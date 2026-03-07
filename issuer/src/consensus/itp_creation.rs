@@ -1,16 +1,16 @@
 //! ITP Creation Handler for BLS-based cross-chain ITP creation (Story 6.21)
 //!
 //! This module handles the consensus protocol for creating ITPs via cross-chain
-//! requests from Arbitrum's BridgeProxy contract.
+//! requests from the BridgeProxy contract on the Settlement chain.
 //!
 //! ## Flow (Atomic)
 //!
-//! 1. User calls `BridgeProxy.requestCreateItp()` on Arbitrum
+//! 1. User calls `BridgeProxy.requestCreateItp()` on Settlement chain
 //! 2. Issuers detect `CreateItpRequested` event
 //! 3. Leader broadcasts `ItpCreationProposal` with weightsHash + assetsHash
 //! 4. Followers verify and sign
 //! 5. Leader aggregates signatures (BFT >2/3 threshold)
-//! 6. Leader calls `BridgeProxy.completeCreateItp()` on Arbitrum
+//! 6. Leader calls `BridgeProxy.completeCreateItp()` on Settlement chain
 //!    (BridgeProxy atomically calls Index.createITP on L3)
 //!
 //! ## Design: STATELESS
@@ -30,8 +30,8 @@ use crate::chain::events::ItpCreationRequest;
 /// Build the message hash for BLS signing (must match BridgeProxy.sol exactly)
 ///
 /// # Arguments
-/// * `chain_id` - Arbitrum chain ID (42161 for mainnet, 421614 for Sepolia)
-/// * `bridge_proxy` - BridgeProxy contract address on Arbitrum
+/// * `chain_id` - Settlement chain ID (42161 for mainnet, 421614 for Sepolia)
+/// * `bridge_proxy` - BridgeProxy contract address on Settlement chain
 /// * `admin` - Original requester address
 /// * `nonce` - Request nonce from BridgeProxy
 /// * `weights_hash` - keccak256(abi.encodePacked(weights))
@@ -124,9 +124,9 @@ pub fn verify_proposal_matches_request(
 /// Configuration for ITP creation handler
 #[derive(Debug, Clone)]
 pub struct ItpCreationConfig {
-    /// Arbitrum chain ID (42161 for mainnet)
-    pub arbitrum_chain_id: u64,
-    /// BridgeProxy contract address on Arbitrum
+    /// Settlement chain ID (42161 for mainnet)
+    pub settlement_chain_id: u64,
+    /// BridgeProxy contract address on Settlement chain
     pub bridge_proxy_address: Address,
     /// Timeout for proposal broadcast (ms)
     pub proposal_timeout_ms: u64,
@@ -139,7 +139,7 @@ pub struct ItpCreationConfig {
 impl Default for ItpCreationConfig {
     fn default() -> Self {
         Self {
-            arbitrum_chain_id: 42161,
+            settlement_chain_id: 42161,
             bridge_proxy_address: Address::zero(),
             proposal_timeout_ms: 500,
             sign_timeout_ms: 300,
@@ -172,8 +172,8 @@ pub enum ItpCreationError {
     #[error("L3 ITP creation failed: {reason}")]
     L3CreationFailed { reason: String },
 
-    #[error("Arbitrum completion failed: {reason}")]
-    ArbitrumCompletionFailed { reason: String },
+    #[error("Settlement chain completion failed: {reason}")]
+    SettlementCompletionFailed { reason: String },
 
     #[error("invalid proposal: {reason}")]
     InvalidProposal { reason: String },
@@ -346,7 +346,7 @@ mod tests {
     #[test]
     fn test_config_defaults() {
         let config = ItpCreationConfig::default();
-        assert_eq!(config.arbitrum_chain_id, 42161);
+        assert_eq!(config.settlement_chain_id, 42161);
         assert_eq!(config.proposal_timeout_ms, 500);
         assert_eq!(config.sign_timeout_ms, 300);
         assert_eq!(config.min_signatures, 11);

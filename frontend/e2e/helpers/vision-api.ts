@@ -12,7 +12,7 @@ const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 
 
 import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
-  CHAIN_ID as ENV_CHAIN_ID, ARB_CHAIN_ID as ENV_ARB_CHAIN_ID, ARB_RPC as ENV_ARB_RPC,
+  CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ISSUER_URLS,
   RPC_TIMEOUT,
 } from '../env'
@@ -866,7 +866,7 @@ const VISION_VIRTUAL_BALANCE_ABI = [{
 }] as const
 
 /**
- * Read a player's virtual balance on Vision (credited by issuers from Arb deposits).
+ * Read a player's virtual balance on Vision (credited by issuers from Settlement deposits).
  */
 export async function getVisionVirtualBalance(player: string): Promise<bigint> {
   const data = encodeFunctionData({
@@ -878,37 +878,37 @@ export async function getVisionVirtualBalance(player: string): Promise<bigint> {
   return safeBigInt(result)
 }
 
-// ── Arb-side helpers for bridge deposit/withdraw E2E ──────
+// ── Settlement-side helpers for bridge deposit/withdraw E2E ──────
 
-const ARB_RPC = ENV_ARB_RPC
+const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC
 
-async function arbRpcCall(method: string, params: unknown[]): Promise<unknown> {
+async function settlementRpcCall(method: string, params: unknown[]): Promise<unknown> {
   return withRetry(async () => {
-    const res = await fetch(ARB_RPC, {
+    const res = await fetch(SETTLEMENT_RPC, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
       signal: AbortSignal.timeout(RPC_TIMEOUT),
     })
     const json = await res.json()
-    if (json.error) throw new Error(`Arb RPC ${method}: ${json.error.message}`)
+    if (json.error) throw new Error(`Settlement RPC ${method}: ${json.error.message}`)
     return json.result
   })
 }
 
-function getArbCustodyAddress(): string {
-  return getDeployment().contracts.ArbBridgeCustody
+function getSettlementCustodyAddress(): string {
+  return getDeployment().contracts.SettlementBridgeCustody
 }
 
-function getArbUsdcAddress(): string {
-  return getDeployment().contracts.ARB_USDC
+function getSettlementUsdcAddress(): string {
+  return getDeployment().contracts.SETTLEMENT_USDC
 }
 
 /**
- * Mint Arb USDC to a player.
- * On testnet: L3 and Arb are the same chain, uses signed tx.
+ * Mint Settlement USDC to a player.
+ * On testnet: L3 and Settlement are the same chain, uses signed tx.
  */
-export async function mintArbUsdc(player: string, amount: bigint): Promise<void> {
+export async function mintSettlementUsdc(player: string, amount: bigint): Promise<void> {
   const deployer = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS
   const userPadded = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const amountHex = amount.toString(16).padStart(64, '0')
@@ -917,21 +917,21 @@ export async function mintArbUsdc(player: string, amount: bigint): Promise<void>
   if (!IS_ANVIL) {
     const account = privateKeyToAccount(DEPLOYER_KEY)
     const chain = defineChain({
-      id: ENV_ARB_CHAIN_ID,
-      name: 'Index L3',
+      id: ENV_SETTLEMENT_CHAIN_ID,
+      name: 'Index Settlement',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [ARB_RPC] } },
+      rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
     })
-    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
     await client.sendTransaction({
-      to: getArbUsdcAddress() as `0x${string}`,
+      to: getSettlementUsdcAddress() as `0x${string}`,
       data: data as `0x${string}`,
       gas: 1_000_000n,
     })
   } else {
-    await arbRpcCall('eth_sendTransaction', [{
+    await settlementRpcCall('eth_sendTransaction', [{
       from: deployer,
-      to: getArbUsdcAddress(),
+      to: getSettlementUsdcAddress(),
       data,
       gas: '0x100000',
     }])
@@ -939,24 +939,24 @@ export async function mintArbUsdc(player: string, amount: bigint): Promise<void>
 }
 
 /**
- * Read Arb USDC balance (6 decimals).
+ * Read Settlement USDC balance (6 decimals).
  */
-export async function getArbUsdcBalance(player: string): Promise<bigint> {
+export async function getSettlementUsdcBalance(player: string): Promise<bigint> {
   const paddedAddr = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const data = `0x70a08231${paddedAddr}`
-  const result = await arbRpcCall('eth_call', [{ to: getArbUsdcAddress(), data }, 'latest']) as string
+  const result = await settlementRpcCall('eth_call', [{ to: getSettlementUsdcAddress(), data }, 'latest']) as string
   return safeBigInt(result)
 }
 
 /**
- * Deposit Arb USDC to Vision via ArbBridgeCustody.depositToVision(amount).
+ * Deposit Settlement USDC to Vision via SettlementBridgeCustody.depositToVision(amount).
  * On testnet: uses signed transactions, no block mining needed.
  */
-export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigint): Promise<void> {
-  const custody = getArbCustodyAddress()
-  const usdcAddr = getArbUsdcAddress()
+export async function depositToVisionViaSettlement(player: string, settlementUsdcAmount: bigint): Promise<void> {
+  const custody = getSettlementCustodyAddress()
+  const usdcAddr = getSettlementUsdcAddress()
   const approvePadded = custody.replace('0x', '').toLowerCase().padStart(64, '0')
-  const amtHex = arbUsdcAmount.toString(16).padStart(64, '0')
+  const amtHex = settlementUsdcAmount.toString(16).padStart(64, '0')
   const approveData = `0x095ea7b3${approvePadded}${amtHex}`
 
   const depositData = encodeFunctionData({
@@ -968,26 +968,26 @@ export async function depositToVisionViaArb(player: string, arbUsdcAmount: bigin
       outputs: [{ name: '', type: 'bytes32' }],
     }] as const,
     functionName: 'depositToVision',
-    args: [arbUsdcAmount],
+    args: [settlementUsdcAmount],
   })
 
   if (!IS_ANVIL) {
     const key = getKeyForAddress(player)
     const account = privateKeyToAccount(key)
     const chain = defineChain({
-      id: ENV_ARB_CHAIN_ID,
-      name: 'Index L3',
+      id: ENV_SETTLEMENT_CHAIN_ID,
+      name: 'Index Settlement',
       nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [ARB_RPC] } },
+      rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
     })
-    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
     await client.sendTransaction({ to: usdcAddr as `0x${string}`, data: approveData as `0x${string}`, gas: 1_000_000n })
     await client.sendTransaction({ to: custody as `0x${string}`, data: depositData as `0x${string}`, gas: 2_000_000n })
   } else {
-    await arbRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000'])
-    await arbRpcCall('anvil_impersonateAccount', [player])
-    await arbRpcCall('eth_sendTransaction', [{ from: player, to: usdcAddr, data: approveData, gas: '0x100000' }])
-    await arbRpcCall('eth_sendTransaction', [{ from: player, to: custody, data: depositData, gas: '0x200000' }])
-    await arbRpcCall('anvil_mine', ['0x5'])
+    await settlementRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000'])
+    await settlementRpcCall('anvil_impersonateAccount', [player])
+    await settlementRpcCall('eth_sendTransaction', [{ from: player, to: usdcAddr, data: approveData, gas: '0x100000' }])
+    await settlementRpcCall('eth_sendTransaction', [{ from: player, to: custody, data: depositData, gas: '0x200000' }])
+    await settlementRpcCall('anvil_mine', ['0x5'])
   }
 }

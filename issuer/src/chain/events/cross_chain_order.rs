@@ -1,19 +1,19 @@
 //! CrossChainOrder Event Types (Story 7.1)
 //!
 //! This module provides types for parsing and validating cross-chain order events
-//! from the ArbBridgeCustody contract on Arbitrum.
+//! from the SettlementBridgeCustody contract on the Settlement chain.
 //!
 //! ## Decimal Handling (Story 7-6b)
 //!
 //! The `CrossChainOrderCreated` event emits `amount` in **18-decimal internal format**.
-//! This is because the ArbBridgeCustody contract converts user-provided 6-decimal USDC
+//! This is because the SettlementBridgeCustody contract converts user-provided 6-decimal USDC
 //! to 18-decimal internal representation at order creation time.
 //!
 //! No conversion is needed when parsing these events - amounts are already normalized.
 //!
 //! Events:
-//! - `CrossChainOrderCreated` - User initiates ITP purchase from Arbitrum
-//! - `CrossChainSellOrderCreated` - User initiates ITP sell from Arbitrum
+//! - `CrossChainOrderCreated` - User initiates ITP purchase from Settlement chain
+//! - `CrossChainSellOrderCreated` - User initiates ITP sell from Settlement chain
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -55,7 +55,7 @@ pub const CROSS_CHAIN_SELL_ORDER_CREATED_SIGNATURE: &str =
 pub const CROSS_CHAIN_ORDER_CREATED_SIGNATURE: &str =
     "CrossChainOrderCreated(uint256,bytes32,address,uint256)";
 
-/// Parsed CrossChainOrder from ArbBridgeCustody on Arbitrum
+/// Parsed CrossChainOrder from SettlementBridgeCustody on Settlement chain
 ///
 /// This struct represents the full order data, combining:
 /// - Event data (orderId, itpId, user, amount) from CrossChainOrderCreated
@@ -63,7 +63,7 @@ pub const CROSS_CHAIN_ORDER_CREATED_SIGNATURE: &str =
 /// - Rust-specific fields for deduplication and tracking (chain_id, block_number, tx_hash)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CrossChainOrder {
-    /// Unique order ID from ArbBridgeCustody
+    /// Unique order ID from SettlementBridgeCustody
     pub order_id: U256,
     /// ITP identifier (bytes32)
     pub itp_id: H256,
@@ -96,7 +96,7 @@ pub struct CrossChainOrder {
 /// Use this when you have only the event data and haven't yet called getCrossChainOrder()
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CrossChainOrderEvent {
-    /// Unique order ID from ArbBridgeCustody
+    /// Unique order ID from SettlementBridgeCustody
     pub order_id: U256,
     /// ITP identifier (bytes32)
     pub itp_id: H256,
@@ -135,20 +135,20 @@ pub enum CrossChainOrderParseError {
     ZeroAmount,
 }
 
-/// Cross-chain sell order event data from ArbBridgeCustody on Arbitrum
+/// Cross-chain sell order event data from SettlementBridgeCustody on Settlement chain
 ///
 /// Parsed from CrossChainSellOrderCreated event:
 /// - Event data (orderId, itpId, user, bridgedItpAddress, amount)
 /// - Rust-specific fields for deduplication and tracking (block_number, tx_hash)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CrossChainSellOrderEvent {
-    /// Unique order ID from ArbBridgeCustody
+    /// Unique order ID from SettlementBridgeCustody
     pub order_id: U256,
     /// ITP identifier (bytes32)
     pub itp_id: H256,
     /// User who placed the sell order
     pub user: Address,
-    /// Bridged ITP token address on Arbitrum
+    /// Bridged ITP token address on Settlement chain
     pub bridged_itp_address: Address,
     /// ITP amount to sell (18 decimals)
     pub amount: U256,
@@ -580,7 +580,7 @@ mod tests {
             1,                                       // slippage_tier (normal)
             U256::from(1700000000u64),              // deadline
             U256::from(1699000000u64),              // created_at
-            42161,                                   // chain_id (Arbitrum)
+            42161,                                   // chain_id (Settlement)
         );
 
         assert_eq!(full_order.order_id, U256::from(42));

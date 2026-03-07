@@ -26,7 +26,7 @@ export interface UseWithdrawBalanceReturn {
 /**
  * Hook to withdraw from realBalance on Vision.sol (L3).
  * Sends actual L3 USDC from the contract to the user's wallet.
- * Only debits realBalance — use useWithdrawToArb for virtualBalance.
+ * Only debits realBalance — use useWithdrawToSettlement for virtualBalance.
  */
 export function useWithdrawBalance(): UseWithdrawBalanceReturn {
   const { address } = useAccount()

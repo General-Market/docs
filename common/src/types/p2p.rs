@@ -165,10 +165,10 @@ pub enum P2PMessage {
     /// Leader proposes bridging USDC from Arbitrum to L3
     /// Timeout: 500ms, Retry: 1
     /// Story 7.2: Bridge Arb→L3 orchestration
-    BridgeArbToL3Proposal {
+    BridgeSettlementToL3Proposal {
         /// Leader's peer ID
         leader_id: PeerId,
-        /// CrossChainOrder ID from ArbBridgeCustody
+        /// CrossChainOrder ID from SettlementBridgeCustody
         order_id: U256,
         /// ITP being purchased
         itp_id: H256,
@@ -187,7 +187,7 @@ pub enum P2PMessage {
     /// Follower signs bridge proposal
     /// Timeout: 300ms, Retry: 0
     /// Story 7.2: Bridge Arb→L3 orchestration
-    BridgeArbToL3Sign {
+    BridgeSettlementToL3Sign {
         /// Signer's peer ID
         signer_id: PeerId,
         /// Signer's index in issuer set (for bitmap)
@@ -198,17 +198,17 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
-    /// Leader proposes submitting order on L3 Index on behalf of Arbitrum user
+    /// Leader proposes submitting order on L3 Index on behalf of Settlement chain user
     /// Timeout: 500ms, Retry: 1
     /// Story 7.3: Submit Order for User
     SubmitOrderForUserProposal {
         /// Leader's peer ID (for P2P routing and connection identification)
         leader_id: PeerId,
-        /// Original Arbitrum order ID (from CrossChainOrderCreated)
-        arb_order_id: U256,
+        /// Original Settlement order ID (from CrossChainOrderCreated)
+        settlement_order_id: U256,
         /// ITP being purchased
         itp_id: H256,
-        /// Original Arbitrum user (for share distribution later)
+        /// Original Settlement chain user (for share distribution later)
         user: Address,
         /// USDC amount (18 decimals per TypesLib)
         amount: U256,
@@ -232,8 +232,8 @@ pub enum P2PMessage {
         signer_id: PeerId,
         /// Signer's index in the issuer set (for bitmap calculation)
         signer_index: u8,
-        /// Arbitrum order ID (identifies which proposal this signature is for)
-        arb_order_id: U256,
+        /// Settlement order ID (identifies which proposal this signature is for)
+        settlement_order_id: U256,
         /// Follower's BLS signature
         signature: BLSSignature,
     },
@@ -300,10 +300,10 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
-    /// Leader proposes bridging USDC from L3 back to Arbitrum
+    /// Leader proposes bridging USDC from L3 back to Settlement
     /// Timeout: 500ms, Retry: 1
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
-    BridgeL3ToArbProposal {
+    /// Story 7.5: Bridge USDC L3 to Settlement
+    BridgeL3ToSettlementProposal {
         /// Leader's peer ID
         leader_id: PeerId,
         /// Cycle number that batched these orders
@@ -312,7 +312,7 @@ pub enum P2PMessage {
         order_ids: Vec<U256>,
         /// Total USDC amount to bridge (18 decimals)
         total_amount: U256,
-        /// Destination: IssuerCustody on Arbitrum
+        /// Destination: IssuerCustody on Settlement
         destination: Address,
         /// Registry snapshot nonce for historical BLS verification
         reference_nonce: u64,
@@ -320,10 +320,10 @@ pub enum P2PMessage {
         leader_signature: BLSSignature,
     },
 
-    /// Follower signs bridge L3→Arb proposal
+    /// Follower signs bridge L3→Settlement proposal
     /// Timeout: 300ms, Retry: 0
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
-    BridgeL3ToArbSign {
+    /// Story 7.5: Bridge USDC L3 to Settlement
+    BridgeL3ToSettlementSign {
         /// Signer's peer ID
         signer_id: PeerId,
         /// Signer's index in issuer set (for bitmap)
@@ -945,11 +945,11 @@ mod tests {
         assert_eq!(peer, deserialized);
     }
 
-    /// Test serialization roundtrip for BridgeArbToL3Proposal
+    /// Test serialization roundtrip for BridgeSettlementToL3Proposal
     /// Story 7.2: Bridge Arb→L3 orchestration
     #[test]
     fn test_bridge_arb_to_l3_proposal_serialization_roundtrip() {
-        let msg = P2PMessage::BridgeArbToL3Proposal {
+        let msg = P2PMessage::BridgeSettlementToL3Proposal {
             leader_id: [0x99u8; 32],
             order_id: U256::from(123),
             itp_id: H256::from([0xABu8; 32]),
@@ -969,11 +969,11 @@ mod tests {
         assert_eq!(msg, deserialized);
     }
 
-    /// Test serialization roundtrip for BridgeArbToL3Sign
+    /// Test serialization roundtrip for BridgeSettlementToL3Sign
     /// Story 7.2: Bridge Arb→L3 orchestration
     #[test]
     fn test_bridge_arb_to_l3_sign_serialization_roundtrip() {
-        let msg = P2PMessage::BridgeArbToL3Sign {
+        let msg = P2PMessage::BridgeSettlementToL3Sign {
             signer_id: [0x88u8; 32],
             signer_index: 2,
             order_id: U256::from(456),
@@ -993,14 +993,14 @@ mod tests {
     /// Story 7.2: Bridge Arb→L3 orchestration
     #[test]
     fn test_bridge_different_order_ids_different_serialization() {
-        let msg1 = P2PMessage::BridgeArbToL3Sign {
+        let msg1 = P2PMessage::BridgeSettlementToL3Sign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
             order_id: U256::from(1),
             signature: BLSSignature(vec![0x01]),
         };
 
-        let msg2 = P2PMessage::BridgeArbToL3Sign {
+        let msg2 = P2PMessage::BridgeSettlementToL3Sign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
             order_id: U256::from(2),
@@ -1013,11 +1013,11 @@ mod tests {
         assert_ne!(serialized1, serialized2);
     }
 
-    /// Test BridgeArbToL3Proposal with all fields populated
+    /// Test BridgeSettlementToL3Proposal with all fields populated
     /// Story 7.2: Bridge Arb→L3 orchestration
     #[test]
     fn test_bridge_proposal_all_fields() {
-        let msg = P2PMessage::BridgeArbToL3Proposal {
+        let msg = P2PMessage::BridgeSettlementToL3Proposal {
             leader_id: [0x11u8; 32],
             order_id: U256::from(999),
             itp_id: H256::from([0x22u8; 32]),
@@ -1029,7 +1029,7 @@ mod tests {
         };
 
         // Verify all fields are accessible
-        if let P2PMessage::BridgeArbToL3Proposal {
+        if let P2PMessage::BridgeSettlementToL3Proposal {
             leader_id,
             order_id,
             itp_id,
@@ -1049,7 +1049,7 @@ mod tests {
             assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
-            panic!("Expected BridgeArbToL3Proposal variant");
+            panic!("Expected BridgeSettlementToL3Proposal variant");
         }
     }
 
@@ -1059,7 +1059,7 @@ mod tests {
     fn test_submit_order_for_user_proposal_serialization_roundtrip() {
         let msg = P2PMessage::SubmitOrderForUserProposal {
             leader_id: [0x99u8; 32],
-            arb_order_id: U256::from(123),
+            settlement_order_id: U256::from(123),
             itp_id: H256::from([0xABu8; 32]),
             user: Address::from([0xCDu8; 20]),
             amount: U256::from(1000000000000000000u64), // 1 USDC with 18 decimals
@@ -1086,7 +1086,7 @@ mod tests {
         let msg = P2PMessage::SubmitOrderForUserSign {
             signer_id: [0x88u8; 32],
             signer_index: 2,
-            arb_order_id: U256::from(456),
+            settlement_order_id: U256::from(456),
             signature: BLSSignature(vec![0xAA, 0xBB, 0xCC, 0xDD]),
         };
 
@@ -1099,21 +1099,21 @@ mod tests {
         assert_eq!(msg, deserialized);
     }
 
-    /// Test that different arb_order_ids produce different serialization
+    /// Test that different settlement_order_ids produce different serialization
     /// Story 7.3: Submit Order for User
     #[test]
-    fn test_submit_order_different_arb_order_ids_different_serialization() {
+    fn test_submit_order_different_settlement_order_ids_different_serialization() {
         let msg1 = P2PMessage::SubmitOrderForUserSign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
-            arb_order_id: U256::from(1),
+            settlement_order_id: U256::from(1),
             signature: BLSSignature(vec![0x01]),
         };
 
         let msg2 = P2PMessage::SubmitOrderForUserSign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
-            arb_order_id: U256::from(2),
+            settlement_order_id: U256::from(2),
             signature: BLSSignature(vec![0x01]),
         };
 
@@ -1129,7 +1129,7 @@ mod tests {
     fn test_submit_order_proposal_all_fields() {
         let msg = P2PMessage::SubmitOrderForUserProposal {
             leader_id: [0x11u8; 32],
-            arb_order_id: U256::from(999),
+            settlement_order_id: U256::from(999),
             itp_id: H256::from([0x22u8; 32]),
             user: Address::from([0x33u8; 20]),
             amount: U256::from(5000000000000000000u64), // 5 USDC
@@ -1143,7 +1143,7 @@ mod tests {
         // Verify all fields are accessible
         if let P2PMessage::SubmitOrderForUserProposal {
             leader_id,
-            arb_order_id,
+            settlement_order_id,
             itp_id,
             user,
             amount,
@@ -1155,7 +1155,7 @@ mod tests {
         } = msg.clone()
         {
             assert_eq!(leader_id, [0x11u8; 32]);
-            assert_eq!(arb_order_id, U256::from(999));
+            assert_eq!(settlement_order_id, U256::from(999));
             assert_eq!(itp_id, H256::from([0x22u8; 32]));
             assert_eq!(user, Address::from([0x33u8; 20]));
             assert_eq!(amount, U256::from(5000000000000000000u64));
@@ -1177,7 +1177,7 @@ mod tests {
         for tier in 0u8..=2 {
             let msg = P2PMessage::SubmitOrderForUserProposal {
                 leader_id: [0x01u8; 32],
-                arb_order_id: U256::from(1),
+                settlement_order_id: U256::from(1),
                 itp_id: H256::from([0x00u8; 32]),
                 user: Address::from([0x01u8; 20]),
                 amount: U256::from(1000000000000000000u64),
@@ -1463,11 +1463,11 @@ mod tests {
 
     // ==================== Story 7.5: Bridge L3→Arb Tests ====================
 
-    /// Test serialization roundtrip for BridgeL3ToArbProposal
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test serialization roundtrip for BridgeL3ToSettlementProposal
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_proposal_serialization_roundtrip() {
-        let msg = P2PMessage::BridgeL3ToArbProposal {
+        let msg = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x99u8; 32],
             cycle_number: 42,
             order_ids: vec![U256::from(1), U256::from(2), U256::from(3)],
@@ -1486,11 +1486,11 @@ mod tests {
         assert_eq!(msg, deserialized);
     }
 
-    /// Test serialization roundtrip for BridgeL3ToArbSign
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test serialization roundtrip for BridgeL3ToSettlementSign
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_sign_serialization_roundtrip() {
-        let msg = P2PMessage::BridgeL3ToArbSign {
+        let msg = P2PMessage::BridgeL3ToSettlementSign {
             signer_id: [0x88u8; 32],
             signer_index: 2,
             cycle_number: 123,
@@ -1506,18 +1506,18 @@ mod tests {
         assert_eq!(msg, deserialized);
     }
 
-    /// Test that different cycle numbers produce different serialization for bridge L3→Arb
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test that different cycle numbers produce different serialization for bridge L3→Settlement
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_different_cycles_different_serialization() {
-        let msg1 = P2PMessage::BridgeL3ToArbSign {
+        let msg1 = P2PMessage::BridgeL3ToSettlementSign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
             cycle_number: 1,
             signature: BLSSignature(vec![0x01]),
         };
 
-        let msg2 = P2PMessage::BridgeL3ToArbSign {
+        let msg2 = P2PMessage::BridgeL3ToSettlementSign {
             signer_id: [0x01u8; 32],
             signer_index: 0,
             cycle_number: 2,
@@ -1530,11 +1530,11 @@ mod tests {
         assert_ne!(serialized1, serialized2);
     }
 
-    /// Test BridgeL3ToArbProposal with empty order list
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test BridgeL3ToSettlementProposal with empty order list
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_proposal_empty_orders() {
-        let msg = P2PMessage::BridgeL3ToArbProposal {
+        let msg = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x11u8; 32],
             cycle_number: 0,
             order_ids: vec![],
@@ -1547,22 +1547,22 @@ mod tests {
         let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");
         let deserialized: P2PMessage = rmp_serde::from_slice(&serialized).expect("Deserialization failed");
 
-        if let P2PMessage::BridgeL3ToArbProposal { order_ids, total_amount, .. } = deserialized {
+        if let P2PMessage::BridgeL3ToSettlementProposal { order_ids, total_amount, .. } = deserialized {
             assert!(order_ids.is_empty());
             assert!(total_amount.is_zero());
         } else {
-            panic!("Expected BridgeL3ToArbProposal variant");
+            panic!("Expected BridgeL3ToSettlementProposal variant");
         }
     }
 
-    /// Test BridgeL3ToArbProposal with many orders
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test BridgeL3ToSettlementProposal with many orders
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_proposal_many_orders() {
         let order_ids: Vec<U256> = (0..100).map(|i| U256::from(i)).collect();
         let total_amount = U256::from(100) * U256::from(1000000000000000000u64); // 100 USDC total
 
-        let msg = P2PMessage::BridgeL3ToArbProposal {
+        let msg = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x11u8; 32],
             cycle_number: 999,
             order_ids: order_ids.clone(),
@@ -1575,20 +1575,20 @@ mod tests {
         let serialized = rmp_serde::to_vec(&msg).expect("Serialization failed");
         let deserialized: P2PMessage = rmp_serde::from_slice(&serialized).expect("Deserialization failed");
 
-        if let P2PMessage::BridgeL3ToArbProposal { order_ids: deser_orders, total_amount: deser_amount, .. } = deserialized {
+        if let P2PMessage::BridgeL3ToSettlementProposal { order_ids: deser_orders, total_amount: deser_amount, .. } = deserialized {
             assert_eq!(deser_orders.len(), 100);
             assert_eq!(deser_orders, order_ids);
             assert_eq!(deser_amount, total_amount);
         } else {
-            panic!("Expected BridgeL3ToArbProposal variant");
+            panic!("Expected BridgeL3ToSettlementProposal variant");
         }
     }
 
-    /// Test BridgeL3ToArbProposal with all fields populated
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test BridgeL3ToSettlementProposal with all fields populated
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_proposal_all_fields() {
-        let msg = P2PMessage::BridgeL3ToArbProposal {
+        let msg = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x11u8; 32],
             cycle_number: 999,
             order_ids: vec![U256::from(1), U256::from(2)],
@@ -1599,7 +1599,7 @@ mod tests {
         };
 
         // Verify all fields are accessible
-        if let P2PMessage::BridgeL3ToArbProposal {
+        if let P2PMessage::BridgeL3ToSettlementProposal {
             leader_id,
             cycle_number,
             order_ids,
@@ -1617,15 +1617,15 @@ mod tests {
             assert_eq!(reference_nonce, 42);
             assert_eq!(leader_signature.0.len(), 96);
         } else {
-            panic!("Expected BridgeL3ToArbProposal variant");
+            panic!("Expected BridgeL3ToSettlementProposal variant");
         }
     }
 
-    /// Test that different order_ids produce different serialization for bridge L3→Arb
-    /// Story 7.5: Bridge USDC L3 to Arbitrum
+    /// Test that different order_ids produce different serialization for bridge L3→Settlement
+    /// Story 7.5: Bridge USDC L3 to Settlement
     #[test]
     fn test_bridge_l3_to_arb_different_orders_different_serialization() {
-        let msg1 = P2PMessage::BridgeL3ToArbProposal {
+        let msg1 = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x01u8; 32],
             cycle_number: 1,
             order_ids: vec![U256::from(1)],
@@ -1635,7 +1635,7 @@ mod tests {
             leader_signature: BLSSignature(vec![0x01]),
         };
 
-        let msg2 = P2PMessage::BridgeL3ToArbProposal {
+        let msg2 = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: [0x01u8; 32],
             cycle_number: 1,
             order_ids: vec![U256::from(2)], // Different order

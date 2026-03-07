@@ -196,10 +196,10 @@ export async function checkServicesReady(): Promise<ServiceStatus[]> {
   return results;
 }
 
-/** Quick RPC health check — returns true if both L3 and Arb respond. */
+/** Quick RPC health check — returns true if both L3 and Settlement respond. */
 export async function checkRpcsHealthy(): Promise<boolean> {
   try {
-    const [l3, arb] = await Promise.all([
+    const [l3, settlement] = await Promise.all([
       fetch('http://localhost:8545', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,7 +213,7 @@ export async function checkRpcsHealthy(): Promise<boolean> {
         signal: AbortSignal.timeout(5_000),
       }),
     ]);
-    return l3.ok && arb.ok;
+    return l3.ok && settlement.ok;
   } catch {
     return false;
   }

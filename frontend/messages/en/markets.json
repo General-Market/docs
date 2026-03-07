@@ -90,7 +90,7 @@
     "description_placeholder": "Description (max 280 chars / ~50 words)",
     "website_placeholder": "Website URL (max 128)",
     "video_placeholder": "YouTube URL (max 256)",
-    "arb_erc20": "Arbitrum ERC20:",
+    "settlement_erc20": "Settlement ERC20:",
     "itp_id": "ITP ID:",
     "minted_supply": "Minted Supply",
     "loading_holders": "Loading holders...",
@@ -103,7 +103,7 @@
     "source": "Source:",
     "admin": "Admin:",
     "created": "Created:",
-    "arb_address": "Arb Address:",
+    "settlement_address": "Settlement Address:",
     "request_number": "Request #{number}"
   },
   "rebalance": {

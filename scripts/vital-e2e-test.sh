@@ -6,10 +6,10 @@
 # Runs the complete money trail with submitOrderFor (shares go to original user):
 #   1. Deploy contracts (if not already running)
 #   2. Start 3 issuers + AP with real Bitget prices
-#   3. Buy ITP via ArbBridgeCustody (cross-chain bridge flow)
+#   3. Buy ITP via SettlementBridgeCustody (cross-chain bridge flow)
 #   4. Wait for fills + verify ITP shares minted TO USER (not issuer)
 #   5. Verify order.user == USER_ADDR (share attribution)
-#   6. Sell ITP via ArbBridgeCustody (cross-chain sell from Arbitrum)
+#   6. Sell ITP via SettlementBridgeCustody (cross-chain sell from settlement chain)
 #   7. Wait for fills + verify USDC returned to user
 #   8. Verify AP: real prices, USDT swap, on-chain settlement
 #   9. Print PASS/FAIL summary
@@ -24,12 +24,12 @@ export PATH="$HOME/.foundry/bin:$PATH"
 
 # ==== Configuration ====
 RPC="http://localhost:8545"       # L3 RPC
-ARB_RPC="http://localhost:8546"   # Arbitrum RPC
+SETTLEMENT_RPC="http://localhost:8546"   # Settlement chain RPC
 DEPLOYMENT_FILE="deployments/active-deployment.json"
 DEPLOYER_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 USER_KEY="0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"
 USER_ADDR="0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
-USDC_AMOUNT="500000000"  # 500e6 (ArbBridgeCustody expects 6-decimal USDC input, converts to 18-decimal internally)
+USDC_AMOUNT="500000000"  # 500e6 (SettlementBridgeCustody expects 6-decimal USDC input, converts to 18-decimal internally)
 
 SKIP_BUILD=false
 SKIP_DEPLOY=false
@@ -74,7 +74,7 @@ cleanup() {
     pkill -f 'target/release/issuer' 2>/dev/null || true
     pkill -f 'target/release/ap' 2>/dev/null || true
     # Don't kill Anvils — user might want to inspect state
-    echo "Issuers and AP stopped. Both Anvils left running (L3 :8545, Arb :8546)."
+    echo "Issuers and AP stopped. Both Anvils left running (L3 :8545, Settlement :8546)."
 }
 
 trap cleanup EXIT
@@ -93,16 +93,16 @@ mkdir -p logs
 anvil --chain-id 111222333 --block-time 1 --port 8545 > logs/anvil-l3.log 2>&1 &
 sleep 1
 
-echo "Starting Arbitrum Anvil (chain-id 42161, port 8546)..."
-anvil --chain-id 42161 --block-time 1 --port 8546 > logs/anvil-arb.log 2>&1 &
+echo "Starting Settlement Anvil (chain-id 42161, port 8546)..."
+anvil --chain-id 42161 --block-time 1 --port 8546 > logs/anvil-settlement.log 2>&1 &
 sleep 1
 
 # Verify both
 if ! cast chain-id --rpc-url "$RPC" >/dev/null 2>&1; then
     echo -e "${RED}ERROR: L3 Anvil failed to start${NC}"; exit 1
 fi
-if ! cast chain-id --rpc-url "$ARB_RPC" >/dev/null 2>&1; then
-    echo -e "${RED}ERROR: Arbitrum Anvil failed to start${NC}"; exit 1
+if ! cast chain-id --rpc-url "$SETTLEMENT_RPC" >/dev/null 2>&1; then
+    echo -e "${RED}ERROR: Settlement Anvil failed to start${NC}"; exit 1
 fi
 echo "Both Anvils started (clean state)"
 
@@ -158,9 +158,9 @@ fi
 
 # Load addresses from deployment
 INDEX=$(jq -r '.contracts.Index' "$DEPLOYMENT_FILE")
-ARB_USDC=$(jq -r '.contracts.ARB_USDC' "$DEPLOYMENT_FILE")
+SETTLEMENT_USDC=$(jq -r '.contracts.SETTLEMENT_USDC' "$DEPLOYMENT_FILE")
 L3_USDC=$(jq -r '.contracts.L3_USDC // .contracts.L3_WUSDC' "$DEPLOYMENT_FILE")
-ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody' "$DEPLOYMENT_FILE")
+SETTLEMENT_CUSTODY=$(jq -r '.contracts.SettlementBridgeCustody' "$DEPLOYMENT_FILE")
 ITP_ID=$(jq -r '.contracts.itpId' "$DEPLOYMENT_FILE")
 BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
 MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // .contracts.MockUSDT // empty' "$DEPLOYMENT_FILE")
@@ -171,9 +171,9 @@ BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy // empty' "$DEPLOYMENT_FILE")
 echo ""
 echo "Deployment addresses:"
 echo "  Index:            $INDEX"
-echo "  ARB_USDC:         $ARB_USDC"
-echo "  L3_USDC:          $L3_USDC"
-echo "  ArbBridgeCustody: $ARB_CUSTODY"
+echo "  SETTLEMENT_USDC:         $SETTLEMENT_USDC"
+echo "  L3_USDC:                $L3_USDC"
+echo "  SettlementBridgeCustody: $SETTLEMENT_CUSTODY"
 echo "  MockBitgetVault:  $BITGET_VAULT"
 echo "  BridgeProxy:      $BRIDGE_PROXY"
 echo "  MOCK_USDT:        $MOCK_USDT"
@@ -257,10 +257,10 @@ for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$USER
     fi
 done
 
-# Also fund on Arbitrum
-echo "  Funding signers on Arbitrum..."
+# Also fund on settlement chain
+echo "  Funding signers on settlement chain..."
 for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$USER_ADDR"; do
-    cast send "$ADDR" --value "10ether" --private-key "$DEPLOYER_KEY" --rpc-url "$ARB_RPC" >/dev/null 2>&1
+    cast send "$ADDR" --value "10ether" --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC" >/dev/null 2>&1
 done
 echo "  All signers funded on both chains"
 
@@ -328,11 +328,11 @@ cast send "$BITGET_VAULT" "setPriceSetter(address)" "$AP_ADDR" \
 echo "  Price setter configured"
 
 # Register USDC and USDT as stablecoins for swapStable
-ARB_USDC_DEC=$(cast --to-dec "$(cast call "$ARB_USDC" "decimals()" --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null || echo "6")
+SETTLEMENT_USDC_DEC=$(cast --to-dec "$(cast call "$SETTLEMENT_USDC" "decimals()" --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null || echo "6")
 USDT_DEC=$(cast --to-dec "$(cast call "$MOCK_USDT" "decimals()" --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null || echo "18")
-echo "  Registering stablecoins: ARB_USDC (${ARB_USDC_DEC}dec) + MOCK_USDT (${USDT_DEC}dec)..."
+echo "  Registering stablecoins: SETTLEMENT_USDC (${SETTLEMENT_USDC_DEC}dec) + MOCK_USDT (${USDT_DEC}dec)..."
 cast send "$BITGET_VAULT" "setStableTokens(address,uint8,address,uint8)" \
-    "$ARB_USDC" "$ARB_USDC_DEC" "$MOCK_USDT" "$USDT_DEC" \
+    "$SETTLEMENT_USDC" "$SETTLEMENT_USDC_DEC" "$MOCK_USDT" "$USDT_DEC" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 echo "  Stable tokens registered for swapStable"
 
@@ -387,9 +387,9 @@ echo ""
 echo -e "${BOLD}=== Step 4: Buy Flow (Cross-Chain Bridge) ===${NC}"
 echo "  With submitOrderFor: shares will go to USER ($USER_ADDR), not issuer"
 
-# Record pre-buy state (ARB_USDC deployed to L3 in single-chain E2E; dual-chain deploy TODO)
-USER_ARB_USDC_BEFORE=$(cast call "$ARB_USDC" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
-echo "User ARB_USDC before: $USER_ARB_USDC_BEFORE"
+# Record pre-buy state (SETTLEMENT_USDC deployed to L3 in single-chain E2E; dual-chain deploy TODO)
+USER_SETTLEMENT_USDC_BEFORE=$(cast call "$SETTLEMENT_USDC" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
+echo "User SETTLEMENT_USDC before: $USER_SETTLEMENT_USDC_BEFORE"
 
 # Pre-buy user shares
 INNER_SLOT=$(cast index bytes32 "$ITP_ID" 18)
@@ -397,26 +397,26 @@ USER_SHARE_SLOT=$(cast index address "$USER_ADDR" "$INNER_SLOT")
 PRE_BUY_USER_SHARES=$(cast storage "$INDEX" "$USER_SHARE_SLOT" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
 echo "User shares before: $(cast --to-dec "$PRE_BUY_USER_SHARES" 2>/dev/null || echo 0)"
 
-# 4a. Mint ARB_USDC to user (on L3 — single-chain E2E; dual-chain deploy TODO)
-echo "Minting $USDC_AMOUNT ARB_USDC (6-decimal format, 500 USDC) to user..."
-cast send "$ARB_USDC" "mint(address,uint256)" "$USER_ADDR" "$USDC_AMOUNT" \
+# 4a. Mint SETTLEMENT_USDC to user (on L3 — single-chain E2E; dual-chain deploy TODO)
+echo "Minting $USDC_AMOUNT SETTLEMENT_USDC (6-decimal format, 500 USDC) to user..."
+cast send "$SETTLEMENT_USDC" "mint(address,uint256)" "$USER_ADDR" "$USDC_AMOUNT" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 
-# 4b. Approve ArbBridgeCustody
-echo "Approving ArbBridgeCustody..."
-cast send "$ARB_USDC" "approve(address,uint256)" "$ARB_CUSTODY" "$(cast max-uint)" \
+# 4b. Approve SettlementBridgeCustody
+echo "Approving SettlementBridgeCustody..."
+cast send "$SETTLEMENT_USDC" "approve(address,uint256)" "$SETTLEMENT_CUSTODY" "$(cast max-uint)" \
     --private-key "$USER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 
-# 4c. Buy ITP via ArbBridgeCustody
+# 4c. Buy ITP via SettlementBridgeCustody
 DEADLINE=$(($(date +%s) + 3600))
 if [ "$CURRENT_NAV" != "0" ]; then
     BUY_LIMIT=$(echo "$CURRENT_NAV * 13 / 10" | bc)
 else
     BUY_LIMIT="1"
 fi
-echo "Submitting buyITPFromArbitrum (amount=$USDC_AMOUNT, limitPrice=$BUY_LIMIT, slippage=1)..."
-BUY_TX=$(cast send "$ARB_CUSTODY" \
-    "buyITPFromArbitrum(bytes32,uint256,uint256,uint256,uint256)" \
+echo "Submitting buyITPFromSettlement (amount=$USDC_AMOUNT, limitPrice=$BUY_LIMIT, slippage=1)..."
+BUY_TX=$(cast send "$SETTLEMENT_CUSTODY" \
+    "buyITPFromSettlement(bytes32,uint256,uint256,uint256,uint256)" \
     "$ITP_ID" "$USDC_AMOUNT" "$BUY_LIMIT" "1" "$DEADLINE" \
     --private-key "$USER_KEY" --rpc-url "$RPC" --json 2>/dev/null | jq -r '.transactionHash // empty')
 
@@ -492,7 +492,7 @@ fi
 # BLS consensus (check for signature threshold reached or fills confirmed)
 if grep -q "signature threshold reached\|Fills confirmed\|Batch confirmation completed" logs/issuer-1.log 2>/dev/null; then
     check_pass "BLS consensus reached (issuer logs)"
-elif grep -q "Submit order consensus completed\|Bridge Arb.*L3 consensus completed" logs/issuer-1.log 2>/dev/null; then
+elif grep -q "Submit order consensus completed\|Bridge Settlement.*L3 consensus completed" logs/issuer-1.log 2>/dev/null; then
     check_pass "Consensus completed (bridge pipeline)"
 else
     check_fail "BLS consensus" "No consensus/signature/fill logs in issuer-1.log"
@@ -500,10 +500,10 @@ fi
 
 # NOTE: AP log checks moved to after sell flow — AP needs ~10s to complete on-chain settlement
 
-# ==== Step 6: Sell Flow (Cross-Chain via ArbBridgeCustody) ====
+# ==== Step 6: Sell Flow (Cross-Chain via SettlementBridgeCustody) ====
 echo ""
-echo -e "${BOLD}=== Step 6: Sell Flow (Cross-Chain via ArbBridgeCustody) ===${NC}"
-echo "  User sells via ArbBridgeCustody on Arbitrum (cross-chain sell)"
+echo -e "${BOLD}=== Step 6: Sell Flow (Cross-Chain via SettlementBridgeCustody) ===${NC}"
+echo "  User sells via SettlementBridgeCustody on settlement chain (cross-chain sell)"
 
 if [ "$BUY_FILLED" = false ]; then
     echo -e "${YELLOW}Skipping sell flow — buy did not complete.${NC}"
@@ -511,9 +511,9 @@ if [ "$BUY_FILLED" = false ]; then
     check_fail "ITP shares burned (sell)" "Sell flow skipped"
     check_fail "USDC returned to user" "Sell flow skipped"
 else
-    # Record pre-sell ARB_USDC balance (all contracts on L3 in single-chain E2E)
-    USER_ARB_USDC_BEFORE_SELL=$(cast call "$ARB_USDC" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
-    echo "User ARB_USDC before sell: $(cast --to-dec "$USER_ARB_USDC_BEFORE_SELL" 2>/dev/null || echo 0)"
+    # Record pre-sell SETTLEMENT_USDC balance (all contracts on L3 in single-chain E2E)
+    USER_SETTLEMENT_USDC_BEFORE_SELL=$(cast call "$SETTLEMENT_USDC" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
+    echo "User SETTLEMENT_USDC before sell: $(cast --to-dec "$USER_SETTLEMENT_USDC_BEFORE_SELL" 2>/dev/null || echo 0)"
 
     # Sell amount = shares gained from buy
     SELL_AMOUNT="$SHARE_DELTA"
@@ -529,7 +529,7 @@ else
     fi
     echo "Sell limit price: $SELL_LIMIT (NAV * 0.7, NAV=$SELL_NAV)"
 
-    # Sell via ArbBridgeCustody (new cross-chain flow — single-chain E2E)
+    # Sell via SettlementBridgeCustody (new cross-chain flow — single-chain E2E)
     # 1. Look up BridgedITP address from BridgeProxy
     BRIDGED_ITP=$(cast call "$BRIDGE_PROXY" "getBridgedItp(bytes32)" "$ITP_ID" --rpc-url "$RPC" 2>/dev/null)
     if [ -n "$BRIDGED_ITP" ] && [ "$BRIDGED_ITP" != "0x0000000000000000000000000000000000000000000000000000000000000000" ]; then
@@ -537,17 +537,17 @@ else
         BRIDGED_ITP_ADDR="0x$(echo "$BRIDGED_ITP" | sed 's/^0x//' | tail -c 41)"
         echo "  BridgedITP address: $BRIDGED_ITP_ADDR"
 
-        # 2. Approve BridgedITP to ArbBridgeCustody
-        cast send "$BRIDGED_ITP_ADDR" "approve(address,uint256)" "$ARB_CUSTODY" "$(cast max-uint)" \
+        # 2. Approve BridgedITP to SettlementBridgeCustody
+        cast send "$BRIDGED_ITP_ADDR" "approve(address,uint256)" "$SETTLEMENT_CUSTODY" "$(cast max-uint)" \
             --private-key "$USER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 
-        # 3. Call sellITPFromArbitrum
-        SELL_TX=$(cast send "$ARB_CUSTODY" \
-            "sellITPFromArbitrum(bytes32,uint256,uint256,uint256,uint256)" \
+        # 3. Call sellITPFromSettlement
+        SELL_TX=$(cast send "$SETTLEMENT_CUSTODY" \
+            "sellITPFromSettlement(bytes32,uint256,uint256,uint256,uint256)" \
             "$ITP_ID" "$SELL_AMOUNT" "$SELL_LIMIT" "1" "$DEADLINE" \
             --private-key "$USER_KEY" --rpc-url "$RPC" --json 2>/dev/null | jq -r '.transactionHash // empty')
     else
-        echo "  WARNING: BridgedITP not found on Arbitrum, falling back to L3 direct sell"
+        echo "  WARNING: BridgedITP not found on settlement chain, falling back to L3 direct sell"
         SELL_MODE="l3_direct"
         SELL_TX=$(cast send "$INDEX" \
             "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
@@ -569,13 +569,13 @@ else
     echo "  Waiting for USDC to arrive (confirms sell processed)"
 
     # Record pre-sell USDC for comparison inside loop
-    # In L3 direct sell mode, check L3_USDC (18 dec) instead of ARB_USDC (6 dec)
+    # In L3 direct sell mode, check L3_USDC (18 dec) instead of SETTLEMENT_USDC (6 dec)
     if [ "${SELL_MODE:-}" = "l3_direct" ]; then
         USDC_TOKEN_LABEL="L3_USDC"
         USDC_TOKEN="$L3_USDC"
     else
-        USDC_TOKEN_LABEL="ARB_USDC"
-        USDC_TOKEN="$ARB_USDC"
+        USDC_TOKEN_LABEL="SETTLEMENT_USDC"
+        USDC_TOKEN="$SETTLEMENT_USDC"
     fi
     USER_USDC_BEFORE_SELL=$(cast call "$USDC_TOKEN" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
     USDC_BEFORE_DEC=$(cast --to-dec "$USER_USDC_BEFORE_SELL" 2>/dev/null || echo "0")
@@ -708,7 +708,7 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     echo ""
     echo "Log files:"
     echo "  logs/issuer-1.log  logs/issuer-2.log  logs/issuer-3.log"
-    echo "  logs/ap.log  logs/anvil-l3.log  logs/anvil-arb.log"
+    echo "  logs/ap.log  logs/anvil-l3.log  logs/anvil-settlement.log"
     exit 0
 else
     echo -e "${RED}${BOLD}$FAIL_COUNT CHECK(S) FAILED${NC}"

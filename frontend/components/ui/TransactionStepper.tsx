@@ -7,7 +7,7 @@ export interface MicroStep {
   label: string
   txHash?: string
   explorerUrl?: string
-  chain?: 'arb' | 'l3'
+  chain?: 'settlement' | 'l3'
 }
 
 export interface VisibleStep {
@@ -202,7 +202,7 @@ export function TransactionStepper({
               rel="noopener noreferrer"
               className="hover:text-text-primary transition-colors flex items-center gap-1"
             >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'arb' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'settlement' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
               {truncateHash(tx.hash)}
             </a>
           ))}

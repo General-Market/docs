@@ -1,6 +1,6 @@
 //! Types for bridge orchestration
 //!
-//! Story 7.2: Bridge USDC Orchestrator (Arb→L3)
+//! Story 7.2: Bridge USDC Orchestrator (Settlement→L3)
 //! Story 7.3: Submit Order for User
 //! Story 7.4: Batch and Fill Orchestration
 
@@ -37,10 +37,10 @@ pub struct BridgeConfig {
     pub issuer_custody_l3: Address,
     /// L3Usdc contract address
     pub l3_usdc_address: Address,
-    /// ArbBridgeCustody address (for order verification)
-    pub arb_custody_address: Address,
-    /// Arbitrum chain ID (for message hash)
-    pub arbitrum_chain_id: u64,
+    /// SettlementBridgeCustody address (for order verification)
+    pub settlement_custody_address: Address,
+    /// Settlement chain ID (for message hash)
+    pub settlement_chain_id: u64,
     /// L3 chain ID (for submit order message hash) - Story 7.3
     pub l3_chain_id: u64,
     /// Index contract address on L3 (for submitOrder calls) - Story 7.3
@@ -51,17 +51,17 @@ pub struct BridgeConfig {
     pub proposal_timeout_ms: u64,
     /// Signing timeout in milliseconds
     pub sign_timeout_ms: u64,
-    /// IssuerCustody Arbitrum address (destination for bridged-back ArbUSDC) - Story 7.5
-    pub issuer_custody_arb: Address,
-    /// ArbUSDC contract address (USDC token on Arbitrum) - Story 7.5
-    pub arb_usdc_address: Address,
+    /// IssuerCustody Settlement address (destination for bridged-back SettlementUSDC) - Story 7.5
+    pub issuer_custody_settlement: Address,
+    /// SettlementUSDC contract address (USDC token on Settlement) - Story 7.5
+    pub settlement_usdc_address: Address,
     /// MockBitgetVault address for AP trading (Story 7.6)
     pub bitget_vault: Address,
     /// Issuer signer address (for bridge mint recipient in local E2E)
     pub signer_address: Address,
     /// CollateralRegistry contract address on L3 (8-step bridge Step 3)
     pub collateral_registry: Address,
-    /// BridgeProxy contract address on Arbitrum (8-step bridge Step 8)
+    /// BridgeProxy contract address on Settlement (8-step bridge Step 8)
     pub bridge_proxy: Address,
 }
 
@@ -70,15 +70,15 @@ impl Default for BridgeConfig {
         Self {
             issuer_custody_l3: Address::zero(),
             l3_usdc_address: Address::zero(),
-            arb_custody_address: Address::zero(),
-            arbitrum_chain_id: 42161, // Arbitrum One mainnet
+            settlement_custody_address: Address::zero(),
+            settlement_chain_id: 42161, // Settlement chain mainnet
             l3_chain_id: 111222333,   // Index L3 Orbit chain
             index_address: Address::zero(),
             min_signatures: 2,
             proposal_timeout_ms: 500,
             sign_timeout_ms: 300,
-            issuer_custody_arb: Address::zero(), // Story 7.5
-            arb_usdc_address: Address::zero(),   // Story 7.5
+            issuer_custody_settlement: Address::zero(), // Story 7.5
+            settlement_usdc_address: Address::zero(),   // Story 7.5
             bitget_vault: Address::zero(),       // Story 7.6
             signer_address: Address::zero(),
             collateral_registry: Address::zero(), // 8-step bridge
@@ -92,7 +92,7 @@ impl Default for BridgeConfig {
 pub enum BridgeOrderStatus {
     /// Order received, waiting for consensus
     Pending,
-    /// Successfully bridged USDC from Arbitrum to L3
+    /// Successfully bridged USDC from Settlement to L3
     BridgedToL3,
     /// Order submitted on L3 (Story 7.3)
     SubmittedOnL3,
@@ -100,21 +100,21 @@ pub enum BridgeOrderStatus {
     Batched,
     /// Order filled and ITP shares minted (Story 7.4)
     Filled,
-    /// Successfully bridged back from L3 to Arbitrum (Story 7.5)
-    BridgedBackToArb,
+    /// Successfully bridged back from L3 to Settlement (Story 7.5)
+    BridgedBackToSettlement,
     /// USDC released to MockBitgetVault for AP trading (Story 7.6)
     ReleasedToVault,
-    /// BridgedITP shares minted on Arbitrum via BridgeProxy (Step 8)
+    /// BridgedITP shares minted on Settlement via BridgeProxy (Step 8)
     SharesBridged,
     /// Bridge failed
     Failed,
-    /// Sell order received from Arb, waiting for consensus
+    /// Sell order received from Settlement, waiting for consensus
     SellPending,
     /// Sell order submitted on L3 via Index.submitOrderFor()
     SellSubmittedOnL3,
     /// Sell order filled on L3, USDC returned
     SellFilled,
-    /// USDC bridged back to Arb, completeSellOrder called
+    /// USDC bridged back to Settlement, completeSellOrder called
     SellCompleted,
 }
 
@@ -123,11 +123,11 @@ pub enum BridgeOrderStatus {
 pub struct BridgeProposal {
     /// Leader's peer ID
     pub leader_id: PeerId,
-    /// CrossChainOrder ID from ArbBridgeCustody
+    /// CrossChainOrder ID from SettlementBridgeCustody
     pub order_id: U256,
     /// ITP being purchased
     pub itp_id: H256,
-    /// User who initiated the order on Arbitrum
+    /// User who initiated the order on Settlement
     pub user: Address,
     /// USDC amount to bridge (18 decimals per TypesLib)
     pub amount: U256,
@@ -144,13 +144,13 @@ pub struct BridgeProposal {
 pub struct SellBridgeProposal {
     /// Leader's peer ID
     pub leader_id: PeerId,
-    /// CrossChainSellOrder ID from ArbBridgeCustody
+    /// CrossChainSellOrder ID from SettlementBridgeCustody
     pub order_id: U256,
     /// ITP being sold
     pub itp_id: H256,
-    /// User who initiated the sell on Arbitrum
+    /// User who initiated the sell on Settlement
     pub user: Address,
-    /// Bridged ITP token address on Arbitrum
+    /// Bridged ITP token address on Settlement
     pub bridged_itp_address: Address,
     /// ITP amount to sell (18 decimals)
     pub amount: U256,
@@ -176,12 +176,12 @@ pub struct SellSubmitOrderResult {
 /// Result of successful completeSellOrder consensus
 pub type CompleteSellOrderResult = SignedConsensusResult;
 
-/// Complete sell order proposal for BLS consensus on Arbitrum
+/// Complete sell order proposal for BLS consensus on Settlement
 #[derive(Debug, Clone)]
 pub struct CompleteSellProposal {
     /// Leader's peer ID
     pub leader_id: PeerId,
-    /// Arb sell order ID
+    /// Settlement sell order ID
     pub order_id: U256,
     /// USDC proceeds to return to user
     pub usdc_proceeds: U256,
@@ -204,11 +204,11 @@ pub type BridgeResult = SignedConsensusResult;
 pub struct SubmitOrderProposal {
     /// Leader's peer ID
     pub leader_id: PeerId,
-    /// Original Arbitrum order ID (from CrossChainOrderCreated)
-    pub arb_order_id: U256,
+    /// Original Settlement order ID (from CrossChainOrderCreated)
+    pub settlement_order_id: U256,
     /// ITP being purchased
     pub itp_id: H256,
-    /// Original Arbitrum user (for share distribution later)
+    /// Original Settlement user (for share distribution later)
     pub user: Address,
     /// USDC amount (18 decimals per TypesLib)
     pub amount: U256,
@@ -238,15 +238,15 @@ pub struct SubmitOrderResult {
     pub l3_order_id: Option<U256>,
 }
 
-/// Mapping between Arbitrum and L3 order IDs
+/// Mapping between Settlement and L3 order IDs
 /// Story 7.3: Submit Order for User
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderMapping {
-    /// Original order ID from ArbBridgeCustody
-    pub arb_order_id: U256,
+    /// Original order ID from SettlementBridgeCustody
+    pub settlement_order_id: U256,
     /// Resulting order ID from Index.submitOrder()
     pub l3_order_id: U256,
-    /// Original user from Arbitrum (for share distribution)
+    /// Original user from Settlement (for share distribution)
     pub original_user: Address,
     /// Timestamp when mapping was created
     pub created_at: u64,
@@ -358,8 +358,8 @@ pub enum BridgeError {
     P2PError { reason: String },
 
     // Story 7.3: Submit Order for User error variants
-    #[error("order not bridged: {arb_order_id} has status {status:?}")]
-    OrderNotBridged { arb_order_id: U256, status: Option<BridgeOrderStatus> },
+    #[error("order not bridged: {settlement_order_id} has status {status:?}")]
+    OrderNotBridged { settlement_order_id: U256, status: Option<BridgeOrderStatus> },
 
     #[error("insufficient custody balance: need {required}, have {available}")]
     InsufficientCustodyBalance { required: U256, available: U256 },
@@ -379,8 +379,8 @@ pub enum BridgeError {
     #[error("event parse error: {reason}")]
     EventParseError { reason: String },
 
-    #[error("order already submitted: arb_order_id={arb_order_id} maps to l3_order_id={l3_order_id}")]
-    OrderAlreadySubmitted { arb_order_id: U256, l3_order_id: U256 },
+    #[error("order already submitted: settlement_order_id={settlement_order_id} maps to l3_order_id={l3_order_id}")]
+    OrderAlreadySubmitted { settlement_order_id: U256, l3_order_id: U256 },
 
     // Story 7.4: Batch and Fill error variants
     #[error("batch already confirmed: cycle {cycle_number}")]
@@ -410,18 +410,18 @@ pub enum BridgeError {
     #[error("confirm fills failed: {reason}")]
     ConfirmFillsFailed { reason: String },
 
-    // Story 7.5: Bridge L3→Arb error variants
+    // Story 7.5: Bridge L3→Settlement error variants
     #[error("order not batched: {order_id} has status {status:?}")]
     OrderNotBatched { order_id: U256, status: BridgeOrderStatus },
 
-    #[error("bridge L3→Arb already processed: cycle {cycle_number}")]
-    BridgeL3ToArbAlreadyProcessed { cycle_number: u64 },
+    #[error("bridge L3→Settlement already processed: cycle {cycle_number}")]
+    BridgeL3ToSettlementAlreadyProcessed { cycle_number: u64 },
 
     #[error("amount mismatch: expected {expected}, got {actual}")]
     AmountMismatch { expected: U256, actual: U256 },
 
-    #[error("bridge L3→Arb failed: {reason}")]
-    BridgeL3ToArbFailed { reason: String },
+    #[error("bridge L3→Settlement failed: {reason}")]
+    BridgeL3ToSettlementFailed { reason: String },
 
     #[error("invalid destination: expected {expected:?}, got {actual:?}")]
     InvalidDestination { expected: Address, actual: Address },
@@ -460,10 +460,10 @@ pub enum BridgeError {
     CollectionNotFound { label: String, key: String },
 }
 
-/// Build the message hash for bridge Arb→L3 consensus
+/// Build the message hash for bridge Settlement→L3 consensus
 ///
 /// Layout (180 bytes packed):
-/// - chain_id: 32 bytes (Arbitrum chain ID)
+/// - chain_id: 32 bytes (Settlement chain ID)
 /// - order_id: 32 bytes
 /// - itp_id: 32 bytes
 /// - user: 20 bytes (packed address)
@@ -471,7 +471,7 @@ pub enum BridgeError {
 /// - deadline: 32 bytes
 ///
 /// This matches the format expected for BLS signature verification.
-pub fn build_bridge_arb_to_l3_hash(
+pub fn build_bridge_settlement_to_l3_hash(
     chain_id: u64,
     order_id: U256,
     itp_id: H256,
@@ -496,7 +496,7 @@ pub fn build_bridge_arb_to_l3_hash(
 /// Build the message hash for sell bridge consensus
 ///
 /// Layout (212 bytes packed):
-/// - chain_id: 32 bytes (Arbitrum chain ID)
+/// - chain_id: 32 bytes (Settlement chain ID)
 /// - order_id: 32 bytes
 /// - itp_id: 32 bytes
 /// - user: 20 bytes (packed address)
@@ -549,7 +549,7 @@ pub fn build_complete_sell_order_consensus_hash(
         .keccak256()
 }
 
-/// Build calldata for ArbBridgeCustody.completeSellOrder()
+/// Build calldata for SettlementBridgeCustody.completeSellOrder()
 ///
 /// Selector: keccak256("completeSellOrder(uint256,uint256,address,bytes,uint256,uint256)")[0:4]
 ///
@@ -588,9 +588,9 @@ pub fn build_complete_sell_order_calldata(
 ///
 /// Layout (244 bytes packed):
 /// - chain_id: 32 bytes (L3 chain ID)
-/// - arb_order_id: 32 bytes
+/// - settlement_order_id: 32 bytes
 /// - itp_id: 32 bytes
-/// - user: 20 bytes (packed address - original Arbitrum user)
+/// - user: 20 bytes (packed address - original Settlement user)
 /// - amount: 32 bytes
 /// - limit_price: 32 bytes
 /// - slippage_tier: 32 bytes
@@ -599,7 +599,7 @@ pub fn build_complete_sell_order_calldata(
 /// Story 7.3: Submit Order for User
 pub fn build_submit_order_hash(
     chain_id: u64,
-    arb_order_id: U256,
+    settlement_order_id: U256,
     itp_id: H256,
     user: Address,
     amount: U256,
@@ -609,7 +609,7 @@ pub fn build_submit_order_hash(
 ) -> H256 {
     AbiEncoder::with_capacity(244)
         .u256(U256::from(chain_id))
-        .u256(arb_order_id)
+        .u256(settlement_order_id)
         .h256(itp_id)
         .address_packed(user)
         .u256(amount)
@@ -757,13 +757,13 @@ pub struct FillsProposal {
 pub type FillsResult = SignedConsensusResult;
 
 // ============================================================================
-// Story 7.5: Bridge L3→Arb Types
+// Story 7.5: Bridge L3→Settlement Types
 // ============================================================================
 
-/// Bridge L3→Arb proposal for BLS consensus
-/// Story 7.5: Bridge USDC L3 to Arbitrum
+/// Bridge L3→Settlement proposal for BLS consensus
+/// Story 7.5: Bridge USDC L3 to Settlement
 #[derive(Debug, Clone)]
-pub struct BridgeL3ToArbProposal {
+pub struct BridgeL3ToSettlementProposal {
     /// Leader's peer ID
     pub leader_id: PeerId,
     /// Cycle number that batched these orders
@@ -772,7 +772,7 @@ pub struct BridgeL3ToArbProposal {
     pub order_ids: Vec<U256>,
     /// Total USDC amount to bridge (18 decimals)
     pub total_amount: U256,
-    /// Destination: IssuerCustody on Arbitrum
+    /// Destination: IssuerCustody on Settlement
     pub destination: Address,
     /// Leader's BLS signature on the bridge hash
     pub leader_signature: BLSSignature,
@@ -780,9 +780,9 @@ pub struct BridgeL3ToArbProposal {
     pub message_hash: H256,
 }
 
-/// Result of successful bridge L3→Arb execution
-/// Story 7.5: Bridge USDC L3 to Arbitrum
-pub type BridgeL3ToArbResult = SignedConsensusResult;
+/// Result of successful bridge L3→Settlement execution
+/// Story 7.5: Bridge USDC L3 to Settlement
+pub type BridgeL3ToSettlementResult = SignedConsensusResult;
 
 // ============================================================================
 // Story 7.6: Custody Release to Vault Types
@@ -800,7 +800,7 @@ pub struct ReleaseToVaultProposal {
     pub order_ids: Vec<U256>,
     /// Total USDC amount to release (18 decimals)
     pub total_amount: U256,
-    /// Destination: MockBitgetVault on Arbitrum
+    /// Destination: MockBitgetVault on Settlement
     pub vault_address: Address,
     /// Leader's BLS signature on the release hash
     pub leader_signature: BLSSignature,
@@ -817,7 +817,7 @@ pub type ReleaseToVaultResult = SignedConsensusResult;
 // ============================================================================
 
 /// Proposal for recording collateral movement in CollateralRegistry
-/// This is Step 3 of the 8-step bridge: after batch confirm, before L3→Arb bridge.
+/// This is Step 3 of the 8-step bridge: after batch confirm, before L3→Settlement bridge.
 #[derive(Debug, Clone)]
 pub struct RecordCollateralMoveProposal {
     /// Leader's peer ID
@@ -828,7 +828,7 @@ pub struct RecordCollateralMoveProposal {
     pub itp_id: H256,
     /// Source chain ID (L3 = 111222333)
     pub from_chain: U256,
-    /// Destination chain ID (Arb = 42161)
+    /// Destination chain ID (Settlement = 42161)
     pub to_chain: U256,
     /// Amount being moved (18 decimals)
     pub amount: U256,
@@ -847,7 +847,7 @@ pub type RecordCollateralMoveResult = SignedConsensusResult;
 // 8-step bridge: MintBridgedShares Types
 // ============================================================================
 
-/// Proposal for minting BridgedITP shares on Arbitrum via BridgeProxy
+/// Proposal for minting BridgedITP shares on Settlement via BridgeProxy
 /// This is Step 8 of the 8-step bridge: after fills confirmed.
 #[derive(Debug, Clone)]
 pub struct MintBridgedSharesProposal {
@@ -949,11 +949,11 @@ pub fn build_mint_bridged_shares_hash(
 
 /// Build message hash for completeBuyOrder consensus
 ///
-/// Matches: keccak256(abi.encode(chainid, arbCustody, "completeBuyOrder", orderId, vault))
+/// Matches: keccak256(abi.encode(chainid, settlementCustody, "completeBuyOrder", orderId, vault))
 /// Uses ABI encoding with dynamic string.
 pub fn build_complete_buy_order_hash(
     chain_id: u64,
-    arb_custody: Address,
+    settlement_custody: Address,
     order_id: U256,
     vault: Address,
 ) -> H256 {
@@ -962,7 +962,7 @@ pub fn build_complete_buy_order_hash(
     // Tail: string length + padded data for "completeBuyOrder"
     AbiEncoder::with_capacity(224)
         .u256(U256::from(chain_id))
-        .address_padded(arb_custody)
+        .address_padded(settlement_custody)
         .u256(U256::from(160)) // string offset (5 * 32)
         .u256(order_id)
         .address_padded(vault)
@@ -1031,8 +1031,8 @@ pub fn build_mint_bridged_shares_calldata(
 /// Build message hash for custody release to vault consensus
 ///
 /// Layout (variable size):
-/// - chain_id: 32 bytes (Arbitrum chain ID)
-/// - custody_address: 32 bytes (IssuerCustody Arbitrum)
+/// - chain_id: 32 bytes (Settlement chain ID)
+/// - custody_address: 32 bytes (IssuerCustody Settlement)
 /// - cycle_number: 32 bytes
 /// - order_count: 32 bytes
 /// - order_ids: 32 bytes each
@@ -1081,7 +1081,7 @@ pub fn build_erc20_transfer_calldata(recipient: Address, amount: U256) -> Vec<u8
 /// Build calldata for USDC.transfer(address,uint256) with decimal conversion
 ///
 /// Takes 18-decimal internal amount, converts to 6-decimal USDC for transfer.
-/// Use this for Arbitrum USDC transfers where real USDC has 6 decimals.
+/// Use this for Settlementitrum USDC transfers where real USDC has 6 decimals.
 ///
 /// Story 7-6b: USDC Decimal Conversion (Task 10)
 pub fn build_usdc_transfer_calldata(recipient: Address, internal_amount: U256) -> Vec<u8> {
@@ -1106,10 +1106,10 @@ pub fn build_usdc_transfer_calldata_with_amount(
 }
 
 // ============================================================================
-// Story 7.5: Bridge L3→Arb Hash Builder
+// Story 7.5: Bridge L3→Settlement Hash Builder
 // ============================================================================
 
-/// Build message hash for bridge L3→Arb consensus
+/// Build message hash for bridge L3→Settlement consensus
 ///
 /// Layout (variable size):
 /// - l3_chain_id: 32 bytes
@@ -1119,8 +1119,8 @@ pub fn build_usdc_transfer_calldata_with_amount(
 /// - total_amount: 32 bytes
 /// - destination: 32 bytes (address padded)
 ///
-/// Story 7.5: Bridge USDC L3 to Arbitrum
-pub fn build_bridge_l3_to_arb_hash(
+/// Story 7.5: Bridge USDC L3 to Settlement
+pub fn build_bridge_l3_to_settlement_hash(
     l3_chain_id: u64,
     cycle_number: u64,
     order_ids: &[U256],
@@ -1671,10 +1671,10 @@ pub fn build_set_itp_nav_calldata(
 }
 
 // ============================================================================
-// NAV Oracle (Phase 2B) — ITPNAVOracle.updatePrice() on Arb
+// NAV Oracle (Phase 2B) — ITPNAVOracle.updatePrice() on Settlement
 // ============================================================================
 
-/// Build the message hash for ITPNAVOracle.updatePrice() on Arb.
+/// Build the message hash for ITPNAVOracle.updatePrice() on Settlement.
 /// Must match: keccak256(abi.encode(block.chainid, address(this), itpAddress, newPrice, timestamp, cycleNumber))
 pub fn build_nav_oracle_hash(
     chain_id: u64,
@@ -1941,7 +1941,7 @@ mod tests {
         assert_eq!(config.min_signatures, 2);
         assert_eq!(config.proposal_timeout_ms, 500);
         assert_eq!(config.sign_timeout_ms, 300);
-        assert_eq!(config.arbitrum_chain_id, 42161);
+        assert_eq!(config.settlement_chain_id, 42161);
         assert_eq!(config.l3_chain_id, 111222333);
         assert_eq!(config.index_address, Address::zero());
     }
@@ -1998,7 +1998,7 @@ mod tests {
 
     #[test]
     fn test_build_bridge_hash_deterministic() {
-        let hash1 = build_bridge_arb_to_l3_hash(
+        let hash1 = build_bridge_settlement_to_l3_hash(
             42161,
             U256::from(123),
             H256::from([0xAB; 32]),
@@ -2007,7 +2007,7 @@ mod tests {
             U256::from(1700000000u64),
         );
 
-        let hash2 = build_bridge_arb_to_l3_hash(
+        let hash2 = build_bridge_settlement_to_l3_hash(
             42161,
             U256::from(123),
             H256::from([0xAB; 32]),
@@ -2021,7 +2021,7 @@ mod tests {
 
     #[test]
     fn test_build_bridge_hash_different_inputs() {
-        let hash1 = build_bridge_arb_to_l3_hash(
+        let hash1 = build_bridge_settlement_to_l3_hash(
             42161,
             U256::from(1),
             H256::from([0xAB; 32]),
@@ -2030,7 +2030,7 @@ mod tests {
             U256::from(1700000000u64),
         );
 
-        let hash2 = build_bridge_arb_to_l3_hash(
+        let hash2 = build_bridge_settlement_to_l3_hash(
             42161,
             U256::from(2), // Different order_id
             H256::from([0xAB; 32]),
@@ -2046,7 +2046,7 @@ mod tests {
     fn test_build_bridge_hash_correct_length() {
         // The hash input should be 180 bytes:
         // 32 (chain_id) + 32 (order_id) + 32 (itp_id) + 20 (user) + 32 (amount) + 32 (deadline)
-        let hash = build_bridge_arb_to_l3_hash(
+        let hash = build_bridge_settlement_to_l3_hash(
             42161,
             U256::from(1),
             H256::zero(),
@@ -2149,7 +2149,7 @@ mod tests {
 
         let hash2 = build_submit_order_hash(
             111222333,
-            U256::from(2), // Different arb_order_id
+            U256::from(2), // Different settlement_order_id
             H256::from([0xAB; 32]),
             Address::from([0xCD; 20]),
             U256::from(1000000000000000000u64),
@@ -2164,7 +2164,7 @@ mod tests {
     #[test]
     fn test_build_submit_order_hash_correct_length() {
         // The hash input should be 244 bytes:
-        // 32 (chain_id) + 32 (arb_order_id) + 32 (itp_id) + 20 (user) +
+        // 32 (chain_id) + 32 (settlement_order_id) + 32 (itp_id) + 20 (user) +
         // 32 (amount) + 32 (limit_price) + 32 (slippage_tier) + 32 (deadline) = 244
         let hash = build_submit_order_hash(
             111222333,
@@ -2302,7 +2302,7 @@ mod tests {
     #[test]
     fn test_order_mapping_serialization() {
         let mapping = OrderMapping {
-            arb_order_id: U256::from(123),
+            settlement_order_id: U256::from(123),
             l3_order_id: U256::from(456),
             original_user: Address::from([0xAB; 20]),
             created_at: 1700000000,
@@ -2312,7 +2312,7 @@ mod tests {
         let serialized = serde_json::to_string(&mapping).expect("Serialization failed");
         let deserialized: OrderMapping = serde_json::from_str(&serialized).expect("Deserialization failed");
 
-        assert_eq!(mapping.arb_order_id, deserialized.arb_order_id);
+        assert_eq!(mapping.settlement_order_id, deserialized.settlement_order_id);
         assert_eq!(mapping.l3_order_id, deserialized.l3_order_id);
         assert_eq!(mapping.original_user, deserialized.original_user);
         assert_eq!(mapping.created_at, deserialized.created_at);
@@ -2322,7 +2322,7 @@ mod tests {
     fn test_submit_order_proposal_struct() {
         let proposal = SubmitOrderProposal {
             leader_id: [0x11; 32],
-            arb_order_id: U256::from(123),
+            settlement_order_id: U256::from(123),
             itp_id: H256::from([0xAB; 32]),
             user: Address::from([0xCD; 20]),
             amount: U256::from(1000000000000000000u64),
@@ -2334,7 +2334,7 @@ mod tests {
         };
 
         // Verify fields are accessible
-        assert_eq!(proposal.arb_order_id, U256::from(123));
+        assert_eq!(proposal.settlement_order_id, U256::from(123));
         assert_eq!(proposal.slippage_tier, U256::from(1));
         assert_eq!(proposal.leader_signature.0.len(), 96);
     }
@@ -2355,7 +2355,7 @@ mod tests {
     #[test]
     fn test_bridge_error_story_7_3_variants() {
         let err = BridgeError::OrderNotBridged {
-            arb_order_id: U256::from(42),
+            settlement_order_id: U256::from(42),
             status: Some(BridgeOrderStatus::Pending),
         };
         assert!(err.to_string().contains("42"));
@@ -2394,7 +2394,7 @@ mod tests {
         assert!(err.to_string().contains("invalid event"));
 
         let err = BridgeError::OrderAlreadySubmitted {
-            arb_order_id: U256::from(1),
+            settlement_order_id: U256::from(1),
             l3_order_id: U256::from(2),
         };
         assert!(err.to_string().contains("1"));
@@ -2917,12 +2917,12 @@ mod tests {
     }
 
     // ========================================================================
-    // Story 7.5: Bridge L3→Arb Type and Hash Tests
+    // Story 7.5: Bridge L3→Settlement Type and Hash Tests
     // ========================================================================
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_deterministic() {
-        let hash1 = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_deterministic() {
+        let hash1 = build_bridge_l3_to_settlement_hash(
             111222333, // L3 chain ID
             42,
             &[U256::from(1), U256::from(2), U256::from(3)],
@@ -2930,7 +2930,7 @@ mod tests {
             Address::from([0xAB; 20]),
         );
 
-        let hash2 = build_bridge_l3_to_arb_hash(
+        let hash2 = build_bridge_l3_to_settlement_hash(
             111222333,
             42,
             &[U256::from(1), U256::from(2), U256::from(3)],
@@ -2942,8 +2942,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_different_cycles() {
-        let hash1 = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_different_cycles() {
+        let hash1 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -2951,7 +2951,7 @@ mod tests {
             Address::from([0xAB; 20]),
         );
 
-        let hash2 = build_bridge_l3_to_arb_hash(
+        let hash2 = build_bridge_l3_to_settlement_hash(
             111222333,
             2, // Different cycle
             &[U256::from(1)],
@@ -2963,8 +2963,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_different_orders() {
-        let hash1 = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_different_orders() {
+        let hash1 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -2972,7 +2972,7 @@ mod tests {
             Address::from([0xAB; 20]),
         );
 
-        let hash2 = build_bridge_l3_to_arb_hash(
+        let hash2 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(2)], // Different order
@@ -2984,8 +2984,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_empty() {
-        let hash = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_empty() {
+        let hash = build_bridge_l3_to_settlement_hash(
             111222333,
             0,
             &[],
@@ -2998,8 +2998,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_different_amounts() {
-        let hash1 = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_different_amounts() {
+        let hash1 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -3007,7 +3007,7 @@ mod tests {
             Address::from([0xAB; 20]),
         );
 
-        let hash2 = build_bridge_l3_to_arb_hash(
+        let hash2 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -3019,8 +3019,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_bridge_l3_to_arb_hash_different_destinations() {
-        let hash1 = build_bridge_l3_to_arb_hash(
+    fn test_build_bridge_l3_to_settlement_hash_different_destinations() {
+        let hash1 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -3028,7 +3028,7 @@ mod tests {
             Address::from([0xAB; 20]),
         );
 
-        let hash2 = build_bridge_l3_to_arb_hash(
+        let hash2 = build_bridge_l3_to_settlement_hash(
             111222333,
             1,
             &[U256::from(1)],
@@ -3040,8 +3040,8 @@ mod tests {
     }
 
     #[test]
-    fn test_bridge_l3_to_arb_proposal_struct() {
-        let proposal = BridgeL3ToArbProposal {
+    fn test_bridge_l3_to_settlement_proposal_struct() {
+        let proposal = BridgeL3ToSettlementProposal {
             leader_id: [0x11; 32],
             cycle_number: 42,
             order_ids: vec![U256::from(1), U256::from(2)],
@@ -3057,8 +3057,8 @@ mod tests {
     }
 
     #[test]
-    fn test_bridge_l3_to_arb_result_struct() {
-        let result = BridgeL3ToArbResult {
+    fn test_bridge_l3_to_settlement_result_struct() {
+        let result = BridgeL3ToSettlementResult {
             aggregated_signature: BLSSignature(vec![0xFF; 96]),
             signer_bitmap: U256::from(7), // bits 0, 1, 2 set
             signature_count: 3,
@@ -3069,10 +3069,10 @@ mod tests {
     }
 
     #[test]
-    fn test_bridge_order_status_bridged_back_to_arb() {
+    fn test_bridge_order_status_bridged_back_to_settlement() {
         assert_eq!(
-            format!("{:?}", BridgeOrderStatus::BridgedBackToArb),
-            "BridgedBackToArb"
+            format!("{:?}", BridgeOrderStatus::BridgedBackToSettlement),
+            "BridgedBackToSettlement"
         );
     }
 
@@ -3085,7 +3085,7 @@ mod tests {
         assert!(err.to_string().contains("42"));
         assert!(err.to_string().contains("SubmittedOnL3"));
 
-        let err = BridgeError::BridgeL3ToArbAlreadyProcessed { cycle_number: 99 };
+        let err = BridgeError::BridgeL3ToSettlementAlreadyProcessed { cycle_number: 99 };
         assert!(err.to_string().contains("99"));
 
         let err = BridgeError::AmountMismatch {
@@ -3095,7 +3095,7 @@ mod tests {
         assert!(err.to_string().contains("1000"));
         assert!(err.to_string().contains("500"));
 
-        let err = BridgeError::BridgeL3ToArbFailed {
+        let err = BridgeError::BridgeL3ToSettlementFailed {
             reason: "test failure".to_string(),
         };
         assert!(err.to_string().contains("test failure"));
@@ -3111,7 +3111,7 @@ mod tests {
         let vault = Address::from([0x22; 20]);
 
         let hash1 = build_release_to_vault_hash(
-            42161, // Arbitrum chain ID
+            42161, // Settlement chain ID
             custody,
             42,
             &[U256::from(1), U256::from(2), U256::from(3)],

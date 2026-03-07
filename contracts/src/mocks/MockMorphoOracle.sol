@@ -6,7 +6,7 @@ import { IOracle } from "@morpho-blue/interfaces/IOracle.sol";
 /// @title MockMorphoOracle
 /// @notice Mock oracle implementing Morpho Blue's IOracle interface for E2E testing
 /// @dev Returns a configurable price with 36 + loanDecimals - collateralDecimals precision
-///      For ITP (18 dec) collateral / ArbUSDC (6 dec) loan: precision = 36 + 6 - 18 = 24
+///      For ITP (18 dec) collateral / SettlementUSDC (6 dec) loan: precision = 36 + 6 - 18 = 24
 ///      So 1 ITP = 1 USDC → price() returns 1e24
 contract MockMorphoOracle is IOracle {
     /// @notice The current price (scaled per Morpho convention)

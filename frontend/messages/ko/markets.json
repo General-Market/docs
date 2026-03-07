@@ -90,7 +90,7 @@
     "description_placeholder": "설명 (최대 280자 / 약 50단어)",
     "website_placeholder": "웹사이트 URL (최대 128)",
     "video_placeholder": "YouTube URL (최대 256)",
-    "arb_erc20": "Arbitrum ERC20:",
+    "settlement_erc20": "Settlement ERC20:",
     "itp_id": "ITP ID:",
     "minted_supply": "발행 수량",
     "loading_holders": "보유자 로딩 중...",
@@ -103,7 +103,7 @@
     "source": "소스:",
     "admin": "관리자:",
     "created": "생성일:",
-    "arb_address": "Arb 주소:",
+    "settlement_address": "Settlement 주소:",
     "request_number": "요청 #{number}"
   },
   "rebalance": {

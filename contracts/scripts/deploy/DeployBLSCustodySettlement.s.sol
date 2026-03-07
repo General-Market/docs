@@ -8,19 +8,19 @@ import "../../src/registry/IssuerRegistry.sol";
 import "../../src/core/BLSCustody.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployBLSCustodyArbitrum - Deploy BLSCustody and dependencies to Arbitrum
-/// @notice Deploys Governance, IssuerRegistry, and BLSCustody as UUPS proxies on Arbitrum One
-/// @dev Story 6.5: Deploys the full Arbitrum custody chain.
+/// @title DeployBLSCustodySettlement - Deploy BLSCustody and dependencies to Settlement
+/// @notice Deploys Governance, IssuerRegistry, and BLSCustody as UUPS proxies on Settlement One
+/// @dev Story 6.5: Deploys the full Settlement custody chain.
 ///      Whitelist proposal is attempted but may fail if IssuerRegistry returns a non-empty
 ///      aggregated pubkey (G1 64 bytes), because BLSCustody.proposeWhitelist(, 3, 7) calls
 ///      BLSLib.verifyBLS() which expects G2 pubkeys (128 bytes). This is a known Phase 1
 ///      limitation. Set SKIP_WHITELIST=true to skip whitelist proposals.
 ///      When whitelist succeeds, activation requires a separate call after the 2-day timelock.
-contract DeployBLSCustodyArbitrum is Script {
-    // Arbitrum mainnet addresses
+contract DeployBLSCustodySettlement is Script {
+    // Settlement mainnet addresses
     address constant ONEINCH_ROUTER_V6 = 0x111111125421cA6dc452d289314280a0f8842A65;
-    address constant USDC_ARBITRUM = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
-    uint256 constant ARBITRUM_CHAIN_ID = 42161;
+    address constant USDC_SETTLEMENT = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    uint256 constant SETTLEMENT_CHAIN_ID = 42161;
 
     // Deployed addresses
     address public governanceProxy;
@@ -38,7 +38,7 @@ contract DeployBLSCustodyArbitrum is Script {
         address existingIssuerRegistry = vm.envOr("ISSUER_REGISTRY_ADDRESS", address(0));
 
         console2.log("===========================================");
-        console2.log("ARBITRUM BLSCustody DEPLOYMENT");
+        console2.log("SETTLEMENT BLSCustody DEPLOYMENT");
         console2.log("===========================================");
         console2.log("Chain ID:", block.chainid);
         console2.log("Deployer:", deployer);
@@ -167,8 +167,8 @@ contract DeployBLSCustodyArbitrum is Script {
         console2.log("  Proposed: 1inch Router V6 ", ONEINCH_ROUTER_V6);
 
         // Propose USDC
-        custody.proposeWhitelist(USDC_ARBITRUM, emptySignature, 3, 7);
-        console2.log("  Proposed: USDC            ", USDC_ARBITRUM);
+        custody.proposeWhitelist(USDC_SETTLEMENT, emptySignature, 3, 7);
+        console2.log("  Proposed: USDC            ", USDC_SETTLEMENT);
 
         console2.log("");
         console2.log("  Whitelist timelock: 2 days from now");
@@ -194,12 +194,12 @@ contract DeployBLSCustodyArbitrum is Script {
             '  },\n',
             '  "whitelisted": {\n',
             '    "1inchRouterV6": "', vm.toString(ONEINCH_ROUTER_V6), '",\n',
-            '    "USDC": "', vm.toString(USDC_ARBITRUM), '"\n',
+            '    "USDC": "', vm.toString(USDC_SETTLEMENT), '"\n',
             '  }\n',
             '}'
         );
 
-        vm.writeFile("../deployments/arbitrum.json", json);
-        console2.log("Addresses saved to: deployments/arbitrum.json");
+        vm.writeFile("../deployments/settlement.json", json);
+        console2.log("Addresses saved to: deployments/settlement.json");
     }
 }

@@ -1,13 +1,13 @@
 /**
- * Block Explorer URL utilities for Index L3 (Orbit) and Arbitrum Sepolia
+ * Block Explorer URL utilities for Index L3 (Orbit) and Settlement
  */
 
-import { L3_EXPLORER_URL, ARB_EXPLORER_URL } from '@/lib/config'
+import { L3_EXPLORER_URL, SETTLEMENT_EXPLORER_URL } from '@/lib/config'
 
-export type ExplorerChain = 'arb' | 'l3'
+export type ExplorerChain = 'settlement' | 'l3'
 
 function explorerBase(chain: ExplorerChain): string {
-  const base = chain === 'arb' ? ARB_EXPLORER_URL : L3_EXPLORER_URL
+  const base = chain === 'settlement' ? SETTLEMENT_EXPLORER_URL : L3_EXPLORER_URL
   return base
 }
 

@@ -7,7 +7,7 @@
 #   1. Deploy core contracts (DeployFullSystemE2E)
 #   2. Deploy 100-asset ITP (Deploy100AssetITP) — generates symbol-map.json
 #   3. Start 3 issuers + AP
-#   4. Buy ITP via ArbBridgeCustody (cross-chain bridge)
+#   4. Buy ITP via SettlementBridgeCustody (cross-chain bridge)
 #   5. Wait for buy fills
 #   6. Propose rebalance (skewed weights: 2%/1%/0.75%)
 #   7. Wait for issuer auto-processing (BLS consensus)
@@ -166,18 +166,18 @@ fi
 
 # Load core addresses
 INDEX=$(jq -r '.contracts.Index' "$DEPLOYMENT_FILE")
-ARB_USDC=$(jq -r '.contracts.ARB_USDC' "$DEPLOYMENT_FILE")
+SETTLEMENT_USDC=$(jq -r '.contracts.SETTLEMENT_USDC' "$DEPLOYMENT_FILE")
 L3_USDC=$(jq -r '.contracts.L3_USDC // .contracts.L3_WUSDC' "$DEPLOYMENT_FILE")
-ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody' "$DEPLOYMENT_FILE")
+SETTLEMENT_CUSTODY=$(jq -r '.contracts.SettlementBridgeCustody' "$DEPLOYMENT_FILE")
 BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault' "$DEPLOYMENT_FILE")
 AP_ADDR="0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC"
 
 echo ""
 echo "Core addresses:"
 echo "  Index:            $INDEX"
-echo "  ARB_USDC:         $ARB_USDC"
+echo "  SETTLEMENT_USDC:         $SETTLEMENT_USDC"
 echo "  L3_USDC:          $L3_USDC"
-echo "  ArbBridgeCustody: $ARB_CUSTODY"
+echo "  SettlementBridgeCustody: $SETTLEMENT_CUSTODY"
 echo "  MockBitgetVault:  $BITGET_VAULT"
 
 # ==== Step 2b: Fetch real Bitget prices for ITP creation ====
@@ -358,10 +358,10 @@ for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$FRON
 done
 echo "  Funded issuers + AP + frontend wallet with ETH"
 
-# Fund frontend wallet with ARB_USDC so it can buy ITPs from the UI
-cast send "$ARB_USDC" "mint(address,uint256)" "$FRONTEND_WALLET" "10000000000" \
+# Fund frontend wallet with SETTLEMENT_USDC so it can buy ITPs from the UI
+cast send "$SETTLEMENT_USDC" "mint(address,uint256)" "$FRONTEND_WALLET" "10000000000" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
-echo "  Frontend wallet (0xC0D3..3850) funded with 10,000 ARB_USDC"
+echo "  Frontend wallet (0xC0D3..3850) funded with 10,000 SETTLEMENT_USDC"
 
 # Register issuers
 ISSUER_REGISTRY=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
@@ -397,9 +397,9 @@ cast send "$BITGET_VAULT" "setPriceSetter(address)" "$AP_ADDR" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 echo "  AP set as price setter on vault"
 
-ARB_USDC_DEC=$(cast --to-dec "$(cast call "$ARB_USDC" "decimals()" --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null || echo "6")
+SETTLEMENT_USDC_DEC=$(cast --to-dec "$(cast call "$SETTLEMENT_USDC" "decimals()" --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null || echo "6")
 cast send "$BITGET_VAULT" "setStableTokens(address,uint8,address,uint8)" \
-    "$ARB_USDC" "$ARB_USDC_DEC" "$MOCK_USDT" "18" \
+    "$SETTLEMENT_USDC" "$SETTLEMENT_USDC_DEC" "$MOCK_USDT" "18" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 echo "  Stable tokens registered (USDC + USDT)"
 
@@ -463,19 +463,19 @@ PRE_BUY_SHARES=$(cast storage "$INDEX" "$USER_SHARE_SLOT" --rpc-url "$RPC" 2>/de
 echo "User shares before: $(cast --to-dec "$PRE_BUY_SHARES" 2>/dev/null || echo 0)"
 
 # Mint USDC to user + approve
-echo "Minting $USDC_AMOUNT ARB_USDC (500 USDC) to user..."
-cast send "$ARB_USDC" "mint(address,uint256)" "$USER_ADDR" "$USDC_AMOUNT" \
+echo "Minting $USDC_AMOUNT SETTLEMENT_USDC (500 USDC) to user..."
+cast send "$SETTLEMENT_USDC" "mint(address,uint256)" "$USER_ADDR" "$USDC_AMOUNT" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 
-echo "Approving ArbBridgeCustody..."
-cast send "$ARB_USDC" "approve(address,uint256)" "$ARB_CUSTODY" "$(cast max-uint)" \
+echo "Approving SettlementBridgeCustody..."
+cast send "$SETTLEMENT_USDC" "approve(address,uint256)" "$SETTLEMENT_CUSTODY" "$(cast max-uint)" \
     --private-key "$USER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 
-# Buy via ArbBridgeCustody
+# Buy via SettlementBridgeCustody
 DEADLINE=$(($(date +%s) + 3600))
-echo "Submitting buyITPFromArbitrum (100-asset ITP, amount=$USDC_AMOUNT)..."
-BUY_TX=$(cast send "$ARB_CUSTODY" \
-    "buyITPFromArbitrum(bytes32,uint256,uint256,uint256,uint256)" \
+echo "Submitting buyITPFromSettlement (100-asset ITP, amount=$USDC_AMOUNT)..."
+BUY_TX=$(cast send "$SETTLEMENT_CUSTODY" \
+    "buyITPFromSettlement(bytes32,uint256,uint256,uint256,uint256)" \
     "$ITP_100_ID" "$USDC_AMOUNT" "1000000000000000000" "1" "$DEADLINE" \
     --private-key "$USER_KEY" --rpc-url "$RPC" --json 2>/dev/null | jq -r '.transactionHash // empty')
 

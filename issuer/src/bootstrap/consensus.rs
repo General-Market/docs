@@ -466,16 +466,16 @@ impl<'a> ConsensusBuilder<'a> {
     fn build_itp_creation_config(&self, sig_threshold: usize) -> Option<ItpCreationConfig> {
         let bp_str = self.params.bridge_proxy.as_ref()?;
 
-        let arbitrum_chain_id = match self.config.effective_arbitrum_chain_id() {
+        let settlement_chain_id = match self.config.effective_settlement_chain_id() {
             Ok(id) => id,
             Err(e) => {
-                warn!(self.node_id, error = %e, "ITP creation config disabled: Arbitrum chain ID not configured");
+                warn!(self.node_id, error = %e, "ITP creation config disabled: Settlement chain ID not configured");
                 return None;
             }
         };
 
         Some(ItpCreationConfig {
-            arbitrum_chain_id,
+            settlement_chain_id,
             bridge_proxy_address: bp_str.parse().unwrap_or_default(),
             proposal_timeout_ms: 2000,
             sign_timeout_ms: 2000,
@@ -490,9 +490,9 @@ impl<'a> ConsensusBuilder<'a> {
         sig_threshold: usize,
         target_chain_id: u64,
     ) -> Option<Arc<RwLock<BridgeOrchestrator>>> {
-        if chain.arbitrum_reader.is_none() {
+        if chain.settlement_reader.is_none() {
             warn!(code = "BRIDGE-001", self.node_id,
-                  "BridgeOrchestrator DISABLED: no ArbitrumChainReader (check ISSUER_ARBITRUM_RPC_URL)");
+                  "BridgeOrchestrator DISABLED: no SettlementChainReader (check ISSUER_SETTLEMENT_RPC_URL)");
             return None;
         }
         if chain.writer.is_none() {
@@ -505,19 +505,19 @@ impl<'a> ConsensusBuilder<'a> {
                   "BridgeOrchestrator DISABLED: no BLS keypair");
             return None;
         }
-        let arb_reader = chain.arbitrum_reader.as_ref().unwrap();
+        let settlement_reader = chain.settlement_reader.as_ref().unwrap();
         let chain_writer = chain.writer.as_ref().unwrap();
         let bls_keypair = keys.bls_keypair.as_ref().unwrap();
 
         let bridge_config = BridgeConfig {
             issuer_custody_l3: self.config.effective_issuer_custody_l3().unwrap_or_default(),
             l3_usdc_address: self.config.effective_l3_usdc().unwrap_or_default(),
-            arb_custody_address: self.config.effective_arb_custody().unwrap_or_default(),
-            arbitrum_chain_id: match self.config.effective_arbitrum_chain_id() {
+            settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
+            settlement_chain_id: match self.config.effective_settlement_chain_id() {
                 Ok(id) => id,
                 Err(e) => {
                     warn!(code = "BRIDGE-004", self.node_id, error = %e,
-                          "BridgeOrchestrator DISABLED: Arbitrum chain ID not configured");
+                          "BridgeOrchestrator DISABLED: Settlement chain ID not configured");
                     return None;
                 }
             },
@@ -528,8 +528,8 @@ impl<'a> ConsensusBuilder<'a> {
             min_signatures: sig_threshold,
             proposal_timeout_ms: 2000,
             sign_timeout_ms: 2000,
-            issuer_custody_arb: self.config.effective_issuer_custody_arb().unwrap_or_default(),
-            arb_usdc_address: self.config.effective_arb_usdc().unwrap_or_default(),
+            issuer_custody_settlement: self.config.effective_issuer_custody_settlement().unwrap_or_default(),
+            settlement_usdc_address: self.config.effective_settlement_usdc().unwrap_or_default(),
             bitget_vault: self.config.effective_bitget_vault()
                 .map(ethers::types::Address::from)
                 .unwrap_or_default(),
@@ -557,25 +557,25 @@ impl<'a> ConsensusBuilder<'a> {
             warn!(code = "BRIDGE-006", self.node_id,
                   "BridgeConfig.l3_usdc_address is zero address");
         }
-        if bridge_config.arb_custody_address == ethers::types::Address::zero() {
+        if bridge_config.settlement_custody_address == ethers::types::Address::zero() {
             warn!(code = "BRIDGE-007", self.node_id,
-                  "BridgeConfig.arb_custody_address is zero address");
+                  "BridgeConfig.settlement_custody_address is zero address");
         }
 
         info!(
             self.node_id,
             node_index = keys.node_index,
-            arb_custody = ?self.config.effective_arb_custody(),
+            settlement_custody = ?self.config.effective_settlement_custody(),
             issuer_custody_l3 = ?self.config.effective_issuer_custody_l3(),
             bridge_proxy = ?bridge_config.bridge_proxy,
-            arb_chain_id = bridge_config.arbitrum_chain_id,
+            settlement_chain_id = bridge_config.settlement_chain_id,
             min_signatures = sig_threshold,
             "BridgeOrchestrator initialized"
         );
 
         let orchestrator = BridgeOrchestrator::new(
             bridge_config,
-            arb_reader.clone(),
+            settlement_reader.clone(),
             chain_writer.clone(),
             bls_keypair.clone(),
             keys.peer_id,

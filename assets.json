@@ -772,6 +772,10 @@
     "bitget": "ETHUSDC"
   },
   {
+    "address": "0x21df544947ba3e8b3c32561399e88b52dc8b2823",
+    "bitget": "ETHUSDC"
+  },
+  {
     "address": "0x3a827058359035966c0cdd9581c410b7ffa9578a",
     "bitget": "ETHWUSDT"
   },

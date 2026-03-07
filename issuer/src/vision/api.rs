@@ -1056,7 +1056,7 @@ struct DepositRow {
 struct UserBalanceResponse {
     /// Real balance — backed by actual L3 USDC in Vision.sol.
     real_balance: String,
-    /// Virtual balance — backed by USDC locked in ArbBridgeCustody on Arb.
+    /// Virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement.
     virtual_balance: String,
     /// Total balance (real + virtual) — what the user can spend.
     total: String,
@@ -1066,7 +1066,7 @@ struct UserBalanceResponse {
 ///
 /// Reads from the in-memory tick scheduler for instant response.
 /// `realBalance` = withdrawable to L3 wallet (via `withdrawBalance`)
-/// `virtualBalance` = withdrawable to Arb wallet (via `withdrawToArb`)
+/// `virtualBalance` = withdrawable to Settlement wallet (via `withdrawToSettlement`)
 async fn get_user_balance(
     State(state): State<Arc<VisionState>>,
     Path(address_str): Path<String>,

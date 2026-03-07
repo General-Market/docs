@@ -1,11 +1,11 @@
-//! Bridge orchestrator for Arbitrum to L3 USDC bridging
+//! Bridge orchestrator for Settlementitrum to L3 USDC bridging
 //!
 //! Implements BLS consensus-based bridging following the vital-test.md flow:
 //! 1. Leader proposes bridge for CrossChainOrder
 //! 2. Followers validate and sign
 //! 3. Threshold reached → execute bridge (mint L3Usdc to IssuerCustody L3)
 //!
-//! Story 7.2: Bridge USDC Orchestrator (Arb→L3)
+//! Story 7.2: Bridge USDC Orchestrator (Settlement→L3)
 //! Story 7.3: Submit Order for User
 
 use std::collections::HashMap;
@@ -26,13 +26,13 @@ use crate::consensus::ConsensusError;
 
 use super::signature_manager::SignatureCollectionManager;
 use super::types::{
-    build_bridge_arb_to_l3_hash, build_bridge_l3_to_arb_hash, build_confirm_batch_calldata,
+    build_bridge_settlement_to_l3_hash, build_bridge_l3_to_settlement_hash, build_confirm_batch_calldata,
     build_confirm_batch_hash, build_confirm_fills_calldata, build_confirm_fills_hash,
     build_custody_execute_calldata, build_custody_execute_hash, build_erc20_approve_calldata,
     build_release_to_vault_hash,
     build_submit_order_for_calldata, build_submit_order_hash,
     build_usdc_transfer_calldata_with_amount, BatchProposal, BatchResult, BridgeConfig,
-    BridgeError, BridgeL3ToArbProposal, BridgeL3ToArbResult, BridgeOrderStatus, BridgeProposal,
+    BridgeError, BridgeL3ToSettlementProposal, BridgeL3ToSettlementResult, BridgeOrderStatus, BridgeProposal,
     BridgeResult, Fill, FillsProposal, FillsResult, OrderMapping, ReleaseToVaultProposal,
     ReleaseToVaultResult, SignatureCollector, SubmitOrderProposal, SubmitOrderResult,
     // Story 7-14: Rebalance consensus
@@ -56,22 +56,22 @@ use super::types::{
     build_complete_buy_order_hash, CompleteBuyOrderProposal, CompleteBuyOrderResult,
 };
 
-/// Trait for reading cross-chain order data from Arbitrum
+/// Trait for reading cross-chain order data from Settlement
 ///
 /// This abstraction allows the BridgeOrchestrator to work with
-/// different implementations (real ArbitrumChainReader or mocks).
+/// different implementations (real SettlementChainReader or mocks).
 #[async_trait]
 pub trait CrossChainOrderReader: Send + Sync {
     /// Get a cross-chain order by ID
     async fn get_cross_chain_order(&self, order_id: U256) -> Result<CrossChainOrderData, BridgeError>;
 }
 
-/// Orchestrates USDC bridging from Arbitrum to L3 with BLS consensus
+/// Orchestrates USDC bridging from Settlement to L3 with BLS consensus
 pub struct BridgeOrchestrator {
     /// Configuration
     config: BridgeConfig,
-    /// Chain reader for Arbitrum (to verify orders)
-    arbitrum_reader: Arc<dyn CrossChainOrderReader>,
+    /// Chain reader for Settlementitrum (to verify orders)
+    settlement_reader: Arc<dyn CrossChainOrderReader>,
     /// Chain writer for L3 (to mint L3Usdc in local E2E)
     l3_writer: Arc<dyn ChainWriter>,
     /// BLS keypair for signing
@@ -82,7 +82,7 @@ pub struct BridgeOrchestrator {
     peer_id: PeerId,
     /// This node's index in the issuer set
     node_index: u8,
-    /// Generic signature manager for bridge Arb→L3 proposals (replaces pending_signatures)
+    /// Generic signature manager for bridge Settlement→L3 proposals (replaces pending_signatures)
     bridge_sigs: SignatureCollectionManager<U256>,
     /// Signature collectors for pending submit order proposals (Story 7.3)
     /// SPECIAL CASE: SubmitOrderResult has extra l3_order_id field, kept hand-written
@@ -95,7 +95,7 @@ pub struct BridgeOrchestrator {
     order_status: RwLock<HashMap<U256, BridgeOrderStatus>>,
     /// Processed order IDs (for replay protection)
     processed_orders: RwLock<HashMap<U256, H256>>, // order_id -> tx_hash
-    /// Order ID mappings: arb_order_id → OrderMapping (Story 7.3)
+    /// Order ID mappings: settlement_order_id → OrderMapping (Story 7.3)
     order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Confirmed batch cycles (for deduplication) - Story 7.4
     confirmed_batches: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
@@ -104,10 +104,10 @@ pub struct BridgeOrchestrator {
     /// Custody nonces (for BLSCustody.execute replay protection) - Story 7.4 Task 7.5
     /// Maps custody_address -> next_nonce to use
     custody_nonces: RwLock<HashMap<Address, U256>>,
-    /// Generic signature manager for L3→Arb bridge proposals (Story 7.5)
-    l3_to_arb_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed L3→Arb bridge cycles (for deduplication) - Story 7.5
-    confirmed_l3_to_arb: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
+    /// Generic signature manager for L3→Settlement bridge proposals (Story 7.5)
+    l3_to_settlement_sigs: SignatureCollectionManager<u64>,
+    /// Confirmed L3→Settlement bridge cycles (for deduplication) - Story 7.5
+    confirmed_l3_to_settlement: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
     /// Generic signature manager for custody release to vault proposals (Story 7.6)
     release_sigs: SignatureCollectionManager<u64>,
     /// Confirmed custody releases (for deduplication) - Story 7.6
@@ -143,7 +143,7 @@ pub struct BridgeOrchestrator {
     sell_bridge_sigs: SignatureCollectionManager<U256>,
     /// Generic signature manager for complete sell order proposals
     complete_sell_sigs: SignatureCollectionManager<U256>,
-    /// Order ID mappings for sell: arb_sell_order_id → OrderMapping
+    /// Order ID mappings for sell: settlement_sell_order_id → OrderMapping
     sell_order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Sell order amounts: order_id → amount
     sell_order_amounts: RwLock<HashMap<U256, U256>>,
@@ -173,7 +173,7 @@ impl BridgeOrchestrator {
     /// Create a new bridge orchestrator
     pub fn new(
         config: BridgeConfig,
-        arbitrum_reader: Arc<dyn CrossChainOrderReader>,
+        settlement_reader: Arc<dyn CrossChainOrderReader>,
         l3_writer: Arc<dyn ChainWriter>,
         bls_keypair: BLSKeyPair,
         peer_id: PeerId,
@@ -181,7 +181,7 @@ impl BridgeOrchestrator {
     ) -> Self {
         Self {
             config,
-            arbitrum_reader,
+            settlement_reader,
             l3_writer,
             bls_keypair,
             bls_signer: Bn254BLSSigner::new(),
@@ -197,8 +197,8 @@ impl BridgeOrchestrator {
             confirmed_batches: RwLock::new(HashMap::new()),
             confirmed_fills: RwLock::new(HashMap::new()),
             custody_nonces: RwLock::new(HashMap::new()),
-            l3_to_arb_sigs: SignatureCollectionManager::new("l3_to_arb"),
-            confirmed_l3_to_arb: RwLock::new(HashMap::new()),
+            l3_to_settlement_sigs: SignatureCollectionManager::new("l3_to_settlement"),
+            confirmed_l3_to_settlement: RwLock::new(HashMap::new()),
             release_sigs: SignatureCollectionManager::new("release"),
             confirmed_releases: RwLock::new(HashMap::new()),
             order_amounts: RwLock::new(HashMap::new()),
@@ -434,7 +434,7 @@ impl BridgeOrchestrator {
     /// Returns true if any order is Pending, BridgedToL3, SubmittedOnL3, or Batched.
     /// Used by L3-native processing to skip entirely when cross-chain is active,
     /// preventing the race where L3-native registers the same physical order
-    /// under the L3 order ID while cross-chain tracks it under the Arb order ID.
+    /// under the L3 order ID while cross-chain tracks it under the Settlement order ID.
     ///
     /// Checks BOTH buy and sell order statuses. Without sell checks, the sell
     /// pipeline and L3-native BATCHED path race on the same physical orders:
@@ -501,24 +501,24 @@ impl BridgeOrchestrator {
         mappings.values().map(|m| m.l3_order_id.as_u64()).collect()
     }
 
-    /// Resolve Arb order IDs to L3 order IDs for batch confirmation
+    /// Resolve Settlement order IDs to L3 order IDs for batch confirmation
     ///
-    /// Returns a Vec of L3 order IDs corresponding to the given Arb order IDs.
-    /// Falls back to using the Arb order ID if no mapping exists.
-    pub async fn resolve_l3_order_ids(&self, arb_order_ids: &[U256]) -> Vec<U256> {
+    /// Returns a Vec of L3 order IDs corresponding to the given Settlement order IDs.
+    /// Falls back to using the Settlement order ID if no mapping exists.
+    pub async fn resolve_l3_order_ids(&self, settlement_order_ids: &[U256]) -> Vec<U256> {
         let mappings = self.order_mappings.read().await;
-        arb_order_ids
+        settlement_order_ids
             .iter()
-            .map(|arb_id| {
+            .map(|settlement_id| {
                 mappings
-                    .get(arb_id)
+                    .get(settlement_id)
                     .map(|m| {
-                        info!(arb_order_id = %arb_id, l3_order_id = %m.l3_order_id, "Resolved arb→L3 order ID");
+                        info!(settlement_order_id = %settlement_id, l3_order_id = %m.l3_order_id, "Resolved settlement→L3 order ID");
                         m.l3_order_id
                     })
                     .unwrap_or_else(|| {
-                        warn!(arb_order_id = %arb_id, "No L3 order mapping found, using arb ID as fallback");
-                        *arb_id
+                        warn!(settlement_order_id = %settlement_id, "No L3 order mapping found, using settlement ID as fallback");
+                        *settlement_id
                     })
             })
             .collect()
@@ -554,13 +554,13 @@ impl BridgeOrchestrator {
     ///
     /// This builds the message hash, signs it with the leader's BLS key,
     /// and returns the proposal ready for broadcasting.
-    pub fn propose_bridge_arb_to_l3(
+    pub fn propose_bridge_settlement_to_l3(
         &self,
         order: &CrossChainOrder,
     ) -> Result<BridgeProposal, BridgeError> {
         // Build the message hash for BLS signing
-        let message_hash = build_bridge_arb_to_l3_hash(
-            self.config.arbitrum_chain_id,
+        let message_hash = build_bridge_settlement_to_l3_hash(
+            self.config.settlement_chain_id,
             order.order_id,
             order.itp_id,
             order.user,
@@ -585,7 +585,7 @@ impl BridgeOrchestrator {
             amount = %order.amount,
             deadline = %order.deadline,
             message_hash = ?message_hash,
-            "Bridge Arb→L3 proposal created"
+            "Bridge Settlement→L3 proposal created"
         );
 
         Ok(BridgeProposal {
@@ -607,7 +607,7 @@ impl BridgeOrchestrator {
     /// Validate a bridge proposal from the leader
     ///
     /// Checks:
-    /// 1. Order exists on-chain via ArbitrumChainReader
+    /// 1. Order exists on-chain via SettlementChainReader
     /// 2. Proposal fields match on-chain order
     /// 3. Deadline has not passed
     pub async fn validate_bridge_proposal(
@@ -646,7 +646,7 @@ impl BridgeOrchestrator {
 
         // 2. Verify order exists on-chain
         let on_chain_order = self
-            .arbitrum_reader
+            .settlement_reader
             .get_cross_chain_order(proposal.order_id)
             .await
             .map_err(|e| ConsensusError::ChainReaderError {
@@ -715,8 +715,8 @@ impl BridgeOrchestrator {
         proposal: &BridgeProposal,
     ) -> Result<BLSSignature, BridgeError> {
         // Rebuild the message hash to verify it matches
-        let expected_hash = build_bridge_arb_to_l3_hash(
-            self.config.arbitrum_chain_id,
+        let expected_hash = build_bridge_settlement_to_l3_hash(
+            self.config.settlement_chain_id,
             proposal.order_id,
             proposal.itp_id,
             proposal.user,
@@ -823,7 +823,7 @@ impl BridgeOrchestrator {
     ///
     /// In production, this would call a bridge contract with the aggregated BLS signature.
     /// In local E2E, we simulate by directly minting L3Usdc.
-    pub async fn execute_bridge_arb_to_l3(
+    pub async fn execute_bridge_settlement_to_l3(
         &self,
         proposal: &BridgeProposal,
         _aggregated: &BridgeResult,
@@ -876,9 +876,9 @@ impl BridgeOrchestrator {
             tx_hash = ?tx_hash,
             amount = %proposal.amount,
             recipient = ?signer_address,
-            source_chain = "Arbitrum",
+            source_chain = "Settlement",
             dest_chain = "L3",
-            "BridgeCompleted: Arb→L3 executed (local E2E mint to issuer signer)"
+            "BridgeCompleted: Settlement→L3 executed (local E2E mint to issuer signer)"
         );
 
         Ok(tx_hash)
@@ -896,19 +896,19 @@ impl BridgeOrchestrator {
             .map(|(id, _)| *id)
             .collect();
 
-        for arb_order_id in stale_submit_orders {
+        for settlement_order_id in stale_submit_orders {
             debug!(
-                arb_order_id = %arb_order_id,
+                settlement_order_id = %settlement_order_id,
                 "Removing stale submit order signature collector"
             );
-            submit_collectors.remove(&arb_order_id);
+            submit_collectors.remove(&settlement_order_id);
         }
         drop(submit_collectors);
 
         // Clean up all migrated signature managers
         self.batch_sigs.cleanup_stale(max_age_ms).await;
         self.fills_sigs.cleanup_stale(max_age_ms).await;
-        self.l3_to_arb_sigs.cleanup_stale(max_age_ms).await;
+        self.l3_to_settlement_sigs.cleanup_stale(max_age_ms).await;
         self.release_sigs.cleanup_stale(max_age_ms).await;
         self.rebalance_batch_sigs.cleanup_stale(max_age_ms).await;
         self.update_weights_sigs.cleanup_stale(max_age_ms).await;
@@ -936,7 +936,7 @@ impl BridgeOrchestrator {
         let status = self.get_order_status(&order.order_id).await;
         if status != Some(BridgeOrderStatus::BridgedToL3) {
             return Err(BridgeError::OrderNotBridged {
-                arb_order_id: order.order_id,
+                settlement_order_id: order.order_id,
                 status,
             });
         }
@@ -946,7 +946,7 @@ impl BridgeOrchestrator {
             let mapping = self.order_mappings.read().await.get(&order.order_id).cloned();
             if let Some(m) = mapping {
                 return Err(BridgeError::OrderAlreadySubmitted {
-                    arb_order_id: order.order_id,
+                    settlement_order_id: order.order_id,
                     l3_order_id: m.l3_order_id,
                 });
             }
@@ -983,7 +983,7 @@ impl BridgeOrchestrator {
             })?;
 
         info!(
-            arb_order_id = %order.order_id,
+            settlement_order_id = %order.order_id,
             itp_id = ?order.itp_id,
             user = ?order.user,
             amount = %order.amount,
@@ -996,7 +996,7 @@ impl BridgeOrchestrator {
 
         Ok(SubmitOrderProposal {
             leader_id: self.peer_id,
-            arb_order_id: order.order_id,
+            settlement_order_id: order.order_id,
             itp_id: order.itp_id,
             user: order.user,
             amount: order.amount,
@@ -1030,9 +1030,9 @@ impl BridgeOrchestrator {
         // 1. Check if mapping exists — this is OK for co-signing since followers
         // may store a preliminary mapping before the leader's proposal arrives.
         // The actual dedup protection is on-chain (submitOrder reverts if already submitted).
-        if self.order_mappings.read().await.contains_key(&proposal.arb_order_id) {
+        if self.order_mappings.read().await.contains_key(&proposal.settlement_order_id) {
             debug!(
-                arb_order_id = %proposal.arb_order_id,
+                settlement_order_id = %proposal.settlement_order_id,
                 "Order mapping already exists, allowing co-sign (idempotent)"
             );
         }
@@ -1043,13 +1043,13 @@ impl BridgeOrchestrator {
         // which is valid since only the leader executes the bridge transaction.
         // Followers also advance to SubmittedOnL3 in the main loop (main.rs:1116-1123)
         // before the leader's submit proposal arrives via P2P, so accept that too.
-        let status = self.get_order_status(&proposal.arb_order_id).await;
+        let status = self.get_order_status(&proposal.settlement_order_id).await;
         match status {
             Some(BridgeOrderStatus::BridgedToL3) => {} // expected on leader
             Some(BridgeOrderStatus::Pending) | None => {
                 // Follower hasn't executed bridge yet — trust leader
                 debug!(
-                    arb_order_id = %proposal.arb_order_id,
+                    settlement_order_id = %proposal.settlement_order_id,
                     status = ?status,
                     "Order not BridgedToL3 locally, allowing submit (follower)"
                 );
@@ -1058,13 +1058,13 @@ impl BridgeOrchestrator {
                 // Follower's main loop already advanced status before leader's
                 // P2P proposal arrived — co-signing is safe and idempotent
                 debug!(
-                    arb_order_id = %proposal.arb_order_id,
+                    settlement_order_id = %proposal.settlement_order_id,
                     "Order already SubmittedOnL3 locally, allowing co-sign"
                 );
             }
             _ => {
                 warn!(
-                    arb_order_id = %proposal.arb_order_id,
+                    settlement_order_id = %proposal.settlement_order_id,
                     status = ?status,
                     "Order in unexpected status for submit"
                 );
@@ -1082,7 +1082,7 @@ impl BridgeOrchestrator {
 
         if proposal.deadline.as_u64() < now {
             warn!(
-                arb_order_id = %proposal.arb_order_id,
+                settlement_order_id = %proposal.settlement_order_id,
                 deadline = %proposal.deadline,
                 now = now,
                 "Order deadline passed"
@@ -1097,7 +1097,7 @@ impl BridgeOrchestrator {
         // Note: U256::from(2) comparison is safe - slippage_tier comes from u8 originally
         if proposal.slippage_tier > U256::from(2) {
             warn!(
-                arb_order_id = %proposal.arb_order_id,
+                settlement_order_id = %proposal.settlement_order_id,
                 slippage_tier = %proposal.slippage_tier,
                 "Invalid slippage tier"
             );
@@ -1113,7 +1113,7 @@ impl BridgeOrchestrator {
         // balance/ITP verification happens at execution time in Story 7.4.
 
         debug!(
-            arb_order_id = %proposal.arb_order_id,
+            settlement_order_id = %proposal.settlement_order_id,
             "Submit order proposal validation passed"
         );
 
@@ -1130,7 +1130,7 @@ impl BridgeOrchestrator {
         // Rebuild the message hash to verify it matches
         let expected_hash = build_submit_order_hash(
             self.config.l3_chain_id,
-            proposal.arb_order_id,
+            proposal.settlement_order_id,
             proposal.itp_id,
             proposal.user,
             proposal.amount,
@@ -1141,7 +1141,7 @@ impl BridgeOrchestrator {
 
         if expected_hash != proposal.message_hash {
             warn!(
-                arb_order_id = %proposal.arb_order_id,
+                settlement_order_id = %proposal.settlement_order_id,
                 expected = ?expected_hash,
                 received = ?proposal.message_hash,
                 "Submit order message hash mismatch - possible tampering"
@@ -1162,7 +1162,7 @@ impl BridgeOrchestrator {
             })?;
 
         info!(
-            arb_order_id = %proposal.arb_order_id,
+            settlement_order_id = %proposal.settlement_order_id,
             signer_index = self.node_index,
             "Signed submit order proposal"
         );
@@ -1177,21 +1177,21 @@ impl BridgeOrchestrator {
     /// Start collecting signatures for a submit order proposal (leader)
     pub async fn start_submit_order_signature_collection(
         &self,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         leader_signature: BLSSignature,
     ) {
         let mut collectors = self.submit_order_signatures.write().await;
 
         // Create new collector
-        let mut collector = SignatureCollector::new(arb_order_id);
+        let mut collector = SignatureCollector::new(settlement_order_id);
 
         // Add leader's own signature
         collector.add_signature(self.node_index, leader_signature);
 
-        collectors.insert(arb_order_id, collector);
+        collectors.insert(settlement_order_id, collector);
 
         debug!(
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             "Started signature collection for submit order proposal"
         );
     }
@@ -1201,20 +1201,20 @@ impl BridgeOrchestrator {
     /// Returns Some(SubmitOrderResult) if threshold is reached, None otherwise.
     pub async fn add_submit_order_follower_signature(
         &self,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<SubmitOrderResult>, BridgeError> {
         let mut collectors = self.submit_order_signatures.write().await;
 
-        let collector = collectors.get_mut(&arb_order_id).ok_or_else(|| {
-            BridgeError::OrderNotFound { order_id: arb_order_id }
+        let collector = collectors.get_mut(&settlement_order_id).ok_or_else(|| {
+            BridgeError::OrderNotFound { order_id: settlement_order_id }
         })?;
 
         // Add the signature
         if !collector.add_signature(signer_index, signature.clone()) {
             debug!(
-                arb_order_id = %arb_order_id,
+                settlement_order_id = %settlement_order_id,
                 signer_index = signer_index,
                 "Duplicate submit order signature rejected"
             );
@@ -1222,7 +1222,7 @@ impl BridgeOrchestrator {
         }
 
         info!(
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             signer_index = signer_index,
             collected = collector.signature_count(),
             required = self.config.min_signatures,
@@ -1246,7 +1246,7 @@ impl BridgeOrchestrator {
                 })?;
 
             info!(
-                arb_order_id = %arb_order_id,
+                settlement_order_id = %settlement_order_id,
                 signature_count = collector.signature_count(),
                 signer_bitmap = %collector.signer_bitmap(),
                 "Submit order signature threshold reached, ready for execution"
@@ -1268,10 +1268,10 @@ impl BridgeOrchestrator {
     /// Returns Some(SubmitOrderResult) if threshold is reached, None otherwise.
     pub async fn check_submit_order_threshold_reached(
         &self,
-        arb_order_id: &U256,
+        settlement_order_id: &U256,
     ) -> Option<SubmitOrderResult> {
         let collectors = self.submit_order_signatures.read().await;
-        let collector = collectors.get(arb_order_id)?;
+        let collector = collectors.get(settlement_order_id)?;
 
         if collector.has_threshold(self.config.min_signatures) {
             let signatures: Vec<BLSSignature> = collector
@@ -1297,9 +1297,9 @@ impl BridgeOrchestrator {
     }
 
     /// Get the current submit order signature count (for timeout diagnostics)
-    pub async fn get_submit_order_signature_count(&self, arb_order_id: &U256) -> Option<usize> {
+    pub async fn get_submit_order_signature_count(&self, settlement_order_id: &U256) -> Option<usize> {
         let collectors = self.submit_order_signatures.read().await;
-        collectors.get(arb_order_id).map(|c| c.signature_count())
+        collectors.get(settlement_order_id).map(|c| c.signature_count())
     }
 
     // ========================================================================
@@ -1309,7 +1309,7 @@ impl BridgeOrchestrator {
     /// Store order mapping after successful submitOrder
     pub async fn store_order_mapping(&self, mapping: OrderMapping) {
         info!(
-            arb_order_id = %mapping.arb_order_id,
+            settlement_order_id = %mapping.settlement_order_id,
             l3_order_id = %mapping.l3_order_id,
             original_user = ?mapping.original_user,
             "Storing order mapping"
@@ -1318,30 +1318,30 @@ impl BridgeOrchestrator {
         self.order_mappings
             .write()
             .await
-            .insert(mapping.arb_order_id, mapping);
+            .insert(mapping.settlement_order_id, mapping);
     }
 
-    /// Get L3 order ID for an Arbitrum order ID
-    pub async fn get_l3_order_id(&self, arb_order_id: &U256) -> Option<U256> {
+    /// Get L3 order ID for an Settlement order ID
+    pub async fn get_l3_order_id(&self, settlement_order_id: &U256) -> Option<U256> {
         self.order_mappings
             .read()
             .await
-            .get(arb_order_id)
+            .get(settlement_order_id)
             .map(|m| m.l3_order_id)
     }
 
     /// Get full order mapping
-    pub async fn get_order_mapping(&self, arb_order_id: &U256) -> Option<OrderMapping> {
-        self.order_mappings.read().await.get(arb_order_id).cloned()
+    pub async fn get_order_mapping(&self, settlement_order_id: &U256) -> Option<OrderMapping> {
+        self.order_mappings.read().await.get(settlement_order_id).cloned()
     }
 
     /// Mark order as submitted on L3 (status update)
-    pub async fn mark_order_submitted_on_l3(&self, arb_order_id: U256) {
-        self.set_order_status(arb_order_id, BridgeOrderStatus::SubmittedOnL3)
+    pub async fn mark_order_submitted_on_l3(&self, settlement_order_id: U256) {
+        self.set_order_status(settlement_order_id, BridgeOrderStatus::SubmittedOnL3)
             .await;
 
         info!(
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             "Order status updated to SubmittedOnL3"
         );
     }
@@ -1351,7 +1351,7 @@ impl BridgeOrchestrator {
     /// This calls the L3 Index contract to submit the order on behalf of the user.
     /// First approves the Index contract to spend L3 USDC, then calls submitOrder.
     /// Reads nextOrderId before submitting to determine the L3 order ID,
-    /// then stores the arb→L3 order mapping.
+    /// then stores the settlement→L3 order mapping.
     pub async fn execute_submit_order(
         &self,
         order: &crate::chain::CrossChainOrder,
@@ -1388,18 +1388,18 @@ impl BridgeOrchestrator {
                 U256::from_big_endian(&data[..32])
             }
             Ok(_) => {
-                warn!("nextOrderId returned unexpected data length, using arb order ID as fallback");
+                warn!("nextOrderId returned unexpected data length, using settlement order ID as fallback");
                 order.order_id
             }
             Err(e) => {
-                warn!(error = %e, "Failed to read nextOrderId, using arb order ID as fallback");
+                warn!(error = %e, "Failed to read nextOrderId, using settlement order ID as fallback");
                 order.order_id
             }
         };
 
         // Step 3: Submit the order on the Index contract (on behalf of the original user)
         let calldata = build_submit_order_for_calldata(
-            order.user, // beneficiary = original Arbitrum user
+            order.user, // beneficiary = original Settlement user
             order.itp_id,
             0, // BUY
             order.amount,
@@ -1420,13 +1420,13 @@ impl BridgeOrchestrator {
                 reason: format!("submitOrder failed: {}", e),
             })?;
 
-        // Store the arb→L3 order mapping
+        // Store the settlement→L3 order mapping
         let created_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
         let mapping = OrderMapping {
-            arb_order_id: order.order_id,
+            settlement_order_id: order.order_id,
             l3_order_id,
             original_user: order.user,
             created_at,
@@ -1434,7 +1434,7 @@ impl BridgeOrchestrator {
         self.store_order_mapping(mapping).await;
 
         info!(
-            arb_order_id = %order.order_id,
+            settlement_order_id = %order.order_id,
             l3_order_id = %l3_order_id,
             itp_id = ?order.itp_id,
             amount = %order.amount,
@@ -1875,22 +1875,22 @@ impl BridgeOrchestrator {
     }
 
     /// Mark orders as filled (status update after fills confirmation)
-    /// Fills use L3 order IDs, but order_status tracks Arb order IDs.
-    /// This method reverse-maps L3→Arb before updating status to avoid ID collisions.
+    /// Fills use L3 order IDs, but order_status tracks Settlement order IDs.
+    /// This method reverse-maps L3→Settlement before updating status to avoid ID collisions.
     pub async fn mark_orders_filled(&self, fills: &[Fill]) {
-        // Build reverse map: L3 order ID → Arb order ID
+        // Build reverse map: L3 order ID → Settlement order ID
         let mappings = self.order_mappings.read().await;
-        let l3_to_arb: std::collections::HashMap<U256, U256> = mappings
+        let l3_to_settlement: std::collections::HashMap<U256, U256> = mappings
             .iter()
-            .filter_map(|(arb_id, m)| Some((m.l3_order_id, *arb_id)))
+            .filter_map(|(settlement_id, m)| Some((m.l3_order_id, *settlement_id)))
             .collect();
         drop(mappings);
 
         for fill in fills {
-            let status_key = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+            let status_key = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
             if status_key != fill.order_id {
-                info!(l3_order_id = %fill.order_id, arb_order_id = %status_key,
-                    "Resolved L3→Arb order ID for status update");
+                info!(l3_order_id = %fill.order_id, settlement_order_id = %status_key,
+                    "Resolved L3→Settlement order ID for status update");
             }
             self.set_order_status(status_key, BridgeOrderStatus::Filled)
                 .await;
@@ -1969,10 +1969,10 @@ impl BridgeOrchestrator {
             .insert(cycle_number, tx_hash);
 
         // NOTE: Do NOT call mark_orders_batched here. The order_ids passed to this
-        // function are L3 IDs (for on-chain calls), not arb IDs. Setting status
+        // function are L3 IDs (for on-chain calls), not settlement IDs. Setting status
         // with L3 IDs pollutes the order_status HashMap and causes namespace
-        // collisions when a subsequent arb order shares the same numeric ID.
-        // Status updates happen in main.rs using arb IDs (submitted_orders).
+        // collisions when a subsequent settlement order shares the same numeric ID.
+        // Status updates happen in main.rs using settlement IDs (submitted_orders).
 
         info!(
             cycle_number = cycle_number,
@@ -1993,7 +1993,7 @@ impl BridgeOrchestrator {
     ///
     /// Calls Index.confirmFills(cycleNumber, fills, blsSignature)
     /// This confirms the fills and mints ITP shares to users.
-    /// Note: fills contain Arb order IDs; they are resolved to L3 order IDs
+    /// Note: fills contain Settlement order IDs; they are resolved to L3 order IDs
     /// for the on-chain call.
     pub async fn execute_confirm_fills(
         &self,
@@ -2044,8 +2044,8 @@ impl BridgeOrchestrator {
             .insert(cycle_number, tx_hash);
 
         // NOTE: Do NOT call mark_orders_filled here. The fills contain L3 IDs
-        // (for on-chain calls), not arb IDs. Status updates happen in main.rs
-        // using arb IDs to avoid namespace collisions.
+        // (for on-chain calls), not settlement IDs. Status updates happen in main.rs
+        // using settlement IDs to avoid namespace collisions.
 
         info!(
             cycle_number = cycle_number,
@@ -2327,32 +2327,32 @@ impl BridgeOrchestrator {
     }
 
     // ========================================================================
-    // Story 7.5: Bridge L3→Arb - Leader Proposal (AC: #1)
+    // Story 7.5: Bridge L3→Settlement - Leader Proposal (AC: #1)
     // ========================================================================
 
-    /// Create a bridge L3→Arb proposal (leader only)
+    /// Create a bridge L3→Settlement proposal (leader only)
     ///
-    /// **DEPRECATED**: Use `propose_bridge_l3_to_arb_with_amount()` instead.
+    /// **DEPRECATED**: Use `propose_bridge_l3_to_settlement_with_amount()` instead.
     /// This method validates order statuses but returns total_amount = 0
     /// because order amounts are not tracked internally. The returned proposal
     /// will fail consensus if followers expect a non-zero amount.
     ///
-    /// This proposes bridging L3Usdc from Index escrow back to Arbitrum
+    /// This proposes bridging L3Usdc from Index escrow back to Settlement
     /// for orders that have been batched (Story 7.4).
     ///
     /// Prerequisites: Orders must be in Batched status.
     #[deprecated(
         since = "0.1.0",
-        note = "Use propose_bridge_l3_to_arb_with_amount() instead - this method returns total_amount=0"
+        note = "Use propose_bridge_l3_to_settlement_with_amount() instead - this method returns total_amount=0"
     )]
-    pub async fn propose_bridge_l3_to_arb(
+    pub async fn propose_bridge_l3_to_settlement(
         &self,
         cycle_number: u64,
         order_ids: Vec<U256>,
-    ) -> Result<BridgeL3ToArbProposal, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementProposal, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if self.confirmed_l3_to_arb.read().await.contains_key(&cycle_number) {
-            return Err(BridgeError::BridgeL3ToArbAlreadyProcessed { cycle_number });
+        if self.confirmed_l3_to_settlement.read().await.contains_key(&cycle_number) {
+            return Err(BridgeError::BridgeL3ToSettlementAlreadyProcessed { cycle_number });
         }
 
         // Validate all orders are in Batched status
@@ -2366,21 +2366,21 @@ impl BridgeOrchestrator {
             }
         }
 
-        // WARNING: total_amount is always 0 - use propose_bridge_l3_to_arb_with_amount() instead!
+        // WARNING: total_amount is always 0 - use propose_bridge_l3_to_settlement_with_amount() instead!
         let total_amount = U256::zero();
         warn!(
             cycle_number = cycle_number,
             order_count = order_ids.len(),
-            "DEPRECATED: propose_bridge_l3_to_arb returns total_amount=0. Use propose_bridge_l3_to_arb_with_amount() instead."
+            "DEPRECATED: propose_bridge_l3_to_settlement returns total_amount=0. Use propose_bridge_l3_to_settlement_with_amount() instead."
         );
 
         // Build the message hash for BLS signing
-        let message_hash = build_bridge_l3_to_arb_hash(
+        let message_hash = build_bridge_l3_to_settlement_hash(
             self.config.l3_chain_id,
             cycle_number,
             &order_ids,
             total_amount,
-            self.config.issuer_custody_arb,
+            self.config.issuer_custody_settlement,
         );
 
         // Sign with leader's BLS key using sign_message_hash (not sign_with_keypair)
@@ -2397,38 +2397,38 @@ impl BridgeOrchestrator {
             cycle_number = cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
-            destination = ?self.config.issuer_custody_arb,
+            destination = ?self.config.issuer_custody_settlement,
             message_hash = ?message_hash,
-            "Bridge L3→Arb proposal created"
+            "Bridge L3→Settlement proposal created"
         );
 
-        Ok(BridgeL3ToArbProposal {
+        Ok(BridgeL3ToSettlementProposal {
             leader_id: self.peer_id,
             cycle_number,
             order_ids,
             total_amount,
-            destination: self.config.issuer_custody_arb,
+            destination: self.config.issuer_custody_settlement,
             leader_signature,
             message_hash,
         })
     }
 
-    /// Create a bridge L3→Arb proposal with explicit total amount (leader only)
+    /// Create a bridge L3→Settlement proposal with explicit total amount (leader only)
     ///
     /// Use this variant when the total amount is known (e.g., from fill data).
-    pub fn propose_bridge_l3_to_arb_with_amount(
+    pub fn propose_bridge_l3_to_settlement_with_amount(
         &self,
         cycle_number: u64,
         order_ids: Vec<U256>,
         total_amount: U256,
-    ) -> Result<BridgeL3ToArbProposal, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementProposal, BridgeError> {
         // Build the message hash for BLS signing
-        let message_hash = build_bridge_l3_to_arb_hash(
+        let message_hash = build_bridge_l3_to_settlement_hash(
             self.config.l3_chain_id,
             cycle_number,
             &order_ids,
             total_amount,
-            self.config.issuer_custody_arb,
+            self.config.issuer_custody_settlement,
         );
 
         // Sign with leader's BLS key using sign_message_hash (not sign_with_keypair)
@@ -2445,48 +2445,48 @@ impl BridgeOrchestrator {
             cycle_number = cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
-            destination = ?self.config.issuer_custody_arb,
+            destination = ?self.config.issuer_custody_settlement,
             message_hash = ?message_hash,
-            "Bridge L3→Arb proposal created (with explicit amount)"
+            "Bridge L3→Settlement proposal created (with explicit amount)"
         );
 
-        Ok(BridgeL3ToArbProposal {
+        Ok(BridgeL3ToSettlementProposal {
             leader_id: self.peer_id,
             cycle_number,
             order_ids,
             total_amount,
-            destination: self.config.issuer_custody_arb,
+            destination: self.config.issuer_custody_settlement,
             leader_signature,
             message_hash,
         })
     }
 
     // ========================================================================
-    // Story 7.5: Bridge L3→Arb - Follower Validation (AC: #2)
+    // Story 7.5: Bridge L3→Settlement - Follower Validation (AC: #2)
     // ========================================================================
 
-    /// Validate a bridge L3→Arb proposal from the leader
+    /// Validate a bridge L3→Settlement proposal from the leader
     ///
     /// Checks:
     /// 1. Cycle not already processed
     /// 2. Message hash matches recomputed hash
     /// 3. Orders are in Batched status (for each order_id)
     /// 4. Amounts match (total_amount equals sum of order amounts)
-    pub async fn validate_bridge_l3_to_arb_proposal(
+    pub async fn validate_bridge_l3_to_settlement_proposal(
         &self,
-        proposal: &BridgeL3ToArbProposal,
+        proposal: &BridgeL3ToSettlementProposal,
     ) -> Result<bool, BridgeError> {
         // 1. Check not already processed
-        if self.confirmed_l3_to_arb.read().await.contains_key(&proposal.cycle_number) {
+        if self.confirmed_l3_to_settlement.read().await.contains_key(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
-                "Bridge L3→Arb already processed for this cycle"
+                "Bridge L3→Settlement already processed for this cycle"
             );
             return Ok(false);
         }
 
         // 2. Verify message hash matches
-        let expected_hash = build_bridge_l3_to_arb_hash(
+        let expected_hash = build_bridge_l3_to_settlement_hash(
             self.config.l3_chain_id,
             proposal.cycle_number,
             &proposal.order_ids,
@@ -2499,18 +2499,18 @@ impl BridgeOrchestrator {
                 cycle_number = proposal.cycle_number,
                 expected = ?expected_hash,
                 received = ?proposal.message_hash,
-                "Bridge L3→Arb proposal: message hash mismatch"
+                "Bridge L3→Settlement proposal: message hash mismatch"
             );
             return Ok(false);
         }
 
         // 3. Verify destination matches our config
-        if proposal.destination != self.config.issuer_custody_arb {
+        if proposal.destination != self.config.issuer_custody_settlement {
             warn!(
                 cycle_number = proposal.cycle_number,
-                expected = ?self.config.issuer_custody_arb,
+                expected = ?self.config.issuer_custody_settlement,
                 received = ?proposal.destination,
-                "Bridge L3→Arb proposal: destination mismatch"
+                "Bridge L3→Settlement proposal: destination mismatch"
             );
             return Err(BridgeError::ProposalMismatch {
                 field: "destination".to_string(),
@@ -2533,7 +2533,7 @@ impl BridgeOrchestrator {
                         cycle_number = proposal.cycle_number,
                         order_id = %order_id,
                         status = ?status,
-                        "Order not Batched locally, allowing L3→Arb bridge (follower)"
+                        "Order not Batched locally, allowing L3→Settlement bridge (follower)"
                     );
                 }
                 _ => {
@@ -2541,7 +2541,7 @@ impl BridgeOrchestrator {
                         cycle_number = proposal.cycle_number,
                         order_id = %order_id,
                         status = ?status,
-                        "Order in unexpected status for L3→Arb bridge"
+                        "Order in unexpected status for L3→Settlement bridge"
                     );
                     return Ok(false);
                 }
@@ -2552,21 +2552,21 @@ impl BridgeOrchestrator {
             cycle_number = proposal.cycle_number,
             order_count = proposal.order_ids.len(),
             total_amount = %proposal.total_amount,
-            "Bridge L3→Arb proposal validation passed"
+            "Bridge L3→Settlement proposal validation passed"
         );
 
         Ok(true)
     }
 
-    /// Sign a validated bridge L3→Arb proposal (follower)
+    /// Sign a validated bridge L3→Settlement proposal (follower)
     ///
     /// Returns the BLS signature for the proposal's message hash.
-    pub fn sign_bridge_l3_to_arb_proposal(
+    pub fn sign_bridge_l3_to_settlement_proposal(
         &self,
-        proposal: &BridgeL3ToArbProposal,
+        proposal: &BridgeL3ToSettlementProposal,
     ) -> Result<BLSSignature, BridgeError> {
         // Rebuild the message hash to verify it matches
-        let expected_hash = build_bridge_l3_to_arb_hash(
+        let expected_hash = build_bridge_l3_to_settlement_hash(
             self.config.l3_chain_id,
             proposal.cycle_number,
             &proposal.order_ids,
@@ -2579,7 +2579,7 @@ impl BridgeOrchestrator {
                 cycle_number = proposal.cycle_number,
                 expected = ?expected_hash,
                 received = ?proposal.message_hash,
-                "Bridge L3→Arb proposal message hash mismatch - possible tampering"
+                "Bridge L3→Settlement proposal message hash mismatch - possible tampering"
             );
             return Err(BridgeError::ProposalMismatch {
                 field: "message_hash".to_string(),
@@ -2599,37 +2599,37 @@ impl BridgeOrchestrator {
         info!(
             cycle_number = proposal.cycle_number,
             signer_index = self.node_index,
-            "Signed bridge L3→Arb proposal"
+            "Signed bridge L3→Settlement proposal"
         );
 
         Ok(signature)
     }
 
     // ========================================================================
-    // Story 7.5: Bridge L3→Arb - Signature Aggregation (AC: #3)
+    // Story 7.5: Bridge L3→Settlement - Signature Aggregation (AC: #3)
     // ========================================================================
 
-    /// Start collecting signatures for a bridge L3→Arb proposal (leader)
-    pub async fn start_l3_to_arb_signature_collection(
+    /// Start collecting signatures for a bridge L3→Settlement proposal (leader)
+    pub async fn start_l3_to_settlement_signature_collection(
         &self,
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.l3_to_arb_sigs
+        self.l3_to_settlement_sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
 
-    /// Add a follower signature to the bridge L3→Arb collection (leader)
+    /// Add a follower signature to the bridge L3→Settlement collection (leader)
     ///
-    /// Returns Some(BridgeL3ToArbResult) if threshold is reached, None otherwise.
-    pub async fn add_l3_to_arb_follower_signature(
+    /// Returns Some(BridgeL3ToSettlementResult) if threshold is reached, None otherwise.
+    pub async fn add_l3_to_settlement_follower_signature(
         &self,
         cycle_number: u64,
         signer_index: u8,
         signature: BLSSignature,
-    ) -> Result<Option<BridgeL3ToArbResult>, BridgeError> {
-        self.l3_to_arb_sigs
+    ) -> Result<Option<BridgeL3ToSettlementResult>, BridgeError> {
+        self.l3_to_settlement_sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -2641,44 +2641,44 @@ impl BridgeOrchestrator {
     }
 
     // ========================================================================
-    // Story 7.5: Bridge L3→Arb Execution (AC: #3, #4, #5)
+    // Story 7.5: Bridge L3→Settlement Execution (AC: #3, #4, #5)
     // ========================================================================
 
-    /// Execute bridge L3→Arb by minting ArbUSDC to IssuerCustody Arb (local E2E)
+    /// Execute bridge L3→Settlement by minting SettlementUSDC to IssuerCustody Settlement (local E2E)
     ///
     /// This simulates the bridge by:
     /// 1. "Releasing" L3Usdc from Index escrow (simulated - no actual burn)
-    /// 2. Minting ArbUSDC to IssuerCustody on Arbitrum
+    /// 2. Minting SettlementUSDC to IssuerCustody on Settlement
     ///
     /// In production, this would call actual bridge contracts.
-    pub async fn execute_bridge_l3_to_arb(
+    pub async fn execute_bridge_l3_to_settlement(
         &self,
-        proposal: &BridgeL3ToArbProposal,
-        _aggregated: &BridgeL3ToArbResult,
+        proposal: &BridgeL3ToSettlementProposal,
+        _aggregated: &BridgeL3ToSettlementResult,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if let Some(existing_tx) = self.confirmed_l3_to_arb.read().await.get(&proposal.cycle_number) {
+        if let Some(existing_tx) = self.confirmed_l3_to_settlement.read().await.get(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 existing_tx = ?existing_tx,
-                "Bridge L3→Arb already executed for this cycle"
+                "Bridge L3→Settlement already executed for this cycle"
             );
-            return Err(BridgeError::BridgeL3ToArbAlreadyProcessed {
+            return Err(BridgeError::BridgeL3ToSettlementAlreadyProcessed {
                 cycle_number: proposal.cycle_number,
             });
         }
 
-        // Validate destination matches our configured IssuerCustody Arb address
+        // Validate destination matches our configured IssuerCustody Settlement address
         // This prevents executing a malicious proposal with a different destination
-        if proposal.destination != self.config.issuer_custody_arb {
+        if proposal.destination != self.config.issuer_custody_settlement {
             warn!(
                 cycle_number = proposal.cycle_number,
                 proposal_destination = ?proposal.destination,
-                expected_destination = ?self.config.issuer_custody_arb,
-                "Bridge L3→Arb proposal has invalid destination"
+                expected_destination = ?self.config.issuer_custody_settlement,
+                "Bridge L3→Settlement proposal has invalid destination"
             );
             return Err(BridgeError::InvalidDestination {
-                expected: self.config.issuer_custody_arb,
+                expected: self.config.issuer_custody_settlement,
                 actual: proposal.destination,
             });
         }
@@ -2691,13 +2691,13 @@ impl BridgeOrchestrator {
             "Simulating L3Usdc release from Index escrow"
         );
 
-        // Step 2: Mint ArbUSDC to IssuerCustody on Arbitrum
-        // Build ArbUSDC.mint(recipient, amount) calldata
+        // Step 2: Mint SettlementUSDC to IssuerCustody on Settlement
+        // Build SettlementUSDC.mint(recipient, amount) calldata
         let mint_selector = &ethers::utils::keccak256("mint(address,uint256)")[..4];
 
         let mut calldata = mint_selector.to_vec();
 
-        // recipient = IssuerCustody Arbitrum (32 bytes, address padded)
+        // recipient = IssuerCustody Settlement (32 bytes, address padded)
         let mut recipient_bytes = [0u8; 32];
         recipient_bytes[12..32].copy_from_slice(proposal.destination.as_bytes());
         calldata.extend_from_slice(&recipient_bytes);
@@ -2708,26 +2708,26 @@ impl BridgeOrchestrator {
         calldata.extend_from_slice(&amount_bytes);
 
         // Submit transaction (using L3 writer for local E2E simulation)
-        // Note: In production with separate Arbitrum writer, use that instead
+        // Note: In production with separate Settlement writer, use that instead
         let tx_hash = self
             .l3_writer
             .send_transaction(
-                self.config.arb_usdc_address,
+                self.config.settlement_usdc_address,
                 calldata,
                 U256::zero(), // no ETH value
             )
             .await
-            .map_err(|e| BridgeError::BridgeL3ToArbFailed {
+            .map_err(|e| BridgeError::BridgeL3ToSettlementFailed {
                 reason: e.to_string(),
             })?;
 
         // Record as confirmed (deduplication)
-        self.confirmed_l3_to_arb
+        self.confirmed_l3_to_settlement
             .write()
             .await
             .insert(proposal.cycle_number, tx_hash);
 
-        // Mark orders as BridgedBackToArb
+        // Mark orders as BridgedBackToSettlement
         self.mark_orders_bridged_back(&proposal.order_ids).await;
 
         info!(
@@ -2737,51 +2737,51 @@ impl BridgeOrchestrator {
             total_amount = %proposal.total_amount,
             destination = ?proposal.destination,
             source_chain = "L3",
-            dest_chain = "Arbitrum",
-            "BridgeCompleted: L3→Arb executed (local E2E mint)"
+            dest_chain = "Settlement",
+            "BridgeCompleted: L3→Settlement executed (local E2E mint)"
         );
 
         Ok(tx_hash)
     }
 
-    /// Mark orders as BridgedBackToArb (status update)
+    /// Mark orders as BridgedBackToSettlement (status update)
     pub async fn mark_orders_bridged_back(&self, order_ids: &[U256]) {
         for order_id in order_ids {
-            self.set_order_status(*order_id, BridgeOrderStatus::BridgedBackToArb)
+            self.set_order_status(*order_id, BridgeOrderStatus::BridgedBackToSettlement)
                 .await;
         }
 
         info!(
             order_count = order_ids.len(),
-            "Orders status updated to BridgedBackToArb"
+            "Orders status updated to BridgedBackToSettlement"
         );
     }
 
-    /// Check if a bridge L3→Arb cycle has already been confirmed
-    pub async fn is_l3_to_arb_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_l3_to_arb.read().await.contains_key(&cycle_number)
+    /// Check if a bridge L3→Settlement cycle has already been confirmed
+    pub async fn is_l3_to_settlement_confirmed(&self, cycle_number: u64) -> bool {
+        self.confirmed_l3_to_settlement.read().await.contains_key(&cycle_number)
     }
 
-    /// Clean up stale L3→Arb signature collectors
-    pub async fn cleanup_stale_l3_to_arb_collectors(&self, max_age_ms: u64) {
-        self.l3_to_arb_sigs.cleanup_stale(max_age_ms).await;
+    /// Clean up stale L3→Settlement signature collectors
+    pub async fn cleanup_stale_l3_to_settlement_collectors(&self, max_age_ms: u64) {
+        self.l3_to_settlement_sigs.cleanup_stale(max_age_ms).await;
     }
 
-    /// Check if L3→Arb signature threshold is reached (Story 7.10)
+    /// Check if L3→Settlement signature threshold is reached (Story 7.10)
     ///
-    /// Returns Some(BridgeL3ToArbResult) if threshold is reached, None otherwise.
-    pub async fn check_l3_to_arb_threshold_reached(
+    /// Returns Some(BridgeL3ToSettlementResult) if threshold is reached, None otherwise.
+    pub async fn check_l3_to_settlement_threshold_reached(
         &self,
         cycle_number: u64,
-    ) -> Option<BridgeL3ToArbResult> {
-        self.l3_to_arb_sigs
+    ) -> Option<BridgeL3ToSettlementResult> {
+        self.l3_to_settlement_sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
-    /// Get the current L3→Arb signature count for a cycle (Story 7.10)
-    pub async fn get_l3_to_arb_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.l3_to_arb_sigs.get_signature_count(&cycle_number).await
+    /// Get the current L3→Settlement signature count for a cycle (Story 7.10)
+    pub async fn get_l3_to_settlement_signature_count(&self, cycle_number: u64) -> Option<usize> {
+        self.l3_to_settlement_sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -2790,10 +2790,10 @@ impl BridgeOrchestrator {
 
     /// Create a custody release to vault proposal (leader only)
     ///
-    /// This proposes releasing ArbUSDC from IssuerCustody on Arbitrum
+    /// This proposes releasing SettlementUSDC from IssuerCustody on Settlement
     /// to MockBitgetVault for AP trading.
     ///
-    /// Prerequisites: Orders must be in BridgedBackToArb status (from Story 7.5).
+    /// Prerequisites: Orders must be in BridgedBackToSettlement status (from Story 7.5).
     pub async fn propose_release_to_vault(
         &self,
         cycle_number: u64,
@@ -2805,10 +2805,10 @@ impl BridgeOrchestrator {
             return Err(BridgeError::ReleaseAlreadyProcessed { cycle_number });
         }
 
-        // Validate all orders are in BridgedBackToArb status
+        // Validate all orders are in BridgedBackToSettlement status
         for order_id in &order_ids {
             let status = self.get_order_status(order_id).await;
-            if status != Some(BridgeOrderStatus::BridgedBackToArb) {
+            if status != Some(BridgeOrderStatus::BridgedBackToSettlement) {
                 return Err(BridgeError::OrderNotBridgedBack {
                     order_id: *order_id,
                     status: status.unwrap_or(BridgeOrderStatus::Pending),
@@ -2817,10 +2817,10 @@ impl BridgeOrchestrator {
         }
 
         // Build the message hash for BLS signing
-        // Use Arbitrum chain ID since the custody release happens on Arbitrum
+        // Use Settlement chain ID since the custody release happens on Settlement
         let message_hash = build_release_to_vault_hash(
-            self.config.arbitrum_chain_id,
-            self.config.issuer_custody_arb,
+            self.config.settlement_chain_id,
+            self.config.issuer_custody_settlement,
             cycle_number,
             &order_ids,
             total_amount,
@@ -2842,7 +2842,7 @@ impl BridgeOrchestrator {
             order_count = order_ids.len(),
             total_amount = %total_amount,
             vault_address = ?self.config.bitget_vault,
-            custody_address = ?self.config.issuer_custody_arb,
+            custody_address = ?self.config.issuer_custody_settlement,
             message_hash = ?message_hash,
             "Custody release to vault proposal created"
         );
@@ -2868,7 +2868,7 @@ impl BridgeOrchestrator {
     /// 1. Cycle not already processed
     /// 2. Vault address matches config
     /// 3. Message hash matches recomputed hash
-    /// 4. Orders are in BridgedBackToArb status
+    /// 4. Orders are in BridgedBackToSettlement status
     /// 5. Total amount matches sum of individual order amounts (AC: #2)
     pub async fn validate_release_proposal(
         &self,
@@ -2899,8 +2899,8 @@ impl BridgeOrchestrator {
 
         // 3. Verify message hash matches
         let expected_hash = build_release_to_vault_hash(
-            self.config.arbitrum_chain_id,
-            self.config.issuer_custody_arb,
+            self.config.settlement_chain_id,
+            self.config.issuer_custody_settlement,
             proposal.cycle_number,
             &proposal.order_ids,
             proposal.total_amount,
@@ -2917,14 +2917,14 @@ impl BridgeOrchestrator {
             return Ok(false);
         }
 
-        // 4. Verify orders are in BridgedBackToArb status and sum amounts
+        // 4. Verify orders are in BridgedBackToSettlement status and sum amounts
         //    Followers may not have tracked order status through all phases,
         //    so allow earlier statuses (Pending, BridgedToL3, etc.) — trust leader.
         let mut computed_total = U256::zero();
         for order_id in &proposal.order_ids {
             let status = self.get_order_status(order_id).await;
             match status {
-                Some(BridgeOrderStatus::BridgedBackToArb) => {} // expected on leader
+                Some(BridgeOrderStatus::BridgedBackToSettlement) => {} // expected on leader
                 Some(BridgeOrderStatus::Pending)
                 | Some(BridgeOrderStatus::BridgedToL3)
                 | Some(BridgeOrderStatus::SubmittedOnL3)
@@ -2935,7 +2935,7 @@ impl BridgeOrchestrator {
                         cycle_number = proposal.cycle_number,
                         order_id = %order_id,
                         status = ?status,
-                        "Order not BridgedBackToArb locally, allowing custody release (follower)"
+                        "Order not BridgedBackToSettlement locally, allowing custody release (follower)"
                     );
                 }
                 _ => {
@@ -2990,8 +2990,8 @@ impl BridgeOrchestrator {
     ) -> Result<BLSSignature, BridgeError> {
         // Rebuild the message hash to verify it matches
         let expected_hash = build_release_to_vault_hash(
-            self.config.arbitrum_chain_id,
-            self.config.issuer_custody_arb,
+            self.config.settlement_chain_id,
+            self.config.issuer_custody_settlement,
             proposal.cycle_number,
             &proposal.order_ids,
             proposal.total_amount,
@@ -3070,8 +3070,8 @@ impl BridgeOrchestrator {
 
     /// Execute custody release to MockBitgetVault via BLSCustody.execute()
     ///
-    /// This calls BLSCustody.execute() to transfer ArbUSDC from IssuerCustody
-    /// on Arbitrum to MockBitgetVault.
+    /// This calls BLSCustody.execute() to transfer SettlementUSDC from IssuerCustody
+    /// on Settlement to MockBitgetVault.
     pub async fn execute_release_to_vault(
         &self,
         proposal: &ReleaseToVaultProposal,
@@ -3106,18 +3106,18 @@ impl BridgeOrchestrator {
 
         // Build USDC transfer calldata with 18→6 decimal conversion
         // Story 7-6b: proposal.total_amount is 18-decimal internal format
-        // ArbUSDC uses 6 decimals, so we convert here at the protocol boundary
+        // SettlementUSDC uses 6 decimals, so we convert here at the protocol boundary
         let (inner_calldata, usdc_amount_6dec) = build_usdc_transfer_calldata_with_amount(
             proposal.vault_address,
             proposal.total_amount,
         );
 
-        // Execute via BLSCustody.execute() on IssuerCustody Arbitrum
-        // Target is the ArbUSDC token contract
+        // Execute via BLSCustody.execute() on IssuerCustody Settlement
+        // Target is the SettlementUSDC token contract
         let tx_hash = self
             .execute_custody_call(
-                self.config.issuer_custody_arb,  // custody contract
-                self.config.arb_usdc_address,    // target (ArbUSDC)
+                self.config.issuer_custody_settlement,  // custody contract
+                self.config.settlement_usdc_address,    // target (SettlementUSDC)
                 &inner_calldata,                  // transfer(vault, usdc_amount_6dec)
                 &result.aggregated_signature,
                 reference_nonce,
@@ -3144,7 +3144,7 @@ impl BridgeOrchestrator {
             usdc_amount_6dec = %usdc_amount_6dec,
             vault_address = ?proposal.vault_address,
             signer_bitmap = %result.signer_bitmap,
-            "CustodyRelease: ArbUSDC transferred to MockBitgetVault (18→6 decimal converted)"
+            "CustodyRelease: SettlementUSDC transferred to MockBitgetVault (18→6 decimal converted)"
         );
 
         Ok(tx_hash)
@@ -4032,24 +4032,24 @@ impl BridgeOrchestrator {
         ids
     }
 
-    /// Store sell order mapping (arb → L3)
+    /// Store sell order mapping (settlement → L3)
     pub async fn store_sell_order_mapping(&self, mapping: OrderMapping) {
-        let arb_id = mapping.arb_order_id;
-        self.sell_order_mappings.write().await.insert(arb_id, mapping);
+        let settlement_id = mapping.settlement_order_id;
+        self.sell_order_mappings.write().await.insert(settlement_id, mapping);
     }
 
-    /// Resolve arb sell order IDs → L3 order IDs
-    pub async fn resolve_sell_l3_order_ids(&self, arb_order_ids: &[U256]) -> Vec<U256> {
+    /// Resolve settlement sell order IDs → L3 order IDs
+    pub async fn resolve_sell_l3_order_ids(&self, settlement_order_ids: &[U256]) -> Vec<U256> {
         let mappings = self.sell_order_mappings.read().await;
-        arb_order_ids
+        settlement_order_ids
             .iter()
-            .filter_map(|arb_id| mappings.get(arb_id).map(|m| m.l3_order_id))
+            .filter_map(|settlement_id| mappings.get(settlement_id).map(|m| m.l3_order_id))
             .collect()
     }
 
     /// Get L3 order ID for a sell order
-    pub async fn get_sell_l3_order_id(&self, arb_order_id: &U256) -> Option<U256> {
-        self.sell_order_mappings.read().await.get(arb_order_id).map(|m| m.l3_order_id)
+    pub async fn get_sell_l3_order_id(&self, settlement_order_id: &U256) -> Option<U256> {
+        self.sell_order_mappings.read().await.get(settlement_order_id).map(|m| m.l3_order_id)
     }
 
     // ---- Submit Sell Order Consensus ----
@@ -4074,7 +4074,7 @@ impl BridgeOrchestrator {
 
         // Build hash using sell bridge hash
         let message_hash = build_sell_bridge_hash(
-            self.config.arbitrum_chain_id,
+            self.config.settlement_chain_id,
             order_id,
             itp_id,
             user,
@@ -4219,11 +4219,11 @@ impl BridgeOrchestrator {
                 U256::from_big_endian(&data[..32])
             }
             Ok(_) => {
-                warn!("nextOrderId returned unexpected data, using arb order ID as fallback");
+                warn!("nextOrderId returned unexpected data, using settlement order ID as fallback");
                 order_id
             }
             Err(e) => {
-                warn!(error = %e, "Failed to read nextOrderId, using arb order ID as fallback");
+                warn!(error = %e, "Failed to read nextOrderId, using settlement order ID as fallback");
                 order_id
             }
         };
@@ -4264,13 +4264,13 @@ impl BridgeOrchestrator {
                 reason: format!("submitOrderFor(SELL) failed: {}", e),
             })?;
 
-        // Store arb→L3 sell order mapping
+        // Store settlement→L3 sell order mapping
         let created_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
         let mapping = OrderMapping {
-            arb_order_id: order_id,
+            settlement_order_id: order_id,
             l3_order_id,
             original_user: user,
             created_at,
@@ -4278,7 +4278,7 @@ impl BridgeOrchestrator {
         self.store_sell_order_mapping(mapping).await;
 
         info!(
-            arb_order_id = %order_id,
+            settlement_order_id = %order_id,
             l3_order_id = %l3_order_id,
             itp_id = ?itp_id,
             amount = %amount,
@@ -4291,7 +4291,7 @@ impl BridgeOrchestrator {
 
     // ---- Complete Sell Order Consensus ----
 
-    /// Leader: propose completing sell order on Arbitrum
+    /// Leader: propose completing sell order on Settlement
     pub async fn propose_complete_sell_order(
         &self,
         order_id: U256,
@@ -4299,8 +4299,8 @@ impl BridgeOrchestrator {
         vault: Address,
     ) -> Result<CompleteSellProposal, BridgeError> {
         let message_hash = build_complete_sell_order_consensus_hash(
-            self.config.arbitrum_chain_id,
-            self.config.arb_custody_address,
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
             order_id,
             usdc_proceeds,
             vault,
@@ -4605,7 +4605,7 @@ impl BridgeOrchestrator {
         bridge_proxy: Address,
     ) -> Result<MintBridgedSharesProposal, BridgeError> {
         let message_hash = build_mint_bridged_shares_hash(
-            self.config.arbitrum_chain_id,
+            self.config.settlement_chain_id,
             bridge_proxy,
             itp_id,
             user,
@@ -4655,7 +4655,7 @@ impl BridgeOrchestrator {
         }
 
         let expected_hash = build_mint_bridged_shares_hash(
-            self.config.arbitrum_chain_id,
+            self.config.settlement_chain_id,
             bridge_proxy,
             proposal.itp_id,
             proposal.user,
@@ -4698,7 +4698,7 @@ impl BridgeOrchestrator {
         bridge_proxy: Address,
     ) -> Result<BLSSignature, BridgeError> {
         let expected_hash = build_mint_bridged_shares_hash(
-            self.config.arbitrum_chain_id,
+            self.config.settlement_chain_id,
             bridge_proxy,
             proposal.itp_id,
             proposal.user,
@@ -4795,8 +4795,8 @@ impl BridgeOrchestrator {
         vault: Address,
     ) -> Result<CompleteBuyOrderProposal, BridgeError> {
         let message_hash = build_complete_buy_order_hash(
-            self.config.arbitrum_chain_id,
-            self.config.arb_custody_address,
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
             order_id,
             vault,
         );
@@ -4832,8 +4832,8 @@ impl BridgeOrchestrator {
         proposal: &CompleteBuyOrderProposal,
     ) -> Result<BLSSignature, BridgeError> {
         let expected_hash = build_complete_buy_order_hash(
-            self.config.arbitrum_chain_id,
-            self.config.arb_custody_address,
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
             proposal.order_id,
             proposal.vault,
         );
@@ -4918,6 +4918,6 @@ impl BridgeOrchestrator {
     }
 }
 
-// Tests are in issuer/tests/bridge_arb_to_l3_integration.rs (Task 10)
+// Tests are in issuer/tests/bridge_settlement_to_l3_integration.rs (Task 10)
 // Submit order tests will be in issuer/tests/submit_order_integration.rs
 // Basic unit tests for types are in types.rs

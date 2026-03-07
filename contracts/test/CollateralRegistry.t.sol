@@ -23,7 +23,7 @@ contract CollateralRegistryTest is TestHelper {
     // Use actual chain IDs for on-chain collateral tracking
     uint256 constant EXTERNAL = 0; // External/no-chain (CEX operations)
     uint256 constant INDEX_L3 = 111222333; // Index L3 Orbit chain
-    uint256 constant ARBITRUM = 42161;
+    uint256 constant SETTLEMENT = 42161;
     uint256 constant ETHEREUM = 1;
     uint256 constant BASE = 8453;
 
@@ -81,26 +81,26 @@ contract CollateralRegistryTest is TestHelper {
     // ============ AC2: BRIDGE TYPE - Updates Both Chains ============
 
     function test_RecordCollateralMove_Bridge_UpdatesBothChains() public {
-        // First add collateral to source chain (Arbitrum) via BUY from external
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT);
+        // First add collateral to source chain (Settlement) via BUY from external
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT);
 
-        // Now bridge from Arbitrum to L3
-        _recordMove(ITP_1, ARBITRUM, INDEX_L3, AMOUNT / 2, TypesLib.TxType.BRIDGE);
+        // Now bridge from Settlement to L3
+        _recordMove(ITP_1, SETTLEMENT, INDEX_L3, AMOUNT / 2, TypesLib.TxType.BRIDGE);
 
         // Verify fromChain was decremented and toChain was incremented
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT / 2);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT / 2);
         assertEq(registry.getITPCollateralByChain(ITP_1, INDEX_L3), AMOUNT / 2);
     }
 
     function test_RecordCollateralMove_Bridge_EmitsEvent() public {
         // First add collateral
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         vm.expectEmit(true, false, false, true);
-        emit CollateralMoved(ITP_1, ARBITRUM, INDEX_L3, AMOUNT, TypesLib.TxType.BRIDGE);
+        emit CollateralMoved(ITP_1, SETTLEMENT, INDEX_L3, AMOUNT, TypesLib.TxType.BRIDGE);
 
-        _recordMove(ITP_1, ARBITRUM, INDEX_L3, AMOUNT, TypesLib.TxType.BRIDGE);
+        _recordMove(ITP_1, SETTLEMENT, INDEX_L3, AMOUNT, TypesLib.TxType.BRIDGE);
     }
 
     // ============ AC3: SWAP_IN - Only toChain Updated ============
@@ -108,9 +108,9 @@ contract CollateralRegistryTest is TestHelper {
     function test_RecordCollateralMove_SwapIn_OnlyToChainUpdated() public {
         // SWAP_IN: assets coming in from external, only toChain should be updated
         // fromChain = 0 (external) means no source chain decrement
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.SWAP_IN);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.SWAP_IN);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT);
         // EXTERNAL (chain 0) shouldn't be tracked when it's the fromChain
     }
 
@@ -118,13 +118,13 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_RecordCollateralMove_SwapOut_OnlyFromChainUpdated() public {
         // First add collateral
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.SWAP_IN);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.SWAP_IN);
 
         // SWAP_OUT: assets going out to external, only fromChain should be decremented
         // toChain = 0 (external) means no destination chain increment
-        _recordMove(ITP_1, ARBITRUM, EXTERNAL, AMOUNT / 2, TypesLib.TxType.SWAP_OUT);
+        _recordMove(ITP_1, SETTLEMENT, EXTERNAL, AMOUNT / 2, TypesLib.TxType.SWAP_OUT);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT / 2);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT / 2);
     }
 
     // ============ AC5: BUY Type - toChain Updated ============
@@ -132,33 +132,33 @@ contract CollateralRegistryTest is TestHelper {
     function test_RecordCollateralMove_Buy_ToChainUpdated() public {
         // BUY: assets coming to ITP from CEX (external)
         // fromChain = 0 (external/CEX), toChain = where assets now held
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT);
     }
 
     // ============ AC6: SELL Type - fromChain Updated ============
 
     function test_RecordCollateralMove_Sell_FromChainUpdated() public {
         // First add collateral
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         // SELL: assets leaving ITP to CEX (external)
         // fromChain = where assets were, toChain = 0 (external/CEX)
-        _recordMove(ITP_1, ARBITRUM, EXTERNAL, AMOUNT / 4, TypesLib.TxType.SELL);
+        _recordMove(ITP_1, SETTLEMENT, EXTERNAL, AMOUNT / 4, TypesLib.TxType.SELL);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), AMOUNT - AMOUNT / 4);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), AMOUNT - AMOUNT / 4);
     }
 
     // ============ AC7: getITPCollateralByChain Returns Correct Amounts ============
 
     function test_GetITPCollateralByChain_ReturnsCorrectAmounts() public {
         // Add collateral to multiple chains via BUY from external
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
         _recordMove(ITP_1, EXTERNAL, ETHEREUM, 200e18, TypesLib.TxType.BUY);
         _recordMove(ITP_1, EXTERNAL, BASE, 300e18, TypesLib.TxType.BUY);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 100e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 100e18);
         assertEq(registry.getITPCollateralByChain(ITP_1, ETHEREUM), 200e18);
         assertEq(registry.getITPCollateralByChain(ITP_1, BASE), 300e18);
     }
@@ -167,7 +167,7 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_GetTotalCollateral_SumsCorrectly() public {
         // Add collateral to multiple chains
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
         _recordMove(ITP_1, EXTERNAL, ETHEREUM, 200e18, TypesLib.TxType.BUY);
         _recordMove(ITP_1, EXTERNAL, BASE, 300e18, TypesLib.TxType.BUY);
 
@@ -177,7 +177,7 @@ contract CollateralRegistryTest is TestHelper {
     // ============ AC9: getCollateralBreakdown Returns Correct Arrays ============
 
     function test_GetCollateralBreakdown_ReturnsCorrectArrays() public {
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
         _recordMove(ITP_1, EXTERNAL, ETHEREUM, 200e18, TypesLib.TxType.BUY);
 
         (uint256[] memory chainIds, uint256[] memory amounts) = registry.getCollateralBreakdown(ITP_1);
@@ -186,7 +186,7 @@ contract CollateralRegistryTest is TestHelper {
         assertEq(amounts.length, 2);
 
         // Order depends on insertion order
-        assertEq(chainIds[0], ARBITRUM);
+        assertEq(chainIds[0], SETTLEMENT);
         assertEq(amounts[0], 100e18);
         assertEq(chainIds[1], ETHEREUM);
         assertEq(amounts[1], 200e18);
@@ -197,7 +197,7 @@ contract CollateralRegistryTest is TestHelper {
     function test_ItpExists_ReturnsTrueAfterMovement() public {
         assertFalse(registry.itpExists(ITP_1));
 
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         assertTrue(registry.itpExists(ITP_1));
     }
@@ -211,7 +211,7 @@ contract CollateralRegistryTest is TestHelper {
     function test_Nonce_IncrementsOnEachCall() public {
         assertEq(registry.getNonce(), 0);
 
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
         assertEq(registry.getNonce(), 1);
 
         _recordMove(ITP_1, EXTERNAL, ETHEREUM, AMOUNT, TypesLib.TxType.BUY);
@@ -223,34 +223,34 @@ contract CollateralRegistryTest is TestHelper {
     function test_RecordCollateralMove_RevertsOnUnderflow() public {
         // Try to move collateral that doesn't exist
         // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
-        bytes memory sig = _signRecordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE);
+        bytes memory sig = _signRecordCollateralMove(ITP_1, SETTLEMENT, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE);
         vm.expectRevert(
-            abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, AMOUNT, 0)
+            abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, SETTLEMENT, AMOUNT, 0)
         );
-        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE, sig, 3, 7);
+        registry.recordCollateralMove(ITP_1, SETTLEMENT, ETHEREUM, AMOUNT, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     function test_RecordCollateralMove_RevertsOnPartialUnderflow() public {
         // Add some collateral
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
 
         // Try to move more than available
         // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
-        bytes memory sig = _signRecordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
+        bytes memory sig = _signRecordCollateralMove(ITP_1, SETTLEMENT, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
         vm.expectRevert(
-            abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, ARBITRUM, 200e18, 100e18)
+            abi.encodeWithSelector(CollateralRegistry.InsufficientCollateral.selector, ITP_1, SETTLEMENT, 200e18, 100e18)
         );
-        registry.recordCollateralMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE, sig, 3, 7);
+        registry.recordCollateralMove(ITP_1, SETTLEMENT, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     // ============ MULTIPLE ITPs TRACK INDEPENDENTLY ============
 
     function test_MultipleITPs_TrackIndependently() public {
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
-        _recordMove(ITP_2, EXTERNAL, ARBITRUM, 500e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_2, EXTERNAL, SETTLEMENT, 500e18, TypesLib.TxType.BUY);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 100e18);
-        assertEq(registry.getITPCollateralByChain(ITP_2, ARBITRUM), 500e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 100e18);
+        assertEq(registry.getITPCollateralByChain(ITP_2, SETTLEMENT), 500e18);
 
         assertEq(registry.getTotalCollateral(ITP_1), 100e18);
         assertEq(registry.getTotalCollateral(ITP_2), 500e18);
@@ -286,37 +286,37 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_ChainTracking_NoDuplicates() public {
         // Add to same chain multiple times via BUY from external
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 100e18, TypesLib.TxType.BUY);
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 200e18, TypesLib.TxType.BUY);
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 300e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 100e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 200e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 300e18, TypesLib.TxType.BUY);
 
         (uint256[] memory chainIds,) = registry.getCollateralBreakdown(ITP_1);
 
-        // Should only have one entry for ARBITRUM
+        // Should only have one entry for SETTLEMENT
         assertEq(chainIds.length, 1);
-        assertEq(chainIds[0], ARBITRUM);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 600e18);
+        assertEq(chainIds[0], SETTLEMENT);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 600e18);
     }
 
     // ============ ALL TX TYPES COMPREHENSIVE TEST ============
 
     function test_AllTxTypes_ProcessCorrectly() public {
-        // Setup: Add initial collateral to Arbitrum via BUY
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 1000e18, TypesLib.TxType.BUY);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 1000e18);
+        // Setup: Add initial collateral to Settlement via BUY
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 1000e18, TypesLib.TxType.BUY);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 1000e18);
 
-        // BRIDGE: from Arbitrum to Ethereum
-        _recordMove(ITP_1, ARBITRUM, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 800e18);
+        // BRIDGE: from Settlement to Ethereum
+        _recordMove(ITP_1, SETTLEMENT, ETHEREUM, 200e18, TypesLib.TxType.BRIDGE);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 800e18);
         assertEq(registry.getITPCollateralByChain(ITP_1, ETHEREUM), 200e18);
 
         // SWAP_IN: assets coming in from external to Ethereum
         _recordMove(ITP_1, EXTERNAL, ETHEREUM, 300e18, TypesLib.TxType.SWAP_IN);
         assertEq(registry.getITPCollateralByChain(ITP_1, ETHEREUM), 500e18);
 
-        // SWAP_OUT: assets going out from Arbitrum to external
-        _recordMove(ITP_1, ARBITRUM, EXTERNAL, 200e18, TypesLib.TxType.SWAP_OUT);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 600e18);
+        // SWAP_OUT: assets going out from Settlement to external
+        _recordMove(ITP_1, SETTLEMENT, EXTERNAL, 200e18, TypesLib.TxType.SWAP_OUT);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 600e18);
 
         // BUY: CEX buy adds to Base from external
         _recordMove(ITP_1, EXTERNAL, BASE, 300e18, TypesLib.TxType.BUY);
@@ -335,9 +335,9 @@ contract CollateralRegistryTest is TestHelper {
     function test_ZeroAmount_Movement_Reverts() public {
         // Zero amount movements should revert to prevent spam/abuse
         // Pre-compute signature BEFORE vm.expectRevert to avoid getNonce() being captured
-        bytes memory sig = _signRecordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE);
+        bytes memory sig = _signRecordCollateralMove(ITP_1, INDEX_L3, SETTLEMENT, 0, TypesLib.TxType.BRIDGE);
         vm.expectRevert(CollateralRegistry.ZeroAmount.selector);
-        registry.recordCollateralMove(ITP_1, INDEX_L3, ARBITRUM, 0, TypesLib.TxType.BRIDGE, sig, 3, 7);
+        registry.recordCollateralMove(ITP_1, INDEX_L3, SETTLEMENT, 0, TypesLib.TxType.BRIDGE, sig, 3, 7);
     }
 
     function test_EmptyBreakdown_ForNewITP() public view {
@@ -350,15 +350,15 @@ contract CollateralRegistryTest is TestHelper {
     // ============ L3 CHAIN TRACKING TESTS ============
 
     function test_L3ChainTracking_BridgeToL3() public {
-        // First add collateral to Arbitrum
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 1000e18, TypesLib.TxType.BUY);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 1000e18);
+        // First add collateral to Settlement
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 1000e18, TypesLib.TxType.BUY);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 1000e18);
 
-        // Bridge from Arbitrum to L3
-        _recordMove(ITP_1, ARBITRUM, INDEX_L3, 500e18, TypesLib.TxType.BRIDGE);
+        // Bridge from Settlement to L3
+        _recordMove(ITP_1, SETTLEMENT, INDEX_L3, 500e18, TypesLib.TxType.BRIDGE);
 
         // Verify both chains track correctly
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 500e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 500e18);
         assertEq(registry.getITPCollateralByChain(ITP_1, INDEX_L3), 500e18);
         assertEq(registry.getTotalCollateral(ITP_1), 1000e18);
     }
@@ -368,12 +368,12 @@ contract CollateralRegistryTest is TestHelper {
         _recordMove(ITP_1, EXTERNAL, INDEX_L3, 1000e18, TypesLib.TxType.BUY);
         assertEq(registry.getITPCollateralByChain(ITP_1, INDEX_L3), 1000e18);
 
-        // Bridge from L3 to Arbitrum
-        _recordMove(ITP_1, INDEX_L3, ARBITRUM, 400e18, TypesLib.TxType.BRIDGE);
+        // Bridge from L3 to Settlement
+        _recordMove(ITP_1, INDEX_L3, SETTLEMENT, 400e18, TypesLib.TxType.BRIDGE);
 
         // Verify both chains track correctly
         assertEq(registry.getITPCollateralByChain(ITP_1, INDEX_L3), 600e18);
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 400e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 400e18);
         assertEq(registry.getTotalCollateral(ITP_1), 1000e18);
     }
 
@@ -382,22 +382,22 @@ contract CollateralRegistryTest is TestHelper {
     function test_CEX_BuyFromExternal() public {
         // BUY: Assets coming from CEX (external) to a chain
         // fromChain = 0 (external), toChain = actual chain
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 1000e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 1000e18, TypesLib.TxType.BUY);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 1000e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 1000e18);
         assertEq(registry.getITPCollateralByChain(ITP_1, EXTERNAL), 0); // External not tracked
         assertEq(registry.getTotalCollateral(ITP_1), 1000e18);
     }
 
     function test_CEX_SellToExternal() public {
         // First have collateral on chain
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, 1000e18, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, 1000e18, TypesLib.TxType.BUY);
 
         // SELL: Assets going to CEX (external) from a chain
         // fromChain = actual chain, toChain = 0 (external)
-        _recordMove(ITP_1, ARBITRUM, EXTERNAL, 300e18, TypesLib.TxType.SELL);
+        _recordMove(ITP_1, SETTLEMENT, EXTERNAL, 300e18, TypesLib.TxType.SELL);
 
-        assertEq(registry.getITPCollateralByChain(ITP_1, ARBITRUM), 700e18);
+        assertEq(registry.getITPCollateralByChain(ITP_1, SETTLEMENT), 700e18);
         assertEq(registry.getTotalCollateral(ITP_1), 700e18);
     }
 
@@ -423,7 +423,7 @@ contract CollateralRegistryTest is TestHelper {
         uint256 initialNonce = registry.getNonce();
 
         // Record a move - this will use nonce and increment it
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         // Verify nonce incremented
         assertEq(registry.getNonce(), initialNonce + 1);
@@ -436,7 +436,7 @@ contract CollateralRegistryTest is TestHelper {
                 address(registry), // Contract address
                 ITP_1, // itpId
                 EXTERNAL, // fromChain
-                ARBITRUM, // toChain
+                SETTLEMENT, // toChain
                 AMOUNT, // amount
                 TypesLib.TxType.BUY, // txType
                 initialNonce // nonce at time of call
@@ -454,7 +454,7 @@ contract CollateralRegistryTest is TestHelper {
                 address(registry),
                 ITP_1,
                 EXTERNAL,
-                ARBITRUM,
+                SETTLEMENT,
                 AMOUNT,
                 TypesLib.TxType.BUY,
                 initialNonce
@@ -466,17 +466,17 @@ contract CollateralRegistryTest is TestHelper {
     /// @notice Verify nonce prevents replay with same parameters
     function test_NonceInMessageHash_PreventsReplay() public {
         uint256 nonce1 = registry.getNonce();
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         uint256 nonce2 = registry.getNonce();
-        _recordMove(ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY);
+        _recordMove(ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY);
 
         // Same parameters but different nonces = different message hashes
         bytes32 message1 = keccak256(
-            abi.encode(block.chainid, address(registry), ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, nonce1)
+            abi.encode(block.chainid, address(registry), ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY, nonce1)
         );
         bytes32 message2 = keccak256(
-            abi.encode(block.chainid, address(registry), ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, nonce2)
+            abi.encode(block.chainid, address(registry), ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY, nonce2)
         );
 
         assertTrue(message1 != message2, "Different nonces must produce different message hashes");
@@ -488,15 +488,15 @@ contract CollateralRegistryTest is TestHelper {
 
         // Message on chain 111222333 (L3)
         bytes32 messageL3 = keccak256(
-            abi.encode(111222333, address(registry), ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, nonce)
+            abi.encode(111222333, address(registry), ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY, nonce)
         );
 
-        // Same params but different chain ID (Arbitrum)
-        bytes32 messageArb = keccak256(
-            abi.encode(42161, address(registry), ITP_1, EXTERNAL, ARBITRUM, AMOUNT, TypesLib.TxType.BUY, nonce)
+        // Same params but different chain ID (Settlement)
+        bytes32 messageSettlement = keccak256(
+            abi.encode(42161, address(registry), ITP_1, EXTERNAL, SETTLEMENT, AMOUNT, TypesLib.TxType.BUY, nonce)
         );
 
-        assertTrue(messageL3 != messageArb, "Different chain IDs must produce different message hashes");
+        assertTrue(messageL3 != messageSettlement, "Different chain IDs must produce different message hashes");
     }
 
     // ============ HELPER FUNCTIONS ============

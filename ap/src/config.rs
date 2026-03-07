@@ -99,12 +99,12 @@ pub struct APConfig {
     /// When set, /nav fetches NAV from data-node instead of computing locally
     pub data_node_url: Option<String>,
 
-    /// Arbitrum RPC endpoint for on-chain settlement (default: http://localhost:8546)
-    /// Used by BitgetVaultClient when MockBitgetVault is on Arbitrum chain
-    pub arb_rpc_url: Option<String>,
+    /// Settlement chain RPC endpoint for on-chain settlement (default: http://localhost:8546)
+    /// Used by BitgetVaultClient when MockBitgetVault is on the settlement chain
+    pub settlement_rpc_url: Option<String>,
 
-    /// Arbitrum chain ID (default: 42161)
-    pub arb_chain_id: Option<u64>,
+    /// Settlement chain ID (default: 42161)
+    pub settlement_chain_id: Option<u64>,
 
     /// Exchange mode: mock, testnet, or mainnet. Supersedes mock_bitget and bitget_testnet flags.
     pub exchange_mode: Option<String>,
@@ -144,8 +144,8 @@ impl fmt::Debug for APConfig {
             .field("chain_id", &self.chain_id)
             .field("mock_usdt", &self.mock_usdt)
             .field("data_node_url", &self.data_node_url)
-            .field("arb_rpc_url", &self.arb_rpc_url)
-            .field("arb_chain_id", &self.arb_chain_id)
+            .field("settlement_rpc_url", &self.settlement_rpc_url)
+            .field("settlement_chain_id", &self.settlement_chain_id)
             .field("exchange_mode", &self.exchange_mode)
             .finish()
     }
@@ -216,10 +216,10 @@ impl APConfig {
             }),
             mock_usdt: std::env::var("AP_MOCK_USDT").ok(),
             data_node_url: std::env::var("AP_DATA_NODE_URL").ok(),
-            arb_rpc_url: std::env::var("AP_ARBITRUM_RPC_URL").ok(),
-            arb_chain_id: std::env::var("AP_ARBITRUM_CHAIN_ID").ok().and_then(|v| {
+            settlement_rpc_url: std::env::var("AP_SETTLEMENT_RPC_URL").ok(),
+            settlement_chain_id: std::env::var("AP_SETTLEMENT_CHAIN_ID").ok().and_then(|v| {
                 v.parse().ok().or_else(|| {
-                    warn!(value = %v, "Invalid AP_ARBITRUM_CHAIN_ID value, expected integer");
+                    warn!(value = %v, "Invalid AP_SETTLEMENT_CHAIN_ID value, expected integer");
                     None
                 })
             }),
@@ -283,11 +283,11 @@ impl APConfig {
         if other.data_node_url.is_some() {
             self.data_node_url = other.data_node_url.clone();
         }
-        if other.arb_rpc_url.is_some() {
-            self.arb_rpc_url = other.arb_rpc_url.clone();
+        if other.settlement_rpc_url.is_some() {
+            self.settlement_rpc_url = other.settlement_rpc_url.clone();
         }
-        if other.arb_chain_id.is_some() {
-            self.arb_chain_id = other.arb_chain_id;
+        if other.settlement_chain_id.is_some() {
+            self.settlement_chain_id = other.settlement_chain_id;
         }
         if other.exchange_mode.is_some() {
             self.exchange_mode = other.exchange_mode.clone();
@@ -441,21 +441,21 @@ impl APConfig {
         })
     }
 
-    /// Get the effective Arbitrum RPC URL.
+    /// Get the effective settlement chain RPC URL.
     ///
     /// Returns an error if not configured (no silent fallback to L3 RPC).
-    pub fn effective_arb_rpc_url(&self) -> Result<String, String> {
-        self.arb_rpc_url
+    pub fn effective_settlement_rpc_url(&self) -> Result<String, String> {
+        self.settlement_rpc_url
             .clone()
-            .ok_or_else(|| "AP_ARB_RPC_URL not configured".to_string())
+            .ok_or_else(|| "AP_SETTLEMENT_RPC_URL not configured".to_string())
     }
 
-    /// Get the effective Arbitrum chain ID.
+    /// Get the effective settlement chain ID.
     ///
     /// Returns an error if not configured (no silent fallback to L3 chain ID).
-    pub fn effective_arb_chain_id(&self) -> Result<u64, String> {
-        self.arb_chain_id
-            .ok_or_else(|| "AP_ARB_CHAIN_ID not configured".to_string())
+    pub fn effective_settlement_chain_id(&self) -> Result<u64, String> {
+        self.settlement_chain_id
+            .ok_or_else(|| "AP_SETTLEMENT_CHAIN_ID not configured".to_string())
     }
 
     /// Resolve the effective ExchangeMode using legacy flag compat.
@@ -539,8 +539,8 @@ impl ConfigBuilder {
             chain_id: None,              // Set via with_chain_id
             mock_usdt: None,             // Set via with_mock_usdt
             data_node_url: None,     // Set via with_data_node_url
-            arb_rpc_url: None,
-            arb_chain_id: None,
+            settlement_rpc_url: None,
+            settlement_chain_id: None,
             exchange_mode: None,     // Set via with_exchange_mode
         };
         self
@@ -582,15 +582,15 @@ impl ConfigBuilder {
         self
     }
 
-    /// Set arb_rpc_url CLI override
-    pub fn with_arb_rpc_url(mut self, url: Option<String>) -> Self {
-        self.cli_config.arb_rpc_url = url;
+    /// Set settlement_rpc_url CLI override
+    pub fn with_settlement_rpc_url(mut self, url: Option<String>) -> Self {
+        self.cli_config.settlement_rpc_url = url;
         self
     }
 
-    /// Set arb_chain_id CLI override
-    pub fn with_arb_chain_id(mut self, chain_id: Option<u64>) -> Self {
-        self.cli_config.arb_chain_id = chain_id;
+    /// Set settlement_chain_id CLI override
+    pub fn with_settlement_chain_id(mut self, chain_id: Option<u64>) -> Self {
+        self.cli_config.settlement_chain_id = chain_id;
         self
     }
 

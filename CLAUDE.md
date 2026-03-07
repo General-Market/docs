@@ -29,18 +29,18 @@ After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 | Network | Chain ID | RPC | Collateral |
 |---------|----------|-----|------------|
 | Index L3 (Orbit) | 111222333 | http://142.132.164.24/ | GM (18 dec) |
-| Local Arb (Anvil) | 421611337 | http://localhost:8546 | — |
+| Local Settlement (Anvil) | 421611337 | http://localhost:8546 | — |
 
 ## USDC Decimals by Chain
 
-**Critical: L3 and Arb use different USDC decimals. Never assume 6 everywhere.**
+**Critical: L3 and Settlement use different USDC decimals. Never assume 6 everywhere.**
 
 | Chain | USDC Decimals | Where |
 |-------|--------------|-------|
 | **L3 (Orbit)** | **18** | Vision balances, TVL, PnL, leaderboard, batch pools, VisionReserve |
-| **Arbitrum** | **6** | Arb USDC deposits, AP keeper balances, bridge custody |
+| **Settlement** | **6** | Settlement USDC deposits, AP keeper balances, bridge custody |
 
-When formatting amounts: check which chain the value comes from. Issuer APIs return L3 values (18 dec). Arb wallet reads return 6 dec.
+When formatting amounts: check which chain the value comes from. Issuer APIs return L3 values (18 dec). Settlement wallet reads return 6 dec.
 
 ## ITP Pricing Model (ETF)
 

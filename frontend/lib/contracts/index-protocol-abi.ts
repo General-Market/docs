@@ -99,15 +99,15 @@ export const BRIDGE_PROXY_ABI = [
     stateMutability: 'view',
     type: 'function',
   },
-  // Get Arbitrum bridged ITP address from orbit ITP ID
+  // Get Settlement bridged ITP address from orbit ITP ID
   {
     inputs: [{ name: 'orbitItpId', type: 'bytes32' }],
-    name: 'orbitToArbitrum',
+    name: 'orbitToSettlement',
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
-  // Get orbit ITP ID from Arbitrum bridged ITP address
+  // Get orbit ITP ID from Settlement bridged ITP address
   {
     inputs: [{ name: 'bridgedItp', type: 'address' }],
     name: 'getOrbitItpId',
@@ -226,9 +226,9 @@ export const BRIDGE_PROXY_ABI = [
   },
 ] as const
 
-// ArbBridgeCustody ABI - for buying ITPs from Arbitrum
-export const ARB_CUSTODY_ABI = [
-  // Buy ITP from Arbitrum (requires USDC approval first)
+// SettlementBridgeCustody ABI - for buying ITPs from Settlement
+export const SETTLEMENT_CUSTODY_ABI = [
+  // Buy ITP from Settlement (requires USDC approval first)
   {
     inputs: [
       { name: 'itpId', type: 'bytes32' },
@@ -237,7 +237,7 @@ export const ARB_CUSTODY_ABI = [
       { name: 'slippageTier', type: 'uint256' },
       { name: 'deadline', type: 'uint256' },
     ],
-    name: 'buyITPFromArbitrum',
+    name: 'buyITPFromSettlement',
     outputs: [{ name: 'orderId', type: 'uint256' }],
     stateMutability: 'nonpayable',
     type: 'function',

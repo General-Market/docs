@@ -17,7 +17,7 @@ use std::time::Duration;
 #[command(name = "curator")]
 #[command(author = "Index Team")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
-#[command(about = "Index Curator — Oracle BLS Collector (L3), Allocation Bot (Arb) & Health Monitor (dual-chain)")]
+#[command(about = "Index Curator — Oracle BLS Collector (L3), Allocation Bot (Settlement) & Health Monitor (dual-chain)")]
 pub struct CuratorArgs {
     // ========================================================================
     // Mode Selection
@@ -37,14 +37,14 @@ pub struct CuratorArgs {
     // ========================================================================
     // Common Args
     // ========================================================================
-    /// Chain RPC endpoint (L3 for oracle-collector mode, Arbitrum for allocation/health-monitor modes)
+    /// Chain RPC endpoint (L3 for oracle-collector mode, settlement chain for allocation/health-monitor modes)
     #[arg(long, default_value = "http://localhost:8545")]
     pub rpc_url: String,
 
-    /// Arbitrum RPC endpoint (alias for --rpc-url in allocation/health-monitor modes)
+    /// Settlement chain RPC endpoint (alias for --rpc-url in allocation/health-monitor modes)
     /// When set, overrides --rpc-url for allocation-mode and health-monitor-mode
     #[arg(long)]
-    pub arb_rpc_url: Option<String>,
+    pub settlement_rpc_url: Option<String>,
 
     /// Curator wallet private key (hex, without 0x prefix)
     #[arg(long)]
@@ -175,7 +175,7 @@ impl std::fmt::Debug for CuratorArgs {
             .field("health_monitor_mode", &self.health_monitor_mode)
             .field("unified_mode", &self.unified_mode)
             .field("rpc_url", &self.rpc_url)
-            .field("arb_rpc_url", &self.arb_rpc_url)
+            .field("settlement_rpc_url", &self.settlement_rpc_url)
             .field("private_key", &"[REDACTED]")
             .field("log_level", &self.log_level)
             .field("issuer_urls", &self.issuer_urls)
@@ -324,8 +324,8 @@ impl AllocationConfig {
             HashMap::new()
         };
 
-        // Prefer --arb-rpc-url for allocation mode (Morpho is on Arbitrum)
-        let rpc_url = args.arb_rpc_url.unwrap_or(args.rpc_url);
+        // Prefer --settlement-rpc-url for allocation mode (Morpho is on settlement chain)
+        let rpc_url = args.settlement_rpc_url.unwrap_or(args.rpc_url);
 
         Ok(Self {
             morpho_address,
@@ -422,8 +422,8 @@ impl HealthMonitorConfig {
         let itp_addresses = parse_addresses(&args.itp_addresses)?;
         let market_ids = parse_market_ids(&args.market_ids)?;
 
-        // Prefer --arb-rpc-url for health monitor mode (Morpho/vault on Arbitrum)
-        let rpc_url = args.arb_rpc_url.unwrap_or(args.rpc_url);
+        // Prefer --settlement-rpc-url for health monitor mode (Morpho/vault on settlement chain)
+        let rpc_url = args.settlement_rpc_url.unwrap_or(args.rpc_url);
 
         Ok(Self {
             rpc_url,

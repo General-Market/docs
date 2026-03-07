@@ -252,7 +252,7 @@ library ErrorsLib {
     /// @param destChainId The invalid chain ID
     error E053_InvalidDestChainId(uint256 destChainId);
 
-    // ============ ARB BRIDGE CUSTODY ERRORS (Story 2.10) ============
+    // ============ SETTLEMENT BRIDGE CUSTODY ERRORS (Story 2.10) ============
 
     /// @notice E054: Bridge already completed for this source chain + nonce
     /// @param sourceChainId Source chain ID
@@ -400,7 +400,7 @@ library ErrorsLib {
     /// @param minimum The minimum required (1000 = 0.001 USDC)
     error E07F_UsdcAmountTooSmall(uint256 amount, uint256 minimum);
 
-    /// @notice E080: Invalid USDC decimals (expected 18 for L3, 6 for Arbitrum)
+    /// @notice E080: Invalid USDC decimals (expected 18 for L3, 6 for Settlement)
     /// @param actual The actual decimals
     /// @param expected The expected decimals
     error E080_InvalidUsdcDecimals(uint8 actual, uint8 expected);

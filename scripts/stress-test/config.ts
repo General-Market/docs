@@ -14,16 +14,16 @@ import { fileURLToPath } from 'url';
 // ── Chain configuration ──────────────────────────────────────────────
 
 export const L3_RPC = 'http://localhost:8545';
-export const ARB_RPC = 'http://localhost:8546';
+export const SETTLEMENT_RPC = 'http://localhost:8546';
 export const L3_CHAIN_ID = 111222333;
-export const ARB_CHAIN_ID = 421611337;
+export const SETTLEMENT_CHAIN_ID = 421611337;
 
 // ── Contract addresses (from start.sh / deploy scripts) ─────────────
 
 export const L3_INDEX = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
-export const ARB_BRIDGE_PROXY = '0x59b670e9fA9D0A427751Af201D676719a970857b';
-export const ARB_USDC = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
-export const ARB_BRIDGED_ITP = '0x8D308d3D699A85472d874DBDBbffd16bc9fBD856';
+export const SETTLEMENT_BRIDGE_PROXY = '0x59b670e9fA9D0A427751Af201D676719a970857b';
+export const SETTLEMENT_USDC = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+export const SETTLEMENT_BRIDGED_ITP = '0x8D308d3D699A85472d874DBDBbffd16bc9fBD856';
 
 // ── Anvil accounts ──────────────────────────────────────────────────
 
@@ -135,7 +135,7 @@ export interface MorphoConfig {
   morpho: string;
   mockOracle: string;
   adaptiveIrm: string;
-  loanToken: string;       // ARB_USDC
+  loanToken: string;       // SETTLEMENT_USDC
   collateralToken: string;  // BridgedITP
   lltv: bigint;
   marketId: string;
@@ -152,8 +152,8 @@ export function loadMorphoConfig(): MorphoConfig | null {
       morpho: data.contracts?.MORPHO ?? MORPHO_FALLBACK.MORPHO,
       mockOracle: data.contracts?.MOCK_ORACLE ?? MORPHO_FALLBACK.MOCK_ORACLE,
       adaptiveIrm: data.contracts?.ADAPTIVE_IRM ?? MORPHO_FALLBACK.ADAPTIVE_IRM,
-      loanToken: data.marketParams?.loanToken ?? ARB_USDC,
-      collateralToken: data.marketParams?.collateralToken ?? ARB_BRIDGED_ITP,
+      loanToken: data.marketParams?.loanToken ?? SETTLEMENT_USDC,
+      collateralToken: data.marketParams?.collateralToken ?? SETTLEMENT_BRIDGED_ITP,
       lltv: BigInt(data.marketParams?.lltv ?? MORPHO_FALLBACK.LLTV),
       marketId: data.contracts?.MARKET_ID ?? '',
     };

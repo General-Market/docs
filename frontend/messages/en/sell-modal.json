@@ -12,7 +12,7 @@
   "computing_price": "Computing price...",
   "set_min_price": "Set min price",
   "no_limit": "0 (no limit)",
-  "usdc_balance_label": "Your USDC Balance (Arbitrum)",
+  "usdc_balance_label": "Your USDC Balance (Settlement)",
   "sell_more": "Sell More",
   "estimated_pnl": {
     "title": "Estimated P&L",
@@ -43,7 +43,7 @@
     "batch": "Batching order...",
     "fill": "Executing trades...",
     "record_collateral": "Recording collateral...",
-    "bridge_to_arb": "Bridging USDC to Arbitrum...",
+    "bridge_to_settlement": "Bridging USDC to Settlement...",
     "complete_sell": "Completing sell order...",
     "usdc_received": "USDC received!"
   },

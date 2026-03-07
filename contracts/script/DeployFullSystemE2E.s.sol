@@ -12,7 +12,7 @@ import "../src/core/Investment.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/registry/CollateralRegistry.sol";
 import "../src/custody/L3BridgeCustody.sol";
-import "../src/custody/ArbBridgeCustody.sol";
+import "../src/custody/SettlementBridgeCustody.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -24,13 +24,13 @@ import "./helpers/DeployBLSHelper.sol";
 ///
 /// ## Decimal Handling (Story 7-6b)
 /// - L3_WUSDC: 18 decimals (internal protocol standard)
-/// - ARB_WUSDC: 6 decimals (real USDC on Arbitrum)
+/// - SETTLEMENT_WUSDC: 6 decimals (real USDC on Settlement)
 /// - Protocol converts at boundaries: 6→18 on entry, 18→6 on exit
 contract DeployFullSystemE2E is DeployBLSHelper {
     // ============ CONSTANTS ============
 
     uint256 public constant CHAIN_ID = 111222333;
-    uint256 public constant ARB_CHAIN_ID = 421611337;
+    uint256 public constant SETTLEMENT_CHAIN_ID = 421611337;
 
     // L3 amounts use 18 decimals (internal protocol standard)
     uint256 public constant VAULT_INITIAL_BALANCE_18DEC = 1_000_000 * 1e18;
@@ -38,7 +38,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     uint256 public constant AP_INITIAL_BALANCE_18DEC = 500_000 * 1e18;
     uint256 public constant USER_INITIAL_BALANCE_18DEC = 50_000 * 1e18;
 
-    // Arb amounts use 6 decimals (real USDC)
+    // Settlement amounts use 6 decimals (real USDC)
     uint256 public constant VAULT_INITIAL_BALANCE_6DEC = 1_000_000 * 1e6;
     uint256 public constant CUSTODY_INITIAL_BALANCE_6DEC = 100_000 * 1e6;
     uint256 public constant USER_INITIAL_BALANCE_6DEC = 50_000 * 1e6;
@@ -52,14 +52,14 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     // ============ DEPLOYED ADDRESSES ============
 
     address public l3Wusdc;
-    address public arbWusdc;
+    address public settlementUsdc;
     address public mockUsdt;
     address public governance;
     address public indexProxy;
     address public issuerRegistry;
     address public collateralRegistry;
     address public l3BridgeCustodyProxy;
-    address public arbBridgeCustodyProxy;
+    address public settlementBridgeCustodyProxy;
     address public blsCustodyProxy;
     address public mockBitgetVault;
     address public bridgeProxyAddr;
@@ -111,7 +111,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _getDeployerKey() internal view returns (uint256) {
         uint256 DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        if (block.chainid == CHAIN_ID || block.chainid == ARB_CHAIN_ID) {
+        if (block.chainid == CHAIN_ID || block.chainid == SETTLEMENT_CHAIN_ID) {
             return vm.envOr("PRIVATE_KEY", DEFAULT_KEY);
         }
         uint256 key = vm.envUint("PRIVATE_KEY");
@@ -134,12 +134,12 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("Phase 1: Deploy Tokens");
         // Story 7-6b: L3 USDC uses 18 decimals (internal protocol standard)
         l3Wusdc = address(new MockERC20("L3 Wrapped USDC", "L3_WUSDC", 18));
-        // Story 7-6b: Arb USDC uses 6 decimals (real USDC on Arbitrum/mainnet)
-        arbWusdc = address(new MockERC20("Arbitrum USDC", "ARB_USDC", 6));
+        // Story 7-6b: Settlement USDC uses 6 decimals (real USDC on Settlement/mainnet)
+        settlementUsdc = address(new MockERC20("Settlement USDC", "SETTLEMENT_USDC", 6));
         // MockUSDT for USDT-pair settlement (18 decimals on L3, same as L3_WUSDC)
         mockUsdt = address(new MockERC20("Mock USDT", "MOCK_USDT", 18));
         console.log("  L3_WUSDC (18 dec):", l3Wusdc);
-        console.log("  ARB_USDC (6 dec):", arbWusdc);
+        console.log("  SETTLEMENT_USDC (6 dec):", settlementUsdc);
         console.log("  MOCK_USDT (18 dec):", mockUsdt);
     }
 
@@ -172,11 +172,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         bytes memory l3Init = abi.encodeWithSelector(L3BridgeCustody.initialize.selector, issuerRegistry, l3Wusdc);
         l3BridgeCustodyProxy = address(new ERC1967Proxy(l3Impl, l3Init));
 
-        // ArbBridgeCustody (with indexContract for cross-chain buy)
+        // SettlementBridgeCustody (with indexContract for cross-chain buy)
         // bridgeProxyAddr set during initialize to avoid BLS-gated setBridgeProxy call
-        address arbImpl = address(new ArbBridgeCustody());
-        bytes memory arbInit = abi.encodeWithSelector(ArbBridgeCustody.initialize.selector, issuerRegistry, arbWusdc, indexProxy, bridgeProxyAddr);
-        arbBridgeCustodyProxy = address(new ERC1967Proxy(arbImpl, arbInit));
+        address settlementImpl = address(new SettlementBridgeCustody());
+        bytes memory settlementInit = abi.encodeWithSelector(SettlementBridgeCustody.initialize.selector, issuerRegistry, settlementUsdc, indexProxy, bridgeProxyAddr);
+        settlementBridgeCustodyProxy = address(new ERC1967Proxy(settlementImpl, settlementInit));
 
         // BLSCustody
         address blsImpl = address(new BLSCustody());
@@ -184,7 +184,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         blsCustodyProxy = address(new ERC1967Proxy(blsImpl, blsInit));
 
         console.log("  L3BridgeCustody:", l3BridgeCustodyProxy);
-        console.log("  ArbBridgeCustody:", arbBridgeCustodyProxy);
+        console.log("  SettlementBridgeCustody:", settlementBridgeCustodyProxy);
         console.log("  BLSCustody:", blsCustodyProxy);
     }
 
@@ -231,17 +231,17 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("  Index wired to IssuerRegistry");
         Investment(indexProxy).setAuthorizedBridge(bridgeProxyAddr);
         console.log("  Index authorized bridge set to BridgeProxy");
-        // BridgeProxy set on ArbBridgeCustody during initialize() (avoids BLS-gated setBridgeProxy)
-        console.log("  ArbBridgeCustody wired to BridgeProxy (via initialize)");
-        // Vault approves ArbBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
-        MockBitgetVault(mockBitgetVault).approveSpender(arbWusdc, arbBridgeCustodyProxy, type(uint256).max);
-        console.log("  MockBitgetVault: approved ArbBridgeCustody for ARB_USDC spending");
+        // BridgeProxy set on SettlementBridgeCustody during initialize() (avoids BLS-gated setBridgeProxy)
+        console.log("  SettlementBridgeCustody wired to BridgeProxy (via initialize)");
+        // Vault approves SettlementBridgeCustody for USDC spending (for completeSellOrder vault→user pull)
+        MockBitgetVault(mockBitgetVault).approveSpender(settlementUsdc, settlementBridgeCustodyProxy, type(uint256).max);
+        console.log("  MockBitgetVault: approved SettlementBridgeCustody for SETTLEMENT_USDC spending");
         // Authorize all BLS-verifying contracts for incrementMissedCounts
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
         IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(arbBridgeCustodyProxy, true);
+        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
         console.log("  IssuerRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
     }
 
@@ -265,33 +265,33 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("Phase 9: Fund Contracts");
 
         // Mint L3 tokens (18 decimals) to admin for distribution
-        // +VAULT_INITIAL_BALANCE_18DEC for MockBitgetVault (AP settlement uses L3_WUSDC, not ARB_USDC)
+        // +VAULT_INITIAL_BALANCE_18DEC for MockBitgetVault (AP settlement uses L3_WUSDC, not SETTLEMENT_USDC)
         MockERC20(l3Wusdc).mint(admin, CUSTODY_INITIAL_BALANCE_18DEC * 2 + VAULT_INITIAL_BALANCE_18DEC * 2);
 
-        // Mint Arb USDC (6 decimals) to admin for distribution
+        // Mint Settlement USDC (6 decimals) to admin for distribution
         // Story 7-6b: Use 6-decimal amounts for real USDC
         // +VAULT_INITIAL_BALANCE_6DEC for MockBitgetVault (AP quote token for on-chain settlement)
-        MockERC20(arbWusdc).mint(admin, VAULT_INITIAL_BALANCE_6DEC * 2 + CUSTODY_INITIAL_BALANCE_6DEC * 2);
+        MockERC20(settlementUsdc).mint(admin, VAULT_INITIAL_BALANCE_6DEC * 2 + CUSTODY_INITIAL_BALANCE_6DEC * 2);
 
         // Mint MockUSDT (18 decimals) to admin for vault funding (USDT-pair swapStable)
         MockERC20(mockUsdt).mint(admin, VAULT_INITIAL_BALANCE_18DEC);
 
-        // Fund L3BridgeCustody with L3_WUSDC (18 decimals, for bridge L3→Arb in Phase 2)
+        // Fund L3BridgeCustody with L3_WUSDC (18 decimals, for bridge L3→Settlement in Phase 2)
         MockERC20(l3Wusdc).transfer(l3BridgeCustodyProxy, CUSTODY_INITIAL_BALANCE_18DEC);
         console.log("  L3BridgeCustody funded with L3_WUSDC (18 dec)");
 
-        // Fund ArbBridgeCustody with ARB_USDC (6 decimals, for cross-chain buy in Phase 4)
-        // Story 7-6b: Use 6-decimal amounts for Arbitrum USDC
-        MockERC20(arbWusdc).transfer(arbBridgeCustodyProxy, CUSTODY_INITIAL_BALANCE_6DEC);
-        console.log("  ArbBridgeCustody funded with ARB_USDC (6 dec)");
+        // Fund SettlementBridgeCustody with SETTLEMENT_USDC (6 decimals, for cross-chain buy in Phase 4)
+        // Story 7-6b: Use 6-decimal amounts for Settlement USDC
+        MockERC20(settlementUsdc).transfer(settlementBridgeCustodyProxy, CUSTODY_INITIAL_BALANCE_6DEC);
+        console.log("  SettlementBridgeCustody funded with SETTLEMENT_USDC (6 dec)");
 
         // Fund MockBitgetVault with L3_WUSDC (18 decimals — AP settlement uses L3_WUSDC)
         _fundVault(l3Wusdc);
         console.log("  MockBitgetVault funded with L3_WUSDC (18 dec)");
 
-        // Fund MockBitgetVault with ARB_USDC (6 decimals — AP quote token for on-chain settlement)
-        _fundVaultArb(arbWusdc, VAULT_INITIAL_BALANCE_6DEC);
-        console.log("  MockBitgetVault funded with ARB_USDC (6 dec)");
+        // Fund MockBitgetVault with SETTLEMENT_USDC (6 decimals — AP quote token for on-chain settlement)
+        _fundVaultSettlement(settlementUsdc, VAULT_INITIAL_BALANCE_6DEC);
+        console.log("  MockBitgetVault funded with SETTLEMENT_USDC (6 dec)");
 
         // Fund MockBitgetVault with MockUSDT (18 decimals — for USDT-pair swapStable)
         _fundVault(mockUsdt);
@@ -303,13 +303,13 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
         // Fund Anvil user (Account 5)
         MockERC20(l3Wusdc).mint(user, USER_INITIAL_BALANCE_18DEC);
-        MockERC20(arbWusdc).mint(user, USER_INITIAL_BALANCE_6DEC);
-        console.log("  Anvil user funded (L3_WUSDC 18dec + ARB_USDC 6dec)");
+        MockERC20(settlementUsdc).mint(user, USER_INITIAL_BALANCE_6DEC);
+        console.log("  Anvil user funded (L3_WUSDC 18dec + SETTLEMENT_USDC 6dec)");
 
         // Fund test user (MetaMask wallet)
         MockERC20(l3Wusdc).mint(TEST_USER, USER_INITIAL_BALANCE_18DEC);
-        MockERC20(arbWusdc).mint(TEST_USER, USER_INITIAL_BALANCE_6DEC);
-        console.log("  Test user 0xC0D3..3850 funded (L3_WUSDC 18dec + ARB_USDC 6dec)");
+        MockERC20(settlementUsdc).mint(TEST_USER, USER_INITIAL_BALANCE_6DEC);
+        console.log("  Test user 0xC0D3..3850 funded (L3_WUSDC 18dec + SETTLEMENT_USDC 6dec)");
 
         // Fund issuer and AP accounts with gas (GM/ETH) on L3
         // These accounts need gas to submit transactions
@@ -328,8 +328,8 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     }
 
     /// @notice Fund vault with a specific amount (for tokens with non-18 decimals)
-    /// @dev Story 7-6b: Use this for Arb USDC (6 decimals)
-    function _fundVaultArb(address token, uint256 amount) internal {
+    /// @dev Story 7-6b: Use this for Settlement USDC (6 decimals)
+    function _fundVaultSettlement(address token, uint256 amount) internal {
         MockERC20(token).approve(mockBitgetVault, amount);
         MockBitgetVault(mockBitgetVault).fundVault(token, amount);
     }
@@ -376,7 +376,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         );
         string memory p2 = string.concat(
             '    "L3BridgeCustody": "', vm.toString(l3BridgeCustodyProxy), '",\n',
-            '    "ArbBridgeCustody": "', vm.toString(arbBridgeCustodyProxy), '",\n',
+            '    "SettlementBridgeCustody": "', vm.toString(settlementBridgeCustodyProxy), '",\n',
             '    "BLSCustody": "', vm.toString(blsCustodyProxy), '",\n',
             '    "MockBitgetVault": "', vm.toString(mockBitgetVault), '",\n',
             '    "BridgeProxy": "', vm.toString(bridgeProxyAddr), '",\n',
@@ -385,8 +385,8 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         string memory p3 = string.concat(
             '    "L3_WUSDC": "', vm.toString(l3Wusdc), '",\n',
             '    "L3_WUSDC_DECIMALS": "18",\n',
-            '    "ARB_USDC": "', vm.toString(arbWusdc), '",\n',
-            '    "ARB_USDC_DECIMALS": "6",\n',
+            '    "SETTLEMENT_USDC": "', vm.toString(settlementUsdc), '",\n',
+            '    "SETTLEMENT_USDC_DECIMALS": "6",\n',
             '    "MOCK_USDT": "', vm.toString(mockUsdt), '",\n',
             '    "USDC": "', vm.toString(l3Wusdc), '"\n'
         );
@@ -416,11 +416,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("");
         console.log("DECIMAL CONFIGURATION (Story 7-6b):");
         console.log("  L3_WUSDC: 18 decimals (internal protocol)");
-        console.log("  ARB_USDC: 6 decimals (real USDC)");
+        console.log("  SETTLEMENT_USDC: 6 decimals (real USDC)");
         console.log("");
         console.log("Next steps (in E2E script):");
         console.log("  1. User approves Index for L3_WUSDC spending");
-        console.log("  2. User approves ArbBridgeCustody for ARB_USDC spending");
+        console.log("  2. User approves SettlementBridgeCustody for SETTLEMENT_USDC spending");
         console.log("  3. AP approves MockBitgetVault for token spending");
         console.log("===========================================");
     }

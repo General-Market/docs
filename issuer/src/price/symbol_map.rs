@@ -70,7 +70,7 @@ impl SymbolMap {
         self.map.keys()
     }
 
-    /// Create default symbol map with common Arbitrum tokens
+    /// Create default symbol map with common Settlement chain tokens
     ///
     /// Includes mappings for:
     /// - WBTC → BTCUSDT
@@ -78,19 +78,19 @@ impl SymbolMap {
     /// - USDC → USDCUSDT
     /// - ARB → ARBUSDT
     /// - LINK → LINKUSDT
-    pub fn default_arbitrum() -> Self {
+    pub fn default_settlement() -> Self {
         Self::new()
-            // WBTC on Arbitrum
+            // WBTC on Settlement chain
             .add_hex("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f", "BTCUSDT")
-            // WETH on Arbitrum
+            // WETH on Settlement chain
             .add_hex("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", "ETHUSDT")
-            // USDC on Arbitrum (native)
+            // USDC on Settlement chain (native)
             .add_hex("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "USDCUSDT")
-            // USDC.e (bridged) on Arbitrum
+            // USDC.e (bridged) on Settlement chain
             .add_hex("0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", "USDCUSDT")
             // ARB token
             .add_hex("0x912CE59144191C1204E64559FE8253a0e49E6548", "ARBUSDT")
-            // LINK on Arbitrum
+            // LINK on Settlement chain
             .add_hex("0xf97f4df75117a78c1A5a0DBb814Af92458539FB4", "LINKUSDT")
     }
 
@@ -251,8 +251,8 @@ mod tests {
     }
 
     #[test]
-    fn test_symbol_map_default_arbitrum() {
-        let map = SymbolMap::default_arbitrum();
+    fn test_symbol_map_default_settlement() {
+        let map = SymbolMap::default_settlement();
 
         // Should have 6 mappings (WBTC, WETH, USDC native, USDC.e, ARB, LINK)
         assert_eq!(map.len(), 6);

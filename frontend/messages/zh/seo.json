@@ -3,7 +3,7 @@
     "title": "General Market",
     "title_template": "%s | General Market",
     "description": "面向链上指数产品的机构级协议。",
-    "keywords": "指数基金, ETF, 机构级, 链上, 加密货币交易, DeFi, 自主资本市场, Arbitrum Orbit, L3"
+    "keywords": "指数基金, ETF, 机构级, 链上, 加密货币交易, DeFi, 自主资本市场, Orbit, L3"
   },
   "og": {
     "site_name": "General Market",
@@ -18,7 +18,7 @@
     "h1": "General Market -- 链上指数产品",
     "markets": {
       "title": "指数跟踪产品 (ITP)",
-      "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和 Arbitrum Orbit L3 链上结算。"
+      "description": "探索去中心化指数产品。每个 ITP 跟踪一篮子加密资产，具有实时 NAV (净资产价值) 定价和 Orbit L3 链上结算。"
     },
     "portfolio": {
       "title": "投资组合追踪",
@@ -70,7 +70,7 @@
     },
     "about": {
       "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
     },
     "vision": {
       "title": "愿景",

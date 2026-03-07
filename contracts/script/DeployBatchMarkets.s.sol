@@ -17,7 +17,7 @@ import {Morpho} from "@morpho-blue/Morpho.sol";
 ///        MORPHO                — Morpho Blue core address
 ///        CURATOR_RATE_IRM      — CuratorRateIRM address (already deployed + enabled)
 ///        METAMORPHO_VAULT      — MetaMorpho vault address
-///        ARB_USDC              — Loan token (USDC)
+///        SETTLEMENT_USDC              — Loan token (USDC)
 ///        MIRROR_REGISTRY       — MirrorIssuerRegistry for oracle constructor
 ///        BATCH_MARKET_COUNT    — Number of ITP markets to create (1-indexed)
 ///        ITP_<i>_ADDRESS       — ITP token address (i = 0..count-1)
@@ -46,7 +46,7 @@ contract DeployBatchMarkets is Script {
         address morphoAddr = vm.envAddress("MORPHO");
         address curatorIrmAddr = vm.envAddress("CURATOR_RATE_IRM");
         address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
-        address arbUSDC = vm.envAddress("ARB_USDC");
+        address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address mirrorRegistry = vm.envAddress("MIRROR_REGISTRY");
         uint256 marketCount = vm.envUint("BATCH_MARKET_COUNT");
 
@@ -57,7 +57,7 @@ contract DeployBatchMarkets is Script {
         console.log("Morpho:", morphoAddr);
         console.log("CuratorRateIRM:", curatorIrmAddr);
         console.log("MetaMorpho Vault:", vaultAddr);
-        console.log("Loan Token (USDC):", arbUSDC);
+        console.log("Loan Token (USDC):", settlementUSDC);
         console.log("Mirror Registry:", mirrorRegistry);
         console.log("Market count:", marketCount);
 
@@ -90,7 +90,7 @@ contract DeployBatchMarkets is Script {
 
             // 2. Create Morpho market with CuratorRateIRM
             MarketParams memory params = MarketParams({
-                loanToken: arbUSDC,
+                loanToken: settlementUSDC,
                 collateralToken: itpAddress,
                 oracle: address(oracle),
                 irm: curatorIrmAddr,
@@ -127,7 +127,7 @@ contract DeployBatchMarkets is Script {
 
         // Write batch deployment JSON
         _writeDeploymentJson(
-            deployer, morphoAddr, curatorIrmAddr, vaultAddr, arbUSDC, mirrorRegistry, deployments
+            deployer, morphoAddr, curatorIrmAddr, vaultAddr, settlementUSDC, mirrorRegistry, deployments
         );
     }
 
@@ -136,7 +136,7 @@ contract DeployBatchMarkets is Script {
         address morphoAddr,
         address curatorIrmAddr,
         address vaultAddr,
-        address arbUSDC,
+        address settlementUSDC,
         address mirrorRegistry,
         MarketDeployment[] memory deployments
     ) internal {
@@ -149,7 +149,7 @@ contract DeployBatchMarkets is Script {
             '    "MORPHO": "', vm.toString(morphoAddr),
             '",\n    "CURATOR_RATE_IRM": "', vm.toString(curatorIrmAddr),
             '",\n    "METAMORPHO_VAULT": "', vm.toString(vaultAddr),
-            '",\n    "ARB_USDC": "', vm.toString(arbUSDC),
+            '",\n    "SETTLEMENT_USDC": "', vm.toString(settlementUSDC),
             '",\n    "MIRROR_REGISTRY": "', vm.toString(mirrorRegistry),
             '"\n  },\n  "markets": [\n'
         );
@@ -163,7 +163,7 @@ contract DeployBatchMarkets is Script {
                 '",\n      "oracle": "', vm.toString(d.oracle),
                 '",\n      "marketId": "', vm.toString(Id.unwrap(d.marketId)),
                 '",\n      "lltv": "', vm.toString(d.lltv),
-                '",\n      "loanToken": "', vm.toString(arbUSDC),
+                '",\n      "loanToken": "', vm.toString(settlementUSDC),
                 '",\n      "irm": "', vm.toString(curatorIrmAddr),
                 '"\n    }'
             );

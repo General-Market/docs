@@ -130,13 +130,13 @@ struct Args {
     #[arg(long)]
     data_node_url: Option<String>,
 
-    /// Arbitrum RPC endpoint for on-chain settlement (MockBitgetVault on Arbitrum)
+    /// Settlement chain RPC endpoint for on-chain settlement (MockBitgetVault on settlement chain)
     #[arg(long)]
-    arb_rpc: Option<String>,
+    settlement_rpc: Option<String>,
 
-    /// Arbitrum chain ID (default: 42161)
+    /// Settlement chain ID (default: 42161)
     #[arg(long)]
-    arb_chain_id: Option<u64>,
+    settlement_chain_id: Option<u64>,
 }
 
 fn setup_logging(config: &APConfig) -> Result<(), Box<dyn std::error::Error>> {
@@ -651,22 +651,22 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             let deployment = DeploymentConfig::from_file(&deployment_path)
                 .map_err(|e| format!("Failed to load deployment config for on-chain settlement: {}", e))?;
 
-            // Quote token is ARB_USDC (6 decimals) — Arbitrum USDC for on-chain settlement
-            let quote_token = deployment.token_address("ARB_USDC")
+            // Quote token is SETTLEMENT_USDC (6 decimals) — Settlement chain USDC for on-chain settlement
+            let quote_token = deployment.token_address("SETTLEMENT_USDC")
                 .or_else(|_| deployment.token_address("L3_WUSDC"))
-                .map_err(|e| format!("Deployment missing ARB_USDC/L3_WUSDC token address: {}", e))?;
+                .map_err(|e| format!("Deployment missing SETTLEMENT_USDC/L3_WUSDC token address: {}", e))?;
 
-            // Use Arbitrum RPC for MockBitgetVault (vault is on Arbitrum chain)
-            let arb_rpc = config.effective_arb_rpc_url()
-                .map_err(|e| format!("On-chain settlement requires Arbitrum RPC: {}", e))?;
-            let arb_chain_id = config.effective_arb_chain_id()
-                .map_err(|e| format!("On-chain settlement requires Arbitrum chain ID: {}", e))?;
+            // Use settlement chain RPC for MockBitgetVault (vault is on settlement chain)
+            let settlement_rpc = config.effective_settlement_rpc_url()
+                .map_err(|e| format!("On-chain settlement requires settlement RPC: {}", e))?;
+            let settlement_chain_id = config.effective_settlement_chain_id()
+                .map_err(|e| format!("On-chain settlement requires settlement chain ID: {}", e))?;
 
             let vault_client = BitgetVaultClient::new(
-                &arb_rpc,
+                &settlement_rpc,
                 private_key,
                 vault_address,
-                arb_chain_id,
+                settlement_chain_id,
             )
             .map_err(|e| format!("Failed to create BitgetVaultClient: {}", e))?;
 
@@ -674,13 +674,13 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
             vault_client.initialize_nonce().await
                 .map_err(|e| format!("Failed to initialize vault nonce: {}", e))?;
 
-            let arb_rpc_display = arb_rpc.clone();
+            let settlement_rpc_display = settlement_rpc.clone();
             info!(
                 vault_address = ?ethers::types::Address::from(vault_address),
                 quote_token = ?quote_token,
-                arb_rpc = %arb_rpc_display,
+                settlement_rpc = %settlement_rpc_display,
                 data_node = ?config.data_node_url,
-                "On-chain settlement enabled on Arbitrum (issuer-driven AssetTradeRequest events)"
+                "On-chain settlement enabled (issuer-driven AssetTradeRequest events)"
             );
 
             // Resolve MockUSDT address from config (Story 7.18)
@@ -1260,8 +1260,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_chain_id(args.chain_id)
         .with_mock_usdt(args.mock_usdt.clone())
         .with_data_node_url(args.data_node_url.clone())
-        .with_arb_rpc_url(args.arb_rpc)
-        .with_arb_chain_id(args.arb_chain_id)
+        .with_settlement_rpc_url(args.settlement_rpc)
+        .with_settlement_chain_id(args.settlement_chain_id)
         .with_exchange_mode(args.exchange_mode)
         .build()
         .map_err(|e| {

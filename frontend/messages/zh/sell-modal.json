@@ -12,7 +12,7 @@
   "computing_price": "计算价格中...",
   "set_min_price": "设置最低价格",
   "no_limit": "0 (不限价)",
-  "usdc_balance_label": "您的 USDC 余额 (Arbitrum)",
+  "usdc_balance_label": "您的 USDC 余额 (Settlement)",
   "sell_more": "继续卖出",
   "estimated_pnl": {
     "title": "预估盈亏",
@@ -43,7 +43,7 @@
     "batch": "批量处理订单中...",
     "fill": "执行交易中...",
     "record_collateral": "记录抵押品中...",
-    "bridge_to_arb": "将 USDC 跨链至 Arbitrum...",
+    "bridge_to_settlement": "将 USDC 跨链至 Settlement...",
     "complete_sell": "完成卖出订单中...",
     "usdc_received": "USDC 已到账!"
   },

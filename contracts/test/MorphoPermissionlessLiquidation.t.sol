@@ -343,7 +343,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
         // Step 5: Simulate ITP sell proceeds
         // NOTE: In production, liquidator would sell ITP via Index contract's sell order flow,
-        // which is a cross-chain operation (Arb→L3→Arb) requiring issuer consensus.
+        // which is a cross-chain operation (Settlement→L3→Settlement) requiring issuer consensus.
         // For this Foundry test, we simulate the USDC proceeds by minting equivalent value.
         // The key assertion is that the liquidator ends profitable, proving the economic model works.
         uint256 usdcProceeds = seized * dropPrice / 1e36;

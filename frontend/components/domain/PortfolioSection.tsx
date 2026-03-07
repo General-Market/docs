@@ -198,7 +198,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       timestamp: o.timestamp,
     }))
 
-  // Merge pending Arb orders from localStorage (not yet relayed to L3)
+  // Merge pending Settlement orders from localStorage (not yet relayed to L3)
   const orders = useMemo(() => {
     try {
       const stored: any[] = JSON.parse(localStorage.getItem('index-pending-orders') || '[]')
@@ -376,7 +376,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               <div className="flex items-center gap-2">
                 {orders.filter(o => o.status < 2).map((o, i) => (
                   <span key={`${o.orderId}-${o.timestamp}-${i}`} className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[o.status] || 'text-orange-600 bg-orange-100'}`}>
-                    {o.orderId > 0 ? `#${o.orderId}` : 'Arb'} {o.side === 0 ? t('side.buy') : t('side.sell')} · {STATUS_LABELS[o.status] || 'Relaying'}
+                    {o.orderId > 0 ? `#${o.orderId}` : 'Settlement'} {o.side === 0 ? t('side.buy') : t('side.sell')} · {STATUS_LABELS[o.status] || 'Relaying'}
                   </span>
                 ))}
               </div>

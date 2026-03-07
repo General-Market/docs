@@ -96,7 +96,7 @@ load_addresses() {
     ISSUER_REGISTRY=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
     INVESTMENT=$(jq -r '.contracts.Index // .contracts.Investment // empty' "$DEPLOYMENT_FILE")
     BLS_CUSTODY=$(jq -r '.contracts.BLSCustody // empty' "$DEPLOYMENT_FILE")
-    ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody // empty' "$DEPLOYMENT_FILE")
+    SETTLEMENT_CUSTODY=$(jq -r '.contracts.SettlementBridgeCustody // empty' "$DEPLOYMENT_FILE")
     L3_CUSTODY=$(jq -r '.contracts.L3BridgeCustody // empty' "$DEPLOYMENT_FILE")
     BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy // empty' "$DEPLOYMENT_FILE")
     FEE_REGISTRY=$(jq -r '.contracts.FeeRegistry // empty' "$DEPLOYMENT_FILE")
@@ -105,7 +105,7 @@ load_addresses() {
     echo "  IssuerRegistry:   $ISSUER_REGISTRY"
     echo "  Investment/Index:  $INVESTMENT"
     echo "  BLSCustody:        $BLS_CUSTODY"
-    echo "  ArbBridgeCustody:  $ARB_CUSTODY"
+    echo "  SettlementBridgeCustody:  $SETTLEMENT_CUSTODY"
     echo "  L3BridgeCustody:   $L3_CUSTODY"
     echo "  BridgeProxy:       $BRIDGE_PROXY"
     echo "  FeeRegistry:       $FEE_REGISTRY"

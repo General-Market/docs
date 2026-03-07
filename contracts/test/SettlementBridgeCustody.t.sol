@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/custody/ArbBridgeCustody.sol";
+import "../src/custody/SettlementBridgeCustody.sol";
 import "../src/mocks/MockERC20.sol";
 import "../src/registry/IssuerRegistry.sol";
 import "../src/libraries/TypesLib.sol";
@@ -13,11 +13,11 @@ import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title ArbBridgeCustodyTest - Comprehensive tests for ArbBridgeCustody
+/// @title SettlementBridgeCustodyTest - Comprehensive tests for SettlementBridgeCustody
 /// @notice Tests bridge completion, cross-chain ITP purchase, and edge cases
-contract ArbBridgeCustodyTest is TestHelper {
-    ArbBridgeCustody public custody;
-    ArbBridgeCustody public implementation;
+contract SettlementBridgeCustodyTest is TestHelper {
+    SettlementBridgeCustody public custody;
+    SettlementBridgeCustody public implementation;
     IssuerRegistry public mockRegistry;
     Governance public governance;
     MockERC20 public usdc;
@@ -28,7 +28,7 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     // Chain IDs
     uint256 public constant L3_CHAIN_ID = 111222333;
-    uint256 public constant ARB_CHAIN_ID = 42161;
+    uint256 public constant SETTLEMENT_CHAIN_ID = 42161;
     uint256 public constant BASE_CHAIN_ID = 8453;
 
     // Test amounts (6-decimal USDC for inputs, 18-decimal for internal)
@@ -56,25 +56,25 @@ contract ArbBridgeCustodyTest is TestHelper {
     );
 
     function setUp() public {
-        // Set Arbitrum chain ID for testing
-        vm.chainId(ARB_CHAIN_ID);
+        // Set Settlement chain ID for testing
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         // Deploy real governance and issuer registry via UUPS proxy
         governance = deployGovernance(address(this));
         mockRegistry = deployIssuerRegistry(address(governance));
-        // CRITICAL: Deploy USDC with 6 decimals (real USDC format) for Arbitrum side
+        // CRITICAL: Deploy USDC with 6 decimals (real USDC format) for Settlement side
         usdc = new MockERC20("USDC", "USDC", 6);
 
         // Deploy implementation
-        implementation = new ArbBridgeCustody();
+        implementation = new SettlementBridgeCustody();
 
         // Deploy proxy
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), l3IndexAddr, address(0)))
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(mockRegistry), address(usdc), l3IndexAddr, address(0)))
         );
 
-        custody = ArbBridgeCustody(address(proxy));
+        custody = SettlementBridgeCustody(address(proxy));
 
         // Register 3 real BLS test issuers and set aggregated pubkey
         registerTestIssuersWithBLS(mockRegistry, address(this));
@@ -146,29 +146,29 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_initialize_revertsOnZeroIssuerRegistry() public {
-        ArbBridgeCustody impl = new ArbBridgeCustody();
+        SettlementBridgeCustody impl = new SettlementBridgeCustody();
         vm.expectRevert(ErrorsLib.E043_ZeroIssuerRegistry.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(0), address(usdc), l3IndexAddr, address(0)))
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(0), address(usdc), l3IndexAddr, address(0)))
         );
     }
 
     function test_initialize_revertsOnZeroUSDC() public {
-        ArbBridgeCustody impl = new ArbBridgeCustody();
+        SettlementBridgeCustody impl = new SettlementBridgeCustody();
         vm.expectRevert(ErrorsLib.E050_ZeroUSDCAddress.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(0), l3IndexAddr, address(0)))
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(mockRegistry), address(0), l3IndexAddr, address(0)))
         );
     }
 
     function test_initialize_revertsOnZeroL3Index() public {
-        ArbBridgeCustody impl = new ArbBridgeCustody();
+        SettlementBridgeCustody impl = new SettlementBridgeCustody();
         vm.expectRevert(ErrorsLib.E056_ZeroL3IndexAddress.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(usdc), address(0), address(0)))
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(mockRegistry), address(usdc), address(0), address(0)))
         );
     }
 
@@ -251,10 +251,10 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_completeBridge_revertsOnCurrentChainId() public {
-        TypesLib.ReleaseProof memory proof = _createValidProof(ARB_CHAIN_ID);
+        TypesLib.ReleaseProof memory proof = _createValidProof(SETTLEMENT_CHAIN_ID);
 
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, ARB_CHAIN_ID));
-        custody.completeBridge(ARB_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E055_InvalidSourceChainId.selector, SETTLEMENT_CHAIN_ID));
+        custody.completeBridge(SETTLEMENT_CHAIN_ID, RELEASE_AMOUNT, 0, proof, new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroBlockHash() public {
@@ -355,14 +355,14 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertTrue(custody.isNonceUsed(L3_CHAIN_ID, nonce));
     }
 
-    // ============ BUY ITP FROM ARBITRUM TESTS ============
+    // ============ BUY ITP FROM SETTLEMENT TESTS ============
 
-    function test_buyITPFromArbitrum_happyPath() public {
+    function test_buyITPFromSettlement_happyPath() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         // User provides 6-decimal USDC amount
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 1, deadline);
 
         // Check order ID
         assertEq(orderId, 0);
@@ -377,7 +377,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertEq(order.amount, ORDER_AMOUNT_INTERNAL); // 500 * 1e18
     }
 
-    function test_buyITPFromArbitrum_emitsCrossChainOrderCreatedEvent() public {
+    function test_buyITPFromSettlement_emitsCrossChainOrderCreatedEvent() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         // Event emits 18-decimal internal amount
@@ -386,16 +386,16 @@ contract ArbBridgeCustodyTest is TestHelper {
 
         vm.prank(alice);
         // User provides 6-decimal USDC
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_sequentialOrderIds() public {
+    function test_buyITPFromSettlement_sequentialOrderIds() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.startPrank(alice);
-        uint256 orderId1 = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 0, deadline);
-        uint256 orderId2 = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
-        uint256 orderId3 = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 2, deadline);
+        uint256 orderId1 = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 0, deadline);
+        uint256 orderId2 = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        uint256 orderId3 = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 2, deadline);
         vm.stopPrank();
 
         assertEq(orderId1, 0);
@@ -404,15 +404,15 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertEq(custody.currentOrderId(), 3);
     }
 
-    function test_buyITPFromArbitrum_revertsOnZeroAmount() public {
+    function test_buyITPFromSettlement_revertsOnZeroAmount() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         vm.expectRevert(ErrorsLib.E059_CrossChainOrderZeroAmount.selector);
-        custody.buyITPFromArbitrum(TEST_ITP_ID, 0, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, 0, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_revertsOnAmountBelowMinimum() public {
+    function test_buyITPFromSettlement_revertsOnAmountBelowMinimum() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         // MIN_USDC_AMOUNT = 1000 (0.001 USDC in 6 decimals)
@@ -420,56 +420,56 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E07F_UsdcAmountTooSmall.selector, 999, 1000)
         );
-        custody.buyITPFromArbitrum(TEST_ITP_ID, 999, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, 999, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_minimumAmountAccepted() public {
+    function test_buyITPFromSettlement_minimumAmountAccepted() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         // Exactly minimum: 1000 (0.001 USDC)
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, 1000, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, 1000, 1e18, 1, deadline);
 
         TypesLib.CrossChainOrder memory order = custody.getCrossChainOrder(orderId);
         // 1000 (6 dec) -> 1000 * 1e12 = 1e15 (18 dec)
         assertEq(order.amount, 1e15);
     }
 
-    function test_buyITPFromArbitrum_revertsOnInvalidSlippageTier_3() public {
+    function test_buyITPFromSettlement_revertsOnInvalidSlippageTier_3() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E011_InvalidSlippageTier.selector, 3));
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 3, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 3, deadline);
     }
 
-    function test_buyITPFromArbitrum_revertsOnInvalidSlippageTier_max() public {
+    function test_buyITPFromSettlement_revertsOnInvalidSlippageTier_max() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E011_InvalidSlippageTier.selector, type(uint256).max));
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, type(uint256).max, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, type(uint256).max, deadline);
     }
 
-    function test_buyITPFromArbitrum_slippageTier0_valid() public {
+    function test_buyITPFromSettlement_slippageTier0_valid() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 0, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 0, deadline);
 
         assertEq(orderId, 0);
     }
 
-    function test_buyITPFromArbitrum_slippageTier2_valid() public {
+    function test_buyITPFromSettlement_slippageTier2_valid() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 2, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 2, deadline);
 
         assertEq(orderId, 0);
     }
 
-    function test_buyITPFromArbitrum_revertsOnExpiredDeadline() public {
+    function test_buyITPFromSettlement_revertsOnExpiredDeadline() public {
         uint256 deadline = block.timestamp; // Exactly now - expired
 
         uint256 minDeadline = block.timestamp + 1;
@@ -479,10 +479,10 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E058_InvalidDeadline.selector, deadline, minDeadline, maxDeadline)
         );
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_revertsOnPastDeadline() public {
+    function test_buyITPFromSettlement_revertsOnPastDeadline() public {
         uint256 deadline = block.timestamp - 1; // In the past
 
         uint256 minDeadline = block.timestamp + 1;
@@ -492,10 +492,10 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E058_InvalidDeadline.selector, deadline, minDeadline, maxDeadline)
         );
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_revertsOnDeadlineTooFar() public {
+    function test_buyITPFromSettlement_revertsOnDeadlineTooFar() public {
         uint256 deadline = block.timestamp + 24 hours + 1; // Just over 24h
 
         uint256 minDeadline = block.timestamp + 1;
@@ -505,23 +505,23 @@ contract ArbBridgeCustodyTest is TestHelper {
         vm.expectRevert(
             abi.encodeWithSelector(ErrorsLib.E058_InvalidDeadline.selector, deadline, minDeadline, maxDeadline)
         );
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
     }
 
-    function test_buyITPFromArbitrum_deadlineExactly24hAllowed() public {
+    function test_buyITPFromSettlement_deadlineExactly24hAllowed() public {
         uint256 deadline = block.timestamp + 24 hours; // Exactly 24h - should be valid
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
 
         assertEq(orderId, 0);
     }
 
-    function test_buyITPFromArbitrum_deadline1SecondValid() public {
+    function test_buyITPFromSettlement_deadline1SecondValid() public {
         uint256 deadline = block.timestamp + 1; // Minimum valid deadline
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
 
         assertEq(orderId, 0);
     }
@@ -555,7 +555,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
-        custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
 
         assertEq(custody.currentOrderId(), 1);
     }
@@ -586,7 +586,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function testFuzz_completeBridge_variousChainIds(uint256 chainId) public {
-        vm.assume(chainId > 0 && chainId != ARB_CHAIN_ID);
+        vm.assume(chainId > 0 && chainId != SETTLEMENT_CHAIN_ID);
 
         TypesLib.ReleaseProof memory proof = _createValidProof(chainId);
 
@@ -595,7 +595,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertTrue(custody.isNonceUsed(chainId, 0));
     }
 
-    function testFuzz_buyITPFromArbitrum_variousAmounts(uint256 usdcAmount6dec) public {
+    function testFuzz_buyITPFromSettlement_variousAmounts(uint256 usdcAmount6dec) public {
         // Amount is in 6 decimals, must be >= minimum (1000) and reasonable
         vm.assume(usdcAmount6dec >= 1000 && usdcAmount6dec <= 1_000_000 * 1e6);
 
@@ -603,7 +603,7 @@ contract ArbBridgeCustodyTest is TestHelper {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, usdcAmount6dec, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, usdcAmount6dec, 1e18, 1, deadline);
 
         assertEq(orderId, 0);
 
@@ -612,13 +612,13 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertEq(order.amount, DecimalLib.toInternal(usdcAmount6dec));
     }
 
-    function testFuzz_buyITPFromArbitrum_variousDeadlines(uint256 deadlineOffset) public {
+    function testFuzz_buyITPFromSettlement_variousDeadlines(uint256 deadlineOffset) public {
         vm.assume(deadlineOffset > 0 && deadlineOffset <= 24 hours);
 
         uint256 deadline = block.timestamp + deadlineOffset;
 
         vm.prank(alice);
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT, 1e18, 1, deadline);
 
         assertEq(orderId, 0);
     }
@@ -637,7 +637,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     // ============ UPGRADE TESTS ============
 
     function test_proposeUpgrade_setsState() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
 
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
@@ -653,16 +653,16 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_proposeUpgrade_revertsOnAlreadyPending() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
-        ArbBridgeCustody anotherImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody anotherImpl = new SettlementBridgeCustody();
         vm.expectRevert(ErrorsLib.E039_UpgradeAlreadyPending.selector);
         custody.proposeUpgrade(address(anotherImpl), new bytes(64), 3, 7); // reverts before BLS check
     }
 
     function test_proposeEmergencyUpgrade_setsEmergencyFlag() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
 
         custody.proposeEmergencyUpgrade(address(newImpl), _signProposeEmergencyUpgrade(address(newImpl)), 3, 7);
 
@@ -671,7 +671,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_executeUpgrade_revertsBeforeTimelock() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
         uint256 unlockTime = block.timestamp + 7 days;
@@ -691,7 +691,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_executeUpgrade_revertsOnMismatch() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
         vm.warp(block.timestamp + 7 days + 1);
@@ -707,7 +707,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_executeUpgrade_succeedsAfterTimelock() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
         vm.warp(block.timestamp + 7 days + 1);
@@ -720,7 +720,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_executeEmergencyUpgrade_succeedsAfter24Hours() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeEmergencyUpgrade(address(newImpl), _signProposeEmergencyUpgrade(address(newImpl)), 3, 7);
 
         vm.warp(block.timestamp + 24 hours + 1);
@@ -735,7 +735,7 @@ contract ArbBridgeCustodyTest is TestHelper {
     // ============ CANCEL UPGRADE TESTS ============
 
     function test_cancelUpgrade_clearsPendingUpgrade() public {
-        ArbBridgeCustody newImpl = new ArbBridgeCustody();
+        SettlementBridgeCustody newImpl = new SettlementBridgeCustody();
         custody.proposeUpgrade(address(newImpl), _signProposeUpgrade(address(newImpl)), 3, 7);
 
         // Verify pending upgrade exists
@@ -756,8 +756,8 @@ contract ArbBridgeCustodyTest is TestHelper {
     }
 
     function test_cancelUpgrade_allowsNewProposalAfterCancel() public {
-        ArbBridgeCustody impl1 = new ArbBridgeCustody();
-        ArbBridgeCustody impl2 = new ArbBridgeCustody();
+        SettlementBridgeCustody impl1 = new SettlementBridgeCustody();
+        SettlementBridgeCustody impl2 = new SettlementBridgeCustody();
 
         // Propose first upgrade
         custody.proposeUpgrade(address(impl1), _signProposeUpgrade(address(impl1)), 3, 7);
@@ -776,13 +776,13 @@ contract ArbBridgeCustodyTest is TestHelper {
 
     // ============ ORDER STORAGE & RETRIEVAL TESTS (Code Review Fixes) ============
 
-    function test_buyITPFromArbitrum_storesOrderParameters() public {
+    function test_buyITPFromSettlement_storesOrderParameters() public {
         uint256 deadline = block.timestamp + 1 hours;
         uint256 limitPrice = 1.5e18;
 
         vm.prank(alice);
         // User provides 6-decimal USDC
-        uint256 orderId = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT_6DEC, limitPrice, 1, deadline);
+        uint256 orderId = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT_6DEC, limitPrice, 1, deadline);
 
         TypesLib.CrossChainOrder memory order = custody.getCrossChainOrder(orderId);
         assertEq(order.itpId, TEST_ITP_ID);
@@ -804,15 +804,15 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertEq(order.createdAt, 0);
     }
 
-    function test_buyITPFromArbitrum_multipleOrdersStoredCorrectly() public {
+    function test_buyITPFromSettlement_multipleOrdersStoredCorrectly() public {
         uint256 deadline1 = block.timestamp + 1 hours;
         uint256 deadline2 = block.timestamp + 2 hours;
 
         vm.prank(alice);
-        uint256 orderId1 = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 0, deadline1);
+        uint256 orderId1 = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT_6DEC, 1e18, 0, deadline1);
 
         vm.prank(bob);
-        uint256 orderId2 = custody.buyITPFromArbitrum(TEST_ITP_ID, ORDER_AMOUNT_6DEC * 2, 2e18, 2, deadline2);
+        uint256 orderId2 = custody.buyITPFromSettlement(TEST_ITP_ID, ORDER_AMOUNT_6DEC * 2, 2e18, 2, deadline2);
 
         TypesLib.CrossChainOrder memory order1 = custody.getCrossChainOrder(orderId1);
         assertEq(order1.user, alice);
@@ -828,12 +828,12 @@ contract ArbBridgeCustodyTest is TestHelper {
         assertEq(order2.deadline, deadline2);
     }
 
-    function test_buyITPFromArbitrum_revertsOnZeroItpId() public {
+    function test_buyITPFromSettlement_revertsOnZeroItpId() public {
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(alice);
         vm.expectRevert(ErrorsLib.E060_ZeroITPId.selector);
-        custody.buyITPFromArbitrum(bytes32(0), ORDER_AMOUNT, 1e18, 1, deadline);
+        custody.buyITPFromSettlement(bytes32(0), ORDER_AMOUNT, 1e18, 1, deadline);
     }
 
     function test_completeBridge_revertsOnInvalidProof_zeroBlockNumber() public {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title IBridgedITP - ERC20 representation of L3 ITP on Arbitrum
+/// @title IBridgedITP - ERC20 representation of L3 ITP on Settlement
 /// @notice Interface for the bridged ITP token
 /// @dev Mint/burn controlled by BridgeProxy only
 interface IBridgedITP is IERC20 {

@@ -21,7 +21,7 @@ test.describe('Health Check', () => {
     expect(healthy).toBe(true);
   });
 
-  test('Arbitrum RPC is reachable', async () => {
+  test('Settlement RPC is reachable', async () => {
     const ok = await checkRpc(RPC_URL);
     expect(ok).toBe(true);
   });

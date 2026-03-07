@@ -45,7 +45,7 @@
     "batch": "주문 배치 중...",
     "fill": "거래 체결 중...",
     "record_collateral": "담보 기록 중...",
-    "bridge_to_arb": "USDC를 Arbitrum으로 브릿지 중...",
+    "bridge_to_settlement": "USDC를 Settlement으로 브릿지 중...",
     "complete_bridge": "브릿지 완료 중...",
     "mint_shares": "BridgedITP 발행 중...",
     "shares_received": "주식이 수령되었습니다!"
@@ -62,7 +62,7 @@
     "buy_filled": "매수 체결 — {name} 주식 수령"
   },
   "stall": {
-    "title": "Arbitrum에서 주문이 제출되었습니다",
+    "title": "Settlement에서 주문이 제출되었습니다",
     "description": "주문이 L3로 중계되어 처리 중입니다. 몇 분이 걸릴 수 있습니다. 이 대화상자를 닫아도 안전합니다. 주문은 계속 처리되며 포트폴리오에 표시됩니다."
   },
   "error": {

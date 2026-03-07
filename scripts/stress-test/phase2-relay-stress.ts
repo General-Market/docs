@@ -1,12 +1,12 @@
 /**
  * Phase 2: Issuer Relay Stress
  *
- * Submits N requestCreateItp() on Arb BridgeProxy simultaneously,
+ * Submits N requestCreateItp() on Settlement BridgeProxy simultaneously,
  * measures how long it takes issuers to process the backlog.
  */
 
 import {
-  PHASE2_LEVELS, ARB_RPC, ARB_BRIDGE_PROXY, DEPLOYER, ANVIL_ACCOUNTS,
+  PHASE2_LEVELS, SETTLEMENT_RPC, SETTLEMENT_BRIDGE_PROXY, DEPLOYER, ANVIL_ACCOUNTS,
 } from './config';
 import {
   log, logSection, logVerbose, timer, sleep,

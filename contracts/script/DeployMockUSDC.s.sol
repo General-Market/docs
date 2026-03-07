@@ -5,10 +5,10 @@ import {Script, console2} from "forge-std/Script.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 
 /// @title DeployMockUSDC - Deploy mock USDC tokens for local E2E testing
-/// @notice Deploys L3Usdc (18 decimals) and/or ArbUSDC (6 decimals)
+/// @notice Deploys L3Usdc (18 decimals) and/or SettlementUSDC (6 decimals)
 contract DeployMockUSDC is Script {
     address public l3Usdc;
-    address public arbUsdc;
+    address public settlementUsdc;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -16,7 +16,7 @@ contract DeployMockUSDC is Script {
 
         // Check which token to deploy (or both)
         bool deployL3 = vm.envOr("DEPLOY_L3_USDC", true);
-        bool deployArb = vm.envOr("DEPLOY_ARB_USDC", true);
+        bool deploySettlement = vm.envOr("DEPLOY_SETTLEMENT_USDC", true);
 
         console2.log("===========================================");
         console2.log("MOCK USDC DEPLOYMENT");
@@ -24,7 +24,7 @@ contract DeployMockUSDC is Script {
         console2.log("Chain ID:", block.chainid);
         console2.log("Deployer:", deployer);
         console2.log("Deploy L3 USDC:", deployL3);
-        console2.log("Deploy Arb USDC:", deployArb);
+        console2.log("Deploy Settlement USDC:", deploySettlement);
         console2.log("");
 
         vm.startBroadcast(deployerPrivateKey);
@@ -36,11 +36,11 @@ contract DeployMockUSDC is Script {
             console2.log("L3Usdc deployed:", l3Usdc);
         }
 
-        if (deployArb) {
-            // ArbUSDC - USDC on "mock Arbitrum" (6 decimals like real USDC)
-            MockERC20 arbToken = new MockERC20("Arbitrum USDC", "ArbUSDC", 6);
-            arbUsdc = address(arbToken);
-            console2.log("ArbUSDC deployed:", arbUsdc);
+        if (deploySettlement) {
+            // SettlementUSDC - USDC on "mock Settlement" (6 decimals like real USDC)
+            MockERC20 settlementToken = new MockERC20("Settlement USDC", "SettlementUSDC", 6);
+            settlementUsdc = address(settlementToken);
+            console2.log("SettlementUSDC deployed:", settlementUsdc);
         }
 
         vm.stopBroadcast();
@@ -53,7 +53,7 @@ contract DeployMockUSDC is Script {
         console2.log("DEPLOYMENT COMPLETE");
         console2.log("===========================================");
         if (deployL3) console2.log("L3_USDC:", l3Usdc);
-        if (deployArb) console2.log("ARB_USDC:", arbUsdc);
+        if (deploySettlement) console2.log("SETTLEMENT_USDC:", settlementUsdc);
     }
 
     function _saveDeployment(address deployer) internal {
@@ -64,8 +64,8 @@ contract DeployMockUSDC is Script {
             '  "timestamp": ', vm.toString(block.timestamp), ',\n',
             '  "contracts": {\n',
             l3Usdc != address(0) ? string.concat('    "L3_USDC": "', vm.toString(l3Usdc), '"') : '',
-            l3Usdc != address(0) && arbUsdc != address(0) ? ',\n' : '\n',
-            arbUsdc != address(0) ? string.concat('    "ARB_USDC": "', vm.toString(arbUsdc), '"\n') : '',
+            l3Usdc != address(0) && settlementUsdc != address(0) ? ',\n' : '\n',
+            settlementUsdc != address(0) ? string.concat('    "SETTLEMENT_USDC": "', vm.toString(settlementUsdc), '"\n') : '',
             '  }\n',
             '}'
         );

@@ -224,7 +224,7 @@ cmd_deploy() {
     ITP_VAULT=$(read_deployment_addr "ITP_Vault")
     ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
 
-    ARB_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ISSUER_REGISTRY="$ISSUER_REGISTRY" \
+    SETTLEMENT_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ISSUER_REGISTRY="$ISSUER_REGISTRY" \
     forge script contracts/script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
@@ -343,7 +343,7 @@ _start_data_node() {
             --database-url postgres:///$DB_NAME \
             --symbol-map data/symbol-map.json \
             --rpc-url $RPC_URL \
-            --arb-rpc-url $RPC_URL \
+            --settlement-rpc-url $RPC_URL \
             --deployment-file $DEPLOYMENT_FILE \
             --morpho-deployment-file deployments/morpho-e2e.json \
             --ecb-enabled \
@@ -408,8 +408,8 @@ _start_issuers() {
             ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt \
             ISSUER_PEERS=$PEERS \
             ISSUER_RPC_URL=$RPC_URL \
-            ISSUER_ARBITRUM_RPC_URL=$RPC_URL \
-            ISSUER_ARBITRUM_CHAIN_ID=$CHAIN_ID \
+            ISSUER_SETTLEMENT_RPC_URL=$RPC_URL \
+            ISSUER_SETTLEMENT_CHAIN_ID=$CHAIN_ID \
             DATA_NODE_URL=http://localhost:$DATA_NODE_PORT \
             EXCHANGE_MODE=mock \
             nohup ./target/release/issuer \
@@ -461,8 +461,8 @@ _start_ap() {
             --port 9100 \
             --rpc http://localhost/ \
             --exchange-mode mock \
-            --arb-rpc http://localhost/ \
-            --arb-chain-id $CHAIN_ID \
+            --settlement-rpc http://localhost/ \
+            --settlement-chain-id $CHAIN_ID \
             --deployment-file $DEPLOYMENT_FILE \
             --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \
             --log-level info \

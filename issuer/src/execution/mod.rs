@@ -1,7 +1,7 @@
 //! Execution module for DEX swap orchestration
 //!
 //! Provides orchestrators for:
-//! - Same-chain swaps via BLSCustody + 1inch Router (Arbitrum)
+//! - Same-chain swaps via BLSCustody + 1inch Router (Settlement chain)
 //! - Cross-chain swaps via Fusion+ intents
 //! - Order routing to classify merged orders by execution venue
 

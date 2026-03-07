@@ -7,7 +7,7 @@ import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useNonceCheck } from '@/hooks/useNonceCheck'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
-import { arbChainId, arbitrumChain } from '@/lib/wagmi'
+import { settlementChainId, settlementChain } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -85,7 +85,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
   const { switchChainAsync } = useSwitchChain()
   const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
-  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: arbChainId })
+  const { isLoading: isConfirming, isSuccess, error: confirmError } = useWaitForTransactionReceipt({ hash, chainId: settlementChainId })
 
   // Toast notifications for ITP creation
   useTransactionNotification({
@@ -306,13 +306,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingPrices(false)
 
     try {
-      // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain before submitting.
+      // BridgeProxy lives on Settlement — ensure wallet is on Settlement chain before submitting.
       // Use writeContractAsync (not writeContract) so the chain switch and tx submit
       // happen in the same async execution context without React re-renders in between.
       try {
-        await ensureCorrectChain(currentChainId, switchChainAsync, arbChainId, arbitrumChain)
+        await ensureCorrectChain(currentChainId, switchChainAsync, settlementChainId, settlementChain)
       } catch {
-        setTxError('Please switch to the Arbitrum chain to create an ITP')
+        setTxError('Please switch to the Settlement chain to create an ITP')
         return
       }
 
@@ -324,7 +324,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           abi: BRIDGE_PROXY_ABI,
           functionName: 'setDeployerName',
           args: [issuerName.trim()],
-          chainId: arbChainId,
+          chainId: settlementChainId,
         })
         refetchDeployerName()
       }
@@ -347,7 +347,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
         abi: BRIDGE_PROXY_ABI,
         functionName: 'requestCreateItp',
         args: [name, symbol, weights, assets, prices, { description, websiteUrl, videoUrl }],
-        chainId: arbChainId,
+        chainId: settlementChainId,
       })
     } catch (e: any) {
       console.error('[CreateITP] writeContractAsync threw:', e)

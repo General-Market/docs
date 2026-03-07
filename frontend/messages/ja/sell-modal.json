@@ -12,7 +12,7 @@
   "computing_price": "価格を計算中...",
   "set_min_price": "最低価格を設定",
   "no_limit": "0（制限なし）",
-  "usdc_balance_label": "あなたのUSDC残高（Arbitrum）",
+  "usdc_balance_label": "あなたのUSDC残高（Settlement）",
   "sell_more": "追加売却",
   "estimated_pnl": {
     "title": "推定損益",
@@ -43,7 +43,7 @@
     "batch": "注文をバッチ処理中...",
     "fill": "取引を実行中...",
     "record_collateral": "担保を記録中...",
-    "bridge_to_arb": "USDCをArbitrumにブリッジ中...",
+    "bridge_to_settlement": "USDCをSettlementにブリッジ中...",
     "complete_sell": "売り注文を完了中...",
     "usdc_received": "USDCを受け取りました！"
   },

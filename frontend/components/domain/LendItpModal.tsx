@@ -27,7 +27,7 @@ interface ItpInfo {
   source: 'index' | 'bridge'
   completed: boolean
   orbitItpId?: string
-  arbAddress?: string
+  settlementAddress?: string
 }
 
 interface LendItpModalProps {
@@ -58,17 +58,17 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
     }
   }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const market = getMorphoMarketForItp(itpInfo.arbAddress)
+  const market = getMorphoMarketForItp(itpInfo.settlementAddress)
 
   const { position, refetch: refetchPosition } = useMorphoPosition(market ?? undefined)
   const hasPosition = position && (position.collateralAmount > 0n || position.debtAmount > 0n)
 
   // Fetch crisis level from quote API (lightweight probe with minimal borrow)
   const { quote: crisisProbe } = useLendingQuote({
-    itpAddress: itpInfo.arbAddress,
+    itpAddress: itpInfo.settlementAddress,
     collateralAmount: position?.collateralAmount?.toString(),
     borrowAmount: '1', // minimal amount just to get crisis level
-    enabled: !!hasPosition && !!itpInfo.arbAddress,
+    enabled: !!hasPosition && !!itpInfo.settlementAddress,
   })
   const crisisLevel: CrisisLevel | undefined = crisisProbe
     ? (crisisProbe as any).crisisLevel as CrisisLevel

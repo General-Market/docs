@@ -6,7 +6,7 @@
  * - Lending TVL showing raw wei ($100,000,000,033,200)
  * - Vision balance showing unformatted 18-decimal values
  * - ITP NAV out of sane range
- * - Arb USDC showing 18 decimal places instead of 6
+ * - Settlement USDC showing 18 decimal places instead of 6
  * - Any 18+ digit numbers visible in document body (raw bigint leak)
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';

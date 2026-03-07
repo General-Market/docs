@@ -266,7 +266,7 @@ contract MockBitgetVault is Initializable {
     }
 
     /// @notice Approve a spender to transfer tokens from the vault
-    /// @dev Used to allow ArbBridgeCustody to pull USDC for completeSellOrder
+    /// @dev Used to allow SettlementBridgeCustody to pull USDC for completeSellOrder
     /// @param token ERC20 token to approve
     /// @param spender Address to approve
     /// @param amount Approval amount

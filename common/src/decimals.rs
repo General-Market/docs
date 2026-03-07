@@ -1,12 +1,12 @@
 //! USDC decimal conversion utilities
 //!
-//! Converts between 6-decimal USDC (real Arbitrum/mainnet USDC) and 18-decimal
+//! Converts between 6-decimal USDC (real settlement chain/mainnet USDC) and 18-decimal
 //! internal representation used throughout the protocol.
 //!
 //! # Conversion Boundaries
 //!
-//! - **Entry (Arbitrum → L3):** User deposits 6-decimal USDC, convert to 18-decimal internal
-//! - **Exit (L3 → Arbitrum):** Internal 18-decimal amount, convert to 6-decimal USDC for transfer
+//! - **Entry (Settlement → L3):** User deposits 6-decimal USDC, convert to 18-decimal internal
+//! - **Exit (L3 → Settlement):** Internal 18-decimal amount, convert to 6-decimal USDC for transfer
 //!
 //! # Example
 //!
@@ -28,7 +28,7 @@
 
 use ethers::types::U256;
 
-/// Number of decimals for real USDC (Arbitrum/mainnet)
+/// Number of decimals for real USDC (settlement chain/mainnet)
 pub const USDC_DECIMALS: u8 = 6;
 
 /// Number of decimals for internal protocol representation
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_real_world_user_deposit() {
-        // User deposits 1000 USDC on Arbitrum
+        // User deposits 1000 USDC on settlement chain
         let user_deposit = U256::from(1000u64 * 1_000_000u64); // 1,000,000,000
 
         // Contract converts to internal representation

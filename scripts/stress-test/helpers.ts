@@ -7,7 +7,7 @@
  */
 
 import {
-  L3_RPC, ARB_RPC, L3_INDEX, ARB_BRIDGE_PROXY, ARB_USDC,
+  L3_RPC, SETTLEMENT_RPC, L3_INDEX, SETTLEMENT_BRIDGE_PROXY, SETTLEMENT_USDC,
   DEPLOYER, ANVIL_ACCOUNTS, WEIGHT_SUM,
   Side, OrderStatus,
   BACKEND_URL,
@@ -187,7 +187,7 @@ export async function rpcCall(url: string, method: string, params: unknown[]): P
 }
 
 export const l3Rpc = (method: string, params: unknown[]) => rpcCall(L3_RPC, method, params);
-export const arbRpc = (method: string, params: unknown[]) => rpcCall(ARB_RPC, method, params);
+export const settlementRpc = (method: string, params: unknown[]) => rpcCall(SETTLEMENT_RPC, method, params);
 
 // ── Nonce management ─────────────────────────────────────────────────
 
@@ -504,7 +504,7 @@ export async function mintItpShares(
   const bytesOffset = padUint(4 * 32); // 0x80
   const bytesLength = padUint(0);
   const data = `0x${sel}${pad32(itpId)}${padAddr(user)}${padUint(amount)}${bytesOffset}${bytesLength}`;
-  return sendTx(ARB_RPC, ARB_BRIDGE_PROXY, data, DEPLOYER, '0x200000');
+  return sendTx(SETTLEMENT_RPC, SETTLEMENT_BRIDGE_PROXY, data, DEPLOYER, '0x200000');
 }
 
 /** Fund a test account with L3 USDC and approve Index contract. */
@@ -601,14 +601,14 @@ export async function requestCreateItp(
   const metadataOff = padUint(currentOffset);
 
   const calldata = `0x${fnSel}${nameOff}${symbolOff}${weightsOff}${assetsOff}${pricesOff}${metadataOff}${nameEnc}${symbolEnc}${weightsEnc}${assetsEnc}${pricesEnc}${metadataBody}`;
-  return sendTx(ARB_RPC, ARB_BRIDGE_PROXY, calldata, from, '0x500000');
+  return sendTx(SETTLEMENT_RPC, SETTLEMENT_BRIDGE_PROXY, calldata, from, '0x500000');
 }
 
 /** isPending(uint256) → bool on BridgeProxy */
 export async function isPending(nonce: bigint): Promise<boolean> {
   const fnSel = sel('isPending(uint256)');
   const data = `0x${fnSel}${padUint(nonce)}`;
-  const result = await arbRpc('eth_call', [{ to: ARB_BRIDGE_PROXY, data }, 'latest']) as string;
+  const result = await settlementRpc('eth_call', [{ to: SETTLEMENT_BRIDGE_PROXY, data }, 'latest']) as string;
   return BigInt(result) !== 0n;
 }
 
@@ -616,7 +616,7 @@ export async function isPending(nonce: bigint): Promise<boolean> {
 export async function getNextCreationNonce(): Promise<bigint> {
   const fnSel = sel('nextCreationNonce()');
   const data = `0x${fnSel}`;
-  const result = await arbRpc('eth_call', [{ to: ARB_BRIDGE_PROXY, data }, 'latest']) as string;
+  const result = await settlementRpc('eth_call', [{ to: SETTLEMENT_BRIDGE_PROXY, data }, 'latest']) as string;
   return BigInt(result);
 }
 
@@ -654,7 +654,7 @@ export async function requestRebalance(
   const calldata = `0x${fnSel}${itpIdEnc}${removeOff}${addOff}${weightsOff}${noteOff}${removeEnc}${addEnc}${weightsEnc}${noteEnc}`;
   // Gas scales with weight count: base ~500k + ~30k per weight entry
   const gasNeeded = Math.min(500_000 + newWeights.length * 30_000, 29_000_000);
-  return sendTx(ARB_RPC, ARB_BRIDGE_PROXY, calldata, from, '0x' + gasNeeded.toString(16));
+  return sendTx(SETTLEMENT_RPC, SETTLEMENT_BRIDGE_PROXY, calldata, from, '0x' + gasNeeded.toString(16));
 }
 
 /** rebalance(bytes32,uint256[],address[],uint256[],uint256[],bytes) on L3 Index */
@@ -805,7 +805,7 @@ export async function morphoSupplyCollateral(
   const bytesOffset = padUint(8 * 32); // 8 head words → offset in bytes = 256
   const bytesLen = padUint(0);
   const calldata = `0x${fnSel}${encodeMorphoMarketParams(cfg)}${padUint(amount)}${padAddr(user)}${bytesOffset}${bytesLen}`;
-  return sendTx(ARB_RPC, cfg.morpho, calldata, user, '0x500000');
+  return sendTx(SETTLEMENT_RPC, cfg.morpho, calldata, user, '0x500000');
 }
 
 /** borrow(MarketParams,uint256,uint256,address,address) */
@@ -815,7 +815,7 @@ export async function morphoBorrow(
   const fnSel = sel('borrow((address,address,address,address,uint256),uint256,uint256,address,address)');
   // MarketParams (5 words) + assets + shares + onBehalf + receiver
   const calldata = `0x${fnSel}${encodeMorphoMarketParams(cfg)}${padUint(amount)}${padUint(0)}${padAddr(user)}${padAddr(user)}`;
-  return sendTx(ARB_RPC, cfg.morpho, calldata, user, '0x500000');
+  return sendTx(SETTLEMENT_RPC, cfg.morpho, calldata, user, '0x500000');
 }
 
 /** liquidate(MarketParams,address,uint256,uint256,bytes) */
@@ -827,7 +827,7 @@ export async function morphoLiquidate(
   const bytesOffset = padUint(9 * 32);
   const bytesLen = padUint(0);
   const calldata = `0x${fnSel}${encodeMorphoMarketParams(cfg)}${padAddr(borrower)}${padUint(seizedAssets)}${padUint(0)}${bytesOffset}${bytesLen}`;
-  return sendTx(ARB_RPC, cfg.morpho, calldata, liquidator, '0x500000');
+  return sendTx(SETTLEMENT_RPC, cfg.morpho, calldata, liquidator, '0x500000');
 }
 
 /** setPrice(uint256) on MockMorphoOracle */
@@ -836,7 +836,7 @@ export async function setMorphoOraclePrice(
 ): Promise<TxReceipt> {
   const fnSel = sel('setPrice(uint256)');
   const calldata = `0x${fnSel}${padUint(newPrice)}`;
-  return sendTx(ARB_RPC, oracleAddr, calldata, DEPLOYER, '0x100000');
+  return sendTx(SETTLEMENT_RPC, oracleAddr, calldata, DEPLOYER, '0x100000');
 }
 
 /** position(bytes32,address) → (supplyShares, borrowShares, collateral) */
@@ -845,7 +845,7 @@ export async function getMorphoPosition(
 ): Promise<{ supplyShares: bigint; borrowShares: bigint; collateral: bigint }> {
   const fnSel = sel('position(bytes32,address)');
   const data = `0x${fnSel}${pad32(cfg.marketId)}${padAddr(user)}`;
-  const result = await arbRpc('eth_call', [{ to: cfg.morpho, data }, 'latest']) as string;
+  const result = await settlementRpc('eth_call', [{ to: cfg.morpho, data }, 'latest']) as string;
   const hex = result.replace('0x', '');
   return {
     supplyShares: decodeUint(hex.slice(0, 64)),
@@ -871,13 +871,13 @@ export async function getFailedFillEscrow(orderId: number): Promise<bigint> {
 
 /**
  * Setup a Morpho borrow position: approve collateral → supply → borrow.
- * Requires user to have BridgedITP tokens on Arb.
+ * Requires user to have BridgedITP tokens on settlement chain.
  */
 export async function setupBorrowPosition(
   cfg: MorphoConfig, user: string, collateralAmount: bigint, borrowAmount: bigint,
 ): Promise<void> {
   // Approve Morpho to spend collateral
-  await approveErc20(ARB_RPC, cfg.collateralToken, cfg.morpho, collateralAmount, user);
+  await approveErc20(SETTLEMENT_RPC, cfg.collateralToken, cfg.morpho, collateralAmount, user);
   // Supply collateral
   await morphoSupplyCollateral(cfg, user, collateralAmount);
   // Borrow

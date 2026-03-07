@@ -5,14 +5,14 @@ import {
   getItpCountL3,
   getBridgedItpAddress,
   pollUntil,
-  startArbBlockMiner,
+  startSettlementBlockMiner,
 } from '../helpers/backend-api';
 
 test.describe('Create ITP', () => {
-  test('create ITP via frontend + Arb bridge relay', async ({ walletPage: page }) => {
+  test('create ITP via frontend + Settlement bridge relay', async ({ walletPage: page }) => {
     test.setTimeout(360_000); // 6 min — bridge relay with prod-like cycle (1000ms) needs more time
 
-    const stopMiner = startArbBlockMiner(1000);
+    const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       // 1. Connect wallet
@@ -58,7 +58,7 @@ test.describe('Create ITP', () => {
       await expect(submitBtn).toBeEnabled({ timeout: 30_000 });
       await submitBtn.click();
 
-      // 10. Wait for success banner (frontend tx confirmed on Arb BridgeProxy)
+      // 10. Wait for success banner (frontend tx confirmed on Settlement BridgeProxy)
       // Chain switch + approval + confirmation can take a while on Anvil
       await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 90_000 });
 
@@ -78,7 +78,7 @@ test.describe('Create ITP', () => {
       const newState = await getItpStateL3(newItpId);
       expect(newState.assets.length).toBeGreaterThan(0);
 
-      // 13. Verify BridgedITP was deployed on Arb (poll — completeCreateItp may still be mining)
+      // 13. Verify BridgedITP was deployed on Settlement (poll — completeCreateItp may still be mining)
       const bridgedAddr = await pollUntil(
         () => getBridgedItpAddress(newItpId),
         (addr) => addr !== '0x' + '0'.repeat(40),

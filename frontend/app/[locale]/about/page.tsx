@@ -34,7 +34,7 @@ export default async function AboutPage() {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
     name: 'About General Market',
-    description: 'The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3.',
+    description: 'The team and technology behind General Market. On-chain index products and AI prediction markets built on an Orbit L3.',
     mainEntity: {
       '@type': 'Organization',
       name: 'General Market',
@@ -65,7 +65,7 @@ export default async function AboutPage() {
       <HeroBand
         eyebrow="General Market"
         title="About"
-        subtitle="On-chain protocol for index products and AI prediction markets. Built on Arbitrum Orbit L3."
+        subtitle="On-chain protocol for index products and AI prediction markets. Built on an Orbit L3."
       />
 
       <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
@@ -179,7 +179,7 @@ export default async function AboutPage() {
                 Settlement
               </div>
               <p className="text-[14px] text-text-secondary leading-relaxed">
-                Arbitrum Orbit L3 with BLS signature verification. 3-of-5 keeper consensus for bet resolution.
+                Orbit L3 with BLS signature verification. 3-of-5 keeper consensus for bet resolution.
               </p>
             </div>
             <div className="border-r border-b border-border-light p-6 md:p-8">

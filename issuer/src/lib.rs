@@ -27,8 +27,8 @@ pub mod state;
 
 pub use batcher::{BatchResult, OrderBatcher, PauseState, ValidationResult, DEFAULT_MAX_BATCH_SIZE};
 pub use chain::{
-    ArbitrumChainReader, ArbitrumChainReaderConfig, ArbitrumChainWriter, ArbitrumChainWriterConfig,
-    ArbitrumReaderError, ArbitrumWriterError, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
+    SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter, SettlementChainWriterConfig,
+    SettlementReaderError, SettlementWriterError, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
     CustodyWriter, CustodyWriterConfig, CustodyWriterError, EthersChainReader, EthersChainWriter,
     GasConfig, ItpCreationRequest, NonceManager, RetryConfig, WriterContractAddresses,
 };
@@ -76,7 +76,7 @@ pub use heartbeat::{
     PeerHealthTracker, HEARTBEAT_INTERVAL, KICK_VOTE_THRESHOLD, UNHEALTHY_THRESHOLD,
 };
 pub use bridge::{
-    build_bridge_arb_to_l3_hash, build_nav_oracle_hash, build_update_price_calldata,
+    build_bridge_settlement_to_l3_hash, build_nav_oracle_hash, build_update_price_calldata,
     BridgeConfig, BridgeError, BridgeOrderStatus, BridgeOrchestrator,
     BridgeProposal, BridgeResult, CrossChainOrderReader, SignatureCollector,
 };

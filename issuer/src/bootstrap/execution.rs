@@ -53,11 +53,11 @@ impl<'a> ExecutionBuilder<'a> {
     }
 
     fn build_custody_writer(&self) -> Option<Arc<CustodyWriter>> {
-        let arb_custody_addr = self.config.effective_arbitrum_custody_address()?;
-        let arb_rpc = match self.config.effective_arbitrum_rpc_url() {
+        let settlement_custody_addr = self.config.effective_settlement_custody_address()?;
+        let settlement_rpc = match self.config.effective_settlement_rpc_url() {
             Ok(url) => url,
             Err(e) => {
-                warn!(code = "INFRA-002", self.node_id, error = %e, "CustodyWriter unavailable: Arbitrum RPC not configured");
+                warn!(code = "INFRA-002", self.node_id, error = %e, "CustodyWriter unavailable: Settlement RPC not configured");
                 return None;
             }
         };
@@ -74,18 +74,18 @@ impl<'a> ExecutionBuilder<'a> {
             }
         };
 
-        let arb_chain_id = match self.config.effective_arbitrum_chain_id() {
+        let settlement_chain_id = match self.config.effective_settlement_chain_id() {
             Ok(id) => id,
             Err(e) => {
-                warn!(code = "INFRA-002", self.node_id, error = %e, "CustodyWriter unavailable: Arbitrum chain ID not configured");
+                warn!(code = "INFRA-002", self.node_id, error = %e, "CustodyWriter unavailable: Settlement chain ID not configured");
                 return None;
             }
         };
 
         let custody_config = CustodyWriterConfig {
-            rpc_url: arb_rpc.clone(),
-            custody_address: arb_custody_addr,
-            chain_id: arb_chain_id,
+            rpc_url: settlement_rpc.clone(),
+            custody_address: settlement_custody_addr,
+            chain_id: settlement_chain_id,
             ..Default::default()
         };
 
@@ -93,8 +93,8 @@ impl<'a> ExecutionBuilder<'a> {
             Ok(writer) => {
                 info!(
                     self.node_id,
-                    custody_address = ?arb_custody_addr,
-                    arb_rpc = %arb_rpc,
+                    custody_address = ?settlement_custody_addr,
+                    settlement_rpc = %settlement_rpc,
                     "CustodyWriter initialized"
                 );
                 Some(Arc::new(writer))
@@ -111,18 +111,18 @@ impl<'a> ExecutionBuilder<'a> {
         let cached_client = self.cached_client.as_ref()?;
         let api_key = self.config.oneinch_api_key.as_ref()?;
 
-        let arb_chain_id = match self.config.effective_arbitrum_chain_id() {
+        let settlement_chain_id = match self.config.effective_settlement_chain_id() {
             Ok(id) => id,
             Err(e) => {
-                warn!(code = "INFRA-002", self.node_id, error = %e, "SwapOrchestrator unavailable: Arbitrum chain ID not configured");
+                warn!(code = "INFRA-002", self.node_id, error = %e, "SwapOrchestrator unavailable: Settlement chain ID not configured");
                 return None;
             }
         };
 
         let oneinch_config = OneInchConfig {
             api_key: api_key.clone(),
-            chain_id: arb_chain_id,
-            custody_address: self.config.effective_arbitrum_custody_address().unwrap_or_default(),
+            chain_id: settlement_chain_id,
+            custody_address: self.config.effective_settlement_custody_address().unwrap_or_default(),
             timeout: std::time::Duration::from_secs(5),
             base_url: "https://api.1inch.dev".to_string(),
         };
@@ -149,10 +149,10 @@ impl<'a> ExecutionBuilder<'a> {
         let fusion_api_key = self.config.oneinch_fusion_api_key.as_ref()
             .or(self.config.oneinch_api_key.as_ref())?;
 
-        let src_chain_id = match self.config.effective_arbitrum_chain_id() {
+        let src_chain_id = match self.config.effective_settlement_chain_id() {
             Ok(id) => id,
             Err(e) => {
-                warn!(code = "INFRA-002", self.node_id, error = %e, "CrossChainOrchestrator unavailable: Arbitrum chain ID not configured");
+                warn!(code = "INFRA-002", self.node_id, error = %e, "CrossChainOrchestrator unavailable: Settlement chain ID not configured");
                 return None;
             }
         };

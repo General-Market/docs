@@ -8,7 +8,7 @@ import "../src/mocks/MockBitgetVault.sol";
 
 /// @title DeployMockTokensAndFund
 /// @notice Deploy mock tokens and fund MockBitgetVault with 627 tokens each
-/// @dev Story 7-6b Note: For real USDC on Arbitrum/mainnet, use 6 decimals.
+/// @dev Story 7-6b Note: For real USDC on Settlement/mainnet, use 6 decimals.
 ///      This script uses 18 decimals for simplified mock testing.
 ///      For production-like decimals, use DeployFullSystemE2E or DeployRebalanceE2E.
 contract DeployMockTokensAndFund is Script {

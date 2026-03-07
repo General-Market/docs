@@ -13,11 +13,11 @@
 //!
 //! ```text
 //! Bridge requests:
-//! - L3 → Arb: $50k
-//! - Arb → L3: $30k
+//! - L3 → Settlement: $50k
+//! - Settlement → L3: $30k
 //!
 //! Result after netting:
-//! - L3 → Arb: $20k (actual bridge)
+//! - L3 → Settlement: $20k (actual bridge)
 //! - Internal match: $30k (no bridge needed)
 //!
 //! Savings: 60% fewer bridge operations
@@ -224,7 +224,7 @@ mod tests {
 
     // Chain IDs for testing
     const L3: u64 = 111222333;
-    const ARB: u64 = 42161;
+    const SETTLEMENT: u64 = 42161;
     const ETH: u64 = 1;
 
     fn u(val: u64) -> U256 {
@@ -234,8 +234,8 @@ mod tests {
     #[test]
     fn test_bridge_netting_no_netting_same_direction() {
         let requests = vec![
-            BridgeRequest::new(u(L3), u(ARB), u(50000)),
-            BridgeRequest::new(u(L3), u(ARB), u(30000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(30000)),
         ];
 
         let result = bridge_netting(requests);
@@ -250,8 +250,8 @@ mod tests {
     #[test]
     fn test_bridge_netting_opposite_directions_partial() {
         let requests = vec![
-            BridgeRequest::new(u(L3), u(ARB), u(50000)), // L3 → ARB
-            BridgeRequest::new(u(ARB), u(L3), u(30000)), // ARB → L3
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)), // L3 → Settlement
+            BridgeRequest::new(u(SETTLEMENT), u(L3), u(30000)), // Settlement → L3
         ];
 
         let result = bridge_netting(requests);
@@ -262,24 +262,24 @@ mod tests {
         assert_eq!(fwd.amount, u(30000));
         assert_eq!(rev.amount, u(30000));
 
-        // Net bridge should be $20k L3 → ARB
-        // Direction analysis: ARB (42161) < L3 (111222333)
-        // So forward = ARB → L3, reverse = L3 → ARB
-        // forward_amount = 30000 (ARB → L3 request)
-        // reverse_amount = 50000 (L3 → ARB request)
-        // Since reverse > forward, net bridge is in reverse direction (L3 → ARB)
+        // Net bridge should be $20k L3 → Settlement
+        // Direction analysis: Settlement (42161) < L3 (111222333)
+        // So forward = Settlement → L3, reverse = L3 → Settlement
+        // forward_amount = 30000 (Settlement → L3 request)
+        // reverse_amount = 50000 (L3 → Settlement request)
+        // Since reverse > forward, net bridge is in reverse direction (L3 → Settlement)
         // Net = 50000 - 30000 = 20000
         assert_eq!(result.bridges.len(), 1);
         assert_eq!(result.bridges[0].source_chain, u(L3));
-        assert_eq!(result.bridges[0].dest_chain, u(ARB));
+        assert_eq!(result.bridges[0].dest_chain, u(SETTLEMENT));
         assert_eq!(result.bridges[0].amount, u(20000));
     }
 
     #[test]
     fn test_bridge_netting_opposite_directions_full_match() {
         let requests = vec![
-            BridgeRequest::new(u(L3), u(ARB), u(50000)),
-            BridgeRequest::new(u(ARB), u(L3), u(50000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)),
+            BridgeRequest::new(u(SETTLEMENT), u(L3), u(50000)),
         ];
 
         let result = bridge_netting(requests);
@@ -293,20 +293,20 @@ mod tests {
     #[test]
     fn test_bridge_netting_multiple_chain_pairs() {
         let requests = vec![
-            // L3 ↔ ARB
-            BridgeRequest::new(u(L3), u(ARB), u(50000)),
-            BridgeRequest::new(u(ARB), u(L3), u(30000)),
-            // ETH ↔ ARB
-            BridgeRequest::new(u(ETH), u(ARB), u(20000)),
-            BridgeRequest::new(u(ARB), u(ETH), u(20000)), // Full match
+            // L3 ↔ Settlement
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)),
+            BridgeRequest::new(u(SETTLEMENT), u(L3), u(30000)),
+            // ETH ↔ Settlement
+            BridgeRequest::new(u(ETH), u(SETTLEMENT), u(20000)),
+            BridgeRequest::new(u(SETTLEMENT), u(ETH), u(20000)), // Full match
         ];
 
         let result = bridge_netting(requests);
 
-        // L3 ↔ ARB: net $20k one direction, $30k internal match
-        // ETH ↔ ARB: $20k internal match, no net bridge
+        // L3 ↔ Settlement: net $20k one direction, $30k internal match
+        // ETH ↔ Settlement: $20k internal match, no net bridge
 
-        // One bridge (L3 ↔ ARB), one full match (ETH ↔ ARB)
+        // One bridge (L3 ↔ Settlement), one full match (ETH ↔ Settlement)
         assert_eq!(result.bridges.len(), 1);
         assert_eq!(result.internal_matches.len(), 2);
     }
@@ -321,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_bridge_netting_single_request() {
-        let requests = vec![BridgeRequest::new(u(L3), u(ARB), u(50000))];
+        let requests = vec![BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000))];
 
         let result = bridge_netting(requests);
 
@@ -335,35 +335,35 @@ mod tests {
     fn test_bridge_netting_three_way() {
         // Multiple requests in same direction accumulate
         let requests = vec![
-            BridgeRequest::new(u(L3), u(ARB), u(30000)),
-            BridgeRequest::new(u(L3), u(ARB), u(20000)),
-            BridgeRequest::new(u(ARB), u(L3), u(40000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(30000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(20000)),
+            BridgeRequest::new(u(SETTLEMENT), u(L3), u(40000)),
         ];
 
         let result = bridge_netting(requests);
 
-        // Forward: 30k + 20k = 50k (L3 → ARB direction, but L3 > ARB so this is reverse)
-        // Reverse: 40k (ARB → L3 direction, which is forward since ARB < L3)
-        // ARB < L3, so:
-        //   forward = ARB → L3 = 40k
-        //   reverse = L3 → ARB = 50k
+        // Forward: 30k + 20k = 50k (L3 → Settlement direction, but L3 > ARB so this is reverse)
+        // Reverse: 40k (Settlement → L3 direction, which is forward since Settlement < L3)
+        // Settlement < L3, so:
+        //   forward = Settlement → L3 = 40k
+        //   reverse = L3 → Settlement = 50k
         // Match: 40k
-        // Net: 50k - 40k = 10k in reverse direction (L3 → ARB)
+        // Net: 50k - 40k = 10k in reverse direction (L3 → Settlement)
 
         assert_eq!(result.internal_matches.len(), 1);
         assert_eq!(result.internal_matches[0].0.amount, u(40000));
 
         assert_eq!(result.bridges.len(), 1);
         assert_eq!(result.bridges[0].source_chain, u(L3));
-        assert_eq!(result.bridges[0].dest_chain, u(ARB));
+        assert_eq!(result.bridges[0].dest_chain, u(SETTLEMENT));
         assert_eq!(result.bridges[0].amount, u(10000));
     }
 
     #[test]
     fn test_volume_reduction_calculation() {
         let requests = vec![
-            BridgeRequest::new(u(L3), u(ARB), u(50000)),
-            BridgeRequest::new(u(ARB), u(L3), u(30000)),
+            BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)),
+            BridgeRequest::new(u(SETTLEMENT), u(L3), u(30000)),
         ];
 
         let result = bridge_netting(requests);

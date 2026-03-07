@@ -23,14 +23,22 @@ export const indexL3: Chain = {
   testnet: true,
 }
 
-// Chain definition — Arbitrum (for cross-chain deposits via ArbBridgeCustody)
-export const arbitrumChain: Chain = {
-  id: Number(process.env.NEXT_PUBLIC_ARB_CHAIN_ID) || 421611337,
-  name: 'Index Arbitrum',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+// Chain definition — Settlement (for cross-chain deposits via SettlementBridgeCustody)
+// Native currency and explorer are env-driven: Sonic testnet uses S, local Anvil uses ETH.
+const settlementNativeName = process.env.NEXT_PUBLIC_SETTLEMENT_NATIVE_NAME || 'Sonic'
+const settlementNativeSymbol = process.env.NEXT_PUBLIC_SETTLEMENT_NATIVE_SYMBOL || 'S'
+const settlementExplorer = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || 'https://testnet.sonicscan.org'
+
+export const settlementChain: Chain = {
+  id: Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337,
+  name: process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_NAME || 'Sonic Testnet',
+  nativeCurrency: { name: settlementNativeName, symbol: settlementNativeSymbol, decimals: 18 },
   rpcUrls: {
     default: { http: [envRpcUrl] },
     public: { http: [envRpcUrl] },
+  },
+  blockExplorers: {
+    default: { name: 'Explorer', url: settlementExplorer },
   },
   testnet: true,
 }
@@ -58,11 +66,11 @@ const l3Transport = l3FallbackRpcUrl
       retryDelay: 1_000
     })
 
-// RPC configuration — Arbitrum
+// RPC configuration — Settlement
 const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 const fallbackRpcUrl = process.env.NEXT_PUBLIC_RPC_FALLBACK_URL
 
-const arbTransport = fallbackRpcUrl
+const settlementTransport = fallbackRpcUrl
   ? fallback([
       http(rpcUrl, {
         timeout: 5_000,
@@ -81,13 +89,13 @@ const arbTransport = fallbackRpcUrl
       retryDelay: 1_000
     })
 
-// Multi-chain wagmi config: L3 (primary) + Arbitrum (for deposits)
+// Multi-chain wagmi config: L3 (primary) + Settlement (for deposits)
 export const wagmiConfig = createConfig({
-  chains: [indexL3, arbitrumChain],
+  chains: [indexL3, settlementChain],
   connectors: [injected()],
   transports: {
     [indexL3.id]: l3Transport,
-    [arbitrumChain.id]: arbTransport,
+    [settlementChain.id]: settlementTransport,
   },
   ssr: true,
 })
@@ -95,12 +103,12 @@ export const wagmiConfig = createConfig({
 // Export the active chain for use in components (L3 is the primary chain)
 export const activeChain = indexL3
 export const activeChainId = indexL3.id
-export const arbChainId = arbitrumChain.id
+export const settlementChainId = settlementChain.id
 
 // ---------------------------------------------------------------------------
 // L3-defaulting hook wrappers
 // Use these instead of raw wagmi hooks so chain reads always target L3
-// (or Arb when explicitly overridden). This prevents reads from defaulting
+// (or Settlement when explicitly overridden). This prevents reads from defaulting
 // to whatever chain the wallet happens to be connected to.
 // ---------------------------------------------------------------------------
 import {

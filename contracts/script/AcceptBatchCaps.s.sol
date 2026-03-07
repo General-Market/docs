@@ -15,7 +15,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 ///
 ///      Environment variables (same as DeployBatchMarkets):
 ///        METAMORPHO_VAULT      — MetaMorpho vault address
-///        ARB_USDC              — Loan token (USDC)
+///        SETTLEMENT_USDC              — Loan token (USDC)
 ///        CURATOR_RATE_IRM      — CuratorRateIRM address
 ///        BATCH_MARKET_COUNT    — Number of ITP markets
 ///        ITP_<i>_ADDRESS       — ITP token address (i = 0..count-1)
@@ -34,7 +34,7 @@ contract AcceptBatchCaps is Script {
         address deployer = vm.addr(anvilKey);
 
         address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
-        address arbUSDC = vm.envAddress("ARB_USDC");
+        address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address curatorIrmAddr = vm.envAddress("CURATOR_RATE_IRM");
         uint256 marketCount = vm.envUint("BATCH_MARKET_COUNT");
         uint256 seedLiquidity = vm.envOr("SEED_LIQUIDITY_USDC", uint256(0));
@@ -60,7 +60,7 @@ contract AcceptBatchCaps is Script {
             address oracleAddr = vm.envAddress(string.concat(prefix, "_ORACLE"));
 
             MarketParams memory params = MarketParams({
-                loanToken: arbUSDC,
+                loanToken: settlementUSDC,
                 collateralToken: itpAddress,
                 oracle: oracleAddr,
                 irm: curatorIrmAddr,
@@ -82,8 +82,8 @@ contract AcceptBatchCaps is Script {
 
         // Optionally seed vault with USDC liquidity
         if (seedLiquidity > 0) {
-            MockERC20(arbUSDC).mint(deployer, seedLiquidity);
-            IERC20(arbUSDC).approve(vaultAddr, seedLiquidity);
+            MockERC20(settlementUSDC).mint(deployer, seedLiquidity);
+            IERC20(settlementUSDC).approve(vaultAddr, seedLiquidity);
             vault.deposit(seedLiquidity, deployer);
             console.log("Vault seeded with", seedLiquidity / 1e6, "USDC");
         }

@@ -16,8 +16,8 @@ export const INDEX_PROTOCOL = {
   issuerRegistry: c.IssuerRegistry as `0x${string}`,
   assetPairRegistry: c.CollateralRegistry as `0x${string}`,
   mockBitgetVault: c.MockBitgetVault as `0x${string}`,
-  arbCustody: c.ArbBridgeCustody as `0x${string}`,
-  arbUsdc: c.ARB_USDC as `0x${string}`,
+  settlementCustody: c.SettlementBridgeCustody as `0x${string}`,
+  settlementUsdc: c.SETTLEMENT_USDC as `0x${string}`,
   l3Usdc: c.L3_WUSDC as `0x${string}`,
   feeRegistry: '' as `0x${string}`,
 }

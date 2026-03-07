@@ -10,13 +10,13 @@ import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 import { indexL3 } from '@/lib/wagmi'
 
-export type WithdrawToArbStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
+export type WithdrawToSettlementStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
 
-export interface UseWithdrawToArbReturn {
-  /** Call Vision.withdrawToArb(amount) — debits virtualBalance, issuers release from ArbBridgeCustody */
+export interface UseWithdrawToSettlementReturn {
+  /** Call Vision.withdrawToSettlement(amount) on L3 — debits virtualBalance, issuers release from SettlementBridgeCustody */
   withdraw: (amount: bigint) => void
   /** Current step */
-  step: WithdrawToArbStep
+  step: WithdrawToSettlementStep
   /** L3 transaction hash */
   txHash: `0x${string}` | undefined
   /** Error message if any */
@@ -27,15 +27,15 @@ export interface UseWithdrawToArbReturn {
 
 /**
  * Hook to withdraw from virtualBalance on Vision.sol (L3).
- * This triggers issuers to release USDC from ArbBridgeCustody on Arbitrum.
+ * This triggers issuers to release USDC from SettlementBridgeCustody on Settlement.
  * Only debits virtualBalance — use useWithdrawBalance for realBalance.
  *
- * After L3 tx confirms, polls issuer API for Arb-side completion.
+ * After L3 tx confirms, polls issuer API for Settlement-side completion.
  */
-export function useWithdrawToArb(): UseWithdrawToArbReturn {
+export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
   const { address } = useAccount()
 
-  const [step, setStep] = useState<WithdrawToArbStep>('idle')
+  const [step, setStep] = useState<WithdrawToSettlementStep>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [withdrawId, setWithdrawId] = useState<string | null>(null)
 
@@ -58,10 +58,10 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
   useTransactionNotification({
     hash: txHash,
     isPending: isWithdrawPending,
-    isConfirming: false, // isWithdrawConfirming not directly available here
+    isConfirming: false,
     isSuccess: isWithdrawSuccess,
     error: withdrawError,
-    label: 'Withdraw to Arbitrum',
+    label: 'Withdraw to Settlement',
   })
 
   const withdraw = useCallback((amount: bigint) => {
@@ -75,7 +75,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     writeWithdraw({
       address: VISION_ADDRESS,
       abi: VISION_ABI,
-      functionName: 'withdrawToArb',
+      functionName: 'withdrawToSettlement',
       args: [amount],
     })
   }, [address, writeWithdraw])
@@ -85,7 +85,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
     if (!isWithdrawSuccess || !withdrawReceipt || withdrawHandled.current) return
     withdrawHandled.current = true
 
-    // Extract withdrawId from WithdrawToArbRequested event
+    // Extract withdrawId from WithdrawToSettlementRequested event
     for (const log of withdrawReceipt.logs) {
       try {
         const decoded = decodeEventLog({
@@ -93,7 +93,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
           data: log.data,
           topics: log.topics,
         })
-        if (decoded.eventName === 'WithdrawToArbRequested') {
+        if (decoded.eventName === 'WithdrawToSettlementRequested') {
           setWithdrawId(String((decoded.args as any).withdrawId))
           break
         }
@@ -177,7 +177,7 @@ export function useWithdrawToArb(): UseWithdrawToArbReturn {
   // Error handling
   useEffect(() => {
     if (withdrawError) {
-      const msg = withdrawError.message || 'Withdrawal to Arb failed'
+      const msg = withdrawError.message || 'Withdrawal to Settlement failed'
       setErrorMsg(msg.slice(0, 300))
       setStep('error')
       resetWithdraw()

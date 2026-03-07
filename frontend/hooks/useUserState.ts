@@ -7,7 +7,7 @@ import { fetchUserState, type UserState } from '@/lib/api/backend'
 interface UseUserStateReturn {
   /** USDC balance (18 decimals on L3, string) */
   usdcBalance: bigint
-  /** USDC allowance for ArbBridgeCustody */
+  /** USDC allowance for SettlementBridgeCustody */
   usdcAllowanceCustody: bigint
   /** USDC allowance for Morpho */
   usdcAllowanceMorpho: bigint
@@ -15,7 +15,7 @@ interface UseUserStateReturn {
   bridgedItpAddress: string
   /** BridgedITP balance (18 decimals) */
   bridgedItpBalance: bigint
-  /** BridgedITP allowance for ArbBridgeCustody */
+  /** BridgedITP allowance for SettlementBridgeCustody */
   bridgedItpAllowanceCustody: bigint
   /** BridgedITP allowance for Morpho */
   bridgedItpAllowanceMorpho: bigint

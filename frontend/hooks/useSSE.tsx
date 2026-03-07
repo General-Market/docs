@@ -66,7 +66,7 @@ export interface NavSnapshot {
   nav_per_share: number
   total_supply: string
   aum_usd: number
-  arb_address: string | null
+  settlement_address: string | null
 }
 
 export interface OracleSnapshot {
@@ -78,7 +78,7 @@ export interface OracleSnapshot {
 
 export interface UserBalances {
   usdc_l3: string
-  usdc_arb: string
+  usdc_settlement: string
   /** Per-ITP shares: itp_id hex -> balance string (wei) */
   itp_shares: Record<string, string>
   bridged_itp: string
@@ -87,7 +87,7 @@ export interface UserBalances {
 
 export interface UserAllowances {
   usdc_l3_to_index: string
-  usdc_arb_to_custody: string
+  usdc_settlement_to_custody: string
   itp_to_morpho: string
 }
 

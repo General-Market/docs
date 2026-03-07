@@ -1,8 +1,8 @@
 //! Cross-chain swap orchestrator using Fusion+ intents
 //!
-//! Routes cross-chain DEX pairs through the Arbitrum hub:
-//! 1. Bridge USDC from L3 to Arbitrum (if needed)
-//! 2. Create Fusion+ intent from Arbitrum to destination chain
+//! Routes cross-chain DEX pairs through the Settlement hub:
+//! 1. Bridge USDC from L3 to Settlement chain (if needed)
+//! 2. Create Fusion+ intent from Settlement chain to destination chain
 //! 3. Monitor intent settlement status
 
 use common::integrations::oneinch::{
@@ -47,7 +47,7 @@ pub enum CrossChainError {
     MaxRetriesExceeded { max_retries: u32 },
 
     /// Bridge required but not available
-    #[error("L3 -> Arbitrum bridge required but not configured")]
+    #[error("L3 -> Settlement bridge required but not configured")]
     BridgeRequired,
 
     /// 1inch error
@@ -92,7 +92,7 @@ pub enum CrossChainStatus {
 /// Configuration for cross-chain orchestrator
 #[derive(Debug, Clone)]
 pub struct CrossChainOrchestratorConfig {
-    /// Source chain ID (e.g. Arbitrum). Must be set explicitly.
+    /// Source chain ID (e.g. Settlement chain). Must be set explicitly.
     pub src_chain_id: u64,
     /// Intent timeout in seconds
     pub intent_timeout_secs: u64,
@@ -119,7 +119,7 @@ impl Default for CrossChainOrchestratorConfig {
 /// Request to execute a cross-chain swap
 #[derive(Debug, Clone)]
 pub struct CrossChainRequest {
-    /// Source token address (on Arbitrum)
+    /// Source token address (on Settlement chain)
     pub src_token: String,
     /// Destination token address (on dst chain)
     pub dst_token: String,
@@ -202,7 +202,7 @@ impl CrossChainOrchestrator {
         &self,
         request: &CrossChainRequest,
     ) -> Result<CrossChainResult, CrossChainError> {
-        // Validate route (Arbitrum must be source)
+        // Validate route (Settlement chain must be source)
         let src_chain_id = self.config.src_chain_id;
         if !FusionRoute::is_supported(src_chain_id, request.dst_chain_id) {
             return Err(CrossChainError::UnsupportedRoute {

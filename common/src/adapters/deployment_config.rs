@@ -120,7 +120,7 @@ impl DeploymentConfig {
     }
 
     /// Get a token address by symbol (E2E testing)
-    /// Supports: BTC, ETH, L3_WUSDC, ARB_WUSDC
+    /// Supports: BTC, ETH, L3_WUSDC, SETTLEMENT_USDC
     pub fn token_address(&self, symbol: &str) -> Result<Address, Error> {
         self.get_contract_address(symbol)
     }

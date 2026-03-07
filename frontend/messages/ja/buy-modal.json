@@ -45,7 +45,7 @@
     "batch": "注文をバッチ処理中...",
     "fill": "取引を実行中...",
     "record_collateral": "担保を記録中...",
-    "bridge_to_arb": "USDCをArbitrumにブリッジ中...",
+    "bridge_to_settlement": "USDCをSettlementにブリッジ中...",
     "complete_bridge": "ブリッジを完了中...",
     "mint_shares": "BridgedITPをミント中...",
     "shares_received": "シェアを受け取りました！"
@@ -62,7 +62,7 @@
     "buy_filled": "購入約定 — {name}のシェアを受け取りました"
   },
   "stall": {
-    "title": "Arbitrumで注文が送信されました",
+    "title": "Settlementで注文が送信されました",
     "description": "注文はL3に中継されて処理中です。数分かかる場合があります。このダイアログを閉じても安全です。注文は処理を続行し、ポートフォリオに表示されます。"
   },
   "error": {

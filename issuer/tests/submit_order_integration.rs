@@ -53,7 +53,7 @@ fn test_cross_chain_order() -> CrossChainOrder {
         slippage_tier: 1, // Normal
         deadline: U256::from(u64::MAX), // Far future
         created_at: U256::from(1700000000u64),
-        chain_id: 42161, // Arbitrum One
+        chain_id: 42161, // Settlement chain
         block_number: 100,
         tx_hash: H256::from([0xEE; 32]),
     }
@@ -165,7 +165,7 @@ fn test_build_submit_order_hash_includes_limit_price() {
 fn test_submit_order_proposal_creation() {
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: U256::from(123),
+        settlement_order_id: U256::from(123),
         itp_id: H256::from([0xAB; 32]),
         user: Address::from([0xCD; 20]),
         amount: U256::from(1000000000000000000u64),
@@ -176,7 +176,7 @@ fn test_submit_order_proposal_creation() {
         message_hash: H256::from([0xEE; 32]),
     };
 
-    assert_eq!(proposal.arb_order_id, U256::from(123));
+    assert_eq!(proposal.settlement_order_id, U256::from(123));
     assert_eq!(proposal.slippage_tier, U256::from(1));
     assert_eq!(proposal.leader_signature.0.len(), 96);
 }
@@ -218,13 +218,13 @@ fn test_submit_order_result_without_l3_order_id() {
 #[test]
 fn test_order_mapping_creation() {
     let mapping = OrderMapping {
-        arb_order_id: U256::from(123),
+        settlement_order_id: U256::from(123),
         l3_order_id: U256::from(456),
         original_user: Address::from([0xAB; 20]),
         created_at: 1700000000,
     };
 
-    assert_eq!(mapping.arb_order_id, U256::from(123));
+    assert_eq!(mapping.settlement_order_id, U256::from(123));
     assert_eq!(mapping.l3_order_id, U256::from(456));
     assert_eq!(mapping.original_user, Address::from([0xAB; 20]));
 }
@@ -232,7 +232,7 @@ fn test_order_mapping_creation() {
 #[test]
 fn test_order_mapping_serialization() {
     let mapping = OrderMapping {
-        arb_order_id: U256::from(123),
+        settlement_order_id: U256::from(123),
         l3_order_id: U256::from(456),
         original_user: Address::from([0xAB; 20]),
         created_at: 1700000000,
@@ -242,7 +242,7 @@ fn test_order_mapping_serialization() {
     let json = serde_json::to_string(&mapping).expect("Serialization failed");
     let deserialized: OrderMapping = serde_json::from_str(&json).expect("Deserialization failed");
 
-    assert_eq!(mapping.arb_order_id, deserialized.arb_order_id);
+    assert_eq!(mapping.settlement_order_id, deserialized.settlement_order_id);
     assert_eq!(mapping.l3_order_id, deserialized.l3_order_id);
     assert_eq!(mapping.original_user, deserialized.original_user);
     assert_eq!(mapping.created_at, deserialized.created_at);
@@ -350,7 +350,7 @@ async fn test_submit_order_consensus_flow_simulation() {
     // 2. Create proposal
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: order.order_id,
+        settlement_order_id: order.order_id,
         itp_id: order.itp_id,
         user: order.user,
         amount: order.amount,
@@ -365,7 +365,7 @@ async fn test_submit_order_consensus_flow_simulation() {
     // Follower 2 rebuilds hash and verifies it matches
     let follower2_hash = build_submit_order_hash(
         l3_chain_id,
-        proposal.arb_order_id,
+        proposal.settlement_order_id,
         proposal.itp_id,
         proposal.user,
         proposal.amount,
@@ -422,7 +422,7 @@ async fn test_order_mapping_storage_and_retrieval() {
 
     // Store mapping after successful submitOrder
     let mapping = OrderMapping {
-        arb_order_id: U256::from(123),
+        settlement_order_id: U256::from(123),
         l3_order_id: U256::from(456),
         original_user: Address::from([0xAB; 20]),
         created_at: 1700000000,
@@ -431,7 +431,7 @@ async fn test_order_mapping_storage_and_retrieval() {
     order_mappings
         .write()
         .await
-        .insert(mapping.arb_order_id, mapping.clone());
+        .insert(mapping.settlement_order_id, mapping.clone());
 
     // Retrieve mapping
     let retrieved = order_mappings
@@ -459,7 +459,7 @@ fn test_submit_order_expired_deadline_validation() {
 
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: U256::from(123),
+        settlement_order_id: U256::from(123),
         itp_id: H256::from([0xAB; 32]),
         user: Address::from([0xCD; 20]),
         amount: U256::from(1000000000000000000u64),
@@ -527,16 +527,16 @@ fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
         issuer_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
-        arb_custody_address: Address::from([0x33; 20]),
-        arbitrum_chain_id: 42161,
+        settlement_custody_address: Address::from([0x33; 20]),
+        settlement_chain_id: 42161,
         l3_chain_id: 111222333,
         index_address: Address::from([0x44; 20]),
         min_signatures: 2,
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Arb config
-        issuer_custody_arb: Address::from([0x55; 20]),
-        arb_usdc_address: Address::from([0x66; 20]),
+        issuer_custody_settlement: Address::from([0x55; 20]),
+        settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),
         signer_address: Address::from([0x88; 20]),
@@ -569,8 +569,8 @@ async fn test_orchestrator_propose_submit_order_requires_bridged_status() {
     assert!(result.is_err());
 
     match result.unwrap_err() {
-        BridgeError::OrderNotBridged { arb_order_id, status } => {
-            assert_eq!(arb_order_id, order.order_id);
+        BridgeError::OrderNotBridged { settlement_order_id, status } => {
+            assert_eq!(settlement_order_id, order.order_id);
             assert_eq!(status, None); // No status set yet
         }
         other => panic!("Expected OrderNotBridged error, got: {:?}", other),
@@ -602,7 +602,7 @@ async fn test_orchestrator_propose_submit_order_success() {
     // Now propose should succeed
     let proposal = orchestrator.propose_submit_order(&order).await.expect("Proposal should succeed");
 
-    assert_eq!(proposal.arb_order_id, order.order_id);
+    assert_eq!(proposal.settlement_order_id, order.order_id);
     assert_eq!(proposal.itp_id, order.itp_id);
     assert_eq!(proposal.user, order.user);
     assert_eq!(proposal.amount, order.amount);
@@ -655,7 +655,7 @@ async fn test_orchestrator_validate_submit_order_proposal() {
 
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: order.order_id,
+        settlement_order_id: order.order_id,
         itp_id: order.itp_id,
         user: order.user,
         amount: order.amount,
@@ -702,7 +702,7 @@ async fn test_orchestrator_validate_rejects_already_submitted() {
     // Set status and store mapping (simulating already submitted)
     orchestrator.set_order_status(order.order_id, BridgeOrderStatus::BridgedToL3).await;
     orchestrator.store_order_mapping(OrderMapping {
-        arb_order_id: order.order_id,
+        settlement_order_id: order.order_id,
         l3_order_id: U256::from(999),
         original_user: order.user,
         created_at: 1700000000,
@@ -721,7 +721,7 @@ async fn test_orchestrator_validate_rejects_already_submitted() {
 
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: order.order_id,
+        settlement_order_id: order.order_id,
         itp_id: order.itp_id,
         user: order.user,
         amount: order.amount,
@@ -769,7 +769,7 @@ async fn test_orchestrator_sign_submit_order_proposal() {
 
     let proposal = SubmitOrderProposal {
         leader_id: test_peer_id(1),
-        arb_order_id: order.order_id,
+        settlement_order_id: order.order_id,
         itp_id: order.itp_id,
         user: order.user,
         amount: order.amount,
@@ -805,12 +805,12 @@ async fn test_orchestrator_signature_collection_threshold() {
         0, // leader index
     );
 
-    let arb_order_id = U256::from(123);
+    let settlement_order_id = U256::from(123);
 
     // Create a message hash for signing
     let message_hash = build_submit_order_hash(
         config.l3_chain_id,
-        arb_order_id,
+        settlement_order_id,
         H256::from([0xAB; 32]),
         Address::from([0xCD; 20]),
         U256::from(1000000000000000000u64),
@@ -828,10 +828,10 @@ async fn test_orchestrator_signature_collection_threshold() {
         .expect("Follower signing failed");
 
     // Start signature collection
-    orchestrator.start_submit_order_signature_collection(arb_order_id, leader_sig).await;
+    orchestrator.start_submit_order_signature_collection(settlement_order_id, leader_sig).await;
 
     // Add follower signature - with min_signatures = 2, threshold should now be reached
-    let result = orchestrator.add_submit_order_follower_signature(arb_order_id, 1, follower_sig).await;
+    let result = orchestrator.add_submit_order_follower_signature(settlement_order_id, 1, follower_sig).await;
     assert!(result.is_ok(), "Adding follower signature should succeed");
 
     // With min_signatures = 2, threshold should now be reached (leader + 1 follower = 2)
@@ -861,27 +861,27 @@ async fn test_orchestrator_order_mapping_storage() {
         0,
     );
 
-    let arb_order_id = U256::from(123);
+    let settlement_order_id = U256::from(123);
     let l3_order_id = U256::from(456);
     let user = Address::from([0xAB; 20]);
 
     // Initially no mapping
-    assert!(orchestrator.get_l3_order_id(&arb_order_id).await.is_none());
+    assert!(orchestrator.get_l3_order_id(&settlement_order_id).await.is_none());
 
     // Store mapping
     orchestrator.store_order_mapping(OrderMapping {
-        arb_order_id,
+        settlement_order_id,
         l3_order_id,
         original_user: user,
         created_at: 1700000000,
     }).await;
 
     // Now mapping exists
-    let retrieved_l3_id = orchestrator.get_l3_order_id(&arb_order_id).await;
+    let retrieved_l3_id = orchestrator.get_l3_order_id(&settlement_order_id).await;
     assert_eq!(retrieved_l3_id, Some(l3_order_id));
 
     // Full mapping retrieval
-    let mapping = orchestrator.get_order_mapping(&arb_order_id).await;
+    let mapping = orchestrator.get_order_mapping(&settlement_order_id).await;
     assert!(mapping.is_some());
     let mapping = mapping.unwrap();
     assert_eq!(mapping.original_user, user);

@@ -173,7 +173,7 @@ contract DecimalLibTest is Test {
     }
 
     function test_realWorldScenario_userDeposit() public pure {
-        // User deposits 1000 USDC on Arbitrum
+        // User deposits 1000 USDC on Settlement
         uint256 userDeposit6dec = 1000 * 1e6; // 1,000,000,000
 
         // Contract converts to internal representation

@@ -209,7 +209,7 @@ echo -e "  ${GREEN}Source synced${NC}"
 echo -e "${BLUE}[3/5] Patching .env for VPS PostgreSQL...${NC}"
 ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env" 2>/dev/null
 # Also update RPC URLs to point to VPS L3 (local nginx proxy)
-ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|INDEX_RPC_URL=.*|INDEX_RPC_URL=http://localhost/|' data-node/.env && sed -i 's|ARB_RPC_URL=.*|ARB_RPC_URL=http://localhost/|' data-node/.env" 2>/dev/null
+ssh "$VPS_HOST" "cd $VPS_DIR && sed -i 's|INDEX_RPC_URL=.*|INDEX_RPC_URL=http://localhost/|' data-node/.env && sed -i 's|SETTLEMENT_RPC_URL=.*|SETTLEMENT_RPC_URL=http://localhost/|' data-node/.env" 2>/dev/null
 echo -e "  ${GREEN}ENV patched (postgres:///$DB_NAME — peer auth via socket)${NC}"
 
 # ── Build on VPS ──────────────────────────────────────────────
@@ -229,7 +229,7 @@ sleep 1
 ssh "$VPS_HOST" "mkdir -p $VPS_DIR/logs && cd $VPS_DIR && nohup ./target/release/data-node serve \
     --database-url postgres:///$DB_NAME \
     --rpc-url http://localhost/ \
-    --arb-rpc-url http://localhost/ \
+    --settlement-rpc-url http://localhost/ \
     --ecb-enabled \
     --openmeteo-sync-interval 300 \
     > logs/data-node.log 2>&1 &

@@ -5,7 +5,7 @@
   "contracts": {
     "USDC": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
     "L3_USDC": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
-    "ARB_USDC": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    "SETTLEMENT_USDC": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
     "Governance": "0x0165878a594ca255338adfa4d48449f69242eb8f",
     "FeeRegistry": "0x610178da211fef7d417bc0e6fed39f05609ad788",
     "CollateralRegistry": "0xa51c1fc2f0d1a1b8494ed1fe312d7c3a78ed91c0",
@@ -19,7 +19,7 @@
     "BridgedItpFactory": "0x7a2088a1bfc9d81c55368ae168c2c02570cb814f",
     "IssuerCustodyL3": "0x67d269191c92caf3cd7723f116c85e6e9bf55933",
     "IssuerCustodyArb": "0xc3e53f4d16ae77db1c982e75a937b9f60fe63690",
-    "ArbBridgeCustody": "0x9e545e3c0baab3e08cdfd552c960a1050f373042",
+    "SettlementBridgeCustody": "0x9e545e3c0baab3e08cdfd552c960a1050f373042",
     "ITP1_CryptoBlend": "",
     "ITP2_DeFiIndex": ""
   },

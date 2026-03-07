@@ -45,16 +45,16 @@ fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
         issuer_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
-        arb_custody_address: Address::from([0x33; 20]),
-        arbitrum_chain_id: 42161,
+        settlement_custody_address: Address::from([0x33; 20]),
+        settlement_chain_id: 42161,
         l3_chain_id: 111222333,
         index_address: Address::from([0x44; 20]),
         min_signatures: 2,
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Arb config
-        issuer_custody_arb: Address::from([0x55; 20]),
-        arb_usdc_address: Address::from([0x66; 20]),
+        issuer_custody_settlement: Address::from([0x55; 20]),
+        settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),
         signer_address: Address::from([0x88; 20]),

@@ -1,16 +1,16 @@
 //! Rebalance Request Handler for BLS-based cross-chain rebalance (Cross-Chain Rebalance)
 //!
 //! This module handles the consensus protocol for rebalancing ITPs via cross-chain
-//! requests from Arbitrum's BridgeProxy contract.
+//! requests from the BridgeProxy contract on the Settlement chain.
 //!
 //! ## Flow
 //!
-//! 1. Deployer calls `BridgeProxy.requestRebalance()` on Arbitrum
+//! 1. Deployer calls `BridgeProxy.requestRebalance()` on Settlement chain
 //! 2. Issuers detect `RebalanceRequested` event (or poll pending requests)
 //! 3. Leader broadcasts `RebalanceRequestProposal` with weightsHash
 //! 4. Followers verify and sign
 //! 5. Leader aggregates signatures (threshold)
-//! 6. Leader calls `BridgeProxy.completeRebalance()` on Arbitrum
+//! 6. Leader calls `BridgeProxy.completeRebalance()` on Settlement chain
 //!    (BridgeProxy atomically calls Index.proposeRebalanceFromBridge on L3)
 
 use ethers::types::{Address, H256, U256};
@@ -80,9 +80,9 @@ pub fn compute_rebalance_weights_hash(weights: &[U256]) -> H256 {
 /// Configuration for rebalance request handler
 #[derive(Debug, Clone)]
 pub struct RebalanceRequestConfig {
-    /// Arbitrum chain ID (42161 for mainnet)
-    pub arbitrum_chain_id: u64,
-    /// BridgeProxy contract address on Arbitrum
+    /// Settlement chain ID (42161 for mainnet)
+    pub settlement_chain_id: u64,
+    /// BridgeProxy contract address on Settlement chain
     pub bridge_proxy_address: Address,
     /// Timeout for proposal broadcast (ms)
     pub proposal_timeout_ms: u64,
@@ -95,7 +95,7 @@ pub struct RebalanceRequestConfig {
 impl Default for RebalanceRequestConfig {
     fn default() -> Self {
         Self {
-            arbitrum_chain_id: 42161,
+            settlement_chain_id: 42161,
             bridge_proxy_address: Address::zero(),
             proposal_timeout_ms: 500,
             sign_timeout_ms: 300,
@@ -240,7 +240,7 @@ mod tests {
     #[test]
     fn test_config_defaults() {
         let config = RebalanceRequestConfig::default();
-        assert_eq!(config.arbitrum_chain_id, 42161);
+        assert_eq!(config.settlement_chain_id, 42161);
         assert_eq!(config.proposal_timeout_ms, 500);
         assert_eq!(config.sign_timeout_ms, 300);
         assert_eq!(config.min_signatures, 11);

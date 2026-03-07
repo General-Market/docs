@@ -5,12 +5,12 @@ import { useAccount, useSwitchChain, useWriteContract } from 'wagmi'
 import { encodeFunctionData, decodeFunctionResult } from 'viem'
 import { INDEX_ABI, BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { arbChainId } from '@/lib/wagmi'
+import { settlementChainId } from '@/lib/wagmi'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
-import { DATA_NODE_URL, ARB_RPC_URL as ARB_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
+import { DATA_NODE_URL, SETTLEMENT_RPC_URL as SETTLEMENT_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 
 const L3_INDEX = INDEX_PROTOCOL.index
@@ -107,17 +107,17 @@ async function fetchItpState(itpId: string) {
   }
 }
 
-/** Poll Arb RPC for a receipt — retries for up to `timeoutMs` before giving up */
-async function waitForArbReceipt(hash: string, timeoutMs = 20_000): Promise<any> {
+/** Poll Settlement RPC for a receipt — retries for up to `timeoutMs` before giving up */
+async function waitForSettlementReceipt(hash: string, timeoutMs = 20_000): Promise<any> {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
-    const receipt = await rpcCall(ARB_RPC, 'eth_getTransactionReceipt', [hash]) as any
+    const receipt = await rpcCall(SETTLEMENT_RPC, 'eth_getTransactionReceipt', [hash]) as any
     if (receipt) return receipt
     await new Promise(r => setTimeout(r, 1_000))
   }
   throw new Error(
     `Transaction receipt not found after ${timeoutMs / 1000}s. ` +
-    `Ensure MetaMask chain ${arbChainId} points to ${ARB_RPC}. Tx hash: ${hash}`
+    `Ensure MetaMask chain ${settlementChainId} points to ${SETTLEMENT_RPC}. Tx hash: ${hash}`
   )
 }
 
@@ -286,18 +286,18 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
   // This is more reliable than useWaitForTransactionReceipt on local Anvil.
   useEffect(() => {
     if (!requestHash || statusRef.current !== 'confirming') return
-    const arbTxHash = requestHash // capture for closure (non-null)
+    const settlementTxHash = requestHash // capture for closure (non-null)
 
     let cancelled = false
 
     async function confirmAndExecute() {
       try {
-        // Step 1 done: wait for receipt on Arb Anvil
-        const receipt = await waitForArbReceipt(arbTxHash)
+        // Step 1 done: wait for receipt on Settlement
+        const receipt = await waitForSettlementReceipt(settlementTxHash)
         if (cancelled) return
 
         if (receipt.status === '0x0') {
-          throw new Error('requestRebalance reverted on Arbitrum')
+          throw new Error('requestRebalance reverted on Settlement')
         }
 
         // Step 2: Execute rebalance on L3
@@ -422,12 +422,12 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
     resetWrite()
     setErrorMsg('')
 
-    // BridgeProxy lives on Arbitrum — ensure wallet is on Arb chain
-    if (currentChain?.id !== arbChainId) {
+    // BridgeProxy lives on Settlement — ensure wallet is on Settlement chain
+    if (currentChain?.id !== settlementChainId) {
       try {
-        await switchChainAsync({ chainId: arbChainId })
+        await switchChainAsync({ chainId: settlementChainId })
       } catch {
-        setErrorMsg('Please switch to the Arbitrum chain to rebalance')
+        setErrorMsg('Please switch to the Settlement chain to rebalance')
         return
       }
       // Give wallet time to complete the chain switch
@@ -459,7 +459,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
     // Set status to requesting (wallet pending), will advance to confirming when hash arrives
     setStatus('requesting')
 
-    // Step 1: Submit requestRebalance through MetaMask (on Arb chain)
+    // Step 1: Submit requestRebalance through MetaMask (on Settlement chain)
     writeContract({
       address: INDEX_PROTOCOL.bridgeProxy,
       abi: BRIDGE_PROXY_ABI,
@@ -471,7 +471,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
         newWeights,
         'Frontend rebalance request',
       ],
-      chainId: arbChainId,
+      chainId: settlementChainId,
     })
   }
 

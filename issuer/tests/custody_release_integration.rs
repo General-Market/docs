@@ -2,7 +2,7 @@
 //!
 //! Tests the full custody release flow with BLS consensus:
 //! 1. Leader proposes custody release with cycle_number, order_ids, and total_amount
-//! 2. Followers validate proposal (orders must be in BridgedBackToArb status)
+//! 2. Followers validate proposal (orders must be in BridgedBackToSettlement status)
 //! 3. Followers sign proposal
 //! 4. Threshold reached → signatures aggregated
 //! 5. Execute custody release via BLSCustody.execute()
@@ -81,15 +81,15 @@ fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
         issuer_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
-        arb_custody_address: Address::from([0x33; 20]),
-        arbitrum_chain_id: 42161,
+        settlement_custody_address: Address::from([0x33; 20]),
+        settlement_chain_id: 42161,
         l3_chain_id: 111222333,
         index_address: Address::from([0x44; 20]),
         min_signatures: 2, // 2-of-3 threshold
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
-        issuer_custody_arb: Address::from([0x55; 20]),
-        arb_usdc_address: Address::from([0x66; 20]),
+        issuer_custody_settlement: Address::from([0x55; 20]),
+        settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: MockBitgetVault address
         bitget_vault: Address::from([0x77; 20]),
         signer_address: Address::from([0x88; 20]),
@@ -215,9 +215,9 @@ async fn test_leader_creates_release_to_vault_proposal() {
         0, // node_index
     );
 
-    // Pre-condition: mark orders as BridgedBackToArb and store amounts
-    orchestrator.set_order_status(order1_id, BridgeOrderStatus::BridgedBackToArb).await;
-    orchestrator.set_order_status(order2_id, BridgeOrderStatus::BridgedBackToArb).await;
+    // Pre-condition: mark orders as BridgedBackToSettlement and store amounts
+    orchestrator.set_order_status(order1_id, BridgeOrderStatus::BridgedBackToSettlement).await;
+    orchestrator.set_order_status(order2_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     orchestrator.set_order_amount(order1_id, amount1).await;
     orchestrator.set_order_amount(order2_id, amount2).await;
 
@@ -244,8 +244,8 @@ async fn test_leader_creates_release_to_vault_proposal() {
 
     // Verify message hash matches recomputed
     let expected_hash = build_release_to_vault_hash(
-        config.arbitrum_chain_id,
-        config.issuer_custody_arb,
+        config.settlement_chain_id,
+        config.issuer_custody_settlement,
         cycle_number,
         &order_ids,
         amount1 + amount2,
@@ -255,7 +255,7 @@ async fn test_leader_creates_release_to_vault_proposal() {
 }
 
 // ============================================================================
-// Test 2: Follower validates proposal (requires BridgedBackToArb status)
+// Test 2: Follower validates proposal (requires BridgedBackToSettlement status)
 // ============================================================================
 
 #[tokio::test]
@@ -278,8 +278,8 @@ async fn test_follower_validates_release_proposal() {
         0,
     );
 
-    // Mark as BridgedBackToArb (pre-condition) and store amount
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    // Mark as BridgedBackToSettlement (pre-condition) and store amount
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
 
     // Create proposal
@@ -303,7 +303,7 @@ async fn test_follower_validates_release_proposal() {
     );
 
     // Follower must also track order status and amount
-    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     follower.set_order_amount(order_id, amount).await;
 
     // Validate proposal
@@ -316,7 +316,7 @@ async fn test_follower_validates_release_proposal() {
 }
 
 // ============================================================================
-// Test 3: Follower rejects proposal when order not BridgedBackToArb
+// Test 3: Follower rejects proposal when order not BridgedBackToSettlement
 // ============================================================================
 
 #[tokio::test]
@@ -339,8 +339,8 @@ async fn test_follower_rejects_proposal_wrong_status() {
         0,
     );
 
-    // Mark as BridgedBackToArb for leader and store amount
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    // Mark as BridgedBackToSettlement for leader and store amount
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
 
     // Create proposal
@@ -368,7 +368,7 @@ async fn test_follower_rejects_proposal_wrong_status() {
 
     // Validate proposal - should return false (not an error, following existing pattern)
     let is_valid = follower.validate_release_proposal(&proposal).await.unwrap();
-    assert!(!is_valid, "Follower should reject proposal when order not in BridgedBackToArb status");
+    assert!(!is_valid, "Follower should reject proposal when order not in BridgedBackToSettlement status");
 }
 
 // ============================================================================
@@ -395,8 +395,8 @@ async fn test_follower_rejects_proposal_wrong_vault() {
         0,
     );
 
-    // Mark as BridgedBackToArb and store amount
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    // Mark as BridgedBackToSettlement and store amount
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
 
     // Create proposal
@@ -422,7 +422,7 @@ async fn test_follower_rejects_proposal_wrong_vault() {
         1,
     );
 
-    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     follower.set_order_amount(order_id, amount).await;
 
     // Validate proposal - should fail
@@ -461,7 +461,7 @@ async fn test_follower_signs_release_proposal() {
         0,
     );
 
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
 
     // Create proposal
@@ -485,7 +485,7 @@ async fn test_follower_signs_release_proposal() {
         1,
     );
 
-    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    follower.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     follower.set_order_amount(order_id, amount).await;
 
     // Sign proposal
@@ -531,7 +531,7 @@ async fn test_release_signature_aggregation_threshold() {
         0,
     );
 
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
 
     // Create proposal
@@ -590,7 +590,7 @@ async fn test_duplicate_release_execution_rejected() {
         0,
     );
 
-    orchestrator.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    orchestrator.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     orchestrator.set_order_amount(order_id, amount).await;
 
     let cycle_number = 42u64;
@@ -658,9 +658,9 @@ async fn test_mark_orders_released() {
         0,
     );
 
-    // Pre-condition: orders are BridgedBackToArb with amounts
-    orchestrator.set_order_status(order1_id, BridgeOrderStatus::BridgedBackToArb).await;
-    orchestrator.set_order_status(order2_id, BridgeOrderStatus::BridgedBackToArb).await;
+    // Pre-condition: orders are BridgedBackToSettlement with amounts
+    orchestrator.set_order_status(order1_id, BridgeOrderStatus::BridgedBackToSettlement).await;
+    orchestrator.set_order_status(order2_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     orchestrator.set_order_amount(order1_id, amount).await;
     orchestrator.set_order_amount(order2_id, amount).await;
 
@@ -705,7 +705,7 @@ async fn test_is_release_confirmed_initially_false() {
 
     // After creating proposal and reaching signature threshold, still not confirmed
     // (confirmation only happens after execute_release_to_vault which requires real chain)
-    orchestrator.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    orchestrator.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     orchestrator.set_order_amount(order_id, amount).await;
     let proposal = orchestrator
         .propose_release_to_vault(cycle_number, vec![order_id], amount)
@@ -795,13 +795,13 @@ async fn test_full_3_node_release_consensus() {
         2,
     );
 
-    // Pre-condition: All nodes have order in BridgedBackToArb status with amounts
+    // Pre-condition: All nodes have order in BridgedBackToSettlement status with amounts
     let cycle_number = 100u64;
-    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    leader.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     leader.set_order_amount(order_id, amount).await;
-    follower1.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    follower1.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     follower1.set_order_amount(order_id, amount).await;
-    follower2.set_order_status(order_id, BridgeOrderStatus::BridgedBackToArb).await;
+    follower2.set_order_status(order_id, BridgeOrderStatus::BridgedBackToSettlement).await;
     follower2.set_order_amount(order_id, amount).await;
 
     // Step 1: Leader creates proposal

@@ -74,9 +74,9 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
 
-    // Resolve BridgeProxy once for arbAddress lookups
+    // Resolve BridgeProxy once for settlement address lookups
     let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
-    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.arb_provider));
+    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.settlement_provider));
 
     let count: U256 = reader.get_itp_count().call().await?;
     let mut snapshots = Vec::new();
@@ -98,8 +98,8 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                     Err(_) => (String::new(), String::new()),
                 };
 
-                // Resolve bridged ERC20 address on Arbitrum
-                let arb_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
+                // Resolve bridged ERC20 address on Settlement chain
+                let settlement_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
                     Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
                     _ => None,
                 };
@@ -111,7 +111,7 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                     nav_per_share: nav_f64,
                     total_supply: total_supply.to_string(),
                     aum_usd: aum,
-                    arb_address,
+                    settlement_address,
                 });
             }
             Err(e) => {
@@ -194,7 +194,7 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
     drop(users);
 
     // Resolve contract addresses
-    let arb_usdc_addr = crate::api::deployment_addr(&state.deployment, "ARB_USDC")?;
+    let settlement_usdc_addr = crate::api::deployment_addr(&state.deployment, "SETTLEMENT_USDC")?;
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let l3_usdc_addr = crate::api::deployment_addr(&state.deployment, "L3_WUSDC")?;
 
@@ -233,8 +233,8 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
     let has_vault = vault_addr != Address::zero();
 
     for (user, user_cache) in &user_list {
-        // ARB USDC balance
-        let usdc = BalanceReader::new(arb_usdc_addr, Arc::clone(&state.arb_provider));
+        // Settlement USDC balance
+        let usdc = BalanceReader::new(settlement_usdc_addr, Arc::clone(&state.settlement_provider));
         let usdc_bal = usdc.balance_of(*user).call().await.unwrap_or_default();
 
         // L3 USDC (WUSDC) balance
@@ -264,7 +264,7 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
         let mut uc = user_cache.write().await;
         uc.balances = UserBalances {
             usdc_l3: l3_usdc_bal.to_string(),
-            usdc_arb: usdc_bal.to_string(),
+            usdc_settlement: usdc_bal.to_string(),
             itp_shares: shares_map,
             bridged_itp: bridged_bal.to_string(),
             itp_nonce: 0,
@@ -289,7 +289,7 @@ pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn s
     drop(users);
 
     let l3_usdc_addr = crate::api::deployment_addr(&state.deployment, "L3_WUSDC")?;
-    let arb_custody_addr = crate::api::deployment_addr(&state.deployment, "ArbBridgeCustody")?;
+    let settlement_custody_addr = crate::api::deployment_addr(&state.deployment, "SettlementBridgeCustody")?;
     let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
 
     // Vault ERC20 on L3 (Morpho collateral)
@@ -301,10 +301,10 @@ pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn s
         let l3_usdc = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
         let usdc_to_morpho = l3_usdc.allowance(*user, morpho_addr).call().await.unwrap_or_default();
 
-        // ARB USDC allowance to ArbCustody (still on Arb)
-        let arb_usdc_addr = crate::api::deployment_addr(&state.deployment, "ARB_USDC").unwrap_or_default();
-        let arb_usdc = BalanceReader::new(arb_usdc_addr, Arc::clone(&state.arb_provider));
-        let usdc_to_custody = arb_usdc.allowance(*user, arb_custody_addr).call().await.unwrap_or_default();
+        // Settlement USDC allowance to custody (on Settlement chain)
+        let settlement_usdc_addr = crate::api::deployment_addr(&state.deployment, "SETTLEMENT_USDC").unwrap_or_default();
+        let settlement_usdc = BalanceReader::new(settlement_usdc_addr, Arc::clone(&state.settlement_provider));
+        let usdc_to_custody = settlement_usdc.allowance(*user, settlement_custody_addr).call().await.unwrap_or_default();
 
         // Vault token allowance to Morpho (on L3)
         let itp_to_morpho = if has_vault {
@@ -317,7 +317,7 @@ pub async fn poll_user_allowances_once(state: &AppState) -> Result<(), Box<dyn s
         let mut uc = user_cache.write().await;
         uc.allowances = UserAllowances {
             usdc_l3_to_index: usdc_to_morpho.to_string(),
-            usdc_arb_to_custody: usdc_to_custody.to_string(),
+            usdc_settlement_to_custody: usdc_to_custody.to_string(),
             itp_to_morpho: itp_to_morpho.to_string(),
         };
         uc.allowances_gen.bump();

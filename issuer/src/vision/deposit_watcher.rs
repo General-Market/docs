@@ -1,15 +1,15 @@
-//! Vision deposit watcher — cross-chain Arb→L3 deposit orchestrator
+//! Vision deposit watcher — cross-chain Settlement→L3 deposit orchestrator
 //!
-//! Polls ArbBridgeCustody on Arbitrum for `VisionDepositCreated` events.
+//! Polls SettlementBridgeCustody on Settlement for `VisionDepositCreated` events.
 //! For each deposit:
-//!   1. Wait for Arb finality (~15 confirmations)
+//!   1. Wait for Settlement finality (~15 confirmations)
 //!   2. BLS-sign + submit `Vision.creditBalance()` on L3
 //!   3. GM gas drip to user (if below threshold)
-//!   4. Submit `ArbBridgeCustody.completeVisionDeposit()` on Arb
+//!   4. Submit `SettlementBridgeCustody.completeVisionDeposit()` on Settlement
 //!
-//! Also handles `WithdrawToArbRequested` from Vision.sol on L3:
+//! Also handles `WithdrawToSettlementRequested` from Vision.sol on L3:
 //!   1. Wait for L3 finality
-//!   2. BLS-sign + submit `ArbBridgeCustody.completeVisionWithdraw()` on Arb
+//!   2. BLS-sign + submit `SettlementBridgeCustody.completeVisionWithdraw()` on Settlement
 //!
 //! Persists state to `vision_deposit_orders` / `vision_withdraw_orders` for crash recovery.
 //! On restart: recovers from DB state, checks on-chain idempotency keys.
@@ -35,8 +35,8 @@ use super::types::{
     DepositStatus, PendingVisionDeposit, PendingVisionWithdraw, WithdrawStatus,
 };
 
-/// Maximum blocks to query in a single getLogs request on Arbitrum.
-const ARB_MAX_BLOCK_RANGE: u64 = 10_000;
+/// Maximum blocks to query in a single getLogs request on Settlement.
+const SETTLEMENT_MAX_BLOCK_RANGE: u64 = 10_000;
 
 /// Maximum blocks to query in a single getLogs request on L3.
 const L3_MAX_BLOCK_RANGE: u64 = 50_000;
@@ -45,25 +45,25 @@ const L3_MAX_BLOCK_RANGE: u64 = 50_000;
 /// Protects against rare L3 Orbit reorgs (AUDIT FIX round 3).
 const L3_CONFIRMATION_BUFFER: u64 = 5;
 
-/// Vision deposit watcher: watches Arb for deposits, L3 for withdrawals.
+/// Vision deposit watcher: watches Settlement for deposits, L3 for withdrawals.
 ///
 /// This is an independent background task that runs alongside the tick engine
 /// and chain listener.
 pub struct VisionDepositWatcher {
-    /// Arbitrum provider (for watching VisionDepositCreated events).
-    arb_provider: Arc<Provider<Http>>,
+    /// Settlement provider (for watching VisionDepositCreated events).
+    settlement_provider: Arc<Provider<Http>>,
     /// L3 provider (for submitting creditBalance and checking depositProcessed).
     l3_provider: Arc<Provider<Http>>,
     /// Vision.sol address on L3.
     vision_address: Address,
-    /// ArbBridgeCustody address on Arbitrum.
-    arb_custody_address: Address,
+    /// SettlementBridgeCustody address on Settlement.
+    settlement_custody_address: Address,
     /// IssuerRegistry address on L3 (for reading lastSnapshotNonce for BLS referenceNonce).
     l3_registry_address: Address,
-    /// IssuerRegistry address on Arb (for reading lastSnapshotNonce for BLS referenceNonce).
+    /// IssuerRegistry address on Settlement (for reading lastSnapshotNonce for BLS referenceNonce).
     /// On L3 testnet where both chains share the same registry, this equals l3_registry_address.
-    /// In production with separate chains, these would differ (e.g., MirrorIssuerRegistry on Arb).
-    arb_registry_address: Address,
+    /// In production with separate chains, these would differ (e.g., MirrorIssuerRegistry on Settlement).
+    settlement_registry_address: Address,
     /// Postgres pool for persistence.
     pool: PgPool,
     /// Configuration.
@@ -74,7 +74,7 @@ pub struct VisionDepositWatcher {
     pending_withdrawals: HashMap<u64, PendingVisionWithdraw>,
     /// Event topic for VisionDepositCreated(uint256 indexed orderId, address indexed user, uint256 amount).
     deposit_created_topic: H256,
-    /// Event topic for WithdrawToArbRequested(address indexed user, uint256 indexed withdrawId, uint256 amount).
+    /// Event topic for WithdrawToSettlementRequested(address indexed user, uint256 indexed withdrawId, uint256 amount).
     withdraw_requested_topic: H256,
     /// BLS keypair for signing cross-chain operations.
     /// None = degraded mode (log-only, no tx submission).
@@ -83,8 +83,8 @@ pub struct VisionDepositWatcher {
     bls_signer: Bn254BLSSigner,
     /// Chain writer for L3 (creditBalance).
     l3_chain_writer: Option<Arc<dyn ChainWriter>>,
-    /// Chain writer for Arb (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw).
-    arb_chain_writer: Option<Arc<dyn ChainWriter>>,
+    /// Chain writer for Settlement (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw).
+    settlement_chain_writer: Option<Arc<dyn ChainWriter>>,
     /// Issuer node index (for signer bitmap).
     node_index: u8,
 }
@@ -93,24 +93,24 @@ impl VisionDepositWatcher {
     /// Create a new deposit watcher.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        arb_provider: Arc<Provider<Http>>,
+        settlement_provider: Arc<Provider<Http>>,
         l3_provider: Arc<Provider<Http>>,
         vision_address: Address,
-        arb_custody_address: Address,
+        settlement_custody_address: Address,
         l3_registry_address: Address,
-        arb_registry_address: Address,
+        settlement_registry_address: Address,
         pool: PgPool,
         config: VisionConfig,
         bls_keypair: Option<BLSKeyPair>,
         l3_chain_writer: Option<Arc<dyn ChainWriter>>,
-        arb_chain_writer: Option<Arc<dyn ChainWriter>>,
+        settlement_chain_writer: Option<Arc<dyn ChainWriter>>,
         node_index: u8,
     ) -> Self {
         let deposit_created_topic = H256::from(ethers::utils::keccak256(
             b"VisionDepositCreated(uint256,address,uint256)",
         ));
         let withdraw_requested_topic = H256::from(ethers::utils::keccak256(
-            b"WithdrawToArbRequested(address,uint256,uint256)",
+            b"WithdrawToSettlementRequested(address,uint256,uint256)",
         ));
 
         if bls_keypair.is_none() {
@@ -119,17 +119,17 @@ impl VisionDepositWatcher {
         if l3_chain_writer.is_none() {
             warn!("VisionDepositWatcher created WITHOUT L3 chain writer — cannot submit L3 transactions");
         }
-        if arb_chain_writer.is_none() {
-            warn!("VisionDepositWatcher created WITHOUT Arb chain writer — cannot submit Arb transactions");
+        if settlement_chain_writer.is_none() {
+            warn!("VisionDepositWatcher created WITHOUT Settlement chain writer — cannot submit Settlement transactions");
         }
 
         Self {
-            arb_provider,
+            settlement_provider,
             l3_provider,
             vision_address,
-            arb_custody_address,
+            settlement_custody_address,
             l3_registry_address,
-            arb_registry_address,
+            settlement_registry_address,
             pool,
             config,
             pending_deposits: HashMap::new(),
@@ -139,7 +139,7 @@ impl VisionDepositWatcher {
             bls_keypair,
             bls_signer: Bn254BLSSigner::new(),
             l3_chain_writer,
-            arb_chain_writer,
+            settlement_chain_writer,
             node_index,
         }
     }
@@ -149,15 +149,15 @@ impl VisionDepositWatcher {
     /// On startup:
     /// 1. Load incomplete deposits from DB
     /// 2. For each, check on-chain state and resume from correct step
-    /// 3. Start polling Arb for new VisionDepositCreated events
-    /// 4. Start polling L3 for new WithdrawToArbRequested events
+    /// 3. Start polling Settlement for new VisionDepositCreated events
+    /// 4. Start polling L3 for new WithdrawToSettlementRequested events
     pub async fn run(mut self, shutdown: Arc<AtomicBool>) {
         info!(
-            arb_custody = %self.arb_custody_address,
+            settlement_custody = %self.settlement_custody_address,
             vision = %self.vision_address,
             has_bls = self.bls_keypair.is_some(),
             has_l3_writer = self.l3_chain_writer.is_some(),
-            has_arb_writer = self.arb_chain_writer.is_some(),
+            has_settlement_writer = self.settlement_chain_writer.is_some(),
             "VisionDepositWatcher starting"
         );
 
@@ -169,22 +169,22 @@ impl VisionDepositWatcher {
             error!(error = %e, "Failed to recover withdrawal watcher state from DB");
         }
 
-        // 2. Determine Arb polling cursor
-        let mut arb_cursor = match self.get_arb_cursor().await {
+        // 2. Determine Settlement polling cursor
+        let mut settlement_cursor = match self.get_settlement_cursor().await {
             Some(block) => {
-                info!(block, "Resuming Arb polling from bookmark");
+                info!(block, "Resuming Settlement polling from bookmark");
                 block + 1
             }
             None => {
-                // Start from recent blocks (don't replay entire Arb history)
+                // Start from recent blocks (don't replay entire Settlement history)
                 let tip = self
-                    .arb_provider
+                    .settlement_provider
                     .get_block_number()
                     .await
                     .map(|n| n.as_u64())
                     .unwrap_or(0);
                 let start = tip.saturating_sub(1000);
-                info!(start, "No Arb bookmark, starting from tip - 1000");
+                info!(start, "No Settlement bookmark, starting from tip - 1000");
                 start
             }
         };
@@ -216,9 +216,9 @@ impl VisionDepositWatcher {
                 break;
             }
 
-            // 4. Poll for new Arb deposit events
-            if let Err(e) = self.poll_arb_deposits(&mut arb_cursor).await {
-                warn!(error = %e, "Failed to poll Arb deposits");
+            // 4. Poll for new Settlement deposit events
+            if let Err(e) = self.poll_settlement_deposits(&mut settlement_cursor).await {
+                warn!(error = %e, "Failed to poll Settlement deposits");
             }
 
             // 5. Poll for new L3 withdrawal events
@@ -242,29 +242,29 @@ impl VisionDepositWatcher {
     }
 
     // =========================================================================
-    // Arb event polling
+    // Settlement event polling
     // =========================================================================
 
-    /// Poll Arbitrum for new VisionDepositCreated events.
-    async fn poll_arb_deposits(
+    /// Poll Settlement for new VisionDepositCreated events.
+    async fn poll_settlement_deposits(
         &mut self,
         cursor: &mut u64,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let tip = self.arb_provider.get_block_number().await?.as_u64();
+        let tip = self.settlement_provider.get_block_number().await?.as_u64();
 
         if *cursor > tip {
             return Ok(());
         }
 
-        let to_block = std::cmp::min(*cursor + ARB_MAX_BLOCK_RANGE - 1, tip);
+        let to_block = std::cmp::min(*cursor + SETTLEMENT_MAX_BLOCK_RANGE - 1, tip);
 
         let filter = Filter::new()
-            .address(self.arb_custody_address)
+            .address(self.settlement_custody_address)
             .topic0(self.deposit_created_topic)
             .from_block(U64::from(*cursor))
             .to_block(U64::from(to_block));
 
-        let logs = self.arb_provider.get_logs(&filter).await?;
+        let logs = self.settlement_provider.get_logs(&filter).await?;
 
         for log in &logs {
             // VisionDepositCreated(uint256 indexed orderId, address indexed user, uint256 amount)
@@ -290,7 +290,7 @@ impl VisionDepositWatcher {
             // Check if already completed on-chain (restart recovery)
             if self.is_deposit_processed_on_l3(order_id).await {
                 info!(order_id, user = %user, "Deposit already processed on L3, skipping");
-                self.upsert_deposit_status(order_id, user, amount, DepositStatus::CompletedOnArb)
+                self.upsert_deposit_status(order_id, user, amount, DepositStatus::CompletedOnSettlement)
                     .await;
                 continue;
             }
@@ -325,12 +325,12 @@ impl VisionDepositWatcher {
                 from = *cursor,
                 to = to_block,
                 events = logs.len(),
-                "Processed Arb VisionDeposit events"
+                "Processed Settlement VisionDeposit events"
             );
         }
 
         // Save cursor
-        self.save_arb_cursor(to_block).await;
+        self.save_settlement_cursor(to_block).await;
         *cursor = to_block + 1;
 
         Ok(())
@@ -340,7 +340,7 @@ impl VisionDepositWatcher {
     // L3 withdrawal event polling (Issue 3)
     // =========================================================================
 
-    /// Poll L3 for new WithdrawToArbRequested events from Vision.sol.
+    /// Poll L3 for new WithdrawToSettlementRequested events from Vision.sol.
     async fn poll_l3_withdrawals(
         &mut self,
         cursor: &mut u64,
@@ -362,7 +362,7 @@ impl VisionDepositWatcher {
         let logs = self.l3_provider.get_logs(&filter).await?;
 
         for log in &logs {
-            // WithdrawToArbRequested(address indexed user, uint256 indexed withdrawId, uint256 amount)
+            // WithdrawToSettlementRequested(address indexed user, uint256 indexed withdrawId, uint256 amount)
             let user = match log.topics.get(1) {
                 Some(t) => Address::from_slice(&t.as_bytes()[12..]),
                 None => continue,
@@ -386,7 +386,7 @@ impl VisionDepositWatcher {
                 withdraw_id,
                 user = %user,
                 amount = %amount,
-                "New WithdrawToArbRequested detected"
+                "New WithdrawToSettlementRequested detected"
             );
 
             let withdrawal = PendingVisionWithdraw {
@@ -408,7 +408,7 @@ impl VisionDepositWatcher {
                 from = *cursor,
                 to = to_block,
                 events = logs.len(),
-                "Processed L3 WithdrawToArbRequested events"
+                "Processed L3 WithdrawToSettlementRequested events"
             );
         }
 
@@ -435,13 +435,13 @@ impl VisionDepositWatcher {
 
             match deposit.status {
                 DepositStatus::Pending => {
-                    // Check Arb finality
-                    let _tip = match self.arb_provider.get_block_number().await {
+                    // Check Settlement finality
+                    let _tip = match self.settlement_provider.get_block_number().await {
                         Ok(n) => n.as_u64(),
                         Err(_) => continue,
                     };
 
-                    // For Arb finality, we need the deposit's block number.
+                    // For Settlement finality, we need the deposit's block number.
                     // Since we don't store it, we rely on the deposit_finality_confirmations
                     // being elapsed since creation. In production, we'd track the block number.
                     // For now, proceed if deposit is older than finality window.
@@ -451,7 +451,7 @@ impl VisionDepositWatcher {
                         .as_secs()
                         .saturating_sub(deposit.created_at);
 
-                    // Conservative: ~1 block per 250ms on Arb, so 15 confirmations ~ 4s
+                    // Conservative: ~1 block per 250ms on Settlement, so 15 confirmations ~ 4s
                     let finality_wait_secs =
                         (self.config.deposit_finality_confirmations as u64) / 4 + 1;
 
@@ -460,7 +460,7 @@ impl VisionDepositWatcher {
                             order_id,
                             age_secs,
                             finality_wait_secs,
-                            "Waiting for Arb finality"
+                            "Waiting for Settlement finality"
                         );
                         continue;
                     }
@@ -533,7 +533,7 @@ impl VisionDepositWatcher {
                     }
                 }
                 DepositStatus::CreditedOnL3 => {
-                    // Step 6-7: Submit ArbBridgeCustody.completeVisionDeposit() on Arb
+                    // Step 6-7: Submit SettlementBridgeCustody.completeVisionDeposit() on Settlement
 
                     // Verify the credit actually landed on L3 (confirmation buffer)
                     if !self.is_deposit_processed_on_l3(deposit.order_id).await {
@@ -546,8 +546,8 @@ impl VisionDepositWatcher {
                     }
 
                     let complete_message_hash = build_complete_deposit_hash(
-                        self.config.arb_chain_id,
-                        self.arb_custody_address,
+                        self.config.settlement_chain_id,
+                        self.settlement_custody_address,
                         U256::from(deposit.order_id),
                     );
 
@@ -559,16 +559,16 @@ impl VisionDepositWatcher {
                             info!(
                                 order_id,
                                 tx_hash = ?tx_hash,
-                                "completeVisionDeposit submitted on Arb"
+                                "completeVisionDeposit submitted on Settlement"
                             );
                             if let Some(d) = self.pending_deposits.get_mut(&order_id) {
-                                d.status = DepositStatus::CompletedOnArb;
+                                d.status = DepositStatus::CompletedOnSettlement;
                             }
                             self.upsert_deposit_status(
                                 order_id,
                                 deposit.user,
                                 deposit.amount,
-                                DepositStatus::CompletedOnArb,
+                                DepositStatus::CompletedOnSettlement,
                             )
                             .await;
                         }
@@ -576,12 +576,12 @@ impl VisionDepositWatcher {
                             warn!(
                                 order_id,
                                 error = %e,
-                                "Failed to submit completeVisionDeposit on Arb, will retry"
+                                "Failed to submit completeVisionDeposit on Settlement, will retry"
                             );
                         }
                     }
                 }
-                DepositStatus::CompletedOnArb | DepositStatus::Refunded => {
+                DepositStatus::CompletedOnSettlement | DepositStatus::Refunded => {
                     // Terminal states — remove from in-flight tracking
                     self.pending_deposits.remove(&order_id);
                 }
@@ -605,10 +605,10 @@ impl VisionDepositWatcher {
 
             match withdrawal.status {
                 WithdrawStatus::Pending => {
-                    // Submit ArbBridgeCustody.completeVisionWithdraw() on Arb
+                    // Submit SettlementBridgeCustody.completeVisionWithdraw() on Settlement
                     let withdraw_message_hash = build_complete_withdraw_hash(
-                        self.config.arb_chain_id,
-                        self.arb_custody_address,
+                        self.config.settlement_chain_id,
+                        self.settlement_custody_address,
                         U256::from(withdrawal.withdraw_id),
                         withdrawal.user,
                         withdrawal.amount,
@@ -626,7 +626,7 @@ impl VisionDepositWatcher {
                                 tx_hash = ?tx_hash,
                                 user = %withdrawal.user,
                                 amount = %withdrawal.amount,
-                                "completeVisionWithdraw submitted on Arb"
+                                "completeVisionWithdraw submitted on Settlement"
                             );
                             if let Some(w) = self.pending_withdrawals.get_mut(&withdraw_id) {
                                 w.status = WithdrawStatus::Completed;
@@ -643,7 +643,7 @@ impl VisionDepositWatcher {
                             warn!(
                                 withdraw_id,
                                 error = %e,
-                                "Failed to submit completeVisionWithdraw on Arb, will retry"
+                                "Failed to submit completeVisionWithdraw on Settlement, will retry"
                             );
                         }
                     }
@@ -664,8 +664,8 @@ impl VisionDepositWatcher {
     ///
     /// The reference nonce is required as a parameter in all BLS-verified calls.
     /// For L3 operations (creditBalance), read from L3 IssuerRegistry via `l3_provider`.
-    /// For Arb operations (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw),
-    /// read from Arb IssuerRegistry via `arb_provider`.
+    /// For Settlement operations (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw),
+    /// read from Settlement IssuerRegistry via `settlement_provider`.
     async fn get_reference_nonce(
         &self,
         provider: &Provider<Http>,
@@ -735,16 +735,16 @@ impl VisionDepositWatcher {
         Ok(tx_hash)
     }
 
-    /// Sign and submit ArbBridgeCustody.completeVisionDeposit() on Arb.
+    /// Sign and submit SettlementBridgeCustody.completeVisionDeposit() on Settlement.
     async fn sign_and_submit_complete_deposit(
         &self,
         message_hash: &H256,
         order_id: U256,
     ) -> Result<H256, String> {
-        let (bls_keypair, arb_writer) = match (&self.bls_keypair, &self.arb_chain_writer) {
+        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
             (Some(kp), Some(w)) => (kp, w),
             _ => {
-                return Err("BLS keypair or Arb chain writer not available (degraded mode)".into());
+                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
             }
         };
 
@@ -754,9 +754,9 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // Read referenceNonce from Arb IssuerRegistry (completeVisionDeposit is an Arb operation)
+        // Read referenceNonce from Settlement IssuerRegistry (completeVisionDeposit is an Settlement operation)
         let reference_nonce = self
-            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
             .await?;
 
         // completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
@@ -767,24 +767,24 @@ impl VisionDepositWatcher {
             signer_bitmap,
         );
 
-        let tx_hash = arb_writer
-            .send_transaction(self.arb_custody_address, calldata, U256::zero())
+        let tx_hash = settlement_writer
+            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
             .await
-            .map_err(|e| format!("Arb send_transaction failed: {e}"))?;
+            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
 
         Ok(tx_hash)
     }
 
-    /// Sign and submit ArbBridgeCustody.refundVisionDeposit() on Arb.
+    /// Sign and submit SettlementBridgeCustody.refundVisionDeposit() on Settlement.
     async fn sign_and_submit_refund_deposit(
         &self,
         message_hash: &H256,
         order_id: U256,
     ) -> Result<H256, String> {
-        let (bls_keypair, arb_writer) = match (&self.bls_keypair, &self.arb_chain_writer) {
+        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
             (Some(kp), Some(w)) => (kp, w),
             _ => {
-                return Err("BLS keypair or Arb chain writer not available (degraded mode)".into());
+                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
             }
         };
 
@@ -794,9 +794,9 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // Read referenceNonce from Arb IssuerRegistry (refundVisionDeposit is an Arb operation)
+        // Read referenceNonce from Settlement IssuerRegistry (refundVisionDeposit is an Settlement operation)
         let reference_nonce = self
-            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
             .await?;
 
         // refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
@@ -807,15 +807,15 @@ impl VisionDepositWatcher {
             signer_bitmap,
         );
 
-        let tx_hash = arb_writer
-            .send_transaction(self.arb_custody_address, calldata, U256::zero())
+        let tx_hash = settlement_writer
+            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
             .await
-            .map_err(|e| format!("Arb send_transaction failed: {e}"))?;
+            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
 
         Ok(tx_hash)
     }
 
-    /// Sign and submit ArbBridgeCustody.completeVisionWithdraw() on Arb (Issue 3).
+    /// Sign and submit SettlementBridgeCustody.completeVisionWithdraw() on Settlement (Issue 3).
     async fn sign_and_submit_complete_withdraw(
         &self,
         message_hash: &H256,
@@ -823,10 +823,10 @@ impl VisionDepositWatcher {
         user: Address,
         amount: U256,
     ) -> Result<H256, String> {
-        let (bls_keypair, arb_writer) = match (&self.bls_keypair, &self.arb_chain_writer) {
+        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
             (Some(kp), Some(w)) => (kp, w),
             _ => {
-                return Err("BLS keypair or Arb chain writer not available (degraded mode)".into());
+                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
             }
         };
 
@@ -836,9 +836,9 @@ impl VisionDepositWatcher {
 
         let signer_bitmap = U256::one() << self.node_index;
 
-        // Read referenceNonce from Arb IssuerRegistry (completeVisionWithdraw is an Arb operation)
+        // Read referenceNonce from Settlement IssuerRegistry (completeVisionWithdraw is an Settlement operation)
         let reference_nonce = self
-            .get_reference_nonce(&self.arb_provider, self.arb_registry_address)
+            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
             .await?;
 
         // completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
@@ -851,10 +851,10 @@ impl VisionDepositWatcher {
             signer_bitmap,
         );
 
-        let tx_hash = arb_writer
-            .send_transaction(self.arb_custody_address, calldata, U256::zero())
+        let tx_hash = settlement_writer
+            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
             .await
-            .map_err(|e| format!("Arb send_transaction failed: {e}"))?;
+            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
 
         Ok(tx_hash)
     }
@@ -989,8 +989,8 @@ impl VisionDepositWatcher {
             if *should_refund {
                 // Build refund message hash and submit
                 let refund_hash = build_refund_deposit_hash(
-                    self.config.arb_chain_id,
-                    self.arb_custody_address,
+                    self.config.settlement_chain_id,
+                    self.settlement_custody_address,
                     U256::from(*order_id),
                 );
 
@@ -1144,7 +1144,7 @@ impl VisionDepositWatcher {
         status: DepositStatus,
     ) {
         let completed_at = match status {
-            DepositStatus::CompletedOnArb | DepositStatus::Refunded => {
+            DepositStatus::CompletedOnSettlement | DepositStatus::Refunded => {
                 Some(chrono::Utc::now().naive_utc())
             }
             _ => None,
@@ -1246,10 +1246,10 @@ impl VisionDepositWatcher {
     // DB cursors
     // =========================================================================
 
-    /// Get the last Arb block cursor from DB.
-    async fn get_arb_cursor(&self) -> Option<u64> {
+    /// Get the last Settlement block cursor from DB.
+    async fn get_settlement_cursor(&self) -> Option<u64> {
         let row: Option<(String,)> = sqlx::query_as(
-            "SELECT value FROM vision_kv_store WHERE key = 'deposit_watcher_arb_cursor'",
+            "SELECT value FROM vision_kv_store WHERE key = 'deposit_watcher_settlement_cursor'",
         )
         .fetch_optional(&self.pool)
         .await
@@ -1258,18 +1258,18 @@ impl VisionDepositWatcher {
         row.and_then(|(v,)| v.parse::<u64>().ok())
     }
 
-    /// Save the Arb block cursor to DB.
-    async fn save_arb_cursor(&self, block: u64) {
+    /// Save the Settlement block cursor to DB.
+    async fn save_settlement_cursor(&self, block: u64) {
         if let Err(e) = sqlx::query(
             "INSERT INTO vision_kv_store (key, value)
-             VALUES ('deposit_watcher_arb_cursor', $1)
+             VALUES ('deposit_watcher_settlement_cursor', $1)
              ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
         )
         .bind(block.to_string())
         .execute(&self.pool)
         .await
         {
-            warn!(block, error = %e, "Failed to save Arb cursor");
+            warn!(block, error = %e, "Failed to save Settlement cursor");
         }
     }
 
@@ -1333,7 +1333,7 @@ fn build_credit_balance_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
+/// Build calldata for SettlementBridgeCustody.completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_complete_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
@@ -1357,7 +1357,7 @@ fn build_complete_deposit_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
+/// Build calldata for SettlementBridgeCustody.refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_refund_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
@@ -1381,7 +1381,7 @@ fn build_refund_deposit_calldata(
     calldata
 }
 
-/// Build calldata for ArbBridgeCustody.completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
+/// Build calldata for SettlementBridgeCustody.completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
 fn build_complete_withdraw_calldata(
     withdraw_id: U256,
     user: Address,
@@ -1434,7 +1434,7 @@ pub fn build_credit_balance_hash(
     H256::from(ethers::utils::keccak256(&encoded))
 }
 
-/// Build the BLS message hash for ArbBridgeCustody.completeVisionDeposit().
+/// Build the BLS message hash for SettlementBridgeCustody.completeVisionDeposit().
 ///
 /// Matches: keccak256(abi.encode(chainId, custodyAddress, "completeVisionDeposit", orderId))
 pub fn build_complete_deposit_hash(
@@ -1451,7 +1451,7 @@ pub fn build_complete_deposit_hash(
     H256::from(ethers::utils::keccak256(&encoded))
 }
 
-/// Build the BLS message hash for ArbBridgeCustody.refundVisionDeposit().
+/// Build the BLS message hash for SettlementBridgeCustody.refundVisionDeposit().
 ///
 /// Matches: keccak256(abi.encode(chainId, custodyAddress, "refundVisionDeposit", orderId))
 pub fn build_refund_deposit_hash(
@@ -1468,7 +1468,7 @@ pub fn build_refund_deposit_hash(
     H256::from(ethers::utils::keccak256(&encoded))
 }
 
-/// Build the BLS message hash for ArbBridgeCustody.completeVisionWithdraw().
+/// Build the BLS message hash for SettlementBridgeCustody.completeVisionWithdraw().
 ///
 /// Matches: keccak256(abi.encode(chainId, custodyAddress, "completeVisionWithdraw", withdrawId, user, amount))
 pub fn build_complete_withdraw_hash(
@@ -1561,7 +1561,7 @@ mod tests {
         for status in &[
             DepositStatus::Pending,
             DepositStatus::CreditedOnL3,
-            DepositStatus::CompletedOnArb,
+            DepositStatus::CompletedOnSettlement,
             DepositStatus::Refunded,
         ] {
             let s = status.as_str();

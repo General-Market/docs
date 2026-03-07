@@ -462,9 +462,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Story 6.21: ITP creation messages now include sender IDs for proper routing
         P2PMessage::ItpCreationProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ItpCreationSign { signer_id, .. } => Some(*signer_id),
-        // Story 7.2: Bridge Arb→L3 messages include sender IDs for proper routing
-        P2PMessage::BridgeArbToL3Proposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::BridgeArbToL3Sign { signer_id, .. } => Some(*signer_id),
+        // Story 7.2: Bridge Settlement→L3 messages include sender IDs for proper routing
+        P2PMessage::BridgeSettlementToL3Proposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::BridgeSettlementToL3Sign { signer_id, .. } => Some(*signer_id),
         // Story 7.3: Submit Order for User messages include sender IDs
         P2PMessage::SubmitOrderForUserProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::SubmitOrderForUserSign { signer_id, .. } => Some(*signer_id),
@@ -473,9 +473,9 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::ConfirmBatchSign { signer_id, .. } => Some(*signer_id),
         P2PMessage::ConfirmFillsProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ConfirmFillsSign { signer_id, .. } => Some(*signer_id),
-        // Story 7.5: Bridge L3→Arb messages include sender IDs for proper routing
-        P2PMessage::BridgeL3ToArbProposal { leader_id, .. } => Some(*leader_id),
-        P2PMessage::BridgeL3ToArbSign { signer_id, .. } => Some(*signer_id),
+        // Story 7.5: Bridge L3→Settlement messages include sender IDs for proper routing
+        P2PMessage::BridgeL3ToSettlementProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::BridgeL3ToSettlementSign { signer_id, .. } => Some(*signer_id),
         // Story 7.6: Custody release to vault messages include sender IDs
         P2PMessage::ReleaseToVaultProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ReleaseToVaultSign { signer_id, .. } => Some(*signer_id),
@@ -516,7 +516,7 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         P2PMessage::ArbitrationPriceProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::ArbitrationPriceVote { voter_id, .. } => Some(*voter_id),
         P2PMessage::ArbitrationResolutionSign { signer_id, .. } => Some(*signer_id),
-        // NAV oracle (ITPNAVOracle on Arb)
+        // NAV oracle (ITPNAVOracle on Settlement)
         P2PMessage::NavOracleProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::NavOracleSign { signer_id, .. } => Some(*signer_id),
         // MirrorIssuerRegistry sync (Step 12)

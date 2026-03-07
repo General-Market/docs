@@ -224,7 +224,7 @@ pub struct AppState {
     pub cache: PriceCache,
     pub live_cache: Arc<LiveTickerCache>,
     pub l3_provider: Arc<Provider<Http>>,
-    pub arb_provider: Arc<Provider<Http>>,
+    pub settlement_provider: Arc<Provider<Http>>,
     pub deployment: serde_json::Value,
     pub morpho_deployment: serde_json::Value,
     pub logos_dir: std::path::PathBuf,
@@ -3106,11 +3106,11 @@ struct VaultBalancesResponse {
 async fn vault_balances(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<VaultBalancesResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let arb = &state.arb_provider;
+    let settlement = &state.settlement_provider;
 
     let vault_addr = deployment_addr(&state.deployment, "MockBitgetVault").map_err(|e| rpc_error(e))?;
-    let arb_usdc_addr = deployment_addr(&state.deployment, "ARB_USDC").map_err(|e| rpc_error(e))?;
-    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(arb));
+    let settlement_usdc_addr = deployment_addr(&state.deployment, "SETTLEMENT_USDC").map_err(|e| rpc_error(e))?;
+    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(settlement));
 
     // Get token addresses from symbol map
     let token_addrs: Vec<Address> = state.symbol_map.keys()
@@ -3163,12 +3163,12 @@ async fn vault_balances(
     }
 
     // Check USDC balance in vault
-    let usdc_token = ERC20Reader::new(arb_usdc_addr, Arc::clone(arb));
+    let usdc_token = ERC20Reader::new(settlement_usdc_addr, Arc::clone(settlement));
     if let Ok(usdc_balance) = usdc_token.balance_of(vault_addr).call().await {
         if usdc_balance > U256::zero() {
             let usdc_f64: f64 = usdc_balance.to_string().parse().unwrap_or(0.0);
             assets.push(VaultAsset {
-                address: format!("{:?}", arb_usdc_addr),
+                address: format!("{:?}", settlement_usdc_addr),
                 symbol: "USDC".to_string(),
                 balance: usdc_balance.to_string(),
                 price: "1000000000000000000".to_string(), // $1 in wei
@@ -5729,7 +5729,7 @@ fn truncate_hex(hex: &str, prefix_len: usize, suffix_len: usize) -> String {
 
 async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     let l3 = &state.l3_provider;
-    let arb = &state.arb_provider;
+    let settlement = &state.settlement_provider;
 
     // Resolve contract addresses
     let index_addr = match deployment_addr(&state.deployment, "Index") {
@@ -5881,7 +5881,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     }
 
     // Vault asset breakdown (top holdings chart)
-    let (vault_assets, _) = build_vault_snapshot(state, arb).await;
+    let (vault_assets, _) = build_vault_snapshot(state, settlement).await;
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
@@ -5901,12 +5901,12 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     }
 }
 
-async fn build_vault_snapshot(state: &AppState, arb: &Arc<Provider<Http>>) -> (Vec<VaultAssetInfo>, f64) {
+async fn build_vault_snapshot(state: &AppState, settlement: &Arc<Provider<Http>>) -> (Vec<VaultAssetInfo>, f64) {
     let vault_addr = match deployment_addr(&state.deployment, "MockBitgetVault") {
         Ok(a) => a,
         Err(_) => return (vec![], 0.0),
     };
-    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(arb));
+    let vault = MockBitgetVaultReader::new(vault_addr, Arc::clone(settlement));
 
     let token_addrs: Vec<Address> = state.symbol_map.keys()
         .filter_map(|addr_str| addr_str.parse::<Address>().ok())

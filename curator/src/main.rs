@@ -525,7 +525,7 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
         let rate_push_config = if !args.curator_irm_address.is_empty() {
             match args.curator_irm_address.parse::<ethers::types::Address>() {
                 Ok(irm_addr) => {
-                    let rpc_url = args.arb_rpc_url.clone().unwrap_or(args.rpc_url.clone());
+                    let rpc_url = args.settlement_rpc_url.clone().unwrap_or(args.rpc_url.clone());
                     Some(curator::quote_server::RatePushConfig {
                         rpc_url,
                         private_key: args.private_key.clone(),

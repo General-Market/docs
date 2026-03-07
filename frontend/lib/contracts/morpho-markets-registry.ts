@@ -38,7 +38,7 @@ interface BatchDeploymentJson {
     MORPHO: string
     CURATOR_RATE_IRM: string
     METAMORPHO_VAULT: string
-    ARB_USDC: string
+    SETTLEMENT_USDC: string
     MIRROR_REGISTRY: string
   }
   markets: BatchMarketJson[]
@@ -63,7 +63,7 @@ const MARKETS: Record<string, MorphoMarketEntry> = {
   },
 }
 
-// Also register under the BridgedITP address (ITP cards pass arbAddress to hasLendingMarket)
+// Also register under the BridgedITP address (ITP cards pass settlementAddress to hasLendingMarket)
 const bridgedItp = (deployment as { contracts?: { BridgedITP?: string } }).contracts?.BridgedITP
 if (bridgedItp) {
   const entry = MARKETS[mp.collateralToken.toLowerCase()]

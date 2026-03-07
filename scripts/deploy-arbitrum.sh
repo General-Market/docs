@@ -1,16 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-# Deploy BLSCustody and dependencies to Arbitrum One
-# Story 6.5: BLSCustody Arbitrum deployment
+# Deploy BLSCustody and dependencies to the settlement chain
+# Story 6.5: BLSCustody settlement chain deployment
 
 # Validate required environment variables
 : "${PRIVATE_KEY:?PRIVATE_KEY is required}"
-: "${ARBITRUM_RPC_URL:?ARBITRUM_RPC_URL is required}"
+: "${SETTLEMENT_RPC_URL:?SETTLEMENT_RPC_URL is required}"
 : "${ARBISCAN_API_KEY:?ARBISCAN_API_KEY is required}"
 
 echo "============================================"
-echo "Deploying BLSCustody to Arbitrum One"
+echo "Deploying BLSCustody to settlement chain"
 echo "============================================"
 echo ""
 
@@ -26,7 +26,7 @@ cd contracts
 
 # Deploy contracts
 forge script scripts/deploy/DeployBLSCustodyArbitrum.s.sol \
-    --rpc-url "$ARBITRUM_RPC_URL" \
+    --rpc-url "$SETTLEMENT_RPC_URL" \
     --broadcast \
     --verify \
     --etherscan-api-key "$ARBISCAN_API_KEY" \

@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "./helpers/DeployBLSHelper.sol";
 
-/// @title CreateBridgedItp - Create a BridgedITP on Arbitrum via requestCreateItp + completeCreateItp
+/// @title CreateBridgedItp - Create a BridgedITP on Settlement via requestCreateItp + completeCreateItp
 /// @notice Replaces the old adminCreateBridgedItp admin bypass with proper BLS-signed flow
 /// @dev Reads ITP data from env vars (set by start.sh), creates pending request, then completes with BLS
 contract CreateBridgedItp is DeployBLSHelper {

@@ -45,7 +45,7 @@
     "batch": "Batching order...",
     "fill": "Executing trades...",
     "record_collateral": "Recording collateral...",
-    "bridge_to_arb": "Bridging USDC to Arbitrum...",
+    "bridge_to_settlement": "Bridging USDC to Settlement...",
     "complete_bridge": "Completing bridge...",
     "mint_shares": "Minting BridgedITP...",
     "shares_received": "Shares received!"
@@ -62,7 +62,7 @@
     "buy_filled": "Buy filled \u2014 {name} shares received"
   },
   "stall": {
-    "title": "Order submitted on Arbitrum",
+    "title": "Order submitted on Settlement",
     "description": "Your order is being relayed to L3 for processing. This can take a few minutes. You can safely close this dialog — your order will continue processing and appear in your portfolio."
   },
   "error": {

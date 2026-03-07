@@ -81,9 +81,9 @@ pub struct ServeArgs {
     #[arg(long, default_value = "86400", env = "CG_POLL_INTERVAL_SECS")]
     pub cg_poll_interval: u64,
 
-    /// RPC endpoint for Arbitrum chain (balances, allowances, Morpho)
-    #[arg(long, default_value = "http://localhost:8546", env = "ARB_RPC_URL")]
-    pub arb_rpc_url: String,
+    /// RPC endpoint for Settlement chain (balances, allowances, Morpho)
+    #[arg(long, default_value = "http://localhost:8546", env = "SETTLEMENT_RPC_URL")]
+    pub settlement_rpc_url: String,
 
     /// Path to active-deployment.json
     #[arg(long, default_value = "deployments/active-deployment.json", env = "DEPLOYMENT_FILE")]

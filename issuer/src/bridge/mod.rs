@@ -1,15 +1,15 @@
 //! Bridge orchestration module for cross-chain USDC bridging
 //!
-//! This module implements BLS consensus-based bridging from Arbitrum to L3:
+//! This module implements BLS consensus-based bridging from Settlement to L3:
 //! - `BridgeOrchestrator` - orchestrates the bridge flow with BLS consensus
 //! - `BridgeConfig` - configuration for bridge contracts and timeouts
 //! - `SignatureCollector` - collects follower signatures for threshold aggregation
-//! - `CrossChainOrderReader` - trait for reading orders from Arbitrum
+//! - `CrossChainOrderReader` - trait for reading orders from Settlement
 //!
-//! Story 7.2: Bridge USDC Orchestrator (Arb→L3)
+//! Story 7.2: Bridge USDC Orchestrator (Settlement→L3)
 //! Story 7.3: Submit Order for User
 //! Story 7.4: Batch and Fill Orchestration
-//! Story 7.5: Bridge USDC L3 to Arbitrum
+//! Story 7.5: Bridge USDC L3 to Settlement
 //! Story 7.6: Custody Release to MockBitgetVault
 
 mod orchestrator;
@@ -23,10 +23,10 @@ pub use orchestrator::{BridgeOrchestrator, CrossChainOrderReader};
 pub use types::{
     // Shared consensus result type
     SignedConsensusResult,
-    // Story 7.2: Bridge Arb→L3
-    build_bridge_arb_to_l3_hash, BridgeConfig, BridgeError, BridgeOrderStatus, BridgeProposal,
+    // Story 7.2: Bridge Settlement→L3
+    build_bridge_settlement_to_l3_hash, BridgeConfig, BridgeError, BridgeOrderStatus, BridgeProposal,
     BridgeResult, SignatureCollector,
-    // Cross-chain sell from Arb
+    // Cross-chain sell from Settlement
     build_sell_bridge_hash, SellBridgeProposal, build_complete_sell_order_calldata,
     build_complete_sell_order_consensus_hash, SellSubmitOrderResult, CompleteSellOrderResult,
     CompleteSellProposal,
@@ -36,8 +36,8 @@ pub use types::{
     // Story 7.4: Batch and Fill Orchestration
     build_confirm_batch_calldata, build_confirm_batch_hash, build_confirm_fills_calldata,
     build_confirm_fills_hash, BatchProposal, BatchResult, Fill, FillsProposal, FillsResult,
-    // Story 7.5: Bridge USDC L3 to Arbitrum
-    build_bridge_l3_to_arb_hash, BridgeL3ToArbProposal, BridgeL3ToArbResult,
+    // Story 7.5: Bridge USDC L3 to Settlement
+    build_bridge_l3_to_settlement_hash, BridgeL3ToSettlementProposal, BridgeL3ToSettlementResult,
     // Story 7.6: Custody Release to MockBitgetVault
     build_erc20_transfer_calldata, build_release_to_vault_hash, ReleaseToVaultProposal,
     ReleaseToVaultResult,
@@ -51,7 +51,7 @@ pub use types::{
     build_rebalance_hash, build_rebalance_calldata, RebalanceResult,
     // NAV push (L3 Investment.setItpNav)
     build_set_itp_nav_calldata, build_set_itp_nav_hash, SetItpNavResult,
-    // NAV oracle (ITPNAVOracle on Arb — Phase 2B)
+    // NAV oracle (ITPNAVOracle on Settlement — Phase 2B)
     build_nav_oracle_hash, build_update_price_calldata,
     // MirrorIssuerRegistry sync (Step 12)
     build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,

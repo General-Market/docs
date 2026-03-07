@@ -156,8 +156,8 @@ export async function restartIssuer(id: number): Promise<void> {
   // Contract addresses
   if (contracts.BridgeProxy) args.push('--bridge-proxy', contracts.BridgeProxy);
   if (contracts.MockBitgetVault) args.push('--bitget-vault', contracts.MockBitgetVault);
-  if (contracts.ArbBridgeCustody) args.push('--arb-custody', contracts.ArbBridgeCustody);
-  if (contracts.BLSCustody) args.push('--issuer-custody-arb', contracts.BLSCustody);
+  if (contracts.SettlementBridgeCustody) args.push('--settlement-custody', contracts.SettlementBridgeCustody);
+  if (contracts.BLSCustody) args.push('--issuer-custody-settlement', contracts.BLSCustody);
   if (contracts.MOCK_USDT && contracts.MOCK_USDT !== '0x0000000000000000000000000000000000000000') {
     args.push('--mock-usdt', contracts.MOCK_USDT);
   }
@@ -189,8 +189,8 @@ export async function restartIssuer(id: number): Promise<void> {
     ...process.env as Record<string, string>,
     ISSUER_PRIVATE_KEY_PATH: keyFile,
     ISSUER_PEERS: peers.join(','),
-    ISSUER_ARBITRUM_RPC_URL: 'http://localhost:8546',
-    ISSUER_ARBITRUM_CHAIN_ID: '421611337',
+    ISSUER_SETTLEMENT_RPC_URL: 'http://localhost:8546',
+    ISSUER_SETTLEMENT_CHAIN_ID: '421611337',
     ISSUER_BRIDGE_PROXY_ADDRESS: contracts.BridgeProxy || '',
     DATA_NODE_URL: 'http://localhost:8200',
   };

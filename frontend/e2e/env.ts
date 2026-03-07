@@ -12,7 +12,7 @@ export const IS_ANVIL = process.env.E2E_TESTNET !== '1'
 
 // ── URLs ────────────────────────────────────────────────────
 export const L3_RPC = process.env.E2E_L3_RPC_URL || 'http://localhost:8545'
-export const ARB_RPC = process.env.E2E_ARB_RPC_URL || 'http://localhost:8546'
+export const SETTLEMENT_RPC = process.env.E2E_SETTLEMENT_RPC_URL || 'http://localhost:8546'
 export const BACKEND_URL = process.env.E2E_BACKEND_URL || 'http://localhost:8200'
 export const VISION_API = process.env.E2E_VISION_API_URL || 'http://localhost:10001'
 export const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000'
@@ -22,7 +22,7 @@ export const ISSUER_URLS = (
 
 // ── Chain IDs ───────────────────────────────────────────────
 export const CHAIN_ID = Number(process.env.E2E_CHAIN_ID || 111222333)
-export const ARB_CHAIN_ID = Number(process.env.E2E_ARB_CHAIN_ID || 421611337)
+export const SETTLEMENT_CHAIN_ID = Number(process.env.E2E_SETTLEMENT_CHAIN_ID || 421611337)
 
 // ── Keys ────────────────────────────────────────────────────
 export const DEPLOYER_KEY = (

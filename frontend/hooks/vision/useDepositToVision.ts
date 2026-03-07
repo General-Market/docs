@@ -6,13 +6,13 @@ import { useWriteContract } from 'wagmi'
 import { decodeEventLog } from 'viem'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
-import { ARB_BRIDGE_CUSTODY_ABI } from '@/lib/contracts/arb-bridge-custody-abi'
+import { SETTLEMENT_BRIDGE_CUSTODY_ABI } from '@/lib/contracts/settlement-bridge-custody-abi'
 import {
-  ARB_BRIDGE_CUSTODY_ADDRESS,
-  ARB_USDC_ADDRESS,
+  SETTLEMENT_BRIDGE_CUSTODY_ADDRESS,
+  SETTLEMENT_USDC_ADDRESS,
   VISION_ADDRESS,
 } from '@/lib/vision/constants'
-import { arbChainId } from '@/lib/wagmi'
+import { settlementChainId } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import { useDepositStatus, type DepositStatus } from '@/hooks/vision/useDepositStatus'
@@ -27,7 +27,7 @@ export type DepositToVisionStep =
   | 'error'
 
 export interface UseDepositToVisionReturn {
-  /** Execute the cross-chain deposit flow: approve Arb USDC -> depositToVision -> poll for credit */
+  /** Execute the cross-chain deposit flow: approve Settlement USDC -> depositToVision -> poll for credit */
   deposit: (usdcAmount: bigint) => void
   /** The orderId from the deposit event */
   orderId: `0x${string}` | null
@@ -42,14 +42,14 @@ export interface UseDepositToVisionReturn {
 }
 
 /**
- * Hook for cross-chain deposit from Arbitrum to Vision.sol on L3.
+ * Hook for cross-chain deposit from Settlement to Vision.sol on L3.
  *
  * Flow:
- * 1. Approve USDC (6 dec) on Arbitrum for ArbBridgeCustody
- * 2. Call ArbBridgeCustody.depositToVision(usdcAmount) on Arbitrum
+ * 1. Approve USDC (6 dec) on Settlement for SettlementBridgeCustody
+ * 2. Call SettlementBridgeCustody.depositToVision(usdcAmount) on Settlement
  * 3. Poll Vision.virtualBalance(address) on L3 until credited
  *
- * The issuers observe the ArbBridgeCustody event and call Vision.creditBalance() on L3.
+ * The issuers observe the SettlementBridgeCustody event and call Vision.creditBalance() on L3.
  */
 export function useDepositToVision(): UseDepositToVisionReturn {
   const { address } = useAccount()
@@ -67,7 +67,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   // --- Deposit status from issuer API ---
   const { status: depositStatus } = useDepositStatus(orderId)
 
-  // --- Approve USDC on Arb ---
+  // --- Approve USDC on Settlement ---
   const {
     writeContract: writeApprove,
     data: approveHash,
@@ -77,9 +77,9 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   } = useWriteContract()
   const {
     isSuccess: isApproveSuccess,
-  } = useWaitForTransactionReceipt({ hash: approveHash, chainId: arbChainId })
+  } = useWaitForTransactionReceipt({ hash: approveHash, chainId: settlementChainId })
 
-  // --- DepositToVision on Arb ---
+  // --- DepositToVision on Settlement ---
   const {
     writeContract: writeDeposit,
     data: depositHash,
@@ -90,16 +90,16 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   const {
     isSuccess: isDepositSuccess,
     data: depositReceipt,
-  } = useWaitForTransactionReceipt({ hash: depositHash, chainId: arbChainId })
+  } = useWaitForTransactionReceipt({ hash: depositHash, chainId: settlementChainId })
 
-  // --- Read allowance on Arb ---
+  // --- Read allowance on Settlement ---
   const { data: currentAllowance, refetch: refetchAllowance } = useReadContract({
-    address: ARB_USDC_ADDRESS,
+    address: SETTLEMENT_USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: address ? [address, ARB_BRIDGE_CUSTODY_ADDRESS] : undefined,
-    chainId: arbChainId,
-    query: { enabled: !!address && ARB_BRIDGE_CUSTODY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    args: address ? [address, SETTLEMENT_BRIDGE_CUSTODY_ADDRESS] : undefined,
+    chainId: settlementChainId,
+    query: { enabled: !!address && SETTLEMENT_BRIDGE_CUSTODY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 
   // --- Read virtualBalance on L3 (for polling) ---
@@ -112,15 +112,15 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     query: { enabled: !!address && step === 'polling' },
   })
 
-  // Toast notifications for the deposit tx (on Arb)
+  // Toast notifications for the deposit tx (on Settlement)
   useTransactionNotification({
     hash: depositHash,
     isPending: isDepositPending,
     isConfirming: false,
     isSuccess: isDepositSuccess,
     error: depositError,
-    label: 'Deposit to Vision (Arb)',
-    chain: 'arb',
+    label: 'Deposit to Vision (Settlement)',
+    chain: 'settlement',
   })
 
   const deposit = useCallback((usdcAmount: bigint) => {
@@ -138,20 +138,20 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     if (allowance !== undefined && allowance >= usdcAmount) {
       setStep('depositing')
       writeDeposit({
-        address: ARB_BRIDGE_CUSTODY_ADDRESS,
-        abi: ARB_BRIDGE_CUSTODY_ABI,
+        address: SETTLEMENT_BRIDGE_CUSTODY_ADDRESS,
+        abi: SETTLEMENT_BRIDGE_CUSTODY_ABI,
         functionName: 'depositToVision',
         args: [usdcAmount],
-        chainId: arbChainId,
+        chainId: settlementChainId,
       })
     } else {
       setStep('approving')
       writeApprove({
-        address: ARB_USDC_ADDRESS,
+        address: SETTLEMENT_USDC_ADDRESS,
         abi: ERC20_ABI,
         functionName: 'approve',
-        args: [ARB_BRIDGE_CUSTODY_ADDRESS, usdcAmount],
-        chainId: arbChainId,
+        args: [SETTLEMENT_BRIDGE_CUSTODY_ADDRESS, usdcAmount],
+        chainId: settlementChainId,
       })
     }
   }, [address, currentAllowance, writeApprove, writeDeposit])
@@ -165,11 +165,11 @@ export function useDepositToVision(): UseDepositToVisionReturn {
       resetApprove()
       setStep('depositing')
       writeDeposit({
-        address: ARB_BRIDGE_CUSTODY_ADDRESS,
-        abi: ARB_BRIDGE_CUSTODY_ABI,
+        address: SETTLEMENT_BRIDGE_CUSTODY_ADDRESS,
+        abi: SETTLEMENT_BRIDGE_CUSTODY_ABI,
         functionName: 'depositToVision',
         args: [pendingAmount],
-        chainId: arbChainId,
+        chainId: settlementChainId,
       })
     })
   }, [isApproveSuccess, pendingAmount, refetchAllowance, resetApprove, writeDeposit])
@@ -183,7 +183,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     for (const log of depositReceipt.logs) {
       try {
         const decoded = decodeEventLog({
-          abi: ARB_BRIDGE_CUSTODY_ABI,
+          abi: SETTLEMENT_BRIDGE_CUSTODY_ABI,
           data: log.data,
           topics: log.topics,
         })
@@ -248,7 +248,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
         clearInterval(pollRef.current)
         pollRef.current = null
       }
-      // Deposit is locked on Arb and will be credited eventually — show bridging state
+      // Deposit is locked on Settlement and will be credited eventually — show bridging state
       setStep('bridging')
     }, 120_000)
 

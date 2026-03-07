@@ -47,14 +47,14 @@ contract DeployMorphoE2E is DeployBLSHelper {
         address deployer = vm.addr(anvilKey);
 
         // Read existing deployment addresses
-        address arbUSDC = vm.envAddress("ARB_USDC");
+        address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
         // Use the MAIN IssuerRegistry for the oracle — keeps nonces in sync
         // when registry syncs happen during ITP creation/rebalance
         address mainRegistry = vm.envAddress("ISSUER_REGISTRY");
 
         console.log("Deployer:", deployer);
-        console.log("ArbUSDC:", arbUSDC);
+        console.log("SettlementUSDC:", settlementUSDC);
         console.log("ITP Vault (collateral):", itpVault);
         console.log("IssuerRegistry (shared):", mainRegistry);
 
@@ -97,7 +97,7 @@ contract DeployMorphoE2E is DeployBLSHelper {
 
         // 5. Create market
         MarketParams memory marketParams = MarketParams({
-            loanToken: arbUSDC,
+            loanToken: settlementUSDC,
             collateralToken: itpVault,
             oracle: address(oracle),
             irm: address(irm),
@@ -114,7 +114,7 @@ contract DeployMorphoE2E is DeployBLSHelper {
             deployer,
             address(morpho),
             0,
-            arbUSDC,
+            settlementUSDC,
             "Index ITP Lending Vault",
             "ilUSDC"
         );
@@ -134,8 +134,8 @@ contract DeployMorphoE2E is DeployBLSHelper {
 
         // 9. Seed vault with initial USDC liquidity
         uint256 initialLiquidity = 100_000 * 1e18;
-        MockERC20(arbUSDC).mint(deployer, initialLiquidity);
-        IERC20(arbUSDC).approve(vaultAddr, initialLiquidity);
+        MockERC20(settlementUSDC).mint(deployer, initialLiquidity);
+        IERC20(settlementUSDC).approve(vaultAddr, initialLiquidity);
         vault.deposit(initialLiquidity, deployer);
         console.log("Vault seeded with 100k USDC");
 
@@ -159,7 +159,7 @@ contract DeployMorphoE2E is DeployBLSHelper {
         );
         string memory p3 = string.concat(
             '  "marketParams": {\n',
-            '    "loanToken": "', vm.toString(arbUSDC),
+            '    "loanToken": "', vm.toString(settlementUSDC),
             '",\n    "collateralToken": "', vm.toString(itpVault),
             '",\n    "oracle": "', vm.toString(address(oracle)),
             '",\n    "irm": "', vm.toString(address(irm)),

@@ -2,8 +2,8 @@
 //!
 //! Routes merged orders from the netting engine to the appropriate execution path:
 //! - CEX pairs -> TradeRequest event to AP (existing flow)
-//! - DEX pairs on Arbitrum -> SwapOrchestrator (BLSCustody + 1inch Router)
-//! - Cross-chain DEX (Fusion+) -> CrossChainOrchestrator (Arbitrum hub)
+//! - DEX pairs on Settlement chain -> SwapOrchestrator (BLSCustody + 1inch Router)
+//! - Cross-chain DEX (Fusion+) -> CrossChainOrchestrator (Settlement hub)
 
 use ethers::types::H256;
 use std::collections::{HashMap, HashSet};
@@ -15,9 +15,9 @@ use crate::netting::MergedOrder;
 pub enum ExecutionVenue {
     /// CEX execution via AP (Bitget)
     Cex,
-    /// DEX swap on Arbitrum via BLSCustody + 1inch Router
-    DexArbitrum,
-    /// Cross-chain swap via Fusion+ (through Arbitrum hub)
+    /// DEX swap on Settlement chain via BLSCustody + 1inch Router
+    DexSettlement,
+    /// Cross-chain swap via Fusion+ (through Settlement hub)
     CrossChain {
         /// Destination chain ID
         dst_chain_id: u64,
@@ -27,7 +27,7 @@ pub enum ExecutionVenue {
 /// Routing configuration
 #[derive(Debug, Clone)]
 pub struct RoutingConfig {
-    /// Pair IDs that route to DEX on Arbitrum
+    /// Pair IDs that route to DEX on Settlement chain
     pub dex_pair_ids: HashSet<H256>,
     /// Pair IDs that route to cross-chain via Fusion+
     /// Maps pair_id -> destination chain ID
@@ -48,7 +48,7 @@ impl Default for RoutingConfig {
 pub struct RoutingResult {
     /// Orders routed to CEX (AP/Bitget)
     pub cex_orders: Vec<MergedOrder>,
-    /// Orders routed to DEX on Arbitrum (SwapOrchestrator)
+    /// Orders routed to DEX on Settlement chain (SwapOrchestrator)
     pub dex_orders: Vec<MergedOrder>,
     /// Orders routed to cross-chain (CrossChainOrchestrator)
     /// Tuple: (merged_order, destination_chain_id)
@@ -59,8 +59,8 @@ pub struct RoutingResult {
 ///
 /// Per architecture Section 14:
 /// - CEX pair (Bitget)? -> TradeRequest event to AP (existing flow)
-/// - DEX pair on Arbitrum? -> Execute via BLSCustody + 1inch Router
-/// - Cross-chain DEX (Fusion+)? -> Route through Arbitrum hub
+/// - DEX pair on Settlement? -> Execute via BLSCustody + 1inch Router
+/// - Cross-chain DEX (Fusion+)? -> Route through Settlement hub
 ///
 /// Unknown pair IDs default to CEX routing.
 pub fn route_merged_orders(
@@ -92,7 +92,7 @@ pub fn route_merged_orders(
 /// Determine the execution venue for a single pair_id
 pub fn get_venue_for_pair(pair_id: &H256, config: &RoutingConfig) -> ExecutionVenue {
     if config.dex_pair_ids.contains(pair_id) {
-        ExecutionVenue::DexArbitrum
+        ExecutionVenue::DexSettlement
     } else if let Some(&dst_chain_id) = config.crosschain_pair_ids.get(pair_id) {
         ExecutionVenue::CrossChain { dst_chain_id }
     } else {
@@ -238,7 +238,7 @@ mod tests {
             crosschain_pair_ids,
         };
 
-        assert_eq!(get_venue_for_pair(&dex_pair, &config), ExecutionVenue::DexArbitrum);
+        assert_eq!(get_venue_for_pair(&dex_pair, &config), ExecutionVenue::DexSettlement);
         assert_eq!(
             get_venue_for_pair(&crosschain_pair, &config),
             ExecutionVenue::CrossChain { dst_chain_id: 1 }
@@ -249,8 +249,8 @@ mod tests {
     #[test]
     fn test_execution_venue_equality() {
         assert_eq!(ExecutionVenue::Cex, ExecutionVenue::Cex);
-        assert_eq!(ExecutionVenue::DexArbitrum, ExecutionVenue::DexArbitrum);
-        assert_ne!(ExecutionVenue::Cex, ExecutionVenue::DexArbitrum);
+        assert_eq!(ExecutionVenue::DexSettlement, ExecutionVenue::DexSettlement);
+        assert_ne!(ExecutionVenue::Cex, ExecutionVenue::DexSettlement);
         assert_eq!(
             ExecutionVenue::CrossChain { dst_chain_id: 1 },
             ExecutionVenue::CrossChain { dst_chain_id: 1 }

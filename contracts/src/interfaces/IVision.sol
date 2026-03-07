@@ -69,10 +69,10 @@ interface IVision {
     error BotNotRegistered();
     error TickLocked();                  // bet/update during lock window — F6
     error InvalidBLSSignature();         // kept for backwards compat event decoding
-    error InsufficientBalance();         // withdrawBalance/withdrawToArb amount exceeds balance
+    error InsufficientBalance();         // withdrawBalance/withdrawToSettlement amount exceeds balance
     error AlreadyProcessed();            // depositProcessed[depositId] already true
     error ZeroAddress();                 // creditBalance with user == address(0)
-    error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToArb with amount == 0
+    error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
 
     // ============ EVENTS ============
 
@@ -138,8 +138,8 @@ interface IVision {
     /// @notice Emitted when real balance is withdrawn to L3 wallet
     event RealBalanceWithdrawn(address indexed user, uint256 amount);
 
-    /// @notice Emitted when virtual balance withdrawal to Arbitrum is requested
-    event WithdrawToArbRequested(address indexed user, uint256 amount, uint256 indexed withdrawId);
+    /// @notice Emitted when virtual balance withdrawal to Settlement is requested
+    event WithdrawToSettlementRequested(address indexed user, uint256 amount, uint256 indexed withdrawId);
 
     /// @notice Emitted when _debitBalance draws from user's dual balance pools
     event BalanceDebited(address indexed user, uint256 fromVirtual, uint256 fromReal);
@@ -321,7 +321,7 @@ interface IVision {
     // ============ DUAL-BALANCE OPERATIONS ============
 
     /// @notice Credit virtual balance after cross-chain deposit (BLS-gated, issuers only)
-    /// @dev No L3 USDC enters the contract. Backed by ArbBridgeCustody on Arb.
+    /// @dev No L3 USDC enters the contract. Backed by SettlementBridgeCustody on Settlement.
     /// @param user        User to credit
     /// @param amount      Amount in 18 decimals
     /// @param depositId   Cross-chain deposit ID (for idempotency)
@@ -345,9 +345,9 @@ interface IVision {
     /// @param amount Amount in 18 decimals
     function withdrawBalance(uint256 amount) external;
 
-    /// @notice Withdraw virtual balance back to Arbitrum via issuer bridge
+    /// @notice Withdraw virtual balance back to Settlement via issuer bridge
     /// @param amount Amount in 18 decimals
-    function withdrawToArb(uint256 amount) external;
+    function withdrawToSettlement(uint256 amount) external;
 
     /// @notice Total available balance for a user (real + virtual)
     /// @param user User address
@@ -357,7 +357,7 @@ interface IVision {
     /// @notice Per-user L3 USDC balance — backed by real L3 USDC in the contract
     function realBalance(address user) external view returns (uint256);
 
-    /// @notice Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb
+    /// @notice Per-user virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement
     function virtualBalance(address user) external view returns (uint256);
 
     /// @notice Aggregate real balance tracking for solvency invariants

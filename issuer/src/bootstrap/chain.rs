@@ -2,8 +2,8 @@
 
 use super::{BootstrapError, BootstrapParams, ChainComponents};
 use crate::{
-    ArbitrumChainReader, ArbitrumChainReaderConfig, ArbitrumChainWriter,
-    ArbitrumChainWriterConfig, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
+    SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter,
+    SettlementChainWriterConfig, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
     EthersChainReader, EthersChainWriter, GasConfig, IssuerConfig,
 };
 use common::mocks::MockChainBuilder;
@@ -46,14 +46,14 @@ impl<'a> ChainBuilder<'a> {
         // Build chain writer
         let writer = self.build_writer(node_id, &rpc_url).await?;
 
-        // Build Arbitrum components
-        let (arbitrum_reader, arbitrum_writer) = self.build_arbitrum(node_id).await?;
+        // Build Settlement chain components
+        let (settlement_reader, settlement_writer) = self.build_settlement(node_id).await?;
 
         Ok(ChainComponents {
             reader,
             writer,
-            arbitrum_reader,
-            arbitrum_writer,
+            settlement_reader,
+            settlement_writer,
             rpc_url,
         })
     }
@@ -189,12 +189,12 @@ impl<'a> ChainBuilder<'a> {
         }
     }
 
-    async fn build_arbitrum(
+    async fn build_settlement(
         &self,
         node_id: u32,
     ) -> Result<(
-        Option<Arc<ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
-        Option<Arc<ArbitrumChainWriter>>,
+        Option<Arc<SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
+        Option<Arc<SettlementChainWriter>>,
     ), BootstrapError> {
         let bridge_proxy = match &self.params.bridge_proxy {
             Some(bp) => bp,
@@ -204,52 +204,52 @@ impl<'a> ChainBuilder<'a> {
             }
         };
 
-        let arb_rpc = self.config.effective_arbitrum_rpc_url()
+        let settlement_rpc = self.config.effective_settlement_rpc_url()
             .map_err(|e| BootstrapError::Chain(e))?;
-        let arb_chain_id = self.config.effective_arbitrum_chain_id()
+        let settlement_chain_id = self.config.effective_settlement_chain_id()
             .map_err(|e| BootstrapError::Chain(e))?;
 
-        // Build ArbitrumChainReader
-        let arb_reader = {
-            let arb_config = ArbitrumChainReaderConfig {
-                rpc_url: arb_rpc.clone(),
+        // Build SettlementChainReader
+        let settlement_reader = {
+            let settlement_config = SettlementChainReaderConfig {
+                rpc_url: settlement_rpc.clone(),
                 bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
-                arb_custody_address: self.config.effective_arb_custody().unwrap_or_default(),
-                chain_id: arb_chain_id,
+                settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
+                chain_id: settlement_chain_id,
                 confirmations: 2,
                 max_block_range: 10_000,
             };
 
-            match ArbitrumChainReader::new(arb_config) {
+            match SettlementChainReader::new(settlement_config) {
                 Ok(reader) => {
-                    info!(node_id, bridge_proxy = %bridge_proxy, arb_rpc = %arb_rpc, "ArbitrumChainReader initialized");
+                    info!(node_id, bridge_proxy = %bridge_proxy, settlement_rpc = %settlement_rpc, "SettlementChainReader initialized");
                     Some(Arc::new(reader))
                 }
                 Err(e) => {
-                    warn!(node_id, error = %e, "Failed to create ArbitrumChainReader");
+                    warn!(node_id, error = %e, "Failed to create SettlementChainReader");
                     None
                 }
             }
         };
 
-        // Build ArbitrumChainWriter
-        let arb_writer = match self.config.effective_private_key() {
+        // Build SettlementChainWriter
+        let settlement_writer = match self.config.effective_private_key() {
             Ok(Some(ref private_key)) => {
-                let arb_config = ArbitrumChainWriterConfig {
-                    rpc_url: arb_rpc.clone(),
+                let settlement_config = SettlementChainWriterConfig {
+                    rpc_url: settlement_rpc.clone(),
                     bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
-                    arb_custody_address: self.config.effective_arb_custody().unwrap_or_default(),
-                    chain_id: arb_chain_id,
+                    settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
+                    chain_id: settlement_chain_id,
                     ..Default::default()
                 };
 
-                match ArbitrumChainWriter::new(arb_config, private_key) {
+                match SettlementChainWriter::new(settlement_config, private_key) {
                     Ok(writer) => {
-                        info!(node_id, bridge_proxy = %bridge_proxy, "ArbitrumChainWriter initialized");
+                        info!(node_id, bridge_proxy = %bridge_proxy, "SettlementChainWriter initialized");
                         Some(Arc::new(writer))
                     }
                     Err(e) => {
-                        warn!(node_id, error = %e, "Failed to create ArbitrumChainWriter");
+                        warn!(node_id, error = %e, "Failed to create SettlementChainWriter");
                         None
                     }
                 }
@@ -258,7 +258,7 @@ impl<'a> ChainBuilder<'a> {
         };
 
         // Log status
-        match (&arb_reader, &arb_writer) {
+        match (&settlement_reader, &settlement_writer) {
             (Some(_), Some(_)) => {
                 info!(node_id, bridge_proxy = %bridge_proxy, "Bridge ITP creation ENABLED");
             }
@@ -270,6 +270,6 @@ impl<'a> ChainBuilder<'a> {
             }
         }
 
-        Ok((arb_reader, arb_writer))
+        Ok((settlement_reader, settlement_writer))
     }
 }

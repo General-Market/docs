@@ -11,7 +11,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title MirrorIssuerRegistry
-/// @notice Mirror of L3 IssuerRegistry on Arbitrum (or any chain).
+/// @notice Mirror of L3 IssuerRegistry on Settlement (or any chain).
 ///         Synced via BLS-signed state proofs. Permissionless updates.
 ///         Implements IIssuerRegistry subset so BLSVerifier can use it directly.
 /// @dev Stores individual issuer pubkeys for multi-pairing BLS verification.

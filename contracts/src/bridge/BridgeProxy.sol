@@ -15,7 +15,7 @@ import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 /// @title BridgeProxy - Cross-chain ITP creation with BLS consensus
-/// @notice UUPS upgradeable proxy on Arbitrum for bridged ITP creation
+/// @notice UUPS upgradeable proxy on Settlement for bridged ITP creation
 /// @custom:security-contact security@indexprotocol.com
 contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, PausableUpgradeable, BLSVerifier, IBridgeProxy {
     // ============ CONSTANTS ============
@@ -39,11 +39,11 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice nonce => PendingItpCreation
     mapping(uint256 => PendingItpCreation) private _pendingCreations;
 
-    /// @notice L3 orbitItpId => Arbitrum bridgedItp address
-    mapping(bytes32 => address) public override orbitToArbitrum;
+    /// @notice L3 orbitItpId => Settlement bridgedItp address
+    mapping(bytes32 => address) public override orbitToSettlement;
 
-    /// @notice Arbitrum bridgedItp address => L3 orbitItpId
-    mapping(address => bytes32) public override arbitrumToOrbit;
+    /// @notice Settlement bridgedItp address => L3 orbitItpId
+    mapping(address => bytes32) public override settlementToOrbit;
 
     /// @notice DEPRECATED: was signerThreshold, slot preserved for UUPS layout
     uint256 private _deprecated_signerThreshold;
@@ -186,22 +186,22 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         pending.completed = true;
 
         // orbitItpId was created on L3 by the issuer before calling this function.
-        // Investment.sol only exists on L3 — BridgeProxy stores the mapping here on Arb.
+        // Investment.sol only exists on L3 — BridgeProxy stores the mapping here on Settlement.
         if (orbitItpId == bytes32(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
 
         // Store deployer for future rebalance/transfer authorization
         itpDeployer[orbitItpId] = pending.admin;
 
         // Check orbitItpId not already mapped (defense-in-depth, should be prevented by idempotent createITP)
-        if (orbitToArbitrum[orbitItpId] != address(0))
-            revert ErrorsLib.E07C_OrbitItpAlreadyMapped(orbitItpId, orbitToArbitrum[orbitItpId]);
+        if (orbitToSettlement[orbitItpId] != address(0))
+            revert ErrorsLib.E07C_OrbitItpAlreadyMapped(orbitItpId, orbitToSettlement[orbitItpId]);
 
         // Deploy BridgedITP via factory
         bridgedItpAddress = bridgedItpFactory.deployBridgedItp(pending.name, pending.symbol, orbitItpId);
 
         // Store bidirectional mappings
-        orbitToArbitrum[orbitItpId] = bridgedItpAddress;
-        arbitrumToOrbit[bridgedItpAddress] = orbitItpId;
+        orbitToSettlement[orbitItpId] = bridgedItpAddress;
+        settlementToOrbit[bridgedItpAddress] = orbitItpId;
 
         // Auto-store metadata from creation request (if any provided)
         ItpMetadata storage meta = _pendingMetadata[nonce];
@@ -243,7 +243,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     /// @notice Execute rebalance on L3 Investment via cross-chain BLS consensus
-    /// @dev BLS verified on Arbitrum, then calls Investment.rebalance on L3
+    /// @dev BLS verified on Settlement, then calls Investment.rebalance on L3
     function rebalance(
         bytes32 itpId,
         uint256[] calldata removeIndices,
@@ -350,11 +350,11 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     function getBridgedItp(bytes32 orbitItpId) external view override returns (address) {
-        return orbitToArbitrum[orbitItpId];
+        return orbitToSettlement[orbitItpId];
     }
 
     function getOrbitItpId(address bridgedItp) external view override returns (bytes32) {
-        return arbitrumToOrbit[bridgedItp];
+        return settlementToOrbit[bridgedItp];
     }
 
     function getPendingRebalance(uint256 nonce)
@@ -394,7 +394,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override whenNotPaused {
-        address bridgedItp = orbitToArbitrum[itpId];
+        address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
 
@@ -421,7 +421,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override whenNotPaused {
-        address bridgedItp = orbitToArbitrum[itpId];
+        address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
 

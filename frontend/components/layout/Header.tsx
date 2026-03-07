@@ -61,7 +61,7 @@ export function Header() {
   useEffect(() => { setMounted(true) }, [])
 
   // Auto-switch to L3 only on initial wallet connect — not on every chain change.
-  // CreateITP temporarily switches to Arb for BridgeProxy tx; aggressive auto-switch kills that flow.
+  // CreateITP temporarily switches to Settlement for BridgeProxy tx; aggressive auto-switch kills that flow.
   const hasAutoSwitched = useRef(false)
   useEffect(() => {
     if (isConnected && !hasAutoSwitched.current) {
@@ -212,7 +212,7 @@ export function Header() {
                       </span>
                     ) : usdcBalance !== null ? (
                       <a
-                        href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=arbitrum&walletAddress=${address}`}
+                        href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=${process.env.NEXT_PUBLIC_ONRAMP_NETWORK || 'sonic'}&walletAddress=${address}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"

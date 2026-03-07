@@ -52,7 +52,7 @@ interface UsePortfolioReturn {
 /**
  * Hook to fetch portfolio data for a user address.
  * Fetches from data-node REST endpoints only. On-chain balance reads
- * (bridged ITP on Arbitrum) are now handled via the SSE stream.
+ * (bridged ITP on Settlement) are now handled via the SSE stream.
  */
 export function usePortfolio(userAddress: string | undefined): UsePortfolioReturn {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null)

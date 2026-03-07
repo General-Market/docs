@@ -462,7 +462,7 @@ async fn test_e2e_full_price_flow_for_consensus() {
 
     let mock_server = MockServer::start().await;
 
-    // Realistic Arbitrum token addresses (from SymbolMap::default_arbitrum)
+    // Realistic Settlement token addresses (from SymbolMap::default_settlement)
     let wbtc: Address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
         .parse()
         .unwrap();
@@ -553,7 +553,7 @@ async fn test_e2e_full_price_flow_for_consensus() {
         .mount(&mock_server)
         .await;
 
-    // Create fetcher with default Arbitrum symbol map (production-like setup)
+    // Create fetcher with default Settlement symbol map (production-like setup)
     let config = create_test_config(&mock_server);
     let client = BitgetReadOnlyClientImpl::new(config).unwrap();
     let symbol_map = SymbolMap::default_arbitrum();

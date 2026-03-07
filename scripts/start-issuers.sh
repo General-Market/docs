@@ -45,7 +45,7 @@ BRIDGE_PROXY=$(jval "d['contracts']['BridgeProxy']")
 BITGET_VAULT=$(jval "d['contracts']['MockBitgetVault']")
 MOCK_USDT=$(jval "d['contracts'].get('MOCK_USDT', d['contracts'].get('MockUSDT',''))")
 VISION=$(jval "d['contracts'].get('Vision','')")
-ARB_CUSTODY=$(jval "d['contracts'].get('ArbBridgeCustody','')")
+SETTLEMENT_CUSTODY=$(jval "d['contracts'].get('SettlementBridgeCustody','')")
 BLS_CUSTODY=$(jval "d['contracts'].get('BLSCustody','')")
 CHAIN_ID=$(jval "d['chainId']")
 
@@ -87,8 +87,8 @@ if [ -n "$VISION" ] && [ "$VISION" != "null" ]; then
     VISION_ARGS="--vision-enabled --vision-address $VISION --vision-database-url $VISION_DB --vision-data-node-url http://localhost:8200 --vision-rpc-ws-url $RPC --vision-reveal-window-secs 0"
     echo "Vision: $VISION (DB: $VISION_DB)"
 fi
-export ISSUER_ARBITRUM_CHAIN_ID="$CHAIN_ID"
-export ISSUER_ARBITRUM_RPC_URL="$RPC"
+export ISSUER_SETTLEMENT_CHAIN_ID="$CHAIN_ID"
+export ISSUER_SETTLEMENT_RPC_URL="$RPC"
 export ISSUER_DEPLOYMENT_FILE="$DEPLOYMENT_FILE"
 
 BINARY="./target/release/issuer"
@@ -125,8 +125,8 @@ $BINARY \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
     --deployment-file "$DEPLOYMENT_FILE" \
-    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
-    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
+    ${SETTLEMENT_CUSTODY:+--settlement-custody "$SETTLEMENT_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-settlement "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-1.wal \
     $VISION_ARGS \
@@ -155,8 +155,8 @@ $BINARY \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
     --deployment-file "$DEPLOYMENT_FILE" \
-    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
-    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
+    ${SETTLEMENT_CUSTODY:+--settlement-custody "$SETTLEMENT_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-settlement "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-2.wal \
     $VISION_ARGS \
@@ -185,8 +185,8 @@ $BINARY \
     --data-node-url http://localhost:8200 \
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \
     --deployment-file "$DEPLOYMENT_FILE" \
-    ${ARB_CUSTODY:+--arb-custody "$ARB_CUSTODY"} \
-    ${BLS_CUSTODY:+--issuer-custody-arb "$BLS_CUSTODY"} \
+    ${SETTLEMENT_CUSTODY:+--settlement-custody "$SETTLEMENT_CUSTODY"} \
+    ${BLS_CUSTODY:+--issuer-custody-settlement "$BLS_CUSTODY"} \
     --symbol-map-file data/symbol-map.json \
     --wal-path logs/consensus-3.wal \
     $VISION_ARGS \

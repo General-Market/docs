@@ -1971,12 +1971,12 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!(fast_poll_secs = args.fast_poll_secs, "Fast poller started");
     }
 
-    // Create L3 + ARB providers
+    // Create L3 + Settlement providers
     let l3_provider = Arc::new(Provider::<Http>::try_from(&args.rpc_url)
         .map_err(|e| format!("Failed to create L3 provider from {}: {}", args.rpc_url, e))?);
-    let arb_provider = Arc::new(Provider::<Http>::try_from(&args.arb_rpc_url)
-        .map_err(|e| format!("Failed to create ARB provider from {}: {}", args.arb_rpc_url, e))?);
-    info!(l3_rpc = %args.rpc_url, arb_rpc = %args.arb_rpc_url, "RPC providers created");
+    let settlement_provider = Arc::new(Provider::<Http>::try_from(&args.settlement_rpc_url)
+        .map_err(|e| format!("Failed to create Settlement provider from {}: {}", args.settlement_rpc_url, e))?);
+    info!(l3_rpc = %args.rpc_url, settlement_rpc = %args.settlement_rpc_url, "RPC providers created");
 
     // Load deployment JSONs
     let deployment: serde_json::Value = {
@@ -2046,7 +2046,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         cache: api::PriceCache::new(5), // 5-second TTL
         live_cache,
         l3_provider,
-        arb_provider,
+        settlement_provider,
         deployment,
         morpho_deployment,
         logos_dir,

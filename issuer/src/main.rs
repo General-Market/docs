@@ -176,13 +176,13 @@ struct Args {
     #[arg(long)]
     issuer_custody_l3: Option<String>,
 
-    /// IssuerCustody Arbitrum contract address (Story 7.7).
+    /// IssuerCustody Settlement contract address (Story 7.7).
     #[arg(long)]
-    issuer_custody_arb: Option<String>,
+    issuer_custody_settlement: Option<String>,
 
-    /// ArbBridgeCustody contract address (Story 7.8).
+    /// SettlementBridgeCustody contract address (Story 7.8).
     #[arg(long)]
-    arb_custody: Option<String>,
+    settlement_custody: Option<String>,
 
     /// Enable the NAV signing API endpoint (GET /api/nav-sign).
     /// The endpoint returns BLS-signed NAV prices for ITPs (Story 8.3).
@@ -203,7 +203,7 @@ struct Args {
 
     /// Enable the registry sync endpoint (GET /api/registry-sync).
     /// When enabled, the issuer watches for RegistryStateChanged events from L3 IssuerRegistry
-    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Arbitrum.
+    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Settlement.
     /// (Story 8.4, Task 7.1)
     #[arg(long)]
     registry_sync: bool,
@@ -283,24 +283,24 @@ struct Args {
     #[arg(long)]
     vision_tick_poll_interval_ms: Option<u64>,
 
-    /// Arbitrum RPC URL for watching Vision deposit events.
+    /// Settlement RPC URL for watching Vision deposit events.
     #[arg(long)]
-    vision_arb_rpc_url: Option<String>,
+    vision_settlement_rpc_url: Option<String>,
 
-    /// ArbBridgeCustody contract address on Arbitrum (for Vision deposits).
+    /// SettlementBridgeCustody contract address on Settlement (for Vision deposits).
     #[arg(long)]
-    vision_arb_bridge_custody: Option<String>,
+    vision_settlement_bridge_custody: Option<String>,
 
-    /// Arbitrum chain ID (default: 42161).
+    /// Settlement chain ID (default: 42161).
     #[arg(long)]
-    vision_arb_chain_id: Option<u64>,
+    vision_settlement_chain_id: Option<u64>,
 
     /// Bearer token for authenticating data-node HTTP requests.
     /// Used by Vision, Arbitration, and NAV subsystems to authenticate with the data-node.
     #[arg(long, env = "DATA_NODE_TOKEN")]
     data_node_token: Option<String>,
 
-    /// ITPNAVOracle contract address on Arbitrum.
+    /// ITPNAVOracle contract address on Settlement.
     #[arg(long)]
     nav_oracle: Option<String>,
 
@@ -322,8 +322,8 @@ struct Args {
     #[arg(long)]
     skip_wal_replay: bool,
 
-    /// MirrorIssuerRegistry contract address on Arbitrum (Step 12).
-    /// When set, the issuer actively syncs L3 registry state to the mirror on Arb.
+    /// MirrorIssuerRegistry contract address on Settlement (Step 12).
+    /// When set, the issuer actively syncs L3 registry state to the mirror on Settlement.
     #[arg(long)]
     mirror_registry: Option<String>,
 }
@@ -587,7 +587,7 @@ fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
         .with_state(state)
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, arb_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -651,8 +651,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let consensus_chain_writer_for_task = components.chain.writer.clone();
     let has_bls_keypair = components.consensus.keys.bls_keypair.is_some();
     let consensus_protocol_for_task = components.consensus.protocol.clone();
-    let arbitrum_reader_for_task = components.chain.arbitrum_reader.clone();
-    let arbitrum_writer_for_task = components.chain.arbitrum_writer.clone();
+    let settlement_reader_for_task = components.chain.settlement_reader.clone();
+    let settlement_writer_for_task = components.chain.settlement_writer.clone();
     let itp_creation_config_for_task = components.consensus.itp_creation_config.clone();
     let bridge_orchestrator_for_task = components.consensus.bridge_orchestrator.clone();
     let node_index_for_task = components.consensus.keys.node_index;
@@ -664,7 +664,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let itp_id_for_task = itp_id.clone();
     let nav_oracle_address_for_task = nav_oracle_address;
     let itp_token_address_for_task = itp_token_address;
-    let arb_chain_id_for_task = arb_chain_id;
+    let settlement_chain_id_for_task = settlement_chain_id;
     let l3_chain_id_for_task = components.target_chain_id;
     let mirror_registry_for_task = mirror_registry_address;
     let issuer_registry_for_sync_task = issuer_registry_address_for_sync;
@@ -846,7 +846,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         let oracle_addr = nav_oracle_address_for_task;
                         let itp_addr = itp_token_address_for_task;
                         // NavOracle is on L3 — use L3 chain ID for hash (block.chainid in Solidity)
-                        let cid = if oracle_addr.is_some() { Some(l3_chain_id_for_task) } else { arb_chain_id_for_task };
+                        let cid = if oracle_addr.is_some() { Some(l3_chain_id_for_task) } else { settlement_chain_id_for_task };
                         let addrs = known_asset_addresses.clone();
                         let cycle = current_cycle;
                         let metrics = consensus_metrics.clone();
@@ -862,14 +862,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
                     // ITP creation — spawn if not already running
                     if !itp_active.load(Ordering::Acquire) {
-                        if let (Some(ref arb_reader), Some(ref arb_writer), Some(ref itp_config)) =
-                            (&arbitrum_reader_for_task, &arbitrum_writer_for_task, &itp_creation_config_for_task)
+                        if let (Some(ref settlement_reader), Some(ref settlement_writer), Some(ref itp_config)) =
+                            (&settlement_reader_for_task, &settlement_writer_for_task, &itp_creation_config_for_task)
                         {
                             itp_active.store(true, Ordering::Release);
                             let flag = itp_active.clone();
                             let p = protocol.clone();
-                            let ar = Arc::clone(arb_reader);
-                            let aw = Arc::clone(arb_writer);
+                            let ar = Arc::clone(settlement_reader);
+                            let aw = Arc::clone(settlement_writer);
                             let cw = consensus_chain_writer_for_task.clone();
                             let ic = itp_config.clone();
                             let fs = itp_first_seen.clone();
@@ -885,15 +885,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
                     // Cross-chain BUY — spawn if not already running
                     if !buy_active.load(Ordering::Acquire) {
-                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
-                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
+                            (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
                             buy_active.store(true, Ordering::Release);
                             let flag = buy_active.clone();
                             let p = protocol.clone();
-                            let ar = Arc::clone(arb_reader);
+                            let ar = Arc::clone(settlement_reader);
                             let orch = Arc::clone(orchestrator);
-                            let aw = Arc::clone(arb_writer);
+                            let aw = Arc::clone(settlement_writer);
                             let cr = consensus_chain_reader.clone();
                             let dnu = data_node_url_for_task.clone();
                             let iid = itp_id_for_task.clone();
@@ -914,15 +914,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
                     // Runs independently from detection+bridge+submit so buy_active isn't held during the slow 8-step flow
                     if !bridge_buy_post_active.load(Ordering::Acquire) {
-                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
-                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
+                            (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
                             bridge_buy_post_active.store(true, Ordering::Release);
                             let flag = bridge_buy_post_active.clone();
                             let p = protocol.clone();
-                            let ar = Arc::clone(arb_reader);
+                            let ar = Arc::clone(settlement_reader);
                             let orch = Arc::clone(orchestrator);
-                            let aw = Arc::clone(arb_writer);
+                            let aw = Arc::clone(settlement_writer);
                             let cr = consensus_chain_reader.clone();
                             let dnu = data_node_url_for_task.clone();
                             let iid = itp_id_for_task.clone();
@@ -942,15 +942,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
                     // Cross-chain SELL — spawn if not already running
                     if !sell_active.load(Ordering::Acquire) {
-                        if let (Some(ref arb_reader), Some(ref orchestrator), Some(ref arb_writer)) =
-                            (&arbitrum_reader_for_task, &bridge_orchestrator_for_task, &arbitrum_writer_for_task)
+                        if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
+                            (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
                         {
                             sell_active.store(true, Ordering::Release);
                             let flag = sell_active.clone();
                             let p = protocol.clone();
-                            let ar = Arc::clone(arb_reader);
+                            let ar = Arc::clone(settlement_reader);
                             let orch = Arc::clone(orchestrator);
-                            let aw = Arc::clone(arb_writer);
+                            let aw = Arc::clone(settlement_writer);
                             let cr = consensus_chain_reader.clone();
                             let dnu = data_node_url_for_task.clone();
                             let iid = itp_id_for_task.clone();
@@ -1021,21 +1021,21 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // Mirror registry sync — spawn every 10 cycles if not already running (Step 12)
-                    // Reads L3 nonce + Arb mirror nonce, runs BLS consensus if stale, submits sync tx.
+                    // Reads L3 nonce + Settlement mirror nonce, runs BLS consensus if stale, submits sync tx.
                     if current_cycle % 10 == 0 && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
-                            if let Some(ref arb_writer) = arbitrum_writer_for_task {
+                            if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {
-                                    let arb_cid = arb_chain_id_for_task.unwrap_or(42161);
+                                    let settlement_cid = settlement_chain_id_for_task.unwrap_or(42161);
                                     mirror_sync_active.store(true, Ordering::Release);
                                     let flag = mirror_sync_active.clone();
                                     let p = Arc::clone(protocol);
-                                    let aw = Arc::clone(arb_writer);
+                                    let aw = Arc::clone(settlement_writer);
                                     let cr = consensus_chain_reader.clone();
                                     let cycle = current_cycle;
                                     tokio::spawn(async move {
                                         let _guard = FlagGuard(flag);
-                                        if let Err(e) = mirror_sync_task(&cr, &aw, &p, mirror_addr, arb_cid, cycle).await {
+                                        if let Err(e) = mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle).await {
                                             warn!(cycle, error = %e, "Mirror registry sync failed");
                                         }
                                     });
@@ -1074,9 +1074,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                     issuer::bridge::BridgeOrderStatus::Pending |
                                                     issuer::bridge::BridgeOrderStatus::BridgedToL3
                                                 ) {
-                                                    if let Some(ref arb_reader) = arbitrum_reader_for_task {
-                                                        let chain_id = arb_reader.config().chain_id;
-                                                        arb_reader.remove_seen_order(chain_id, *order_id).await;
+                                                    if let Some(ref settlement_reader) = settlement_reader_for_task {
+                                                        let chain_id = settlement_reader.config().chain_id;
+                                                        settlement_reader.remove_seen_order(chain_id, *order_id).await;
                                                     }
                                                 }
                                             }
@@ -1132,7 +1132,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     run_mock_consensus(
                         &consensus_chain_reader, &consensus_chain_writer_for_task,
                         has_bls_keypair, current_cycle, &consensus_metrics, start_time,
-                        &arbitrum_reader_for_task,
+                        &settlement_reader_for_task,
                     ).await;
                 }
             }
@@ -1413,8 +1413,8 @@ async fn run_price_update<P, W, K, PF>(
 
 async fn run_itp_creation_phase<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
-    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_writer: Arc<issuer::SettlementChainWriter>,
     l3_writer: Option<Arc<issuer::EthersChainWriter>>,
     itp_config: issuer::ItpCreationConfig,
     current_cycle: u64,
@@ -1430,7 +1430,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
     /// Max age before skipping a stale ITP creation request (1 hour)
     const MAX_REQUEST_AGE: std::time::Duration = std::time::Duration::from_secs(3600);
 
-    match arb_reader.get_all_pending_requests().await {
+    match settlement_reader.get_all_pending_requests().await {
         Ok(pending_requests) => {
             if !pending_requests.is_empty() {
                 info!(cycle = current_cycle, count = pending_requests.len(), "Found pending ITP creation requests");
@@ -1486,20 +1486,20 @@ async fn run_itp_creation_phase<P, W, K, PF>(
                                     None
                                 };
 
-                                // Step 2: Complete on Arb with the L3 itpId (deploys BridgedITP ERC20)
+                                // Step 2: Complete on Settlement with the L3 itpId (deploys BridgedITP ERC20)
                                 if let Some(itp_id) = l3_itp_id {
                                     const RECEIPT_TIMEOUT_SECS: u64 = 60;
-                                    match arb_writer.complete_create_itp_and_wait(
+                                    match settlement_writer.complete_create_itp_and_wait(
                                         result.nonce, itp_id,
                                         result.aggregated_signature.clone(),
                                         protocol.registry_nonce(), result.signer_bitmap,
                                         RECEIPT_TIMEOUT_SECS,
                                     ).await {
                                         Ok(receipt) => {
-                                            info!(nonce = %result.nonce, itp_id = ?itp_id, tx_hash = ?receipt.transaction_hash, "ITP creation confirmed on both L3 and Arbitrum");
+                                            info!(nonce = %result.nonce, itp_id = ?itp_id, tx_hash = ?receipt.transaction_hash, "ITP creation confirmed on both L3 and Settlement");
                                         }
                                         Err(e) => {
-                                            error!(nonce = %result.nonce, error = %e, "Failed to complete ITP creation on Arbitrum (L3 succeeded)");
+                                            error!(nonce = %result.nonce, error = %e, "Failed to complete ITP creation on Settlement (L3 succeeded)");
                                         }
                                     }
                                 }
@@ -1520,9 +1520,9 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 
 async fn run_cross_chain_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    _arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    _settlement_writer: Arc<issuer::SettlementChainWriter>,
     _chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
@@ -1537,7 +1537,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    let confirmed_block = match arb_reader.get_confirmed_block().await {
+    let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
         Err(e) => { debug!(cycle = current_cycle, error = %e, "Failed to get confirmed block"); return; }
     };
@@ -1548,9 +1548,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     }
 
     let from_block = confirmed_block.saturating_sub(10000);
-    debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Arb chain");
+    debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
 
-    match arb_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
+    match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
         Ok(orders) if !orders.is_empty() => {
             // Filter out orders already known to orchestrator (already processed or in-progress)
             let mut new_orders = Vec::new();
@@ -1579,25 +1579,25 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 }
             }
 
-            let chain_id = arb_reader.config().chain_id;
+            let chain_id = settlement_reader.config().chain_id;
             let mut handles = Vec::new();
             for order in new_orders {
                 let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
                 info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
 
                 let p = protocol.clone();
-                let ar = arb_reader.clone();
+                let ar = settlement_reader.clone();
                 let orch = orchestrator.clone();
                 let cid = chain_id;
 
                 handles.push(tokio::spawn(async move {
-                    match p.run_bridge_arb_to_l3_phase(&order, am_leader).await {
+                    match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
                         Ok(result) => {
                             if result.signature_count == 0 {
-                                debug!(order_id = %order.order_id, am_leader, "Bridge Arb→L3: no signatures collected (follower placeholder)");
+                                debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: no signatures collected (follower placeholder)");
                                 return;
                             }
-                            info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Arb→L3 consensus completed");
+                            info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
 
                             match p.run_submit_order_phase(&order, am_leader).await {
                                 Ok(submit_result) => {
@@ -1614,7 +1614,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         orch_w.set_order_amount(order.order_id, order.amount).await;
                                         let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
                                         orch_w.store_order_mapping(issuer::bridge::OrderMapping {
-                                            arb_order_id: order.order_id,
+                                            settlement_order_id: order.order_id,
                                             l3_order_id: l3_id,
                                             original_user: order.user,
                                             created_at: std::time::SystemTime::now()
@@ -1631,7 +1631,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                             }
                         }
                         Err(e) => {
-                            warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Arb→L3 consensus failed");
+                            warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Settlement→L3 consensus failed");
                             ar.increment_retry_count(cid, order.order_id).await;
                         }
                     }
@@ -1648,7 +1648,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
 
     if current_cycle % 1000 == 0 {
-        arb_reader.clear_old_seen_orders(100_000).await;
+        settlement_reader.clear_old_seen_orders(100_000).await;
     }
 
 }
@@ -1659,9 +1659,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 /// hold buy_active during the slow batch/fills/mint pipeline.
 async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    _arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    _settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    settlement_writer: Arc<issuer::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
@@ -1683,27 +1683,27 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     };
 
     if !submitted_orders.is_empty() {
-        // Resolve Arb order IDs → L3 order IDs for BLS hash and on-chain calls.
+        // Resolve Settlement order IDs → L3 order IDs for BLS hash and on-chain calls.
         // The contract uses L3 IDs, so the BLS hash must match.
         // On the leader, resolve_l3_order_ids uses stored mappings.
-        // On followers, it falls back to arb IDs (but followers don't create proposals —
+        // On followers, it falls back to settlement IDs (but followers don't create proposals —
         // they receive L3 IDs from the leader's P2P broadcast and sign those).
         let l3_order_ids = {
             let o = orchestrator.read().await;
             o.resolve_l3_order_ids(&submitted_orders).await
         };
-        // Reverse lookup: L3 ID → Arb ID (for post-fill operations that need Arb IDs)
-        let l3_to_arb: std::collections::HashMap<ethers::types::U256, ethers::types::U256> =
-            l3_order_ids.iter().zip(submitted_orders.iter()).map(|(l3, arb)| (*l3, *arb)).collect();
+        // Reverse lookup: L3 ID → Settlement ID (for post-fill operations that need Settlement IDs)
+        let l3_to_settlement: std::collections::HashMap<ethers::types::U256, ethers::types::U256> =
+            l3_order_ids.iter().zip(submitted_orders.iter()).map(|(l3, settlement)| (*l3, *settlement)).collect();
 
         info!(
             cycle = current_cycle,
-            arb_order_ids = ?submitted_orders.iter().map(|id| id.as_u64()).collect::<Vec<_>>(),
+            settlement_order_ids = ?submitted_orders.iter().map(|id| id.as_u64()).collect::<Vec<_>>(),
             l3_order_ids = ?l3_order_ids.iter().map(|id| id.as_u64()).collect::<Vec<_>>(),
-            "Resolved Arb→L3 order IDs for batch/fills"
+            "Resolved Settlement→L3 order IDs for batch/fills"
         );
 
-        // Use order-based leader election (same node as submit leader, which has the arb→L3 mapping)
+        // Use order-based leader election (same node as submit leader, which has the settlement→L3 mapping)
         let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
         let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
         info!(cycle = current_cycle, order_count = submitted_orders.len(), batch_am_leader, "Processing batch for SubmittedOnL3 orders");
@@ -1736,7 +1736,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             Ok(batch_result) => {
                 info!(cycle = current_cycle, signer_count = batch_result.signature_count, "Batch confirmation completed");
 
-                // Mark orders as Batched using ARB IDs (not L3 IDs) to avoid namespace collisions
+                // Mark orders as Batched using Settlement IDs (not L3 IDs) to avoid namespace collisions
                 {
                     let orch = orchestrator.write().await;
                     for oid in &submitted_orders {
@@ -1773,7 +1773,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
 
-                // completeBuyOrder: ArbBridgeCustody → vault (BLS consensus required)
+                // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
                 {
                     let vault = orchestrator.read().await.config().bitget_vault;
                     for order_id in &submitted_orders {
@@ -1783,7 +1783,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             Ok(cbo_result) => {
                                 info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
                                 if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                    match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
+                                    match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
                                         Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
                                         Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
                                     }
@@ -1794,21 +1794,21 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
 
-                // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Arb ID lookup
+                // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Settlement ID lookup
                 // Filter out orders where fill price violates limit (E126 guard)
                 // Uses per-order NAV from prices vector (multi-ITP support)
                 let fills: Vec<Fill> = {
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
-                    for (i, (l3_id, arb_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                    for (i, (l3_id, settlement_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
                         let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                        let amount = o.get_order_amount(arb_id).await
+                        let amount = o.get_order_amount(settlement_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
                         // Check limit price from orchestrator (stored when order was first tracked)
-                        if let Some((limit_price, side)) = o.get_order_limit_price(arb_id).await {
+                        if let Some((limit_price, side)) = o.get_order_limit_price(settlement_id).await {
                             let order_side = common::types::Side::from(side);
                             if !fill_price_respects_limit(order_nav, limit_price, order_side) {
-                                warn!(order_id = %arb_id, l3_id = %l3_id, nav = %order_nav, limit_price = %limit_price,
+                                warn!(order_id = %settlement_id, l3_id = %l3_id, nav = %order_nav, limit_price = %limit_price,
                                     "Skipping cross-chain fill: NAV violates limit price (E126 guard)");
                                 continue;
                             }
@@ -1826,15 +1826,15 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     Ok(fills_result) => {
                         info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed");
 
-                        // Step 8: Mint BridgedITP shares on Arbitrum (using each order's actual itp_id)
+                        // Step 8: Mint BridgedITP shares on Settlement (using each order's actual itp_id)
                         {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                             for fill in &fills {
-                                // Look up original user from order mapping (using Arb ID)
-                                let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
-                                let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                // Look up original user from order mapping (using Settlement ID)
+                                let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                     .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
+                                let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await;
                                 if let Some(mapping) = mapping {
                                     // shares = fill_amount * 1e18 / fill_price
                                     let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -1848,11 +1848,11 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     ).await {
                                         Ok(mint_result) => {
                                             info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
-                                            // Leader executes the Arb transaction
+                                            // Leader executes the Settlement transaction
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
-                                                        info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Arb");
+                                                        info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Settlement");
                                                     }
                                                     Err(e) => warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares tx failed"),
                                                 }
@@ -1861,7 +1861,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                             // (not just leader — otherwise followers keep orders in Batched
                                             // status forever, permanently blocking L3-native PENDING processing)
                                             let orch = orchestrator.write().await;
-                                            orch.mark_orders_shares_bridged(&[arb_id]).await;
+                                            orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                         }
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
@@ -1890,7 +1890,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 Ok(cbo_result) => {
                                     info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus (E021 path)");
                                     if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                        match arb_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
+                                        match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
                                             Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted (E021 path)"),
                                             Err(e) => info!(error = %e, order_id = %order_id, "completeBuyOrder already done or failed (E021 path)"),
                                         }
@@ -1901,14 +1901,14 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         }
                     }
 
-                    // E021 fallback: use L3 IDs for fills, Arb IDs for internal tracking
+                    // E021 fallback: use L3 IDs for fills, Settlement IDs for internal tracking
                     // Uses per-order NAV from prices vector (multi-ITP support)
                     let fills: Vec<Fill> = {
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
-                        for (i, (l3_id, arb_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                        for (i, (l3_id, settlement_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                            let amount = o.get_order_amount(arb_id).await
+                            let amount = o.get_order_amount(settlement_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
                             fills.push(Fill {
                                 order_id: *l3_id, // L3 ID for on-chain confirmFills
@@ -1929,14 +1929,14 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 }
                             }
 
-                            // Step 8: Mint BridgedITP shares on Arbitrum (E021 path, per-order itp_id)
+                            // Step 8: Mint BridgedITP shares on Settlement (E021 path, per-order itp_id)
                             {
                                 let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                                 for fill in &fills {
-                                    let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
-                                    let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                    let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                    let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                         .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                    let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
+                                    let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await;
                                     if let Some(mapping) = mapping {
                                         let shares = if fill.fill_price > ethers::types::U256::zero() {
                                             (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
@@ -1949,7 +1949,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         ).await {
                                             Ok(mint_result) => {
                                                 if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                    match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                    match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
                                                         }
@@ -1958,7 +1958,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                 }
                                                 // All nodes mark order as SharesBridged
                                                 let orch = orchestrator.write().await;
-                                                orch.mark_orders_shares_bridged(&[arb_id]).await;
+                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                             }
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
                                         }
@@ -1982,10 +1982,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 {
                                     let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                                     for fill in &fills {
-                                        let arb_id = l3_to_arb.get(&fill.order_id).copied().unwrap_or(fill.order_id);
-                                        let order_itp = orchestrator.read().await.get_order_itp_id(&arb_id).await
+                                        let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
+                                        let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                             .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                        let mapping = orchestrator.read().await.get_order_mapping(&arb_id).await;
+                                        let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await;
                                         if let Some(mapping) = mapping {
                                             let shares = if fill.fill_price > ethers::types::U256::zero() {
                                                 (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price
@@ -1998,7 +1998,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                             ).await {
                                                 Ok(mint_result) => {
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                        match arb_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                        match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
                                                             }
@@ -2007,7 +2007,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                     }
                                                     // All nodes mark order as SharesBridged
                                                     let orch = orchestrator.write().await;
-                                                    orch.mark_orders_shares_bridged(&[arb_id]).await;
+                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                                 }
                                                 Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
                                             }
@@ -2029,17 +2029,17 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     }
 }
 
-/// Cross-chain SELL order processing from Arbitrum
+/// Cross-chain SELL order processing from Settlement
 ///
 /// Full 3-phase consensus-driven sell flow:
 /// Phase A: Submit sell on L3 (consensus) — submitOrderFor(SELL)
 /// Phase B: Batch/trades/fills (reuse existing consensus phases)
-/// Phase C: Complete sell on Arb (consensus) — completeSellOrder()
+/// Phase C: Complete sell on Settlement (consensus) — completeSellOrder()
 async fn run_cross_chain_sell_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    arb_reader: Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    arb_writer: Arc<issuer::ArbitrumChainWriter>,
+    settlement_writer: Arc<issuer::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
@@ -2054,7 +2054,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    let confirmed_block = match arb_reader.get_confirmed_block().await {
+    let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
         Err(e) => { debug!(cycle = current_cycle, error = %e, "Failed to get confirmed block for sell orders"); return; }
     };
@@ -2064,7 +2064,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     let from_block = confirmed_block.saturating_sub(10000);
 
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
-    match arb_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
+    match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
         Ok(sell_orders) if !sell_orders.is_empty() => {
             let mut new_sell_orders = Vec::new();
             {
@@ -2091,7 +2091,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 }
             }
 
-            let chain_id = arb_reader.config().chain_id;
+            let chain_id = settlement_reader.config().chain_id;
             let mut handles = Vec::new();
             for sell_order in new_sell_orders {
                 let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
@@ -2106,7 +2106,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 );
 
                 let p = protocol.clone();
-                let ar = arb_reader.clone();
+                let ar = settlement_reader.clone();
                 let orch = orchestrator.clone();
                 let cid = chain_id;
 
@@ -2158,7 +2158,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
         info!(cycle = current_cycle, order_count = submitted_sell_orders.len(), batch_am_leader, "Processing batch for SellSubmittedOnL3 orders");
 
-        // Resolve arb sell IDs → L3 order IDs
+        // Resolve settlement sell IDs → L3 order IDs
         let l3_order_ids = {
             let o = orchestrator.read().await;
             o.resolve_sell_l3_order_ids(&submitted_sell_orders).await
@@ -2168,7 +2168,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             warn!(cycle = current_cycle, "No L3 order IDs resolved for sell orders (leader only has mappings)");
         }
 
-        // Use L3 order IDs if available, otherwise use arb IDs (followers don't have mappings)
+        // Use L3 order IDs if available, otherwise use settlement IDs (followers don't have mappings)
         let order_ids_for_batch = if !l3_order_ids.is_empty() {
             l3_order_ids
         } else {
@@ -2237,9 +2237,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
                     for (i, order_id) in order_ids_for_batch.iter().enumerate() {
-                        let arb_order_id = submitted_sell_orders.get(i).unwrap_or(order_id);
+                        let settlement_order_id = submitted_sell_orders.get(i).unwrap_or(order_id);
                         let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                        let amount = o.get_sell_order_amount(arb_order_id).await
+                        let amount = o.get_sell_order_amount(settlement_order_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
                         fills.push(Fill {
                             order_id: *order_id,
@@ -2322,7 +2322,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         }
     }
 
-    // ====== Phase C: Complete sell on Arb for SellFilled orders ======
+    // ====== Phase C: Complete sell on Settlement for SellFilled orders ======
     let filled_sell_orders: Vec<ethers::types::U256> = {
         let o = orchestrator.read().await;
         let snapshot = o.sell_order_status_snapshot().await;
@@ -2337,7 +2337,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
         // Calculate usdc_proceeds = (fill_amount * nav) / 1e18, then convert to 6 decimals
         // amount is 18-dec shares, nav is 18-dec price → result is 18-dec USDC value
-        // ARB_USDC has 6 decimals, so divide by 1e12 to convert
+        // SETTLEMENT_USDC has 6 decimals, so divide by 1e12 to convert
         // Uses per-order ITP ID for NAV fetch (multi-ITP support)
         let usdc_proceeds = {
             let o = orchestrator.read().await;
@@ -2359,7 +2359,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             order_id = %order_id,
             usdc_proceeds = %usdc_proceeds,
             am_leader,
-            "Phase C: Completing sell order on Arbitrum"
+            "Phase C: Completing sell order on Settlement"
         );
 
         let vault = orchestrator.read().await.config().bitget_vault;
@@ -2372,9 +2372,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     "Complete sell order consensus succeeded"
                 );
 
-                // Leader: call arb_writer.complete_sell_order (atomically pulls from vault→user)
+                // Leader: call settlement_writer.complete_sell_order (atomically pulls from vault→user)
                 if am_leader && !result.aggregated_signature.0.is_empty() {
-                    match arb_writer.complete_sell_order(
+                    match settlement_writer.complete_sell_order(
                         order_id,
                         usdc_proceeds,
                         vault,
@@ -2391,7 +2391,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
                             // Wait for receipt
                             const RECEIPT_TIMEOUT_SECS: u64 = 60;
-                            match arb_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                            match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
                                 Ok(receipt) => {
                                     info!(
                                         order_id = %order_id,
@@ -2428,7 +2428,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     // Periodic cleanup
     if current_cycle % 1000 == 0 {
-        arb_reader.clear_old_seen_sell_orders(100_000).await;
+        settlement_reader.clear_old_seen_sell_orders(100_000).await;
     }
 }
 
@@ -2771,7 +2771,7 @@ fn fill_price_respects_limit(
 /// Auto-process L3-native pending orders (sell orders, direct L3 buys).
 ///
 /// These orders are NOT handled by the bridge pipeline (which only processes
-/// CrossChainOrderCreated events from Arbitrum). This function runs confirmBatch +
+/// CrossChainOrderCreated events from Settlement). This function runs confirmBatch +
 /// confirmFills via BLS consensus for any pending orders not already tracked by
 /// the BridgeOrchestrator.
 async fn run_l3_native_order_processing<P, W, K, PF>(
@@ -2822,9 +2822,9 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     };
 
     // 2. Filter out bridge-tracked orders (already managed by cross-chain pipeline)
-    // Uses get_all_tracked_l3_order_ids() which checks order_mappings (keyed by arb_id
+    // Uses get_all_tracked_l3_order_ids() which checks order_mappings (keyed by settlement_id
     // but contains l3_order_id). The old get_order_status(l3_id) didn't work because
-    // order_status is keyed by arb_id, not l3_id.
+    // order_status is keyed by settlement_id, not l3_id.
     let l3_native_orders: Vec<_> = if !pending_orders.is_empty() {
         let orch = orchestrator.read().await;
         let tracked_l3_ids = orch.get_all_tracked_l3_order_ids().await;
@@ -2899,7 +2899,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             );
 
             // Note: Do NOT set order_status here — L3-native order IDs can collide
-            // with Arb order IDs in the orchestrator's status map.
+            // with Settlement order IDs in the orchestrator's status map.
 
             // 6b. Emit per-asset trades (issuer decomposition + cross-ITP netting)
             let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = l3_native_orders.iter()
@@ -3062,7 +3062,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let batched_order_ids: Vec<ethers::types::U256> = l3_batched_orders.iter().map(|o| o.id).collect();
 
     // Register amounts in orchestrator for BLS tracking (but NOT status,
-    // since L3 order IDs can collide with Arb order IDs in the status map)
+    // since L3 order IDs can collide with Settlement order IDs in the status map)
     {
         let orch = orchestrator.write().await;
         for order in &l3_batched_orders {
@@ -3211,7 +3211,7 @@ async fn run_mock_consensus(
     current_cycle: u64,
     metrics: &Arc<IssuerMetrics>,
     start_time: std::time::Instant,
-    arb_reader: &Option<Arc<issuer::ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
+    settlement_reader: &Option<Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
 ) {
     let prices_result = chain_reader.get_prices().await;
     let orders_result = chain_reader.get_pending_orders().await;
@@ -3237,8 +3237,8 @@ async fn run_mock_consensus(
     info!(cycle = current_cycle, elapsed_ms, success = consensus_success, "Consensus phase completed (mock mode)");
 
     // ITP creation in mock mode
-    if let Some(ref arb_reader) = arb_reader {
-        if let Ok(pending_requests) = arb_reader.get_all_pending_requests().await {
+    if let Some(ref settlement_reader) = settlement_reader {
+        if let Ok(pending_requests) = settlement_reader.get_all_pending_requests().await {
             if !pending_requests.is_empty() {
                 info!(cycle = current_cycle, count = pending_requests.len(), "Found pending ITP creation requests (mock mode)");
                 for request in pending_requests {
@@ -3272,14 +3272,14 @@ fn calculate_bridge_leader_with_failover(
 
 /// Mirror registry sync task (Step 12).
 ///
-/// Reads L3 registry nonce and Arb mirror nonce, runs BLS consensus if stale,
-/// and submits the sync transaction to Arbitrum.
+/// Reads L3 registry nonce and Settlement mirror nonce, runs BLS consensus if stale,
+/// and submits the sync transaction to Settlement.
 async fn mirror_sync_task<P, W, K, PF>(
     chain_reader: &Arc<dyn common::traits::ChainReader>,
-    arb_writer: &Arc<issuer::ArbitrumChainWriter>,
+    settlement_writer: &Arc<issuer::SettlementChainWriter>,
     protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     mirror_addr: ethers::types::Address,
-    arb_chain_id: u64,
+    settlement_chain_id: u64,
     cycle: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
 where
@@ -3294,10 +3294,10 @@ where
     let l3_nonce = chain_reader.get_registry_nonce().await
         .map_err(|e| format!("Failed to read L3 registry nonce: {}", e))?;
 
-    // Step 2: Read Arb mirror registryNonce via static_call
+    // Step 2: Read Settlement mirror registryNonce via static_call
     // Selector for registryNonce() = keccak256("registryNonce()")[:4]
     let selector = &ethers::utils::keccak256(b"registryNonce()")[..4];
-    let mirror_nonce_bytes = arb_writer.static_call(mirror_addr, selector.to_vec()).await
+    let mirror_nonce_bytes = settlement_writer.static_call(mirror_addr, selector.to_vec()).await
         .map_err(|e| format!("Failed to read mirror registryNonce: {}", e))?;
     let mirror_nonce = if mirror_nonce_bytes.len() >= 32 {
         U256::from_big_endian(&mirror_nonce_bytes[..32]).as_u64()
@@ -3359,14 +3359,14 @@ where
         active_bitmask,
         active_count,
         threshold,
-        arb_chain_id,
+        settlement_chain_id,
         mirror_addr,
         reference_nonce,
     ).await
         .map_err(|e| format!("Mirror sync BLS consensus failed: {}", e))?;
 
-    // Step 6: Submit sync transaction to Arbitrum
-    let tx_hash = arb_writer.send_transaction(mirror_addr, calldata, U256::zero()).await
+    // Step 6: Submit sync transaction to Settlement
+    let tx_hash = settlement_writer.send_transaction(mirror_addr, calldata, U256::zero()).await
         .map_err(|e| format!("Mirror sync tx submission failed: {}", e))?;
 
     info!(
@@ -3396,8 +3396,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_bitget_vault(args.bitget_vault.clone())
         .with_issuer_custody_l3(args.issuer_custody_l3.clone())
-        .with_issuer_custody_arb(args.issuer_custody_arb.clone())
-        .with_arb_custody(args.arb_custody.clone())
+        .with_issuer_custody_settlement(args.issuer_custody_settlement.clone())
+        .with_settlement_custody(args.settlement_custody.clone())
         .with_mock_usdt(args.mock_usdt.clone())
         .with_registry_sync(args.registry_sync)
         .with_arbitration(
@@ -3440,14 +3440,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             vision_cfg.data_node_token = args.data_node_token.clone();
             // Cross-chain deposit config
-            if let Some(ref url) = args.vision_arb_rpc_url {
-                vision_cfg.arb_rpc_url = url.clone();
+            if let Some(ref url) = args.vision_settlement_rpc_url {
+                vision_cfg.settlement_rpc_url = url.clone();
             }
-            if let Some(ref addr) = args.vision_arb_bridge_custody {
-                vision_cfg.arb_bridge_custody_address = addr.clone();
+            if let Some(ref addr) = args.vision_settlement_bridge_custody {
+                vision_cfg.settlement_bridge_custody_address = addr.clone();
             }
-            if let Some(chain_id) = args.vision_arb_chain_id {
-                vision_cfg.arb_chain_id = chain_id;
+            if let Some(chain_id) = args.vision_settlement_chain_id {
+                vision_cfg.settlement_chain_id = chain_id;
             }
             // BLS proof generation config
             vision_cfg.num_issuers = args.num_issuers as usize;
@@ -3604,7 +3604,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse oracle + mirror configs before config is consumed by bootstrap
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
     let itp_token_address: Option<ethers::types::Address> = config.itp_token_address.as_ref().and_then(|s| s.parse().ok());
-    let arb_chain_id: Option<u64> = config.effective_arbitrum_chain_id().ok();
+    let settlement_chain_id: Option<u64> = config.effective_settlement_chain_id().ok();
     let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| s.parse().ok());
     let issuer_registry_for_sync: Option<ethers::types::Address> = config.issuer_registry_address.as_ref().and_then(|s| s.parse().ok());
 
@@ -3615,9 +3615,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     // GAP 1: Startup diagnostics for cross-chain buy flow
-    if components.consensus.bridge_orchestrator.is_none() && components.chain.arbitrum_reader.is_some() {
+    if components.consensus.bridge_orchestrator.is_none() && components.chain.settlement_reader.is_some() {
         warn!(node_id, code = "BRIDGE-010",
-              "Cross-chain buy flow DISABLED despite ArbitrumReader being available. Check BRIDGE-00x warnings above.");
+              "Cross-chain buy flow DISABLED despite SettlementReader being available. Check BRIDGE-00x warnings above.");
     } else if components.consensus.bridge_orchestrator.is_some() {
         info!(node_id, "Cross-chain buy flow ENABLED");
     }
@@ -3825,18 +3825,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Spawn VisionDepositWatcher (cross-chain deposit/withdraw orchestrator)
                     {
-                        let arb_rpc_url = vision_cfg.arb_rpc_url.clone();
-                        let arb_custody_address: ethers::types::Address = vision_cfg
-                            .arb_bridge_custody_address
+                        let settlement_rpc_url = vision_cfg.settlement_rpc_url.clone();
+                        let settlement_custody_address: ethers::types::Address = vision_cfg
+                            .settlement_bridge_custody_address
                             .parse()
                             .unwrap_or_else(|_| {
-                                warn!("Invalid arb_bridge_custody_address, deposit watcher will have zeroed address");
+                                warn!("Invalid settlement_bridge_custody_address, deposit watcher will have zeroed address");
                                 ethers::types::Address::zero()
                             });
 
-                        let dw_arb_provider = Arc::new(
-                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&arb_rpc_url)
-                                .expect("valid Arb RPC URL for deposit watcher"),
+                        let dw_settlement_provider = Arc::new(
+                            ethers::providers::Provider::<ethers::providers::Http>::try_from(&settlement_rpc_url)
+                                .expect("valid Settlement RPC URL for deposit watcher"),
                         );
                         let dw_l3_provider = Arc::new(
                             ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_cfg.rpc_ws_url)
@@ -3848,15 +3848,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // L3 chain writer for creditBalance + gas drip
                         let dw_l3_writer: Option<Arc<dyn common::traits::ChainWriter>> =
                             components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
-                        // Arb chain writer: ArbitrumChainWriter doesn't impl ChainWriter trait,
-                        // so Arb operations (completeVisionDeposit, refund, completeWithdraw) will
-                        // be wired when the Arb ChainWriter adapter is implemented.
-                        let dw_arb_writer: Option<Arc<dyn common::traits::ChainWriter>> = None;
+                        // Settlement chain writer: SettlementChainWriter doesn't impl ChainWriter trait,
+                        // so Settlement operations (completeVisionDeposit, refund, completeWithdraw) will
+                        // be wired when the Settlement ChainWriter adapter is implemented.
+                        let dw_settlement_writer: Option<Arc<dyn common::traits::ChainWriter>> = None;
                         let dw_node_index = components.consensus.keys.node_index;
 
                         // IssuerRegistry address: used for reading lastSnapshotNonce (BLS referenceNonce).
                         // On L3 testnet the same registry is used for both chains.
-                        // In production with separate chains, arb_registry would be a MirrorIssuerRegistry.
+                        // In production with separate chains, settlement_registry would be a MirrorIssuerRegistry.
                         let dw_registry_address: ethers::types::Address = issuer_registry_address_str
                             .as_ref()
                             .and_then(|addr| addr.parse::<ethers::types::Address>().ok())
@@ -3866,17 +3866,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             });
 
                         let deposit_watcher = issuer::vision::deposit_watcher::VisionDepositWatcher::new(
-                            dw_arb_provider,
+                            dw_settlement_provider,
                             dw_l3_provider,
                             vision_address,
-                            arb_custody_address,
+                            settlement_custody_address,
                             dw_registry_address, // l3_registry_address
-                            dw_registry_address, // arb_registry_address (same on L3 testnet)
+                            dw_registry_address, // settlement_registry_address (same on L3 testnet)
                             pool.clone(),
                             vision_cfg.clone(),
                             dw_bls_keypair,
                             dw_l3_writer,
-                            dw_arb_writer,
+                            dw_settlement_writer,
                             dw_node_index,
                         );
 
@@ -3979,7 +3979,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, arb_chain_id, mirror_registry_address, issuer_registry_for_sync).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }

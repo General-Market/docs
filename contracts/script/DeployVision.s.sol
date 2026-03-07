@@ -11,8 +11,8 @@ import "./helpers/DeployBLSHelper.sol";
 /// @title DeployVision - Deploy Vision.sol (P2Pool prediction market) on L3
 /// @notice Deploys Vision contract on L3 (Index Orbit chain).
 ///         Vision uses dual-balance architecture with real + virtual balances.
-///         USDC is L3 USDC (18 decimals). No L3BridgeCustody needed — withdrawToArb
-///         is a virtual debit, and issuers release from ArbBridgeCustody on Arb.
+///         USDC is L3 USDC (18 decimals). No L3BridgeCustody needed — withdrawToSettlement
+///         is a virtual debit, and issuers release from SettlementBridgeCustody on Settlement.
 ///
 /// Required env vars:
 ///   - ISSUER_REGISTRY: address of IssuerRegistry on L3 (for BLS verification)

@@ -96,7 +96,7 @@ async function main() {
   log('Checking RPC connectivity...');
   const rpcsOk = await checkRpcsHealthy();
   if (!rpcsOk) {
-    console.error('ERROR: L3 (localhost:8545) or Arb (localhost:8546) RPC not responding.');
+    console.error('ERROR: L3 (localhost:8545) or Settlement (localhost:8546) RPC not responding.');
     console.error('Run ./start.sh --no-tail first.');
     process.exit(1);
   }

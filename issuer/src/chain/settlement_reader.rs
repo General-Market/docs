@@ -1,19 +1,19 @@
-//! Arbitrum Chain Reader for BridgeProxy events (Story 6.21) and CrossChainOrder events (Story 7.1)
+//! Settlement Chain Reader for BridgeProxy events (Story 6.21) and CrossChainOrder events (Story 7.1)
 //!
-//! Provides functionality to poll Arbitrum for ITP creation events from the BridgeProxy contract
-//! and cross-chain order events from the ArbBridgeCustody contract.
-//! Uses ethers-rs to interact with Arbitrum RPC endpoints.
+//! Provides functionality to poll Settlement for ITP creation events from the BridgeProxy contract
+//! and cross-chain order events from the SettlementBridgeCustody contract.
+//! Uses ethers-rs to interact with Settlement RPC endpoints.
 //!
 //! ## Decimal Handling (Story 7-6b)
 //!
 //! All amounts returned from this reader are in **18-decimal internal format**.
-//! The ArbBridgeCustody contract converts user-provided 6-decimal USDC to 18-decimal
+//! The SettlementBridgeCustody contract converts user-provided 6-decimal USDC to 18-decimal
 //! at order creation time. Events and view functions return normalized 18-decimal values.
 //!
 //! Events:
-//! - `CreateItpRequested` - User requests ITP creation on Arbitrum
+//! - `CreateItpRequested` - User requests ITP creation on Settlement
 //! - `ItpCreated` - ITP creation completed with bridged token deployed
-//! - `CrossChainOrderCreated` - User initiates ITP purchase from Arbitrum (Story 7.1)
+//! - `CrossChainOrderCreated` - User initiates ITP purchase from Settlement (Story 7.1)
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -33,16 +33,16 @@ use crate::chain::events::{
     ITP_CREATED_SIGNATURE,
 };
 
-/// Configuration for ArbitrumChainReader
+/// Configuration for SettlementChainReader
 #[derive(Debug, Clone)]
-pub struct ArbitrumChainReaderConfig {
-    /// Arbitrum RPC endpoint URL
+pub struct SettlementChainReaderConfig {
+    /// Settlement RPC endpoint URL
     pub rpc_url: String,
-    /// BridgeProxy contract address on Arbitrum
+    /// BridgeProxy contract address on Settlement
     pub bridge_proxy_address: Address,
-    /// ArbBridgeCustody contract address on Arbitrum (for cross-chain orders)
-    pub arb_custody_address: Address,
-    /// Chain ID (42161 for Arbitrum One, 421614 for Sepolia)
+    /// SettlementBridgeCustody contract address on Settlement (for cross-chain orders)
+    pub settlement_custody_address: Address,
+    /// Chain ID (42161 for Settlement chain, 421614 for Sepolia)
     pub chain_id: u64,
     /// Number of confirmations required before considering an event finalized (default: 3 for cross-chain safety)
     pub confirmations: u64,
@@ -50,12 +50,12 @@ pub struct ArbitrumChainReaderConfig {
     pub max_block_range: u64,
 }
 
-impl Default for ArbitrumChainReaderConfig {
+impl Default for SettlementChainReaderConfig {
     fn default() -> Self {
         Self {
             rpc_url: "https://arb1.arbitrum.io/rpc".to_string(),
             bridge_proxy_address: Address::zero(),
-            arb_custody_address: Address::zero(),
+            settlement_custody_address: Address::zero(),
             chain_id: 42161,
             confirmations: 3, // 3 confirmations for cross-chain safety (Story 7.1 AC#8)
             max_block_range: 10_000,
@@ -68,13 +68,13 @@ impl Default for ArbitrumChainReaderConfig {
 /// and won't be retried. Prevents infinite retry loops for permanently invalid orders.
 const MAX_ORDER_RETRIES: u8 = 5;
 
-/// Arbitrum Chain Reader for BridgeProxy and ArbBridgeCustody events
+/// Settlement Chain Reader for BridgeProxy and SettlementBridgeCustody events
 ///
-/// Polls Arbitrum for ITP creation events and cross-chain order events,
+/// Polls Settlement for ITP creation events and cross-chain order events,
 /// parsing and validating them for consensus processing.
-pub struct ArbitrumChainReader<M: Middleware> {
+pub struct SettlementChainReader<M: Middleware> {
     provider: Arc<M>,
-    config: ArbitrumChainReaderConfig,
+    config: SettlementChainReaderConfig,
     create_itp_topic: H256,
     itp_created_topic: H256,
     cross_chain_order_topic: H256,
@@ -92,25 +92,25 @@ pub struct ArbitrumChainReader<M: Middleware> {
     retry_sell_counts: RwLock<HashMap<(u64, U256), u8>>,
 }
 
-impl ArbitrumChainReader<Provider<Http>> {
-    /// Create a new ArbitrumChainReader with HTTP provider
+impl SettlementChainReader<Provider<Http>> {
+    /// Create a new SettlementChainReader with HTTP provider
     ///
     /// # Arguments
     /// * `config` - Configuration including RPC URL and contract address
     ///
     /// # Errors
     /// Returns error if unable to connect to RPC endpoint
-    pub fn new(config: ArbitrumChainReaderConfig) -> Result<Self, ArbitrumReaderError> {
+    pub fn new(config: SettlementChainReaderConfig) -> Result<Self, SettlementReaderError> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
-            .map_err(|e| ArbitrumReaderError::ProviderError(e.to_string()))?;
+            .map_err(|e| SettlementReaderError::ProviderError(e.to_string()))?;
 
         Ok(Self::with_provider(Arc::new(provider), config))
     }
 }
 
-impl<M: Middleware> ArbitrumChainReader<M> {
-    /// Create a new ArbitrumChainReader with a custom provider
-    pub fn with_provider(provider: Arc<M>, config: ArbitrumChainReaderConfig) -> Self {
+impl<M: Middleware> SettlementChainReader<M> {
+    /// Create a new SettlementChainReader with a custom provider
+    pub fn with_provider(provider: Arc<M>, config: SettlementChainReaderConfig) -> Self {
         // Compute event topic hashes
         let create_itp_topic = H256::from_slice(&ethers::utils::keccak256(
             CREATE_ITP_REQUESTED_SIGNATURE,
@@ -141,16 +141,16 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     }
 
     /// Get the configuration
-    pub fn config(&self) -> &ArbitrumChainReaderConfig {
+    pub fn config(&self) -> &SettlementChainReaderConfig {
         &self.config
     }
 
     /// Get the current confirmed block number
     ///
     /// Returns the latest block number minus confirmations
-    pub async fn get_confirmed_block(&self) -> Result<u64, ArbitrumReaderError> {
+    pub async fn get_confirmed_block(&self) -> Result<u64, SettlementReaderError> {
         let latest = self.provider.get_block_number().await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to get block number: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to get block number: {}", e))
         })?;
 
         let confirmed = latest
@@ -171,7 +171,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<ItpCreationRequest>, ArbitrumReaderError> {
+    ) -> Result<Vec<ItpCreationRequest>, SettlementReaderError> {
         if from_block > to_block {
             return Ok(Vec::new());
         }
@@ -190,7 +190,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
             .to_block(to_block);
 
         let logs = self.provider.get_logs(&filter).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to get logs: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to get logs: {}", e))
         })?;
 
         debug!(
@@ -247,7 +247,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<ItpCreatedEvent>, ArbitrumReaderError> {
+    ) -> Result<Vec<ItpCreatedEvent>, SettlementReaderError> {
         if from_block > to_block {
             return Ok(Vec::new());
         }
@@ -266,7 +266,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
             .to_block(to_block);
 
         let logs = self.provider.get_logs(&filter).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to get logs: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to get logs: {}", e))
         })?;
 
         debug!(
@@ -309,7 +309,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     ///
     /// # Returns
     /// `true` if the request is pending, `false` otherwise
-    pub async fn is_pending(&self, nonce: U256) -> Result<bool, ArbitrumReaderError> {
+    pub async fn is_pending(&self, nonce: U256) -> Result<bool, SettlementReaderError> {
         // Call isPending(uint256) on BridgeProxy
         let selector = &ethers::utils::keccak256("isPending(uint256)")[..4];
         let mut call_data = selector.to_vec();
@@ -322,14 +322,14 @@ impl<M: Middleware> ArbitrumChainReader<M> {
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to call isPending: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to call isPending: {}", e))
         })?;
 
         // Decode bool result (last byte of 32-byte word)
         if result.len() >= 32 {
             Ok(result[31] != 0)
         } else {
-            Err(ArbitrumReaderError::DecodeError(
+            Err(SettlementReaderError::DecodeError(
                 "isPending returned invalid data".to_string(),
             ))
         }
@@ -339,7 +339,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     ///
     /// # Returns
     /// The next nonce that will be assigned to a new request
-    pub async fn get_next_nonce(&self) -> Result<U256, ArbitrumReaderError> {
+    pub async fn get_next_nonce(&self) -> Result<U256, SettlementReaderError> {
         let selector = &ethers::utils::keccak256("nextCreationNonce()")[..4];
         let call_data = selector.to_vec();
 
@@ -348,7 +348,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!(
+            SettlementReaderError::ProviderError(format!(
                 "Failed to call nextCreationNonce: {}",
                 e
             ))
@@ -357,7 +357,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         if result.len() >= 32 {
             Ok(U256::from_big_endian(&result[..32]))
         } else {
-            Err(ArbitrumReaderError::DecodeError(
+            Err(SettlementReaderError::DecodeError(
                 "nextCreationNonce returned invalid data".to_string(),
             ))
         }
@@ -374,7 +374,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     pub async fn get_pending_creation(
         &self,
         nonce: U256,
-    ) -> Result<Option<ItpCreationRequest>, ArbitrumReaderError> {
+    ) -> Result<Option<ItpCreationRequest>, SettlementReaderError> {
         // First check if pending
         if !self.is_pending(nonce).await? {
             return Ok(None);
@@ -394,7 +394,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!(
+            SettlementReaderError::ProviderError(format!(
                 "Failed to call getPendingCreation: {}",
                 e
             ))
@@ -413,7 +413,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     /// Vector of all pending ITP creation requests
     pub async fn get_all_pending_requests(
         &self,
-    ) -> Result<Vec<ItpCreationRequest>, ArbitrumReaderError> {
+    ) -> Result<Vec<ItpCreationRequest>, SettlementReaderError> {
         let next_nonce = self.get_next_nonce().await?;
         let max_nonce = next_nonce.as_u64();
 
@@ -442,7 +442,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
 
     // ============ Story 7.1: CrossChainOrder Event Handling ============
 
-    /// Get CrossChainOrderCreated events in a block range from ArbBridgeCustody
+    /// Get CrossChainOrderCreated events in a block range from SettlementBridgeCustody
     ///
     /// # Arguments
     /// * `from_block` - Starting block number (inclusive)
@@ -454,33 +454,33 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<CrossChainOrderEvent>, ArbitrumReaderError> {
+    ) -> Result<Vec<CrossChainOrderEvent>, SettlementReaderError> {
         if from_block > to_block {
             return Ok(Vec::new());
         }
 
         // Ensure we have a valid custody address
-        if self.config.arb_custody_address.is_zero() {
-            return Err(ArbitrumReaderError::ConfigError(
-                "arb_custody_address not configured".to_string(),
+        if self.config.settlement_custody_address.is_zero() {
+            return Err(SettlementReaderError::ConfigError(
+                "settlement_custody_address not configured".to_string(),
             ));
         }
 
         debug!(
             from_block,
             to_block,
-            arb_custody = ?self.config.arb_custody_address,
+            settlement_custody = ?self.config.settlement_custody_address,
             "Fetching CrossChainOrderCreated events"
         );
 
         let filter = Filter::new()
-            .address(self.config.arb_custody_address)
+            .address(self.config.settlement_custody_address)
             .topic0(self.cross_chain_order_topic)
             .from_block(from_block)
             .to_block(to_block);
 
         let logs = self.provider.get_logs(&filter).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to get logs: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to get logs: {}", e))
         })?;
 
         debug!(
@@ -517,9 +517,9 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         Ok(events)
     }
 
-    /// Get full CrossChainOrder details by order ID from ArbBridgeCustody
+    /// Get full CrossChainOrder details by order ID from SettlementBridgeCustody
     ///
-    /// Calls `getCrossChainOrder(uint256 orderId)` on the ArbBridgeCustody contract
+    /// Calls `getCrossChainOrder(uint256 orderId)` on the SettlementBridgeCustody contract
     /// to fetch full order parameters including limitPrice, deadline, and createdAt.
     ///
     /// # Arguments
@@ -530,11 +530,11 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     pub async fn get_cross_chain_order(
         &self,
         order_id: U256,
-    ) -> Result<Option<CrossChainOrderData>, ArbitrumReaderError> {
+    ) -> Result<Option<CrossChainOrderData>, SettlementReaderError> {
         // Ensure we have a valid custody address
-        if self.config.arb_custody_address.is_zero() {
-            return Err(ArbitrumReaderError::ConfigError(
-                "arb_custody_address not configured".to_string(),
+        if self.config.settlement_custody_address.is_zero() {
+            return Err(SettlementReaderError::ConfigError(
+                "settlement_custody_address not configured".to_string(),
             ));
         }
 
@@ -548,11 +548,11 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         call_data.extend_from_slice(&order_id_bytes);
 
         let tx = TransactionRequest::new()
-            .to(self.config.arb_custody_address)
+            .to(self.config.settlement_custody_address)
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to call getCrossChainOrder: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to call getCrossChainOrder: {}", e))
         })?;
 
         // Parse the response
@@ -578,7 +578,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<CrossChainOrder>, ArbitrumReaderError> {
+    ) -> Result<Vec<CrossChainOrder>, SettlementReaderError> {
         // Get the confirmed block (current - confirmations)
         let confirmed_block = self.get_confirmed_block().await?;
 
@@ -785,7 +785,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
     }
     // ============ Cross-Chain Sell Order Event Handling ============
 
-    /// Get CrossChainSellOrderCreated events in a block range from ArbBridgeCustody
+    /// Get CrossChainSellOrderCreated events in a block range from SettlementBridgeCustody
     ///
     /// # Arguments
     /// * `from_block` - Starting block number (inclusive)
@@ -797,33 +797,33 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<CrossChainSellOrderEvent>, ArbitrumReaderError> {
+    ) -> Result<Vec<CrossChainSellOrderEvent>, SettlementReaderError> {
         if from_block > to_block {
             return Ok(Vec::new());
         }
 
         // Ensure we have a valid custody address
-        if self.config.arb_custody_address.is_zero() {
-            return Err(ArbitrumReaderError::ConfigError(
-                "arb_custody_address not configured".to_string(),
+        if self.config.settlement_custody_address.is_zero() {
+            return Err(SettlementReaderError::ConfigError(
+                "settlement_custody_address not configured".to_string(),
             ));
         }
 
         debug!(
             from_block,
             to_block,
-            arb_custody = ?self.config.arb_custody_address,
+            settlement_custody = ?self.config.settlement_custody_address,
             "Fetching CrossChainSellOrderCreated events"
         );
 
         let filter = Filter::new()
-            .address(self.config.arb_custody_address)
+            .address(self.config.settlement_custody_address)
             .topic0(self.cross_chain_sell_order_topic)
             .from_block(from_block)
             .to_block(to_block);
 
         let logs = self.provider.get_logs(&filter).await.map_err(|e| {
-            ArbitrumReaderError::ProviderError(format!("Failed to get sell order logs: {}", e))
+            SettlementReaderError::ProviderError(format!("Failed to get sell order logs: {}", e))
         })?;
 
         debug!(
@@ -878,7 +878,7 @@ impl<M: Middleware> ArbitrumChainReader<M> {
         &self,
         from_block: u64,
         to_block: u64,
-    ) -> Result<Vec<CrossChainSellOrderEvent>, ArbitrumReaderError> {
+    ) -> Result<Vec<CrossChainSellOrderEvent>, SettlementReaderError> {
         // Get the confirmed block (current - confirmations)
         let confirmed_block = self.get_confirmed_block().await?;
 
@@ -1040,7 +1040,7 @@ pub struct CrossChainOrderData {
 /// ## Decimal Format (Story 7-6b)
 ///
 /// The `amount` field is returned in **18-decimal internal format**.
-/// The ArbBridgeCustody contract converts 6-decimal USDC to 18-decimal at order creation.
+/// The SettlementBridgeCustody contract converts 6-decimal USDC to 18-decimal at order creation.
 ///
 /// Response layout (ABI encoded struct):
 /// - [0-32]: itpId (bytes32)
@@ -1053,10 +1053,10 @@ pub struct CrossChainOrderData {
 fn parse_cross_chain_order_response(
     data: &[u8],
     order_id: U256,
-) -> Result<Option<CrossChainOrderData>, ArbitrumReaderError> {
+) -> Result<Option<CrossChainOrderData>, SettlementReaderError> {
     // Minimum expected size: 7 * 32 bytes = 224 bytes
     if data.len() < 224 {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             format!("getCrossChainOrder response too short: {} < 224", data.len()),
         ));
     }
@@ -1101,9 +1101,9 @@ fn parse_cross_chain_order_response(
 fn parse_pending_creation_response(
     data: &[u8],
     nonce: U256,
-) -> Result<Option<ItpCreationRequest>, ArbitrumReaderError> {
+) -> Result<Option<ItpCreationRequest>, SettlementReaderError> {
     if data.len() < 256 {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "getPendingCreation response too short".to_string(),
         ));
     }
@@ -1160,31 +1160,31 @@ fn parse_pending_creation_response(
 }
 
 /// Decode string from ABI response at given offset
-fn decode_string_from_offset(data: &[u8], offset: usize) -> Result<String, ArbitrumReaderError> {
+fn decode_string_from_offset(data: &[u8], offset: usize) -> Result<String, SettlementReaderError> {
     if offset + 32 > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "string offset out of bounds".to_string(),
         ));
     }
 
     let length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
     if offset + 32 + length > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "string data out of bounds".to_string(),
         ));
     }
 
     String::from_utf8(data[offset + 32..offset + 32 + length].to_vec())
-        .map_err(|e| ArbitrumReaderError::DecodeError(format!("invalid UTF-8: {}", e)))
+        .map_err(|e| SettlementReaderError::DecodeError(format!("invalid UTF-8: {}", e)))
 }
 
 /// Decode uint256[] array from ABI response at given offset
 fn decode_uint256_array_from_offset(
     data: &[u8],
     offset: usize,
-) -> Result<Vec<U256>, ArbitrumReaderError> {
+) -> Result<Vec<U256>, SettlementReaderError> {
     if offset + 32 > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "array offset out of bounds".to_string(),
         ));
     }
@@ -1192,7 +1192,7 @@ fn decode_uint256_array_from_offset(
     let length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
     let expected_end = offset + 32 + length * 32;
     if expected_end > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "array data out of bounds".to_string(),
         ));
     }
@@ -1211,9 +1211,9 @@ fn decode_uint256_array_from_offset(
 fn decode_address_array_from_offset(
     data: &[u8],
     offset: usize,
-) -> Result<Vec<Address>, ArbitrumReaderError> {
+) -> Result<Vec<Address>, SettlementReaderError> {
     if offset + 32 > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "array offset out of bounds".to_string(),
         ));
     }
@@ -1221,7 +1221,7 @@ fn decode_address_array_from_offset(
     let length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
     let expected_end = offset + 32 + length * 32;
     if expected_end > data.len() {
-        return Err(ArbitrumReaderError::DecodeError(
+        return Err(SettlementReaderError::DecodeError(
             "array data out of bounds".to_string(),
         ));
     }
@@ -1236,9 +1236,9 @@ fn decode_address_array_from_offset(
     Ok(result)
 }
 
-/// Errors for ArbitrumChainReader operations
+/// Errors for SettlementChainReader operations
 #[derive(Debug, thiserror::Error)]
-pub enum ArbitrumReaderError {
+pub enum SettlementReaderError {
     #[error("provider error: {0}")]
     ProviderError(String),
 
@@ -1261,10 +1261,10 @@ pub enum ArbitrumReaderError {
 // ============================================================================
 
 #[async_trait]
-impl<M: Middleware + Send + Sync + 'static> CrossChainOrderReader for ArbitrumChainReader<M> {
+impl<M: Middleware + Send + Sync + 'static> CrossChainOrderReader for SettlementChainReader<M> {
     /// Get a cross-chain order by ID for BridgeOrchestrator validation
     ///
-    /// Adapts the ArbitrumChainReader::get_cross_chain_order() method to the
+    /// Adapts the SettlementChainReader::get_cross_chain_order() method to the
     /// CrossChainOrderReader trait expected by BridgeOrchestrator.
     async fn get_cross_chain_order(&self, order_id: U256) -> Result<CrossChainOrderData, BridgeError> {
         match self.get_cross_chain_order(order_id).await {
@@ -1287,13 +1287,13 @@ mod tests {
 
     #[test]
     fn test_default_config() {
-        let config = ArbitrumChainReaderConfig::default();
+        let config = SettlementChainReaderConfig::default();
         assert_eq!(config.rpc_url, "https://arb1.arbitrum.io/rpc");
         assert_eq!(config.chain_id, 42161);
         assert_eq!(config.confirmations, 3); // 3 confirmations for cross-chain safety (Story 7.1)
         assert_eq!(config.max_block_range, 10_000);
         assert_eq!(config.bridge_proxy_address, Address::zero());
-        assert_eq!(config.arb_custody_address, Address::zero());
+        assert_eq!(config.settlement_custody_address, Address::zero());
     }
 
     #[test]
@@ -1467,7 +1467,7 @@ mod tests {
         let result = parse_cross_chain_order_response(&data, U256::from(42));
         assert!(result.is_err());
         match result {
-            Err(ArbitrumReaderError::DecodeError(msg)) => {
+            Err(SettlementReaderError::DecodeError(msg)) => {
                 assert!(msg.contains("too short"));
             }
             _ => panic!("Expected DecodeError"),
@@ -1476,14 +1476,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_clear_old_seen_orders() {
-        let config = ArbitrumChainReaderConfig {
-            arb_custody_address: Address::from([0x11u8; 20]),
+        let config = SettlementChainReaderConfig {
+            settlement_custody_address: Address::from([0x11u8; 20]),
             ..Default::default()
         };
 
         // Create a mock provider using Provider<Http>
         let provider = Provider::<Http>::try_from("http://localhost:8545").unwrap();
-        let reader = ArbitrumChainReader::with_provider(Arc::new(provider), config);
+        let reader = SettlementChainReader::with_provider(Arc::new(provider), config);
 
         // Add some seen orders
         {

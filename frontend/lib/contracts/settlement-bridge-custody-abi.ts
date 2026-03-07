@@ -1,13 +1,13 @@
 /**
- * ArbBridgeCustody.sol ABI — Arbitrum-side contract for cross-chain deposits to Vision.
+ * SettlementBridgeCustody.sol ABI — Settlement-side contract for cross-chain deposits to Vision.
  *
- * Users call depositToVision() on Arbitrum to lock USDC (6 dec).
+ * Users call depositToVision() on Settlement to lock USDC (6 dec).
  * Issuers observe the event and call Vision.creditBalance() on L3 (18 dec).
  * After crediting, issuers call completeVisionDeposit() to mark the order done.
  * If crediting fails, issuers can call refundVisionDeposit() to return USDC.
  */
 
-export const ARB_BRIDGE_CUSTODY_ABI = [
+export const SETTLEMENT_BRIDGE_CUSTODY_ABI = [
   // ============ USER OPERATIONS ============
   {
     inputs: [{ name: 'usdcAmount', type: 'uint256' }],

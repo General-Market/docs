@@ -199,7 +199,7 @@ pub struct OracleStatus {
 pub struct MirrorSyncStatus {
     /// Registry nonce on L3
     pub l3_nonce: u64,
-    /// Registry nonce on mirror (Arbitrum)
+    /// Registry nonce on mirror (settlement chain)
     pub mirror_nonce: u64,
     /// Nonce gap (l3 - mirror)
     pub nonce_gap: i64,
@@ -322,7 +322,7 @@ pub enum MonitorError {
 
 /// Health monitor for Morpho lending protocol
 pub struct HealthMonitor {
-    /// Main chain provider (Arbitrum/deployment chain)
+    /// Main chain provider (settlement/deployment chain)
     provider: Arc<Provider<Http>>,
     /// L3 chain provider (for IssuerRegistry)
     l3_provider: Arc<Provider<Http>>,
@@ -334,7 +334,7 @@ pub struct HealthMonitor {
     oracle_addresses: Vec<Address>,
     /// ITP addresses corresponding to oracles
     itp_addresses: Vec<Address>,
-    /// Mirror registry address (on Arbitrum)
+    /// Mirror registry address (on settlement chain)
     mirror_registry_address: Address,
     /// L3 IssuerRegistry address
     l3_registry_address: Address,

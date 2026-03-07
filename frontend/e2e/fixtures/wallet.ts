@@ -11,9 +11,9 @@ import { test as base, type Page } from '@playwright/test';
 import { getInjectWalletScript } from '../helpers/inject-wallet';
 import { installApiInterceptors } from '../helpers/api-interceptor';
 import {
-  IS_ANVIL, L3_RPC, ARB_RPC, BACKEND_URL as ENV_BACKEND_URL,
+  IS_ANVIL, L3_RPC, SETTLEMENT_RPC, BACKEND_URL as ENV_BACKEND_URL,
   FRONTEND_URL as ENV_FRONTEND_URL, CHAIN_ID as ENV_CHAIN_ID,
-  ARB_CHAIN_ID as ENV_ARB_CHAIN_ID, DEPLOYER_KEY,
+  SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, DEPLOYER_KEY,
   CONTRACTS as ENV_CONTRACTS, DEPLOYER_ADDRESS,
 } from '../env';
 
@@ -26,8 +26,8 @@ export const TEST_PRIVATE_KEY = DEPLOYER_KEY;
 /** L3 RPC */
 export const L3_RPC_URL = L3_RPC;
 
-/** Arbitrum RPC */
-export const RPC_URL = ARB_RPC;
+/** Settlement RPC */
+export const RPC_URL = SETTLEMENT_RPC;
 
 /** Data-node backend */
 export const BACKEND_URL = ENV_BACKEND_URL;
@@ -37,7 +37,7 @@ export const FRONTEND_URL = ENV_FRONTEND_URL;
 
 /** Chain IDs */
 export const CHAIN_ID = ENV_CHAIN_ID;
-export const ARB_CHAIN_ID = ENV_ARB_CHAIN_ID;
+export const SETTLEMENT_CHAIN_ID = ENV_SETTLEMENT_CHAIN_ID;
 
 /** Known ITP ID from deployment */
 export const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
@@ -45,8 +45,8 @@ export const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000
 /** Contract addresses — from deployment.json with Anvil fallbacks */
 export const CONTRACTS = {
   Index: ENV_CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
-  ArbBridgeCustody: ENV_CONTRACTS.ArbBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
-  ARB_USDC: ENV_CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+  SettlementBridgeCustody: ENV_CONTRACTS.SettlementBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
+  SETTLEMENT_USDC: ENV_CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
   BridgedITP: ENV_CONTRACTS.BridgedITP ?? '0x8D308d3D699A85472d874DBDBbffd16bc9fBD856',
   BridgeProxy: ENV_CONTRACTS.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b',
   BridgedItpFactory: ENV_CONTRACTS.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
@@ -109,7 +109,7 @@ export const test = base.extend<{ walletPage: Page }>({
     }
 
     // Inject mock wallet into every page in the context (before any JS runs)
-    const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, TEST_ADDRESS, RPC_URL, ARB_CHAIN_ID);
+    const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, TEST_ADDRESS, RPC_URL, SETTLEMENT_CHAIN_ID);
     await context.addInitScript({ content: script });
 
     // Intercept backend API calls that may 404 on stale binary

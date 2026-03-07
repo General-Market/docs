@@ -24,7 +24,7 @@ pub struct NavSnapshot {
     pub nav_per_share: f64,
     pub total_supply: String,
     pub aum_usd: f64,
-    pub arb_address: Option<String>,
+    pub settlement_address: Option<String>,
 }
 
 #[derive(Clone, Serialize, Default)]
@@ -40,7 +40,7 @@ pub struct OracleSnapshot {
 #[derive(Clone, Serialize, Default)]
 pub struct UserBalances {
     pub usdc_l3: String,
-    pub usdc_arb: String,
+    pub usdc_settlement: String,
     /// Per-ITP shares: itp_id hex → balance string (wei)
     pub itp_shares: HashMap<String, String>,
     pub bridged_itp: String,
@@ -50,7 +50,7 @@ pub struct UserBalances {
 #[derive(Clone, Serialize, Default)]
 pub struct UserAllowances {
     pub usdc_l3_to_index: String,
-    pub usdc_arb_to_custody: String,
+    pub usdc_settlement_to_custody: String,
     pub itp_to_morpho: String,
 }
 

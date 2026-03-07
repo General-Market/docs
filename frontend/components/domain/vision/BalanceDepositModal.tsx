@@ -8,9 +8,9 @@ import { useDepositToVision } from '@/hooks/vision/useDepositToVision'
 import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { VISION_USDC_DECIMALS, ARB_USDC_DECIMALS, ARB_USDC_ADDRESS } from '@/lib/vision/constants'
+import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS } from '@/lib/vision/constants'
 import { USDC_ADDRESS } from '@/lib/contracts/addresses'
-import { indexL3, arbitrumChain } from '@/lib/wagmi'
+import { indexL3, settlementChain } from '@/lib/wagmi'
 
 const ERC20_BALANCE_ABI = [{
   name: 'balanceOf', type: 'function', stateMutability: 'view',
@@ -18,7 +18,7 @@ const ERC20_BALANCE_ABI = [{
   outputs: [{ name: '', type: 'uint256' }],
 }] as const
 
-type Mode = 'choose' | 'l3' | 'arb'
+type Mode = 'choose' | 'l3' | 'settlement'
 
 interface BalanceDepositModalProps {
   onClose: () => void
@@ -29,7 +29,7 @@ interface BalanceDepositModalProps {
  *
  * Two paths:
  * - "From L3 wallet": uses useDepositBalance (approve L3 USDC -> Vision.depositBalance)
- * - "From Arbitrum": uses useDepositToVision (approve Arb USDC -> ArbBridgeCustody.depositToVision)
+ * - "From Settlement": uses useDepositToVision (approve Settlement USDC -> SettlementBridgeCustody.depositToVision)
  */
 export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   const { isConnected, address } = useAccount()
@@ -52,20 +52,20 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
     reset: resetL3,
   } = useDepositBalance()
 
-  // --- Arb deposit hook ---
+  // --- Settlement deposit hook ---
   const {
-    deposit: depositArb,
-    step: arbStep,
+    deposit: depositSettlement,
+    step: settlementStep,
     orderId,
-    error: arbError,
-    reset: resetArb,
+    error: settlementError,
+    reset: resetSettlement,
   } = useDepositToVision()
 
-  const activeStep = mode === 'l3' ? l3Step : mode === 'arb' ? arbStep : 'idle'
-  const activeError = mode === 'l3' ? l3Error : mode === 'arb' ? arbError : null
+  const activeStep = mode === 'l3' ? l3Step : mode === 'settlement' ? settlementStep : 'idle'
+  const activeError = mode === 'l3' ? l3Error : mode === 'settlement' ? settlementError : null
   const isProcessing = activeStep !== 'idle' && activeStep !== 'done' && activeStep !== 'error'
 
-  const decimals = mode === 'arb' ? ARB_USDC_DECIMALS : VISION_USDC_DECIMALS
+  const decimals = mode === 'settlement' ? SETTLEMENT_USDC_DECIMALS : VISION_USDC_DECIMALS
   const parsedAmount = amount ? parseUnits(amount, decimals) : 0n
 
   const handleDeposit = useCallback(() => {
@@ -74,25 +74,25 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
     if (mode === 'l3') {
       capture('vision_balance_deposit_l3', { amount })
       depositL3(parsedAmount)
-    } else if (mode === 'arb') {
-      capture('vision_balance_deposit_arb', { amount })
-      depositArb(parsedAmount)
+    } else if (mode === 'settlement') {
+      capture('vision_balance_deposit_settlement', { amount })
+      depositSettlement(parsedAmount)
     }
-  }, [amount, parsedAmount, mode, depositL3, depositArb, capture])
+  }, [amount, parsedAmount, mode, depositL3, depositSettlement, capture])
 
   const handleReset = useCallback(() => {
     setMode('choose')
     setAmount('')
     resetL3()
-    resetArb()
-  }, [resetL3, resetArb])
+    resetSettlement()
+  }, [resetL3, resetSettlement])
 
   const handleDone = useCallback(() => {
     refetchBalance()
     onClose()
   }, [refetchBalance, onClose])
 
-  const isOnArb = chainId === arbitrumChain.id
+  const isOnSettlement = chainId === settlementChain.id
   const isOnL3 = chainId === indexL3.id
 
   // Read wallet USDC balance on L3 (always read, regardless of connected chain)
@@ -105,21 +105,21 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
     query: { enabled: !!address },
   })
 
-  // Read wallet USDC balance on Arb
-  const { data: arbUsdcRaw } = useReadContract({
-    address: ARB_USDC_ADDRESS,
+  // Read wallet USDC balance on Settlement
+  const { data: settlementUsdcRaw } = useReadContract({
+    address: SETTLEMENT_USDC_ADDRESS,
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: arbitrumChain.id,
+    chainId: settlementChain.id,
     query: { enabled: !!address },
   })
 
   const l3WalletBalance = l3UsdcRaw !== undefined
     ? parseFloat(formatUnits(l3UsdcRaw, VISION_USDC_DECIMALS)).toFixed(2)
     : null
-  const arbWalletBalance = arbUsdcRaw !== undefined
-    ? parseFloat(formatUnits(arbUsdcRaw, ARB_USDC_DECIMALS)).toFixed(2)
+  const settlementWalletBalance = settlementUsdcRaw !== undefined
+    ? parseFloat(formatUnits(settlementUsdcRaw, SETTLEMENT_USDC_DECIMALS)).toFixed(2)
     : null
 
   const stepLabel = (() => {
@@ -131,10 +131,10 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
         default: return ''
       }
     }
-    if (mode === 'arb') {
-      switch (arbStep) {
-        case 'approving': return 'Approving USDC on Arbitrum...'
-        case 'depositing': return 'Locking USDC in ArbBridgeCustody...'
+    if (mode === 'settlement') {
+      switch (settlementStep) {
+        case 'approving': return 'Approving USDC on Settlement...'
+        case 'depositing': return 'Locking USDC in SettlementBridgeCustody...'
         case 'polling': return 'Waiting for issuers to credit your balance...'
         case 'done': return 'Deposit credited!'
         default: return ''
@@ -163,7 +163,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <p className="text-color-up font-semibold text-lg mb-1">Deposit Successful</p>
                 <p className="text-text-secondary text-sm">
                   {amount} USDC deposited to your Vision balance
-                  {mode === 'arb' ? ' (via Arbitrum)' : ' (from L3)'}
+                  {mode === 'settlement' ? ' (via Settlement)' : ' (from L3)'}
                 </p>
                 {orderId && (
                   <p className="text-xs text-text-muted font-mono mt-2 break-all">
@@ -250,25 +250,25 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 )}
               </button>
 
-              {/* From Arbitrum */}
+              {/* From Settlement */}
               <button
-                onClick={() => setMode('arb')}
+                onClick={() => setMode('settlement')}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
-                  isOnArb
+                  isOnSettlement
                     ? 'border-color-up bg-surface-up/20 hover:bg-surface-up/30'
                     : 'border-border-light bg-muted hover:bg-surface'
                 }`}
               >
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-bold text-text-primary">From Arbitrum</p>
-                  {arbWalletBalance !== null && (
-                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{arbWalletBalance} USDC</span>
+                  <p className="text-sm font-bold text-text-primary">From Settlement</p>
+                  {settlementWalletBalance !== null && (
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{settlementWalletBalance} USDC</span>
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
-                  Lock USDC on Arbitrum. Issuers credit your virtual balance on L3.
+                  Lock USDC on Settlement. Issuers credit your virtual balance on L3.
                 </p>
-                {isOnArb && (
+                {isOnSettlement && (
                   <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>
                 )}
               </button>
@@ -289,18 +289,18 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               <div className="bg-muted border border-border-light rounded-xl p-3">
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Arbitrum'}
+                    {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Settlement'}
                   </p>
                   {mode === 'l3' && l3WalletBalance !== null && (
                     <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{l3WalletBalance} USDC</span>
                   )}
-                  {mode === 'arb' && arbWalletBalance !== null && (
-                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{arbWalletBalance} USDC</span>
+                  {mode === 'settlement' && settlementWalletBalance !== null && (
+                    <span className="text-sm font-bold font-mono tabular-nums text-text-primary">{settlementWalletBalance} USDC</span>
                   )}
                 </div>
-                {mode === 'arb' && !isOnArb && (
+                {mode === 'settlement' && !isOnSettlement && (
                   <p className="text-xs text-color-warning mt-1">
-                    Switch your wallet to Arbitrum to proceed
+                    Switch your wallet to Settlement to proceed
                   </p>
                 )}
                 {mode === 'l3' && !isOnL3 && (
@@ -324,9 +324,9 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                       MAX
                     </button>
                   )}
-                  {mode === 'arb' && arbWalletBalance !== null && (
+                  {mode === 'settlement' && settlementWalletBalance !== null && (
                     <button
-                      onClick={() => setAmount(arbWalletBalance)}
+                      onClick={() => setAmount(settlementWalletBalance)}
                       className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                     >
                       MAX
@@ -386,7 +386,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   disabled={!amount || parsedAmount === 0n}
                   className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 >
-                  {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Arbitrum'}
+                  {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Settlement'}
                 </WalletActionButton>
               )}
 

@@ -89,11 +89,11 @@ interface IL3BridgeCustody {
     event LockReversed(uint256 indexed nonce);
 }
 
-/// @title IArbBridgeCustody - Arbitrum destination chain bridge custody interface
-/// @notice Handles releasing USDC on Arbitrum and cross-chain ITP purchases
-/// @dev Deployed on Arbitrum chain
+/// @title ISettlementBridgeCustody - Settlement destination chain bridge custody interface
+/// @notice Handles releasing USDC on Settlement and cross-chain ITP purchases
+/// @dev Deployed on Settlement chain
 /// @dev Message format: keccak256(abi.encode(chainid, this, functionSpecificData...))
-interface IArbBridgeCustody {
+interface ISettlementBridgeCustody {
     // ============ BRIDGE COMPLETION ============
 
     /// @notice Complete a bridge transfer by releasing USDC
@@ -114,8 +114,8 @@ interface IArbBridgeCustody {
         uint256 signersBitmask
     ) external;
 
-    /// @notice Buy ITP tokens from Arbitrum (cross-chain purchase)
-    /// @dev Locks USDC on Arbitrum, signals L3 to mint ITP
+    /// @notice Buy ITP tokens from Settlement (cross-chain purchase)
+    /// @dev Locks USDC on Settlement, signals L3 to mint ITP
     /// @dev User's USDC is transferred to custody
     /// @param itpId The ITP to purchase
     /// @param amount USDC amount to spend (18 decimals)
@@ -123,7 +123,7 @@ interface IArbBridgeCustody {
     /// @param slippageTier Tolerance: 0=strict(0.3%), 1=normal(1%), 2=relaxed(3%)
     /// @param deadline Unix timestamp - order expires after this
     /// @return orderId The order ID on L3 (will be bridged)
-    function buyITPFromArbitrum(
+    function buyITPFromSettlement(
         bytes32 itpId,
         uint256 amount,
         uint256 limitPrice,
@@ -186,7 +186,7 @@ interface IArbBridgeCustody {
 
     // ============ CROSS-CHAIN SELL ============
 
-    /// @notice Sell ITP tokens from Arbitrum (cross-chain sell)
+    /// @notice Sell ITP tokens from Settlement (cross-chain sell)
     /// @dev Escrows BridgedITP tokens, signals issuers to sell on L3
     /// @param itpId The ITP to sell
     /// @param amount Amount of BridgedITP tokens to sell (18 decimals)
@@ -194,7 +194,7 @@ interface IArbBridgeCustody {
     /// @param slippageTier Tolerance: 0=strict(0.3%), 1=normal(1%), 2=relaxed(3%)
     /// @param deadline Unix timestamp - order expires after this
     /// @return orderId The sell order ID
-    function sellITPFromArbitrum(
+    function sellITPFromSettlement(
         bytes32 itpId,
         uint256 amount,
         uint256 limitPrice,
@@ -262,7 +262,7 @@ interface IArbBridgeCustody {
 
     // ============ VISION DEPOSIT/WITHDRAW ============
 
-    /// @notice Deposit USDC for Vision on L3 (locks on Arb, credited on L3)
+    /// @notice Deposit USDC for Vision on L3 (locks on Settlement, credited on L3)
     /// @param usdcAmount Amount of USDC in 6 decimals
     /// @return orderId The unique order ID for this deposit
     function depositToVision(uint256 usdcAmount) external returns (uint256 orderId);
@@ -291,7 +291,7 @@ interface IArbBridgeCustody {
         uint256 signersBitmask
     ) external;
 
-    /// @notice Release USDC to user after Vision.withdrawToArb on L3
+    /// @notice Release USDC to user after Vision.withdrawToSettlement on L3
     /// @dev Sends USDC to `user`, NOT to msg.sender. Has replay protection.
     /// @param withdrawId The withdraw ID from Vision.sol
     /// @param user User address to receive USDC
@@ -319,7 +319,7 @@ interface IArbBridgeCustody {
 
     // ============ VISION EVENTS ============
 
-    /// @notice Emitted when a Vision deposit is created (USDC locked on Arb)
+    /// @notice Emitted when a Vision deposit is created (USDC locked on Settlement)
     event VisionDepositCreated(uint256 indexed orderId, address indexed user, uint256 amount);
 
     /// @notice Emitted when a Vision deposit is completed (L3 credit confirmed)
@@ -328,11 +328,11 @@ interface IArbBridgeCustody {
     /// @notice Emitted when a Vision deposit is refunded (L3 credit failed)
     event VisionDepositRefunded(uint256 indexed orderId, address indexed user, uint256 usdcAmount);
 
-    /// @notice Emitted when a Vision withdrawal is completed (USDC sent to user on Arb)
+    /// @notice Emitted when a Vision withdrawal is completed (USDC sent to user on Settlement)
     event VisionWithdrawCompleted(uint256 indexed withdrawId, address indexed user, uint256 usdcAmount);
 }
 
 /// @title IBridge - Combined bridge interface for convenience
-/// @notice Aggregates both L3 and Arbitrum bridge custody interfaces
-/// @dev Implementations should inherit from both IL3BridgeCustody and IArbBridgeCustody as needed
-interface IBridge is IL3BridgeCustody, IArbBridgeCustody {}
+/// @notice Aggregates both L3 and Settlement bridge custody interfaces
+/// @dev Implementations should inherit from both IL3BridgeCustody and ISettlementBridgeCustody as needed
+interface IBridge is IL3BridgeCustody, ISettlementBridgeCustody {}

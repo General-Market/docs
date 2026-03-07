@@ -6,8 +6,8 @@ pragma solidity 0.8.24;
 /// @dev All internal protocol calculations use 18 decimals. Conversion happens at entry/exit boundaries.
 ///
 /// Conversion boundaries:
-/// - Entry (Arbitrum → L3): User deposits 6-decimal USDC, convert to 18-decimal internal
-/// - Exit (L3 → Arbitrum): Internal 18-decimal amount, convert to 6-decimal USDC for transfer
+/// - Entry (Settlement → L3): User deposits 6-decimal USDC, convert to 18-decimal internal
+/// - Exit (L3 → Settlement): Internal 18-decimal amount, convert to 6-decimal USDC for transfer
 ///
 /// Example:
 ///   User deposits 100 USDC = 100_000_000 (6 decimals)
@@ -15,7 +15,7 @@ pragma solidity 0.8.24;
 ///   User receives 100 USDC = 100_000_000 (6 decimals)
 /// @custom:security-contact security@indexprotocol.com
 library DecimalLib {
-    /// @notice Number of decimals for real USDC (Arbitrum/mainnet)
+    /// @notice Number of decimals for real USDC (Settlement/mainnet)
     uint8 public constant USDC_DECIMALS = 6;
 
     /// @notice Number of decimals for internal protocol representation

@@ -153,19 +153,19 @@ pub enum Side {
 // Dual-balance deposit/withdraw types (Vision First Deposit)
 // =============================================================================
 
-/// Status of a cross-chain deposit order (Arb → L3 Vision).
+/// Status of a cross-chain deposit order (Settlement → L3 Vision).
 ///
-/// State machine: Pending → CreditedOnL3 → CompletedOnArb
+/// State machine: Pending → CreditedOnL3 → CompletedOnSettlement
 ///                Pending → Refunded (on failure, only from Pending)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DepositStatus {
-    /// Deposit detected on Arb, waiting for finality + L3 credit.
+    /// Deposit detected on Settlement, waiting for finality + L3 credit.
     Pending,
-    /// creditBalance() confirmed on L3, waiting for completeVisionDeposit() on Arb.
+    /// creditBalance() confirmed on L3, waiting for completeVisionDeposit() on Settlement.
     CreditedOnL3,
-    /// Full round-trip complete: L3 credited + Arb marked done.
-    CompletedOnArb,
-    /// Deposit refunded on Arb (only from Pending state).
+    /// Full round-trip complete: L3 credited + Settlement marked done.
+    CompletedOnSettlement,
+    /// Deposit refunded on Settlement (only from Pending state).
     Refunded,
 }
 
@@ -175,7 +175,7 @@ impl DepositStatus {
         match s {
             "pending" => Some(Self::Pending),
             "credited_on_l3" => Some(Self::CreditedOnL3),
-            "completed" => Some(Self::CompletedOnArb),
+            "completed" => Some(Self::CompletedOnSettlement),
             "refunded" => Some(Self::Refunded),
             _ => None,
         }
@@ -186,7 +186,7 @@ impl DepositStatus {
         match self {
             Self::Pending => "pending",
             Self::CreditedOnL3 => "credited_on_l3",
-            Self::CompletedOnArb => "completed",
+            Self::CompletedOnSettlement => "completed",
             Self::Refunded => "refunded",
         }
     }
@@ -203,24 +203,24 @@ impl std::fmt::Display for DepositStatus {
 /// Persisted to `vision_deposit_orders` table for crash recovery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingVisionDeposit {
-    /// Cross-chain order ID from ArbBridgeCustody.
+    /// Cross-chain order ID from SettlementBridgeCustody.
     pub order_id: u64,
     /// User address (depositor).
     pub user: Address,
-    /// Amount in 18-decimal internal format (converted from 6-dec on Arb).
+    /// Amount in 18-decimal internal format (converted from 6-dec on Settlement).
     pub amount: U256,
-    /// Unix timestamp when the deposit was detected on Arb.
+    /// Unix timestamp when the deposit was detected on Settlement.
     pub created_at: u64,
     /// Current status in the deposit state machine.
     pub status: DepositStatus,
 }
 
-/// Status of a cross-chain withdraw order (L3 Vision → Arb).
+/// Status of a cross-chain withdraw order (L3 Vision → Settlement).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WithdrawStatus {
-    /// WithdrawToArbRequested detected on L3, waiting for Arb completion.
+    /// WithdrawToSettlementRequested detected on L3, waiting for Settlement completion.
     Pending,
-    /// completeVisionWithdraw() confirmed on Arb.
+    /// completeVisionWithdraw() confirmed on Settlement.
     Completed,
 }
 

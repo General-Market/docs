@@ -6,11 +6,11 @@
 import type { Page, Route } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { ARB_RPC as ENV_ARB_RPC, CONTRACTS, RPC_TIMEOUT } from '../env';
+import { SETTLEMENT_RPC as ENV_SETTLEMENT_RPC, CONTRACTS, RPC_TIMEOUT } from '../env';
 
-const ARB_RPC = ENV_ARB_RPC;
-const ARB_USDC = CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
-const ARB_CUSTODY = CONTRACTS.ArbBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
+const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC;
+const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
 const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b';
 const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
 
@@ -32,7 +32,7 @@ const MORPHO_DEPLOY = readMorphoDeployment();
 const MORPHO = MORPHO_DEPLOY.morpho;
 
 async function rpcCall(method: string, params: unknown[]): Promise<string> {
-  const res = await fetch(ARB_RPC, {
+  const res = await fetch(SETTLEMENT_RPC, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
@@ -122,9 +122,9 @@ async function handleUserState(route: Route): Promise<void> {
     let bridgedItpAddr = await getBridgedItpAddress(itpId);
 
     const [usdcBalance, usdcAllowanceCustody, usdcAllowanceMorpho] = await Promise.all([
-      erc20BalanceOf(ARB_USDC, user),
-      erc20Allowance(ARB_USDC, user, ARB_CUSTODY),
-      erc20Allowance(ARB_USDC, user, MORPHO),
+      erc20BalanceOf(SETTLEMENT_USDC, user),
+      erc20Allowance(SETTLEMENT_USDC, user, SETTLEMENT_CUSTODY),
+      erc20Allowance(SETTLEMENT_USDC, user, MORPHO),
     ]);
 
     let bridgedItpBalance = '0';
@@ -137,7 +137,7 @@ async function handleUserState(route: Route): Promise<void> {
     if (bridgedItpAddr) {
       [bridgedItpBalance, bridgedItpAllowanceCustody, bridgedItpAllowanceMorpho, bridgedItpName, bridgedItpSymbol, bridgedItpTotalSupply] = await Promise.all([
         erc20BalanceOf(bridgedItpAddr, user),
-        erc20Allowance(bridgedItpAddr, user, ARB_CUSTODY),
+        erc20Allowance(bridgedItpAddr, user, SETTLEMENT_CUSTODY),
         erc20Allowance(bridgedItpAddr, user, MORPHO),
         erc20Name(bridgedItpAddr),
         erc20Symbol(bridgedItpAddr),

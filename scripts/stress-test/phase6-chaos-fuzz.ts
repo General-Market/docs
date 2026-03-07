@@ -7,7 +7,7 @@
 
 import {
   PHASE6_TIERS, PHASE6_OP_WEIGHTS, ChaosOpType,
-  L3_RPC, ARB_RPC, L3_INDEX, DEPLOYER,
+  L3_RPC, SETTLEMENT_RPC, L3_INDEX, DEPLOYER,
   Side, WEIGHT_SUM, MIN_WEIGHT, loadMorphoConfig, MorphoConfig,
 } from './config';
 import {
@@ -100,7 +100,7 @@ export async function runPhase6(): Promise<Phase6Result> {
     const morphoCandidates = chaosAccounts.slice(65, 80);
     for (const account of morphoCandidates) {
       try {
-        // Mint BridgedITP to user on Arb for collateral
+        // Mint BridgedITP to user on settlement chain for collateral
         const collateralAmount = 1000n * 10n ** 18n;
         await mintItpShares(
           '0x' + '1'.padStart(64, '0'), // ITP #1

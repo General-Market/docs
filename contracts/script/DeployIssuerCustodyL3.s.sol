@@ -6,7 +6,7 @@ import {BLSCustody} from "../src/core/BLSCustody.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployIssuerCustodyL3 - Deploy IssuerCustody contract on L3
-/// @notice Deploys BLSCustody as IssuerCustody L3 for holding L3Usdc after bridge from Arbitrum
+/// @notice Deploys BLSCustody as IssuerCustody L3 for holding L3Usdc after bridge from Settlement
 /// @dev Story 7.7: IssuerCustody L3 is a BLSCustody instance with Index contract whitelisted
 ///      Uses existing IssuerRegistry for BLS verification
 contract DeployIssuerCustodyL3 is Script {

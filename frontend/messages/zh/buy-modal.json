@@ -45,7 +45,7 @@
     "batch": "批量处理订单中...",
     "fill": "执行交易中...",
     "record_collateral": "记录抵押品中...",
-    "bridge_to_arb": "将 USDC 跨链至 Arbitrum...",
+    "bridge_to_settlement": "将 USDC 跨链至 Settlement...",
     "complete_bridge": "完成跨链中...",
     "mint_shares": "铸造 BridgedITP 中...",
     "shares_received": "份额已到账!"
@@ -62,7 +62,7 @@
     "buy_filled": "买入已成交 -- 收到 {name} 份额"
   },
   "stall": {
-    "title": "订单已在Arbitrum上提交",
+    "title": "订单已在Settlement上提交",
     "description": "您的订单正在中继到L3进行处理。这可能需要几分钟。您可以安全关闭此对话框——订单将继续处理并显示在您的投资组合中。"
   },
   "error": {

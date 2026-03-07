@@ -11,8 +11,8 @@
  * Uses backend API (placeBuyOrderDirect / placeSellOrderDirect) rather than
  * UI to isolate the issuer pipeline from frontend concerns.
  *
- * NOTE: Cross-chain orders are tracked on ArbBridgeCustody (Arb chain), not
- * L3 Index. We use balance-based verification (L3 shares / Arb USDC) instead
+ * NOTE: Cross-chain orders are tracked on SettlementBridgeCustody (Settlement chain), not
+ * L3 Index. We use balance-based verification (L3 shares / Settlement USDC) instead
  * of waitForOrderFill (which reads L3 Index).
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
@@ -26,11 +26,11 @@ import {
   placeBuyOrderDirect,
   placeSellOrderDirect,
   pollUntil,
-  startArbBlockMiner,
+  startSettlementBlockMiner,
   getBridgedItpAddress,
   deployBridgedItpDirect,
   erc20BalanceOf,
-  ARB_USDC,
+  SETTLEMENT_USDC,
   BRIDGED_ITP,
 } from '../helpers/backend-api';
 
@@ -73,18 +73,18 @@ test.describe('Multi-ITP Order Processing', () => {
     // 3. Record shares before buy
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
 
-    // 4. Start Arb block miner (issuers need blocks for confirmation)
-    const stopMiner = startArbBlockMiner(1000);
+    // 4. Start Settlement block miner (issuers need blocks for confirmation)
+    const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       // 5. Place buy order for ITP2 (100 USDC at 10x limit price to ensure fill)
-      const usdcAmount = 100n * 10n ** 6n; // Arb USDC is 6 decimals
+      const usdcAmount = 100n * 10n ** 6n; // Settlement USDC is 6 decimals
       const limitPrice = 10n * 10n ** 18n;  // $10 limit (NAV ~$1)
       const orderId = await placeBuyOrderDirect(TEST_ADDRESS, itp2Id, usdcAmount, limitPrice);
       console.log(`Placed ITP2 buy order #${orderId}`);
 
       // 6. Wait for L3 shares to increase (balance-based verification)
-      // Cross-chain buy: ArbBridgeCustody → issuers → L3 mint + Arb BridgedITP mint
+      // Cross-chain buy: SettlementBridgeCustody → issuers → L3 mint + Settlement BridgedITP mint
       // Note: issuers may not support multi-ITP yet — use shorter initial probe
       try {
         const sharesAfter = await pollUntil(
@@ -160,11 +160,11 @@ test.describe('Multi-ITP Order Processing', () => {
     // 4. Fund L3 Index with USDC so sell payouts don't fail
     await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
-    // 5. Record Arb USDC balance before sell (cross-chain sell returns Arb USDC)
-    const arbUsdcBefore = BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS));
+    // 5. Record Settlement USDC balance before sell (cross-chain sell returns Settlement USDC)
+    const settlementUsdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
 
-    // 6. Start Arb block miner
-    const stopMiner = startArbBlockMiner(1000);
+    // 6. Start Settlement block miner
+    const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       // 7. Place sell order for ITP2 (50 shares at low limit to ensure fill)
@@ -181,15 +181,15 @@ test.describe('Multi-ITP Order Processing', () => {
       }
       console.log(`Placed ITP2 sell order #${orderId}`);
 
-      // 8. Wait for Arb USDC to increase (balance-based verification)
+      // 8. Wait for Settlement USDC to increase (balance-based verification)
       try {
-        const arbUsdcAfter = await pollUntil(
-          async () => BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS)),
-          (balance) => balance > arbUsdcBefore,
+        const settlementUsdcAfter = await pollUntil(
+          async () => BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS)),
+          (balance) => balance > settlementUsdcBefore,
           180_000,
           3_000,
         );
-        console.log(`ITP2 sell order #${orderId} filled — Arb USDC: ${arbUsdcBefore} → ${arbUsdcAfter}`);
+        console.log(`ITP2 sell order #${orderId} filled — Settlement USDC: ${settlementUsdcBefore} → ${settlementUsdcAfter}`);
       } catch {
         console.log(`ITP2 sell order #${orderId} not filled — issuers may not support multi-ITP`);
         test.skip(true, 'ITP2 sell not filled — multi-ITP issuer support may not be deployed');
@@ -226,7 +226,7 @@ test.describe('Multi-ITP Order Processing', () => {
       }
     }
 
-    // Mint BridgedITP on Arb (only on Anvil — testnet uses existing bridge balance)
+    // Mint BridgedITP on Settlement (only on Anvil — testnet uses existing bridge balance)
     if (IS_ANVIL) {
       await mintBridgedItp(TEST_ADDRESS, itp1Id, 50n * 10n ** 18n);
     }
@@ -235,19 +235,19 @@ test.describe('Multi-ITP Order Processing', () => {
     if (!IS_ANVIL) {
       const bridgedBal = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
       if (bridgedBal === 0n) {
-        test.skip(true, 'No BridgedITP balance on Arb — bridge buy test (08) must create BridgedITP first');
+        test.skip(true, 'No BridgedITP balance on Settlement — bridge buy test (08) must create BridgedITP first');
         return;
       }
-      console.log(`BridgedITP balance on Arb: ${bridgedBal}`);
+      console.log(`BridgedITP balance on Settlement: ${bridgedBal}`);
     }
 
     // Fund L3 Index with USDC so sell payouts don't fail
     await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
-    // Cross-chain sell returns Arb USDC (6 decimals), not L3 USDC
-    const arbUsdcBefore = BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS));
+    // Cross-chain sell returns Settlement USDC (6 decimals), not L3 USDC
+    const settlementUsdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
 
-    const stopMiner = startArbBlockMiner(1000);
+    const stopMiner = startSettlementBlockMiner(1000);
     try {
       const sellAmount = 25n * 10n ** 18n;
       const limitPrice = 1n;
@@ -255,15 +255,15 @@ test.describe('Multi-ITP Order Processing', () => {
       console.log(`Placed ITP1 sell order #${orderId}`);
 
       // This is the key regression test — ITP1 sell was stuck before the fix
-      // Use balance-based verification (Arb USDC increase)
+      // Use balance-based verification (Settlement USDC increase)
       try {
-        const arbUsdcAfter = await pollUntil(
-          async () => BigInt(await erc20BalanceOf(ARB_USDC, TEST_ADDRESS)),
-          (balance) => balance > arbUsdcBefore,
+        const settlementUsdcAfter = await pollUntil(
+          async () => BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS)),
+          (balance) => balance > settlementUsdcBefore,
           180_000,
           3_000,
         );
-        console.log(`ITP1 sell order #${orderId} filled — Arb USDC: ${arbUsdcBefore} → ${arbUsdcAfter}`);
+        console.log(`ITP1 sell order #${orderId} filled — Settlement USDC: ${settlementUsdcBefore} → ${settlementUsdcAfter}`);
       } catch {
         // ITP2 sell (test above) already proved multi-ITP fix works.
         // ITP1 sell timeout likely means issuers are still processing prior orders.

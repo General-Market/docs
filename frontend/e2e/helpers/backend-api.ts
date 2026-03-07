@@ -6,10 +6,10 @@
 
 import { encodeFunctionData, decodeFunctionResult, createWalletClient, http, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { INDEX_ABI, BRIDGE_PROXY_ABI, ARB_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
+import { INDEX_ABI, BRIDGE_PROXY_ABI, SETTLEMENT_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 import {
-  IS_ANVIL, L3_RPC as ENV_L3_RPC, ARB_RPC as ENV_ARB_RPC,
-  BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, ARB_CHAIN_ID as ENV_ARB_CHAIN_ID,
+  IS_ANVIL, L3_RPC as ENV_L3_RPC, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
+  BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID,
   DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER,
   RPC_TIMEOUT,
 } from '../env';
@@ -182,17 +182,17 @@ async function getOrderViaL3(orderId: number | string): Promise<OrderData> {
 
 // ── Direct RPC helpers (fallback when backend endpoints unavailable) ─────
 
-const ARB_RPC = ENV_ARB_RPC;
+const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC;
 
 const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A52357737A11';
-const ARB_USDC = CONTRACTS.ARB_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
-const ARB_CUSTODY = CONTRACTS.ArbBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
+const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
 const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
 /** Deployer account — Anvil #0 locally, real deployer on testnet */
 const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS;
 
-/** Inline ABI for sellITPFromArbitrum (not in shared ABI file) */
+/** Inline ABI for sellITPFromSettlement */
 const SELL_ABI = [
   {
     inputs: [
@@ -202,7 +202,7 @@ const SELL_ABI = [
       { name: 'slippageTier', type: 'uint256' },
       { name: 'deadline', type: 'uint256' },
     ],
-    name: 'sellITPFromArbitrum',
+    name: 'sellITPFromSettlement',
     outputs: [{ name: 'orderId', type: 'uint256' }],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -211,7 +211,7 @@ const SELL_ABI = [
 
 async function rpcCall(method: string, params: unknown[]): Promise<unknown> {
   return withRetry(async () => {
-    const res = await fetch(ARB_RPC, {
+    const res = await fetch(SETTLEMENT_RPC, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params }),
@@ -447,29 +447,29 @@ async function l3SignedSend(to: string, data: string, value?: bigint): Promise<s
 }
 
 /** Simple async mutex to prevent parallel nonce conflicts on testnet. */
-let _arbNonceLock: Promise<void> = Promise.resolve();
-function withArbNonceLock<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = _arbNonceLock;
+let _settlementNonceLock: Promise<void> = Promise.resolve();
+function withSettlementNonceLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _settlementNonceLock;
   let resolve: () => void;
-  _arbNonceLock = new Promise(r => { resolve = r; });
+  _settlementNonceLock = new Promise(r => { resolve = r; });
   return prev.then(fn).finally(() => resolve!());
 }
 
 /**
- * Send a signed transaction on ARB using the deployer private key.
+ * Send a signed transaction on Settlement using the deployer private key.
  * Uses a mutex to prevent parallel nonce conflicts on testnet.
  */
-async function arbSignedSend(to: string, data: string, value?: bigint): Promise<string> {
-  return withArbNonceLock(async () => {
+async function settlementSignedSend(to: string, data: string, value?: bigint): Promise<string> {
+  return withSettlementNonceLock(async () => {
     const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-    const chainId = ENV_ARB_CHAIN_ID;
+    const chainId = ENV_SETTLEMENT_CHAIN_ID;
     const chain = defineChain({
       id: chainId,
-      name: 'Arb',
+      name: 'Settlement',
       nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-      rpcUrls: { default: { http: [ARB_RPC] } },
+      rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
     });
-    const client = createWalletClient({ account, chain, transport: rpcHttp(ARB_RPC) });
+    const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) });
     return client.sendTransaction({
       to: to as `0x${string}`,
       data: data as `0x${string}`,
@@ -624,7 +624,7 @@ export async function pollUntil<T>(
 // ── Direct order placement (via Anvil impersonation) ────────────────────
 
 /**
- * Place a buy order directly on ArbBridgeCustody by impersonating the user.
+ * Place a buy order directly on SettlementBridgeCustody by impersonating the user.
  * Returns the orderId.
  */
 export async function placeBuyOrderDirect(
@@ -640,21 +640,21 @@ export async function placeBuyOrderDirect(
     args: [user as `0x${string}`, usdcAmount],
   });
 
-  // Approve USDC to ArbBridgeCustody
+  // Approve USDC to SettlementBridgeCustody
   const approveData = encodeFunctionData({
     abi: ERC20_ABI,
     functionName: 'approve',
-    args: [ARB_CUSTODY as `0x${string}`, usdcAmount],
+    args: [SETTLEMENT_CUSTODY as `0x${string}`, usdcAmount],
   });
 
   // Read crossChainOrderId before placing
   const nextIdData = encodeFunctionData({
-    abi: ARB_CUSTODY_ABI,
+    abi: SETTLEMENT_CUSTODY_ABI,
     functionName: 'crossChainOrderId',
     args: [],
   });
   const nextIdResult = await rpcCall('eth_call', [
-    { to: ARB_CUSTODY, data: nextIdData },
+    { to: SETTLEMENT_CUSTODY, data: nextIdData },
     'latest',
   ]) as string;
   const orderId = Number(safeBigInt(nextIdResult));
@@ -664,8 +664,8 @@ export async function placeBuyOrderDirect(
   const deadline = BigInt(chainTimestamp + 3600);
 
   const buyData = encodeFunctionData({
-    abi: ARB_CUSTODY_ABI,
-    functionName: 'buyITPFromArbitrum',
+    abi: SETTLEMENT_CUSTODY_ABI,
+    functionName: 'buyITPFromSettlement',
     args: [
       itpId as `0x${string}`,
       usdcAmount,
@@ -677,22 +677,22 @@ export async function placeBuyOrderDirect(
 
   if (!IS_ANVIL) {
     // On testnet: user = deployer, sign all txs
-    await arbSignedSend(ARB_USDC, mintData);
-    await arbSignedSend(ARB_USDC, approveData);
-    await arbSignedSend(ARB_CUSTODY, buyData);
+    await settlementSignedSend(SETTLEMENT_USDC, mintData);
+    await settlementSignedSend(SETTLEMENT_USDC, approveData);
+    await settlementSignedSend(SETTLEMENT_CUSTODY, buyData);
   } else {
     await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await rpcCall('eth_sendTransaction', [{ from: DEPLOYER, to: ARB_USDC, data: mintData, gas: '0x100000' }]);
+    await rpcCall('eth_sendTransaction', [{ from: DEPLOYER, to: SETTLEMENT_USDC, data: mintData, gas: '0x100000' }]);
     await rpcCall('anvil_impersonateAccount', [user]);
-    await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_USDC, data: approveData, gas: '0x100000' }]);
-    await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_CUSTODY, data: buyData, gas: '0x200000' }]);
+    await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_USDC, data: approveData, gas: '0x100000' }]);
+    await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_CUSTODY, data: buyData, gas: '0x200000' }]);
   }
 
   return orderId;
 }
 
 /**
- * Place a sell order directly on ArbBridgeCustody by impersonating the user.
+ * Place a sell order directly on SettlementBridgeCustody by impersonating the user.
  * Returns the orderId.
  */
 export async function placeSellOrderDirect(
@@ -713,16 +713,16 @@ export async function placeSellOrderDirect(
   const approveData = encodeFunctionData({
     abi: ERC20_ABI,
     functionName: 'approve',
-    args: [ARB_CUSTODY as `0x${string}`, amount],
+    args: [SETTLEMENT_CUSTODY as `0x${string}`, amount],
   });
 
   const nextIdData = encodeFunctionData({
-    abi: ARB_CUSTODY_ABI,
+    abi: SETTLEMENT_CUSTODY_ABI,
     functionName: 'crossChainOrderId',
     args: [],
   });
   const nextIdResult = await rpcCall('eth_call', [
-    { to: ARB_CUSTODY, data: nextIdData },
+    { to: SETTLEMENT_CUSTODY, data: nextIdData },
     'latest',
   ]) as string;
   const orderId = Number(safeBigInt(nextIdResult));
@@ -733,7 +733,7 @@ export async function placeSellOrderDirect(
 
   const sellData = encodeFunctionData({
     abi: SELL_ABI,
-    functionName: 'sellITPFromArbitrum',
+    functionName: 'sellITPFromSettlement',
     args: [
       itpId as `0x${string}`,
       amount,
@@ -744,8 +744,8 @@ export async function placeSellOrderDirect(
   });
 
   if (!IS_ANVIL) {
-    await arbSignedSend(bridgedToken, approveData);
-    await arbSignedSend(ARB_CUSTODY, sellData);
+    await settlementSignedSend(bridgedToken, approveData);
+    await settlementSignedSend(SETTLEMENT_CUSTODY, sellData);
   } else {
     await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
     await rpcCall('anvil_impersonateAccount', [user]);
@@ -760,7 +760,7 @@ export async function placeSellOrderDirect(
       throw new Error(`BridgedITP approve tx reverted (status=${approveReceipt?.status}): ${approveTxHash}`);
     }
     await rpcCall('anvil_impersonateAccount', [user]);
-    const sellTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: ARB_CUSTODY, data: sellData, gas: '0x200000' }]) as string;
+    const sellTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_CUSTODY, data: sellData, gas: '0x200000' }]) as string;
     let sellReceipt: { status: string } | null = null;
     for (let i = 0; i < 5; i++) {
       sellReceipt = await rpcCall('eth_getTransactionReceipt', [sellTxHash]) as { status: string } | null;
@@ -768,7 +768,7 @@ export async function placeSellOrderDirect(
       await new Promise(r => setTimeout(r, 500));
     }
     if (!sellReceipt || sellReceipt.status !== '0x1') {
-      throw new Error(`sellITPFromArbitrum tx reverted (status=${sellReceipt?.status}): ${sellTxHash}`);
+      throw new Error(`sellITPFromSettlement tx reverted (status=${sellReceipt?.status}): ${sellTxHash}`);
     }
   }
 
@@ -824,7 +824,7 @@ export async function requestRebalanceDirect(
   });
 
   if (!IS_ANVIL) {
-    await arbSignedSend(BRIDGE_PROXY, requestCalldata);
+    await settlementSignedSend(BRIDGE_PROXY, requestCalldata);
   } else {
     await rpcCall('eth_sendTransaction', [{
       from: DEPLOYER,
@@ -838,13 +838,13 @@ export async function requestRebalanceDirect(
 }
 
 /**
- * Mine empty blocks on Arb Anvil.
+ * Mine empty blocks on Settlement Anvil.
  * Issuers require `confirmations` (default: 2) blocks after an event
  * before they consider it confirmed. On Anvil with auto-mine, blocks
  * only advance when txs are submitted, so events may never become
  * "confirmed" without this helper.
  */
-export async function mineArbBlocks(count: number): Promise<void> {
+export async function mineSettlementBlocks(count: number): Promise<void> {
   if (!IS_ANVIL) return; // Blocks mine naturally on testnet
   await rpcCall('anvil_mine', [`0x${count.toString(16)}`]);
 }
@@ -853,7 +853,7 @@ export async function mineArbBlocks(count: number): Promise<void> {
  * Start a periodic block miner.
  * On testnet: no-op (blocks mine naturally).
  */
-export function startArbBlockMiner(intervalMs = 1000): () => void {
+export function startSettlementBlockMiner(intervalMs = 1000): () => void {
   if (!IS_ANVIL) return () => {};
   const timer = setInterval(() => {
     rpcCall('anvil_mine', ['0x1']).catch(() => {});
@@ -862,13 +862,13 @@ export function startArbBlockMiner(intervalMs = 1000): () => void {
 }
 
 /**
- * Get the BridgedITP address for an ITP ID on Arb via BridgeProxy.orbitToArbitrum().
+ * Get the BridgedITP address for an ITP ID on Settlement via BridgeProxy.orbitToSettlement().
  * Returns the zero address if no BridgedITP has been deployed for this ITP.
  */
 export async function getBridgedItpAddress(itpId: string): Promise<string> {
   const calldata = encodeFunctionData({
     abi: BRIDGE_PROXY_ABI,
-    functionName: 'orbitToArbitrum',
+    functionName: 'orbitToSettlement',
     args: [itpId as `0x${string}`],
   });
   const result = await rpcCall('eth_call', [
@@ -879,7 +879,7 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
 }
 
 /**
- * Deploy a BridgedITP for an ITP on Arb Anvil (when test 05 didn't create it).
+ * Deploy a BridgedITP for an ITP on Settlement Anvil (when test 05 didn't create it).
  * Impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(),
  * then sets BridgeProxy storage mappings via anvil_setStorageAt.
  *
@@ -889,8 +889,8 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
  *   slot 2: bridgedItpFactory
  *   slot 3: nextCreationNonce
  *   slot 4: _pendingCreations (mapping)
- *   slot 5: orbitToArbitrum (mapping(bytes32 => address))
- *   slot 6: arbitrumToOrbit (mapping(address => bytes32))
+ *   slot 5: orbitToSettlement (mapping(bytes32 => address))
+ *   slot 6: settlementToOrbit (mapping(address => bytes32))
  */
 export async function deployBridgedItpDirect(
   itpId: string,
@@ -953,17 +953,17 @@ export async function deployBridgedItpDirect(
     throw new Error('BridgedITP deployment failed — factory returned zero address');
   }
 
-  // Helper: compute keccak256 via Arb Anvil's web3_sha3
+  // Helper: compute keccak256 via Settlement Anvil's web3_sha3
   const sha3 = async (data: string) => await rpcCall('web3_sha3', [data]) as string;
 
-  // Set BridgeProxy.orbitToArbitrum[itpId] = deployedAddr (slot 5)
+  // Set BridgeProxy.orbitToSettlement[itpId] = deployedAddr (slot 5)
   const slot5Hex = '0x' + BigInt(5).toString(16).padStart(64, '0');
   const mappingInput = '0x' + itpIdPadded + slot5Hex.replace('0x', '');
   const storageSlot = await sha3(mappingInput);
   const addrPadded = '0x' + deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
   await rpcCall('anvil_setStorageAt', [BRIDGE_PROXY, storageSlot, addrPadded]);
 
-  // Set BridgeProxy.arbitrumToOrbit[deployedAddr] = itpId (slot 6)
+  // Set BridgeProxy.settlementToOrbit[deployedAddr] = itpId (slot 6)
   const slot6Hex = '0x' + BigInt(6).toString(16).padStart(64, '0');
   const addrForMapping = deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
   const reverseInput = '0x' + addrForMapping + slot6Hex.replace('0x', '');
@@ -973,11 +973,11 @@ export async function deployBridgedItpDirect(
   // Verify by reading back
   const verifyAddr = await getBridgedItpAddress(itpId);
   if (verifyAddr.toLowerCase() !== deployedAddr.toLowerCase()) {
-    throw new Error(`BridgeProxy.orbitToArbitrum verification failed: expected ${deployedAddr}, got ${verifyAddr} — storage slot may be wrong`);
+    throw new Error(`BridgeProxy.orbitToSettlement verification failed: expected ${deployedAddr}, got ${verifyAddr} — storage slot may be wrong`);
   }
 
   return deployedAddr;
 }
 
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */
-export { erc20BalanceOf, BRIDGED_ITP, ARB_USDC, ARB_CUSTODY, BRIDGE_PROXY, L3_WUSDC };
+export { erc20BalanceOf, BRIDGED_ITP, SETTLEMENT_USDC, SETTLEMENT_CUSTODY, BRIDGE_PROXY, L3_WUSDC };

@@ -1,10 +1,10 @@
 //! ITP Creation Event Types (Story 6.21)
 //!
 //! This module provides types for parsing and validating cross-chain ITP creation events
-//! from the BridgeProxy contract on Arbitrum.
+//! from the BridgeProxy contract on the Settlement chain.
 //!
 //! Events:
-//! - `CreateItpRequested` - User requests ITP creation on Arbitrum
+//! - `CreateItpRequested` - User requests ITP creation on Settlement chain
 //! - `ItpCreated` - ITP creation completed with bridged token deployed
 
 use ethers::prelude::*;
@@ -36,10 +36,10 @@ pub const MAX_NAME_LENGTH: usize = 32;
 /// Maximum symbol length in bytes
 pub const MAX_SYMBOL_LENGTH: usize = 10;
 
-/// Parsed CreateItpRequested event from BridgeProxy on Arbitrum
+/// Parsed CreateItpRequested event from BridgeProxy on Settlement chain
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItpCreationRequest {
-    /// Original requester address on Arbitrum
+    /// Original requester address on Settlement chain
     pub admin: Address,
     /// Request nonce from BridgeProxy
     pub nonce: U256,
@@ -280,12 +280,12 @@ impl ItpCreationRequest {
     }
 }
 
-/// Parsed ItpCreated event from BridgeProxy on Arbitrum
+/// Parsed ItpCreated event from BridgeProxy on Settlement chain
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItpCreatedEvent {
     /// L3 ITP ID
     pub orbit_itp_id: H256,
-    /// Deployed BridgedITP address on Arbitrum
+    /// Deployed BridgedITP address on Settlement chain
     pub bridged_itp_address: Address,
     /// Original request nonce
     pub nonce: U256,

@@ -8,15 +8,15 @@ import "../src/core/BLSCustody.sol";
 import "../src/interfaces/IBLSCustody.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
-import "../scripts/deploy/DeployBLSCustodyArbitrum.s.sol";
+import "../scripts/deploy/DeployBLSCustodySettlement.s.sol";
 import "./helpers/TestHelper.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployBLSCustodyArbitrumTest - Deployment validation tests for Story 6.5
-/// @notice Tests the full Arbitrum deployment chain: Governance -> IssuerRegistry -> BLSCustody
+/// @title DeployBLSCustodySettlementTest - Deployment validation tests for Story 6.5
+/// @notice Tests the full Settlement deployment chain: Governance -> IssuerRegistry -> BLSCustody
 /// @dev Uses real IssuerRegistry with real BLS test keys
 ///      for both whitelist tests and initialization chain tests
-contract DeployBLSCustodyArbitrumTest is TestHelper {
+contract DeployBLSCustodySettlementTest is TestHelper {
     // Real contracts (initialization chain)
     Governance public governance;
     IssuerRegistry public issuerRegistry;
@@ -41,7 +41,7 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
 
     // Constants matching deployment script
     address constant ONEINCH_ROUTER_V6 = 0x111111125421cA6dc452d289314280a0f8842A65;
-    address constant USDC_ARBITRUM = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+    address constant USDC_SETTLEMENT = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     address public deployer;
     uint256 public deployerKey = 0xA11CE;
@@ -110,7 +110,7 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
 
         // Propose whitelist targets with real BLS signatures
         custody.proposeWhitelist(ONEINCH_ROUTER_V6, _signProposeWhitelist(address(custody), ONEINCH_ROUTER_V6), 3, 7);
-        custody.proposeWhitelist(USDC_ARBITRUM, _signProposeWhitelist(address(custody), USDC_ARBITRUM), 3, 7);
+        custody.proposeWhitelist(USDC_SETTLEMENT, _signProposeWhitelist(address(custody), USDC_SETTLEMENT), 3, 7);
 
         vm.stopPrank();
     }
@@ -202,21 +202,21 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
     // ============ AC #4: USDC WHITELISTED ============
 
     function test_whitelist_usdcProposed() public view {
-        (uint256 proposedAt, ) = custody.getWhitelistStatus(USDC_ARBITRUM);
+        (uint256 proposedAt, ) = custody.getWhitelistStatus(USDC_SETTLEMENT);
         assertGt(proposedAt, 0, "USDC should be proposed");
     }
 
     function test_whitelist_usdcActivatedAfterTimelock() public {
         vm.warp(block.timestamp + 2 days + 1);
-        custody.activateWhitelist(USDC_ARBITRUM);
-        assertTrue(custody.isWhitelisted(USDC_ARBITRUM), "USDC should be whitelisted after activation");
+        custody.activateWhitelist(USDC_SETTLEMENT);
+        assertTrue(custody.isWhitelisted(USDC_SETTLEMENT), "USDC should be whitelisted after activation");
     }
 
     // ============ AC #5: DEPLOYMENT SCRIPT EXISTS ============
 
     function test_deploymentScript_compiles() public pure {
         // If this test file compiles, the deployment script exists and compiles
-        // (we import DeployBLSCustodyArbitrum at the top)
+        // (we import DeployBLSCustodySettlement at the top)
         assertTrue(true);
     }
 
@@ -225,10 +225,10 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
     function test_activateAndVerifyWhitelist() public {
         vm.warp(block.timestamp + 2 days + 1);
         custody.activateWhitelist(ONEINCH_ROUTER_V6);
-        custody.activateWhitelist(USDC_ARBITRUM);
+        custody.activateWhitelist(USDC_SETTLEMENT);
 
         assertTrue(custody.isWhitelisted(ONEINCH_ROUTER_V6));
-        assertTrue(custody.isWhitelisted(USDC_ARBITRUM));
+        assertTrue(custody.isWhitelisted(USDC_SETTLEMENT));
     }
 
     function test_execute_failsWithNonWhitelistedTarget() public {
@@ -274,18 +274,18 @@ contract DeployBLSCustodyArbitrumTest is TestHelper {
 
         // 3. Verify whitelist proposals exist (mock registry custody)
         (uint256 routerProposedAt, ) = custody.getWhitelistStatus(ONEINCH_ROUTER_V6);
-        (uint256 usdcProposedAt, ) = custody.getWhitelistStatus(USDC_ARBITRUM);
+        (uint256 usdcProposedAt, ) = custody.getWhitelistStatus(USDC_SETTLEMENT);
         assertGt(routerProposedAt, 0);
         assertGt(usdcProposedAt, 0);
 
         // 4. Activate whitelists after timelock
         vm.warp(block.timestamp + 2 days + 1);
         custody.activateWhitelist(ONEINCH_ROUTER_V6);
-        custody.activateWhitelist(USDC_ARBITRUM);
+        custody.activateWhitelist(USDC_SETTLEMENT);
 
         // 5. Verify whitelisted
         assertTrue(custody.isWhitelisted(ONEINCH_ROUTER_V6));
-        assertTrue(custody.isWhitelisted(USDC_ARBITRUM));
+        assertTrue(custody.isWhitelisted(USDC_SETTLEMENT));
 
         // 6. Verify nonce starts at 0
         assertEq(custody.nonce(), 0);

@@ -249,8 +249,8 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
         }
 
-        // ── Bridge Arb→L3 ──────────────────────────────────────
-        P2PMessage::BridgeArbToL3Proposal {
+        // ── Bridge Settlement→L3 ──────────────────────────────────────
+        P2PMessage::BridgeSettlementToL3Proposal {
             leader_id,
             order_id,
             itp_id,
@@ -260,7 +260,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
-            h.update(b"BridgeArbToL3Proposal");
+            h.update(b"BridgeSettlementToL3Proposal");
             h.update(leader_id);
             let mut buf = [0u8; 32];
             order_id.to_little_endian(&mut buf);
@@ -272,13 +272,13 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             deadline.to_little_endian(&mut buf);
             h.update(buf);
         }
-        P2PMessage::BridgeArbToL3Sign {
+        P2PMessage::BridgeSettlementToL3Sign {
             signer_id,
             signer_index,
             order_id,
             signature: _, // exclude BLS sig
         } => {
-            h.update(b"BridgeArbToL3Sign");
+            h.update(b"BridgeSettlementToL3Sign");
             h.update(signer_id);
             h.update([*signer_index]);
             let mut buf = [0u8; 32];
@@ -289,7 +289,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
         // ── Submit order for user ───────────────────────────────
         P2PMessage::SubmitOrderForUserProposal {
             leader_id,
-            arb_order_id,
+            settlement_order_id,
             itp_id,
             user,
             amount,
@@ -302,7 +302,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(b"SubmitOrderForUserProposal");
             h.update(leader_id);
             let mut buf = [0u8; 32];
-            arb_order_id.to_little_endian(&mut buf);
+            settlement_order_id.to_little_endian(&mut buf);
             h.update(buf);
             h.update(itp_id.as_bytes());
             h.update(user.as_bytes());
@@ -318,14 +318,14 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
         P2PMessage::SubmitOrderForUserSign {
             signer_id,
             signer_index,
-            arb_order_id,
+            settlement_order_id,
             signature: _, // exclude BLS sig
         } => {
             h.update(b"SubmitOrderForUserSign");
             h.update(signer_id);
             h.update([*signer_index]);
             let mut buf = [0u8; 32];
-            arb_order_id.to_little_endian(&mut buf);
+            settlement_order_id.to_little_endian(&mut buf);
             h.update(buf);
         }
 
@@ -388,8 +388,8 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(cycle_number.to_le_bytes());
         }
 
-        // ── Bridge L3→Arb ──────────────────────────────────────
-        P2PMessage::BridgeL3ToArbProposal {
+        // ── Bridge L3→Settlement ──────────────────────────────────────
+        P2PMessage::BridgeL3ToSettlementProposal {
             leader_id,
             cycle_number,
             order_ids,
@@ -398,7 +398,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
-            h.update(b"BridgeL3ToArbProposal");
+            h.update(b"BridgeL3ToSettlementProposal");
             h.update(leader_id);
             h.update(cycle_number.to_le_bytes());
             for oid in order_ids {
@@ -411,13 +411,13 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             h.update(destination.as_bytes());
         }
-        P2PMessage::BridgeL3ToArbSign {
+        P2PMessage::BridgeL3ToSettlementSign {
             signer_id,
             signer_index,
             cycle_number,
             signature: _, // exclude BLS sig
         } => {
-            h.update(b"BridgeL3ToArbSign");
+            h.update(b"BridgeL3ToSettlementSign");
             h.update(signer_id);
             h.update([*signer_index]);
             h.update(cycle_number.to_le_bytes());
@@ -848,7 +848,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(buf);
             h.update(outcome_hash.as_bytes());
         }
-        // ── NAV oracle (ITPNAVOracle on Arb) ──────────────────────
+        // ── NAV oracle (ITPNAVOracle on Settlement) ──────────────────────
         P2PMessage::NavOracleProposal {
             leader_id,
             itp_address,
@@ -1002,16 +1002,16 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::ItpCreationSign { .. } => "ItpCreationSign",
         P2PMessage::RebalanceRequestProposal { .. } => "RebalanceRequestProposal",
         P2PMessage::RebalanceRequestSign { .. } => "RebalanceRequestSign",
-        P2PMessage::BridgeArbToL3Proposal { .. } => "BridgeArbToL3Proposal",
-        P2PMessage::BridgeArbToL3Sign { .. } => "BridgeArbToL3Sign",
+        P2PMessage::BridgeSettlementToL3Proposal { .. } => "BridgeSettlementToL3Proposal",
+        P2PMessage::BridgeSettlementToL3Sign { .. } => "BridgeSettlementToL3Sign",
         P2PMessage::SubmitOrderForUserProposal { .. } => "SubmitOrderForUserProposal",
         P2PMessage::SubmitOrderForUserSign { .. } => "SubmitOrderForUserSign",
         P2PMessage::ConfirmBatchProposal { .. } => "ConfirmBatchProposal",
         P2PMessage::ConfirmBatchSign { .. } => "ConfirmBatchSign",
         P2PMessage::ConfirmFillsProposal { .. } => "ConfirmFillsProposal",
         P2PMessage::ConfirmFillsSign { .. } => "ConfirmFillsSign",
-        P2PMessage::BridgeL3ToArbProposal { .. } => "BridgeL3ToArbProposal",
-        P2PMessage::BridgeL3ToArbSign { .. } => "BridgeL3ToArbSign",
+        P2PMessage::BridgeL3ToSettlementProposal { .. } => "BridgeL3ToSettlementProposal",
+        P2PMessage::BridgeL3ToSettlementSign { .. } => "BridgeL3ToSettlementSign",
         P2PMessage::ReleaseToVaultProposal { .. } => "ReleaseToVaultProposal",
         P2PMessage::ReleaseToVaultSign { .. } => "ReleaseToVaultSign",
         P2PMessage::RebalanceBatchProposal { .. } => "RebalanceBatchProposal",
@@ -1059,11 +1059,11 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::BatchSign { .. }
             | P2PMessage::ItpCreationSign { .. }
             | P2PMessage::RebalanceRequestSign { .. }
-            | P2PMessage::BridgeArbToL3Sign { .. }
+            | P2PMessage::BridgeSettlementToL3Sign { .. }
             | P2PMessage::SubmitOrderForUserSign { .. }
             | P2PMessage::ConfirmBatchSign { .. }
             | P2PMessage::ConfirmFillsSign { .. }
-            | P2PMessage::BridgeL3ToArbSign { .. }
+            | P2PMessage::BridgeL3ToSettlementSign { .. }
             | P2PMessage::ReleaseToVaultSign { .. }
             | P2PMessage::RebalanceBatchSign { .. }
             | P2PMessage::UpdateWeightsSign { .. }

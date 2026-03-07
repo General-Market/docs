@@ -160,7 +160,7 @@ impl<'a> PriceBuilder<'a> {
                 }
             }
         }
-        SymbolMap::default_arbitrum()
+        SymbolMap::default_settlement()
     }
 
     async fn build_dex_source(

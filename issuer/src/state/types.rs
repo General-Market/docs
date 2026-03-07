@@ -227,8 +227,8 @@ impl Checkpoint {
 pub mod chains {
     /// Index L3 Orbit chain ID
     pub const INDEX_L3: u64 = 111222333;
-    /// Arbitrum One chain ID
-    pub const ARBITRUM: u64 = 42161;
+    /// Settlement chain ID (Arbitrum One)
+    pub const SETTLEMENT: u64 = 42161;
     /// Ethereum Mainnet chain ID
     pub const ETHEREUM: u64 = 1;
     /// Base chain ID
@@ -237,7 +237,7 @@ pub mod chains {
     pub const OPTIMISM: u64 = 10;
 
     /// All supported chain IDs
-    pub const ALL_CHAINS: &[u64] = &[INDEX_L3, ARBITRUM, ETHEREUM, BASE, OPTIMISM];
+    pub const ALL_CHAINS: &[u64] = &[INDEX_L3, SETTLEMENT, ETHEREUM, BASE, OPTIMISM];
 }
 
 #[cfg(test)]
@@ -288,7 +288,7 @@ mod tests {
     #[test]
     fn test_chain_constants() {
         assert_eq!(chains::INDEX_L3, 111222333);
-        assert_eq!(chains::ARBITRUM, 42161);
+        assert_eq!(chains::SETTLEMENT, 42161);
         assert_eq!(chains::ALL_CHAINS.len(), 5);
     }
 
@@ -314,7 +314,7 @@ mod tests {
     fn test_issuer_state_get_collateral() {
         let mut state = IssuerState::default();
         let itp_id = H256::random();
-        let chain_id = U256::from(chains::ARBITRUM);
+        let chain_id = U256::from(chains::SETTLEMENT);
         let amount = U256::from(1000) * U256::exp10(18);
 
         state.collateral_by_chain.insert((itp_id, chain_id), amount);

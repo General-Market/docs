@@ -8,7 +8,7 @@ import { indexL3 } from '@/lib/wagmi'
 export interface UseVisionBalanceReturn {
   /** Real balance — backed by actual L3 USDC in Vision.sol */
   realBalance: bigint
-  /** Virtual balance — backed by USDC locked in ArbBridgeCustody on Arb */
+  /** Virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement*/
   virtualBalance: bigint
   /** Total balance = realBalance + virtualBalance */
   total: bigint
@@ -22,7 +22,7 @@ export interface UseVisionBalanceReturn {
  * Read the dual-balance for the connected wallet from Vision.sol on L3.
  *
  * realBalance = backed by L3 USDC held in contract
- * virtualBalance = backed by Arb USDC locked in ArbBridgeCustody
+ * virtualBalance = backed by SettlementUSDC locked in SettlementBridgeCustody
  * total = realBalance + virtualBalance (also available as balanceOf)
  */
 export function useVisionBalance(): UseVisionBalanceReturn {

@@ -4,13 +4,13 @@ import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { useWithdrawBalance } from '@/hooks/vision/useWithdrawBalance'
-import { useWithdrawToArb } from '@/hooks/vision/useWithdrawToArb'
+import { useWithdrawToSettlement } from '@/hooks/vision/useWithdrawToSettlement'
 import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 
-type Mode = 'choose' | 'l3' | 'arb'
+type Mode = 'choose' | 'l3' | 'settlement'
 
 interface BalanceWithdrawModalProps {
   onClose: () => void
@@ -21,7 +21,7 @@ interface BalanceWithdrawModalProps {
  *
  * Two paths:
  * - "To L3 wallet": uses useWithdrawBalance (debits realBalance, sends L3 USDC)
- * - "To Arbitrum": uses useWithdrawToArb (debits virtualBalance, issuers release on Arb)
+ * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, issuers release on Settlement)
  */
 export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   const { isConnected } = useAccount()
@@ -40,23 +40,23 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
     reset: resetL3,
   } = useWithdrawBalance()
 
-  // --- Arb withdraw hook ---
+  // --- Settlement withdraw hook ---
   const {
-    withdraw: withdrawArb,
-    step: arbStep,
-    txHash: arbTxHash,
-    error: arbError,
-    reset: resetArb,
-  } = useWithdrawToArb()
+    withdraw: withdrawSettlement,
+    step: settlementStep,
+    txHash: settlementTxHash,
+    error: settlementError,
+    reset: resetSettlement,
+  } = useWithdrawToSettlement()
 
-  const activeStep = mode === 'l3' ? l3Step : mode === 'arb' ? arbStep : 'idle'
-  const activeError = mode === 'l3' ? l3Error : mode === 'arb' ? arbError : null
+  const activeStep = mode === 'l3' ? l3Step : mode === 'settlement' ? settlementStep : 'idle'
+  const activeError = mode === 'l3' ? l3Error : mode === 'settlement' ? settlementError : null
   const isProcessing = activeStep !== 'idle' && activeStep !== 'done' && activeStep !== 'error'
 
   // Withdrawals are always in L3 USDC decimals (18) since both balance types are stored on L3
   const parsedAmount = amount ? parseUnits(amount, VISION_USDC_DECIMALS) : 0n
 
-  const maxBalance = mode === 'l3' ? realBalance : mode === 'arb' ? virtualBalance : 0n
+  const maxBalance = mode === 'l3' ? realBalance : mode === 'settlement' ? virtualBalance : 0n
   const insufficientBalance = parsedAmount > 0n && parsedAmount > maxBalance
 
   const fmtBal = (v: bigint) => parseFloat(formatUnits(v, VISION_USDC_DECIMALS)).toFixed(2)
@@ -67,18 +67,18 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
     if (mode === 'l3') {
       capture('vision_balance_withdraw_l3', { amount })
       withdrawL3(parsedAmount)
-    } else if (mode === 'arb') {
-      capture('vision_balance_withdraw_arb', { amount })
-      withdrawArb(parsedAmount)
+    } else if (mode === 'settlement') {
+      capture('vision_balance_withdraw_settlement', { amount })
+      withdrawSettlement(parsedAmount)
     }
-  }, [amount, parsedAmount, insufficientBalance, mode, withdrawL3, withdrawArb, capture])
+  }, [amount, parsedAmount, insufficientBalance, mode, withdrawL3, withdrawSettlement, capture])
 
   const handleReset = useCallback(() => {
     setMode('choose')
     setAmount('')
     resetL3()
-    resetArb()
-  }, [resetL3, resetArb])
+    resetSettlement()
+  }, [resetL3, resetSettlement])
 
   const handleDone = useCallback(() => {
     refetchBalance()
@@ -99,11 +99,11 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
         default: return ''
       }
     }
-    if (mode === 'arb') {
-      switch (arbStep) {
+    if (mode === 'settlement') {
+      switch (settlementStep) {
         case 'withdrawing': return 'Submitting withdrawal request...'
-        case 'polling': return 'Waiting for issuers to release on Arbitrum...'
-        case 'done': return 'Withdrawal initiated! USDC will arrive on Arbitrum shortly.'
+        case 'polling': return 'Waiting for issuers to release on Settlement...'
+        case 'done': return 'Withdrawal initiated! USDC will arrive on Settlement shortly.'
         default: return ''
       }
     }
@@ -130,16 +130,16 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 <p className="text-color-up font-semibold text-lg mb-1">Withdrawal Successful</p>
                 <p className="text-text-secondary text-sm">
                   {amount} USDC withdrawn
-                  {mode === 'arb' ? ' to Arbitrum' : ' to L3 wallet'}
+                  {mode === 'settlement' ? ' to Settlement' : ' to L3 wallet'}
                 </p>
-                {(l3TxHash || arbTxHash) && (
+                {(l3TxHash || settlementTxHash) && (
                   <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                    Tx: {l3TxHash || arbTxHash}
+                    Tx: {l3TxHash || settlementTxHash}
                   </p>
                 )}
-                {mode === 'arb' && (
+                {mode === 'settlement' && (
                   <p className="text-xs text-text-muted mt-2">
-                    USDC will arrive on Arbitrum once issuers process the release.
+                    USDC will arrive on Settlement once issuers process the release.
                   </p>
                 )}
               </div>
@@ -182,9 +182,9 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 )}
               </button>
 
-              {/* To Arbitrum */}
+              {/* To Settlement */}
               <button
-                onClick={() => setMode('arb')}
+                onClick={() => setMode('settlement')}
                 disabled={virtualBalance === 0n}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
                   virtualBalance > 0n
@@ -194,9 +194,9 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm font-bold text-text-primary">To Arbitrum</p>
+                    <p className="text-sm font-bold text-text-primary">To Settlement</p>
                     <p className="text-xs text-text-muted mt-1">
-                      Release virtual balance USDC on Arbitrum via issuers
+                      Release virtual balance USDC on Settlement via issuers
                     </p>
                   </div>
                   <span className="text-xs font-mono text-text-secondary">
@@ -224,7 +224,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               <div className="bg-muted border border-border-light rounded-xl p-3">
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
-                    {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Arbitrum'}
+                    {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                   </p>
                   <span className="text-xs font-mono text-text-secondary">
                     Max: {fmtBal(maxBalance)} USDC
@@ -293,7 +293,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   disabled={!amount || parsedAmount === 0n || insufficientBalance}
                   className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 >
-                  {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Arbitrum'}
+                  {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                 </WalletActionButton>
               )}
 

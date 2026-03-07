@@ -356,7 +356,7 @@ export const VISION_ABI = [
   },
   {
     inputs: [{ name: 'amount', type: 'uint256' }],
-    name: 'withdrawToArb',
+    name: 'withdrawToSettlement',
     outputs: [],
     stateMutability: 'nonpayable',
     type: 'function',
@@ -418,7 +418,7 @@ export const VISION_ABI = [
       { indexed: true, name: 'user', type: 'address' },
       { indexed: false, name: 'amount', type: 'uint256' },
     ],
-    name: 'WithdrawToArbRequested',
+    name: 'WithdrawToSettlementRequested',
     type: 'event',
   },
 

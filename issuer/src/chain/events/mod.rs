@@ -1,6 +1,6 @@
 //! Event parsing modules for cross-chain operations
 //!
-//! This module provides event parsing for Arbitrum and L3 chain events.
+//! This module provides event parsing for Settlement chain and L3 chain events.
 //!
 //! Events:
 //! - `itp_creation` - ITP creation events (Story 6.21)

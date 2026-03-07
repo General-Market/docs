@@ -22,7 +22,7 @@ import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
 import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { indexL3, arbChainId } from '@/lib/wagmi'
+import { indexL3, settlementChainId } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 
@@ -65,7 +65,7 @@ interface ItpInfo {
   source: 'index' | 'bridge'
   completed: boolean
   orbitItpId?: string
-  arbAddress?: string
+  settlementAddress?: string
   totalValue?: bigint
   totalSupply?: bigint
 }
@@ -128,7 +128,7 @@ function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
         createdAt: 0, // Not available from SSE
         source: 'index' as const,
         completed: true,
-        arbAddress: nav.arb_address ?? undefined,
+        settlementAddress: nav.settlement_address ?? undefined,
         totalValue: BigInt(Math.round(nav.aum_usd * 1e18)),
         totalSupply: BigInt(nav.total_supply),
       }
@@ -281,7 +281,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
                       setSellModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
                     }}
-                    onLend={(arbAddr) => setLendModalItp({ ...itp, arbAddress: arbAddr })}
+                    onLend={(settlementAddr) => setLendModalItp({ ...itp, settlementAddress: settlementAddr })}
                     onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
                     onRebalance={() => itp.itpId && setRebalanceModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
                   />
@@ -335,7 +335,7 @@ interface ItpCardProps {
   index: number
   onBuy: () => void
   onSell: () => void
-  onLend: (arbAddress: string) => void
+  onLend: (settlementAddress: string) => void
   onChart: () => void
   onRebalance: () => void
 }
@@ -359,7 +359,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
   const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useWriteContract()
-  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash, chainId: arbChainId })
+  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash, chainId: settlementChainId })
 
   // Toast notifications for metadata edit
   useTransactionNotification({
@@ -396,7 +396,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
         abi: BRIDGE_PROXY_ABI,
         functionName: 'setItpMetadata',
         args: [itp.itpId as `0x${string}`, editDesc, editUrl, editVideo],
-        chainId: arbChainId,
+        chainId: settlementChainId,
       })
     } catch {
       // User rejected or tx failed
@@ -409,8 +409,8 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
     address as `0x${string}` | undefined
   )
 
-  // arbAddress is now provided via SSE NAV payload (resolved in data-node poll_nav)
-  const effectiveArbAddress = itp.arbAddress ?? undefined
+  // settlementAddress is now provided via SSE NAV payload (resolved in data-node poll_nav)
+  const effectiveSettlementAddress = itp.settlementAddress ?? undefined
 
   const isActive = itp.source === 'index' || itp.completed
 
@@ -436,7 +436,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
   // Fetch minted balances when details are expanded (low priority migration to REST)
   useEffect(() => {
     // Skip if conditions not met
-    if (!showDetails || !effectiveArbAddress) return
+    if (!showDetails || !effectiveSettlementAddress) return
 
     let cancelled = false
 
@@ -451,7 +451,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       setHolderError(false)
 
       try {
-        const tokenAddr = effectiveArbAddress as `0x${string}`
+        const tokenAddr = effectiveSettlementAddress as `0x${string}`
 
         // Get total supply with error handling
         let supply: bigint
@@ -515,7 +515,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
 
     fetchHolders()
     return () => { cancelled = true }
-  }, [showDetails, publicClient, effectiveArbAddress])
+  }, [showDetails, publicClient, effectiveSettlementAddress])
 
   return (
     <div
@@ -590,10 +590,10 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
           <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.chart')}</button>
           <span className="mx-2.5 text-border-light font-normal">|</span>
           <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.rebalance')}</WalletActionButton>
-          {effectiveArbAddress && hasLendingMarket(effectiveArbAddress) && (
+          {effectiveSettlementAddress && hasLendingMarket(effectiveSettlementAddress) && (
             <>
               <span className="mx-2.5 text-border-light font-normal">|</span>
-              <WalletActionButton onClick={() => onLend(effectiveArbAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.borrow')}</WalletActionButton>
+              <WalletActionButton onClick={() => onLend(effectiveSettlementAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.borrow')}</WalletActionButton>
             </>
           )}
         </div>
@@ -687,10 +687,10 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
             </div>
           )}
 
-          {effectiveArbAddress && (
+          {effectiveSettlementAddress && (
             <div className="bg-muted rounded p-2 font-mono space-y-1">
-              <span className="text-text-muted">{t('itp_card.arb_erc20')}</span>
-              <p className="text-text-secondary break-all">{effectiveArbAddress}</p>
+              <span className="text-text-muted">{t('itp_card.settlement_erc20')}</span>
+              <p className="text-text-secondary break-all">{effectiveSettlementAddress}</p>
             </div>
           )}
 
@@ -707,7 +707,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
           )}
 
           {/* Minted Balances Section */}
-          {effectiveArbAddress && (
+          {effectiveSettlementAddress && (
             <div className="bg-muted rounded p-3">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-text-secondary font-medium">{t('itp_card.minted_supply')}</span>
@@ -766,7 +766,7 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
             <p>{t('itp_card.source')} {itp.source === 'index' ? t('itp_card.source_index') : t('itp_card.source_bridge')}</p>
             {itp.admin && <p>{t('itp_card.admin')} {itp.admin}</p>}
             {createdDate && <p>{t('itp_card.created')} {createdDate.toISOString()}</p>}
-            {effectiveArbAddress && <p className="break-all">{t('itp_card.arb_address')} {effectiveArbAddress}</p>}
+            {effectiveSettlementAddress && <p className="break-all">{t('itp_card.settlement_address')} {effectiveSettlementAddress}</p>}
             {itp.itpId && <p className="break-all">{t('itp_card.itp_id')} {itp.itpId}</p>}
           </div>
         </div>

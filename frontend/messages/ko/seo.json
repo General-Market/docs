@@ -3,7 +3,7 @@
     "title": "General Market",
     "title_template": "%s | General Market",
     "description": "온체인 인덱스 상품을 위한 기관급 프로토콜입니다.",
-    "keywords": "인덱스 펀드, ETF, 기관, 온체인, 암호화폐 거래, DeFi, 자율 자본 시장, Arbitrum Orbit, L3"
+    "keywords": "인덱스 펀드, ETF, 기관, 온체인, 암호화폐 거래, DeFi, 자율 자본 시장, Orbit, L3"
   },
   "og": {
     "site_name": "General Market",
@@ -18,7 +18,7 @@
     "h1": "General Market — 온체인 인덱스 상품",
     "markets": {
       "title": "인덱스 추적 상품 (ITP)",
-      "description": "탈중앙화 인덱스 상품을 탐색하세요. 각 ITP는 Arbitrum Orbit L3에서 실시간 NAV (순자산가치) 가격 책정과 온체인 결제로 암호화폐 자산 바스켓을 추적합니다."
+      "description": "탈중앙화 인덱스 상품을 탐색하세요. 각 ITP는 Orbit L3에서 실시간 NAV (순자산가치) 가격 책정과 온체인 결제로 암호화폐 자산 바스켓을 추적합니다."
     },
     "portfolio": {
       "title": "포트폴리오 추적",
@@ -70,7 +70,7 @@
     },
     "about": {
       "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
     },
     "vision": {
       "title": "비전",

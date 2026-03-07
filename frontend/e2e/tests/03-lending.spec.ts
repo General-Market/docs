@@ -42,7 +42,7 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
       }
     }
 
-    // Ensure user has BridgedITP on Arb (lending UI checks this balance)
+    // Ensure user has BridgedITP on Settlement (lending UI checks this balance)
     if (IS_ANVIL) {
       await mintBridgedItp(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
     }

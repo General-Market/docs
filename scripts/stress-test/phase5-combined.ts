@@ -6,7 +6,7 @@
  */
 
 import {
-  PHASE5_RATES, L3_RPC, ARB_RPC, DEPLOYER, ANVIL_ACCOUNTS,
+  PHASE5_RATES, L3_RPC, SETTLEMENT_RPC, DEPLOYER, ANVIL_ACCOUNTS,
   Side, OrderStatus,
 } from './config';
 import {

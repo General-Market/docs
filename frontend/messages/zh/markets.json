@@ -90,7 +90,7 @@
     "description_placeholder": "描述 (最多 280 字符 / 约 50 词)",
     "website_placeholder": "网站 URL (最多 128 字符)",
     "video_placeholder": "YouTube URL (最多 256 字符)",
-    "arb_erc20": "Arbitrum ERC20:",
+    "settlement_erc20": "Settlement ERC20:",
     "itp_id": "ITP ID:",
     "minted_supply": "已铸造供应量",
     "loading_holders": "加载持有人中...",
@@ -103,7 +103,7 @@
     "source": "来源:",
     "admin": "管理员:",
     "created": "创建时间:",
-    "arb_address": "Arb 地址:",
+    "settlement_address": "Settlement 地址:",
     "request_number": "请求 #{number}"
   },
   "rebalance": {

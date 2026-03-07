@@ -16,10 +16,10 @@ export const DATA_NODE_URL = typeof window !== 'undefined'
   ? '/dn'
   : (process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200')
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
-export const ARB_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
+export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
 export const AP_URL = process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 export const L3_EXPLORER_URL = process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
-export const ARB_EXPLORER_URL = process.env.NEXT_PUBLIC_ARB_EXPLORER_URL || 'https://sepolia.arbiscan.io'
+export const SETTLEMENT_EXPLORER_URL = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || 'https://testnet.sonicscan.org'
 
 // Vision API — proxied through Next.js rewrites to avoid CORS.
 // In dev: /api/vision/* → localhost:10001/vision/*

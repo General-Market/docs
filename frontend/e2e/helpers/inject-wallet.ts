@@ -13,11 +13,11 @@ export function getInjectWalletScript(
   rpcUrl: string,
   chainId: number,
   address: string,
-  arbRpcUrl?: string,
-  arbChainId?: number,
+  settlementRpcUrl?: string,
+  settlementChainId?: number,
 ): string {
-  const _arbRpcUrl = arbRpcUrl || rpcUrl;
-  const _arbChainId = arbChainId || chainId;
+  const _settlementRpcUrl = settlementRpcUrl || rpcUrl;
+  const _settlementChainId = settlementChainId || chainId;
   return `
 (function() {
   const RPC_URL = ${JSON.stringify(rpcUrl)};
@@ -28,13 +28,13 @@ export function getInjectWalletScript(
   // Multi-chain RPC routing: chain ID → RPC URL
   const L3_CHAIN_ID = ${chainId};
   const L3_RPC_URL = ${JSON.stringify(rpcUrl)};
-  const ARB_CHAIN_ID = ${_arbChainId};
-  const ARB_RPC_URL = ${JSON.stringify(_arbRpcUrl)};
+  const SETTLEMENT_CHAIN_ID = ${_settlementChainId};
+  const SETTLEMENT_RPC_URL = ${JSON.stringify(_settlementRpcUrl)};
 
   const CHAIN_RPCS = {
     [CHAIN_ID]: RPC_URL,
     [L3_CHAIN_ID]: L3_RPC_URL,
-    [ARB_CHAIN_ID]: ARB_RPC_URL,
+    [SETTLEMENT_CHAIN_ID]: SETTLEMENT_RPC_URL,
   };
 
   let currentChainId = CHAIN_ID;

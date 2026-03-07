@@ -1,4 +1,4 @@
-//! Integration tests for Bridge Arb→L3 orchestration (Story 7.2, Task 10)
+//! Integration tests for Bridge Settlement→L3 orchestration (Story 7.2, Task 10)
 //!
 //! Tests the full bridge flow with 3 nodes:
 //! 1. Leader proposes bridge for CrossChainOrder
@@ -56,16 +56,16 @@ fn test_config() -> BridgeConfig {
     BridgeConfig {
         issuer_custody_l3: Address::from([0x11u8; 20]),
         l3_usdc_address: Address::from([0x22u8; 20]),
-        arb_custody_address: Address::from([0x33u8; 20]),
-        arbitrum_chain_id: 42161,
+        settlement_custody_address: Address::from([0x33u8; 20]),
+        settlement_chain_id: 42161,
         l3_chain_id: 111222333, // Index L3 Orbit chain
         index_address: Address::from([0x44u8; 20]),
         min_signatures: 2, // 2 of 3 threshold
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
-        // Story 7.5: Bridge L3→Arb config
-        issuer_custody_arb: Address::from([0x55u8; 20]),
-        arb_usdc_address: Address::from([0x66u8; 20]),
+        // Story 7.5: Bridge L3→Settlement config
+        issuer_custody_settlement: Address::from([0x55u8; 20]),
+        settlement_usdc_address: Address::from([0x66u8; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77u8; 20]),
         signer_address: Address::from([0x88; 20]),
@@ -151,7 +151,7 @@ async fn test_leader_creates_valid_proposal() {
     );
 
     // Create proposal
-    let proposal = orchestrator.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Verify proposal fields
     assert_eq!(proposal.leader_id, peer_id);
@@ -166,7 +166,7 @@ async fn test_leader_creates_valid_proposal() {
     assert_eq!(proposal.leader_signature.0.len(), 64);
 
     // Verify message hash is deterministic
-    let proposal2 = orchestrator.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal2 = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
     assert_eq!(proposal.message_hash, proposal2.message_hash);
 }
 
@@ -196,7 +196,7 @@ async fn test_follower_validates_proposal() {
     );
 
     // Create proposal
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Setup follower
     let follower_reader = Arc::new(MockCrossChainOrderReader::new());
@@ -241,7 +241,7 @@ async fn test_follower_rejects_mismatched_proposal() {
         0,
     );
 
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Setup follower with DIFFERENT amount in on-chain data
     let mut wrong_data = order_to_data(&order);
@@ -286,7 +286,7 @@ async fn test_follower_rejects_nonexistent_order() {
         0,
     );
 
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Follower has EMPTY reader (no orders)
     let follower_reader = Arc::new(MockCrossChainOrderReader::new());
@@ -325,7 +325,7 @@ async fn test_follower_signs_validated_proposal() {
         0,
     );
 
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Setup follower
     let follower_reader = Arc::new(MockCrossChainOrderReader::new());
@@ -391,7 +391,7 @@ async fn test_signature_aggregation_threshold() {
     );
 
     // Leader creates proposal and starts collection
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
     leader.start_signature_collection(order.order_id, proposal.leader_signature.clone()).await;
 
     // Follower 1 signs
@@ -463,7 +463,7 @@ async fn test_full_bridge_flow_3_nodes() {
     );
 
     // Step 1: Leader creates proposal
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
     assert_eq!(proposal.order_id, order.order_id);
 
     // Step 2: Leader starts signature collection with its own signature
@@ -483,7 +483,7 @@ async fn test_full_bridge_flow_3_nodes() {
     assert!(bridge_result.signature_count >= config.min_signatures);
 
     // Step 5: Execute bridge (mint L3Usdc)
-    let tx_hash = leader.execute_bridge_arb_to_l3(&proposal, &bridge_result).await.unwrap();
+    let tx_hash = leader.execute_bridge_settlement_to_l3(&proposal, &bridge_result).await.unwrap();
 
     // Verify tx_hash is not zero
     assert_ne!(tx_hash, H256::zero());
@@ -519,7 +519,7 @@ async fn test_l3_usdc_mint_transaction_format() {
         0,
     );
 
-    let proposal = orchestrator.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Create a minimal bridge result
     let bridge_result = issuer::bridge::BridgeResult {
@@ -529,7 +529,7 @@ async fn test_l3_usdc_mint_transaction_format() {
     };
 
     // Execute bridge
-    let tx_hash = orchestrator.execute_bridge_arb_to_l3(&proposal, &bridge_result).await.unwrap();
+    let tx_hash = orchestrator.execute_bridge_settlement_to_l3(&proposal, &bridge_result).await.unwrap();
 
     // Verify transaction was submitted
     assert_ne!(tx_hash, H256::zero());
@@ -577,7 +577,7 @@ async fn test_duplicate_signature_rejected() {
         1,
     );
 
-    let proposal = leader.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&order).unwrap();
     leader.start_signature_collection(order.order_id, proposal.leader_signature.clone()).await;
 
     let sig = follower.sign_bridge_proposal(&proposal).unwrap();
@@ -619,7 +619,7 @@ async fn test_expired_order_rejected() {
         0,
     );
 
-    let proposal = leader.propose_bridge_arb_to_l3(&expired_order).unwrap();
+    let proposal = leader.propose_bridge_settlement_to_l3(&expired_order).unwrap();
 
     // Follower should reject during validation due to expired deadline
     let follower = BridgeOrchestrator::new(
@@ -659,13 +659,13 @@ async fn test_replay_protection() {
     );
 
     // Create and execute first bridge
-    let proposal = orchestrator.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
     let bridge_result = issuer::bridge::BridgeResult {
         aggregated_signature: common::types::BLSSignature(vec![0u8; 64]),
         signer_bitmap: U256::from(3),
         signature_count: 2,
     };
-    orchestrator.execute_bridge_arb_to_l3(&proposal, &bridge_result).await.unwrap();
+    orchestrator.execute_bridge_settlement_to_l3(&proposal, &bridge_result).await.unwrap();
 
     // Order should now be marked as processed
     assert!(orchestrator.is_order_processed(&order.order_id).await);
@@ -718,9 +718,9 @@ async fn test_message_hash_deterministic_across_nodes() {
     );
 
     // All nodes should compute the same message hash
-    let proposal0 = node0.propose_bridge_arb_to_l3(&order).unwrap();
-    let proposal1 = node1.propose_bridge_arb_to_l3(&order).unwrap();
-    let proposal2 = node2.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal0 = node0.propose_bridge_settlement_to_l3(&order).unwrap();
+    let proposal1 = node1.propose_bridge_settlement_to_l3(&order).unwrap();
+    let proposal2 = node2.propose_bridge_settlement_to_l3(&order).unwrap();
 
     assert_eq!(proposal0.message_hash, proposal1.message_hash);
     assert_eq!(proposal1.message_hash, proposal2.message_hash);
@@ -750,7 +750,7 @@ async fn test_stale_collector_cleanup() {
     );
 
     // Start collection
-    let proposal = orchestrator.propose_bridge_arb_to_l3(&order).unwrap();
+    let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
     orchestrator.start_signature_collection(order.order_id, proposal.leader_signature.clone()).await;
 
     // Cleanup with very small max_age should remove the collector

@@ -42,8 +42,8 @@ pub mod usdt_addresses {
 
     /// USDT on Ethereum mainnet
     pub const ETHEREUM: &str = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-    /// USDT on Arbitrum One
-    pub const ARBITRUM: &str = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
+    /// USDT on Settlement chain
+    pub const SETTLEMENT: &str = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9";
     /// USDT on Base
     pub const BASE: &str = "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2";
     /// USDT on Optimism
@@ -53,7 +53,7 @@ pub mod usdt_addresses {
     pub fn is_known_usdt(addr: &Address) -> bool {
         let addr_str = format!("{:?}", addr);
         addr_str.eq_ignore_ascii_case(ETHEREUM)
-            || addr_str.eq_ignore_ascii_case(ARBITRUM)
+            || addr_str.eq_ignore_ascii_case(SETTLEMENT)
             || addr_str.eq_ignore_ascii_case(BASE)
             || addr_str.eq_ignore_ascii_case(OPTIMISM)
     }
@@ -62,7 +62,7 @@ pub mod usdt_addresses {
     pub fn parse(chain: &str) -> Option<Address> {
         let addr_str = match chain.to_lowercase().as_str() {
             "ethereum" | "eth" => ETHEREUM,
-            "arbitrum" | "arb" => ARBITRUM,
+            "settlement" => SETTLEMENT,
             "base" => BASE,
             "optimism" | "op" => OPTIMISM,
             _ => return None,
@@ -781,7 +781,7 @@ mod tests {
     impl PairQuoteLookup for MockPairRegistry {
         fn get_quote_token(&self, pair_id: H256) -> Option<Address> {
             if self.usdt_pairs.contains(&pair_id) {
-                // Return Arbitrum USDT address
+                // Return Settlement USDT address
                 Some(
                     std::str::FromStr::from_str("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
                         .unwrap(),
@@ -800,8 +800,8 @@ mod tests {
     fn test_usdt_addresses_known() {
         use std::str::FromStr;
 
-        let arb_usdt = Address::from_str("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9").unwrap();
-        assert!(usdt_addresses::is_known_usdt(&arb_usdt));
+        let settlement_usdt = Address::from_str("Fd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9").unwrap();
+        assert!(usdt_addresses::is_known_usdt(&settlement_usdt));
 
         let usdc = Address::from_str("af88d065e77c8cC2239327C5EDb3A432268e5831").unwrap();
         assert!(!usdt_addresses::is_known_usdt(&usdc));

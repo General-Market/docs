@@ -50,7 +50,7 @@ struct EventTopics {
     balance_credited: H256,
     balance_deposited: H256,
     real_balance_withdrawn: H256,
-    withdraw_to_arb_requested: H256,
+    withdraw_to_settlement_requested: H256,
     balance_debited: H256,
 }
 
@@ -97,8 +97,8 @@ impl EventTopics {
             real_balance_withdrawn: H256::from(ethers::utils::keccak256(
                 b"RealBalanceWithdrawn(address,uint256)",
             )),
-            withdraw_to_arb_requested: H256::from(ethers::utils::keccak256(
-                b"WithdrawToArbRequested(address,uint256,uint256)",
+            withdraw_to_settlement_requested: H256::from(ethers::utils::keccak256(
+                b"WithdrawToSettlementRequested(address,uint256,uint256)",
             )),
             balance_debited: H256::from(ethers::utils::keccak256(
                 b"BalanceDebited(address,uint256,uint256)",
@@ -267,8 +267,8 @@ impl ChainListener {
                     self.handle_balance_deposited(&log).await;
                 } else if *topic0 == topics.real_balance_withdrawn {
                     self.handle_real_balance_withdrawn(&log).await;
-                } else if *topic0 == topics.withdraw_to_arb_requested {
-                    self.handle_withdraw_to_arb_requested(&log).await;
+                } else if *topic0 == topics.withdraw_to_settlement_requested {
+                    self.handle_withdraw_to_settlement_requested(&log).await;
                 } else if *topic0 == topics.balance_debited {
                     self.handle_balance_debited(&log).await;
                 }
@@ -920,7 +920,7 @@ impl ChainListener {
 
     /// Handle `BalanceCredited(address indexed user, uint256 amount, uint256 indexed depositId)`
     ///
-    /// Emitted by Vision.creditBalance() after cross-chain deposit from Arb.
+    /// Emitted by Vision.creditBalance() after cross-chain deposit from Settlement.
     /// Updates the user's virtual balance in the tick scheduler and Postgres.
     async fn handle_balance_credited(&self, log: &Log) {
         let user = match extract_indexed_address(log, 1) {
@@ -1056,16 +1056,16 @@ impl ChainListener {
         info!(user = %user, amount = %amount, "RealBalanceWithdrawn");
     }
 
-    /// Handle `WithdrawToArbRequested(address indexed user, uint256 amount, uint256 indexed withdrawId)`
+    /// Handle `WithdrawToSettlementRequested(address indexed user, uint256 amount, uint256 indexed withdrawId)`
     ///
-    /// Emitted by Vision.withdrawToArb() when user initiates Arb withdrawal.
+    /// Emitted by Vision.withdrawToSettlement() when user initiates Settlement withdrawal.
     /// Virtual balance already debited on-chain. We track the withdraw order
-    /// and the deposit watcher handles the Arb-side completion.
-    async fn handle_withdraw_to_arb_requested(&self, log: &Log) {
+    /// and the deposit watcher handles the Settlement-side completion.
+    async fn handle_withdraw_to_settlement_requested(&self, log: &Log) {
         let user = match extract_indexed_address(log, 1) {
             Some(v) => v,
             None => {
-                warn!("WithdrawToArbRequested: missing user topic");
+                warn!("WithdrawToSettlementRequested: missing user topic");
                 return;
             }
         };
@@ -1074,7 +1074,7 @@ impl ChainListener {
         let amount = match decode_single_u256(&log.data) {
             Some(v) => v,
             None => {
-                warn!(user = %user, "WithdrawToArbRequested: failed to decode amount");
+                warn!(user = %user, "WithdrawToSettlementRequested: failed to decode amount");
                 return;
             }
         };
@@ -1082,7 +1082,7 @@ impl ChainListener {
         let withdraw_id = match log.topics.get(2) {
             Some(t) => U256::from(t.as_bytes()).as_u64(),
             None => {
-                warn!(user = %user, "WithdrawToArbRequested: missing withdrawId topic");
+                warn!(user = %user, "WithdrawToSettlementRequested: missing withdrawId topic");
                 return;
             }
         };
@@ -1124,7 +1124,7 @@ impl ChainListener {
             user = %user,
             amount = %amount,
             withdraw_id,
-            "WithdrawToArbRequested"
+            "WithdrawToSettlementRequested"
         );
     }
 
@@ -1469,7 +1469,7 @@ mod tests {
         assert_ne!(topics.balance_credited, H256::zero());
         assert_ne!(topics.balance_deposited, H256::zero());
         assert_ne!(topics.real_balance_withdrawn, H256::zero());
-        assert_ne!(topics.withdraw_to_arb_requested, H256::zero());
+        assert_ne!(topics.withdraw_to_settlement_requested, H256::zero());
         assert_ne!(topics.balance_debited, H256::zero());
 
         // All topics should be distinct
@@ -1487,7 +1487,7 @@ mod tests {
             topics.balance_credited,
             topics.balance_deposited,
             topics.real_balance_withdrawn,
-            topics.withdraw_to_arb_requested,
+            topics.withdraw_to_settlement_requested,
             topics.balance_debited,
         ];
         let unique: std::collections::HashSet<_> = all.iter().collect();

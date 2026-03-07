@@ -112,7 +112,7 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
                 L3: ${fmtUsdc(realBalance)}
               </p>
               <p className="text-[10px] text-text-muted font-mono">
-                Arb-backed: ${fmtUsdc(virtualBalance)}
+                Settlement-backed: ${fmtUsdc(virtualBalance)}
               </p>
             </div>
           </div>

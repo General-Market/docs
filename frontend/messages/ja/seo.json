@@ -3,7 +3,7 @@
     "title": "General Market",
     "title_template": "%s | General Market",
     "description": "オンチェーンインデックス商品のための機関投資家向けプロトコル。",
-    "keywords": "インデックスファンド, ETF, 機関投資家, オンチェーン, 暗号通貨取引, DeFi, 自律型資本市場, Arbitrum Orbit, L3"
+    "keywords": "インデックスファンド, ETF, 機関投資家, オンチェーン, 暗号通貨取引, DeFi, 自律型資本市場, Orbit, L3"
   },
   "og": {
     "site_name": "General Market",
@@ -18,7 +18,7 @@
     "h1": "General Market — オンチェーンインデックス商品",
     "markets": {
       "title": "インデックス追跡商品（ITP）",
-      "description": "分散型インデックス商品をご覧ください。各ITPはリアルタイムのNAV (純資産価値) 価格設定とArbitrum Orbit L3上のオンチェーン決済で暗号資産のバスケットを追跡します。"
+      "description": "分散型インデックス商品をご覧ください。各ITPはリアルタイムのNAV (純資産価値) 価格設定とOrbit L3上のオンチェーン決済で暗号資産のバスケットを追跡します。"
     },
     "portfolio": {
       "title": "ポートフォリオ管理",
@@ -70,7 +70,7 @@
     },
     "about": {
       "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
     },
     "vision": {
       "title": "ビジョン",

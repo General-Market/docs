@@ -41,7 +41,7 @@ fn usdt_pair() -> H256 {
 
 // Chain IDs for testing
 const L3: u64 = 111222333;
-const ARB: u64 = 42161;
+const SETTLEMENT: u64 = 42161;
 
 fn u(val: u64) -> U256 {
     U256::from(val)
@@ -73,8 +73,8 @@ fn test_full_netting_pipeline() {
 
     // Create bridge requests
     let bridges = vec![
-        BridgeRequest::new(u(L3), u(ARB), u(50000)),
-        BridgeRequest::new(u(ARB), u(L3), u(30000)),
+        BridgeRequest::new(u(L3), u(SETTLEMENT), u(50000)),
+        BridgeRequest::new(u(SETTLEMENT), u(L3), u(30000)),
     ];
 
     // Run pipeline
@@ -207,8 +207,8 @@ fn test_fee_allocation_integration() {
 #[test]
 fn test_bridge_netting_volume_savings() {
     let bridges = vec![
-        BridgeRequest::new(u(L3), u(ARB), u(100_000)),
-        BridgeRequest::new(u(ARB), u(L3), u(60_000)),
+        BridgeRequest::new(u(L3), u(SETTLEMENT), u(100_000)),
+        BridgeRequest::new(u(SETTLEMENT), u(L3), u(60_000)),
     ];
 
     let result = bridge_netting(bridges);
@@ -217,7 +217,7 @@ fn test_bridge_netting_volume_savings() {
     // Original: 100k + 60k internal + 40k net = 200k
     // Wait, let me recalculate...
     // Internal match: $60k each way (because min(100k, 60k) = 60k)
-    // Net bridge: $40k L3 → ARB
+    // Net bridge: $40k L3 → Settlement
     // volume_reduction returns:
     //   original = bridges + internal = 40k + (60k + 60k) = 160k
     //   netted = bridges = 40k

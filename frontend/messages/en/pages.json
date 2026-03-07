@@ -38,7 +38,7 @@
     "acceptance_title": "Acceptance",
     "acceptance_text": "By using General Market (including both Index and Vision products), you agree to these terms. If you don't agree, don't use the platform. These terms apply to all products operated by IM Standards LLC.",
     "what_is_title": "What General Market Is",
-    "what_is_text": "General Market is a decentralized protocol operated by IM Standards LLC on the Index L3 chain (Arbitrum Orbit). It consists of two products:",
+    "what_is_text": "General Market is a decentralized protocol operated by IM Standards LLC on the Index L3 chain (Orbit). It consists of two products:",
     "what_is_index": "Index \u2014 Create, trade, and manage tokenized index tracking products (ITPs). ITPs are on-chain baskets of crypto assets with NAV pricing, similar to ETFs but entirely on-chain. Prices are submitted by decentralized, Goldilocks-selected BLS-verified issuers \u2014 not by IM Standards LLC.",
     "what_is_vision": "Vision \u2014 Peer-to-peer prediction markets across 60+ data sources. Users trade event contracts against each other via smart contracts. IM Standards LLC does not act as counterparty, bookmaker, or market maker.",
     "risk_title": "Risk Warning",
@@ -81,7 +81,7 @@
     "overview_text": "Vision is a peer-to-peer prediction market protocol operated by IM Standards LLC. It enables users to create and trade event contracts on publicly available data outcomes across 60+ data sources. This page sets out the legal basis for Vision's operations, data usage, and your rights and obligations as a user.",
 
     "p2p_title": "Peer-to-Peer Market Structure",
-    "p2p_text": "Vision operates as a peer-to-peer protocol. All trades are executed between users via smart contracts deployed on the Index L3 chain (Arbitrum Orbit). IM Standards LLC does not act as a counterparty, bookmaker, or market maker in any transaction.",
+    "p2p_text": "Vision operates as a peer-to-peer protocol. All trades are executed between users via smart contracts deployed on the Index L3 chain (Orbit). IM Standards LLC does not act as a counterparty, bookmaker, or market maker in any transaction.",
     "p2p_no_house": "No house edge \u2014 Vision does not take positions against users. There is no \"house\" to bet against.",
     "p2p_no_counterparty": "No counterparty risk from the operator \u2014 IM Standards LLC never holds the other side of any trade.",
     "p2p_smart_contract": "Settlement is automated \u2014 outcomes are resolved by on-chain smart contracts using BLS-verified data feeds from independent issuers.",
@@ -144,7 +144,7 @@
     "nature_decentralized_issuers": "Price feeds are submitted by a decentralized network of independent issuers, selected through a Goldilocks consensus mechanism and verified via BLS aggregate signatures. IM Standards LLC does not submit prices, select issuers, or control the consensus process. This further decouples the protocol from any single operator's efforts.",
 
     "protocol_title": "Protocol Architecture",
-    "protocol_text": "General Market Index operates as an autonomous, non-custodial protocol on the Index L3 chain (Arbitrum Orbit):",
+    "protocol_text": "General Market Index operates as an autonomous, non-custodial protocol on the Index L3 chain (Orbit):",
     "protocol_non_custodial": "Non-custodial \u2014 IM Standards LLC does not custody, hold, or control user funds. Your assets remain in smart contracts that you interact with directly through your wallet.",
     "protocol_immutable": "Immutable contracts \u2014 core logic is deployed to immutable smart contracts. IM Standards LLC cannot unilaterally alter, freeze, or reverse transactions after deployment.",
     "protocol_transparent": "Fully transparent \u2014 all ITP compositions, NAV calculations, trades, and settlement are verifiable on-chain by any party.",

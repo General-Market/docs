@@ -48,7 +48,7 @@ pub struct TokenMapping {
 /// Configuration for the DEX price source
 #[derive(Debug, Clone)]
 pub struct DexPriceSourceConfig {
-    /// Chain to fetch quotes on (typically Arbitrum)
+    /// Chain to fetch quotes on (typically Settlement chain)
     pub chain: SupportedChain,
     /// Base token address for pricing (USDC)
     pub base_token: String,
@@ -65,7 +65,7 @@ impl Default for DexPriceSourceConfig {
     fn default() -> Self {
         Self {
             chain: SupportedChain::Arbitrum,
-            base_token: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831".to_string(), // USDC on Arbitrum
+            base_token: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831".to_string(), // USDC on Settlement chain
             base_token_decimals: 6,
             token_mappings: HashMap::new(),
             quote_amount: "1000000000".to_string(), // 1000 USDC
@@ -370,10 +370,10 @@ mod tests {
         Address::from(bytes)
     }
 
-    // USDC address on Arbitrum
-    const USDC_ARB: &str = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
-    // WETH address on Arbitrum
-    const WETH_ARB: &str = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
+    // USDC address on Settlement chain
+    const USDC_SETTLEMENT: &str = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+    // WETH address on Settlement chain
+    const WETH_SETTLEMENT: &str = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
 
     fn create_test_config() -> DexPriceSourceConfig {
         let mut mappings = HashMap::new();
@@ -382,14 +382,14 @@ mod tests {
             weth_addr,
             TokenMapping {
                 asset: weth_addr,
-                oneinch_address: WETH_ARB.to_string(),
+                oneinch_address: WETH_SETTLEMENT.to_string(),
                 decimals: 18,
             },
         );
 
         DexPriceSourceConfig {
             chain: SupportedChain::Arbitrum,
-            base_token: USDC_ARB.to_string(),
+            base_token: USDC_SETTLEMENT.to_string(),
             base_token_decimals: 6,
             token_mappings: mappings,
             quote_amount: "1000000000".to_string(), // 1000 USDC
@@ -399,7 +399,7 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = DexPriceSourceConfig::default();
-        assert_eq!(config.base_token, USDC_ARB);
+        assert_eq!(config.base_token, USDC_SETTLEMENT);
         assert_eq!(config.base_token_decimals, 6);
         assert_eq!(config.quote_amount, "1000000000");
     }
@@ -408,11 +408,11 @@ mod tests {
     fn test_token_mapping() {
         let mapping = TokenMapping {
             asset: test_address(1),
-            oneinch_address: WETH_ARB.to_string(),
+            oneinch_address: WETH_SETTLEMENT.to_string(),
             decimals: 18,
         };
         assert_eq!(mapping.decimals, 18);
-        assert_eq!(mapping.oneinch_address, WETH_ARB);
+        assert_eq!(mapping.oneinch_address, WETH_SETTLEMENT);
     }
 
     #[test]

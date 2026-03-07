@@ -12,7 +12,7 @@
   "computing_price": "가격 계산 중...",
   "set_min_price": "최소 가격 설정",
   "no_limit": "0 (제한 없음)",
-  "usdc_balance_label": "USDC 잔액 (Arbitrum)",
+  "usdc_balance_label": "USDC 잔액 (Settlement)",
   "sell_more": "추가 매도",
   "estimated_pnl": {
     "title": "예상 손익",
@@ -43,7 +43,7 @@
     "batch": "주문 배치 중...",
     "fill": "거래 체결 중...",
     "record_collateral": "담보 기록 중...",
-    "bridge_to_arb": "USDC를 Arbitrum으로 브릿지 중...",
+    "bridge_to_settlement": "USDC를 Settlement으로 브릿지 중...",
     "complete_sell": "매도 주문 완료 중...",
     "usdc_received": "USDC가 수령되었습니다!"
   },

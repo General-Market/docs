@@ -24,13 +24,13 @@ use super::itp_creation::{
 
 // Story 7.9: Import bridge types for BridgeOrchestrator integration
 use crate::bridge::{
-    build_bridge_arb_to_l3_hash, BridgeError, BridgeOrchestrator, BridgeProposal, BridgeResult,
+    build_bridge_settlement_to_l3_hash, BridgeError, BridgeOrchestrator, BridgeProposal, BridgeResult,
 };
 
-// Story 7.10: Import L3→Arb and custody release types
+// Story 7.10: Import L3→Settlement and custody release types
 use crate::bridge::{
-    build_bridge_l3_to_arb_hash, build_release_to_vault_hash, BridgeL3ToArbProposal,
-    BridgeL3ToArbResult, ReleaseToVaultProposal, ReleaseToVaultResult,
+    build_bridge_l3_to_settlement_hash, build_release_to_vault_hash, BridgeL3ToSettlementProposal,
+    BridgeL3ToSettlementResult, ReleaseToVaultProposal, ReleaseToVaultResult,
 };
 
 // Story 7.3: Import submit order types
@@ -497,8 +497,8 @@ where
 
     /// Set BridgeOrchestrator for handling cross-chain bridge consensus (Story 7.9)
     ///
-    /// When set, the protocol can handle BridgeArbToL3Proposal messages from the leader
-    /// and respond with signed BridgeArbToL3Sign messages.
+    /// When set, the protocol can handle BridgeSettlementToL3Proposal messages from the leader
+    /// and respond with signed BridgeSettlementToL3Sign messages.
     pub async fn set_bridge_orchestrator(&self, orchestrator: Arc<RwLock<BridgeOrchestrator>>) {
         let mut bridge_orch = self.bridge_orchestrator.write().await;
         *bridge_orch = Some(orchestrator);
@@ -1645,8 +1645,8 @@ where
                 self.handle_itp_creation_sign(from, signer_index, nonce, BLSSignature(signature.0))
                     .await?;
             }
-            // Story 7.2/7.9: Bridge Arb→L3 messages - handled via BridgeOrchestrator
-            MessageHandleResult::ProcessBridgeArbToL3Proposal {
+            // Story 7.2/7.9: Bridge Settlement→L3 messages - handled via BridgeOrchestrator
+            MessageHandleResult::ProcessBridgeSettlementToL3Proposal {
                 from,
                 leader_id,
                 order_id,
@@ -1664,10 +1664,10 @@ where
                     user = ?user,
                     amount = %amount,
                     deadline = %deadline,
-                    "Processing BridgeArbToL3Proposal as follower"
+                    "Processing BridgeSettlementToL3Proposal as follower"
                 );
 
-                if let Err(e) = self.handle_bridge_arb_to_l3_proposal(
+                if let Err(e) = self.handle_bridge_settlement_to_l3_proposal(
                     from,
                     leader_id,
                     order_id,
@@ -1685,7 +1685,7 @@ where
                     );
                 }
             }
-            MessageHandleResult::ProcessBridgeArbToL3Sign {
+            MessageHandleResult::ProcessBridgeSettlementToL3Sign {
                 from,
                 signer_index,
                 order_id,
@@ -1696,10 +1696,10 @@ where
                     ?from,
                     signer_index,
                     order_id = %order_id,
-                    "Processing BridgeArbToL3Sign as leader"
+                    "Processing BridgeSettlementToL3Sign as leader"
                 );
 
-                if let Err(e) = self.handle_bridge_arb_to_l3_sign(
+                if let Err(e) = self.handle_bridge_settlement_to_l3_sign(
                     from,
                     signer_index,
                     order_id,
@@ -1717,7 +1717,7 @@ where
             MessageHandleResult::ProcessSubmitOrderForUserProposal {
                 from,
                 leader_id,
-                arb_order_id,
+                settlement_order_id,
                 itp_id,
                 user,
                 amount,
@@ -1729,7 +1729,7 @@ where
                 // Route to handle_submit_order_proposal (follower handler)
                 debug!(
                     ?from,
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     itp_id = ?itp_id,
                     user = ?user,
                     amount = %amount,
@@ -1739,7 +1739,7 @@ where
                     .handle_submit_order_proposal(
                         from,
                         leader_id,
-                        arb_order_id,
+                        settlement_order_id,
                         itp_id,
                         user,
                         amount,
@@ -1752,7 +1752,7 @@ where
                 {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         error = %e,
                         "Failed to handle submit order proposal"
                     );
@@ -1761,28 +1761,28 @@ where
             MessageHandleResult::ProcessSubmitOrderForUserSign {
                 from,
                 signer_index,
-                arb_order_id,
+                settlement_order_id,
                 signature,
             } => {
                 // Route to handle_submit_order_sign (leader handler)
                 debug!(
                     ?from,
                     signer_index,
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     "Received SubmitOrderForUserSign - routing to handler"
                 );
                 if let Err(e) = self
                     .handle_submit_order_sign(
                         from,
                         signer_index,
-                        arb_order_id,
+                        settlement_order_id,
                         BLSSignature(signature.0),
                     )
                     .await
                 {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         error = %e,
                         "Failed to handle submit order signature"
                     );
@@ -1922,7 +1922,7 @@ where
                 }
             }
             // Story 7.10: Bridge L3 to Arb messages - routed to ConsensusProtocol handlers
-            MessageHandleResult::ProcessBridgeL3ToArbProposal {
+            MessageHandleResult::ProcessBridgeL3ToSettlementProposal {
                 from,
                 leader_id,
                 cycle_number,
@@ -1931,17 +1931,17 @@ where
                 destination,
                 leader_signature,
             } => {
-                // Route to handle_bridge_l3_to_arb_proposal (follower handler)
+                // Route to handle_bridge_l3_to_settlement_proposal (follower handler)
                 debug!(
                     ?from,
                     cycle_number,
                     num_orders = order_ids.len(),
                     total_amount = %total_amount,
                     destination = ?destination,
-                    "Received BridgeL3ToArbProposal - routing to handler"
+                    "Received BridgeL3ToSettlementProposal - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_bridge_l3_to_arb_proposal(
+                    .handle_bridge_l3_to_settlement_proposal(
                         from,
                         leader_id,
                         cycle_number,
@@ -1956,32 +1956,32 @@ where
                         code = "INFRA-007",
                         cycle_number,
                         error = %e,
-                        "Failed to handle BridgeL3ToArbProposal"
+                        "Failed to handle BridgeL3ToSettlementProposal"
                     );
                 }
             }
-            MessageHandleResult::ProcessBridgeL3ToArbSign {
+            MessageHandleResult::ProcessBridgeL3ToSettlementSign {
                 from,
                 signer_index,
                 cycle_number,
                 signature,
             } => {
-                // Route to handle_bridge_l3_to_arb_sign (leader handler)
+                // Route to handle_bridge_l3_to_settlement_sign (leader handler)
                 debug!(
                     ?from,
                     signer_index,
                     cycle_number,
-                    "Received BridgeL3ToArbSign - routing to handler"
+                    "Received BridgeL3ToSettlementSign - routing to handler"
                 );
                 if let Err(e) = self
-                    .handle_bridge_l3_to_arb_sign(from, signer_index, cycle_number, signature)
+                    .handle_bridge_l3_to_settlement_sign(from, signer_index, cycle_number, signature)
                     .await
                 {
                     warn!(
                         code = "INFRA-007",
                         cycle_number,
                         error = %e,
-                        "Failed to handle BridgeL3ToArbSign"
+                        "Failed to handle BridgeL3ToSettlementSign"
                     );
                 }
             }
@@ -2605,8 +2605,8 @@ where
                 let config = orch.config();
 
                 let message_hash = build_complete_buy_order_hash(
-                    config.arbitrum_chain_id,
-                    config.arb_custody_address,
+                    config.settlement_chain_id,
+                    config.settlement_custody_address,
                     order_id,
                     vault,
                 );
@@ -3245,12 +3245,12 @@ where
 
     /// Run ITP creation consensus for a pending request
     ///
-    /// This is called when a `CreateItpRequested` event is detected from Arbitrum's
+    /// This is called when a `CreateItpRequested` event is detected from the Settlement chain's
     /// BridgeProxy contract. The leader creates the ITP on L3, then coordinates
     /// BLS signature collection from followers.
     ///
     /// # Arguments
-    /// * `request` - The pending ITP creation request from Arbitrum
+    /// * `request` - The pending ITP creation request from the Settlement chain
     /// * `itp_config` - ITP creation configuration (chain_id, bridge_proxy, timeouts)
     /// * `am_leader` - Whether this node is the current leader
     ///
@@ -3306,7 +3306,7 @@ where
         let weights_hash = compute_weights_hash(&request.weights);
         let assets_hash = compute_assets_hash(&request.assets);
         let message_hash = build_message_hash(
-            itp_config.arbitrum_chain_id,
+            itp_config.settlement_chain_id,
             itp_config.bridge_proxy_address,
             request.admin,
             request.nonce,
@@ -3531,7 +3531,7 @@ where
         let assets_hash = compute_assets_hash(&assets);
         if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
             let message_hash = build_message_hash(
-                itp_config.arbitrum_chain_id,
+                itp_config.settlement_chain_id,
                 itp_config.bridge_proxy_address,
                 admin,
                 nonce,
@@ -3582,7 +3582,7 @@ where
         // Step 3: Sign the same message
         // Use sign_message_hash since message_hash is already keccak256'd
         let message_hash = build_message_hash(
-            itp_config.arbitrum_chain_id,
+            itp_config.settlement_chain_id,
             itp_config.bridge_proxy_address,
             admin,
             nonce,
@@ -3643,22 +3643,22 @@ where
     }
 
     // =========================================================================
-    // Bridge Arb→L3 Phase (Story 7.9)
+    // Bridge Settlement→L3 Phase (Story 7.9)
     // =========================================================================
 
-    /// Run bridge Arb→L3 consensus for a cross-chain order
+    /// Run bridge Settlement→L3 consensus for a cross-chain order
     ///
-    /// This is called when a `CrossChainOrderCreated` event is detected from Arbitrum's
-    /// ArbBridgeCustody contract. The leader creates a bridge proposal, collects BLS
+    /// This is called when a `CrossChainOrderCreated` event is detected from the Settlement chain's
+    /// SettlementBridgeCustody contract. The leader creates a bridge proposal, collects BLS
     /// signatures from followers, and executes the bridge (mint L3Usdc).
     ///
     /// # Arguments
-    /// * `order` - The cross-chain order from Arbitrum
+    /// * `order` - The cross-chain order from the Settlement chain
     /// * `am_leader` - Whether this node is the current leader
     ///
     /// # Returns
     /// `BridgeResult` with aggregated signature on success
-    pub async fn run_bridge_arb_to_l3_phase(
+    pub async fn run_bridge_settlement_to_l3_phase(
         &self,
         order: &crate::chain::CrossChainOrder,
         am_leader: bool,
@@ -3669,7 +3669,7 @@ where
             user = ?order.user,
             amount = %order.amount,
             am_leader,
-            "Starting bridge Arb→L3 consensus"
+            "Starting bridge Settlement→L3 consensus"
         );
 
         // Get bridge orchestrator reference
@@ -3697,17 +3697,17 @@ where
         if am_leader {
             drop(orch); // Release lock before async leader flow
             drop(bridge_orch_guard);
-            self.run_bridge_arb_to_l3_as_leader(order).await
+            self.run_bridge_settlement_to_l3_as_leader(order).await
         } else {
             // Follower just waits - actual signing happens via handle_message
             drop(orch);
             drop(bridge_orch_guard);
-            self.run_bridge_arb_to_l3_as_follower(order).await
+            self.run_bridge_settlement_to_l3_as_follower(order).await
         }
     }
 
     /// Leader: Create bridge proposal and collect signatures
-    async fn run_bridge_arb_to_l3_as_leader(
+    async fn run_bridge_settlement_to_l3_as_leader(
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<BridgeResult, BridgeError> {
@@ -3715,7 +3715,7 @@ where
 
         info!(
             order_id = %order.order_id,
-            "Leader: Creating bridge Arb→L3 proposal"
+            "Leader: Creating bridge Settlement→L3 proposal"
         );
 
         // Get bridge orchestrator
@@ -3728,7 +3728,7 @@ where
 
         // Step 1: Create proposal
         let orch = bridge_orch.read().await;
-        let proposal = orch.propose_bridge_arb_to_l3(order)?;
+        let proposal = orch.propose_bridge_settlement_to_l3(order)?;
         let leader_signature = proposal.leader_signature.clone();
 
         // Step 2: Start signature collection with leader's signature
@@ -3739,7 +3739,7 @@ where
         }
 
         // Step 3: Broadcast proposal to followers via P2P
-        let message = P2PMessage::BridgeArbToL3Proposal {
+        let message = P2PMessage::BridgeSettlementToL3Proposal {
             leader_id: self.config.peer_id,
             order_id: order.order_id,
             itp_id: order.itp_id,
@@ -3803,29 +3803,29 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let tx_hash = orch.execute_bridge_arb_to_l3(&proposal, &result).await?;
+        let tx_hash = orch.execute_bridge_settlement_to_l3(&proposal, &result).await?;
 
         info!(
             order_id = %order.order_id,
             tx_hash = ?tx_hash,
-            "Leader: Bridge Arb→L3 executed successfully"
+            "Leader: Bridge Settlement→L3 executed successfully"
         );
 
         Ok(result)
     }
 
     /// Follower: Wait for proposal and participate via message handler
-    async fn run_bridge_arb_to_l3_as_follower(
+    async fn run_bridge_settlement_to_l3_as_follower(
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<BridgeResult, BridgeError> {
         debug!(
             order_id = %order.order_id,
-            "Follower: Waiting for bridge Arb→L3 proposal"
+            "Follower: Waiting for bridge Settlement→L3 proposal"
         );
 
-        // Followers participate via handle_bridge_arb_to_l3_proposal when they receive
-        // the BridgeArbToL3Proposal message. This method is a placeholder that returns
+        // Followers participate via handle_bridge_settlement_to_l3_proposal when they receive
+        // the BridgeSettlementToL3Proposal message. This method is a placeholder that returns
         // a dummy result - the actual signing happens in handle_message.
         Ok(BridgeResult {
             aggregated_signature: BLSSignature(vec![]),
@@ -3913,12 +3913,12 @@ where
 
     // =========================================================================
     // Story 7.3/7.4: Submit Order and Batch/Fill Phase Methods
-    // These methods chain after bridge Arb→L3 to complete the buy flow
+    // These methods chain after bridge Settlement→L3 to complete the buy flow
     // =========================================================================
 
     /// Run submit order phase - submits bridged order on L3 (Story 7.3)
     ///
-    /// After bridge Arb→L3 completes (order status: BridgedToL3), this submits
+    /// After bridge Settlement→L3 completes (order status: BridgedToL3), this submits
     /// the order to the Index contract on L3 via BLSCustody.execute().
     ///
     /// # Returns
@@ -3988,7 +3988,7 @@ where
         // Step 3: Broadcast proposal
         let message = P2PMessage::SubmitOrderForUserProposal {
             leader_id: self.config.peer_id,
-            arb_order_id: order.order_id,
+            settlement_order_id: order.order_id,
             itp_id: order.itp_id,
             user: order.user,
             amount: order.amount,
@@ -4555,10 +4555,10 @@ where
         })
     }
 
-    /// Handle incoming BridgeArbToL3Proposal message (as follower) - Task 5
+    /// Handle incoming BridgeSettlementToL3Proposal message (as follower) - Task 5
     ///
     /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_bridge_arb_to_l3_proposal(
+    pub async fn handle_bridge_settlement_to_l3_proposal(
         &self,
         from: PeerId,
         leader_id: PeerId,
@@ -4574,7 +4574,7 @@ where
             itp_id = ?itp_id,
             user = ?user,
             amount = %amount,
-            "Follower: Received bridge Arb→L3 proposal"
+            "Follower: Received bridge Settlement→L3 proposal"
         );
 
         // Step 1: Get bridge orchestrator
@@ -4594,14 +4594,14 @@ where
         };
 
         // Step 2: Verify leader's BLS signature
-        // Use verify_message_hash since build_bridge_arb_to_l3_hash returns a pre-hashed H256
+        // Use verify_message_hash since build_bridge_settlement_to_l3_hash returns a pre-hashed H256
         if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
             let orch = bridge_orch.read().await;
             let config = orch.config();
 
             // Rebuild message hash
-            let message_hash = build_bridge_arb_to_l3_hash(
-                config.arbitrum_chain_id,
+            let message_hash = build_bridge_settlement_to_l3_hash(
+                config.settlement_chain_id,
                 order_id,
                 itp_id,
                 user,
@@ -4659,8 +4659,8 @@ where
             amount,
             deadline,
             leader_signature: leader_signature.clone(),
-            message_hash: build_bridge_arb_to_l3_hash(
-                orch.config().arbitrum_chain_id,
+            message_hash: build_bridge_settlement_to_l3_hash(
+                orch.config().settlement_chain_id,
                 order_id,
                 itp_id,
                 user,
@@ -4715,7 +4715,7 @@ where
         drop(bridge_orch_guard);
 
         // Step 5: Send signature back to leader
-        let message = P2PMessage::BridgeArbToL3Sign {
+        let message = P2PMessage::BridgeSettlementToL3Sign {
             signer_id: self.config.peer_id,
             signer_index: self.runtime_config.issuer_registry_index(),
             order_id,
@@ -4731,10 +4731,10 @@ where
         self.p2p.send_to(from, message).await
     }
 
-    /// Handle incoming BridgeArbToL3Sign message (as leader) - Task 6
+    /// Handle incoming BridgeSettlementToL3Sign message (as leader) - Task 6
     ///
     /// Adds the follower's signature to the collection.
-    pub async fn handle_bridge_arb_to_l3_sign(
+    pub async fn handle_bridge_settlement_to_l3_sign(
         &self,
         from: PeerId,
         signer_index: u8,
@@ -4792,13 +4792,13 @@ where
     }
 
     // =========================================================================
-    // Story 7.10: Bridge L3→Arb Phase Methods (Task 1)
+    // Story 7.10: Bridge L3→Settlement Phase Methods (Task 1)
     // =========================================================================
 
-    /// Run bridge L3→Arb consensus phase (Step 5 of vital-test.md)
+    /// Run bridge L3→Settlement consensus phase (Step 5 of vital-test.md)
     ///
-    /// This method runs consensus for bridging USDC from L3 back to Arbitrum
-    /// after batch confirmation. USDC goes to IssuerCustody on Arbitrum.
+    /// This method runs consensus for bridging USDC from L3 back to Settlement
+    /// after batch confirmation. USDC goes to IssuerCustody on Settlement.
     ///
     /// # Arguments
     /// * `cycle_number` - The batch cycle number
@@ -4807,20 +4807,20 @@ where
     /// * `am_leader` - Whether this node is the current leader
     ///
     /// # Returns
-    /// `BridgeL3ToArbResult` with aggregated signature on success
-    pub async fn run_bridge_l3_to_arb_phase(
+    /// `BridgeL3ToSettlementResult` with aggregated signature on success
+    pub async fn run_bridge_l3_to_settlement_phase(
         &self,
         cycle_number: u64,
         order_ids: Vec<U256>,
         total_amount: U256,
         am_leader: bool,
-    ) -> Result<BridgeL3ToArbResult, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementResult, BridgeError> {
         info!(
             cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
             am_leader,
-            "Starting bridge L3→Arb consensus"
+            "Starting bridge L3→Settlement consensus"
         );
 
         // Get bridge orchestrator reference
@@ -4834,40 +4834,40 @@ where
         // Check if already processed (replay protection)
         {
             let orch = bridge_orch.read().await;
-            if orch.is_l3_to_arb_confirmed(cycle_number).await {
+            if orch.is_l3_to_settlement_confirmed(cycle_number).await {
                 debug!(
                     cycle_number,
-                    "L3→Arb bridge already processed for this cycle, skipping"
+                    "L3→Settlement bridge already processed for this cycle, skipping"
                 );
-                return Err(BridgeError::BridgeL3ToArbAlreadyProcessed { cycle_number });
+                return Err(BridgeError::BridgeL3ToSettlementAlreadyProcessed { cycle_number });
             }
         }
 
         if am_leader {
             drop(bridge_orch_guard); // Release lock before async leader flow
-            self.run_bridge_l3_to_arb_as_leader(cycle_number, order_ids, total_amount)
+            self.run_bridge_l3_to_settlement_as_leader(cycle_number, order_ids, total_amount)
                 .await
         } else {
             // Follower just waits - actual signing happens via handle_message
             drop(bridge_orch_guard);
-            self.run_bridge_l3_to_arb_as_follower(cycle_number).await
+            self.run_bridge_l3_to_settlement_as_follower(cycle_number).await
         }
     }
 
-    /// Leader: Create L3→Arb bridge proposal and collect signatures
-    async fn run_bridge_l3_to_arb_as_leader(
+    /// Leader: Create L3→Settlement bridge proposal and collect signatures
+    async fn run_bridge_l3_to_settlement_as_leader(
         &self,
         cycle_number: u64,
         order_ids: Vec<U256>,
         total_amount: U256,
-    ) -> Result<BridgeL3ToArbResult, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementResult, BridgeError> {
         let ref_nonce = self.key_registry.registry_nonce();
 
         info!(
             cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
-            "Leader: Creating bridge L3→Arb proposal"
+            "Leader: Creating bridge L3→Settlement proposal"
         );
 
         // Get bridge orchestrator
@@ -4881,19 +4881,19 @@ where
         // Step 1: Create proposal using non-deprecated method
         let proposal = {
             let orch = bridge_orch.read().await;
-            orch.propose_bridge_l3_to_arb_with_amount(cycle_number, order_ids.clone(), total_amount)?
+            orch.propose_bridge_l3_to_settlement_with_amount(cycle_number, order_ids.clone(), total_amount)?
         };
         let leader_signature = proposal.leader_signature.clone();
 
         // Step 2: Start signature collection with leader's signature
         {
             let orch = bridge_orch.write().await;
-            orch.start_l3_to_arb_signature_collection(cycle_number, leader_signature)
+            orch.start_l3_to_settlement_signature_collection(cycle_number, leader_signature)
                 .await;
         }
 
         // Step 3: Broadcast proposal to followers via P2P
-        let message = P2PMessage::BridgeL3ToArbProposal {
+        let message = P2PMessage::BridgeL3ToSettlementProposal {
             leader_id: self.config.peer_id,
             cycle_number,
             order_ids: proposal.order_ids.clone(),
@@ -4909,12 +4909,12 @@ where
             .broadcast(message)
             .await
             .map_err(|e| ConsensusError::ChainWriterError {
-                reason: format!("Failed to broadcast L3→Arb bridge proposal: {}", e),
+                reason: format!("Failed to broadcast L3→Settlement bridge proposal: {}", e),
             })?;
 
         info!(
             cycle_number,
-            "Leader: L3→Arb bridge proposal broadcast, collecting signatures"
+            "Leader: L3→Settlement bridge proposal broadcast, collecting signatures"
         );
 
         // Step 4: Collect signatures with timeout
@@ -4933,17 +4933,17 @@ where
         drop(bridge_orch_guard);
 
         let result = self
-            .collect_l3_to_arb_signatures(cycle_number, config.sign_timeout_ms, config.min_signatures)
+            .collect_l3_to_settlement_signatures(cycle_number, config.sign_timeout_ms, config.min_signatures)
             .await?;
 
         info!(
             cycle_number,
             signer_count = result.signature_count,
             signer_bitmap = %result.signer_bitmap,
-            "Leader: L3→Arb bridge signature threshold reached"
+            "Leader: L3→Settlement bridge signature threshold reached"
         );
 
-        // Step 5: Execute bridge (transfer USDC to IssuerCustody Arbitrum)
+        // Step 5: Execute bridge (transfer USDC to IssuerCustody Settlement)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
@@ -4952,57 +4952,57 @@ where
         })?;
 
         let orch = bridge_orch.write().await;
-        let tx_hash = orch.execute_bridge_l3_to_arb(&proposal, &result).await?;
+        let tx_hash = orch.execute_bridge_l3_to_settlement(&proposal, &result).await?;
 
         info!(
             cycle_number,
             tx_hash = ?tx_hash,
-            "Leader: Bridge L3→Arb executed successfully"
+            "Leader: Bridge L3→Settlement executed successfully"
         );
 
         Ok(result)
     }
 
-    /// Follower: Wait for L3→Arb proposal and participate via message handler
-    async fn run_bridge_l3_to_arb_as_follower(
+    /// Follower: Wait for L3→Settlement proposal and participate via message handler
+    async fn run_bridge_l3_to_settlement_as_follower(
         &self,
         cycle_number: u64,
-    ) -> Result<BridgeL3ToArbResult, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementResult, BridgeError> {
         debug!(
             cycle_number,
-            "Follower: Waiting for bridge L3→Arb proposal"
+            "Follower: Waiting for bridge L3→Settlement proposal"
         );
 
-        // Followers participate via handle_bridge_l3_to_arb_proposal when they receive
-        // the BridgeL3ToArbProposal message. This method is a placeholder that returns
+        // Followers participate via handle_bridge_l3_to_settlement_proposal when they receive
+        // the BridgeL3ToSettlementProposal message. This method is a placeholder that returns
         // a dummy result - the actual signing happens in handle_message.
-        Ok(BridgeL3ToArbResult {
+        Ok(BridgeL3ToSettlementResult {
             aggregated_signature: BLSSignature(vec![]),
             signer_bitmap: U256::zero(),
             signature_count: 0,
         })
     }
 
-    /// Collect L3→Arb bridge signatures from followers (Task 1.4)
+    /// Collect L3→Settlement bridge signatures from followers (Task 1.4)
     ///
     /// Polls the BridgeOrchestrator's signature collector until threshold is reached
     /// or timeout occurs.
-    async fn collect_l3_to_arb_signatures(
+    async fn collect_l3_to_settlement_signatures(
         &self,
         cycle_number: u64,
         timeout_ms: u64,
         _min_signatures: usize,
-    ) -> Result<BridgeL3ToArbResult, BridgeError> {
+    ) -> Result<BridgeL3ToSettlementResult, BridgeError> {
         collect_sigs_loop!(self, timeout_ms, |orch| {
-            check: orch.check_l3_to_arb_threshold_reached(cycle_number).await,
-            count: orch.get_l3_to_arb_signature_count(cycle_number).await.unwrap_or(0),
+            check: orch.check_l3_to_settlement_threshold_reached(cycle_number).await,
+            count: orch.get_l3_to_settlement_signature_count(cycle_number).await.unwrap_or(0),
         })
     }
 
-    /// Handle incoming BridgeL3ToArbProposal message (as follower) - Task 2
+    /// Handle incoming BridgeL3ToSettlementProposal message (as follower) - Task 2
     ///
     /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_bridge_l3_to_arb_proposal(
+    pub async fn handle_bridge_l3_to_settlement_proposal(
         &self,
         from: PeerId,
         leader_id: PeerId,
@@ -5017,7 +5017,7 @@ where
             order_count = order_ids.len(),
             total_amount = %total_amount,
             destination = ?destination,
-            "Follower: Received bridge L3→Arb proposal"
+            "Follower: Received bridge L3→Settlement proposal"
         );
 
         // Step 1: Get bridge orchestrator
@@ -5040,7 +5040,7 @@ where
             let config = orch.config();
 
             // Rebuild message hash
-            let message_hash = build_bridge_l3_to_arb_hash(
+            let message_hash = build_bridge_l3_to_settlement_hash(
                 config.l3_chain_id,
                 cycle_number,
                 &order_ids,
@@ -5054,16 +5054,16 @@ where
                 .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
             {
                 Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for L3→Arb proposal");
+                    debug!(cycle_number, "Leader signature verified for L3→Settlement proposal");
                 }
                 Ok(false) => {
                     warn!(
                         code = "INFRA-007",
                         cycle_number,
-                        "Invalid leader signature on L3→Arb bridge proposal"
+                        "Invalid leader signature on L3→Settlement bridge proposal"
                     );
                     return Err(Error::BlsVerification(
-                        "Invalid leader signature on L3→Arb bridge proposal".to_string(),
+                        "Invalid leader signature on L3→Settlement bridge proposal".to_string(),
                     ));
                 }
                 Err(e) => {
@@ -5071,7 +5071,7 @@ where
                         code = "INFRA-007",
                         cycle_number,
                         error = %e,
-                        "Failed to verify leader signature for L3→Arb proposal"
+                        "Failed to verify leader signature for L3→Settlement proposal"
                     );
                     return Err(e);
                 }
@@ -5088,17 +5088,17 @@ where
             ));
         }
 
-        // Step 3: Reconstruct BridgeL3ToArbProposal and validate
+        // Step 3: Reconstruct BridgeL3ToSettlementProposal and validate
         let proposal = {
             let orch = bridge_orch.read().await;
-            BridgeL3ToArbProposal {
+            BridgeL3ToSettlementProposal {
                 leader_id,
                 cycle_number,
                 order_ids: order_ids.clone(),
                 total_amount,
                 destination,
                 leader_signature: leader_signature.clone(),
-                message_hash: build_bridge_l3_to_arb_hash(
+                message_hash: build_bridge_l3_to_settlement_hash(
                     orch.config().l3_chain_id,
                     cycle_number,
                     &order_ids,
@@ -5111,15 +5111,15 @@ where
         // Validate proposal against on-chain data
         {
             let orch = bridge_orch.read().await;
-            match orch.validate_bridge_l3_to_arb_proposal(&proposal).await {
+            match orch.validate_bridge_l3_to_settlement_proposal(&proposal).await {
                 Ok(true) => {
-                    debug!(cycle_number, "L3→Arb bridge proposal validation passed");
+                    debug!(cycle_number, "L3→Settlement bridge proposal validation passed");
                 }
                 Ok(false) => {
                     warn!(
                         code = "INFRA-007",
                         cycle_number,
-                        "L3→Arb bridge proposal validation failed"
+                        "L3→Settlement bridge proposal validation failed"
                     );
                     return Ok(()); // Don't sign invalid proposals
                 }
@@ -5128,7 +5128,7 @@ where
                         code = "INFRA-007",
                         cycle_number,
                         error = %e,
-                        "L3→Arb bridge proposal validation error"
+                        "L3→Settlement bridge proposal validation error"
                     );
                     return Ok(()); // Don't sign on validation errors
                 }
@@ -5138,17 +5138,17 @@ where
         // Step 4: Sign the proposal
         let signature = {
             let orch = bridge_orch.read().await;
-            match orch.sign_bridge_l3_to_arb_proposal(&proposal) {
+            match orch.sign_bridge_l3_to_settlement_proposal(&proposal) {
                 Ok(sig) => sig,
                 Err(e) => {
                     warn!(
                         code = "INFRA-007",
                         cycle_number,
                         error = %e,
-                        "Failed to sign L3→Arb bridge proposal"
+                        "Failed to sign L3→Settlement bridge proposal"
                     );
                     return Err(Error::BlsVerification(format!(
-                        "Failed to sign L3→Arb bridge proposal: {}",
+                        "Failed to sign L3→Settlement bridge proposal: {}",
                         e
                     )));
                 }
@@ -5159,7 +5159,7 @@ where
         drop(bridge_orch_guard);
 
         // Step 5: Send signature back to leader
-        let message = P2PMessage::BridgeL3ToArbSign {
+        let message = P2PMessage::BridgeL3ToSettlementSign {
             signer_id: self.config.peer_id,
             signer_index: self.runtime_config.issuer_registry_index(),
             cycle_number,
@@ -5169,16 +5169,16 @@ where
         debug!(
             cycle_number,
             signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending L3→Arb bridge signature to leader"
+            "Follower: Sending L3→Settlement bridge signature to leader"
         );
 
         self.p2p.send_to(from, message).await
     }
 
-    /// Handle incoming BridgeL3ToArbSign message (as leader) - Task 3
+    /// Handle incoming BridgeL3ToSettlementSign message (as leader) - Task 3
     ///
     /// Adds the follower's signature to the collection.
-    pub async fn handle_bridge_l3_to_arb_sign(
+    pub async fn handle_bridge_l3_to_settlement_sign(
         &self,
         from: PeerId,
         signer_index: u8,
@@ -5189,7 +5189,7 @@ where
             ?from,
             signer_index,
             cycle_number,
-            "Leader: Received L3→Arb bridge signature"
+            "Leader: Received L3→Settlement bridge signature"
         );
 
         // Get bridge orchestrator
@@ -5199,7 +5199,7 @@ where
             None => {
                 warn!(
                     cycle_number,
-                    "BridgeOrchestrator not configured, ignoring L3→Arb signature"
+                    "BridgeOrchestrator not configured, ignoring L3→Settlement signature"
                 );
                 return Ok(());
             }
@@ -5208,21 +5208,21 @@ where
         // Add signature to collector
         let orch = bridge_orch.write().await;
         match orch
-            .add_l3_to_arb_follower_signature(cycle_number, signer_index, signature)
+            .add_l3_to_settlement_follower_signature(cycle_number, signer_index, signature)
             .await
         {
             Ok(Some(result)) => {
                 info!(
                     cycle_number,
                     signature_count = result.signature_count,
-                    "L3→Arb bridge signature threshold reached via add_l3_to_arb_follower_signature"
+                    "L3→Settlement bridge signature threshold reached via add_l3_to_settlement_follower_signature"
                 );
             }
             Ok(None) => {
                 debug!(
                     cycle_number,
                     signer_index,
-                    "L3→Arb bridge signature added, threshold not yet reached"
+                    "L3→Settlement bridge signature added, threshold not yet reached"
                 );
             }
             Err(e) => {
@@ -5230,7 +5230,7 @@ where
                     code = "INFRA-007",
                     cycle_number,
                     error = %e,
-                    "Failed to add L3→Arb bridge signature"
+                    "Failed to add L3→Settlement bridge signature"
                 );
             }
         }
@@ -5244,7 +5244,7 @@ where
 
     /// Run custody release to vault consensus phase (Step 6 of vital-test.md)
     ///
-    /// This method runs consensus for releasing USDC from IssuerCustody on Arbitrum
+    /// This method runs consensus for releasing USDC from IssuerCustody on Settlement
     /// to MockBitgetVault for AP trading.
     ///
     /// # Arguments
@@ -5490,8 +5490,8 @@ where
 
             // Rebuild message hash (6 parameters including custody_address)
             let message_hash = build_release_to_vault_hash(
-                config.arbitrum_chain_id,
-                config.issuer_custody_arb, // custody_address from config
+                config.settlement_chain_id,
+                config.issuer_custody_settlement, // custody_address from config
                 cycle_number,
                 &order_ids,
                 total_amount,
@@ -5550,8 +5550,8 @@ where
                 vault_address,
                 leader_signature: leader_signature.clone(),
                 message_hash: build_release_to_vault_hash(
-                    config.arbitrum_chain_id,
-                    config.issuer_custody_arb,
+                    config.settlement_chain_id,
+                    config.issuer_custody_settlement,
                     cycle_number,
                     &order_ids,
                     total_amount,
@@ -5701,7 +5701,7 @@ where
         &self,
         from: PeerId,
         leader_id: PeerId,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         itp_id: H256,
         user: Address,
         amount: U256,
@@ -5711,7 +5711,7 @@ where
         leader_signature: BLSSignature,
     ) -> Result<(), Error> {
         info!(
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             itp_id = ?itp_id,
             user = ?user,
             amount = %amount,
@@ -5725,7 +5725,7 @@ where
             None => {
                 warn!(
                     code = "INFRA-007",
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
                 );
                 return Ok(());
@@ -5740,7 +5740,7 @@ where
             // Rebuild message hash using the same parameters
             let message_hash = build_submit_order_hash(
                 config.l3_chain_id,
-                arb_order_id,
+                settlement_order_id,
                 itp_id,
                 user,
                 amount,
@@ -5755,12 +5755,12 @@ where
                 .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
             {
                 Ok(true) => {
-                    debug!(arb_order_id = %arb_order_id, "Leader signature verified for submit order proposal");
+                    debug!(settlement_order_id = %settlement_order_id, "Leader signature verified for submit order proposal");
                 }
                 Ok(false) => {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         "Invalid leader signature on submit order proposal"
                     );
                     return Err(Error::BlsVerification(
@@ -5770,7 +5770,7 @@ where
                 Err(e) => {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         error = %e,
                         "Failed to verify leader signature for submit order proposal"
                     );
@@ -5780,7 +5780,7 @@ where
         } else {
             warn!(
                 code = "INFRA-007",
-                arb_order_id = %arb_order_id,
+                settlement_order_id = %settlement_order_id,
                 ?leader_id,
                 "Leader public key not found in registry, REJECTING proposal"
             );
@@ -5795,7 +5795,7 @@ where
             let config = orch.config();
             SubmitOrderProposal {
                 leader_id,
-                arb_order_id,
+                settlement_order_id,
                 itp_id,
                 user,
                 amount,
@@ -5805,7 +5805,7 @@ where
                 leader_signature: leader_signature.clone(),
                 message_hash: build_submit_order_hash(
                     config.l3_chain_id,
-                    arb_order_id,
+                    settlement_order_id,
                     itp_id,
                     user,
                     amount,
@@ -5821,12 +5821,12 @@ where
             let orch = bridge_orch.read().await;
             match orch.validate_submit_order_proposal(&proposal).await {
                 Ok(true) => {
-                    debug!(arb_order_id = %arb_order_id, "Submit order proposal validation passed");
+                    debug!(settlement_order_id = %settlement_order_id, "Submit order proposal validation passed");
                 }
                 Ok(false) => {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         "Submit order proposal validation failed"
                     );
                     return Ok(()); // Don't sign invalid proposals
@@ -5834,7 +5834,7 @@ where
                 Err(e) => {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         error = %e,
                         "Submit order proposal validation error"
                     );
@@ -5851,7 +5851,7 @@ where
                 Err(e) => {
                     warn!(
                         code = "INFRA-007",
-                        arb_order_id = %arb_order_id,
+                        settlement_order_id = %settlement_order_id,
                         error = %e,
                         "Failed to sign submit order proposal"
                     );
@@ -5870,12 +5870,12 @@ where
         let message = P2PMessage::SubmitOrderForUserSign {
             signer_id: self.config.peer_id,
             signer_index: self.runtime_config.issuer_registry_index(),
-            arb_order_id,
+            settlement_order_id,
             signature: signature.clone(),
         };
 
         debug!(
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             signer_index = self.runtime_config.issuer_registry_index(),
             "Follower: Sending submit order signature to leader"
         );
@@ -5890,13 +5890,13 @@ where
         &self,
         from: PeerId,
         signer_index: u8,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         signature: BLSSignature,
     ) -> Result<(), Error> {
         debug!(
             ?from,
             signer_index,
-            arb_order_id = %arb_order_id,
+            settlement_order_id = %settlement_order_id,
             "Leader: Received submit order signature"
         );
 
@@ -5906,7 +5906,7 @@ where
             Some(orch) => orch,
             None => {
                 warn!(
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     "BridgeOrchestrator not configured, ignoring submit order signature"
                 );
                 return Ok(());
@@ -5916,19 +5916,19 @@ where
         // Add signature to collector
         let orch = bridge_orch.write().await;
         match orch
-            .add_submit_order_follower_signature(arb_order_id, signer_index, signature)
+            .add_submit_order_follower_signature(settlement_order_id, signer_index, signature)
             .await
         {
             Ok(Some(result)) => {
                 info!(
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     signature_count = result.signature_count,
                     "Submit order signature threshold reached via add_submit_order_follower_signature"
                 );
             }
             Ok(None) => {
                 debug!(
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     signer_index,
                     "Submit order signature added, threshold not yet reached"
                 );
@@ -5936,7 +5936,7 @@ where
             Err(e) => {
                 warn!(
                     code = "INFRA-007",
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     error = %e,
                     "Failed to add submit order signature"
                 );
@@ -7946,7 +7946,7 @@ where
     /// Called by the main loop when L3 nonce > mirror nonce. The caller is
     /// responsible for reading on-chain state and submitting the final tx.
     ///
-    /// Returns the sync calldata for the caller to submit to Arbitrum.
+    /// Returns the sync calldata for the caller to submit to Settlement.
     pub async fn run_mirror_sync_consensus(
         &self,
         l3_nonce: u64,
@@ -7955,13 +7955,13 @@ where
         active_bitmask: U256,
         active_count: u64,
         threshold: u64,
-        arb_chain_id: u64,
+        settlement_chain_id: u64,
         mirror_registry_address: Address,
         reference_nonce: u64,
     ) -> Result<Vec<u8>, Error> {
         // Step 1: Compute sync hash and sign
         let message_hash = build_mirror_registry_sync_hash(
-            arb_chain_id,
+            settlement_chain_id,
             mirror_registry_address,
             l3_nonce,
             &issuer_pubkeys,
@@ -7995,7 +7995,7 @@ where
             active_bitmask,
             active_count,
             threshold,
-            chain_id: arb_chain_id,
+            chain_id: settlement_chain_id,
             mirror_address: mirror_registry_address,
             reference_nonce,
             leader_signature: leader_sig,
@@ -8269,7 +8269,7 @@ where
             let config = orch.config();
 
             let message_hash = build_sell_bridge_hash(
-                config.arbitrum_chain_id,
+                config.settlement_chain_id,
                 order_id,
                 itp_id,
                 user,
@@ -8318,7 +8318,7 @@ where
                 amount,
                 leader_signature: leader_signature.clone(),
                 message_hash: build_sell_bridge_hash(
-                    config.arbitrum_chain_id, order_id, itp_id, user, bridged_itp_address, amount,
+                    config.settlement_chain_id, order_id, itp_id, user, bridged_itp_address, amount,
                 ),
             }
         };
@@ -8570,8 +8570,8 @@ where
             let config = orch.config();
 
             let message_hash = build_complete_sell_order_consensus_hash(
-                config.arbitrum_chain_id,
-                config.arb_custody_address,
+                config.settlement_chain_id,
+                config.settlement_custody_address,
                 order_id,
                 usdc_proceeds,
                 vault,
@@ -8615,7 +8615,7 @@ where
                 usdc_proceeds,
                 leader_signature: leader_signature.clone(),
                 message_hash: build_complete_sell_order_consensus_hash(
-                    config.arbitrum_chain_id, config.arb_custody_address, order_id, usdc_proceeds, vault,
+                    config.settlement_chain_id, config.settlement_custody_address, order_id, usdc_proceeds, vault,
                 ),
             }
         };
@@ -9151,7 +9151,7 @@ where
             let config = orch.config();
 
             let message_hash = build_mint_bridged_shares_hash(
-                config.arbitrum_chain_id,
+                config.settlement_chain_id,
                 config.bridge_proxy,
                 itp_id,
                 user,
@@ -9189,7 +9189,7 @@ where
         let config = orch.config();
 
         let message_hash = build_mint_bridged_shares_hash(
-            config.arbitrum_chain_id,
+            config.settlement_chain_id,
             config.bridge_proxy,
             itp_id,
             user,
@@ -9464,16 +9464,16 @@ mod tests {
     }
 
     // =========================================================================
-    // Story 7.10: L3→Arb and Custody Release Tests
+    // Story 7.10: L3→Settlement and Custody Release Tests
     // =========================================================================
 
     #[tokio::test]
-    async fn test_run_bridge_l3_to_arb_phase_no_orchestrator() {
+    async fn test_run_bridge_l3_to_settlement_phase_no_orchestrator() {
         let (protocol, _, _) = create_test_protocol(0, 3).await;
 
         // Without setting a BridgeOrchestrator, the method should fail
         let result = protocol
-            .run_bridge_l3_to_arb_phase(
+            .run_bridge_l3_to_settlement_phase(
                 1,                            // cycle_number
                 vec![U256::from(1)],          // order_ids
                 U256::from(1000),             // total_amount
@@ -9514,12 +9514,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_bridge_l3_to_arb_proposal_no_orchestrator() {
+    async fn test_handle_bridge_l3_to_settlement_proposal_no_orchestrator() {
         let (protocol, _, _) = create_test_protocol(0, 3).await;
 
         // Without orchestrator, handler should return Ok(()) and log warning
         let result = protocol
-            .handle_bridge_l3_to_arb_proposal(
+            .handle_bridge_l3_to_settlement_proposal(
                 test_peer_id(1),              // from
                 test_peer_id(1),              // leader_id
                 1,                            // cycle_number
@@ -9534,12 +9534,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_bridge_l3_to_arb_sign_no_orchestrator() {
+    async fn test_handle_bridge_l3_to_settlement_sign_no_orchestrator() {
         let (protocol, _, _) = create_test_protocol(0, 3).await;
 
         // Without orchestrator, handler should return Ok(()) and log warning
         let result = protocol
-            .handle_bridge_l3_to_arb_sign(
+            .handle_bridge_l3_to_settlement_sign(
                 test_peer_id(1),              // from
                 1,                            // signer_index
                 1,                            // cycle_number
@@ -9588,14 +9588,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_run_bridge_l3_to_arb_phase_orchestrator_check_before_role_branch() {
+    async fn test_run_bridge_l3_to_settlement_phase_orchestrator_check_before_role_branch() {
         let (protocol, _, _) = create_test_protocol(1, 3).await;
 
         // Tests that orchestrator validation happens BEFORE the leader/follower branch.
         // Without orchestrator configured, the method fails early regardless of role.
         // This ensures the orchestrator guard is checked first.
         let result = protocol
-            .run_bridge_l3_to_arb_phase(
+            .run_bridge_l3_to_settlement_phase(
                 1,                            // cycle_number
                 vec![U256::from(1)],          // order_ids
                 U256::from(1000),             // total_amount
@@ -9640,6 +9640,6 @@ mod tests {
 
     // Integration tests would require more setup with multiple nodes,
     // BridgeOrchestrator, and proper message passing, which is covered
-    // in issuer/tests/bridge_l3_to_arb_integration.rs and
+    // in issuer/tests/bridge_l3_to_settlement_integration.rs and
     // issuer/tests/custody_release_integration.rs
 }

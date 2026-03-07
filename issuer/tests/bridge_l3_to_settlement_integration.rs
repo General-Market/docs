@@ -1,11 +1,11 @@
-//! Integration tests for Story 7.5: Bridge USDC L3 to Arbitrum
+//! Integration tests for Story 7.5: Bridge USDC L3 to Settlement
 //!
-//! Tests the full L3→Arb bridge flow with BLS consensus:
-//! 1. Leader proposes bridge L3→Arb with cycle_number, order_ids, and total_amount
+//! Tests the full L3→Settlement bridge flow with BLS consensus:
+//! 1. Leader proposes bridge L3→Settlement with cycle_number, order_ids, and total_amount
 //! 2. Followers validate proposal (orders must be in Batched status)
 //! 3. Followers sign proposal
 //! 4. Threshold reached → signatures aggregated
-//! 5. Execute bridge simulation (mint ArbUSDC to IssuerCustody Arb)
+//! 5. Execute bridge simulation (mint SettlementUSDC to IssuerCustody Settlement)
 //!
 //! This is Step 5 of the vital-test.md "Buy ITP via Bridge" flow.
 
@@ -21,8 +21,8 @@ use common::traits::BLSSigner;
 use common::types::{BLSSignature, PeerId};
 
 use issuer::bridge::{
-    build_bridge_l3_to_arb_hash, BridgeConfig, BridgeError, BridgeL3ToArbProposal,
-    BridgeL3ToArbResult, BridgeOrchestrator, BridgeOrderStatus, CrossChainOrderReader,
+    build_bridge_l3_to_settlement_hash, BridgeConfig, BridgeError, BridgeL3ToSettlementProposal,
+    BridgeL3ToSettlementResult, BridgeOrchestrator, BridgeOrderStatus, CrossChainOrderReader,
 };
 use issuer::chain::CrossChainOrderData;
 
@@ -81,16 +81,16 @@ fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
         issuer_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
-        arb_custody_address: Address::from([0x33; 20]),
-        arbitrum_chain_id: 42161,
+        settlement_custody_address: Address::from([0x33; 20]),
+        settlement_chain_id: 42161,
         l3_chain_id: 111222333,
         index_address: Address::from([0x44; 20]),
         min_signatures: 2, // 2-of-3 threshold
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
-        // Story 7.5: Bridge L3→Arb config
-        issuer_custody_arb: Address::from([0x55; 20]),
-        arb_usdc_address: Address::from([0x66; 20]),
+        // Story 7.5: Bridge L3→Settlement config
+        issuer_custody_settlement: Address::from([0x55; 20]),
+        settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),
         signer_address: Address::from([0x88; 20]),
@@ -116,8 +116,8 @@ fn test_order_data(order_id: U256, amount: U256) -> CrossChainOrderData {
 // ============================================================================
 
 #[test]
-fn test_build_bridge_l3_to_arb_hash_is_deterministic() {
-    let hash1 = build_bridge_l3_to_arb_hash(
+fn test_build_bridge_l3_to_settlement_hash_is_deterministic() {
+    let hash1 = build_bridge_l3_to_settlement_hash(
         111222333,
         42,
         &[U256::from(1), U256::from(2), U256::from(3)],
@@ -125,7 +125,7 @@ fn test_build_bridge_l3_to_arb_hash_is_deterministic() {
         Address::from([0x55; 20]),
     );
 
-    let hash2 = build_bridge_l3_to_arb_hash(
+    let hash2 = build_bridge_l3_to_settlement_hash(
         111222333,
         42,
         &[U256::from(1), U256::from(2), U256::from(3)],
@@ -137,8 +137,8 @@ fn test_build_bridge_l3_to_arb_hash_is_deterministic() {
 }
 
 #[test]
-fn test_build_bridge_l3_to_arb_hash_order_ids_matter() {
-    let hash1 = build_bridge_l3_to_arb_hash(
+fn test_build_bridge_l3_to_settlement_hash_order_ids_matter() {
+    let hash1 = build_bridge_l3_to_settlement_hash(
         111222333,
         42,
         &[U256::from(1), U256::from(2)],
@@ -147,7 +147,7 @@ fn test_build_bridge_l3_to_arb_hash_order_ids_matter() {
     );
 
     // Same amount but different order
-    let hash2 = build_bridge_l3_to_arb_hash(
+    let hash2 = build_bridge_l3_to_settlement_hash(
         111222333,
         42,
         &[U256::from(2), U256::from(1)], // Different order
@@ -163,7 +163,7 @@ fn test_build_bridge_l3_to_arb_hash_order_ids_matter() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_leader_creates_l3_to_arb_proposal_with_amount() {
+async fn test_leader_creates_l3_to_settlement_proposal_with_amount() {
     let config = test_bridge_config();
     let mock_reader = Arc::new(MockCrossChainOrderReader::new());
 
@@ -199,7 +199,7 @@ async fn test_leader_creates_l3_to_arb_proposal_with_amount() {
 
     // Create proposal with explicit amount
     let proposal = orchestrator
-        .propose_bridge_l3_to_arb_with_amount(cycle_number, order_ids.clone(), total_amount)
+        .propose_bridge_l3_to_settlement_with_amount(cycle_number, order_ids.clone(), total_amount)
         .unwrap();
 
     // Verify proposal fields
@@ -207,19 +207,19 @@ async fn test_leader_creates_l3_to_arb_proposal_with_amount() {
     assert_eq!(proposal.cycle_number, cycle_number);
     assert_eq!(proposal.order_ids, order_ids);
     assert_eq!(proposal.total_amount, total_amount);
-    assert_eq!(proposal.destination, config.issuer_custody_arb);
+    assert_eq!(proposal.destination, config.issuer_custody_settlement);
 
     // Verify signature is not empty
     assert!(!proposal.leader_signature.0.is_empty());
     assert_eq!(proposal.leader_signature.0.len(), 64);
 
     // Verify message hash matches recomputed
-    let expected_hash = build_bridge_l3_to_arb_hash(
+    let expected_hash = build_bridge_l3_to_settlement_hash(
         config.l3_chain_id,
         cycle_number,
         &order_ids,
         total_amount,
-        config.issuer_custody_arb,
+        config.issuer_custody_settlement,
     );
     assert_eq!(proposal.message_hash, expected_hash);
 }
@@ -229,7 +229,7 @@ async fn test_leader_creates_l3_to_arb_proposal_with_amount() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_follower_validates_l3_to_arb_proposal() {
+async fn test_follower_validates_l3_to_settlement_proposal() {
     let config = test_bridge_config();
 
     // Setup leader
@@ -253,7 +253,7 @@ async fn test_follower_validates_l3_to_arb_proposal() {
 
     // Create proposal
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Setup follower
@@ -274,7 +274,7 @@ async fn test_follower_validates_l3_to_arb_proposal() {
     follower.set_order_status(order_id, BridgeOrderStatus::Batched).await;
 
     // Validate proposal
-    let is_valid = follower.validate_bridge_l3_to_arb_proposal(&proposal).await.unwrap();
+    let is_valid = follower.validate_bridge_l3_to_settlement_proposal(&proposal).await.unwrap();
     assert!(is_valid, "Follower should validate proposal with Batched orders");
 }
 
@@ -306,7 +306,7 @@ async fn test_follower_rejects_proposal_when_order_not_batched() {
     leader.set_order_status(order_id, BridgeOrderStatus::Batched).await;
 
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Setup follower with order in WRONG status (SubmittedOnL3, not Batched)
@@ -327,7 +327,7 @@ async fn test_follower_rejects_proposal_when_order_not_batched() {
     follower.set_order_status(order_id, BridgeOrderStatus::SubmittedOnL3).await;
 
     // Validation should fail
-    let is_valid = follower.validate_bridge_l3_to_arb_proposal(&proposal).await.unwrap();
+    let is_valid = follower.validate_bridge_l3_to_settlement_proposal(&proposal).await.unwrap();
     assert!(!is_valid, "Follower should reject proposal when order not in Batched status");
 }
 
@@ -336,7 +336,7 @@ async fn test_follower_rejects_proposal_when_order_not_batched() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_follower_signs_l3_to_arb_proposal() {
+async fn test_follower_signs_l3_to_settlement_proposal() {
     let config = test_bridge_config();
 
     // Setup leader
@@ -357,7 +357,7 @@ async fn test_follower_signs_l3_to_arb_proposal() {
 
     leader.set_order_status(order_id, BridgeOrderStatus::Batched).await;
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Setup follower
@@ -378,7 +378,7 @@ async fn test_follower_signs_l3_to_arb_proposal() {
     follower.set_order_status(order_id, BridgeOrderStatus::Batched).await;
 
     // Sign proposal
-    let signature = follower.sign_bridge_l3_to_arb_proposal(&proposal).unwrap();
+    let signature = follower.sign_bridge_l3_to_settlement_proposal(&proposal).unwrap();
 
     // Verify signature is valid
     assert!(!signature.0.is_empty());
@@ -419,12 +419,12 @@ async fn test_signature_aggregation_threshold_reached() {
 
     leader.set_order_status(order_id, BridgeOrderStatus::Batched).await;
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Start signature collection
     leader
-        .start_l3_to_arb_signature_collection(proposal.cycle_number, proposal.leader_signature.clone())
+        .start_l3_to_settlement_signature_collection(proposal.cycle_number, proposal.leader_signature.clone())
         .await;
 
     // Setup follower
@@ -443,11 +443,11 @@ async fn test_signature_aggregation_threshold_reached() {
     );
 
     follower.set_order_status(order_id, BridgeOrderStatus::Batched).await;
-    let follower_sig = follower.sign_bridge_l3_to_arb_proposal(&proposal).unwrap();
+    let follower_sig = follower.sign_bridge_l3_to_settlement_proposal(&proposal).unwrap();
 
     // Add follower signature
     let result = leader
-        .add_l3_to_arb_follower_signature(proposal.cycle_number, 1, follower_sig)
+        .add_l3_to_settlement_follower_signature(proposal.cycle_number, 1, follower_sig)
         .await
         .unwrap();
 
@@ -460,11 +460,11 @@ async fn test_signature_aggregation_threshold_reached() {
 }
 
 // ============================================================================
-// Test 6: Execute bridge simulation (mint ArbUSDC)
+// Test 6: Execute bridge simulation (mint SettlementUSDC)
 // ============================================================================
 
 #[tokio::test]
-async fn test_execute_bridge_l3_to_arb_simulation() {
+async fn test_execute_bridge_l3_to_settlement_simulation() {
     let config = test_bridge_config();
 
     // Setup leader
@@ -486,28 +486,28 @@ async fn test_execute_bridge_l3_to_arb_simulation() {
 
     leader.set_order_status(order_id, BridgeOrderStatus::Batched).await;
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Create a result with aggregated signature
-    let result = BridgeL3ToArbResult {
+    let result = BridgeL3ToSettlementResult {
         aggregated_signature: proposal.leader_signature.clone(),
         signer_bitmap: U256::from(3),
         signature_count: 2,
     };
 
     // Execute bridge
-    let tx_hash = leader.execute_bridge_l3_to_arb(&proposal, &result).await.unwrap();
+    let tx_hash = leader.execute_bridge_l3_to_settlement(&proposal, &result).await.unwrap();
 
     // Verify tx_hash is set
     assert_ne!(tx_hash, H256::zero());
 
-    // Verify order status updated to BridgedBackToArb
+    // Verify order status updated to BridgedBackToSettlement
     let status = leader.get_order_status(&order_id).await;
-    assert_eq!(status, Some(BridgeOrderStatus::BridgedBackToArb));
+    assert_eq!(status, Some(BridgeOrderStatus::BridgedBackToSettlement));
 
     // Verify cycle is marked as confirmed
-    assert!(leader.is_l3_to_arb_confirmed(42).await);
+    assert!(leader.is_l3_to_settlement_confirmed(42).await);
 }
 
 // ============================================================================
@@ -535,24 +535,24 @@ async fn test_duplicate_cycle_execution_rejected() {
 
     leader.set_order_status(order_id, BridgeOrderStatus::Batched).await;
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
-    let result = BridgeL3ToArbResult {
+    let result = BridgeL3ToSettlementResult {
         aggregated_signature: proposal.leader_signature.clone(),
         signer_bitmap: U256::from(3),
         signature_count: 2,
     };
 
     // First execution should succeed
-    let tx_hash = leader.execute_bridge_l3_to_arb(&proposal, &result).await.unwrap();
+    let tx_hash = leader.execute_bridge_l3_to_settlement(&proposal, &result).await.unwrap();
     assert_ne!(tx_hash, H256::zero());
 
     // Second execution should fail
-    let err = leader.execute_bridge_l3_to_arb(&proposal, &result).await;
+    let err = leader.execute_bridge_l3_to_settlement(&proposal, &result).await;
     assert!(matches!(
         err,
-        Err(BridgeError::BridgeL3ToArbAlreadyProcessed { cycle_number: 42 })
+        Err(BridgeError::BridgeL3ToSettlementAlreadyProcessed { cycle_number: 42 })
     ));
 }
 
@@ -561,7 +561,7 @@ async fn test_duplicate_cycle_execution_rejected() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_full_3_node_l3_to_arb_consensus() {
+async fn test_full_3_node_l3_to_settlement_consensus() {
     let config = test_bridge_config();
 
     // Setup 3 orders to bridge back
@@ -604,31 +604,31 @@ async fn test_full_3_node_l3_to_arb_consensus() {
 
     // 1. Leader creates proposal
     let proposal = leader
-        .propose_bridge_l3_to_arb_with_amount(cycle_number, order_ids.clone(), total_amount)
+        .propose_bridge_l3_to_settlement_with_amount(cycle_number, order_ids.clone(), total_amount)
         .unwrap();
 
     assert_eq!(proposal.order_ids, order_ids);
     assert_eq!(proposal.total_amount, total_amount);
-    assert_eq!(proposal.destination, config.issuer_custody_arb);
+    assert_eq!(proposal.destination, config.issuer_custody_settlement);
 
     // 2. Leader starts signature collection
     leader
-        .start_l3_to_arb_signature_collection(cycle_number, proposal.leader_signature.clone())
+        .start_l3_to_settlement_signature_collection(cycle_number, proposal.leader_signature.clone())
         .await;
 
     // 3. Followers validate and sign
-    let mut final_result: Option<BridgeL3ToArbResult> = None;
+    let mut final_result: Option<BridgeL3ToSettlementResult> = None;
     for (i, follower) in followers.iter().enumerate() {
         // Validate
-        let is_valid = follower.validate_bridge_l3_to_arb_proposal(&proposal).await.unwrap();
+        let is_valid = follower.validate_bridge_l3_to_settlement_proposal(&proposal).await.unwrap();
         assert!(is_valid, "Follower {} should validate proposal", i + 1);
 
         // Sign
-        let sig = follower.sign_bridge_l3_to_arb_proposal(&proposal).unwrap();
+        let sig = follower.sign_bridge_l3_to_settlement_proposal(&proposal).unwrap();
 
         // Add to leader
         let result = leader
-            .add_l3_to_arb_follower_signature(cycle_number, (i + 1) as u8, sig)
+            .add_l3_to_settlement_follower_signature(cycle_number, (i + 1) as u8, sig)
             .await
             .unwrap();
 
@@ -643,26 +643,26 @@ async fn test_full_3_node_l3_to_arb_consensus() {
     assert_eq!(result.signature_count, 3);
 
     // 5. Execute bridge
-    let tx_hash = leader.execute_bridge_l3_to_arb(&proposal, &result).await.unwrap();
+    let tx_hash = leader.execute_bridge_l3_to_settlement(&proposal, &result).await.unwrap();
     assert_ne!(tx_hash, H256::zero());
 
-    // 6. Verify all orders are now BridgedBackToArb
+    // 6. Verify all orders are now BridgedBackToSettlement
     for order_id in &order_ids {
         let status = leader.get_order_status(order_id).await;
         assert_eq!(
             status,
-            Some(BridgeOrderStatus::BridgedBackToArb),
-            "Order {} should be BridgedBackToArb",
+            Some(BridgeOrderStatus::BridgedBackToSettlement),
+            "Order {} should be BridgedBackToSettlement",
             order_id
         );
     }
 
     // 7. Verify cycle is confirmed
-    assert!(leader.is_l3_to_arb_confirmed(cycle_number).await);
+    assert!(leader.is_l3_to_settlement_confirmed(cycle_number).await);
 }
 
 // ============================================================================
-// Test 9: Status transition Batched → BridgedBackToArb
+// Test 9: Status transition Batched → BridgedBackToSettlement
 // ============================================================================
 
 #[tokio::test]
@@ -701,7 +701,7 @@ async fn test_status_transition_batched_to_bridged_back() {
     // Verify status changed
     assert_eq!(
         orchestrator.get_order_status(&order_id).await,
-        Some(BridgeOrderStatus::BridgedBackToArb)
+        Some(BridgeOrderStatus::BridgedBackToSettlement)
     );
 }
 
@@ -710,7 +710,7 @@ async fn test_status_transition_batched_to_bridged_back() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_cleanup_stale_l3_to_arb_collectors() {
+async fn test_cleanup_stale_l3_to_settlement_collectors() {
     use tokio::time::{sleep, Duration};
 
     let config = test_bridge_config();
@@ -732,19 +732,19 @@ async fn test_cleanup_stale_l3_to_arb_collectors() {
 
     orchestrator.set_order_status(order_id, BridgeOrderStatus::Batched).await;
     let proposal = orchestrator
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Start collection
     orchestrator
-        .start_l3_to_arb_signature_collection(42, proposal.leader_signature.clone())
+        .start_l3_to_settlement_signature_collection(42, proposal.leader_signature.clone())
         .await;
 
     // Wait a small amount to ensure elapsed_ms > 0
     sleep(Duration::from_millis(10)).await;
 
     // Cleanup with max_age of 1ms - since we waited 10ms, the collector should be stale
-    orchestrator.cleanup_stale_l3_to_arb_collectors(1).await;
+    orchestrator.cleanup_stale_l3_to_settlement_collectors(1).await;
 
     // Collector should be gone (CycleNotFound error)
     // Create a valid signature to test - use follower keypair
@@ -755,7 +755,7 @@ async fn test_cleanup_stale_l3_to_arb_collectors() {
         .expect("signing should succeed");
 
     let result = orchestrator
-        .add_l3_to_arb_follower_signature(42, 1, valid_sig)
+        .add_l3_to_settlement_follower_signature(42, 1, valid_sig)
         .await;
     assert!(
         matches!(result, Err(BridgeError::CycleNotFound { cycle_number: 42 })),
@@ -765,7 +765,7 @@ async fn test_cleanup_stale_l3_to_arb_collectors() {
 }
 
 // ============================================================================
-// Test 11: Deprecated propose_bridge_l3_to_arb returns total_amount=0
+// Test 11: Deprecated propose_bridge_l3_to_settlement returns total_amount=0
 // ============================================================================
 
 #[tokio::test]
@@ -794,7 +794,7 @@ async fn test_deprecated_propose_method_returns_zero_amount() {
     // Call the deprecated method - it should return total_amount = 0
     // despite the order having amount = 5 USDC
     let proposal = orchestrator
-        .propose_bridge_l3_to_arb(42, vec![order_id])
+        .propose_bridge_l3_to_settlement(42, vec![order_id])
         .await
         .expect("proposal should succeed");
 
@@ -803,17 +803,17 @@ async fn test_deprecated_propose_method_returns_zero_amount() {
     assert_eq!(
         proposal.total_amount,
         U256::zero(),
-        "DEPRECATED method should return total_amount=0 - use propose_bridge_l3_to_arb_with_amount() instead"
+        "DEPRECATED method should return total_amount=0 - use propose_bridge_l3_to_settlement_with_amount() instead"
     );
 
     // In contrast, the correct method returns the expected amount
     let correct_proposal = orchestrator
-        .propose_bridge_l3_to_arb_with_amount(43, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(43, vec![order_id], amount)
         .expect("proposal should succeed");
 
     assert_eq!(
         correct_proposal.total_amount, amount,
-        "propose_bridge_l3_to_arb_with_amount() should return correct amount"
+        "propose_bridge_l3_to_settlement_with_amount() should return correct amount"
     );
 }
 
@@ -844,7 +844,7 @@ async fn test_execute_validates_destination() {
 
     // Create a proposal with the wrong destination
     let mut proposal = orchestrator
-        .propose_bridge_l3_to_arb_with_amount(42, vec![order_id], amount)
+        .propose_bridge_l3_to_settlement_with_amount(42, vec![order_id], amount)
         .unwrap();
 
     // Tamper with the destination (simulate malicious proposal)
@@ -852,20 +852,20 @@ async fn test_execute_validates_destination() {
     proposal.destination = malicious_destination;
 
     // Create a fake aggregated result (not used but required for API)
-    let aggregated = BridgeL3ToArbResult {
+    let aggregated = BridgeL3ToSettlementResult {
         aggregated_signature: proposal.leader_signature.clone(),
         signer_bitmap: U256::from(0b11), // 2 signers
         signature_count: 2,
     };
 
     // Execute should fail with InvalidDestination error
-    let result = orchestrator.execute_bridge_l3_to_arb(&proposal, &aggregated).await;
+    let result = orchestrator.execute_bridge_l3_to_settlement(&proposal, &aggregated).await;
 
     assert!(
         matches!(
             result,
             Err(BridgeError::InvalidDestination { expected, actual })
-            if expected == config.issuer_custody_arb && actual == malicious_destination
+            if expected == config.issuer_custody_settlement && actual == malicious_destination
         ),
         "Expected InvalidDestination error but got: {:?}",
         result

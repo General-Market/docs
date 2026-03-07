@@ -1343,7 +1343,7 @@ contract MessageHashTest is Test {
     /// @notice Test that message hash is computed correctly with new format
     /// @dev This hash must match the Rust implementation exactly
     function test_messageHash_construction() public pure {
-        uint256 chainId = 42161; // Arbitrum
+        uint256 chainId = 42161; // Settlement
         address bridgeProxyAddr = 0x1234567890123456789012345678901234567890;
         address admin = 0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD;
         uint256 nonce = 42;
@@ -1416,7 +1416,7 @@ contract MessageHashTest is Test {
         bytes32 assetsHash = bytes32(uint256(0xBB));
 
         bytes32 hash1 = keccak256(abi.encodePacked(
-            uint256(42161), // Arbitrum
+            uint256(42161), // Settlement
             bridgeProxyAddr,
             admin,
             uint256(0),

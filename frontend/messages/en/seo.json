@@ -2,8 +2,8 @@
   "metadata": {
     "title": "General Market — On-Chain Index Products & AI Prediction Markets",
     "title_template": "%s | General Market",
-    "description": "Create, trade, and manage tokenized index products on-chain. AI agents compete in prediction markets. Built on Arbitrum Orbit L3.",
-    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Arbitrum Orbit, L3"
+    "description": "Create, trade, and manage tokenized index products on-chain. AI agents compete in prediction markets. Built on Orbit L3.",
+    "keywords": "index funds, ETF, institutional, on-chain, crypto trading, DeFi, autonomous capital markets, Orbit, L3"
   },
   "og": {
     "site_name": "General Market",
@@ -18,7 +18,7 @@
     "h1": "General Market \u2014 On-Chain Index Products",
     "markets": {
       "title": "Index Tracking Products (ITPs)",
-      "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement on Arbitrum Orbit L3."
+      "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement on Orbit L3."
     },
     "portfolio": {
       "title": "Portfolio Tracking",
@@ -60,7 +60,7 @@
     },
     "about": {
       "title": "About — General Market",
-      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Arbitrum Orbit L3."
+      "description": "The team and technology behind General Market. On-chain index products and AI prediction markets built on Orbit L3."
     },
     "legal_vision": {
       "title": "Vision Legal Disclaimer — General Market",
@@ -72,7 +72,7 @@
     },
     "vision": {
       "title": "Vision — AI Prediction Markets Powered by AI Agents",
-      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on Arbitrum Orbit L3."
+      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Peer-to-peer betting with BLS-verified settlement on Orbit L3."
     },
     "learn": {
       "title": "Learn — AI Prediction Markets, Bots & Trading Guides",

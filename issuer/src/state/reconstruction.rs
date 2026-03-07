@@ -695,7 +695,7 @@ mod tests {
     fn test_config_with_usdc_address() {
         let mut config = ReconstructorConfig::default();
         config.usdc_address = Some(Address::random());
-        config.custody_contracts.insert(chains::ARBITRUM, Address::random());
+        config.custody_contracts.insert(chains::SETTLEMENT, Address::random());
         config.custody_contracts.insert(chains::INDEX_L3, Address::random());
 
         assert!(config.usdc_address.is_some());

@@ -5,14 +5,14 @@ import {Script, console2} from "forge-std/Script.sol";
 import {BLSCustody} from "../src/core/BLSCustody.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployIssuerCustodyArb - Deploy IssuerCustody contract on Arbitrum
-/// @notice Deploys BLSCustody as IssuerCustody Arbitrum for holding ArbUSDC after bridge from L3
-/// @dev Story 7.7: IssuerCustody Arb is a BLSCustody instance with MockBitgetVault whitelisted
+/// @title DeployIssuerCustodySettlement - Deploy IssuerCustody contract on Settlement
+/// @notice Deploys BLSCustody as IssuerCustody Settlement for holding SettlementUSDC after bridge from L3
+/// @dev Story 7.7: IssuerCustody Settlement is a BLSCustody instance with MockBitgetVault whitelisted
 ///      Uses existing IssuerRegistry for BLS verification
-contract DeployIssuerCustodyArb is Script {
+contract DeployIssuerCustodySettlement is Script {
     // Deployed addresses
-    address public issuerCustodyArbProxy;
-    address public issuerCustodyArbImpl;
+    address public issuerCustodySettlementProxy;
+    address public issuerCustodySettlementImpl;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -22,7 +22,7 @@ contract DeployIssuerCustodyArb is Script {
         address issuerRegistryProxy = vm.envAddress("ISSUER_REGISTRY");
 
         console2.log("===========================================");
-        console2.log("IssuerCustody Arbitrum DEPLOYMENT");
+        console2.log("IssuerCustody Settlement DEPLOYMENT");
         console2.log("===========================================");
         console2.log("Chain ID:", block.chainid);
         console2.log("Deployer:", deployer);
@@ -32,7 +32,7 @@ contract DeployIssuerCustodyArb is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        _deployIssuerCustodyArb(issuerRegistryProxy);
+        _deployIssuerCustodySettlement(issuerRegistryProxy);
 
         vm.stopBroadcast();
 
@@ -46,36 +46,36 @@ contract DeployIssuerCustodyArb is Script {
         console2.log("===========================================");
         console2.log("DEPLOYMENT COMPLETE");
         console2.log("===========================================");
-        console2.log("IssuerCustody Arbitrum:", issuerCustodyArbProxy);
+        console2.log("IssuerCustody Settlement:", issuerCustodySettlementProxy);
     }
 
-    function _deployIssuerCustodyArb(address issuerRegistryProxy) internal {
-        console2.log("Deploying IssuerCustody Arbitrum (BLSCustody instance)...");
+    function _deployIssuerCustodySettlement(address issuerRegistryProxy) internal {
+        console2.log("Deploying IssuerCustody Settlement (BLSCustody instance)...");
 
         BLSCustody impl = new BLSCustody();
-        issuerCustodyArbImpl = address(impl);
-        console2.log("  Implementation:", issuerCustodyArbImpl);
+        issuerCustodySettlementImpl = address(impl);
+        console2.log("  Implementation:", issuerCustodySettlementImpl);
 
         ERC1967Proxy proxy = new ERC1967Proxy(
-            issuerCustodyArbImpl,
+            issuerCustodySettlementImpl,
             abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
         );
-        issuerCustodyArbProxy = address(proxy);
-        console2.log("  Proxy:", issuerCustodyArbProxy);
+        issuerCustodySettlementProxy = address(proxy);
+        console2.log("  Proxy:", issuerCustodySettlementProxy);
         console2.log("");
     }
 
     function _verify(address issuerRegistryProxy) internal view {
         console2.log("Verifying deployment...");
 
-        BLSCustody custody = BLSCustody(issuerCustodyArbProxy);
+        BLSCustody custody = BLSCustody(issuerCustodySettlementProxy);
         require(
             address(custody.issuerRegistry()) == issuerRegistryProxy,
-            "IssuerCustody Arb: issuerRegistry mismatch"
+            "IssuerCustody Settlement: issuerRegistry mismatch"
         );
-        require(custody.nonce() == 0, "IssuerCustody Arb: nonce should be 0");
-        console2.log("  IssuerCustody Arb issuerRegistry:", address(custody.issuerRegistry()));
-        console2.log("  IssuerCustody Arb nonce:", custody.nonce());
+        require(custody.nonce() == 0, "IssuerCustody Settlement: nonce should be 0");
+        console2.log("  IssuerCustody Settlement issuerRegistry:", address(custody.issuerRegistry()));
+        console2.log("  IssuerCustody Settlement nonce:", custody.nonce());
         console2.log("  Deployment verified successfully!");
         console2.log("");
     }
@@ -87,15 +87,15 @@ contract DeployIssuerCustodyArb is Script {
             '  "deployer": "', vm.toString(deployer), '",\n',
             '  "timestamp": ', vm.toString(block.timestamp), ',\n',
             '  "contracts": {\n',
-            '    "IssuerCustodyArb": {\n',
-            '      "proxy": "', vm.toString(issuerCustodyArbProxy), '",\n',
-            '      "implementation": "', vm.toString(issuerCustodyArbImpl), '"\n',
+            '    "IssuerCustodySettlement": {\n',
+            '      "proxy": "', vm.toString(issuerCustodySettlementProxy), '",\n',
+            '      "implementation": "', vm.toString(issuerCustodySettlementImpl), '"\n',
             '    }\n',
             '  }\n',
             '}'
         );
 
-        string memory outputPath = vm.envOr("DEPLOYMENT_OUTPUT", string("../deployments/issuer-custody-arb.json"));
+        string memory outputPath = vm.envOr("DEPLOYMENT_OUTPUT", string("../deployments/issuer-custody-settlement.json"));
         vm.writeFile(outputPath, json);
         console2.log("Addresses saved to:", outputPath);
     }

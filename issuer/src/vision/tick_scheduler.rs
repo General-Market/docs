@@ -30,7 +30,7 @@ pub struct TickScheduler {
 
     /// Per-user real balance — backed by actual L3 USDC in Vision.sol.
     user_real_balances: RwLock<HashMap<Address, U256>>,
-    /// Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb.
+    /// Per-user virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement.
     user_virtual_balances: RwLock<HashMap<Address, U256>>,
 }
 
@@ -219,7 +219,7 @@ impl TickScheduler {
     // These track the global per-user Vision balance (real + virtual),
     // separate from per-batch position balances above.
 
-    /// Credit virtual balance after cross-chain deposit from Arb.
+    /// Credit virtual balance after cross-chain deposit from Settlement.
     /// Called when `BalanceCredited(user, amount, depositId)` event is received.
     pub async fn on_virtual_balance_credited(&self, user: Address, amount: U256) {
         let mut balances = self.user_virtual_balances.write().await;
@@ -243,8 +243,8 @@ impl TickScheduler {
         *entry = entry.saturating_sub(amount);
     }
 
-    /// Debit virtual balance after withdrawToArb.
-    /// Called when `WithdrawToArbRequested(user, amount, withdrawId)` event is received.
+    /// Debit virtual balance after withdrawToSettlement.
+    /// Called when `WithdrawToSettlementRequested(user, amount, withdrawId)` event is received.
     pub async fn on_virtual_balance_withdrawn(&self, user: Address, amount: U256) {
         let mut balances = self.user_virtual_balances.write().await;
         let entry = balances.entry(user).or_insert(U256::zero());
@@ -884,7 +884,7 @@ mod tests {
         assert_eq!(virt, U256::zero());
         assert_eq!(scheduler.get_user_total_balance(user).await, U256::zero());
 
-        // Credit virtual balance (cross-chain deposit from Arb)
+        // Credit virtual balance (cross-chain deposit from Settlement)
         scheduler
             .on_virtual_balance_credited(user, U256::from(1000))
             .await;
@@ -929,7 +929,7 @@ mod tests {
         assert_eq!(real, U256::from(700));
         assert_eq!(virt, U256::from(2000));
 
-        // Withdraw virtual (withdrawToArb)
+        // Withdraw virtual (withdrawToSettlement)
         scheduler
             .on_virtual_balance_withdrawn(user, U256::from(500))
             .await;

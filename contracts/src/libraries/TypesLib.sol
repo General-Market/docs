@@ -190,7 +190,7 @@ library TypesLib {
         bytes32 sourceTxHash;
     }
 
-    /// @notice Cross-chain order from Arbitrum to L3
+    /// @notice Cross-chain order from Settlement to L3
     /// @dev Stores order parameters for issuer nodes to process
     /// @param itpId The ITP to purchase
     /// @param user Address that submitted the order
@@ -209,7 +209,7 @@ library TypesLib {
         uint256 createdAt;
     }
 
-    /// @notice Cross-chain sell order from Arbitrum
+    /// @notice Cross-chain sell order from Settlement
     /// @dev Stores order parameters for issuer nodes to sell ITP on L3
     /// @param itpId The ITP to sell
     /// @param user Address that submitted the sell order
@@ -344,8 +344,8 @@ library TypesLib {
 
     // ============ VISION DEPOSIT STRUCTS ============
 
-    /// @notice Vision cross-chain deposit from Arbitrum
-    /// @param user Address that deposited on Arb
+    /// @notice Vision cross-chain deposit from Settlement
+    /// @param user Address that deposited on Settlement
     /// @param amount Amount in 18 decimals (converted from 6-dec input)
     /// @param createdAt Timestamp when deposit was created
     struct VisionDeposit {

@@ -48,15 +48,15 @@ pub struct VisionConfig {
     // Dual-balance / cross-chain deposit fields (Vision First Deposit)
     // =========================================================================
 
-    /// Arbitrum RPC URL for watching VisionDepositCreated events.
-    pub arb_rpc_url: String,
-    /// ArbBridgeCustody contract address on Arbitrum.
-    pub arb_bridge_custody_address: String,
-    /// Arbitrum chain ID (42161 for mainnet, 421614 for Sepolia).
-    pub arb_chain_id: u64,
-    /// Polling interval (ms) for checking new Arb deposit events.
+    /// Settlement RPC URL for watching VisionDepositCreated events.
+    pub settlement_rpc_url: String,
+    /// SettlementBridgeCustody contract address on Settlement.
+    pub settlement_bridge_custody_address: String,
+    /// Settlement chain ID (42161 for mainnet, 421614 for Sepolia).
+    pub settlement_chain_id: u64,
+    /// Polling interval (ms) for checking new Settlement deposit events.
     pub deposit_poll_interval_ms: u64,
-    /// Number of Arbitrum confirmations before considering a deposit finalized.
+    /// Number of Settlement confirmations before considering a deposit finalized.
     pub deposit_finality_confirmations: u64,
     /// GM gas drip amount for new users (wei). Default: 0.01 GM = 10^16 wei.
     pub gas_drip_amount_wei: String,
@@ -86,9 +86,9 @@ impl Default for VisionConfig {
             num_issuers: 1,
             node_index: 0,
             // Cross-chain deposit defaults
-            arb_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
-            arb_bridge_custody_address: String::new(),
-            arb_chain_id: 42161,
+            settlement_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
+            settlement_bridge_custody_address: String::new(),
+            settlement_chain_id: 42161,
             deposit_poll_interval_ms: 5000,
             deposit_finality_confirmations: 15,
             gas_drip_amount_wei: "10000000000000000".into(), // 0.01 GM

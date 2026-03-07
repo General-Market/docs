@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../../src/custody/L3BridgeCustody.sol";
-import "../../src/custody/ArbBridgeCustody.sol";
+import "../../src/custody/SettlementBridgeCustody.sol";
 import "../../src/registry/CollateralRegistry.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../../src/registry/IssuerRegistry.sol";
@@ -14,20 +14,20 @@ import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title BridgeIntegrationTest - End-to-end bridge integration tests (L3 <-> Arbitrum)
+/// @title BridgeIntegrationTest - End-to-end bridge integration tests (L3 <-> Settlement)
 /// @notice Tests the full two-phase commit bridge lifecycle across L3BridgeCustody,
-///         ArbBridgeCustody, and CollateralRegistry working together
+///         SettlementBridgeCustody, and CollateralRegistry working together
 /// @dev Uses real BLS signatures via FFI (bls-tool). All BLS-protected calls use real signing.
 contract BridgeIntegrationTest is TestHelper {
     // ============ CONTRACTS ============
 
     L3BridgeCustody public l3Bridge;
-    ArbBridgeCustody public arbBridge;
+    SettlementBridgeCustody public settlementBridge;
     CollateralRegistry public collateralRegistry;
     IssuerRegistry public mockRegistry;
     Governance public governance;
     MockERC20 public usdc;      // L3 USDC (18 decimals)
-    MockERC20 public arbUsdc;   // Arb USDC (6 decimals, matches production)
+    MockERC20 public settlementUsdc;   // Settlement USDC (6 decimals, matches production)
 
     // ============ TEST ACCOUNTS ============
 
@@ -39,7 +39,7 @@ contract BridgeIntegrationTest is TestHelper {
     // ============ CONSTANTS ============
 
     uint256 public constant L3_CHAIN_ID = 111222333;
-    uint256 public constant ARB_CHAIN_ID = 42161;
+    uint256 public constant SETTLEMENT_CHAIN_ID = 42161;
     uint256 public constant BRIDGE_AMOUNT = 1000e18;
     uint256 public constant LARGE_AMOUNT = 5000e18;
     bytes32 public constant TEST_ITP_ID = keccak256("TEST_ITP_001");
@@ -51,7 +51,7 @@ contract BridgeIntegrationTest is TestHelper {
     event LockReleased(uint256 indexed nonce, bytes32 destTxHash);
     event LockReversed(uint256 indexed nonce);
 
-    // ArbBridgeCustody interface events
+    // SettlementBridgeCustody interface events
     event BridgeCompleted(uint256 indexed sourceChainId, uint256 amount, uint256 nonce);
 
     // ============ SETUP ============
@@ -66,8 +66,8 @@ contract BridgeIntegrationTest is TestHelper {
         registerTestIssuersWithBLS(mockRegistry, deployer);
         // L3 USDC uses 18 decimals (internal protocol standard)
         usdc = new MockERC20("L3USDC", "L3USDC", 18);
-        // Arb USDC uses 6 decimals (matches real USDC on Arbitrum)
-        arbUsdc = new MockERC20("USDC", "USDC", 6);
+        // Settlement USDC uses 6 decimals (matches real USDC on Settlement)
+        settlementUsdc = new MockERC20("USDC", "USDC", 6);
 
         // --- Deploy L3BridgeCustody (UUPS proxy) ---
         L3BridgeCustody l3Impl = new L3BridgeCustody();
@@ -77,14 +77,14 @@ contract BridgeIntegrationTest is TestHelper {
         );
         l3Bridge = L3BridgeCustody(address(l3Proxy));
 
-        // --- Deploy ArbBridgeCustody (UUPS proxy) ---
+        // --- Deploy SettlementBridgeCustody (UUPS proxy) ---
         // Note: We deploy on same chain but test logic simulates cross-chain interaction
-        ArbBridgeCustody arbImpl = new ArbBridgeCustody();
-        ERC1967Proxy arbProxy = new ERC1967Proxy(
-            address(arbImpl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(arbUsdc), l3IndexAddr, address(0)))
+        SettlementBridgeCustody settlementImpl = new SettlementBridgeCustody();
+        ERC1967Proxy settlementProxy = new ERC1967Proxy(
+            address(settlementImpl),
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(mockRegistry), address(settlementUsdc), l3IndexAddr, address(0)))
         );
-        arbBridge = ArbBridgeCustody(address(arbProxy));
+        settlementBridge = SettlementBridgeCustody(address(settlementProxy));
 
         // --- Deploy CollateralRegistry ---
         collateralRegistry = new CollateralRegistry(deployer, address(mockRegistry));
@@ -98,8 +98,8 @@ contract BridgeIntegrationTest is TestHelper {
         vm.prank(bob);
         usdc.approve(address(l3Bridge), type(uint256).max);
 
-        // --- Fund ArbBridgeCustody with 6-decimal USDC for release operations ---
-        arbUsdc.mint(address(arbBridge), 50_000_000e6);
+        // --- Fund SettlementBridgeCustody with 6-decimal USDC for release operations ---
+        settlementUsdc.mint(address(settlementBridge), 50_000_000e6);
 
         // --- Seed CollateralRegistry: ITP starts with collateral on L3 ---
         {
@@ -123,9 +123,9 @@ contract BridgeIntegrationTest is TestHelper {
         return signWithTestIssuers(message);
     }
 
-    /// @dev Sign completeBridge message (chainid = ARB_CHAIN_ID)
+    /// @dev Sign completeBridge message (chainid = SETTLEMENT_CHAIN_ID)
     function _signCompleteBridge(address custodyAddr, TypesLib.ReleaseProof memory proof, uint256 amount, uint256 bridgeNonce) internal returns (bytes memory) {
-        bytes32 message = keccak256(abi.encode(ARB_CHAIN_ID, custodyAddr, proof, amount, bridgeNonce));
+        bytes32 message = keccak256(abi.encode(SETTLEMENT_CHAIN_ID, custodyAddr, proof, amount, bridgeNonce));
         return signWithTestIssuers(message);
     }
 
@@ -153,7 +153,7 @@ contract BridgeIntegrationTest is TestHelper {
     function _initiateBridge(uint256 amount) internal returns (uint256 nonce) {
         nonce = l3Bridge.bridgeNonce(); // get nonce before initiating
         vm.prank(alice);
-        nonce = l3Bridge.initiateBridge(ARB_CHAIN_ID, amount, _signInitiateBridge(address(l3Bridge), ARB_CHAIN_ID, amount, nonce), 3, 7);
+        nonce = l3Bridge.initiateBridge(SETTLEMENT_CHAIN_ID, amount, _signInitiateBridge(address(l3Bridge), SETTLEMENT_CHAIN_ID, amount, nonce), 3, 7);
     }
 
     /// @dev Build a valid ReleaseProof from a lock nonce
@@ -167,23 +167,23 @@ contract BridgeIntegrationTest is TestHelper {
         });
     }
 
-    /// @dev Complete a bridge on Arbitrum side (switches chain context)
+    /// @dev Complete a bridge on Settlement side (switches chain context)
     function _completeBridge(uint256 nonce, uint256 amount) internal {
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
-        // Signature must use ARB_CHAIN_ID since completeBridge runs on Arbitrum
-        bytes memory sig = _signCompleteBridge(address(arbBridge), proof, amount, nonce);
-        vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(L3_CHAIN_ID, amount, nonce, proof, sig, 3, 7);
+        // Signature must use SETTLEMENT_CHAIN_ID since completeBridge runs on Settlement
+        bytes memory sig = _signCompleteBridge(address(settlementBridge), proof, amount, nonce);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
+        settlementBridge.completeBridge(L3_CHAIN_ID, amount, nonce, proof, sig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
     /// @dev Mark a lock as released on L3
     function _markReleased(uint256 nonce) internal {
-        bytes32 destTxHash = keccak256(abi.encode("arb_completion_tx", nonce));
+        bytes32 destTxHash = keccak256(abi.encode("settlement_completion_tx", nonce));
         l3Bridge.markReleased(nonce, destTxHash, _signMarkReleased(address(l3Bridge), nonce, destTxHash), 3, 7);
     }
 
-    /// @dev Execute full L3->Arb bridge flow: initiate -> complete -> markReleased
+    /// @dev Execute full L3->Settlement bridge flow: initiate -> complete -> markReleased
     function _fullBridgeFlow(uint256 amount) internal returns (uint256 nonce) {
         nonce = _initiateBridge(amount);
         _completeBridge(nonce, amount);
@@ -204,10 +204,10 @@ contract BridgeIntegrationTest is TestHelper {
     }
 
     // ============================================================================
-    // TASK 2: L3 -> Arb Bridge Flow Tests (AC #1, #2)
+    // TASK 2: L3 -> Settlement Bridge Flow Tests (AC #1, #2)
     // ============================================================================
 
-    function test_l3ToArb_initiateBridge_locksUSDC() public {
+    function test_l3ToSettlement_initiateBridge_locksUSDC() public {
         uint256 aliceBalBefore = usdc.balanceOf(alice);
         uint256 custodyBalBefore = usdc.balanceOf(address(l3Bridge));
 
@@ -224,56 +224,56 @@ contract BridgeIntegrationTest is TestHelper {
         // Lock state correct
         TypesLib.PendingLock memory lock = l3Bridge.getPendingLock(nonce);
         assertEq(lock.amount, BRIDGE_AMOUNT);
-        assertEq(lock.destChainId, ARB_CHAIN_ID);
+        assertEq(lock.destChainId, SETTLEMENT_CHAIN_ID);
         assertGt(lock.lockedAt, 0);
         assertGt(lock.lockedBlock, 0);
         assertFalse(lock.released);
         assertFalse(lock.reversed);
     }
 
-    function test_l3ToArb_initiateBridge_emitsEvents() public {
+    function test_l3ToSettlement_initiateBridge_emitsEvents() public {
         vm.expectEmit(true, false, false, true);
-        emit EventsLib.BridgeLockConfirmed(0, BRIDGE_AMOUNT, ARB_CHAIN_ID, block.number, blockhash(block.number - 1));
+        emit EventsLib.BridgeLockConfirmed(0, BRIDGE_AMOUNT, SETTLEMENT_CHAIN_ID, block.number, blockhash(block.number - 1));
 
         vm.expectEmit(true, false, false, true);
-        emit BridgeInitiated(0, ARB_CHAIN_ID, BRIDGE_AMOUNT);
+        emit BridgeInitiated(0, SETTLEMENT_CHAIN_ID, BRIDGE_AMOUNT);
 
         _initiateBridge(BRIDGE_AMOUNT);
     }
 
-    function test_l3ToArb_completeBridge_releasesUSDC() public {
+    function test_l3ToSettlement_completeBridge_releasesUSDC() public {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
 
-        // ArbBridgeCustody uses 6-decimal USDC — completeBridge converts 18→6 internally
-        uint256 expectedArbAmount = BRIDGE_AMOUNT / 1e12; // 1000e18 → 1000e6
-        uint256 callerBalBefore = arbUsdc.balanceOf(address(this));
-        uint256 arbBalBefore = arbUsdc.balanceOf(address(arbBridge));
+        // SettlementBridgeCustody uses 6-decimal USDC — completeBridge converts 18→6 internally
+        uint256 expectedSettlementAmount = BRIDGE_AMOUNT / 1e12; // 1000e18 → 1000e6
+        uint256 callerBalBefore = settlementUsdc.balanceOf(address(this));
+        uint256 settlementBalBefore = settlementUsdc.balanceOf(address(settlementBridge));
 
         _completeBridge(nonce, BRIDGE_AMOUNT);
 
-        // 6-decimal USDC released from ArbBridgeCustody to caller
-        assertEq(arbUsdc.balanceOf(address(this)), callerBalBefore + expectedArbAmount);
-        assertEq(arbUsdc.balanceOf(address(arbBridge)), arbBalBefore - expectedArbAmount);
+        // 6-decimal USDC released from SettlementBridgeCustody to caller
+        assertEq(settlementUsdc.balanceOf(address(this)), callerBalBefore + expectedSettlementAmount);
+        assertEq(settlementUsdc.balanceOf(address(settlementBridge)), settlementBalBefore - expectedSettlementAmount);
 
         // Nonce marked as used
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce));
     }
 
-    function test_l3ToArb_completeBridge_emitsBridgeCompleted() public {
+    function test_l3ToSettlement_completeBridge_emitsBridgeCompleted() public {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
 
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
-        bytes memory completeSig = _signCompleteBridge(address(arbBridge), proof, BRIDGE_AMOUNT, nonce);
-        vm.chainId(ARB_CHAIN_ID);
+        bytes memory completeSig = _signCompleteBridge(address(settlementBridge), proof, BRIDGE_AMOUNT, nonce);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         vm.expectEmit(true, false, false, true);
         emit BridgeCompleted(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce);
 
-        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, completeSig, 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, completeSig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
-    function test_l3ToArb_markReleased_finalizesLock() public {
+    function test_l3ToSettlement_markReleased_finalizesLock() public {
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
         _completeBridge(nonce, BRIDGE_AMOUNT);
 
@@ -286,11 +286,11 @@ contract BridgeIntegrationTest is TestHelper {
         assertFalse(lock.reversed);
     }
 
-    function test_l3ToArb_fullFlow_endToEnd() public {
+    function test_l3ToSettlement_fullFlow_endToEnd() public {
         // Full two-phase commit lifecycle
         uint256 aliceBalBefore = usdc.balanceOf(alice);
-        uint256 arbBalBefore = arbUsdc.balanceOf(address(arbBridge));
-        uint256 expectedArbAmount = BRIDGE_AMOUNT / 1e12; // 18→6 decimal conversion
+        uint256 settlementBalBefore = settlementUsdc.balanceOf(address(settlementBridge));
+        uint256 expectedSettlementAmount = BRIDGE_AMOUNT / 1e12; // 18→6 decimal conversion
 
         // Phase 1: Lock on L3 (18-decimal USDC)
         uint256 nonce = _initiateBridge(BRIDGE_AMOUNT);
@@ -301,9 +301,9 @@ contract BridgeIntegrationTest is TestHelper {
         assertFalse(lock.released);
         assertFalse(lock.reversed);
 
-        // Phase 2: Complete on Arb (6-decimal USDC released)
+        // Phase 2: Complete on Settlement (6-decimal USDC released)
         _completeBridge(nonce, BRIDGE_AMOUNT);
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce));
 
         // Finalize on L3
         _markReleased(nonce);
@@ -312,10 +312,10 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Balances verified
         assertEq(usdc.balanceOf(alice), aliceBalBefore - BRIDGE_AMOUNT); // L3 side: 18 decimals
-        assertEq(arbUsdc.balanceOf(address(arbBridge)), arbBalBefore - expectedArbAmount); // Arb side: 6 decimals
+        assertEq(settlementUsdc.balanceOf(address(settlementBridge)), settlementBalBefore - expectedSettlementAmount); // Settlement side: 6 decimals
     }
 
-    function test_l3ToArb_sequentialNonces() public {
+    function test_l3ToSettlement_sequentialNonces() public {
         uint256 nonce0 = _initiateBridge(100e18);
         uint256 nonce1 = _initiateBridge(200e18);
         uint256 nonce2 = _initiateBridge(300e18);
@@ -327,21 +327,21 @@ contract BridgeIntegrationTest is TestHelper {
     }
 
     // ============================================================================
-    // TASK 3: Arb -> L3 Bridge Flow Tests (AC #3)
+    // TASK 3: Settlement -> L3 Bridge Flow Tests (AC #3)
     // ============================================================================
 
-    function test_arbToL3_arbBridgeIsDestinationOnly() public view {
-        // ArbBridgeCustody does NOT have an initiateBridge function
+    function test_settlementToL3_settlementBridgeIsDestinationOnly() public view {
+        // SettlementBridgeCustody does NOT have an initiateBridge function
         // It only has completeBridge (destination-only contract)
-        // For Arb->L3 direction, BLSCustody on Arbitrum would lock USDC via execute()
+        // For Settlement->L3 direction, BLSCustody on Settlement would lock USDC via execute()
         // and L3 would release. This is beyond current contract scope.
 
-        // Verify ArbBridgeCustody can only complete bridges from other chains
-        assertFalse(arbBridge.isNonceUsed(L3_CHAIN_ID, 0)); // No bridges completed yet
-        assertFalse(arbBridge.isNonceUsed(ARB_CHAIN_ID, 0)); // Can't bridge from self
+        // Verify SettlementBridgeCustody can only complete bridges from other chains
+        assertFalse(settlementBridge.isNonceUsed(L3_CHAIN_ID, 0)); // No bridges completed yet
+        assertFalse(settlementBridge.isNonceUsed(SETTLEMENT_CHAIN_ID, 0)); // Can't bridge from self
     }
 
-    function test_arbToL3_independentNonceTrackingPerSourceChain() public {
+    function test_settlementToL3_independentNonceTrackingPerSourceChain() public {
         // Initiate 2 bridges from L3
         uint256 nonce0 = _initiateBridge(100e18);
         uint256 nonce1 = _initiateBridge(200e18);
@@ -350,15 +350,15 @@ contract BridgeIntegrationTest is TestHelper {
         _completeBridge(nonce0, 100e18);
 
         // L3 nonce 0 is used, nonce 1 is not
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce0));
-        assertFalse(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce1));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce0));
+        assertFalse(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce1));
 
         // A hypothetical different source chain (e.g., Base = 8453) nonce 0 is independent
-        assertFalse(arbBridge.isNonceUsed(8453, 0));
+        assertFalse(settlementBridge.isNonceUsed(8453, 0));
     }
 
-    function test_arbToL3_completeBridgeFromDifferentSourceChains() public {
-        // Simulate bridges from two different source chains arriving at Arb
+    function test_settlementToL3_completeBridgeFromDifferentSourceChains() public {
+        // Simulate bridges from two different source chains arriving at Settlement
         // Source chain 1: L3 (111222333)
         uint256 nonce0 = _initiateBridge(100e18);
         _completeBridge(nonce0, 100e18);
@@ -372,14 +372,14 @@ contract BridgeIntegrationTest is TestHelper {
         });
 
         // Complete bridge from Base (nonce 0 — same nonce but different source chain)
-        bytes memory baseSig = _signCompleteBridge(address(arbBridge), baseProof, 50e18, 0);
-        vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(8453, 50e18, 0, baseProof, baseSig, 3, 7);
+        bytes memory baseSig = _signCompleteBridge(address(settlementBridge), baseProof, 50e18, 0);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
+        settlementBridge.completeBridge(8453, 50e18, 0, baseProof, baseSig, 3, 7);
         vm.chainId(L3_CHAIN_ID);
 
         // Both are completed independently
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 0));
-        assertTrue(arbBridge.isNonceUsed(8453, 0));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 0));
+        assertTrue(settlementBridge.isNonceUsed(8453, 0));
     }
 
     // ============================================================================
@@ -508,9 +508,9 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Second completion with same nonce reverts
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce));
-        arbBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -527,12 +527,12 @@ contract BridgeIntegrationTest is TestHelper {
             sourceBlockHash: keccak256("base_block"),
             sourceTxHash: keccak256("base_tx")
         });
-        vm.chainId(ARB_CHAIN_ID);
-        arbBridge.completeBridge(8453, 50e18, 0, baseProof, _signCompleteBridge(address(arbBridge), baseProof, 50e18, 0), 3, 7);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
+        settlementBridge.completeBridge(8453, 50e18, 0, baseProof, _signCompleteBridge(address(settlementBridge), baseProof, 50e18, 0), 3, 7);
         vm.chainId(L3_CHAIN_ID);
 
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 0));
-        assertTrue(arbBridge.isNonceUsed(8453, 0));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 0));
+        assertTrue(settlementBridge.isNonceUsed(8453, 0));
     }
 
     function test_replay_markReleasedTwiceFails() public {
@@ -543,7 +543,7 @@ contract BridgeIntegrationTest is TestHelper {
         _markReleased(nonce);
 
         // Second markReleased fails
-        bytes32 destTxHash = keccak256(abi.encode("arb_completion_tx", nonce));
+        bytes32 destTxHash = keccak256(abi.encode("settlement_completion_tx", nonce));
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E045_LockAlreadyReleased.selector, nonce));
         l3Bridge.markReleased(nonce, destTxHash, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
     }
@@ -569,9 +569,9 @@ contract BridgeIntegrationTest is TestHelper {
         assertEq(n2, 2);
 
         // All nonces used
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 0));
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 1));
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, 2));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 0));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 1));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, 2));
 
         // All locks released
         assertTrue(l3Bridge.getPendingLock(0).released);
@@ -583,7 +583,7 @@ contract BridgeIntegrationTest is TestHelper {
     // TASK 6: CollateralRegistry Integration Tests (AC #6)
     // ============================================================================
 
-    function test_collateral_bridgeL3ToArb_updatesBalances() public {
+    function test_collateral_bridgeL3ToSettlement_updatesBalances() public {
         // Initial state: ITP has 10,000 USDC on L3
         uint256 l3Before = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
         assertEq(l3Before, 10_000e18);
@@ -592,15 +592,15 @@ contract BridgeIntegrationTest is TestHelper {
         _fullBridgeFlow(BRIDGE_AMOUNT);
 
         // Record the movement in CollateralRegistry
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, BRIDGE_AMOUNT);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, BRIDGE_AMOUNT);
 
         // L3 collateral decreased
         uint256 l3After = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
         assertEq(l3After, l3Before - BRIDGE_AMOUNT);
 
-        // Arb collateral increased
-        uint256 arbAfter = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID);
-        assertEq(arbAfter, BRIDGE_AMOUNT);
+        // Settlement collateral increased
+        uint256 settlementAfter = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID);
+        assertEq(settlementAfter, BRIDGE_AMOUNT);
     }
 
     function test_collateral_bridgeConservesTotal() public {
@@ -608,7 +608,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Bridge and record
         _fullBridgeFlow(BRIDGE_AMOUNT);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, BRIDGE_AMOUNT);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, BRIDGE_AMOUNT);
 
         // Total remains unchanged (conservation of value)
         uint256 totalAfter = collateralRegistry.getTotalCollateral(TEST_ITP_ID);
@@ -616,20 +616,20 @@ contract BridgeIntegrationTest is TestHelper {
     }
 
     function test_collateral_multipleBridgesTrackedCumulatively() public {
-        // Bridge 1: 1000 USDC L3->Arb
+        // Bridge 1: 1000 USDC L3->Settlement
         _fullBridgeFlow(1000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 1000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 1000e18);
 
-        // Bridge 2: 2000 USDC L3->Arb
+        // Bridge 2: 2000 USDC L3->Settlement
         _fullBridgeFlow(2000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 2000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 2000e18);
 
         // Verify cumulative tracking
         uint256 l3Col = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
-        uint256 arbCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID);
+        uint256 settlementCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID);
 
         assertEq(l3Col, 10_000e18 - 3000e18); // 7000 remaining on L3
-        assertEq(arbCol, 3000e18);             // 3000 on Arb
+        assertEq(settlementCol, 3000e18);             // 3000 on Settlement
 
         // Total unchanged
         assertEq(collateralRegistry.getTotalCollateral(TEST_ITP_ID), 10_000e18);
@@ -648,8 +648,8 @@ contract BridgeIntegrationTest is TestHelper {
         uint256 l3Col = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
         assertEq(l3Col, 10_000e18); // No change
 
-        uint256 arbCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID);
-        assertEq(arbCol, 0); // No arb collateral
+        uint256 settlementCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID);
+        assertEq(settlementCol, 0); // No settlement collateral
 
         assertEq(collateralRegistry.getTotalCollateral(TEST_ITP_ID), 10_000e18);
     }
@@ -663,42 +663,42 @@ contract BridgeIntegrationTest is TestHelper {
         l3Bridge.reverseLock(nonce, _signReverseLock(address(l3Bridge), nonce, 15), 15, 3, 7);
 
         // Accidentally record the reversed bridge — registry accepts it
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, BRIDGE_AMOUNT);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, BRIDGE_AMOUNT);
 
-        // Registry now shows collateral on Arb, but no USDC actually moved there
-        uint256 arbCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID);
-        assertEq(arbCol, BRIDGE_AMOUNT, "Registry incorrectly shows Arb collateral");
+        // Registry now shows collateral on Settlement, but no USDC actually moved there
+        uint256 settlementCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID);
+        assertEq(settlementCol, BRIDGE_AMOUNT, "Registry incorrectly shows Settlement collateral");
 
         // Total is conserved in registry, but reality diverges:
-        // L3BridgeCustody still holds the USDC, yet registry says it's on Arb
+        // L3BridgeCustody still holds the USDC, yet registry says it's on Settlement
         assertEq(collateralRegistry.getTotalCollateral(TEST_ITP_ID), 10_000e18);
     }
 
     function test_collateral_getCollateralBreakdown() public {
-        // Bridge some collateral to Arb
+        // Bridge some collateral to Settlement
         _fullBridgeFlow(BRIDGE_AMOUNT);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, BRIDGE_AMOUNT);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, BRIDGE_AMOUNT);
 
         (uint256[] memory chainIds, uint256[] memory amounts) = collateralRegistry.getCollateralBreakdown(TEST_ITP_ID);
 
-        // Should have 2 chains tracked (L3 and Arb)
+        // Should have 2 chains tracked (L3 and Settlement)
         assertEq(chainIds.length, 2);
 
-        // Find L3 and Arb in the arrays
+        // Find L3 and Settlement in the arrays
         bool foundL3 = false;
-        bool foundArb = false;
+        bool foundSettlement = false;
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (chainIds[i] == L3_CHAIN_ID) {
                 assertEq(amounts[i], 10_000e18 - BRIDGE_AMOUNT);
                 foundL3 = true;
             }
-            if (chainIds[i] == ARB_CHAIN_ID) {
+            if (chainIds[i] == SETTLEMENT_CHAIN_ID) {
                 assertEq(amounts[i], BRIDGE_AMOUNT);
-                foundArb = true;
+                foundSettlement = true;
             }
         }
         assertTrue(foundL3);
-        assertTrue(foundArb);
+        assertTrue(foundSettlement);
     }
 
     // ============================================================================
@@ -706,22 +706,22 @@ contract BridgeIntegrationTest is TestHelper {
     // ============================================================================
 
     function test_e2e_bridgeAndPartialReturn() public {
-        // Step 1: Bridge 1000 USDC L3->Arb
+        // Step 1: Bridge 1000 USDC L3->Settlement
         uint256 nonce0 = _fullBridgeFlow(1000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 1000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 1000e18);
 
         // Verify intermediate state
         assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID), 9000e18);
-        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID), 1000e18);
+        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID), 1000e18);
 
-        // Step 2: Record return of 500 USDC Arb->L3 (collateral tracking only,
-        // since ArbBridgeCustody is destination-only, the actual bridge back would
-        // use BLSCustody.execute on Arb + L3 release mechanism)
-        _recordBridgeMove(ARB_CHAIN_ID, L3_CHAIN_ID, 500e18);
+        // Step 2: Record return of 500 USDC Settlement->L3 (collateral tracking only,
+        // since SettlementBridgeCustody is destination-only, the actual bridge back would
+        // use BLSCustody.execute on Settlement + L3 release mechanism)
+        _recordBridgeMove(SETTLEMENT_CHAIN_ID, L3_CHAIN_ID, 500e18);
 
         // Verify final state
         assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID), 9500e18);
-        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID), 500e18);
+        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID), 500e18);
         assertEq(collateralRegistry.getTotalCollateral(TEST_ITP_ID), 10_000e18);
 
         // L3 lock is finalized
@@ -739,10 +739,10 @@ contract BridgeIntegrationTest is TestHelper {
         _completeBridge(nonce0, 100e18);
         _completeBridge(nonce1, 200e18);
 
-        // All completed on Arb side
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce0));
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce1));
-        assertTrue(arbBridge.isNonceUsed(L3_CHAIN_ID, nonce2));
+        // All completed on Settlement side
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce0));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce1));
+        assertTrue(settlementBridge.isNonceUsed(L3_CHAIN_ID, nonce2));
 
         // Mark released on L3 in yet another order
         _markReleased(nonce1);
@@ -758,14 +758,14 @@ contract BridgeIntegrationTest is TestHelper {
     function test_e2e_mixedScenario_twoSuccessOneReversal() public {
         // Bridge 1: 1000 USDC — successful
         uint256 n0 = _fullBridgeFlow(1000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 1000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 1000e18);
 
         // Bridge 2: 500 USDC — will be reversed (timeout)
         uint256 n1 = _initiateBridge(500e18);
 
         // Bridge 3: 2000 USDC — successful
         uint256 n2 = _fullBridgeFlow(2000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 2000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 2000e18);
 
         // Reverse bridge 2 after timeout
         vm.warp(block.timestamp + 1 hours + 1);
@@ -780,37 +780,37 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Collateral: only 2 successful bridges recorded (1000 + 2000 = 3000)
         assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID), 10_000e18 - 3000e18);
-        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID), 3000e18);
+        assertEq(collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID), 3000e18);
         assertEq(collateralRegistry.getTotalCollateral(TEST_ITP_ID), 10_000e18);
     }
 
     function test_e2e_allCollateralStatesConsistent() public {
         // Complex scenario: multiple bridges + one reversal + collateral moves
-        // Bridge 1000 L3->Arb (success)
+        // Bridge 1000 L3->Settlement (success)
         _fullBridgeFlow(1000e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 1000e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 1000e18);
 
-        // Bridge 500 L3->Arb (timeout, reversed)
+        // Bridge 500 L3->Settlement (timeout, reversed)
         uint256 reversedNonce = _initiateBridge(500e18);
         vm.warp(block.timestamp + 1 hours + 1);
         l3Bridge.reverseLock(reversedNonce, _signReverseLock(address(l3Bridge), reversedNonce, 15), 15, 3, 7);
 
-        // Bridge 1500 L3->Arb (success, after time warp)
+        // Bridge 1500 L3->Settlement (success, after time warp)
         _fullBridgeFlow(1500e18);
-        _recordBridgeMove(L3_CHAIN_ID, ARB_CHAIN_ID, 1500e18);
+        _recordBridgeMove(L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, 1500e18);
 
-        // Return 200 Arb->L3 (collateral record only)
-        _recordBridgeMove(ARB_CHAIN_ID, L3_CHAIN_ID, 200e18);
+        // Return 200 Settlement->L3 (collateral record only)
+        _recordBridgeMove(SETTLEMENT_CHAIN_ID, L3_CHAIN_ID, 200e18);
 
         // Final verification
         uint256 l3Col = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
-        uint256 arbCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, ARB_CHAIN_ID);
+        uint256 settlementCol = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, SETTLEMENT_CHAIN_ID);
         uint256 total = collateralRegistry.getTotalCollateral(TEST_ITP_ID);
 
         // L3: 10000 - 1000 - 1500 + 200 = 7700
         assertEq(l3Col, 7700e18);
-        // Arb: 1000 + 1500 - 200 = 2300
-        assertEq(arbCol, 2300e18);
+        // Settlement: 1000 + 1500 - 200 = 2300
+        assertEq(settlementCol, 2300e18);
         // Total: 10000 (conservation)
         assertEq(total, 10_000e18);
     }
@@ -823,12 +823,12 @@ contract BridgeIntegrationTest is TestHelper {
         // Alice bridges 1000 USDC
         uint256 aliceBalBefore = usdc.balanceOf(alice);
         vm.prank(alice);
-        uint256 nonceAlice = l3Bridge.initiateBridge(ARB_CHAIN_ID, 1000e18, _signInitiateBridge(address(l3Bridge), ARB_CHAIN_ID, 1000e18, 0), 3, 7);
+        uint256 nonceAlice = l3Bridge.initiateBridge(SETTLEMENT_CHAIN_ID, 1000e18, _signInitiateBridge(address(l3Bridge), SETTLEMENT_CHAIN_ID, 1000e18, 0), 3, 7);
 
         // Bob bridges 2000 USDC
         uint256 bobBalBefore = usdc.balanceOf(bob);
         vm.prank(bob);
-        uint256 nonceBob = l3Bridge.initiateBridge(ARB_CHAIN_ID, 2000e18, _signInitiateBridge(address(l3Bridge), ARB_CHAIN_ID, 2000e18, 1), 3, 7);
+        uint256 nonceBob = l3Bridge.initiateBridge(SETTLEMENT_CHAIN_ID, 2000e18, _signInitiateBridge(address(l3Bridge), SETTLEMENT_CHAIN_ID, 2000e18, 1), 3, 7);
 
         // Nonces are sequential regardless of caller
         assertEq(nonceAlice, 0);
@@ -838,7 +838,7 @@ contract BridgeIntegrationTest is TestHelper {
         assertEq(usdc.balanceOf(alice), aliceBalBefore - 1000e18);
         assertEq(usdc.balanceOf(bob), bobBalBefore - 2000e18);
 
-        // Complete both on Arb side
+        // Complete both on Settlement side
         _completeBridge(nonceAlice, 1000e18);
         _completeBridge(nonceBob, 2000e18);
 

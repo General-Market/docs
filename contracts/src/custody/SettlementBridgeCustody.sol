@@ -15,11 +15,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IBridgeProxy.sol";
 
-/// @title ArbBridgeCustody - Arbitrum destination chain bridge custody
-/// @notice Handles releasing USDC on Arbitrum and cross-chain ITP purchases
-/// @dev UUPS upgradeable, deployed on Arbitrum chain
+/// @title SettlementBridgeCustody - Settlement destination chain bridge custody
+/// @notice Handles releasing USDC on Settlement and cross-chain ITP purchases
+/// @dev UUPS upgradeable, deployed on Settlement chain
 /// @custom:security-contact security@indexprotocol.com
-contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBridgeCustody {
+contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, ISettlementBridgeCustody {
     using SafeERC20 for IERC20;
 
     // ============ CONSTANTS ============
@@ -87,7 +87,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @notice Replay protection for Vision withdrawals
     mapping(uint256 => bool) public withdrawProcessed;
 
-    /// @notice USDC reserve tracker for Vision pool (6 decimals, tracks Arb-side USDC)
+    /// @notice USDC reserve tracker for Vision pool (6 decimals, tracks Settlement-side USDC)
     uint256 public visionReserve;
 
     /// @notice Storage gap for future upgrades
@@ -98,7 +98,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     // ============ INITIALIZER ============
 
-    /// @notice Initialize the ArbBridgeCustody contract
+    /// @notice Initialize the SettlementBridgeCustody contract
     /// @param issuerRegistry_ Address of the IssuerRegistry contract
     /// @param usdc_ Address of the USDC token contract
     /// @param l3Index_ Address of the L3 Investment contract
@@ -125,8 +125,8 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     // ============ BRIDGE COMPLETION ============
 
-    /// @inheritdoc IArbBridgeCustody
-    /// @notice Completes a bridge transfer from L3 to Arbitrum
+    /// @inheritdoc ISettlementBridgeCustody
+    /// @notice Completes a bridge transfer from L3 to Settlement
     /// @dev The `amount` parameter is in 18-decimal internal format (from L3).
     ///      The actual USDC transfer uses 6-decimal format (real USDC).
     ///      Events emit 18-decimal amounts for cross-chain consistency.
@@ -193,8 +193,8 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     // ============ CROSS-CHAIN ITP PURCHASE ============
 
-    /// @inheritdoc IArbBridgeCustody
-    /// @notice Creates a cross-chain order to buy ITP from Arbitrum
+    /// @inheritdoc ISettlementBridgeCustody
+    /// @notice Creates a cross-chain order to buy ITP from Settlement
     /// @dev User provides 6-decimal USDC amount (real USDC format).
     ///      Internally, amount is converted to 18-decimal for protocol consistency.
     /// @param itpId The ITP identifier to buy
@@ -203,7 +203,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
     /// @param slippageTier Slippage tier (0=0.3%, 1=1%, 2=3%)
     /// @param deadline Order expiration timestamp
     /// @return orderId The unique order ID assigned
-    function buyITPFromArbitrum(
+    function buyITPFromSettlement(
         bytes32 itpId,
         uint256 usdcAmount,
         uint256 limitPrice,
@@ -264,7 +264,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     // ============ BUY/SELL ORDER CUSTODY ============
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function completeBuyOrder(
         uint256 orderId,
         address vault,
@@ -291,12 +291,12 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
 
     // ============ VIEW FUNCTIONS ============
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function isNonceUsed(uint256 sourceChainId, uint256 nonce) external view override returns (bool) {
         return bridgeCompleted[sourceChainId][nonce];
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function l3IndexContract() external view override returns (address) {
         return l3Index;
     }
@@ -307,7 +307,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         return crossChainOrderId;
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     /// @notice Retrieves cross-chain order details
     /// @dev The returned `amount` field is in 18-decimal internal format
     ///      (converted from 6-decimal USDC at order creation time)
@@ -332,8 +332,8 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         bridgeProxy = IBridgeProxy(bridgeProxy_);
     }
 
-    /// @inheritdoc IArbBridgeCustody
-    function sellITPFromArbitrum(
+    /// @inheritdoc ISettlementBridgeCustody
+    function sellITPFromSettlement(
         bytes32 itpId,
         uint256 amount,
         uint256 limitPrice,
@@ -390,7 +390,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit CrossChainSellOrderCreated(orderId, itpId, msg.sender, bridgedItpAddress, amount);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function completeSellOrder(
         uint256 orderId,
         uint256 usdcProceeds,
@@ -424,7 +424,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit SellOrderCompleted(orderId, usdcProceeds);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function refundSellOrder(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -456,14 +456,14 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit SellOrderRefunded(orderId);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function getCrossChainSellOrder(uint256 orderId) external view override returns (TypesLib.CrossChainSellOrder memory order) {
         return crossChainSellOrders[orderId];
     }
 
     // ============ VISION DEPOSIT/WITHDRAW ============
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function depositToVision(uint256 usdcAmount) external override returns (uint256 orderId) {
         if (usdcAmount < MIN_USDC_AMOUNT) {
             revert ErrorsLib.E07F_UsdcAmountTooSmall(usdcAmount, MIN_USDC_AMOUNT);
@@ -485,7 +485,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit VisionDepositCreated(orderId, msg.sender, internalAmount);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function completeVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -505,7 +505,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit VisionDepositCompleted(orderId);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function refundVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -536,7 +536,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit VisionDepositRefunded(orderId, user, usdcAmount);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function completeVisionWithdraw(
         uint256 withdrawId,
         address user,
@@ -566,7 +566,7 @@ contract ArbBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IArbBr
         emit VisionWithdrawCompleted(withdrawId, user, usdcAmount);
     }
 
-    /// @inheritdoc IArbBridgeCustody
+    /// @inheritdoc ISettlementBridgeCustody
     function getVisionDeposit(uint256 orderId) external view override returns (address user, uint256 amount, uint256 createdAt) {
         TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
         return (dep.user, dep.amount, dep.createdAt);

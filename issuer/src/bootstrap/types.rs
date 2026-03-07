@@ -1,7 +1,7 @@
 //! Shared types for bootstrap module
 
 use crate::{
-    ArbitrumChainReader, ArbitrumChainWriter, BridgeOrchestrator, ConsensusConfig,
+    SettlementChainReader, SettlementChainWriter, BridgeOrchestrator, ConsensusConfig,
     ConsensusProtocol, CycleConfig, CycleManager, EthersChainReader, EthersChainWriter,
     HeartbeatMetrics, HeartbeatMonitor, InMemoryKeyRegistry, IssuerState, ItpCreationConfig,
     PeerHealthTracker, PriceFetcher, RegistrySyncCache,
@@ -46,8 +46,8 @@ pub enum BootstrapError {
 pub struct ChainComponents {
     pub reader: Arc<dyn ChainReader>,
     pub writer: Option<Arc<EthersChainWriter>>,
-    pub arbitrum_reader: Option<Arc<ArbitrumChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
-    pub arbitrum_writer: Option<Arc<ArbitrumChainWriter>>,
+    pub settlement_reader: Option<Arc<SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
+    pub settlement_writer: Option<Arc<SettlementChainWriter>>,
     pub rpc_url: String,
 }
 

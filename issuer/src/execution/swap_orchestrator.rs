@@ -61,7 +61,7 @@ pub enum SwapError {
 /// Result of a swap execution
 #[derive(Debug, Clone)]
 pub struct SwapResult {
-    /// Transaction hash on Arbitrum
+    /// Transaction hash on Settlement chain
     pub tx_hash: H256,
     /// Source token
     pub from_token: Address,
@@ -120,7 +120,7 @@ pub struct SwapOrchestrator {
     cached_client: Arc<CachedQuoteClient<OneInchQuoteClient>>,
     /// Swap calldata builder
     calldata_builder: Arc<SwapCalldataBuilder>,
-    /// Custody writer for Arbitrum BLSCustody execution
+    /// Custody writer for Settlement chain BLSCustody execution
     custody_writer: Arc<CustodyWriter>,
     /// Configuration
     config: SwapOrchestratorConfig,
@@ -270,7 +270,7 @@ impl SwapOrchestrator {
 
     /// Monitor swap confirmation and handle rollback (30 min timeout per architecture Section 16)
     ///
-    /// Polls the Arbitrum chain for the transaction receipt. If the transaction is not
+    /// Polls the Settlement chain for the transaction receipt. If the transaction is not
     /// confirmed within the configured timeout, returns a timeout error signaling that
     /// the caller should initiate a refund. If the transaction reverts, returns an
     /// execution error.
@@ -282,7 +282,7 @@ impl SwapOrchestrator {
         info!(
             tx_hash = ?tx_hash,
             timeout_secs = self.config.timeout_secs,
-            "Monitoring swap confirmation on Arbitrum"
+            "Monitoring swap confirmation on Settlement chain"
         );
 
         loop {
@@ -300,12 +300,12 @@ impl SwapOrchestrator {
 
             match self.custody_writer.check_receipt(tx_hash).await {
                 Ok(Some(true)) => {
-                    info!(tx_hash = ?tx_hash, "Swap confirmed on Arbitrum");
+                    info!(tx_hash = ?tx_hash, "Swap confirmed on Settlement chain");
                     return Ok(());
                 }
                 Ok(Some(false)) => {
                     self.failure_count.fetch_add(1, Ordering::Relaxed);
-                    warn!(tx_hash = ?tx_hash, "Swap transaction reverted on Arbitrum");
+                    warn!(tx_hash = ?tx_hash, "Swap transaction reverted on Settlement chain");
                     return Err(SwapError::ExecutionFailed(
                         "Transaction reverted on-chain".to_string(),
                     ));

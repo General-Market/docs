@@ -3,13 +3,13 @@
 //! Provides implementations for reading from and writing to the blockchain.
 //! - `EthersChainReader` - reads blockchain state (Story 3.2)
 //! - `EthersChainWriter` - submits transactions (Story 3.3)
-//! - `ArbitrumChainReader` - reads BridgeProxy events from Arbitrum (Story 6.21)
+//! - `SettlementChainReader` - reads BridgeProxy events from Settlement chain (Story 6.21)
 //! - `events` - cross-chain event parsing (Story 6.21)
 //!
 //! Both use ethers-rs to interact with the Index L3 chain.
 
-pub mod arbitrum_reader;
-pub mod arbitrum_writer;
+pub mod settlement_reader;
+pub mod settlement_writer;
 pub mod custody_writer;
 pub mod events;
 mod gas;
@@ -18,10 +18,10 @@ mod reader;
 mod retry;
 mod writer;
 
-pub use arbitrum_reader::{
-    ArbitrumChainReader, ArbitrumChainReaderConfig, ArbitrumReaderError, CrossChainOrderData,
+pub use settlement_reader::{
+    SettlementChainReader, SettlementChainReaderConfig, SettlementReaderError, CrossChainOrderData,
 };
-pub use arbitrum_writer::{ArbitrumChainWriter, ArbitrumChainWriterConfig, ArbitrumWriterError};
+pub use settlement_writer::{SettlementChainWriter, SettlementChainWriterConfig, SettlementWriterError};
 pub use custody_writer::{CustodyWriter, CustodyWriterConfig, CustodyWriterError};
 pub use events::{
     CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,

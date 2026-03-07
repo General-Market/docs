@@ -40,7 +40,7 @@ contract DeployMorphoMarket is Script {
         // Read existing deployment addresses
         address morphoAddr = vm.envAddress("MORPHO");
         address irmAddr = vm.envAddress("ADAPTIVE_IRM");
-        address arbUSDC = vm.envAddress("ARB_USDC");
+        address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
         address mirrorRegistry = vm.envAddress("MIRROR_REGISTRY");
 
@@ -54,7 +54,7 @@ contract DeployMorphoMarket is Script {
         console.log("Deployer:", deployer);
         console.log("Morpho:", morphoAddr);
         console.log("AdaptiveIRM:", irmAddr);
-        console.log("ArbUSDC:", arbUSDC);
+        console.log("SettlementUSDC:", settlementUSDC);
         console.log("ITP Vault (collateral):", itpVault);
         console.log("MirrorIssuerRegistry:", mirrorRegistry);
 
@@ -73,7 +73,7 @@ contract DeployMorphoMarket is Script {
 
         // 2. Create Morpho market with real ITPNAVOracle
         MarketParams memory marketParams = MarketParams({
-            loanToken: arbUSDC,
+            loanToken: settlementUSDC,
             collateralToken: itpVault,
             oracle: address(oracle),
             irm: irmAddr,
@@ -90,7 +90,7 @@ contract DeployMorphoMarket is Script {
             deployer,
             morphoAddr,
             1 days,
-            arbUSDC,
+            settlementUSDC,
             "Index ITP Lending Vault",
             "ilUSDC"
         );
@@ -131,7 +131,7 @@ contract DeployMorphoMarket is Script {
         );
         string memory p3 = string.concat(
             '  "marketParams": {\n',
-            '    "loanToken": "', vm.toString(arbUSDC),
+            '    "loanToken": "', vm.toString(settlementUSDC),
             '",\n    "collateralToken": "', vm.toString(itpVault),
             '",\n    "oracle": "', vm.toString(address(oracle)),
             '",\n    "irm": "', vm.toString(irmAddr),
@@ -159,13 +159,13 @@ contract ConfigureMorphoMarket is Script {
 
         // Read deployment addresses
         address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
-        address arbUSDC = vm.envAddress("ARB_USDC");
+        address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
         address oracleAddr = vm.envAddress("ITP_NAV_ORACLE");
         address irmAddr = vm.envAddress("ADAPTIVE_IRM");
 
         MarketParams memory marketParams = MarketParams({
-            loanToken: arbUSDC,
+            loanToken: settlementUSDC,
             collateralToken: itpVault,
             oracle: oracleAddr,
             irm: irmAddr,
@@ -187,8 +187,8 @@ contract ConfigureMorphoMarket is Script {
         console.log("Vault configured: supply cap accepted, supply queue set");
 
         // Seed vault with initial USDC liquidity
-        MockERC20(arbUSDC).mint(vm.addr(anvilKey), INITIAL_VAULT_LIQUIDITY);
-        IERC20(arbUSDC).approve(vaultAddr, INITIAL_VAULT_LIQUIDITY);
+        MockERC20(settlementUSDC).mint(vm.addr(anvilKey), INITIAL_VAULT_LIQUIDITY);
+        IERC20(settlementUSDC).approve(vaultAddr, INITIAL_VAULT_LIQUIDITY);
         vault.deposit(INITIAL_VAULT_LIQUIDITY, vm.addr(anvilKey));
         console.log("Vault seeded with", INITIAL_VAULT_LIQUIDITY / 1e6, "USDC");
 

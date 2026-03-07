@@ -1,29 +1,29 @@
 /**
- * Vision E2E: Withdraw to Arbitrum (Vision virtual balance → Arb USDC).
+ * Vision E2E: Withdraw to Settlement (Vision virtual balance → Settlement USDC).
  *
  * Tests:
- * 1. Ensure player has virtual balance (via Arb bridge deposit)
- * 2. Navigate to frontend and test "To Arbitrum" withdraw path
+ * 1. Ensure player has virtual balance (via Settlement bridge deposit)
+ * 2. Navigate to frontend and test "To Settlement" withdraw path
  * 3. Verify virtualBalance decreases on-chain
  *
- * Depends on player having virtual balance from prior Arb deposits.
+ * Depends on player having virtual balance from prior Settlement deposits.
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
 import {
   PLAYER1,
-  mintArbUsdc,
-  depositToVisionViaArb,
+  mintSettlementUsdc,
+  depositToVisionViaSettlement,
   getVisionVirtualBalance,
   getVisionPlayerBalance,
   depositToVisionBalance,
-  getArbUsdcBalance,
+  getSettlementUsdcBalance,
   ensureBatchExists,
 } from '../helpers/vision-api'
-import { mineArbBlocks, pollUntil } from '../helpers/backend-api'
+import { mineSettlementBlocks, pollUntil } from '../helpers/backend-api'
 import { POLL_TIMEOUT } from '../env'
 
-test.describe('Vision Withdraw to Arbitrum', () => {
-  test('withdraw to Arb UI path shows correct options', async ({ walletPage: page }) => {
+test.describe('Vision Withdraw to Settlement', () => {
+  test('withdraw to Settlement UI path shows correct options', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
     await ensureBatchExists()
@@ -68,20 +68,20 @@ test.describe('Vision Withdraw to Arbitrum', () => {
 
     // Both withdraw paths should be visible
     await expect(page.getByText('To L3 Wallet')).toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText('To Arbitrum')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('To Settlement')).toBeVisible({ timeout: 5_000 })
 
     // Verify descriptions — use first() to handle multiple matches
     await expect(page.getByText(/Release virtual balance/i).first()).toBeVisible({ timeout: 5_000 })
   })
 
-  test('virtual balance from Arb deposit can be withdrawn', async () => {
+  test('virtual balance from Settlement deposit can be withdrawn', async () => {
     test.setTimeout(180_000)
 
-    // 1. Create virtual balance via Arb bridge deposit
-    const arbAmount = BigInt(25) * BigInt(10 ** 6) // 25 USDC (6 dec)
-    await mintArbUsdc(PLAYER1, arbAmount)
-    await depositToVisionViaArb(PLAYER1, arbAmount)
-    await mineArbBlocks(5)
+    // 1. Create virtual balance via Settlement bridge deposit
+    const settlementAmount = BigInt(25) * BigInt(10 ** 6) // 25 USDC (6 dec)
+    await mintSettlementUsdc(PLAYER1, settlementAmount)
+    await depositToVisionViaSettlement(PLAYER1, settlementAmount)
+    await mineSettlementBlocks(5)
 
     // 2. Wait for issuers to credit virtual balance
     const virtualBefore = await getVisionVirtualBalance(PLAYER1)
@@ -94,7 +94,7 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     }
 
     if (virtualNow === 0n) {
-      console.log('No virtual balance credited — issuers may not have processed Arb deposit')
+      console.log('No virtual balance credited — issuers may not have processed Settlement deposit')
       return
     }
 
@@ -103,7 +103,7 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     console.log(`Virtual balance available: ${virtualNow}`)
   })
 
-  test('complete withdrawal from Vision virtual balance to Arb USDC', async ({ walletPage: page }) => {
+  test('complete withdrawal from Vision virtual balance to Settlement USDC', async ({ walletPage: page }) => {
     test.setTimeout(300_000) // 5 min — bridge withdrawal can take time
 
     await ensureBatchExists()
@@ -111,11 +111,11 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     // 1. Ensure player has virtual balance
     let virtualBalance = await getVisionVirtualBalance(PLAYER1)
     if (virtualBalance < 10n * 10n ** 18n) {
-      // Deposit via Arb bridge to create virtual balance
-      const arbAmount = 50n * 10n ** 6n // 50 USDC (6 dec)
-      await mintArbUsdc(PLAYER1, arbAmount)
-      await depositToVisionViaArb(PLAYER1, arbAmount)
-      await mineArbBlocks(5)
+      // Deposit via Settlement bridge to create virtual balance
+      const settlementAmount = 50n * 10n ** 6n // 50 USDC (6 dec)
+      await mintSettlementUsdc(PLAYER1, settlementAmount)
+      await depositToVisionViaSettlement(PLAYER1, settlementAmount)
+      await mineSettlementBlocks(5)
 
       // Wait for issuers to credit virtual balance
       virtualBalance = await pollUntil(
@@ -127,13 +127,13 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     }
 
     if (virtualBalance === 0n) {
-      test.skip(true, 'No virtual balance — issuers may not be processing Arb deposits')
+      test.skip(true, 'No virtual balance — issuers may not be processing Settlement deposits')
       return
     }
 
     console.log(`Virtual balance before withdraw: ${virtualBalance}`)
-    const arbUsdcBefore = await getArbUsdcBalance(PLAYER1)
-    console.log(`Arb USDC before: ${arbUsdcBefore}`)
+    const settlementUsdcBefore = await getSettlementUsdcBalance(PLAYER1)
+    console.log(`Settlement USDC before: ${settlementUsdcBefore}`)
 
     // 2. Navigate and connect wallet
     try {
@@ -163,28 +163,28 @@ test.describe('Vision Withdraw to Arbitrum', () => {
     }
     await withdrawBtn.click()
 
-    // 4. Click "To Arbitrum" option
+    // 4. Click "To Settlement" option
     await expect(page.getByText('Withdraw from Vision')).toBeVisible({ timeout: 10_000 })
-    const toArbBtn = page.getByText('To Arbitrum')
-    await expect(toArbBtn).toBeVisible({ timeout: 5_000 })
-    await toArbBtn.click()
+    const toSettlementBtn = page.getByText('To Settlement')
+    await expect(toSettlementBtn).toBeVisible({ timeout: 5_000 })
+    await toSettlementBtn.click()
 
-    // 5. Wait for Arb USDC to increase (bridge processes withdrawal)
+    // 5. Wait for Settlement USDC to increase (bridge processes withdrawal)
     try {
-      const arbUsdcAfter = await pollUntil(
-        () => getArbUsdcBalance(PLAYER1),
-        (bal) => bal > arbUsdcBefore,
+      const settlementUsdcAfter = await pollUntil(
+        () => getSettlementUsdcBalance(PLAYER1),
+        (bal) => bal > settlementUsdcBefore,
         POLL_TIMEOUT,
         5_000,
       )
-      console.log(`Arb USDC after: ${arbUsdcAfter} (delta: ${arbUsdcAfter - arbUsdcBefore})`)
+      console.log(`Settlement USDC after: ${settlementUsdcAfter} (delta: ${settlementUsdcAfter - settlementUsdcBefore})`)
 
       // 6. Verify virtual balance decreased
       const virtualAfter = await getVisionVirtualBalance(PLAYER1)
       console.log(`Virtual balance after: ${virtualAfter}`)
       expect(virtualAfter).toBeLessThan(virtualBalance)
     } catch {
-      console.log('Arb USDC did not increase — bridge withdrawal may not be processed yet')
+      console.log('Settlement USDC did not increase — bridge withdrawal may not be processed yet')
       // Don't fail — the withdrawal may need more time than our timeout
     }
   })

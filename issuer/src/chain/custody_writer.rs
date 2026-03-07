@@ -1,7 +1,7 @@
-//! CustodyWriter for Arbitrum BLSCustody execution
+//! CustodyWriter for Settlement chain BLSCustody execution
 //!
-//! Submits swap execution transactions to BLSCustody.execute() on Arbitrum.
-//! Uses the same ethers-rs patterns as EthersChainWriter but targets Arbitrum chain.
+//! Submits swap execution transactions to BLSCustody.execute() on the Settlement chain.
+//! Uses the same ethers-rs patterns as EthersChainWriter but targets the Settlement chain.
 
 use ethers::abi::{encode, Token};
 use ethers::prelude::*;
@@ -43,11 +43,11 @@ pub enum CustodyWriterError {
 /// Configuration for CustodyWriter
 #[derive(Debug, Clone)]
 pub struct CustodyWriterConfig {
-    /// Arbitrum RPC URL
+    /// Settlement chain RPC URL
     pub rpc_url: String,
-    /// BLSCustody proxy address on Arbitrum
+    /// BLSCustody proxy address on Settlement chain
     pub custody_address: Address,
-    /// Arbitrum chain ID (42161)
+    /// Settlement chain ID
     pub chain_id: u64,
     /// Gas multiplier for estimation (1.2 = 20% buffer)
     pub gas_multiplier: f64,
@@ -67,8 +67,8 @@ impl Default for CustodyWriterConfig {
     }
 }
 
-/// Type alias for Arbitrum signer
-type ArbSignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
+/// Type alias for Settlement chain signer
+type SettlementSignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 
 /// Bitmap-based nonce tracker matching BLSCustody.sol pattern.
 ///
@@ -129,15 +129,15 @@ impl NonceBitmap {
     }
 }
 
-/// CustodyWriter for executing swaps via BLSCustody on Arbitrum
+/// CustodyWriter for executing swaps via BLSCustody on the Settlement chain
 ///
 /// This writer handles:
 /// - Message hash construction matching BLSCustody.sol line 106
 /// - Nonce management via bitmap pattern (matching BLSCustody.sol)
-/// - Transaction submission to Arbitrum with gas limit and price checks
+/// - Transaction submission to Settlement chain with gas limit and price checks
 pub struct CustodyWriter {
-    /// Signer middleware for Arbitrum
-    client: Arc<ArbSignerClient>,
+    /// Signer middleware for Settlement chain
+    client: Arc<SettlementSignerClient>,
     /// Configuration
     config: CustodyWriterConfig,
     /// Bitmap nonce tracker matching BLSCustody.sol pattern
@@ -150,7 +150,7 @@ impl CustodyWriter {
     /// Create a new CustodyWriter
     ///
     /// # Arguments
-    /// * `config` - Arbitrum-specific configuration
+    /// * `config` - Settlement chain configuration
     /// * `private_key` - Hex private key for transaction signing
     pub fn new(config: CustodyWriterConfig, private_key: &str) -> Result<Self, CustodyWriterError> {
         if config.custody_address == Address::zero() {
@@ -267,7 +267,7 @@ impl CustodyWriter {
             nonce = %nonce,
             calldata_len = calldata.len(),
             sig_len = bls_signature.len(),
-            "Submitting BLSCustody.execute() on Arbitrum"
+            "Submitting BLSCustody.execute() on Settlement chain"
         );
 
         // Build transaction
@@ -318,7 +318,7 @@ impl CustodyWriter {
             target = ?target,
             nonce = %nonce,
             gas_limit = %gas_limit,
-            "BLSCustody.execute() submitted on Arbitrum"
+            "BLSCustody.execute() submitted on Settlement chain"
         );
 
         // Mark nonce as used in bitmap
@@ -338,7 +338,7 @@ impl CustodyWriter {
         self.nonce_bitmap.next_available()
     }
 
-    /// Check if a transaction has been confirmed on Arbitrum
+    /// Check if a transaction has been confirmed on the Settlement chain
     ///
     /// Returns `Some(true)` if confirmed and successful, `Some(false)` if reverted,
     /// `None` if not yet confirmed.

@@ -12,7 +12,7 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 /// @dev One oracle instance per ITP. Fully permissionless — security comes from BLS verification.
 ///      Anyone can push a price update as long as it carries a valid BLS signature
 ///      from the issuer network. Uses BLSVerifier (multi-pairing, 2/3 threshold, snapshot-based)
-///      — the SAME verification path as BridgeProxy, ArbBridgeCustody, and Investment.
+///      — the SAME verification path as BridgeProxy, SettlementBridgeCustody, and Investment.
 ///      The registry is MirrorIssuerRegistry (which implements IIssuerRegistry).
 /// @custom:security-contact security@indexprotocol.com
 contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
@@ -110,7 +110,7 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
             abi.encode(block.chainid, address(this), itpAddress, newPrice, timestamp, cycleNumber)
         );
 
-        // Same verification as BridgeProxy, ArbBridgeCustody, Investment
+        // Same verification as BridgeProxy, SettlementBridgeCustody, Investment
         // Multi-pairing, 2/3 threshold, snapshot-based
         _verifyBLS(messageHash, blsSignature, referenceNonce, signersBitmask);
 

@@ -43,7 +43,7 @@ const COLLATERAL_TOKEN = morphoDeploy.marketParams?.collateralToken;
 const LOAN_TOKEN = morphoDeploy.marketParams?.loanToken;
 const LLTV = morphoDeploy.marketParams?.lltv; // "770000000000000000" = 77%
 
-import { IS_ANVIL, L3_RPC, ARB_RPC } from '../env';
+import { IS_ANVIL, L3_RPC, SETTLEMENT_RPC } from '../env';
 const DEPLOYER = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {

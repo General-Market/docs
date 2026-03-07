@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../../src/core/Investment.sol";
 import "../../src/core/ITP.sol";
-import "../../src/custody/ArbBridgeCustody.sol";
+import "../../src/custody/SettlementBridgeCustody.sol";
 import "../../src/custody/L3BridgeCustody.sol";
 import "../../src/core/BLSCustody.sol";
 import "../../src/bridge/BridgeProxy.sol";
@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2ECrossChainBuyTest - End-to-End Cross-Chain Buy Integration Test (Story 6.12)
 /// @notice Tests the full cross-chain buy flow:
-///         buyITPFromArbitrum on Arb -> issuers process -> ITP minted on L3
+///         buyITPFromSettlement on Settlement -> issuers process -> ITP minted on L3
 /// @dev Uses vm.chainId() switching pattern from BridgeIntegrationTest and
 ///      order-to-mint patterns from E2EOrderToMint
 contract E2ECrossChainBuyTest is TestHelper {
@@ -34,10 +34,10 @@ contract E2ECrossChainBuyTest is TestHelper {
     Governance public governance;
     ITP public itpVault;
 
-    // Arbitrum contracts
-    ArbBridgeCustody public arbBridge;
+    // Settlement contracts
+    SettlementBridgeCustody public settlementBridge;
     IssuerRegistry public mockRegistry;
-    MockERC20 public arbUsdc;
+    MockERC20 public settlementUsdc;
 
     // ============ TEST ACCOUNTS ============
 
@@ -54,10 +54,10 @@ contract E2ECrossChainBuyTest is TestHelper {
     // ============ CONSTANTS ============
 
     uint256 public constant L3_CHAIN_ID = 111222333;
-    uint256 public constant ARB_CHAIN_ID = 42161;
+    uint256 public constant SETTLEMENT_CHAIN_ID = 42161;
     uint256 public constant INITIAL_PRICE = 1e18; // $1.00
-    // Story 7-6b: Arb USDC uses 6 decimals, L3 uses 18 decimals
-    uint256 public constant INITIAL_ARB_USDC = 10_000e6;  // 6 decimals for Arbitrum
+    // Story 7-6b: Settlement USDC uses 6 decimals, L3 uses 18 decimals
+    uint256 public constant INITIAL_SETTLEMENT_USDC = 10_000e6;  // 6 decimals for Settlement
     uint256 public constant INITIAL_L3_USDC = 10_000e18;  // 18 decimals for L3
 
     // ============ EVENTS (for expectEmit) ============
@@ -120,41 +120,41 @@ contract E2ECrossChainBuyTest is TestHelper {
         l3Usdc.mint(admin, 100_000e18);
         l3Usdc.approve(address(index), type(uint256).max);
 
-        // --- Deploy Arbitrum stack ---
-        // Deploy Arb USDC with 6 decimals (real USDC format on Arbitrum)
-        // Story 7-6b: Arbitrum USDC uses 6 decimals, L3 uses 18 decimals internally
-        arbUsdc = new MockERC20("USDC", "USDC", 6);
+        // --- Deploy Settlement stack ---
+        // Deploy Settlement USDC with 6 decimals (real USDC format on Settlement)
+        // Story 7-6b: Settlement USDC uses 6 decimals, L3 uses 18 decimals internally
+        settlementUsdc = new MockERC20("USDC", "USDC", 6);
 
-        // Deploy ArbBridgeCustody as UUPS proxy
-        ArbBridgeCustody arbImpl = new ArbBridgeCustody();
-        ERC1967Proxy arbProxy = new ERC1967Proxy(
-            address(arbImpl),
-            abi.encodeCall(ArbBridgeCustody.initialize, (address(mockRegistry), address(arbUsdc), address(index), address(0)))
+        // Deploy SettlementBridgeCustody as UUPS proxy
+        SettlementBridgeCustody settlementImpl = new SettlementBridgeCustody();
+        ERC1967Proxy settlementProxy = new ERC1967Proxy(
+            address(settlementImpl),
+            abi.encodeCall(SettlementBridgeCustody.initialize, (address(mockRegistry), address(settlementUsdc), address(index), address(0)))
         );
-        arbBridge = ArbBridgeCustody(address(arbProxy));
+        settlementBridge = SettlementBridgeCustody(address(settlementProxy));
 
-        // Fund test users with Arb USDC (6 decimals)
+        // Fund test users with Settlement USDC (6 decimals)
         address[3] memory users = [user1, user2, user3];
         for (uint256 i = 0; i < users.length; i++) {
-            arbUsdc.mint(users[i], INITIAL_ARB_USDC);
+            settlementUsdc.mint(users[i], INITIAL_SETTLEMENT_USDC);
             vm.prank(users[i]);
-            arbUsdc.approve(address(arbBridge), type(uint256).max);
+            settlementUsdc.approve(address(settlementBridge), type(uint256).max);
         }
     }
 
     // ============ HELPERS ============
 
-    /// @dev User buys ITP from Arbitrum (switches to ARB chain context)
-    function _buyITPFromArbitrum(
+    /// @dev User buys ITP from Settlement (switches to Settlement chain context)
+    function _buyITPFromSettlement(
         address user,
         uint256 amount,
         uint256 limitPrice,
         uint256 slippageTier,
         uint256 deadline
     ) internal returns (uint256 orderId) {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.prank(user);
-        orderId = arbBridge.buyITPFromArbitrum(itpId, amount, limitPrice, slippageTier, deadline);
+        orderId = settlementBridge.buyITPFromSettlement(itpId, amount, limitPrice, slippageTier, deadline);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -279,32 +279,32 @@ contract E2ECrossChainBuyTest is TestHelper {
         uint256 limitPrice = 1e18;         // $1.00 per share
         uint256 deadline = block.timestamp + 1 hours;
 
-        // === AC1: User calls buyITPFromArbitrum on Arbitrum ===
+        // === AC1: User calls buyITPFromSettlement on Settlement ===
 
-        uint256 userArbUsdcBefore = arbUsdc.balanceOf(user1);
-        uint256 custodyArbUsdcBefore = arbUsdc.balanceOf(address(arbBridge));
+        uint256 userSettlementUsdcBefore = settlementUsdc.balanceOf(user1);
+        uint256 custodySettlementUsdcBefore = settlementUsdc.balanceOf(address(settlementBridge));
 
-        // Switch to ARB chain and buy
-        vm.chainId(ARB_CHAIN_ID);
+        // Switch to Settlement chain and buy
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         // Expect CrossChainOrderCreated event with 18-decimal internal amount
-        vm.expectEmit(true, true, true, true, address(arbBridge));
+        vm.expectEmit(true, true, true, true, address(settlementBridge));
         emit CrossChainOrderCreated(0, itpId, user1, orderAmount18Dec);
 
         vm.prank(user1);
-        uint256 arbOrderId = arbBridge.buyITPFromArbitrum(itpId, orderAmount6Dec, limitPrice, 1, deadline);
+        uint256 settlementOrderId = settlementBridge.buyITPFromSettlement(itpId, orderAmount6Dec, limitPrice, 1, deadline);
 
         // Verify order ID
-        assertEq(arbOrderId, 0, "First cross-chain order should have ID 0");
+        assertEq(settlementOrderId, 0, "First cross-chain order should have ID 0");
 
-        // Verify 6-decimal USDC transferred from user to ArbBridgeCustody
-        assertEq(arbUsdc.balanceOf(user1), userArbUsdcBefore - orderAmount6Dec, "User USDC should decrease");
-        assertEq(arbUsdc.balanceOf(address(arbBridge)), custodyArbUsdcBefore + orderAmount6Dec, "Custody USDC should increase");
+        // Verify 6-decimal USDC transferred from user to SettlementBridgeCustody
+        assertEq(settlementUsdc.balanceOf(user1), userSettlementUsdcBefore - orderAmount6Dec, "User USDC should decrease");
+        assertEq(settlementUsdc.balanceOf(address(settlementBridge)), custodySettlementUsdcBefore + orderAmount6Dec, "Custody USDC should increase");
 
         // === AC2: Issuers observe event and process on L3 ===
 
         // Verify getCrossChainOrder returns 18-decimal internal amount
-        TypesLib.CrossChainOrder memory ccOrder = arbBridge.getCrossChainOrder(arbOrderId);
+        TypesLib.CrossChainOrder memory ccOrder = settlementBridge.getCrossChainOrder(settlementOrderId);
         assertEq(ccOrder.itpId, itpId, "Order itpId mismatch");
         assertEq(ccOrder.user, user1, "Order user mismatch");
         assertEq(ccOrder.amount, orderAmount18Dec, "Order amount should be 18 decimals");
@@ -356,8 +356,8 @@ contract E2ECrossChainBuyTest is TestHelper {
         TypesLib.LimitOrder memory order = index.getOrder(l3OrderId);
         assertEq(uint8(order.status), uint8(TypesLib.OrderStatus.FILLED), "L3 order should be FILLED");
 
-        // Cross-chain order on Arbitrum remains stored (18-decimal internal amount)
-        TypesLib.CrossChainOrder memory storedOrder = arbBridge.getCrossChainOrder(arbOrderId);
+        // Cross-chain order on Settlement remains stored (18-decimal internal amount)
+        TypesLib.CrossChainOrder memory storedOrder = settlementBridge.getCrossChainOrder(settlementOrderId);
         assertEq(storedOrder.amount, orderAmount18Dec, "Cross-chain order should remain stored");
     }
 
@@ -366,15 +366,15 @@ contract E2ECrossChainBuyTest is TestHelper {
     function test_e2e_crosschain_buy_multiple_users() public {
         uint256 deadline = block.timestamp + 1 hours;
 
-        // Story 7-6b: Users buy from Arb with 6-decimal USDC
+        // Story 7-6b: Users buy from Settlement with 6-decimal USDC
         // Contract converts to 18-decimal internally
-        uint256 arbOrder0 = _buyITPFromArbitrum(user1, 50e6, 1e18, 1, deadline);
-        uint256 arbOrder1 = _buyITPFromArbitrum(user2, 100e6, 1e18, 1, deadline);
-        uint256 arbOrder2 = _buyITPFromArbitrum(user3, 200e6, 1e18, 0, deadline);
+        uint256 settlementOrder0 = _buyITPFromSettlement(user1, 50e6, 1e18, 1, deadline);
+        uint256 settlementOrder1 = _buyITPFromSettlement(user2, 100e6, 1e18, 1, deadline);
+        uint256 settlementOrder2 = _buyITPFromSettlement(user3, 200e6, 1e18, 0, deadline);
 
-        assertEq(arbOrder0, 0);
-        assertEq(arbOrder1, 1);
-        assertEq(arbOrder2, 2);
+        assertEq(settlementOrder0, 0);
+        assertEq(settlementOrder1, 1);
+        assertEq(settlementOrder2, 2);
 
         // Simulate issuers processing on L3 — all in single batch (18-decimal amounts)
         uint256 l3Order1 = _submitOrderOnL3(50e18, 1e18, 1);
@@ -397,10 +397,10 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Verify ITP minted (all to admin in this simulation)
         assertEq(itpVault.balanceOf(admin), 350e18, "Total ITP should be 350");
 
-        // Verify Arb USDC balances (6-decimal amounts)
-        assertEq(arbUsdc.balanceOf(user1), INITIAL_ARB_USDC - 50e6, "User1 Arb USDC decreased");
-        assertEq(arbUsdc.balanceOf(user2), INITIAL_ARB_USDC - 100e6, "User2 Arb USDC decreased");
-        assertEq(arbUsdc.balanceOf(user3), INITIAL_ARB_USDC - 200e6, "User3 Arb USDC decreased");
+        // Verify Settlement USDC balances (6-decimal amounts)
+        assertEq(settlementUsdc.balanceOf(user1), INITIAL_SETTLEMENT_USDC - 50e6, "User1 Settlement USDC decreased");
+        assertEq(settlementUsdc.balanceOf(user2), INITIAL_SETTLEMENT_USDC - 100e6, "User2 Settlement USDC decreased");
+        assertEq(settlementUsdc.balanceOf(user3), INITIAL_SETTLEMENT_USDC - 200e6, "User3 Settlement USDC decreased");
 
         // Verify all L3 orders FILLED
         assertEq(uint8(index.getOrder(l3Order1).status), uint8(TypesLib.OrderStatus.FILLED));
@@ -411,66 +411,66 @@ contract E2ECrossChainBuyTest is TestHelper {
     // ============ TASK 1.5: EXPIRED DEADLINE (AC #5) ============
 
     function test_e2e_crosschain_buy_expired_deadline() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         // Deadline in the past should revert
         uint256 pastDeadline = block.timestamp - 1;
 
         vm.prank(user1);
         vm.expectRevert(); // E058_InvalidDeadline
-        arbBridge.buyITPFromArbitrum(itpId, 100e6, 1e18, 1, pastDeadline); // 6-decimal USDC
+        settlementBridge.buyITPFromSettlement(itpId, 100e6, 1e18, 1, pastDeadline); // 6-decimal USDC
     }
 
     // ============ TASK 1.6: INVALID SLIPPAGE TIER (AC #5) ============
 
     function test_e2e_crosschain_buy_invalid_slippage_tier() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E011_InvalidSlippageTier.selector, 3));
-        arbBridge.buyITPFromArbitrum(itpId, 100e6, 1e18, 3, deadline); // 6-decimal USDC
+        settlementBridge.buyITPFromSettlement(itpId, 100e6, 1e18, 3, deadline); // 6-decimal USDC
     }
 
     // ============ TASK 1.7: ZERO AMOUNT (AC #5) ============
 
     function test_e2e_crosschain_buy_zero_amount() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E059_CrossChainOrderZeroAmount.selector));
-        arbBridge.buyITPFromArbitrum(itpId, 0, 1e18, 1, deadline);
+        settlementBridge.buyITPFromSettlement(itpId, 0, 1e18, 1, deadline);
     }
 
     // ============ TASK 1.8: ZERO ITP ID (AC #5) ============
 
     function test_e2e_crosschain_buy_zero_itpId() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         uint256 deadline = block.timestamp + 1 hours;
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E060_ZeroITPId.selector));
-        arbBridge.buyITPFromArbitrum(bytes32(0), 100e6, 1e18, 1, deadline); // 6-decimal USDC
+        settlementBridge.buyITPFromSettlement(bytes32(0), 100e6, 1e18, 1, deadline); // 6-decimal USDC
     }
 
     // ============ TASK 1.9: INSUFFICIENT USDC (AC #5) ============
 
     function test_e2e_crosschain_buy_insufficient_usdc() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         uint256 deadline = block.timestamp + 1 hours;
         address poorUser = makeAddr("poorUser");
         // poorUser has no USDC but approves
         vm.prank(poorUser);
-        arbUsdc.approve(address(arbBridge), type(uint256).max);
+        settlementUsdc.approve(address(settlementBridge), type(uint256).max);
 
         vm.prank(poorUser);
         vm.expectRevert(); // SafeERC20 transferFrom will revert
-        arbBridge.buyITPFromArbitrum(itpId, 100e6, 1e18, 1, deadline); // 6-decimal USDC
+        settlementBridge.buyITPFromSettlement(itpId, 100e6, 1e18, 1, deadline); // 6-decimal USDC
     }
 
     // ============ TASK 1.10: ORDER STORED CORRECTLY (AC #1, #2) ============
@@ -482,11 +482,11 @@ contract E2ECrossChainBuyTest is TestHelper {
         uint256 limitPrice = 2e18;
         uint256 deadline = block.timestamp + 12 hours;
 
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.prank(user1);
-        uint256 orderId = arbBridge.buyITPFromArbitrum(itpId, amount6Dec, limitPrice, 2, deadline);
+        uint256 orderId = settlementBridge.buyITPFromSettlement(itpId, amount6Dec, limitPrice, 2, deadline);
 
-        TypesLib.CrossChainOrder memory order = arbBridge.getCrossChainOrder(orderId);
+        TypesLib.CrossChainOrder memory order = settlementBridge.getCrossChainOrder(orderId);
 
         assertEq(order.itpId, itpId, "itpId stored correctly");
         assertEq(order.user, user1, "user stored correctly");
@@ -501,37 +501,37 @@ contract E2ECrossChainBuyTest is TestHelper {
     function test_e2e_crosschain_buy_sequential_order_ids() public {
         uint256 deadline = block.timestamp + 1 hours;
 
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
-        // Story 7-6b: Use 6-decimal USDC for Arbitrum buys
+        // Story 7-6b: Use 6-decimal USDC for Settlement buys
         vm.prank(user1);
-        uint256 id0 = arbBridge.buyITPFromArbitrum(itpId, 10e6, 1e18, 0, deadline);
+        uint256 id0 = settlementBridge.buyITPFromSettlement(itpId, 10e6, 1e18, 0, deadline);
 
         vm.prank(user2);
-        uint256 id1 = arbBridge.buyITPFromArbitrum(itpId, 20e6, 1e18, 1, deadline);
+        uint256 id1 = settlementBridge.buyITPFromSettlement(itpId, 20e6, 1e18, 1, deadline);
 
         vm.prank(user3);
-        uint256 id2 = arbBridge.buyITPFromArbitrum(itpId, 30e6, 1e18, 2, deadline);
+        uint256 id2 = settlementBridge.buyITPFromSettlement(itpId, 30e6, 1e18, 2, deadline);
 
         assertEq(id0, 0, "First order ID should be 0");
         assertEq(id1, 1, "Second order ID should be 1");
         assertEq(id2, 2, "Third order ID should be 2");
 
         // Verify currentOrderId reflects the count
-        assertEq(arbBridge.currentOrderId(), 3, "Next order ID should be 3");
+        assertEq(settlementBridge.currentOrderId(), 3, "Next order ID should be 3");
     }
 
     // ============ TASK 1.12: HIGHER FILL PRICE (AC #4) ============
 
     function test_e2e_crosschain_buy_higher_fill_price() public {
-        // Story 7-6b: Arb uses 6 decimals, L3 uses 18 decimals
-        uint256 orderAmount6Dec = 100e6;   // Arb USDC (6 decimals)
+        // Story 7-6b: Settlement uses 6 decimals, L3 uses 18 decimals
+        uint256 orderAmount6Dec = 100e6;   // Settlement USDC (6 decimals)
         uint256 orderAmount18Dec = 100e18; // L3 internal (18 decimals)
         uint256 fillPrice = 2e18; // $2/share -> fewer ITP tokens
         uint256 deadline = block.timestamp + 1 hours;
 
-        // Buy on Arb (6-decimal USDC)
-        _buyITPFromArbitrum(user1, orderAmount6Dec, 2e18, 1, deadline);
+        // Buy on Settlement (6-decimal USDC)
+        _buyITPFromSettlement(user1, orderAmount6Dec, 2e18, 1, deadline);
 
         // Set NAV to $2 on L3 so limit price validation passes
         {
@@ -565,22 +565,22 @@ contract E2ECrossChainBuyTest is TestHelper {
     // ============ TASK 1.13: USDC CUSTODY BALANCES (AC #1, #4) ============
 
     function test_e2e_crosschain_buy_usdc_custody_balances() public {
-        // Story 7-6b: Arb uses 6 decimals, L3 uses 18 decimals
-        uint256 orderAmount6Dec = 100e6;   // Arb USDC (6 decimals)
+        // Story 7-6b: Settlement uses 6 decimals, L3 uses 18 decimals
+        uint256 orderAmount6Dec = 100e6;   // Settlement USDC (6 decimals)
         uint256 orderAmount18Dec = 100e18; // L3 internal (18 decimals)
         uint256 deadline = block.timestamp + 1 hours;
 
-        uint256 arbCustodyBefore = arbUsdc.balanceOf(address(arbBridge));
+        uint256 settlementCustodyBefore = settlementUsdc.balanceOf(address(settlementBridge));
         uint256 l3IndexBefore = l3Usdc.balanceOf(address(index));
 
-        // Buy on Arb (6-decimal USDC)
-        _buyITPFromArbitrum(user1, orderAmount6Dec, 1e18, 1, deadline);
+        // Buy on Settlement (6-decimal USDC)
+        _buyITPFromSettlement(user1, orderAmount6Dec, 1e18, 1, deadline);
 
-        // Verify USDC locked in ArbBridgeCustody (6-decimal amount)
+        // Verify USDC locked in SettlementBridgeCustody (6-decimal amount)
         assertEq(
-            arbUsdc.balanceOf(address(arbBridge)),
-            arbCustodyBefore + orderAmount6Dec,
-            "ArbBridgeCustody should hold user's USDC"
+            settlementUsdc.balanceOf(address(settlementBridge)),
+            settlementCustodyBefore + orderAmount6Dec,
+            "SettlementBridgeCustody should hold user's USDC"
         );
 
         // Submit and fill on L3 (18-decimal amount)
@@ -606,11 +606,11 @@ contract E2ECrossChainBuyTest is TestHelper {
             "L3 Index should hold USDC from admin order"
         );
 
-        // ArbBridgeCustody still holds the Arb USDC (6-decimal, immutable custody)
+        // SettlementBridgeCustody still holds the Settlement USDC (6-decimal, immutable custody)
         assertEq(
-            arbUsdc.balanceOf(address(arbBridge)),
-            arbCustodyBefore + orderAmount6Dec,
-            "ArbBridgeCustody should still hold USDC"
+            settlementUsdc.balanceOf(address(settlementBridge)),
+            settlementCustodyBefore + orderAmount6Dec,
+            "SettlementBridgeCustody should still hold USDC"
         );
     }
 
@@ -620,12 +620,12 @@ contract E2ECrossChainBuyTest is TestHelper {
     function test_getCrossChainOrder_returns_all_fields() public {
         uint256 deadline = block.timestamp + 6 hours;
 
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.prank(user1);
         // Story 7-6b: User provides 6-decimal USDC, stored as 18-decimal internally
-        uint256 orderId = arbBridge.buyITPFromArbitrum(itpId, 250e6, 3e18, 0, deadline);
+        uint256 orderId = settlementBridge.buyITPFromSettlement(itpId, 250e6, 3e18, 0, deadline);
 
-        TypesLib.CrossChainOrder memory order = arbBridge.getCrossChainOrder(orderId);
+        TypesLib.CrossChainOrder memory order = settlementBridge.getCrossChainOrder(orderId);
 
         assertEq(order.itpId, itpId);
         assertEq(order.user, user1);
@@ -637,19 +637,19 @@ contract E2ECrossChainBuyTest is TestHelper {
 
     // Task 3.2: currentOrderId increments properly
     function test_currentOrderId_increments() public {
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         uint256 deadline = block.timestamp + 1 hours;
 
-        assertEq(arbBridge.currentOrderId(), 0, "Starts at 0");
+        assertEq(settlementBridge.currentOrderId(), 0, "Starts at 0");
 
-        // Story 7-6b: Use 6-decimal USDC for Arbitrum buys
+        // Story 7-6b: Use 6-decimal USDC for Settlement buys
         vm.prank(user1);
-        arbBridge.buyITPFromArbitrum(itpId, 10e6, 1e18, 0, deadline);
-        assertEq(arbBridge.currentOrderId(), 1, "After 1st order");
+        settlementBridge.buyITPFromSettlement(itpId, 10e6, 1e18, 0, deadline);
+        assertEq(settlementBridge.currentOrderId(), 1, "After 1st order");
 
         vm.prank(user2);
-        arbBridge.buyITPFromArbitrum(itpId, 20e6, 1e18, 1, deadline);
-        assertEq(arbBridge.currentOrderId(), 2, "After 2nd order");
+        settlementBridge.buyITPFromSettlement(itpId, 20e6, 1e18, 1, deadline);
+        assertEq(settlementBridge.currentOrderId(), 2, "After 2nd order");
     }
 
     // Task 3.3: Event data matches stored order data
@@ -659,12 +659,12 @@ contract E2ECrossChainBuyTest is TestHelper {
         uint256 amount6Dec = 75e6;
         uint256 amount18Dec = 75e18;
 
-        vm.chainId(ARB_CHAIN_ID);
+        vm.chainId(SETTLEMENT_CHAIN_ID);
 
         vm.recordLogs();
 
         vm.prank(user1);
-        uint256 orderId = arbBridge.buyITPFromArbitrum(itpId, amount6Dec, 1e18, 1, deadline);
+        uint256 orderId = settlementBridge.buyITPFromSettlement(itpId, amount6Dec, 1e18, 1, deadline);
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
@@ -684,7 +684,7 @@ contract E2ECrossChainBuyTest is TestHelper {
                 uint256 eventAmount = abi.decode(logs[i].data, (uint256));
 
                 // Compare with stored order
-                TypesLib.CrossChainOrder memory stored = arbBridge.getCrossChainOrder(orderId);
+                TypesLib.CrossChainOrder memory stored = settlementBridge.getCrossChainOrder(orderId);
 
                 assertEq(eventOrderId, orderId, "Event orderId matches");
                 assertEq(eventItpId, stored.itpId, "Event itpId matches stored");
@@ -702,8 +702,8 @@ contract E2ECrossChainBuyTest is TestHelper {
     // ============ 8-STEP BRIDGE BUY FLOW ============
 
     /// @notice Full 8-step cross-chain buy flow exercising all bridge contracts
-    /// Steps: 1) Lock USDC on Arb → 2) Submit on L3 → 3) Batch + RecordCollateralMove
-    ///        → 4) Bridge L3→Arb → 5) Custody→Vault → 6) AP Trades (simulated)
+    /// Steps: 1) Lock USDC on Settlement → 2) Submit on L3 → 3) Batch + RecordCollateralMove
+    ///        → 4) Bridge L3→Settlement → 5) Custody→Vault → 6) AP Trades (simulated)
     ///        → 7) ConfirmFills → 8) MintBridgedShares
     function test_e2e_8step_bridge_buy_happy_path() public {
         uint256 orderAmount6Dec = 100e6;
@@ -723,7 +723,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         );
         L3BridgeCustody l3Bridge = L3BridgeCustody(address(l3BridgeProxy));
 
-        // BLSCustody (simulates Arbitrum custody wallet)
+        // BLSCustody (simulates Settlement custody wallet)
         BLSCustody blsCustodyImpl = new BLSCustody();
         ERC1967Proxy blsCustodyProxy = new ERC1967Proxy(
             address(blsCustodyImpl),
@@ -734,12 +734,12 @@ contract E2ECrossChainBuyTest is TestHelper {
         // MockBitgetVault (destination for AP trades)
         MockBitgetVault vault = new MockBitgetVault();
 
-        // Whitelist arbUsdc in BLSCustody (requires propose + timelock + activate)
-        blsCustody.proposeWhitelist(address(arbUsdc), _signProposeWhitelist(address(blsCustody), address(arbUsdc)), 3, 7);
+        // Whitelist settlementUsdc in BLSCustody (requires propose + timelock + activate)
+        blsCustody.proposeWhitelist(address(settlementUsdc), _signProposeWhitelist(address(blsCustody), address(settlementUsdc)), 3, 7);
         vm.warp(block.timestamp + 2 days + 1);
-        blsCustody.activateWhitelist(address(arbUsdc));
+        blsCustody.activateWhitelist(address(settlementUsdc));
 
-        // BridgeProxy + BridgedItpFactory (on Arbitrum)
+        // BridgeProxy + BridgedItpFactory (on Settlement)
         BridgeProxy bpImpl = new BridgeProxy();
         ERC1967Proxy bpProxy = new ERC1967Proxy(
             address(bpImpl),
@@ -770,12 +770,12 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Set deadline after all warps (whitelist timelock advanced block.timestamp)
         uint256 deadline = block.timestamp + 1 hours;
 
-        // ====== STEP 1: User locks USDC on Arbitrum ======
-        vm.chainId(ARB_CHAIN_ID);
+        // ====== STEP 1: User locks USDC on Settlement ======
+        vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.prank(user1);
-        uint256 arbOrderId = arbBridge.buyITPFromArbitrum(itpId, orderAmount6Dec, limitPrice, 1, deadline);
-        assertEq(arbOrderId, 0);
-        assertEq(arbUsdc.balanceOf(address(arbBridge)), orderAmount6Dec);
+        uint256 settlementOrderId = settlementBridge.buyITPFromSettlement(itpId, orderAmount6Dec, limitPrice, 1, deadline);
+        assertEq(settlementOrderId, 0);
+        assertEq(settlementUsdc.balanceOf(address(settlementBridge)), orderAmount6Dec);
 
         // ====== STEP 2: Issuer submits order on L3 ======
         vm.chainId(L3_CHAIN_ID);
@@ -789,7 +789,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         orderIds[0] = l3OrderId;
         _confirmBatch(1, orderIds);
 
-        // ====== STEP 3b: Record collateral move (L3→Arb for BUY) ======
+        // ====== STEP 3b: Record collateral move (L3→Settlement for BUY) ======
         // Seed initial L3 collateral (simulates ITP creation deposited collateral on L3)
         // CollateralRegistry _nonce starts at 0 and auto-increments on each call
         colReg.recordCollateralMove(
@@ -798,23 +798,23 @@ contract E2ECrossChainBuyTest is TestHelper {
         , 3, 7);
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), orderAmount18Dec, "L3 seeded");
 
-        // Now record the actual L3→Arb move (nonce 1)
+        // Now record the actual L3→Settlement move (nonce 1)
         colReg.recordCollateralMove(
-            itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
-            _signRecordCollateralMove(address(colReg), itpId, L3_CHAIN_ID, ARB_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 1)
+            itpId, L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY,
+            _signRecordCollateralMove(address(colReg), itpId, L3_CHAIN_ID, SETTLEMENT_CHAIN_ID, orderAmount18Dec, TypesLib.TxType.BUY, 1)
         , 3, 7);
 
         assertEq(colReg.getITPCollateralByChain(itpId, L3_CHAIN_ID), 0, "L3 collateral moved out");
-        assertEq(colReg.getITPCollateralByChain(itpId, ARB_CHAIN_ID), orderAmount18Dec, "Arb collateral received");
+        assertEq(colReg.getITPCollateralByChain(itpId, SETTLEMENT_CHAIN_ID), orderAmount18Dec, "Settlement collateral received");
 
-        // ====== STEP 4: Bridge L3→Arb (simulated: mint L3Usdc to L3BridgeCustody, then release on Arb side) ======
+        // ====== STEP 4: Bridge L3→Settlement (simulated: mint L3Usdc to L3BridgeCustody, then release on Settlement side) ======
         // In production, L3BridgeCustody.initiateBridge locks USDC on L3,
-        // and ArbBridgeCustody.completeBridge releases on Arb.
+        // and SettlementBridgeCustody.completeBridge releases on Settlement.
         // For this E2E we simulate by funding BLSCustody directly.
         l3Usdc.mint(address(l3Bridge), orderAmount18Dec); // Simulate L3 custody holds USDC
 
-        // Simulate Arb side: fund BLSCustody with 6-dec USDC
-        arbUsdc.mint(address(blsCustody), orderAmount6Dec);
+        // Simulate Settlement side: fund BLSCustody with 6-dec USDC
+        settlementUsdc.mint(address(blsCustody), orderAmount6Dec);
 
         // ====== STEP 5: BLSCustody transfers USDC to MockBitgetVault ======
         // Build the ERC20.transfer(vault, amount) calldata
@@ -823,9 +823,9 @@ contract E2ECrossChainBuyTest is TestHelper {
             address(vault),
             orderAmount6Dec
         );
-        blsCustody.execute(address(arbUsdc), transferCalldata, _signExecute(address(blsCustody), address(arbUsdc), transferCalldata, 0), 0, 3, 7);
-        assertEq(arbUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
-        assertEq(arbUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
+        blsCustody.execute(address(settlementUsdc), transferCalldata, _signExecute(address(blsCustody), address(settlementUsdc), transferCalldata, 0), 0, 3, 7);
+        assertEq(settlementUsdc.balanceOf(address(vault)), orderAmount6Dec, "Vault should hold USDC");
+        assertEq(settlementUsdc.balanceOf(address(blsCustody)), 0, "BLSCustody should be empty");
 
         // ====== STEP 6: AP trades (simulated — vault swaps USDC for underlying) ======
         // In production, the vault executes trades. In E2E, the USDC is already in vault.
@@ -847,11 +847,11 @@ contract E2ECrossChainBuyTest is TestHelper {
         uint256 expectedShares = (orderAmount18Dec * 1e18) / limitPrice;
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
 
-        // ====== STEP 8: Mint BridgedITP shares on Arbitrum ======
+        // ====== STEP 8: Mint BridgedITP shares on Settlement ======
         bridgeProx.mintBridgedShares(itpId, user1, expectedShares, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares), 3, 7);
 
         // Verify BridgedITP minted
-        assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Arb");
+        assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Settlement");
         assertEq(IERC20(bridgedItpAddr).balanceOf(user1), expectedShares, "BridgedITP amount matches shares");
     }
 }

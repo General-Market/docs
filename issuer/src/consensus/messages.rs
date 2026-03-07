@@ -91,8 +91,8 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
-            // Story 7.2: Bridge Arb→L3 orchestration messages
-            P2PMessage::BridgeArbToL3Proposal {
+            // Story 7.2: Bridge Settlement→L3 orchestration messages
+            P2PMessage::BridgeSettlementToL3Proposal {
                 leader_id,
                 order_id,
                 itp_id,
@@ -107,9 +107,9 @@ impl ConsensusMessageHandler {
                     ?leader_id,
                     order_id = %order_id,
                     itp_id = ?itp_id,
-                    "Received BridgeArbToL3Proposal"
+                    "Received BridgeSettlementToL3Proposal"
                 );
-                MessageHandleResult::ProcessBridgeArbToL3Proposal {
+                MessageHandleResult::ProcessBridgeSettlementToL3Proposal {
                     from,
                     leader_id,
                     order_id,
@@ -120,7 +120,7 @@ impl ConsensusMessageHandler {
                     leader_signature,
                 }
             }
-            P2PMessage::BridgeArbToL3Sign {
+            P2PMessage::BridgeSettlementToL3Sign {
                 signer_id,
                 signer_index,
                 order_id,
@@ -131,10 +131,10 @@ impl ConsensusMessageHandler {
                     ?signer_id,
                     signer_index,
                     order_id = %order_id,
-                    "Received BridgeArbToL3Sign"
+                    "Received BridgeSettlementToL3Sign"
                 );
                 // Use signer_id from message for identification
-                MessageHandleResult::ProcessBridgeArbToL3Sign {
+                MessageHandleResult::ProcessBridgeSettlementToL3Sign {
                     from: signer_id,
                     signer_index,
                     order_id,
@@ -144,7 +144,7 @@ impl ConsensusMessageHandler {
             // Story 7.3: Submit Order for User messages
             P2PMessage::SubmitOrderForUserProposal {
                 leader_id,
-                arb_order_id,
+                settlement_order_id,
                 itp_id,
                 user,
                 amount,
@@ -157,14 +157,14 @@ impl ConsensusMessageHandler {
                 debug!(
                     ?from,
                     ?leader_id,
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     itp_id = ?itp_id,
                     "Received SubmitOrderForUserProposal"
                 );
                 MessageHandleResult::ProcessSubmitOrderForUserProposal {
                     from,
                     leader_id,
-                    arb_order_id,
+                    settlement_order_id,
                     itp_id,
                     user,
                     amount,
@@ -177,21 +177,21 @@ impl ConsensusMessageHandler {
             P2PMessage::SubmitOrderForUserSign {
                 signer_id,
                 signer_index,
-                arb_order_id,
+                settlement_order_id,
                 signature,
             } => {
                 debug!(
                     ?from,
                     ?signer_id,
                     signer_index,
-                    arb_order_id = %arb_order_id,
+                    settlement_order_id = %settlement_order_id,
                     "Received SubmitOrderForUserSign"
                 );
                 // Use signer_id from message for identification
                 MessageHandleResult::ProcessSubmitOrderForUserSign {
                     from: signer_id,
                     signer_index,
-                    arb_order_id,
+                    settlement_order_id,
                     signature,
                 }
             }
@@ -284,8 +284,8 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
-            // Story 7.5: Bridge L3→Arb messages
-            P2PMessage::BridgeL3ToArbProposal {
+            // Story 7.5: Bridge L3→Settlement messages
+            P2PMessage::BridgeL3ToSettlementProposal {
                 leader_id,
                 cycle_number,
                 order_ids,
@@ -300,9 +300,9 @@ impl ConsensusMessageHandler {
                     cycle_number,
                     num_orders = order_ids.len(),
                     total_amount = %total_amount,
-                    "Received BridgeL3ToArbProposal"
+                    "Received BridgeL3ToSettlementProposal"
                 );
-                MessageHandleResult::ProcessBridgeL3ToArbProposal {
+                MessageHandleResult::ProcessBridgeL3ToSettlementProposal {
                     from,
                     leader_id,
                     cycle_number,
@@ -312,7 +312,7 @@ impl ConsensusMessageHandler {
                     leader_signature,
                 }
             }
-            P2PMessage::BridgeL3ToArbSign {
+            P2PMessage::BridgeL3ToSettlementSign {
                 signer_id,
                 signer_index,
                 cycle_number,
@@ -323,10 +323,10 @@ impl ConsensusMessageHandler {
                     ?signer_id,
                     signer_index,
                     cycle_number,
-                    "Received BridgeL3ToArbSign"
+                    "Received BridgeL3ToSettlementSign"
                 );
                 // Use signer_id from message for identification
-                MessageHandleResult::ProcessBridgeL3ToArbSign {
+                MessageHandleResult::ProcessBridgeL3ToSettlementSign {
                     from: signer_id,
                     signer_index,
                     cycle_number,
@@ -848,7 +848,7 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
-            // NAV oracle price update (Arb ITPNAVOracle)
+            // NAV oracle price update (Settlement ITPNAVOracle)
             P2PMessage::NavOracleProposal {
                 leader_id,
                 itp_address,
@@ -1260,8 +1260,8 @@ pub enum MessageHandleResult {
         nonce: U256,
         signature: P2PBLSSignature,
     },
-    /// Process a bridge Arb→L3 proposal from the leader (Story 7.2)
-    ProcessBridgeArbToL3Proposal {
+    /// Process a bridge Settlement→L3 proposal from the leader (Story 7.2)
+    ProcessBridgeSettlementToL3Proposal {
         from: PeerId,
         leader_id: PeerId,
         order_id: U256,
@@ -1271,8 +1271,8 @@ pub enum MessageHandleResult {
         deadline: U256,
         leader_signature: P2PBLSSignature,
     },
-    /// Process a bridge Arb→L3 signature from a follower (Story 7.2)
-    ProcessBridgeArbToL3Sign {
+    /// Process a bridge Settlement→L3 signature from a follower (Story 7.2)
+    ProcessBridgeSettlementToL3Sign {
         from: PeerId,
         /// Signer's index in the issuer set (for bitmap calculation)
         signer_index: u8,
@@ -1283,7 +1283,7 @@ pub enum MessageHandleResult {
     ProcessSubmitOrderForUserProposal {
         from: PeerId,
         leader_id: PeerId,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         itp_id: H256,
         user: Address,
         amount: U256,
@@ -1297,7 +1297,7 @@ pub enum MessageHandleResult {
         from: PeerId,
         /// Signer's index in the issuer set (for bitmap calculation)
         signer_index: u8,
-        arb_order_id: U256,
+        settlement_order_id: U256,
         signature: P2PBLSSignature,
     },
     /// Process a confirm batch proposal from the leader (Story 7.4)
@@ -1333,8 +1333,8 @@ pub enum MessageHandleResult {
         cycle_number: u64,
         signature: P2PBLSSignature,
     },
-    /// Process a bridge L3→Arb proposal from the leader (Story 7.5)
-    ProcessBridgeL3ToArbProposal {
+    /// Process a bridge L3→Settlement proposal from the leader (Story 7.5)
+    ProcessBridgeL3ToSettlementProposal {
         from: PeerId,
         leader_id: PeerId,
         cycle_number: u64,
@@ -1343,8 +1343,8 @@ pub enum MessageHandleResult {
         destination: Address,
         leader_signature: P2PBLSSignature,
     },
-    /// Process a bridge L3→Arb signature from a follower (Story 7.5)
-    ProcessBridgeL3ToArbSign {
+    /// Process a bridge L3→Settlement signature from a follower (Story 7.5)
+    ProcessBridgeL3ToSettlementSign {
         from: PeerId,
         /// Signer's index in the issuer set (for bitmap calculation)
         signer_index: u8,
@@ -1539,7 +1539,7 @@ pub enum MessageHandleResult {
         itp_id: H256,
         signature: P2PBLSSignature,
     },
-    /// Process a NAV oracle proposal from the leader (Arb ITPNAVOracle)
+    /// Process a NAV oracle proposal from the leader (Settlement ITPNAVOracle)
     ProcessNavOracleProposal {
         from: PeerId,
         leader_id: PeerId,
@@ -1552,7 +1552,7 @@ pub enum MessageHandleResult {
         reference_nonce: u64,
         leader_signature: P2PBLSSignature,
     },
-    /// Process a NAV oracle signature from a follower (Arb ITPNAVOracle)
+    /// Process a NAV oracle signature from a follower (Settlement ITPNAVOracle)
     ProcessNavOracleSign {
         from: PeerId,
         signer_index: u8,
@@ -1596,11 +1596,11 @@ impl MessageHandleResult {
             Self::ProcessPriceProposal { from, .. } => Some(*from),
             Self::ProcessBatchProposal { from, .. } => Some(*from),
             Self::ProcessItpCreationProposal { from, .. } => Some(*from),
-            Self::ProcessBridgeArbToL3Proposal { from, .. } => Some(*from),
+            Self::ProcessBridgeSettlementToL3Proposal { from, .. } => Some(*from),
             Self::ProcessSubmitOrderForUserProposal { from, .. } => Some(*from),
             Self::ProcessConfirmBatchProposal { from, .. } => Some(*from),
             Self::ProcessConfirmFillsProposal { from, .. } => Some(*from),
-            Self::ProcessBridgeL3ToArbProposal { from, .. } => Some(*from),
+            Self::ProcessBridgeL3ToSettlementProposal { from, .. } => Some(*from),
             Self::ProcessReleaseToVaultProposal { from, .. } => Some(*from),
             Self::ProcessRebalanceBatchProposal { from, .. } => Some(*from),
             Self::ProcessUpdateWeightsProposal { from, .. } => Some(*from),

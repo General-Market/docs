@@ -51,18 +51,18 @@ export BITGET_READONLY_API_SECRET="${BITGET_PK:-${BITGET_READONLY_API_SECRET}}"
 export BITGET_READONLY_PASSPHRASE="${BITGET_PASS:-${BITGET_READONLY_PASSPHRASE}}"
 
 # Local chain configuration — MUST be set AFTER sourcing system.env
-# (system.env defines ARB_RPC_URL pointing to real Arbitrum which would break local dev)
+# (system.env defines SETTLEMENT_RPC_URL pointing to real Settlement which would break local dev)
 CHAIN_ID=111222333
 RPC_URL="http://localhost:8545"
-ARB_CHAIN_ID=421611337
-ARB_RPC_URL="http://localhost:8546"
+SETTLEMENT_CHAIN_ID=421611337
+SETTLEMENT_RPC_URL="http://localhost:8546"
 
 # Unset production contract addresses from system.env — local dev reads from deployment file
 # (env vars have higher priority than --deployment-file, so stale prod addresses break local dev)
 unset ISSUER_INDEX_ADDRESS ISSUER_GOVERNANCE_ADDRESS ISSUER_ISSUER_REGISTRY_ADDRESS
 unset ISSUER_COLLATERAL_REGISTRY_ADDRESS ISSUER_BLS_CUSTODY_ADDRESS ISSUER_L3_BRIDGE_CUSTODY_ADDRESS
-unset ISSUER_BRIDGE_PROXY_ADDRESS ISSUER_BITGET_VAULT ISSUER_ARB_CUSTODY
-unset ISSUER_RPC_URL ISSUER_ARBITRUM_RPC_URL ISSUER_ARBITRUM_CHAIN_ID ISSUER_LOG_LEVEL
+unset ISSUER_BRIDGE_PROXY_ADDRESS ISSUER_BITGET_VAULT ISSUER_SETTLEMENT_CUSTODY
+unset ISSUER_RPC_URL ISSUER_SETTLEMENT_RPC_URL ISSUER_SETTLEMENT_CHAIN_ID ISSUER_LOG_LEVEL
 
 # Add Foundry to PATH if not already available
 if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
@@ -95,7 +95,7 @@ print_help() {
     echo ""
     echo "What gets deployed:"
     echo "  1. Anvil local chain (chain ID 111222333)"
-    echo "  2. Core contracts (Index, BridgeProxy, ArbBridgeCustody, etc.)"
+    echo "  2. Core contracts (Index, BridgeProxy, SettlementBridgeCustody, etc.)"
     echo "  3. 100-asset ITP with equal weights"
     echo "  4. All Bitget token pairs (~627 tokens from live Bitget API)"
     echo "  5. Morpho Blue lending (Morpho, MetaMorpho vault, Oracle, IRM)"
@@ -197,7 +197,7 @@ if [ -f .pids ]; then
             if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
                 NAME=$(grep ":$PID$" .pids.info 2>/dev/null | cut -d: -f1 || echo "unknown")
                 case "$NAME" in
-                    anvil-l3|anvil-arb|data-node|frontend) echo -e "  ${GREEN}Keeping $NAME (PID: $PID)${NC}" ;;
+                    anvil-l3|anvil-settlement|data-node|frontend) echo -e "  ${GREEN}Keeping $NAME (PID: $PID)${NC}" ;;
                     *) kill "$PID" 2>/dev/null || true ;;
                 esac
             fi
@@ -248,29 +248,29 @@ if [ "$SKIP_DEPLOY" = false ]; then
     fi
 fi
 
-# ============ STEP 1: Anvil (L3 + Arbitrum) ============
-echo -e "${BLUE}[1/$TOTAL_STEPS] Starting Anvil chains (L3: $CHAIN_ID, Arbitrum: $ARB_CHAIN_ID)...${NC}"
+# ============ STEP 1: Anvil (L3 + Settlement) ============
+echo -e "${BLUE}[1/$TOTAL_STEPS] Starting Anvil chains (L3: $CHAIN_ID, Settlement: $SETTLEMENT_CHAIN_ID)...${NC}"
 
 # When --skip-deploy is used and Anvils are already running, reuse them
 if [ "$SKIP_DEPLOY" = true ] && lsof -ti:8545 > /dev/null 2>&1 && lsof -ti:8546 > /dev/null 2>&1; then
     ANVIL_L3_PID=$(lsof -ti:8545 | head -1)
-    ANVIL_ARB_PID=$(lsof -ti:8546 | head -1)
+    ANVIL_SETTLEMENT_PID=$(lsof -ti:8546 | head -1)
     echo $ANVIL_L3_PID >> .pids
     echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
-    echo $ANVIL_ARB_PID >> .pids
-    echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
+    echo $ANVIL_SETTLEMENT_PID >> .pids
+    echo "anvil-settlement:$ANVIL_SETTLEMENT_PID" >> .pids.info
     echo -e "  L3 Anvil: ${GREEN}reused (PID: $ANVIL_L3_PID)${NC}"
-    echo -e "  Arb Anvil: ${GREEN}reused (PID: $ANVIL_ARB_PID)${NC}"
+    echo -e "  Settlement Anvil: ${GREEN}reused (PID: $ANVIL_SETTLEMENT_PID)${NC}"
 else
     nohup anvil --chain-id $CHAIN_ID --host 0.0.0.0 --port 8545 --accounts 100 -q > /dev/null 2>&1 &
     ANVIL_L3_PID=$!
     echo $ANVIL_L3_PID >> .pids
     echo "anvil-l3:$ANVIL_L3_PID" >> .pids.info
 
-    nohup anvil --chain-id $ARB_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
-    ANVIL_ARB_PID=$!
-    echo $ANVIL_ARB_PID >> .pids
-    echo "anvil-arb:$ANVIL_ARB_PID" >> .pids.info
+    nohup anvil --chain-id $SETTLEMENT_CHAIN_ID --host 0.0.0.0 --port 8546 --accounts 100 -q > /dev/null 2>&1 &
+    ANVIL_SETTLEMENT_PID=$!
+    echo $ANVIL_SETTLEMENT_PID >> .pids
+    echo "anvil-settlement:$ANVIL_SETTLEMENT_PID" >> .pids.info
 fi
 
 # Poll both Anvils in parallel
@@ -289,22 +289,22 @@ wait_for_rpc() {
 
 wait_for_rpc "L3" "$RPC_URL" &
 L3_WAIT_PID=$!
-wait_for_rpc "Arb" "$ARB_RPC_URL" &
-ARB_WAIT_PID=$!
+wait_for_rpc "Settlement" "$SETTLEMENT_RPC_URL" &
+SETTLEMENT_WAIT_PID=$!
 
-L3_OK=true; ARB_OK=true
+L3_OK=true; SETTLEMENT_OK=true
 wait $L3_WAIT_PID || L3_OK=false
-wait $ARB_WAIT_PID || ARB_OK=false
+wait $SETTLEMENT_WAIT_PID || SETTLEMENT_OK=false
 
 if $L3_OK; then
     echo -e "  L3 Anvil: ${GREEN}OK${NC}"
 else
     echo -e "${RED}Error: L3 Anvil failed to start${NC}"; exit 1
 fi
-if $ARB_OK; then
-    echo -e "  Arb Anvil: ${GREEN}OK${NC}"
+if $SETTLEMENT_OK; then
+    echo -e "  Settlement Anvil: ${GREEN}OK${NC}"
 else
-    echo -e "${RED}Error: Arbitrum Anvil failed to start${NC}"; exit 1
+    echo -e "${RED}Error: Settlement Anvil failed to start${NC}"; exit 1
 fi
 
 if [ "$SKIP_DEPLOY" = true ]; then
@@ -315,7 +315,7 @@ if [ "$SKIP_DEPLOY" = true ]; then
     fi
 else
     # ============ STEP 2: Core contracts (both chains) ============
-    echo -e "${BLUE}[2/$TOTAL_STEPS] Deploying core contracts (L3 + Arbitrum)...${NC}"
+    echo -e "${BLUE}[2/$TOTAL_STEPS] Deploying core contracts (L3 + Settlement)...${NC}"
     cd contracts
     export PRIVATE_KEY=$DEPLOYER_KEY
 
@@ -331,23 +331,23 @@ else
     fi
     echo -e "  ${GREEN}L3 core contracts deployed${NC}"
 
-    # Save L3 deployment before Arb deploy overwrites e2e-full-system.json
-    # (Arb deploy sets chainId=42161, but AP/issuers need L3 chainId=111222333)
+    # Save L3 deployment before Settlement deploy overwrites e2e-full-system.json
+    # (Settlement deploy sets chainId=42161, but AP/issuers need L3 chainId=111222333)
     [ -f ../deployments/e2e-full-system.json ] && cp ../deployments/e2e-full-system.json ../deployments/e2e-full-system-l3.json
 
-    # 2b: Deploy to Arb (same deployer, fresh Anvil → identical addresses)
+    # 2b: Deploy to Settlement (same deployer, fresh Anvil → identical addresses)
     if ! forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
-        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-core-arb.log 2>&1; then
-        echo -e "${RED}Error: Arbitrum core deployment failed${NC}"
-        tail -20 ../logs/deploy-core-arb.log
+        --broadcast --slow --rpc-url $SETTLEMENT_RPC_URL > ../logs/deploy-core-settlement.log 2>&1; then
+        echo -e "${RED}Error: Settlement core deployment failed${NC}"
+        tail -20 ../logs/deploy-core-settlement.log
         exit 1
     fi
-    echo -e "  ${GREEN}Arbitrum core contracts deployed (mirror)${NC}"
+    echo -e "  ${GREEN}Settlement core contracts deployed (mirror)${NC}"
     cd ..
 
     # Copy the L3 deployment to active (AP/issuers expect L3 chain ID 111222333).
-    # The Arb deploy overwrites e2e-full-system.json with chainId=42161, so we
-    # use the L3 version saved before Arb deploy (addresses are identical).
+    # The Settlement deploy overwrites e2e-full-system.json with chainId=42161, so we
+    # use the L3 version saved before Settlement deploy (addresses are identical).
     L3_DEPLOY="deployments/e2e-full-system-l3.json"
     if [ ! -f "$L3_DEPLOY" ] && [ -f deployments/e2e-full-system.json ]; then
         L3_DEPLOY="deployments/e2e-full-system.json"
@@ -362,24 +362,24 @@ else
     # Fund test user with native ETH on both chains
     TEST_USER=$TEST_USER_ADDRESS
     cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY --value 100ether $TEST_USER --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
     # NOTE: impersonation moved to after all deployments (Step 7) — Forge --broadcast
     # resets Anvil impersonation state, so impersonating here gets lost by Steps 3-6.
     echo -e "  ${GREEN}Test user $TEST_USER funded with 100 ETH on both chains${NC}"
 
-    # Fund AP wallet with native ETH on Arb (needed for gas on executeTrade + swapStable)
+    # Fund AP wallet with native ETH on Settlement (needed for gas on executeTrade + swapStable)
     AP_ADDR=$(cast wallet address $AP_KEY)
-    cast send --private-key $DEPLOYER_KEY --value 100ether $AP_ADDR --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}AP $AP_ADDR funded with 100 ETH on Arb${NC}"
+    cast send --private-key $DEPLOYER_KEY --value 100ether $AP_ADDR --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}AP $AP_ADDR funded with 100 ETH on Settlement${NC}"
 
     # Fund test user with USDC tokens on both chains
     L3_WUSDC=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['L3_WUSDC'])")
-    ARB_USDC=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ARB_USDC'])")
+    SETTLEMENT_USDC=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['SETTLEMENT_USDC'])")
     cast send --private-key $DEPLOYER_KEY $L3_WUSDC "mint(address,uint256)" $TEST_USER 50000000000000000000000 --rpc-url $RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $RPC_URL > /dev/null 2>&1
-    # Mint ARB_USDC on Arbitrum too (frontend reads from Arb)
-    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}Test user funded with 50k L3_WUSDC (L3) + 50k ARB_USDC (both chains)${NC}"
+    cast send --private-key $DEPLOYER_KEY $SETTLEMENT_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $RPC_URL > /dev/null 2>&1
+    # Mint SETTLEMENT_USDC on Settlement too (frontend reads from Settlement)
+    cast send --private-key $DEPLOYER_KEY $SETTLEMENT_USDC "mint(address,uint256)" $TEST_USER 50000000000 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}Test user funded with 50k L3_WUSDC (L3) + 50k SETTLEMENT_USDC (both chains)${NC}"
 
     # Fund Vision bots (Players for Vision) — Vision now lives on L3
     # Fund with GM (native) for gas + L3_WUSDC (18 dec) for deposits
@@ -398,37 +398,37 @@ else
     MOCK_BITGET_VAULT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['MockBitgetVault'])")
     AP_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['accounts']['ap'])")
     MOCK_USDT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('MOCK_USDT',''))" 2>/dev/null || echo "")
-    ARB_USDC=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ARB_USDC'])")
+    SETTLEMENT_USDC=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['SETTLEMENT_USDC'])")
 
     # Register USDC + USDT as supported stablecoins in MockBitgetVault (for swapStable)
-    # ARB_USDC = 6 decimals, MOCK_USDT = 18 decimals (L3 standard)
-    # Must register on BOTH chains since vault is deployed on both (AP uses Arb RPC)
+    # SETTLEMENT_USDC = 6 decimals, MOCK_USDT = 18 decimals (L3 standard)
+    # Must register on BOTH chains since vault is deployed on both (AP uses Settlement RPC)
     if [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "" ]; then
         cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT \
             "setStableTokens(address,uint8,address,uint8)" \
-            "$ARB_USDC" 6 "$MOCK_USDT" 18 \
+            "$SETTLEMENT_USDC" 6 "$MOCK_USDT" 18 \
             --rpc-url $RPC_URL > /dev/null 2>&1
         cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT \
             "setStableTokens(address,uint8,address,uint8)" \
-            "$ARB_USDC" 6 "$MOCK_USDT" 18 \
-            --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-        echo -e "  ${GREEN}MockBitgetVault: registered USDC=$ARB_USDC(6dec) + USDT=$MOCK_USDT(18dec) for swapStable (both chains)${NC}"
+            "$SETTLEMENT_USDC" 6 "$MOCK_USDT" 18 \
+            --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+        echo -e "  ${GREEN}MockBitgetVault: registered USDC=$SETTLEMENT_USDC(6dec) + USDT=$MOCK_USDT(18dec) for swapStable (both chains)${NC}"
     fi
 
     # Enable trading fee simulation (10 bps = 0.1%) on both chains
     cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setFee(uint256)" 10 --rpc-url $RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setFee(uint256)" 10 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setFee(uint256)" 10 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}MockBitgetVault: fee set to 10 bps (0.1%) on both chains${NC}"
 
     # Spread is now applied by AP using real Bitget bid/ask — vault spread = 0
     cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setSpread(uint256)" 0 --rpc-url $RPC_URL > /dev/null 2>&1
-    cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setSpread(uint256)" 0 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+    cast send --private-key $DEPLOYER_KEY $MOCK_BITGET_VAULT "setSpread(uint256)" 0 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
     echo -e "  ${GREEN}MockBitgetVault: spread=0 (real bid/ask applied by AP from /fast-prices)${NC}"
 
-    # Fund vault with ARB_USDC on Arb chain (needed for fundSellOrder to pay users)
+    # Fund vault with SETTLEMENT_USDC on Settlement chain (needed for fundSellOrder to pay users)
     # 1M USDC (6 decimals) = 1_000_000 * 10^6 = 1000000000000
-    cast send --private-key $DEPLOYER_KEY $ARB_USDC "mint(address,uint256)" $MOCK_BITGET_VAULT 1000000000000 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-    echo -e "  ${GREEN}MockBitgetVault: funded with 1M ARB_USDC on Arb (for sell order payouts)${NC}"
+    cast send --private-key $DEPLOYER_KEY $SETTLEMENT_USDC "mint(address,uint256)" $MOCK_BITGET_VAULT 1000000000000 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+    echo -e "  ${GREEN}MockBitgetVault: funded with 1M SETTLEMENT_USDC on Settlement (for sell order payouts)${NC}"
 
     # Fetch real Bitget prices for ITP creation (so NAV starts at ~$1, not ~$730)
     CREATION_PRICES_FILE="data/creation-prices.json"
@@ -529,7 +529,7 @@ deploy['contracts']['ITP_Vault'] = itp100.get('itpVault', '')
 json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
 "
 
-    # 3b: Deploy to Arb (same deployer account 1 + nonce → identical addresses)
+    # 3b: Deploy to Settlement (same deployer account 1 + nonce → identical addresses)
     cd contracts
     if ! INDEX_ADDRESS=$INDEX_ADDRESS \
     MOCK_BITGET_VAULT=$MOCK_BITGET_VAULT \
@@ -537,15 +537,15 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
     L3_WUSDC=$L3_WUSDC \
     USE_CREATION_PRICES=$USE_CREATION_PRICES \
     forge script script/Deploy100AssetITP.s.sol:Deploy100AssetITP \
-        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-itp100-arb.log 2>&1; then
-        echo -e "${RED}Error: ITP-100 Arbitrum deployment failed${NC}"
-        tail -20 ../logs/deploy-itp100-arb.log
+        --broadcast --slow --rpc-url $SETTLEMENT_RPC_URL > ../logs/deploy-itp100-settlement.log 2>&1; then
+        echo -e "${RED}Error: ITP-100 Settlement deployment failed${NC}"
+        tail -20 ../logs/deploy-itp100-settlement.log
         exit 1
     fi
     cd ..
-    echo -e "  ${GREEN}100-asset ITP deployed on Arbitrum (mirror)${NC}"
+    echo -e "  ${GREEN}100-asset ITP deployed on Settlement (mirror)${NC}"
 
-    # 3c: Create BridgedITP on Arbitrum via requestCreateItp + completeCreateItp (BLS-signed)
+    # 3c: Create BridgedITP on Settlement via requestCreateItp + completeCreateItp (BLS-signed)
     BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])")
     ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
     ITP_NAME=$(python3 -c "import json; d=json.load(open('deployments/itp-100-asset.json')); print(d.get('name','Top 100 ITP'))" 2>/dev/null || echo "Top 100 ITP")
@@ -561,18 +561,18 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
     ITP_SYMBOL="$ITP_SYMBOL" \
     ITP_TOKENS="$ITP_TOKENS" \
     forge script script/CreateBridgedItp.s.sol:CreateBridgedItp \
-        --broadcast --slow --rpc-url $ARB_RPC_URL > ../logs/deploy-bridged-itp.log 2>&1; then
+        --broadcast --slow --rpc-url $SETTLEMENT_RPC_URL > ../logs/deploy-bridged-itp.log 2>&1; then
         echo -e "${YELLOW}  Warning: BridgedITP creation failed (check logs/deploy-bridged-itp.log)${NC}"
     fi
     cd ..
 
     # Read BridgedITP address from BridgeProxy mapping
-    BRIDGED_ITP=$(cast call $BRIDGE_PROXY "getBridgedItp(bytes32)(address)" "$ITP_ID" --rpc-url $ARB_RPC_URL 2>/dev/null || echo "")
+    BRIDGED_ITP=$(cast call $BRIDGE_PROXY "getBridgedItp(bytes32)(address)" "$ITP_ID" --rpc-url $SETTLEMENT_RPC_URL 2>/dev/null || echo "")
     if [ -n "$BRIDGED_ITP" ] && [ "$BRIDGED_ITP" != "0x0000000000000000000000000000000000000000" ]; then
-        echo -e "  ${GREEN}BridgedITP created on Arbitrum: $BRIDGED_ITP${NC}"
+        echo -e "  ${GREEN}BridgedITP created on Settlement: $BRIDGED_ITP${NC}"
 
         # setBridgeProxy is now done in DeployFullSystemE2E.s.sol Phase 6 (before BLS pubkey is set)
-        echo -e "  ${GREEN}ArbBridgeCustody.bridgeProxy set in deploy script${NC}"
+        echo -e "  ${GREEN}SettlementBridgeCustody.bridgeProxy set in deploy script${NC}"
         python3 -c "
 import json
 deploy = json.load(open('deployments/active-deployment.json'))
@@ -592,7 +592,7 @@ json.dump(deploy, open('deployments/active-deployment.json', 'w'), indent=2)
         "https://www.generalmarket.io" \
         "" \
         --private-key $DEPLOYER_KEY \
-        --rpc-url $ARB_RPC_URL > /dev/null 2>&1 && \
+        --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1 && \
         echo -e "  ${GREEN}ITP metadata set (description + website)${NC}" || \
         echo -e "  ${YELLOW}Warning: Failed to set ITP metadata${NC}"
 
@@ -739,7 +739,7 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
     set +e
 
     # Read vault ERC20 token address from active-deployment.json (created in Step 3)
-    # Morpho uses the L3 vault ERC20 as collateral (not BridgedITP on Arb)
+    # Morpho uses the L3 vault ERC20 as collateral (not BridgedITP on Settlement)
     VAULT_TOKEN=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['ITP_Vault'])" 2>/dev/null || echo "")
     L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['L3_WUSDC'])" 2>/dev/null || echo "")
 
@@ -750,7 +750,7 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
         # Oracle uses the MAIN IssuerRegistry (not a separate mirror) to avoid nonce desync
         MAIN_REGISTRY=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['IssuerRegistry'])" 2>/dev/null || echo "")
         ITP_VAULT=$VAULT_TOKEN \
-        ARB_USDC=$L3_WUSDC_ADDR \
+        SETTLEMENT_USDC=$L3_WUSDC_ADDR \
         ISSUER_REGISTRY=$MAIN_REGISTRY \
         forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
             --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-morpho-phase1.log 2>&1
@@ -765,12 +765,12 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
             # Advance BOTH chains to keep timestamps in sync
             cast rpc evm_increaseTime 86401 --rpc-url $RPC_URL > /dev/null 2>&1
             cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
-            cast rpc evm_increaseTime 86401 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-            cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            cast rpc evm_increaseTime 86401 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+            cast rpc evm_mine --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
 
             # Phase 2: Configure vault + seed liquidity (on L3)
             ITP_VAULT=$VAULT_TOKEN \
-            ARB_USDC=$L3_WUSDC_ADDR \
+            SETTLEMENT_USDC=$L3_WUSDC_ADDR \
             METAMORPHO_VAULT=$METAMORPHO_VAULT \
             ITP_NAV_ORACLE=$ITP_NAV_ORACLE \
             ADAPTIVE_IRM=$ADAPTIVE_IRM \
@@ -911,14 +911,14 @@ echo "  Address sync complete"
 # MUST be after all forge --broadcast deployments — Forge broadcast resets Anvil impersonation state.
 TEST_USER=$TEST_USER_ADDRESS
 cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
-cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
 echo -e "  ${GREEN}Test user $TEST_USER impersonated on both Anvils${NC}"
 
 # Start background block miner — issuers need blocks to advance for event detection.
 # Anvil automine only creates blocks on transactions; this loop creates empty blocks
 # every 1 second so issuers reliably detect cross-chain events between transactions.
 # Must be AFTER all deployments (automine handles those instantly).
-nohup bash -c "while true; do cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1; cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1; sleep 1; done" > /dev/null 2>&1 &
+nohup bash -c "while true; do cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1; cast rpc evm_mine --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1; sleep 1; done" > /dev/null 2>&1 &
 MINER_PID=$!
 echo $MINER_PID >> .pids
 echo "block-miner:$MINER_PID" >> .pids.info
@@ -930,7 +930,7 @@ echo -e "${BLUE}[8/$TOTAL_STEPS] Starting $ISSUER_COUNT issuer nodes (with Bitge
 # Extract addresses for issuers
 BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
 MOCK_BITGET_VAULT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['MockBitgetVault'])" 2>/dev/null || echo "")
-ARB_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ArbBridgeCustody'])" 2>/dev/null || echo "")
+SETTLEMENT_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['SettlementBridgeCustody'])" 2>/dev/null || echo "")
 BLS_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BLSCustody'])" 2>/dev/null || echo "")
 MOCK_USDT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('MOCK_USDT',''))" 2>/dev/null || echo "")
 # Morpho oracle + mirror registry addresses (from morpho-e2e.json if it exists)
@@ -967,8 +967,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
 
     [ -n "$BRIDGE_PROXY" ] && ISSUER_ARGS="$ISSUER_ARGS --bridge-proxy $BRIDGE_PROXY"
     [ -n "$MOCK_BITGET_VAULT" ] && ISSUER_ARGS="$ISSUER_ARGS --bitget-vault $MOCK_BITGET_VAULT"
-    [ -n "$ARB_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --arb-custody $ARB_CUSTODY"
-    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-arb $BLS_CUSTODY"
+    [ -n "$SETTLEMENT_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --settlement-custody $SETTLEMENT_CUSTODY"
+    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-settlement $BLS_CUSTODY"
     [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
     [ -n "$NAV_ORACLE_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --nav-oracle $NAV_ORACLE_ADDR"
     [ -n "$ITP_TOKEN_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --itp-token $ITP_TOKEN_ADDR"
@@ -992,8 +992,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
     echo -n "$ISSUER_KEY" > "$ISSUER_KEY_FILE"
     export ISSUER_PRIVATE_KEY_PATH="$ISSUER_KEY_FILE"
     export ISSUER_PEERS="$PEER_LIST"
-    export ISSUER_ARBITRUM_RPC_URL="$ARB_RPC_URL"
-    export ISSUER_ARBITRUM_CHAIN_ID="$ARB_CHAIN_ID"
+    export ISSUER_SETTLEMENT_RPC_URL="$SETTLEMENT_RPC_URL"
+    export ISSUER_SETTLEMENT_CHAIN_ID="$SETTLEMENT_CHAIN_ID"
     export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
     # Only pass DATA_NODE_URL when data-node is available (local PG or VPS).
     # Without it, issuers use BitgetPriceFetcher for asset prices and compute NAV locally
@@ -1012,8 +1012,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
         ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://localhost/index_prices"
         ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url ${DATA_NODE_URL:-http://localhost:8200}"
         ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_CUSTODY"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-settlement-rpc-url $SETTLEMENT_RPC_URL"
+        ISSUER_ARGS="$ISSUER_ARGS --vision-settlement-bridge-custody $SETTLEMENT_CUSTODY"
         ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 60"
         ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
     fi
@@ -1066,7 +1066,7 @@ else
         --database-url postgres://localhost/index_prices \
         --symbol-map "$SCRIPT_DIR/data/symbol-map.json" \
         --rpc-url $RPC_URL \
-        --arb-rpc-url $ARB_RPC_URL \
+        --settlement-rpc-url $SETTLEMENT_RPC_URL \
         --deployment-file deployments/active-deployment.json \
         --morpho-deployment-file deployments/morpho-e2e.json \
         ${INDEX_ADDRESS:+--index-address $INDEX_ADDRESS} \
@@ -1114,7 +1114,7 @@ fi
 echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
 AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
-AP_ARGS="$AP_ARGS --arb-rpc $ARB_RPC_URL --arb-chain-id $ARB_CHAIN_ID"
+AP_ARGS="$AP_ARGS --settlement-rpc $SETTLEMENT_RPC_URL --settlement-chain-id $SETTLEMENT_CHAIN_ID"
 AP_ARGS="$AP_ARGS --deployment-file deployments/active-deployment.json"
 [ "$DATA_NODE_RUNNING" = true ] && AP_ARGS="$AP_ARGS --data-node-url ${DATA_NODE_URL:-http://localhost:8200}"
 AP_ARGS="$AP_ARGS --log-level ${LOG_LEVEL}"
@@ -1377,8 +1377,8 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
 
         # Fast-forward Anvil time past tick 0 end (30s tick + 0s reveal window)
         echo -e "  Fast-forwarding Anvil time for tick 0 resolution..."
-        cast rpc evm_increaseTime 35 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-        cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+        cast rpc evm_increaseTime 35 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+        cast rpc evm_mine --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
         # Also advance L3 to keep in sync
         cast rpc evm_increaseTime 35 --rpc-url $RPC_URL > /dev/null 2>&1
         cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
@@ -1428,8 +1428,8 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
             echo -e "  ${GREEN}HN scores modified for tick 1 (reversed pattern)${NC}"
 
             echo -e "  Fast-forwarding Anvil time for tick 1 resolution..."
-            cast rpc evm_increaseTime 35 --rpc-url $ARB_RPC_URL > /dev/null 2>&1
-            cast rpc evm_mine --rpc-url $ARB_RPC_URL > /dev/null 2>&1
+            cast rpc evm_increaseTime 35 --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
+            cast rpc evm_mine --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
             cast rpc evm_increaseTime 35 --rpc-url $RPC_URL > /dev/null 2>&1
             cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1
 
@@ -1549,8 +1549,8 @@ echo -e "${GREEN}║             LOCAL ENVIRONMENT READY!                       
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "  ${BLUE}L3 Anvil:${NC}  http://localhost:8545 (chain $CHAIN_ID)"
-echo -e "  ${BLUE}Arb Anvil:${NC} http://localhost:8546 (chain $ARB_CHAIN_ID)"
-echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + arb-custody)"
+echo -e "  ${BLUE}Settlement Anvil:${NC} http://localhost:8546 (chain $SETTLEMENT_CHAIN_ID)"
+echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + settlement-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
 echo -e "  ${BLUE}Vision:${NC}   http://localhost:10101 (issuer 1 API)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"

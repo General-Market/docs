@@ -9,7 +9,7 @@ use issuer::chain::events::{
     CROSS_CHAIN_ORDER_CREATED_SIGNATURE,
 };
 
-/// Create a realistic Log structure matching what would come from Arbitrum
+/// Create a realistic Log structure matching what would come from Settlement chain
 fn create_mock_cross_chain_order_log(
     order_id: u64,
     itp_id: [u8; 32],
@@ -102,7 +102,7 @@ fn test_convert_event_to_full_order() {
     let slippage_tier = 1u8; // normal (1%)
     let deadline = U256::from(u64::MAX - 1000); // Far future
     let created_at = U256::from(1700000000u64);
-    let chain_id = 42161u64; // Arbitrum
+    let chain_id = 42161u64; // Settlement
 
     // Convert to full order
     let full_order = event.into_full_order(limit_price, slippage_tier, deadline, created_at, chain_id);
@@ -172,14 +172,14 @@ fn test_dedup_key_uniqueness() {
         slippage_tier: 1,
         deadline: U256::from(u64::MAX - 1000),
         created_at: U256::from(1700000000u64),
-        chain_id: 42161, // Arbitrum
+        chain_id: 42161, // Settlement
         block_number: 100,
         tx_hash: H256::from([0xCC; 32]),
     };
 
     let order2 = CrossChainOrder {
         order_id: U256::from(1), // Same order_id
-        chain_id: 421614,        // Different chain (Arbitrum Sepolia)
+        chain_id: 421614,        // Different chain (Settlement Sepolia)
         ..order1.clone()
     };
 

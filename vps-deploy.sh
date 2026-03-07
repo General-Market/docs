@@ -331,7 +331,7 @@ ISSUER_KEYS=(
 if [ -f "$DEPLOYMENT_FILE" ] && command -v python3 &>/dev/null; then
     BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('BridgeProxy',''))" 2>/dev/null || echo "")
     BITGET_VAULT=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('MockBitgetVault',''))" 2>/dev/null || echo "")
-    ARB_CUSTODY=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('ArbBridgeCustody',''))" 2>/dev/null || echo "")
+    SETTLEMENT_CUSTODY=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('SettlementBridgeCustody',''))" 2>/dev/null || echo "")
     BLS_CUSTODY=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('BLSCustody',''))" 2>/dev/null || echo "")
     VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
     INDEX_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('Index',''))" 2>/dev/null || echo "")
@@ -339,7 +339,7 @@ if [ -f "$DEPLOYMENT_FILE" ] && command -v python3 &>/dev/null; then
 elif [ -f "$DEPLOYMENT_FILE" ] && command -v jq &>/dev/null; then
     BRIDGE_PROXY=$(jq -r '.contracts.BridgeProxy // empty' "$DEPLOYMENT_FILE")
     BITGET_VAULT=$(jq -r '.contracts.MockBitgetVault // empty' "$DEPLOYMENT_FILE")
-    ARB_CUSTODY=$(jq -r '.contracts.ArbBridgeCustody // empty' "$DEPLOYMENT_FILE")
+    SETTLEMENT_CUSTODY=$(jq -r '.contracts.SettlementBridgeCustody // empty' "$DEPLOYMENT_FILE")
     BLS_CUSTODY=$(jq -r '.contracts.BLSCustody // empty' "$DEPLOYMENT_FILE")
     VISION_ADDR=$(jq -r '.contracts.Vision // empty' "$DEPLOYMENT_FILE")
     INDEX_ADDR=$(jq -r '.contracts.Index // empty' "$DEPLOYMENT_FILE")
@@ -348,7 +348,7 @@ else
     # Fall back to env vars from system.env
     BRIDGE_PROXY="${ISSUER_BRIDGE_PROXY_ADDRESS:-}"
     BITGET_VAULT="${ISSUER_BITGET_VAULT:-}"
-    ARB_CUSTODY="${ISSUER_ARB_CUSTODY:-}"
+    SETTLEMENT_CUSTODY="${ISSUER_SETTLEMENT_CUSTODY:-}"
     BLS_CUSTODY="${ISSUER_BLS_CUSTODY_ADDRESS:-}"
     VISION_ADDR=""
     INDEX_ADDR="${INDEX_ADDRESS:-}"
@@ -360,7 +360,7 @@ if [ "$DB_READY" = true ]; then
     echo -e "${BLUE}Starting data-node on port 8200...${NC}"
 
     DATA_NODE_ARGS="serve --database-url $DATABASE_URL"
-    DATA_NODE_ARGS="$DATA_NODE_ARGS --rpc-url $RPC_URL --arb-rpc-url $RPC_URL"
+    DATA_NODE_ARGS="$DATA_NODE_ARGS --rpc-url $RPC_URL --settlement-rpc-url $RPC_URL"
     [ -f "data/symbol-map.json" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --symbol-map data/symbol-map.json"
     [ -f "$DEPLOYMENT_FILE" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --deployment-file $DEPLOYMENT_FILE"
     [ -n "$INDEX_ADDR" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --index-address $INDEX_ADDR"
@@ -450,8 +450,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
 
     [ -n "$BRIDGE_PROXY" ] && ISSUER_ARGS="$ISSUER_ARGS --bridge-proxy $BRIDGE_PROXY"
     [ -n "$BITGET_VAULT" ] && ISSUER_ARGS="$ISSUER_ARGS --bitget-vault $BITGET_VAULT"
-    [ -n "$ARB_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --arb-custody $ARB_CUSTODY"
-    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-arb $BLS_CUSTODY"
+    [ -n "$SETTLEMENT_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --settlement-custody $SETTLEMENT_CUSTODY"
+    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-settlement $BLS_CUSTODY"
     [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
     [ -f "$DEPLOYMENT_FILE" ] && ISSUER_ARGS="$ISSUER_ARGS --deployment-file $DEPLOYMENT_FILE"
     ISSUER_ARGS="$ISSUER_ARGS --wal-path logs/consensus-$i.wal"
@@ -469,8 +469,8 @@ for i in $(seq 1 $ISSUER_COUNT); do
 
     export ISSUER_PRIVATE_KEY_PATH="$KEY_FILE"
     export ISSUER_PEERS="$PEER_LIST"
-    export ISSUER_ARBITRUM_RPC_URL="$RPC_URL"
-    export ISSUER_ARBITRUM_CHAIN_ID="$CHAIN_ID"
+    export ISSUER_SETTLEMENT_RPC_URL="$RPC_URL"
+    export ISSUER_SETTLEMENT_CHAIN_ID="$CHAIN_ID"
 
     nohup ./issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
     ISSUER_PID=$!

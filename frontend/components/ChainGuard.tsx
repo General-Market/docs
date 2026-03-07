@@ -3,14 +3,14 @@
 import { useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
-import { indexL3, arbitrumChain } from '@/lib/wagmi'
+import { indexL3, settlementChain } from '@/lib/wagmi'
 
 /**
  * Global chain enforcer — blocks all UI and forces wallet to switch
  * to Index L3 whenever connected on the wrong chain.
  *
- * Vision pages allow Arbitrum as an additional chain because cross-chain
- * deposits (useDepositToVision) require the wallet to be on Arbitrum.
+ * Vision pages allow Settlement as an additional chain because cross-chain
+ * deposits (useDepositToVision) require the wallet to be on Settlement.
  */
 export function ChainGuard({ children }: { children: React.ReactNode }) {
   const { isConnected } = useAccount()
@@ -18,9 +18,9 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   const { switchChain, isPending: isSwitching } = useSwitchChain()
   const pathname = usePathname()
 
-  // Both Vision deposits and ITP creation (via Arb BridgeProxy) require Arbitrum.
-  // Allow Arb on all pages to avoid ChainGuard racing against legitimate cross-chain txs.
-  const allowedChainIds = [indexL3.id, arbitrumChain.id]
+  // Both Vision deposits and ITP creation (via Settlement BridgeProxy) require Settlement.
+  // Allow Settlement on all pages to avoid ChainGuard racing against legitimate cross-chain txs.
+  const allowedChainIds = [indexL3.id, settlementChain.id]
   const isWrongChain = isConnected && !allowedChainIds.includes(chainId)
 
   const forceSwitch = useCallback(async () => {
@@ -76,7 +76,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
             Your wallet is on chain <span className="text-text-primary font-mono">{chainId}</span>.
           </p>
           <p className="text-text-secondary text-sm mb-6">
-            Please switch to <span className="text-text-primary font-medium">Index Arbitrum</span> (chain {indexL3.id}).
+            Please switch to <span className="text-text-primary font-medium">Index L3</span> (chain {indexL3.id}).
           </p>
           <button
             onClick={forceSwitch}

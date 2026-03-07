@@ -5,7 +5,7 @@ import "./IIssuerRegistry.sol";
 import "./IBridgedItpFactory.sol";
 
 /// @title IBridgeProxy - Cross-chain ITP creation and token bridging
-/// @notice Interface for the BridgeProxy contract deployed on Arbitrum
+/// @notice Interface for the BridgeProxy contract deployed on Settlement
 /// @dev UUPS upgradeable, pausable, with BLS signature verification
 interface IBridgeProxy {
     // ============ Structs ============
@@ -64,11 +64,11 @@ interface IBridgeProxy {
     /// @notice Next nonce for creation requests
     function nextCreationNonce() external view returns (uint256);
 
-    /// @notice L3 orbitItpId => Arbitrum bridgedItp address
-    function orbitToArbitrum(bytes32 orbitItpId) external view returns (address);
+    /// @notice L3 orbitItpId => Settlement bridgedItp address
+    function orbitToSettlement(bytes32 orbitItpId) external view returns (address);
 
-    /// @notice Arbitrum bridgedItp address => L3 orbitItpId
-    function arbitrumToOrbit(address bridgedItp) external view returns (bytes32);
+    /// @notice Settlement bridgedItp address => L3 orbitItpId
+    function settlementToOrbit(address bridgedItp) external view returns (bytes32);
 
     /// @notice Get full pending creation details
     function getPendingCreation(uint256 nonce) external view returns (

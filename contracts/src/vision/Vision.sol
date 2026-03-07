@@ -66,7 +66,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     /// @notice Per-user L3 USDC balance — backed by real L3 USDC in the contract
     mapping(address => uint256) public realBalance;
 
-    /// @notice Per-user virtual balance — backed by USDC locked in ArbBridgeCustody on Arb
+    /// @notice Per-user virtual balance — backed by USDC locked in SettlementBridgeCustody on Settlement
     mapping(address => uint256) public virtualBalance;
 
     /// @notice Aggregate tracking for solvency invariants
@@ -585,9 +585,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         accumulatedFees = 0;
 
         // Fees credited to feeCollector's realBalance (not transferred out).
-        // feeCollector can withdrawBalance() or withdrawToArb() to extract.
+        // feeCollector can withdrawBalance() or withdrawToSettlement() to extract.
         // This fixes the solvency issue where collectFees tried to transfer USDC
-        // that didn't exist when all deposits were Arb-bridged.
+        // that didn't exist when all deposits were Settlement-bridged.
         realBalance[feeCollector] += fees;
         totalRealBalance += fees;
     }
@@ -768,7 +768,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     }
 
     /// @inheritdoc IVision
-    function withdrawToArb(uint256 amount) external nonReentrant {
+    function withdrawToSettlement(uint256 amount) external nonReentrant {
         if (amount == 0) revert ZeroAmount();
         if (virtualBalance[msg.sender] < amount) revert InsufficientBalance();
 
@@ -776,7 +776,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         virtualBalance[msg.sender] -= amount;
         totalVirtualBalance -= amount;
 
-        emit WithdrawToArbRequested(msg.sender, amount, wId);
+        emit WithdrawToSettlementRequested(msg.sender, amount, wId);
     }
 
     /// @inheritdoc IVision
@@ -787,7 +787,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ INTERNAL: DUAL-BALANCE DEBIT ============
 
     /// @dev Debit `amount` from user's total balance. Virtual first, then real.
-    ///      This ensures users who deposited from Arb don't accumulate real balance
+    ///      This ensures users who deposited from Settlement don't accumulate real balance
     ///      they can't use, and users who deposited on L3 keep their real balance
     ///      as long as possible.
     /// @return usedVirtual True if any virtual balance was consumed (SOL-2).

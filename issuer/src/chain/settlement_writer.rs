@@ -1,6 +1,6 @@
-//! Arbitrum Chain Writer for BridgeProxy transactions (Story 6.21)
+//! Settlement Chain Writer for BridgeProxy transactions (Story 6.21)
 //!
-//! Provides functionality to submit transactions to the BridgeProxy contract on Arbitrum,
+//! Provides functionality to submit transactions to the BridgeProxy contract on Settlement,
 //! specifically `completeCreateItp()` for finalizing cross-chain ITP creation.
 
 use std::sync::Arc;
@@ -13,16 +13,16 @@ use super::gas::{GasConfig, GasEstimator};
 use super::nonce::NonceManager;
 use super::retry::RetryConfig;
 
-/// Configuration for ArbitrumChainWriter
+/// Configuration for SettlementChainWriter
 #[derive(Debug, Clone)]
-pub struct ArbitrumChainWriterConfig {
-    /// Arbitrum RPC endpoint URL
+pub struct SettlementChainWriterConfig {
+    /// Settlement RPC endpoint URL
     pub rpc_url: String,
     /// BridgeProxy contract address
     pub bridge_proxy_address: Address,
-    /// ArbBridgeCustody contract address (for cross-chain sell order completion)
-    pub arb_custody_address: Address,
-    /// Chain ID (42161 for Arbitrum One)
+    /// SettlementBridgeCustody contract address (for cross-chain sell order completion)
+    pub settlement_custody_address: Address,
+    /// Chain ID (42161 for Settlement chain)
     pub chain_id: u64,
     /// Gas configuration
     pub gas_config: GasConfig,
@@ -30,12 +30,12 @@ pub struct ArbitrumChainWriterConfig {
     pub retry_config: RetryConfig,
 }
 
-impl Default for ArbitrumChainWriterConfig {
+impl Default for SettlementChainWriterConfig {
     fn default() -> Self {
         Self {
             rpc_url: "https://arb1.arbitrum.io/rpc".to_string(),
             bridge_proxy_address: Address::zero(),
-            arb_custody_address: Address::zero(),
+            settlement_custody_address: Address::zero(),
             chain_id: 42161,
             gas_config: GasConfig::default(),
             retry_config: RetryConfig::default(),
@@ -44,27 +44,27 @@ impl Default for ArbitrumChainWriterConfig {
 }
 
 /// Type alias for the signer middleware
-pub type ArbitrumSignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
+pub type SettlementSignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 
-/// Arbitrum Chain Writer for BridgeProxy transactions
+/// Settlement Chain Writer for BridgeProxy transactions
 ///
-/// Submits transactions to the BridgeProxy contract on Arbitrum with:
+/// Submits transactions to the BridgeProxy contract on Settlement with:
 /// - Nonce management for concurrent submissions
 /// - Gas estimation with configurable multiplier
 /// - Retry logic with exponential backoff
-pub struct ArbitrumChainWriter {
+pub struct SettlementChainWriter {
     /// Signer middleware (provider + wallet)
-    client: Arc<ArbitrumSignerClient>,
+    client: Arc<SettlementSignerClient>,
     /// Configuration
-    config: ArbitrumChainWriterConfig,
+    config: SettlementChainWriterConfig,
     /// Nonce manager
     nonce_manager: NonceManager,
     /// Gas estimator
-    gas_estimator: GasEstimator<ArbitrumSignerClient>,
+    gas_estimator: GasEstimator<SettlementSignerClient>,
 }
 
-impl ArbitrumChainWriter {
-    /// Create a new ArbitrumChainWriter
+impl SettlementChainWriter {
+    /// Create a new SettlementChainWriter
     ///
     /// # Arguments
     /// * `config` - Configuration including RPC URL and contract addresses
@@ -73,17 +73,17 @@ impl ArbitrumChainWriter {
     /// # Errors
     /// Returns error if unable to connect to RPC endpoint or parse private key
     pub fn new(
-        config: ArbitrumChainWriterConfig,
+        config: SettlementChainWriterConfig,
         private_key: &str,
-    ) -> Result<Self, ArbitrumWriterError> {
+    ) -> Result<Self, SettlementWriterError> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
-            .map_err(|e| ArbitrumWriterError::ProviderError(format!("Failed to create provider: {}", e)))?;
+            .map_err(|e| SettlementWriterError::ProviderError(format!("Failed to create provider: {}", e)))?;
 
         // Parse private key (handle both with and without 0x prefix)
         let key_hex = private_key.trim_start_matches("0x");
         let wallet: LocalWallet = key_hex
             .parse::<LocalWallet>()
-            .map_err(|e| ArbitrumWriterError::KeyError(format!("Failed to parse private key: {}", e)))?
+            .map_err(|e| SettlementWriterError::KeyError(format!("Failed to parse private key: {}", e)))?
             .with_chain_id(config.chain_id);
 
         let address = wallet.address();
@@ -102,7 +102,7 @@ impl ArbitrumChainWriter {
             rpc_url = %config.rpc_url,
             chain_id = config.chain_id,
             bridge_proxy = ?config.bridge_proxy_address,
-            "ArbitrumChainWriter initialized"
+            "SettlementChainWriter initialized"
         );
 
         Ok(Self {
@@ -118,34 +118,34 @@ impl ArbitrumChainWriter {
         self.client.address()
     }
 
-    /// Perform a read-only static call to a contract on Arbitrum.
+    /// Perform a read-only static call to a contract on Settlement.
     pub async fn static_call(
         &self,
         to: Address,
         calldata: Vec<u8>,
-    ) -> Result<Vec<u8>, ArbitrumWriterError> {
+    ) -> Result<Vec<u8>, SettlementWriterError> {
         use ethers::providers::Middleware;
         let tx = ethers::types::TransactionRequest::new()
             .to(to)
             .data(calldata);
         let result = self.client.call(&tx.into(), None).await
-            .map_err(|e| ArbitrumWriterError::ProviderError(format!("static_call: {}", e)))?;
+            .map_err(|e| SettlementWriterError::ProviderError(format!("static_call: {}", e)))?;
         Ok(result.to_vec())
     }
 
     /// Get the configuration
-    pub fn config(&self) -> &ArbitrumChainWriterConfig {
+    pub fn config(&self) -> &SettlementChainWriterConfig {
         &self.config
     }
 
-    /// Send a generic transaction with calldata to an arbitrary address on Arbitrum.
+    /// Send a generic transaction with calldata to an arbitrary address on Settlement.
     /// Used by oracle price submission and other generic contract calls.
     pub async fn send_transaction(
         &self,
         to: Address,
         calldata: Vec<u8>,
         value: U256,
-    ) -> Result<ethers::types::TxHash, ArbitrumWriterError> {
+    ) -> Result<ethers::types::TxHash, SettlementWriterError> {
         // Resync nonce from chain
         if let Err(e) = self.nonce_manager.resync().await {
             debug!(error = %e, "Nonce resync failed, using cached value");
@@ -163,12 +163,12 @@ impl ArbitrumChainWriter {
 
         // Estimate gas
         let gas = self.gas_estimator.estimate_gas(&tx).await
-            .map_err(|e| ArbitrumWriterError::GasEstimationError(format!("send_transaction gas: {}", e)))?;
+            .map_err(|e| SettlementWriterError::GasEstimationError(format!("send_transaction gas: {}", e)))?;
         tx.set_gas(gas);
 
         // Get gas price
         let gas_price = self.gas_estimator.get_gas_price().await
-            .map_err(|e| ArbitrumWriterError::GasEstimationError(format!("send_transaction gas price: {}", e)))?;
+            .map_err(|e| SettlementWriterError::GasEstimationError(format!("send_transaction gas price: {}", e)))?;
         if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
             gas_price.apply_to_tx(eip1559_tx);
         }
@@ -176,13 +176,13 @@ impl ArbitrumChainWriter {
         match self.client.send_transaction(tx, None).await {
             Ok(pending_tx) => {
                 let tx_hash = pending_tx.tx_hash();
-                info!(tx = ?tx_hash, "Generic Arb transaction submitted");
+                info!(tx = ?tx_hash, "Generic Settlement transaction submitted");
                 self.nonce_manager.track_pending(tx_nonce, tx_hash);
                 Ok(tx_hash)
             }
             Err(e) => {
-                warn!(error = %e, "Generic Arb transaction failed");
-                Err(ArbitrumWriterError::TransactionError(format!("send_transaction: {}", e)))
+                warn!(error = %e, "Generic Settlement transaction failed");
+                Err(SettlementWriterError::TransactionError(format!("send_transaction: {}", e)))
             }
         }
     }
@@ -263,7 +263,7 @@ impl ArbitrumChainWriter {
     /// This finalizes cross-chain ITP creation by:
     /// 1. Submitting the aggregated BLS signature
     /// 2. BridgeProxy atomically creates ITP on L3 via Index.createITP()
-    /// 3. Deploying the BridgedITP token on Arbitrum
+    /// 3. Deploying the BridgedITP token on Settlement
     /// 4. Setting up bidirectional mappings
     ///
     /// # Arguments
@@ -284,7 +284,7 @@ impl ArbitrumChainWriter {
         bls_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             nonce = %nonce,
             orbit_itp_id = ?orbit_itp_id,
@@ -325,7 +325,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -335,7 +335,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             // Apply gas price (for EIP-1559 transactions)
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
@@ -386,12 +386,12 @@ impl ArbitrumChainWriter {
                     }
 
                     // Non-retryable or exhausted
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for completeCreateItp",
             max_attempts
         )))
@@ -409,7 +409,7 @@ impl ArbitrumChainWriter {
         &self,
         tx_hash: H256,
         timeout_secs: u64,
-    ) -> Result<TransactionReceipt, ArbitrumWriterError> {
+    ) -> Result<TransactionReceipt, SettlementWriterError> {
         let pending = PendingTransaction::new(tx_hash, self.client.provider());
 
         tokio::time::timeout(
@@ -417,9 +417,9 @@ impl ArbitrumChainWriter {
             pending,
         )
         .await
-        .map_err(|_| ArbitrumWriterError::ReceiptTimeout { tx_hash, timeout_secs })?
-        .map_err(|e| ArbitrumWriterError::ProviderError(e.to_string()))?
-        .ok_or_else(|| ArbitrumWriterError::ReceiptNotFound(tx_hash))
+        .map_err(|_| SettlementWriterError::ReceiptTimeout { tx_hash, timeout_secs })?
+        .map_err(|e| SettlementWriterError::ProviderError(e.to_string()))?
+        .ok_or_else(|| SettlementWriterError::ReceiptNotFound(tx_hash))
     }
 
     /// Complete ITP creation with receipt confirmation
@@ -442,7 +442,7 @@ impl ArbitrumChainWriter {
         reference_nonce: u64,
         signers_bitmask: U256,
         timeout_secs: u64,
-    ) -> Result<TransactionReceipt, ArbitrumWriterError> {
+    ) -> Result<TransactionReceipt, SettlementWriterError> {
         let tx_hash = self
             .complete_create_itp(nonce, orbit_itp_id, bls_signature, reference_nonce, signers_bitmask)
             .await?;
@@ -451,7 +451,7 @@ impl ArbitrumChainWriter {
 
         // Check transaction status
         if receipt.status == Some(U64::from(0)) {
-            return Err(ArbitrumWriterError::TransactionReverted {
+            return Err(SettlementWriterError::TransactionReverted {
                 tx_hash,
                 receipt: Box::new(receipt),
             });
@@ -549,7 +549,7 @@ impl ArbitrumChainWriter {
         bls_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             nonce = %nonce,
             sig_len = bls_signature.len(),
@@ -588,7 +588,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -598,7 +598,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             // Apply gas price (for EIP-1559 transactions)
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
@@ -649,12 +649,12 @@ impl ArbitrumChainWriter {
                     }
 
                     // Non-retryable or exhausted
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for completeRebalance",
             max_attempts
         )))
@@ -678,7 +678,7 @@ impl ArbitrumChainWriter {
         reference_nonce: u64,
         signers_bitmask: U256,
         timeout_secs: u64,
-    ) -> Result<TransactionReceipt, ArbitrumWriterError> {
+    ) -> Result<TransactionReceipt, SettlementWriterError> {
         let tx_hash = self
             .complete_rebalance(nonce, bls_signature, reference_nonce, signers_bitmask)
             .await?;
@@ -687,7 +687,7 @@ impl ArbitrumChainWriter {
 
         // Check transaction status
         if receipt.status == Some(U64::from(0)) {
-            return Err(ArbitrumWriterError::TransactionReverted {
+            return Err(SettlementWriterError::TransactionReverted {
                 tx_hash,
                 receipt: Box::new(receipt),
             });
@@ -706,7 +706,7 @@ impl ArbitrumChainWriter {
 
     /// Build a completeSellOrder transaction
     ///
-    /// Encodes: ArbBridgeCustody.completeSellOrder(orderId, usdcProceeds, blsSignature)
+    /// Encodes: SettlementBridgeCustody.completeSellOrder(orderId, usdcProceeds, blsSignature)
     fn build_complete_sell_order_tx(
         &self,
         order_id: U256,
@@ -771,22 +771,22 @@ impl ArbitrumChainWriter {
             .expect("ABI encoding should not fail");
 
         let mut tx = TypedTransaction::default();
-        tx.set_to(self.config.arb_custody_address);
+        tx.set_to(self.config.settlement_custody_address);
         tx.set_data(call_data.into());
         tx.set_chain_id(self.config.chain_id);
 
         tx
     }
 
-    /// Submit completeSellOrder transaction to ArbBridgeCustody
+    /// Submit completeSellOrder transaction to SettlementBridgeCustody
     ///
     /// This finalizes a cross-chain sell order by:
     /// 1. Providing the USDC proceeds amount from the L3 sell
     /// 2. Providing the aggregated BLS signature as consensus proof
-    /// 3. ArbBridgeCustody releases USDC to the original user
+    /// 3. SettlementBridgeCustody releases USDC to the original user
     ///
     /// # Arguments
-    /// * `order_id` - Sell order ID from ArbBridgeCustody
+    /// * `order_id` - Sell order ID from SettlementBridgeCustody
     /// * `usdc_proceeds` - USDC amount to return to user
     /// * `aggregated_signature` - Aggregated BLS signature
     ///
@@ -800,7 +800,7 @@ impl ArbitrumChainWriter {
         aggregated_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             order_id = %order_id,
             usdc_proceeds = %usdc_proceeds,
@@ -839,7 +839,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -849,7 +849,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
                 gas_price.apply_to_tx(eip1559_tx);
@@ -887,12 +887,12 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for completeSellOrder",
             max_attempts
         )))
@@ -900,7 +900,7 @@ impl ArbitrumChainWriter {
 
     /// Build a refundSellOrder transaction
     ///
-    /// Encodes: ArbBridgeCustody.refundSellOrder(orderId, blsSignature)
+    /// Encodes: SettlementBridgeCustody.refundSellOrder(orderId, blsSignature)
     fn build_refund_sell_order_tx(
         &self,
         order_id: U256,
@@ -951,21 +951,21 @@ impl ArbitrumChainWriter {
             .expect("ABI encoding should not fail");
 
         let mut tx = TypedTransaction::default();
-        tx.set_to(self.config.arb_custody_address);
+        tx.set_to(self.config.settlement_custody_address);
         tx.set_data(call_data.into());
         tx.set_chain_id(self.config.chain_id);
 
         tx
     }
 
-    /// Submit refundSellOrder transaction to ArbBridgeCustody
+    /// Submit refundSellOrder transaction to SettlementBridgeCustody
     ///
     /// This refunds a cross-chain sell order by:
     /// 1. Providing the aggregated BLS signature as consensus proof
-    /// 2. ArbBridgeCustody returns ITP tokens to the original user
+    /// 2. SettlementBridgeCustody returns ITP tokens to the original user
     ///
     /// # Arguments
-    /// * `order_id` - Sell order ID from ArbBridgeCustody
+    /// * `order_id` - Sell order ID from SettlementBridgeCustody
     /// * `aggregated_signature` - Aggregated BLS signature
     ///
     /// # Returns
@@ -976,7 +976,7 @@ impl ArbitrumChainWriter {
         aggregated_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             order_id = %order_id,
             sig_len = aggregated_signature.len(),
@@ -1010,7 +1010,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -1019,7 +1019,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
                 gas_price.apply_to_tx(eip1559_tx);
@@ -1057,12 +1057,12 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for refundSellOrder",
             max_attempts
         )))
@@ -1072,7 +1072,7 @@ impl ArbitrumChainWriter {
 
     /// Build a completeBuyOrder transaction
     ///
-    /// Encodes: ArbBridgeCustody.completeBuyOrder(orderId, vault, blsSignature)
+    /// Encodes: SettlementBridgeCustody.completeBuyOrder(orderId, vault, blsSignature)
     fn build_complete_buy_order_tx(
         &self,
         order_id: U256,
@@ -1129,14 +1129,14 @@ impl ArbitrumChainWriter {
             .expect("ABI encoding should not fail");
 
         let mut tx = TypedTransaction::default();
-        tx.set_to(self.config.arb_custody_address);
+        tx.set_to(self.config.settlement_custody_address);
         tx.set_data(call_data.into());
         tx.set_chain_id(self.config.chain_id);
 
         tx
     }
 
-    /// Submit completeBuyOrder transaction to ArbBridgeCustody
+    /// Submit completeBuyOrder transaction to SettlementBridgeCustody
     ///
     /// Transfers escrowed USDC from custody to vault after L3 order processing.
     ///
@@ -1154,7 +1154,7 @@ impl ArbitrumChainWriter {
         bls_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             order_id = %order_id,
             vault = ?vault,
@@ -1190,7 +1190,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -1199,7 +1199,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
                 gas_price.apply_to_tx(eip1559_tx);
@@ -1237,18 +1237,18 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for completeBuyOrder",
             max_attempts
         )))
     }
 
-    /// Mint BridgedITP shares on Arbitrum via BridgeProxy (8-step bridge Step 8)
+    /// Mint BridgedITP shares on Settlement via BridgeProxy (8-step bridge Step 8)
     ///
     /// Calls BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature, referenceNonce, signersBitmask)
     pub async fn mint_bridged_shares(
@@ -1259,7 +1259,7 @@ impl ArbitrumChainWriter {
         bls_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<H256, ArbitrumWriterError> {
+    ) -> Result<H256, SettlementWriterError> {
         info!(
             itp_id = ?itp_id,
             user = ?user,
@@ -1298,7 +1298,7 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::GasEstimationError(e.to_string()));
+                    return Err(SettlementWriterError::GasEstimationError(e.to_string()));
                 }
             };
             tx.set_gas(gas);
@@ -1307,7 +1307,7 @@ impl ArbitrumChainWriter {
                 .gas_estimator
                 .get_gas_price()
                 .await
-                .map_err(|e| ArbitrumWriterError::GasEstimationError(e.to_string()))?;
+                .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
 
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
                 gas_price.apply_to_tx(eip1559_tx);
@@ -1345,12 +1345,12 @@ impl ArbitrumChainWriter {
                         tokio::time::sleep(delay).await;
                         continue;
                     }
-                    return Err(ArbitrumWriterError::TransactionError(e.to_string()));
+                    return Err(SettlementWriterError::TransactionError(e.to_string()));
                 }
             }
         }
 
-        Err(ArbitrumWriterError::RetryExhausted(format!(
+        Err(SettlementWriterError::RetryExhausted(format!(
             "Max attempts ({}) exceeded for mintBridgedShares",
             max_attempts
         )))
@@ -1358,9 +1358,9 @@ impl ArbitrumChainWriter {
 
 }
 
-/// Errors for ArbitrumChainWriter operations
+/// Errors for SettlementChainWriter operations
 #[derive(Debug, thiserror::Error)]
-pub enum ArbitrumWriterError {
+pub enum SettlementWriterError {
     #[error("provider error: {0}")]
     ProviderError(String),
 
@@ -1398,7 +1398,7 @@ mod tests {
 
     #[test]
     fn test_default_config() {
-        let config = ArbitrumChainWriterConfig::default();
+        let config = SettlementChainWriterConfig::default();
         assert_eq!(config.rpc_url, "https://arb1.arbitrum.io/rpc");
         assert_eq!(config.chain_id, 42161);
         assert_eq!(config.bridge_proxy_address, Address::zero());

@@ -90,7 +90,7 @@
     "description_placeholder": "説明（最大280文字 / 約50語）",
     "website_placeholder": "ウェブサイトURL（最大128文字）",
     "video_placeholder": "YouTube URL（最大256文字）",
-    "arb_erc20": "Arbitrum ERC20：",
+    "settlement_erc20": "Settlement ERC20：",
     "itp_id": "ITP ID：",
     "minted_supply": "発行済み供給量",
     "loading_holders": "保有者を読み込み中...",
@@ -103,7 +103,7 @@
     "source": "ソース：",
     "admin": "管理者：",
     "created": "作成日：",
-    "arb_address": "Arbアドレス：",
+    "settlement_address": "Settlementアドレス：",
     "request_number": "リクエスト #{number}"
   },
   "rebalance": {

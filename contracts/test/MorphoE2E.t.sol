@@ -21,7 +21,7 @@ contract MorphoE2ETest is Test {
     AdaptiveCurveIrm irm;
     MockMorphoOracle oracle;
     MetaMorpho vault;
-    MockERC20 arbUSDC;
+    MockERC20 settlementUSDC;
     MockERC20 itpToken;
 
     MarketParams marketParams;
@@ -37,7 +37,7 @@ contract MorphoE2ETest is Test {
 
     function setUp() public {
         // Deploy tokens
-        arbUSDC = new MockERC20("ArbUSDC", "USDC", 6);
+        settlementUSDC = new MockERC20("SettlementUSDC", "USDC", 6);
         itpToken = new MockERC20("ITP Vault", "ITP", 18);
 
         // Deploy Morpho core
@@ -55,7 +55,7 @@ contract MorphoE2ETest is Test {
 
         // Create market
         marketParams = MarketParams({
-            loanToken: address(arbUSDC),
+            loanToken: address(settlementUSDC),
             collateralToken: address(itpToken),
             oracle: address(oracle),
             irm: address(irm),
@@ -69,7 +69,7 @@ contract MorphoE2ETest is Test {
             owner,
             address(morpho),
             1 days,
-            address(arbUSDC),
+            address(settlementUSDC),
             "Index ITP Lending Vault",
             "ilUSDC"
         );
@@ -85,9 +85,9 @@ contract MorphoE2ETest is Test {
 
         // Fund lender and seed vault
         uint256 lenderAmount = 1_000_000 * 1e6; // 1M USDC
-        arbUSDC.mint(lender, lenderAmount);
+        settlementUSDC.mint(lender, lenderAmount);
         vm.startPrank(lender);
-        arbUSDC.approve(address(vault), lenderAmount);
+        settlementUSDC.approve(address(vault), lenderAmount);
         vault.deposit(lenderAmount, lender);
         vm.stopPrank();
 
@@ -107,7 +107,7 @@ contract MorphoE2ETest is Test {
         // AC#4: market params are queryable by ID
         (address loanToken, address collateralToken, address oracleAddr, address irmAddr, uint256 lltv) =
             morpho.idToMarketParams(marketId);
-        assertEq(loanToken, address(arbUSDC));
+        assertEq(loanToken, address(settlementUSDC));
         assertEq(collateralToken, address(itpToken));
         assertEq(oracleAddr, address(oracle));
         assertEq(irmAddr, address(irm));
@@ -138,9 +138,9 @@ contract MorphoE2ETest is Test {
         assertEq(collateral, collateralAmount, "Collateral should be deposited");
 
         // Borrow USDC
-        uint256 usdcBefore = arbUSDC.balanceOf(borrower);
+        uint256 usdcBefore = settlementUSDC.balanceOf(borrower);
         morpho.borrow(marketParams, borrowAmount, 0, borrower, borrower);
-        uint256 usdcAfter = arbUSDC.balanceOf(borrower);
+        uint256 usdcAfter = settlementUSDC.balanceOf(borrower);
 
         assertEq(usdcAfter - usdcBefore, borrowAmount, "Should receive borrowed USDC");
 
@@ -161,7 +161,7 @@ contract MorphoE2ETest is Test {
 
         // Repay all borrowed USDC using share-based repay (robust against interest accrual)
         (, uint128 borrowShares,) = morpho.position(marketId, borrower);
-        arbUSDC.approve(address(morpho), type(uint256).max);
+        settlementUSDC.approve(address(morpho), type(uint256).max);
         morpho.repay(marketParams, 0, borrowShares, borrower, "");
         // Verify borrow position is cleared
         (, uint128 remainingShares,) = morpho.position(marketId, borrower);
@@ -218,7 +218,7 @@ contract MorphoE2ETest is Test {
         vault.withdraw(withdrawAmount, lender, lender);
         vm.stopPrank();
 
-        uint256 usdcBalance = arbUSDC.balanceOf(lender);
+        uint256 usdcBalance = settlementUSDC.balanceOf(lender);
         assertEq(usdcBalance, withdrawAmount, "Lender should receive withdrawn USDC");
     }
 }

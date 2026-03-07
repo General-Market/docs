@@ -136,19 +136,19 @@ pub struct IssuerConfig {
     /// 1inch API key for quote fetching.
     pub oneinch_api_key: Option<String>,
 
-    /// Arbitrum RPC URL for BLSCustody execution.
-    pub arbitrum_rpc_url: Option<String>,
+    /// Settlement chain RPC URL for BLSCustody execution.
+    pub settlement_rpc_url: Option<String>,
 
-    /// Arbitrum BLSCustody proxy address.
-    pub arbitrum_custody_address: Option<String>,
+    /// Settlement chain BLSCustody proxy address.
+    pub settlement_custody_address: Option<String>,
 
-    /// Arbitrum BridgeProxy contract address (Story 6.21).
+    /// Settlement chain BridgeProxy contract address (Story 6.21).
     /// Used for cross-chain ITP creation via BLS consensus.
     pub bridge_proxy_address: Option<String>,
 
-    /// Arbitrum chain ID (default: 42161 for Arbitrum One).
+    /// Settlement chain ID (default: 42161).
     /// For E2E testing with BridgeProxy on L3, set to 111222333.
-    pub arbitrum_chain_id: Option<u64>,
+    pub settlement_chain_id: Option<u64>,
 
     /// 1inch Fusion+ API key (may differ from quote key).
     pub oneinch_fusion_api_key: Option<String>,
@@ -160,24 +160,24 @@ pub struct IssuerConfig {
     pub bitget_vault: Option<String>,
 
     // --- IssuerCustody fields (Story 7.7) ---
-    /// IssuerCustody contract address on L3 (holds L3Usdc after bridge from Arbitrum).
+    /// IssuerCustody contract address on L3 (holds L3Usdc after bridge from Settlement).
     /// Used by issuers to execute BLS-signed transfers for submitOrder flow.
     pub issuer_custody_l3: Option<String>,
 
-    /// IssuerCustody contract address on Arbitrum (holds ArbUSDC after bridge from L3).
+    /// IssuerCustody contract address on Settlement (holds SettlementUSDC after bridge from L3).
     /// Used by issuers to execute BLS-signed transfers for vault release flow.
-    pub issuer_custody_arb: Option<String>,
+    pub issuer_custody_settlement: Option<String>,
 
-    /// ArbBridgeCustody contract address (Story 7.8).
-    /// Locks user's ArbUSDC when buying ITP from Arbitrum. Issuers observe
+    /// SettlementBridgeCustody contract address (Story 7.8).
+    /// Locks user's SettlementUSDC when buying ITP from Settlement chain. Issuers observe
     /// CrossChainOrderCreated events from this contract for cross-chain buy flow.
-    pub arb_custody: Option<String>,
+    pub settlement_custody: Option<String>,
 
     /// L3 USDC token contract address.
     pub l3_usdc: Option<String>,
 
-    /// Arbitrum USDC token contract address.
-    pub arb_usdc: Option<String>,
+    /// Settlement chain USDC token contract address.
+    pub settlement_usdc: Option<String>,
 
     /// NTP server address for time synchronization (default: pool.ntp.org).
     pub ntp_server: Option<String>,
@@ -188,7 +188,7 @@ pub struct IssuerConfig {
     // --- Registry Sync fields (Story 8.4) ---
     /// Enable the registry sync endpoint (GET /api/registry-sync).
     /// When enabled, the issuer watches for RegistryStateChanged events from L3 IssuerRegistry
-    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Arbitrum.
+    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Settlement chain.
     /// Defaults to false.
     pub registry_sync_enabled: Option<bool>,
 
@@ -247,14 +247,14 @@ pub struct IssuerConfig {
     /// Can also be set via EXCHANGE_MODE env var.
     pub exchange_mode: Option<String>,
 
-    /// ITPNAVOracle contract address on Arbitrum for Morpho price oracle.
+    /// ITPNAVOracle contract address on Settlement chain for Morpho price oracle.
     pub nav_oracle_address: Option<String>,
 
     /// ITP token address that the NAV oracle prices.
     pub itp_token_address: Option<String>,
 
-    /// MirrorIssuerRegistry contract address on Arbitrum (Step 12).
-    /// When set, the issuer actively syncs L3 registry state to the mirror on Arb.
+    /// MirrorIssuerRegistry contract address on Settlement chain (Step 12).
+    /// When set, the issuer actively syncs L3 registry state to the mirror on Settlement.
     pub mirror_registry_address: Option<String>,
 }
 
@@ -338,19 +338,19 @@ impl IssuerConfig {
                 .ok()
                 .map(PathBuf::from),
             oneinch_api_key: std::env::var("ISSUER_ONEINCH_API_KEY").ok(),
-            arbitrum_rpc_url: std::env::var("ISSUER_ARBITRUM_RPC_URL").ok(),
-            arbitrum_custody_address: std::env::var("ISSUER_ARBITRUM_CUSTODY_ADDRESS").ok(),
+            settlement_rpc_url: std::env::var("ISSUER_SETTLEMENT_RPC_URL").ok(),
+            settlement_custody_address: std::env::var("ISSUER_SETTLEMENT_CUSTODY_ADDRESS").ok(),
             bridge_proxy_address: std::env::var("ISSUER_BRIDGE_PROXY_ADDRESS").ok(),
-            arbitrum_chain_id: std::env::var("ISSUER_ARBITRUM_CHAIN_ID")
+            settlement_chain_id: std::env::var("ISSUER_SETTLEMENT_CHAIN_ID")
                 .ok()
                 .and_then(|s| s.parse().ok()),
             oneinch_fusion_api_key: std::env::var("ISSUER_ONEINCH_FUSION_API_KEY").ok(),
             bitget_vault: std::env::var("ISSUER_BITGET_VAULT").ok(),
             issuer_custody_l3: std::env::var("ISSUER_CUSTODY_L3").ok(),
-            issuer_custody_arb: std::env::var("ISSUER_CUSTODY_ARB").ok(),
-            arb_custody: std::env::var("ISSUER_ARB_CUSTODY").ok(),
+            issuer_custody_settlement: std::env::var("ISSUER_CUSTODY_SETTLEMENT").ok(),
+            settlement_custody: std::env::var("ISSUER_SETTLEMENT_CUSTODY").ok(),
             l3_usdc: std::env::var("ISSUER_L3_USDC").ok(),
-            arb_usdc: std::env::var("ISSUER_ARB_USDC").ok(),
+            settlement_usdc: std::env::var("ISSUER_SETTLEMENT_USDC").ok(),
             ntp_server: std::env::var("ISSUER_NTP_SERVER").ok(),
             ntp_tolerance_ms: parse_env_var("ISSUER_NTP_TOLERANCE_MS"),
             registry_sync_enabled: parse_env_var("ISSUER_REGISTRY_SYNC"),
@@ -395,11 +395,11 @@ impl IssuerConfig {
                         num_issuers: parse_env_var("ISSUER_VISION_NUM_ISSUERS").unwrap_or(1),
                         node_index: parse_env_var::<u8>("ISSUER_VISION_NODE_INDEX").unwrap_or(0),
                         // Cross-chain deposit fields (Vision First Deposit)
-                        arb_rpc_url: std::env::var("ISSUER_VISION_ARB_RPC_URL")
+                        settlement_rpc_url: std::env::var("ISSUER_VISION_SETTLEMENT_RPC_URL")
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),
-                        arb_bridge_custody_address: std::env::var("ISSUER_VISION_ARB_BRIDGE_CUSTODY_ADDRESS")
+                        settlement_bridge_custody_address: std::env::var("ISSUER_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS")
                             .unwrap_or_default(),
-                        arb_chain_id: parse_env_var("ISSUER_VISION_ARB_CHAIN_ID").unwrap_or(42161),
+                        settlement_chain_id: parse_env_var("ISSUER_VISION_SETTLEMENT_CHAIN_ID").unwrap_or(42161),
                         deposit_poll_interval_ms: parse_env_var("ISSUER_VISION_DEPOSIT_POLL_INTERVAL_MS").unwrap_or(5000),
                         deposit_finality_confirmations: parse_env_var("ISSUER_VISION_DEPOSIT_FINALITY_CONFIRMATIONS").unwrap_or(15),
                         gas_drip_amount_wei: std::env::var("ISSUER_VISION_GAS_DRIP_AMOUNT_WEI")
@@ -476,17 +476,17 @@ impl IssuerConfig {
         if other.oneinch_api_key.is_some() {
             self.oneinch_api_key = other.oneinch_api_key.clone();
         }
-        if other.arbitrum_rpc_url.is_some() {
-            self.arbitrum_rpc_url = other.arbitrum_rpc_url.clone();
+        if other.settlement_rpc_url.is_some() {
+            self.settlement_rpc_url = other.settlement_rpc_url.clone();
         }
-        if other.arbitrum_custody_address.is_some() {
-            self.arbitrum_custody_address = other.arbitrum_custody_address.clone();
+        if other.settlement_custody_address.is_some() {
+            self.settlement_custody_address = other.settlement_custody_address.clone();
         }
         if other.bridge_proxy_address.is_some() {
             self.bridge_proxy_address = other.bridge_proxy_address.clone();
         }
-        if other.arbitrum_chain_id.is_some() {
-            self.arbitrum_chain_id = other.arbitrum_chain_id;
+        if other.settlement_chain_id.is_some() {
+            self.settlement_chain_id = other.settlement_chain_id;
         }
         if other.oneinch_fusion_api_key.is_some() {
             self.oneinch_fusion_api_key = other.oneinch_fusion_api_key.clone();
@@ -497,17 +497,17 @@ impl IssuerConfig {
         if other.issuer_custody_l3.is_some() {
             self.issuer_custody_l3 = other.issuer_custody_l3.clone();
         }
-        if other.issuer_custody_arb.is_some() {
-            self.issuer_custody_arb = other.issuer_custody_arb.clone();
+        if other.issuer_custody_settlement.is_some() {
+            self.issuer_custody_settlement = other.issuer_custody_settlement.clone();
         }
-        if other.arb_custody.is_some() {
-            self.arb_custody = other.arb_custody.clone();
+        if other.settlement_custody.is_some() {
+            self.settlement_custody = other.settlement_custody.clone();
         }
         if other.l3_usdc.is_some() {
             self.l3_usdc = other.l3_usdc.clone();
         }
-        if other.arb_usdc.is_some() {
-            self.arb_usdc = other.arb_usdc.clone();
+        if other.settlement_usdc.is_some() {
+            self.settlement_usdc = other.settlement_usdc.clone();
         }
         if other.ntp_server.is_some() {
             self.ntp_server = other.ntp_server.clone();
@@ -662,20 +662,20 @@ impl IssuerConfig {
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective IssuerCustody Arbitrum address.
+    /// Get the effective IssuerCustody Settlement address.
     ///
     /// Returns the parsed address if configured, or None if not set.
-    pub fn effective_issuer_custody_arb(&self) -> Option<Address> {
-        self.issuer_custody_arb
+    pub fn effective_issuer_custody_settlement(&self) -> Option<Address> {
+        self.issuer_custody_settlement
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective ArbBridgeCustody address (Story 7.8).
+    /// Get the effective SettlementBridgeCustody address (Story 7.8).
     ///
     /// Returns the parsed address if configured, or None if not set.
-    pub fn effective_arb_custody(&self) -> Option<Address> {
-        self.arb_custody
+    pub fn effective_settlement_custody(&self) -> Option<Address> {
+        self.settlement_custody
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
@@ -687,9 +687,9 @@ impl IssuerConfig {
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective Arbitrum USDC token address.
-    pub fn effective_arb_usdc(&self) -> Option<Address> {
-        self.arb_usdc
+    /// Get the effective Settlement USDC token address.
+    pub fn effective_settlement_usdc(&self) -> Option<Address> {
+        self.settlement_usdc
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
@@ -761,17 +761,17 @@ impl IssuerConfig {
                 self.issuer_custody_l3 = Some(addr.to_string());
             }
         }
-        if self.issuer_custody_arb.is_none() {
+        if self.issuer_custody_settlement.is_none() {
             if let Some(addr) = contracts.get("IssuerCustodyArb").and_then(|v| v.as_str()) {
-                self.issuer_custody_arb = Some(addr.to_string());
+                self.issuer_custody_settlement = Some(addr.to_string());
             }
         }
-        if self.arb_custody.is_none() {
+        if self.settlement_custody.is_none() {
             // Try both naming conventions
-            if let Some(addr) = contracts.get("ArbBridgeCustody").and_then(|v| v.as_str()) {
-                self.arb_custody = Some(addr.to_string());
+            if let Some(addr) = contracts.get("SettlementBridgeCustody").and_then(|v| v.as_str()) {
+                self.settlement_custody = Some(addr.to_string());
             } else if let Some(addr) = contracts.get("ARB_CUSTODY").and_then(|v| v.as_str()) {
-                self.arb_custody = Some(addr.to_string());
+                self.settlement_custody = Some(addr.to_string());
             }
         }
         if self.l3_usdc.is_none() {
@@ -781,9 +781,9 @@ impl IssuerConfig {
                 self.l3_usdc = Some(addr.to_string());
             }
         }
-        if self.arb_usdc.is_none() {
-            if let Some(addr) = contracts.get("ARB_USDC").and_then(|v| v.as_str()) {
-                self.arb_usdc = Some(addr.to_string());
+        if self.settlement_usdc.is_none() {
+            if let Some(addr) = contracts.get("SETTLEMENT_USDC").and_then(|v| v.as_str()) {
+                self.settlement_usdc = Some(addr.to_string());
             }
         }
         if self.mock_usdt.is_none() {
@@ -888,7 +888,7 @@ impl IssuerConfig {
     ///
     /// # Errors
     ///
-    /// - `ConfigError::MissingField` if `issuer_custody_l3` or `issuer_custody_arb` is not set
+    /// - `ConfigError::MissingField` if `issuer_custody_l3` or `issuer_custody_settlement` is not set
     /// - `ConfigError::InvalidAddress` if the address string cannot be parsed
     pub fn validate_custody_addresses(&self) -> Result<(), ConfigError> {
         // Validate IssuerCustody L3
@@ -906,16 +906,16 @@ impl IssuerConfig {
             }
         }
 
-        // Validate IssuerCustody Arbitrum
-        match &self.issuer_custody_arb {
+        // Validate IssuerCustody Settlement
+        match &self.issuer_custody_settlement {
             None => {
-                return Err(ConfigError::MissingField("issuer_custody_arb"));
+                return Err(ConfigError::MissingField("issuer_custody_settlement"));
             }
             Some(addr) => {
                 if addr.parse::<Address>().is_err() {
                     return Err(ConfigError::InvalidAddress {
                         value: addr.clone(),
-                        reason: "invalid IssuerCustody Arbitrum address".to_string(),
+                        reason: "invalid IssuerCustody Settlement address".to_string(),
                     });
                 }
             }
@@ -924,25 +924,25 @@ impl IssuerConfig {
         Ok(())
     }
 
-    /// Get the effective Arbitrum RPC URL.
+    /// Get the effective Settlement RPC URL.
     ///
     /// Returns an error if not configured (no silent fallback to mainnet).
-    pub fn effective_arbitrum_rpc_url(&self) -> Result<String, String> {
-        self.arbitrum_rpc_url
+    pub fn effective_settlement_rpc_url(&self) -> Result<String, String> {
+        self.settlement_rpc_url
             .clone()
-            .ok_or_else(|| "ISSUER_ARBITRUM_RPC_URL not configured".to_string())
+            .ok_or_else(|| "ISSUER_SETTLEMENT_RPC_URL not configured".to_string())
     }
 
-    /// Get the effective Arbitrum BLSCustody address.
+    /// Get the effective Settlement BLSCustody address.
     ///
     /// Returns None if not configured.
-    pub fn effective_arbitrum_custody_address(&self) -> Option<Address> {
-        self.arbitrum_custody_address
+    pub fn effective_settlement_custody_address(&self) -> Option<Address> {
+        self.settlement_custody_address
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective BridgeProxy address on Arbitrum.
+    /// Get the effective BridgeProxy address on Settlement chain.
     ///
     /// Returns None if not configured.
     pub fn effective_bridge_proxy_address(&self) -> Option<Address> {
@@ -951,13 +951,13 @@ impl IssuerConfig {
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective Arbitrum chain ID.
+    /// Get the effective Settlement chain ID.
     ///
     /// Returns an error if not configured (no silent fallback to 42161).
-    /// Set ISSUER_ARBITRUM_CHAIN_ID explicitly.
-    pub fn effective_arbitrum_chain_id(&self) -> Result<u64, String> {
-        self.arbitrum_chain_id
-            .ok_or_else(|| "ISSUER_ARBITRUM_CHAIN_ID not configured".to_string())
+    /// Set ISSUER_SETTLEMENT_CHAIN_ID explicitly.
+    pub fn effective_settlement_chain_id(&self) -> Result<u64, String> {
+        self.settlement_chain_id
+            .ok_or_else(|| "ISSUER_SETTLEMENT_CHAIN_ID not configured".to_string())
     }
 
     /// Get the effective private key (from env var, config field, or key file).
@@ -1141,28 +1141,28 @@ impl ConfigBuilder {
 
     /// Set the IssuerCustody L3 address CLI override (Story 7.7).
     ///
-    /// IssuerCustody L3 holds L3Usdc after bridge from Arbitrum.
+    /// IssuerCustody L3 holds L3Usdc after bridge from Settlement.
     /// Used for BLS-signed transfers to Index contract in submitOrder flow.
     pub fn with_issuer_custody_l3(mut self, address: Option<String>) -> Self {
         self.cli_config.issuer_custody_l3 = address;
         self
     }
 
-    /// Set the IssuerCustody Arbitrum address CLI override (Story 7.7).
+    /// Set the IssuerCustody Settlement address CLI override (Story 7.7).
     ///
-    /// IssuerCustody Arb holds ArbUSDC after bridge from L3.
+    /// IssuerCustody Settlement holds SettlementUSDC after bridge from L3.
     /// Used for BLS-signed transfers to MockBitgetVault in vault release flow.
-    pub fn with_issuer_custody_arb(mut self, address: Option<String>) -> Self {
-        self.cli_config.issuer_custody_arb = address;
+    pub fn with_issuer_custody_settlement(mut self, address: Option<String>) -> Self {
+        self.cli_config.issuer_custody_settlement = address;
         self
     }
 
-    /// Set the ArbBridgeCustody address CLI override (Story 7.8).
+    /// Set the SettlementBridgeCustody address CLI override (Story 7.8).
     ///
-    /// ArbBridgeCustody locks user's ArbUSDC when buying ITP from Arbitrum.
+    /// SettlementBridgeCustody locks user's SettlementUSDC when buying ITP from Settlement chain.
     /// Issuers observe CrossChainOrderCreated events for cross-chain buy flow.
-    pub fn with_arb_custody(mut self, address: Option<String>) -> Self {
-        self.cli_config.arb_custody = address;
+    pub fn with_settlement_custody(mut self, address: Option<String>) -> Self {
+        self.cli_config.settlement_custody = address;
         self
     }
 
@@ -1246,7 +1246,7 @@ impl ConfigBuilder {
         self
     }
 
-    /// Set MirrorIssuerRegistry contract address on Arbitrum (Step 12).
+    /// Set MirrorIssuerRegistry contract address on Settlement chain (Step 12).
     pub fn with_mirror_registry(mut self, address: Option<String>) -> Self {
         if address.is_some() {
             self.cli_config.mirror_registry_address = address;
@@ -1943,27 +1943,27 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     }
 
     #[test]
-    fn test_effective_issuer_custody_arb_valid() {
+    fn test_effective_issuer_custody_settlement_valid() {
         let config = IssuerConfig {
-            issuer_custody_arb: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
-        let addr = config.effective_issuer_custody_arb();
+        let addr = config.effective_issuer_custody_settlement();
         assert!(addr.is_some());
         assert_ne!(addr.unwrap(), Address::zero());
     }
 
     #[test]
-    fn test_effective_issuer_custody_arb_none() {
+    fn test_effective_issuer_custody_settlement_none() {
         let config = IssuerConfig::default();
-        assert!(config.effective_issuer_custody_arb().is_none());
+        assert!(config.effective_issuer_custody_settlement().is_none());
     }
 
     #[test]
     fn test_validate_custody_addresses_both_set() {
         let config = IssuerConfig {
             issuer_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
-            issuer_custody_arb: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         assert!(config.validate_custody_addresses().is_ok());
@@ -1972,7 +1972,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     #[test]
     fn test_validate_custody_addresses_l3_missing() {
         let config = IssuerConfig {
-            issuer_custody_arb: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
@@ -1980,20 +1980,20 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     }
 
     #[test]
-    fn test_validate_custody_addresses_arb_missing() {
+    fn test_validate_custody_addresses_settlement_missing() {
         let config = IssuerConfig {
             issuer_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
-        assert!(matches!(result, Err(ConfigError::MissingField("issuer_custody_arb"))));
+        assert!(matches!(result, Err(ConfigError::MissingField("issuer_custody_settlement"))));
     }
 
     #[test]
     fn test_validate_custody_addresses_l3_invalid() {
         let config = IssuerConfig {
             issuer_custody_l3: Some("not-an-address".to_string()),
-            issuer_custody_arb: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
@@ -2009,7 +2009,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
         let other = IssuerConfig {
             issuer_custody_l3: Some("0x2222222222222222222222222222222222222222".to_string()),
-            issuer_custody_arb: Some("0x3333333333333333333333333333333333333333".to_string()),
+            issuer_custody_settlement: Some("0x3333333333333333333333333333333333333333".to_string()),
             ..Default::default()
         };
 
@@ -2020,9 +2020,9 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             base.issuer_custody_l3,
             Some("0x2222222222222222222222222222222222222222".to_string())
         );
-        // issuer_custody_arb should be set
+        // issuer_custody_settlement should be set
         assert_eq!(
-            base.issuer_custody_arb,
+            base.issuer_custody_settlement,
             Some("0x3333333333333333333333333333333333333333".to_string())
         );
     }
@@ -2032,7 +2032,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         let config = ConfigBuilder::new()
             .with_cli_args(Some(1), None, None, None, None, None, None, vec![])
             .with_issuer_custody_l3(Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()))
-            .with_issuer_custody_arb(Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()))
+            .with_issuer_custody_settlement(Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()))
             .build()
             .unwrap();
 
@@ -2041,7 +2041,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_arb,
+            config.issuer_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
         assert!(config.validate_custody_addresses().is_ok());
@@ -2070,7 +2070,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_arb,
+            config.issuer_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
     }
@@ -2079,7 +2079,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     fn test_env_var_custody_addresses() {
         let _guard = EnvGuard::new(&[
             ("ISSUER_CUSTODY_L3", "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"),
-            ("ISSUER_CUSTODY_ARB", "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"),
+            ("ISSUER_CUSTODY_SETTLEMENT", "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"),
         ]);
 
         let config = IssuerConfig::from_env();
@@ -2088,60 +2088,60 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_arb,
+            config.issuer_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
     }
 
-    // ============ ARB_CUSTODY TESTS (Story 7.8) ============
+    // ============ SETTLEMENT_CUSTODY TESTS (Story 7.8) ============
 
     #[test]
-    fn test_effective_arb_custody_valid() {
+    fn test_effective_settlement_custody_valid() {
         let config = IssuerConfig {
-            arb_custody: Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string()),
+            settlement_custody: Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string()),
             ..Default::default()
         };
-        let addr = config.effective_arb_custody();
+        let addr = config.effective_settlement_custody();
         assert!(addr.is_some());
         assert_ne!(addr.unwrap(), Address::zero());
     }
 
     #[test]
-    fn test_effective_arb_custody_none() {
+    fn test_effective_settlement_custody_none() {
         let config = IssuerConfig::default();
-        assert!(config.effective_arb_custody().is_none());
+        assert!(config.effective_settlement_custody().is_none());
     }
 
     #[test]
-    fn test_effective_arb_custody_invalid() {
+    fn test_effective_settlement_custody_invalid() {
         let config = IssuerConfig {
-            arb_custody: Some("not-an-address".to_string()),
+            settlement_custody: Some("not-an-address".to_string()),
             ..Default::default()
         };
         // Invalid address returns None (parse fails silently)
-        assert!(config.effective_arb_custody().is_none());
+        assert!(config.effective_settlement_custody().is_none());
     }
 
     #[test]
-    fn test_env_var_arb_custody() {
+    fn test_env_var_settlement_custody() {
         let _guard = EnvGuard::new(&[
-            ("ISSUER_ARB_CUSTODY", "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"),
+            ("ISSUER_SETTLEMENT_CUSTODY", "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"),
         ]);
 
         let config = IssuerConfig::from_env();
         assert_eq!(
-            config.arb_custody,
+            config.settlement_custody,
             Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string())
         );
     }
 
     #[test]
-    fn test_load_deployment_file_with_arb_custody() {
+    fn test_load_deployment_file_with_settlement_custody() {
         let json_content = r#"{
             "chainId": 111222333,
             "contracts": {
                 "Index": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-                "ArbBridgeCustody": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+                "SettlementBridgeCustody": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
             }
         }"#;
 
@@ -2153,13 +2153,13 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
-            config.arb_custody,
+            config.settlement_custody,
             Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string())
         );
     }
 
     #[test]
-    fn test_load_deployment_file_with_arb_custody_alt_key() {
+    fn test_load_deployment_file_with_settlement_custody_alt_key() {
         // Test the alternative key name "ARB_CUSTODY"
         let json_content = r#"{
             "chainId": 111222333,
@@ -2177,43 +2177,43 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
-            config.arb_custody,
+            config.settlement_custody,
             Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string())
         );
     }
 
     #[test]
-    fn test_config_builder_with_arb_custody() {
+    fn test_config_builder_with_settlement_custody() {
         let config = ConfigBuilder::new()
             .with_cli_args(Some(1), None, None, None, None, None, None, vec![])
-            .with_arb_custody(Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string()))
+            .with_settlement_custody(Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string()))
             .build()
             .unwrap();
 
         assert_eq!(
-            config.arb_custody,
+            config.settlement_custody,
             Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string())
         );
-        assert!(config.effective_arb_custody().is_some());
+        assert!(config.effective_settlement_custody().is_some());
     }
 
     #[test]
-    fn test_config_merge_arb_custody() {
+    fn test_config_merge_settlement_custody() {
         let mut base = IssuerConfig {
-            arb_custody: Some("0x1111111111111111111111111111111111111111".to_string()),
+            settlement_custody: Some("0x1111111111111111111111111111111111111111".to_string()),
             ..Default::default()
         };
 
         let other = IssuerConfig {
-            arb_custody: Some("0x2222222222222222222222222222222222222222".to_string()),
+            settlement_custody: Some("0x2222222222222222222222222222222222222222".to_string()),
             ..Default::default()
         };
 
         base.merge(&other);
 
-        // arb_custody should be overridden
+        // settlement_custody should be overridden
         assert_eq!(
-            base.arb_custody,
+            base.settlement_custody,
             Some("0x2222222222222222222222222222222222222222".to_string())
         );
     }

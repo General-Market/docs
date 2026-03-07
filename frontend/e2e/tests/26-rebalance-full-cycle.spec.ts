@@ -11,8 +11,8 @@ import { test, expect } from '@playwright/test';
 import {
   getItpStateL3,
   rebalanceItp,
-  mineArbBlocks,
-  startArbBlockMiner,
+  mineSettlementBlocks,
+  startSettlementBlockMiner,
 } from '../helpers/backend-api';
 import { CONSENSUS_TIMEOUT } from '../env';
 
@@ -35,8 +35,8 @@ test.describe('Rebalance Full Cycle', () => {
     // NAV must be non-zero for the test to be meaningful
     expect(navBefore).toBeGreaterThan(0n);
 
-    // 2. Start block miner (issuers need Arb blocks for event confirmation)
-    const stopMiner = startArbBlockMiner(1000);
+    // 2. Start block miner (issuers need Settlement blocks for event confirmation)
+    const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       // 3. Execute rebalance (shifts 0.5% weight between asset[0] and asset[1])
@@ -45,7 +45,7 @@ test.describe('Rebalance Full Cycle', () => {
       console.log('Rebalance completed');
 
       // Mine a few more blocks for finality
-      await mineArbBlocks(3);
+      await mineSettlementBlocks(3);
 
       // 4. Read state after rebalance
       const stateAfter = await getItpStateL3(ITP_ID);

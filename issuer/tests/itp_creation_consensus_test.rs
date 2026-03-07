@@ -1,7 +1,7 @@
 //! Integration tests for Story 6.24: Consensus-Integrated Bridge ITP Creation
 //!
 //! These tests verify that:
-//! - All issuers detect CreateItpRequested events via ArbitrumChainReader
+//! - All issuers detect CreateItpRequested events via SettlementChainReader
 //! - ITP creation goes through BLS consensus
 //! - Leader creates real L3 ITP via ChainWriter
 //! - Leader submits with aggregated BLS signature
@@ -43,7 +43,7 @@ fn create_test_itp_request(nonce: u64) -> ItpCreationRequest {
 
 fn create_test_itp_config() -> ItpCreationConfig {
     ItpCreationConfig {
-        arbitrum_chain_id: 42161,
+        settlement_chain_id: 42161,
         bridge_proxy_address: Address::from([0xBBu8; 20]),
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
@@ -126,7 +126,7 @@ async fn test_consensus_itp_creation_signature() {
 #[tokio::test]
 async fn test_insufficient_signatures() {
     let itp_config = ItpCreationConfig {
-        arbitrum_chain_id: 42161,
+        settlement_chain_id: 42161,
         bridge_proxy_address: Address::from([0xBBu8; 20]),
         proposal_timeout_ms: 100, // Short timeout for test
         sign_timeout_ms: 100,
@@ -175,7 +175,7 @@ async fn test_bls_signature_submitted() {
     let weights_hash = compute_weights_hash(&request.weights);
     let assets_hash = compute_assets_hash(&request.assets);
     let message_hash = build_message_hash(
-        itp_config.arbitrum_chain_id,
+        itp_config.settlement_chain_id,
         itp_config.bridge_proxy_address,
         request.admin,
         request.nonce,
@@ -201,10 +201,10 @@ async fn test_bls_signature_submitted() {
 /// Test stateless design: pending requests are re-fetched each cycle
 #[tokio::test]
 async fn test_stateless_restart() {
-    // This test verifies the conceptual design - ArbitrumChainReader.get_all_pending_requests()
+    // This test verifies the conceptual design - SettlementChainReader.get_all_pending_requests()
     // is called each cycle to get fresh state, not relying on cached/in-memory state.
 
-    // The implementation uses ArbitrumChainReader.get_all_pending_requests() which:
+    // The implementation uses SettlementChainReader.get_all_pending_requests() which:
     // 1. Queries the current block number
     // 2. Fetches CreateItpRequested events from last processed block
     // 3. Filters out completed requests (isPending == false)
@@ -218,14 +218,14 @@ async fn test_stateless_restart() {
     assert!(!request.name.is_empty());
     assert!(!request.assets.is_empty());
 
-    // The actual stateless behavior is enforced by ArbitrumChainReader implementation
+    // The actual stateless behavior is enforced by SettlementChainReader implementation
     // which queries chain state fresh each time get_all_pending_requests() is called
 }
 
 /// Test that already completed requests are not processed again
 #[tokio::test]
 async fn test_already_completed_skipped() {
-    // ArbitrumChainReader.get_all_pending_requests() filters by isPending status
+    // SettlementChainReader.get_all_pending_requests() filters by isPending status
     // This is implemented in the reader, not the consensus protocol
 
     // The consensus protocol trusts that get_all_pending_requests() only returns
@@ -238,7 +238,7 @@ async fn test_already_completed_skipped() {
     assert_eq!(request.nonce, U256::from(999));
 
     // In the real implementation:
-    // 1. ArbitrumChainReader queries BridgeProxy.requests(nonce).isPending
+    // 1. SettlementChainReader queries BridgeProxy.requests(nonce).isPending
     // 2. Only returns requests where isPending == true
     // 3. Once completeCreateItp() is called, isPending becomes false
     // 4. Next cycle's get_all_pending_requests() won't include it

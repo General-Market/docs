@@ -22,7 +22,7 @@ contract AssetPairRegistryTest is TestHelper {
     address public quoteToken = address(0x300); // USDC
     bytes32 public constant SOURCE_BITGET = keccak256("BITGET");
     bytes32 public constant SOURCE_1INCH = keccak256("1INCH");
-    uint256 public constant CHAIN_ARBITRUM = 42161;
+    uint256 public constant CHAIN_SETTLEMENT = 42161;
     uint256 public constant CHAIN_CEX = 0;
 
     function setUp() public {
@@ -506,7 +506,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_getActivePairs_returnsOnlyActivePairs() public {
         bytes32 pairId1 = _proposeAndActivatePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
-        bytes32 pairId2 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
+        bytes32 pairId2 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT);
 
         bytes32[] memory activePairs = registry.getActivePairs();
         assertEq(activePairs.length, 2);
@@ -530,7 +530,7 @@ contract AssetPairRegistryTest is TestHelper {
         registry.proposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX, _signProposePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX), 3, 7);
 
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM), 3, 7);
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT), 3, 7);
 
         bytes32[] memory assetPairs = registry.getPairsForAsset(asset1);
         assertEq(assetPairs.length, 2);
@@ -572,7 +572,7 @@ contract AssetPairRegistryTest is TestHelper {
         // Create pairs for each
         bytes32 pair1 = _proposeAndActivatePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
         bytes32 pair2 = _proposeAndActivatePair(asset2, SOURCE_BITGET, quoteToken, CHAIN_CEX);
-        bytes32 pair3 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
+        bytes32 pair3 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT);
 
         // Verify independent tracking
         assertTrue(registry.isAssetWhitelisted(asset1));
@@ -612,10 +612,10 @@ contract AssetPairRegistryTest is TestHelper {
         assertFalse(registry.isAssetWhitelisted(asset1));
 
         // New pairs cannot be proposed for delisting asset
-        bytes memory sig = _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
+        bytes memory sig = _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT);
         vm.expectRevert(AssetPairRegistry.AssetNotWhitelisted.selector);
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, sig, 3, 7);
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT, sig, 3, 7);
     }
 
     // ============ ACTIVATE PAIR - ASSET STATUS CHECK (HIGH-3 FIX) ============
@@ -778,7 +778,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Create two pairs
         bytes32 pairId1 = _proposeAndActivatePair(asset1, SOURCE_BITGET, quoteToken, CHAIN_CEX);
-        bytes32 pairId2 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM);
+        bytes32 pairId2 = _proposeAndActivatePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT);
 
         // Both should be active
         bytes32[] memory activePairs = registry.getActivePairsForAsset(asset1);
@@ -802,7 +802,7 @@ contract AssetPairRegistryTest is TestHelper {
 
         // Propose another (still pending)
         vm.prank(user);
-        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_ARBITRUM), 3, 7);
+        registry.proposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT, _signProposePair(asset1, SOURCE_1INCH, quoteToken, CHAIN_SETTLEMENT), 3, 7);
 
         // getPairsForAsset returns both
         bytes32[] memory allPairs = registry.getPairsForAsset(asset1);

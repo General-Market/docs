@@ -27,7 +27,7 @@ contract MorphoBorrowLendTest is TestHelper {
     ITPNAVOracle oracle;
     MirrorIssuerRegistry mirror;
     MetaMorpho vault;
-    MockERC20 arbUSDC;
+    MockERC20 settlementUSDC;
     MockERC20 itpToken;
 
     MarketParams marketParams;
@@ -48,7 +48,7 @@ contract MorphoBorrowLendTest is TestHelper {
         vm.warp(1_700_000_000);
 
         // Deploy tokens
-        arbUSDC = new MockERC20("ArbUSDC", "USDC", 6);
+        settlementUSDC = new MockERC20("SettlementUSDC", "USDC", 6);
         itpToken = new MockERC20("ITP Vault", "ITP", 18);
 
         // Deploy MirrorIssuerRegistry as UUPS proxy with real BLS aggregated pubkey
@@ -94,7 +94,7 @@ contract MorphoBorrowLendTest is TestHelper {
 
         // Create market with real ITPNAVOracle
         marketParams = MarketParams({
-            loanToken: address(arbUSDC),
+            loanToken: address(settlementUSDC),
             collateralToken: address(itpToken),
             oracle: address(oracle),
             irm: address(irm),
@@ -108,7 +108,7 @@ contract MorphoBorrowLendTest is TestHelper {
             owner,
             address(morpho),
             1 days,
-            address(arbUSDC),
+            address(settlementUSDC),
             "Index ITP Lending Vault",
             "ilUSDC"
         );
@@ -136,9 +136,9 @@ contract MorphoBorrowLendTest is TestHelper {
 
         // Fund lender and seed vault with USDC
         uint256 lenderAmount = 1_000_000 * 1e6; // 1M USDC
-        arbUSDC.mint(lender, lenderAmount);
+        settlementUSDC.mint(lender, lenderAmount);
         vm.startPrank(lender);
-        arbUSDC.approve(address(vault), lenderAmount);
+        settlementUSDC.approve(address(vault), lenderAmount);
         vault.deposit(lenderAmount, lender);
         vm.stopPrank();
 
@@ -159,7 +159,7 @@ contract MorphoBorrowLendTest is TestHelper {
     function test_createMarket_deterministic_id() public {
         // AC1: Same MarketParams always produce same ID
         MarketParams memory sameParams = MarketParams({
-            loanToken: address(arbUSDC),
+            loanToken: address(settlementUSDC),
             collateralToken: address(itpToken),
             oracle: address(oracle),
             irm: address(irm),
@@ -175,7 +175,7 @@ contract MorphoBorrowLendTest is TestHelper {
         // AC2: MetaMorpho vault deployed with correct params
         assertEq(vault.name(), "Index ITP Lending Vault");
         assertEq(vault.symbol(), "ilUSDC");
-        assertEq(vault.asset(), address(arbUSDC));
+        assertEq(vault.asset(), address(settlementUSDC));
         assertEq(vault.timelock(), 1 days);
     }
 
@@ -201,7 +201,7 @@ contract MorphoBorrowLendTest is TestHelper {
         }
 
         MarketParams memory mp2 = MarketParams({
-            loanToken: address(arbUSDC),
+            loanToken: address(settlementUSDC),
             collateralToken: address(itpToken2),
             oracle: address(oracle2),
             irm: address(irm),
@@ -236,7 +236,7 @@ contract MorphoBorrowLendTest is TestHelper {
         }
 
         MarketParams memory mp3 = MarketParams({
-            loanToken: address(arbUSDC),
+            loanToken: address(settlementUSDC),
             collateralToken: address(itpToken3),
             oracle: address(oracle3),
             irm: address(irm),
@@ -285,9 +285,9 @@ contract MorphoBorrowLendTest is TestHelper {
         assertEq(collateral, collateralAmount, "Collateral should be deposited");
 
         // Borrow USDC
-        uint256 usdcBefore = arbUSDC.balanceOf(borrower);
+        uint256 usdcBefore = settlementUSDC.balanceOf(borrower);
         morpho.borrow(marketParams, borrowAmount, 0, borrower, borrower);
-        uint256 usdcAfter = arbUSDC.balanceOf(borrower);
+        uint256 usdcAfter = settlementUSDC.balanceOf(borrower);
 
         assertEq(usdcAfter - usdcBefore, borrowAmount, "Should receive borrowed USDC");
 
@@ -308,7 +308,7 @@ contract MorphoBorrowLendTest is TestHelper {
 
         // Repay all borrowed USDC (share-based for interest accrual robustness)
         (, uint128 borrowShares,) = morpho.position(marketId, borrower);
-        arbUSDC.approve(address(morpho), type(uint256).max);
+        settlementUSDC.approve(address(morpho), type(uint256).max);
         morpho.repay(marketParams, 0, borrowShares, borrower, "");
 
         // Verify borrow position cleared
@@ -390,7 +390,7 @@ contract MorphoBorrowLendTest is TestHelper {
         vault.withdraw(withdrawAmount, lender, lender);
         vm.stopPrank();
 
-        uint256 usdcBalance = arbUSDC.balanceOf(lender);
+        uint256 usdcBalance = settlementUSDC.balanceOf(lender);
         assertEq(usdcBalance, withdrawAmount, "Lender should receive withdrawn USDC");
     }
 }

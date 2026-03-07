@@ -325,21 +325,21 @@ if [ -n "$L3_WUSDC" ]; then
     fi
 fi
 
-# Check ARB_USDC balance (same chain on testnet)
-ARB_USDC=$(jval "d['contracts'].get('ARB_USDC','')")
-if [ -n "$ARB_USDC" ]; then
-    ARB_BAL=$(cast call "$ARB_USDC" "balanceOf(address)" "$TEST_USER" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
-    ARB_DEC=$(cast --to-dec "$ARB_BAL" 2>/dev/null || echo "0")
-    ARB_HAS=$(python3 -c "print('yes' if int('$ARB_DEC') > 0 else 'no')" 2>/dev/null || echo "no")
+# Check SETTLEMENT_USDC balance (same chain on testnet)
+SETTLEMENT_USDC=$(jval "d['contracts'].get('SETTLEMENT_USDC','')")
+if [ -n "$SETTLEMENT_USDC" ]; then
+    SETTLEMENT_BAL=$(cast call "$SETTLEMENT_USDC" "balanceOf(address)" "$TEST_USER" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
+    SETTLEMENT_DEC=$(cast --to-dec "$SETTLEMENT_BAL" 2>/dev/null || echo "0")
+    ARB_HAS=$(python3 -c "print('yes' if int('$SETTLEMENT_DEC') > 0 else 'no')" 2>/dev/null || echo "no")
     if [ "$ARB_HAS" = "yes" ]; then
-        check_pass "Test user has ARB_USDC ($ARB_DEC)"
+        check_pass "Test user has SETTLEMENT_USDC ($SETTLEMENT_DEC)"
     else
-        echo "  Minting 10000 ARB_USDC to test user..."
+        echo "  Minting 10000 SETTLEMENT_USDC to test user..."
         MINT_AMOUNT="10000000000"  # 10000 * 1e6
-        cast send "$ARB_USDC" "mint(address,uint256)" "$TEST_USER" "$MINT_AMOUNT" \
+        cast send "$SETTLEMENT_USDC" "mint(address,uint256)" "$TEST_USER" "$MINT_AMOUNT" \
             --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1 && \
-            check_pass "Minted 10000 ARB_USDC to test user" || \
-            check_warn "Mint ARB_USDC" "Failed"
+            check_pass "Minted 10000 SETTLEMENT_USDC to test user" || \
+            check_warn "Mint SETTLEMENT_USDC" "Failed"
     fi
 fi
 

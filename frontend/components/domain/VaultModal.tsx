@@ -93,7 +93,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 
   // State for the borrow modal opened from the markets table
   const [borrowModalItp, setBorrowModalItp] = useState<{
-    arbAddress: string
+    settlementAddress: string
     name: string
   } | null>(null)
 
@@ -251,7 +251,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       {/* Markets Table */}
       <MarketsTableInline
         liveMarkets={markets}
-        onBorrow={(arbAddress, name) => setBorrowModalItp({ arbAddress, name })}
+        onBorrow={(settlementAddress, name) => setBorrowModalItp({ settlementAddress, name })}
         activeBorrowCollaterals={
           position?.debtAmount && position.debtAmount > 0n
             ? new Set([MORPHO_ADDRESSES.collateralToken.toLowerCase()])
@@ -263,14 +263,14 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       {borrowModalItp && (
         <LendItpModal
           itpInfo={{
-            id: borrowModalItp.arbAddress,
+            id: borrowModalItp.settlementAddress,
             name: borrowModalItp.name,
             symbol: '',
             admin: '',
             createdAt: 0,
             source: 'index',
             completed: true,
-            arbAddress: borrowModalItp.arbAddress,
+            settlementAddress: borrowModalItp.settlementAddress,
           }}
           isOpen={true}
           onClose={() => setBorrowModalItp(null)}
