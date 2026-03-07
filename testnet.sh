@@ -139,7 +139,11 @@ for key in ['SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SETTLEMENT_USDC_DECIM
 # Add Sonic-specific keys
 if 'IssuerRegistry' in sc:
     l3['contracts']['SettlementIssuerRegistry'] = sc['IssuerRegistry']
+# BridgeProxy: frontend/E2E use this for settlement operations (requestCreateItp etc.)
+# so it MUST point to the Sonic address. Save L3's as L3BridgeProxy.
 if 'BridgeProxy' in sc:
+    l3['contracts']['L3BridgeProxy'] = l3['contracts'].get('BridgeProxy', '')
+    l3['contracts']['BridgeProxy'] = sc['BridgeProxy']
     l3['contracts']['SettlementBridgeProxy'] = sc['BridgeProxy']
 # Add settlement chain metadata
 l3['settlementChainId'] = $SETTLEMENT_CHAIN_ID
