@@ -1,8 +1,8 @@
 {
   "chainId": 111222333,
-  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "timestamp": 1772908708,
+  "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
+  "timestamp": 1772882610,
   "contracts": {
-    "Vision": "0xf5c4a909455C00B99A90d93b48736F3196DB5621"
+    "Vision": "0xD5Dd84dDD6793497c0277785149B2E34E8B1C48b"
   }
 }

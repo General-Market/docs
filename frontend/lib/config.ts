@@ -10,10 +10,11 @@ export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || 'http://localh
 export const CSP_CONNECT_EXTRA = process.env.CSP_CONNECT_EXTRA || ''
 
 // ── Client-side URLs (NEXT_PUBLIC_ prefix for browser exposure) ──
-// Always use /dn proxy in the browser — avoids mixed content on HTTPS
-// and works around unreachable direct IPs on some networks.
+// Browser: use /dn proxy by default (avoids mixed content on HTTPS).
+// Override with NEXT_PUBLIC_DATA_NODE_BROWSER_URL for local dev where
+// the Next.js proxy doesn't stream SSE properly.
 export const DATA_NODE_URL = typeof window !== 'undefined'
-  ? '/dn'
+  ? (process.env.NEXT_PUBLIC_DATA_NODE_BROWSER_URL || '/dn')
   : (process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200')
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'

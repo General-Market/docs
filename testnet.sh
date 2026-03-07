@@ -1,11 +1,15 @@
 #!/bin/bash
-# testnet.sh — Manage Index testnet on VPSes (Orbit L3, chain 111222333)
+# testnet.sh — Manage Index testnet on VPSes
 #
 # Architecture:
 #   VPS 1 (be)       — data-node, 3 issuers, PostgreSQL
 #   VPS 2 (postgres)  — AP, L3 Orbit chain (Docker)
 #   Mac (local)       — contract deployment (forge)
 #   Vercel            — frontend (www.generalmarket.io)
+#
+# Chains:
+#   L3 (Orbit)        — chain 111222333, http://142.132.164.24/
+#   Settlement (Sonic) — chain 14601, https://rpc.testnet.soniclabs.com
 #
 # Usage:
 #   ./testnet.sh setup-be       # First-time VPS 1 setup (PostgreSQL, clone, build)
@@ -31,8 +35,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # ── Configuration ────────────────────────────────────────────
+# L3 (Orbit)
 CHAIN_ID=111222333
 RPC_URL="http://142.132.164.24/"
+
+# Settlement chain (Sonic Testnet)
+SETTLEMENT_CHAIN_ID=14601
+SETTLEMENT_RPC_URL="https://rpc.testnet.soniclabs.com"
+
 GITHUB_REPO="https://github.com/General-Market/mono.git"
 
 # VPS 1 — Backend (issuers + data-node + PostgreSQL)
@@ -90,6 +100,32 @@ check_service() {
 read_deployment_addr() {
     local key=$1
     python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('$key', ''))" 2>/dev/null || echo ""
+}
+
+_merge_deployments() {
+    local l3_json="$1"       # e.g., deployments/e2e-full-system-l3.json
+    local sonic_json="$2"    # e.g., deployments/e2e-full-system-sonic.json
+    local output="$3"        # e.g., deployments/active-deployment.json
+
+    python3 -c "
+import json
+l3 = json.load(open('$l3_json'))
+sonic = json.load(open('$sonic_json'))
+sc = sonic['contracts']
+# Override settlement-specific contracts with Sonic addresses
+for key in ['SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SETTLEMENT_USDC_DECIMALS', 'MockBitgetVault', 'MOCK_USDT', 'BridgedItpFactory']:
+    if key in sc:
+        l3['contracts'][key] = sc[key]
+# Add Sonic-specific keys
+if 'IssuerRegistry' in sc:
+    l3['contracts']['SettlementIssuerRegistry'] = sc['IssuerRegistry']
+if 'BridgeProxy' in sc:
+    l3['contracts']['SettlementBridgeProxy'] = sc['BridgeProxy']
+# Add settlement chain metadata
+l3['settlementChainId'] = $SETTLEMENT_CHAIN_ID
+json.dump(l3, open('$output', 'w'), indent=2)
+print('Merged: L3 (%d contracts) + Sonic (%d contracts) -> %s' % (len(l3['contracts']), len(sc), '$output'))
+"
 }
 
 # ── setup-be: First-time VPS 1 setup ────────────────────────
@@ -210,6 +246,40 @@ cmd_deploy() {
     fi
     echo -e "  ${GREEN}Core contracts deployed${NC}"
 
+    # 3b: Deploy settlement contracts to Sonic
+    echo -e "${BLUE}[3b/7] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
+
+    # Save L3 deployment before Sonic overwrites it
+    cp "$DEPLOYMENT_FILE" deployments/e2e-full-system-l3.json 2>/dev/null || true
+
+    SONIC_CHAIN_ID=$(cast chain-id --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "0")
+    if [ "$SONIC_CHAIN_ID" != "$SETTLEMENT_CHAIN_ID" ]; then
+        echo -e "  ${YELLOW}Sonic not reachable (got $SONIC_CHAIN_ID, expected $SETTLEMENT_CHAIN_ID) — skipping settlement deploy${NC}"
+    else
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
+            --rpc-url "$SETTLEMENT_RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --broadcast \
+            --chain-id $SETTLEMENT_CHAIN_ID \
+            --slow) \
+            > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
+
+        if [ -f "$DEPLOYMENT_FILE" ]; then
+            cp "$DEPLOYMENT_FILE" deployments/e2e-full-system-sonic.json
+            echo -e "  ${GREEN}Sonic contracts deployed${NC}"
+        else
+            echo -e "  ${YELLOW}Sonic deploy didn't write JSON — contracts may still be deployed (check log)${NC}"
+        fi
+
+        # Merge L3 + Sonic into active deployment
+        _merge_deployments \
+            deployments/e2e-full-system-l3.json \
+            deployments/e2e-full-system-sonic.json \
+            "$DEPLOYMENT_FILE"
+        echo -e "  ${GREEN}Merged L3 + Sonic deployment${NC}"
+    fi
+
     # Fund Anvil accounts 1-4 (issuers + AP) with GM for gas
     echo -e "${BLUE}[4/7] Funding issuer + AP accounts with gas...${NC}"
     ISSUER_1_ADDR=$(cast wallet address "$ISSUER_1_KEY")
@@ -222,6 +292,14 @@ cmd_deploy() {
             "$addr" --value 10ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 4 accounts with 10 GM each${NC}"
+
+    # Fund accounts with gas on Sonic
+    echo -e "${BLUE}[4b/7] Funding accounts with gas on Sonic...${NC}"
+    for addr in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR"; do
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            "$addr" --value 0.5ether > /dev/null 2>&1 || true
+    done
+    echo -e "  ${GREEN}Funded 4 accounts with 0.5 S each on Sonic${NC}"
 
     # Deploy Morpho (no timelock wait)
     echo -e "${BLUE}[5/7] Deploying Morpho (forked, no timelock)...${NC}"
@@ -270,6 +348,15 @@ cmd_deploy() {
             "$L3_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 1000000000000000000000000 \
             > /dev/null 2>&1 || true
         echo -e "  ${GREEN}Funded deployer with 1M L3 USDC${NC}"
+    fi
+
+    # Fund accounts with SETTLEMENT_USDC on Sonic (6 decimals)
+    SONIC_USDC=$(read_deployment_addr "SETTLEMENT_USDC")
+    if [ -n "$SONIC_USDC" ] && [ "$SONIC_USDC" != "" ]; then
+        cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
+            "$SONIC_USDC" "mint(address,uint256)" "$DEPLOYER_ADDRESS" 50000000000 \
+            > /dev/null 2>&1 || true
+        echo -e "  ${GREEN}Funded deployer with 50k SETTLEMENT_USDC on Sonic${NC}"
     fi
 
     # Sync deployment JSONs to envs/testnet/ so switch-env.sh testnet stays current
@@ -352,7 +439,7 @@ _start_data_node() {
             --database-url postgres:///$DB_NAME \
             --symbol-map data/symbol-map.json \
             --rpc-url $RPC_URL \
-            --settlement-rpc-url $RPC_URL \
+            --settlement-rpc-url $SETTLEMENT_RPC_URL \
             --deployment-file $DEPLOYMENT_FILE \
             --morpho-deployment-file deployments/morpho-e2e.json \
             --ecb-enabled \
@@ -417,8 +504,8 @@ _start_issuers() {
             ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt \
             ISSUER_PEERS=$PEERS \
             ISSUER_RPC_URL=$RPC_URL \
-            ISSUER_SETTLEMENT_RPC_URL=$RPC_URL \
-            ISSUER_SETTLEMENT_CHAIN_ID=$CHAIN_ID \
+            ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_URL \
+            ISSUER_SETTLEMENT_CHAIN_ID=$SETTLEMENT_CHAIN_ID \
             DATA_NODE_URL=http://localhost:$DATA_NODE_PORT \
             EXCHANGE_MODE=mock \
             nohup ./target/release/issuer \
@@ -470,8 +557,8 @@ _start_ap() {
             --port 9100 \
             --rpc http://localhost/ \
             --exchange-mode mock \
-            --settlement-rpc http://localhost/ \
-            --settlement-chain-id $CHAIN_ID \
+            --settlement-rpc $SETTLEMENT_RPC_URL \
+            --settlement-chain-id $SETTLEMENT_CHAIN_ID \
             --deployment-file $DEPLOYMENT_FILE \
             --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \
             --log-level info \
@@ -526,6 +613,17 @@ cmd_status() {
         echo -e "  ${GREEN}L3 OK — chain $VPS_CHAIN_ID, block $BLOCK${NC}"
     else
         echo -e "  ${RED}L3 unreachable${NC}"
+    fi
+
+    # Check Settlement chain (Sonic)
+    echo ""
+    echo -e "${BLUE}Settlement Chain (Sonic):${NC}"
+    SONIC_ID=$(cast chain-id --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "unreachable")
+    if [ "$SONIC_ID" = "$SETTLEMENT_CHAIN_ID" ]; then
+        SBLOCK=$(cast block-number --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "?")
+        echo -e "  ${GREEN}Sonic OK — chain $SONIC_ID, block $SBLOCK${NC}"
+    else
+        echo -e "  ${RED}Sonic unreachable${NC}"
     fi
 
     # Check data-node health
@@ -634,6 +732,7 @@ case "${1:-help}" in
         echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, PostgreSQL"
         echo "  VPS 2 ($VPS_CHAIN_IP)  — AP, L3 Orbit chain"
         echo "  L3 chain $CHAIN_ID     — $RPC_URL"
+        echo "  Settlement chain $SETTLEMENT_CHAIN_ID  — $SETTLEMENT_RPC_URL"
         ;;
     *)
         echo -e "${RED}Unknown command: $1${NC}"
