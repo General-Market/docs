@@ -580,11 +580,11 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1 (issuers + data-node)...${NC}"
-    vps_be_ssh "pkill -f 'target/release/issuer' 2>/dev/null || true; pkill -x data-node 2>/dev/null || true"
+    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 1 stopped${NC}"
 
     echo -e "${BLUE}VPS 2 (AP)...${NC}"
-    vps_chain_ssh "pkill -f 'target/release/ap' 2>/dev/null || true"
+    vps_chain_ssh "pkill -x ap 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 2 stopped${NC}"
 
     echo -e "${GREEN}All services stopped${NC}"
