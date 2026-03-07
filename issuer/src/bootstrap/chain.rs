@@ -6,6 +6,8 @@ use crate::{
     SettlementChainWriterConfig, SettlementReader, ChainReaderConfig, ChainWriterConfig,
     ContractAddresses, EthersChainReader, EthersChainWriter, GasConfig, IssuerConfig,
 };
+use crate::chain::DataNodeSettlementReader;
+use common::adapters::DataNodeChainReader;
 use common::mocks::MockChainBuilder;
 use common::traits::ChainReader;
 use ethers::prelude::Middleware;
@@ -64,6 +66,13 @@ impl<'a> ChainBuilder<'a> {
             let mock = MockChainBuilder::new().build();
             info!(node_id, "MockChain initialized (ChainReader)");
             return Ok(Box::new(mock));
+        }
+
+        // Use DataNodeChainReader when DATA_NODE_URL is configured
+        if let Some(ref data_node_url) = self.config.data_node_url {
+            info!(node_id, url = %data_node_url, "Using DataNodeChainReader (reads via data-node)");
+            let reader = DataNodeChainReader::new(data_node_url.clone());
+            return Ok(Box::new(reader));
         }
 
         info!(node_id, rpc = %rpc_url, "Initializing EthersChainReader for production");
@@ -210,8 +219,11 @@ impl<'a> ChainBuilder<'a> {
         let settlement_chain_id = self.config.effective_settlement_chain_id()
             .map_err(|e| BootstrapError::Chain(e))?;
 
-        // Build SettlementChainReader
-        let settlement_reader: Option<Arc<dyn SettlementReader>> = {
+        // Build SettlementChainReader (or DataNodeSettlementReader when data_node_url is set)
+        let settlement_reader: Option<Arc<dyn SettlementReader>> = if let Some(ref data_node_url) = self.config.data_node_url {
+            info!(node_id, url = %data_node_url, chain_id = settlement_chain_id, "Using DataNodeSettlementReader (reads via data-node)");
+            Some(Arc::new(DataNodeSettlementReader::new(data_node_url.clone(), settlement_chain_id)) as Arc<dyn SettlementReader>)
+        } else {
             let settlement_config = SettlementChainReaderConfig {
                 rpc_url: settlement_rpc.clone(),
                 bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),

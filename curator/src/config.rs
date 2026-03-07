@@ -215,6 +215,8 @@ pub struct CuratorConfig {
     pub private_key: String,
     pub update_interval: Duration,
     pub log_level: String,
+    /// Optional data-node URL for proxying L3 reads (e.g., lastCycleNumber)
+    pub data_node_url: Option<String>,
 }
 
 impl std::fmt::Debug for CuratorConfig {
@@ -227,6 +229,7 @@ impl std::fmt::Debug for CuratorConfig {
             .field("private_key", &"[REDACTED]")
             .field("update_interval", &self.update_interval)
             .field("log_level", &self.log_level)
+            .field("data_node_url", &self.data_node_url)
             .finish()
     }
 }
@@ -263,6 +266,11 @@ impl CuratorConfig {
             private_key: args.private_key,
             update_interval: Duration::from_secs(args.update_interval_secs),
             log_level: args.log_level,
+            data_node_url: if args.data_node_url.is_empty() {
+                None
+            } else {
+                Some(args.data_node_url)
+            },
         })
     }
 }

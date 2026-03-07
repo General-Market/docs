@@ -26,7 +26,7 @@ ethers.workspace = true
 hex = "0.4"
 
 # Bitget API client dependencies (Story 5.1)
-reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+reqwest = { version = "0.11", features = ["json", "rustls-tls", "stream"] }
 hmac = "0.12"
 sha2 = "0.10"
 base64 = "0.21"

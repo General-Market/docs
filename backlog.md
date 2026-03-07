@@ -1,5 +1,20 @@
 # Design Decision Backlog
 
+## Session: 20260307-2330-m4p7 (AP data-node chain reader + SSE events)
+
+- [DECISION] AP uses existing `--data-node-url` CLI flag (already present) to switch between direct RPC and data-node mode. When `data_node_url` is set AND `mock_chain` is false, AP creates `DataNodeChainReader` for L3 state reads and connects to data-node SSE for real-time events. When `data_node_url` is NOT set, existing direct RPC + EventMonitor behavior is preserved (backward compatible).
+- [DECISION] SSE mode bypasses EventMonitor entirely. Instead of EventMonitor polling via `subscribe_events()`, the SSE client connects to `/sse/chain-events?topics=order-submitted,fill-confirmed,rebalance-requested`, parses raw log data from the ChainEventEnvelope format, and sends `ChainEvent` variants through an mpsc channel. A bridge task converts `ChainEvent` -> `APEvent` (replicating EventMonitor::handle_chain_event logic) and feeds the same event_receiver that process_events consumes.
+- [DECISION] SSE reconnection uses exponential backoff (1s initial, 60s max). Checks if sender channel is closed to detect AP shutdown and exit cleanly.
+- [DECISION] Chain writes (RpcChainWriter) still go through direct RPC even in data-node mode. DataNodeChainReader is only for reads.
+- [DECISION] Exported `DataNodeChainReader` from `common::adapters::mod.rs` (was defined but not exported). Fixed unused import warnings in the file.
+- [DECISION] Created `ap/src/sse_client.rs` as a new module. Parses SSE text/event-stream format manually (line-based: `event:`, `data:`, empty line dispatch, `:` comments for keepalive). Uses reqwest `bytes_stream()` for streaming.
+
+## Session: 20260307-2200-k8v3 (Curator data-node HTTP read proxy)
+
+- [DECISION] Added optional DataNodeClient to curator for proxying L3 chain reads through data-node HTTP endpoints instead of direct RPC. Only proxies reads that data-node already caches: activeIssuerCount, aggregatedPubkey, consensusPaused, lastCycle. Morpho/vault/IRM reads stay direct RPC (DeFi-specific, not cached in data-node). registryNonce also stays RPC (not cached in data-node).
+- [DECISION] Fallback pattern: when data-node call fails, silently falls back to direct RPC with a warn log. This means data-node outage does not break the curator.
+- [DECISION] Health monitor uses DataNodeClient for L3 activeIssuerCount in check_mirror_sync(). Collector's OraclePusher uses it for lastCycleNumber reads. Both opt-in via existing --data-node-url CLI arg.
+
 ## Session: 20260307-1845-t3s1 (Testnet dual-chain E2E — Sonic settlement)
 
 - [DECISION] Bridge buy/sell order consensus stalls on testnet: all 3 issuers report `am_leader=false` for the same orders. Root cause: leader election uses `order_id % num_issuers` but different issuers scan different Sonic block ranges at different times. The designated leader may not have the order in their current scan window when followers start consensus. Watchdog resets stale orders every ~80s but leader keeps missing the order across retries. Create ITP works because it uses `current_cycle` (not order_id) for leader election, and all issuers see the event simultaneously via the same L3 event cursor.

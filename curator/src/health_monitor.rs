@@ -8,6 +8,7 @@
 //!
 //! Generates structured JSON reports with alerts for risk events.
 
+use crate::data_node_client::DataNodeClient;
 use crate::quote::CrisisLevel;
 use crate::serm::{AssetConfig, AssetPriceData, SermEngine};
 use crate::tier_config::RiskTier;
@@ -352,6 +353,8 @@ pub struct HealthMonitor {
     data_node_url: Option<String>,
     /// HTTP client for data-node API calls
     http_client: reqwest::Client,
+    /// Data-node HTTP client for L3 chain reads (replaces direct RPC when configured)
+    data_node_client: Option<DataNodeClient>,
 }
 
 impl HealthMonitor {
@@ -394,6 +397,7 @@ impl HealthMonitor {
                 .timeout(Duration::from_secs(10))
                 .build()
                 .unwrap_or_default(),
+            data_node_client: None,
         })
     }
 
@@ -410,9 +414,10 @@ impl HealthMonitor {
             .push(borrower);
     }
 
-    /// Set the data node service URL for asset stress computation
+    /// Set the data node service URL for asset stress computation and L3 chain reads
     pub fn set_data_node_url(&mut self, url: String) {
-        info!(url = %url, "Data node URL configured for health monitor");
+        info!(url = %url, "Data node URL configured for health monitor (stress + L3 reads)");
+        self.data_node_client = Some(DataNodeClient::new(&url));
         self.data_node_url = Some(url);
     }
 
@@ -541,6 +546,29 @@ impl HealthMonitor {
             .oracle_stale_secs
             .get(tier)
             .unwrap_or(&TIER_D_CADENCE_SECS)
+    }
+
+    // ========================================================================
+    // Data-Node RPC Fallback Helpers
+    // ========================================================================
+
+    /// Read L3 activeIssuerCount via direct RPC (fallback when data-node unavailable)
+    async fn rpc_read_l3_active_issuer_count(&self) -> u64 {
+        let tx = TransactionRequest::new()
+            .to(self.l3_registry_address)
+            .data(SELECTOR_ACTIVE_ISSUER_COUNT.to_vec());
+
+        match tokio::time::timeout(
+            self.rpc_timeout,
+            self.l3_provider.call(&tx.into(), None),
+        )
+        .await
+        {
+            Ok(Ok(result)) if result.len() >= 32 => {
+                U256::from_big_endian(&result[0..32]).as_u64()
+            }
+            _ => 0,
+        }
     }
 
     // ========================================================================
@@ -940,21 +968,20 @@ impl HealthMonitor {
 
         let mirror_nonce = U256::from_big_endian(&result_mirror[0..32]).as_u64();
 
-        // Read active counts (L3)
-        let tx_l3_count = TransactionRequest::new()
-            .to(self.l3_registry_address)
-            .data(SELECTOR_ACTIVE_ISSUER_COUNT.to_vec());
-
-        let l3_active_count = match tokio::time::timeout(
-            self.rpc_timeout,
-            self.l3_provider.call(&tx_l3_count.into(), None),
-        )
-        .await
-        {
-            Ok(Ok(result)) if result.len() >= 32 => {
-                U256::from_big_endian(&result[0..32]).as_u64()
+        // Read active counts (L3) — use data-node if available, otherwise direct RPC
+        let l3_active_count = if let Some(ref dn) = self.data_node_client {
+            match dn.get_active_issuer_count().await {
+                Ok(count) => {
+                    debug!(count, "L3 active issuer count via data-node");
+                    count
+                }
+                Err(e) => {
+                    warn!(error = %e, "Data-node activeIssuerCount failed, falling back to RPC");
+                    self.rpc_read_l3_active_issuer_count().await
+                }
             }
-            _ => 0, // Default if call fails
+        } else {
+            self.rpc_read_l3_active_issuer_count().await
         };
 
         // Read active counts (mirror)

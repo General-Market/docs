@@ -6,6 +6,7 @@
 //! 3. Aggregate BLS signatures
 //! 4. Push aggregated result to ITPNAVOracle contract
 
+use crate::data_node_client::DataNodeClient;
 use common::bls::Bn254BLSSigner;
 use common::traits::BLSSigner;
 use common::types::BLSSignature;
@@ -493,6 +494,8 @@ pub struct OraclePusher {
     provider: Arc<Provider<Http>>,
     wallet: LocalWallet,
     oracle_address: Address,
+    /// Optional data-node client for reading last cycle via HTTP instead of RPC
+    data_node_client: Option<DataNodeClient>,
 }
 
 impl OraclePusher {
@@ -512,11 +515,35 @@ impl OraclePusher {
             provider: Arc::new(provider),
             wallet,
             oracle_address,
+            data_node_client: None,
         })
     }
 
-    /// Read the lastCycleNumber from the oracle contract
+    /// Set data-node client for proxying L3 reads through the data-node HTTP API
+    pub fn set_data_node_client(&mut self, client: DataNodeClient) {
+        self.data_node_client = Some(client);
+    }
+
+    /// Read the lastCycleNumber — uses data-node if configured, otherwise direct RPC
     pub async fn read_last_cycle_number(&self) -> Result<u64, PushError> {
+        // Try data-node first when configured
+        if let Some(ref dn) = self.data_node_client {
+            match dn.get_last_cycle().await {
+                Ok(cycle) => {
+                    debug!(cycle, "Last cycle via data-node");
+                    return Ok(cycle);
+                }
+                Err(e) => {
+                    warn!(error = %e, "Data-node last-cycle failed, falling back to RPC");
+                }
+            }
+        }
+
+        self.rpc_read_last_cycle_number().await
+    }
+
+    /// Read lastCycleNumber via direct RPC (fallback)
+    async fn rpc_read_last_cycle_number(&self) -> Result<u64, PushError> {
         // Function selector for lastCycleNumber(): keccak256("lastCycleNumber()")[:4]
         let selector = &ethers::utils::keccak256(b"lastCycleNumber()")[..4];
 

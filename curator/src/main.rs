@@ -19,6 +19,7 @@ use curator::collector::{NavCollector, OraclePusher};
 use curator::config::{
     AlertingConfig, AllocationConfig, CuratorArgs, CuratorConfig, HealthMonitorConfig,
 };
+use curator::data_node_client::DataNodeClient;
 use curator::health_monitor::{write_report_to_file, HealthMonitor, Severity};
 use curator::shared_state::SharedCuratorState;
 use ethers::types::{Address, U256};
@@ -93,11 +94,17 @@ async fn run_collector_loop(
     shutdown: Arc<AtomicBool>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let collector = NavCollector::new(config.issuer_urls.clone());
-    let pusher = OraclePusher::new(
+    let mut pusher = OraclePusher::new(
         &config.rpc_url,
         &config.private_key,
         config.oracle_address,
     )?;
+
+    // Wire data-node client for last-cycle reads when configured
+    if let Some(ref url) = config.data_node_url {
+        pusher.set_data_node_client(DataNodeClient::new(url));
+        info!(url = %url, "Collector using data-node for lastCycleNumber reads");
+    }
 
     let total_issuers = config.issuer_urls.len();
 

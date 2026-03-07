@@ -13,6 +13,7 @@ pub mod alerting;
 pub mod allocator;
 pub mod collector;
 pub mod config;
+pub mod data_node_client;
 pub mod health_monitor;
 pub mod liquidator;
 pub mod market_config;

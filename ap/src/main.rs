@@ -7,12 +7,13 @@ use ap::event_monitor::{EventMonitorBuilder, EventMonitorConfig};
 use ap::event_queue::{APEvent, EventReceiver};
 use ap::external::bitget::{BitgetClient, BitgetConfig, RateLimitedBitgetClient};
 use ap::external::bitget_vault::BitgetVaultClient;
+use ap::sse_client::SseChainEventClient;
 use ethers::types::Address as EthAddress;
 use ap::limit_enforcer::{LimitOrderEnforcer, ValidationResult};
 use ap::metrics::{APMetrics, PrometheusFormatter};
 use ap::timeout::{TimeoutConfig, TimeoutHandler};
 use clap::Parser;
-use common::adapters::{DeploymentConfig, RpcChainReader, RpcChainWriter};
+use common::adapters::{DataNodeChainReader, DeploymentConfig, RpcChainReader, RpcChainWriter};
 use common::mocks::{MockBitgetBuilder, MockChainBuilder};
 use common::rate_limit::{BitgetRateLimiter, RateLimiterTier};
 use common::traits::{APClient, ChainWriter};
@@ -429,8 +430,125 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         let mock_provider = Provider::<Http>::try_from(&rpc_url).ok().map(Arc::new);
 
         (receiver, mock_writer, mock_provider)
+    } else if let Some(ref data_node_url) = config.data_node_url {
+        // Data-node mode: reads from data-node HTTP API, events from SSE stream
+        let deployment_path = config.effective_deployment_file()
+            .ok_or("Real chain mode requires --deployment-file or AP_DEPLOYMENT_FILE")?;
+        let deployment = DeploymentConfig::from_file(&deployment_path)
+            .map_err(|e| format!("Failed to load deployment config: {}", e))?;
+        deployment.validate(target_chain_id)
+            .map_err(|e| format!("Deployment config validation failed: {}", e))?;
+
+        // Provider is still needed for chain writes
+        let provider = Provider::<Http>::try_from(&rpc_url)
+            .map_err(|e| format!("Failed to create RPC provider: {}", e))?;
+        let provider = Arc::new(provider);
+
+        // Create DataNodeChainReader for L3 state reads
+        let _data_node_reader = Arc::new(DataNodeChainReader::new(data_node_url.clone()));
+
+        // Create chain writer for fill confirmation (AC #3) - still via RPC
+        let private_key_hex = config.private_key.as_ref()
+            .ok_or("Real chain mode requires AP_PRIVATE_KEY environment variable")?;
+        let wallet: LocalWallet = private_key_hex.parse()
+            .map_err(|e| format!("Failed to parse AP_PRIVATE_KEY: {}", e))?;
+        let rpc_writer: Arc<dyn ChainWriter> = Arc::new(
+            RpcChainWriter::new(
+                Provider::<Http>::try_from(&rpc_url)
+                    .map_err(|e| format!("Failed to create provider for writer: {}", e))?,
+                wallet,
+                &deployment,
+            ).map_err(|e| format!("Failed to create RpcChainWriter: {}", e))?
+        );
+
+        let index_addr = deployment.index_address()
+            .map_err(|e| format!("Failed to get Index address: {}", e))?;
+
+        info!(
+            data_node = %data_node_url,
+            rpc = %rpc_url,
+            index = ?index_addr,
+            chain_id = deployment.chain_id,
+            "Data-node mode initialized (DataNodeChainReader + SSE events, RpcChainWriter)"
+        );
+
+        // SSE mode: bypass EventMonitor, create mpsc channel directly for APEvent delivery
+        let (event_tx, event_rx) = tokio::sync::mpsc::channel::<APEvent>(10_000);
+
+        // Spawn SSE client to consume chain events from data-node
+        let sse_topics = vec![
+            "order-submitted".to_string(),
+            "fill-confirmed".to_string(),
+            "rebalance-requested".to_string(),
+        ];
+        let sse_client = SseChainEventClient::new(data_node_url.clone(), sse_topics);
+
+        // Create a bridge channel: SSE client sends ChainEvent, we convert to APEvent
+        let (chain_event_tx, mut chain_event_rx) = tokio::sync::mpsc::channel::<common::traits::ChainEvent>(10_000);
+
+        // Spawn SSE consumer
+        tokio::spawn(async move {
+            sse_client.run(chain_event_tx).await;
+        });
+
+        // Spawn ChainEvent -> APEvent converter (replicates EventMonitor::handle_chain_event logic)
+        let event_tx_clone = event_tx.clone();
+        tokio::spawn(async move {
+            use common::traits::ChainEvent;
+            while let Some(chain_event) = chain_event_rx.recv().await {
+                let ap_event = match chain_event {
+                    ChainEvent::TradeRequest {
+                        cycle_number, pair_id, side, amount, limit_price,
+                        block_number, tx_hash, log_index,
+                    } => {
+                        match ap::event_types::TradeRequestEvent::from_chain_fields(
+                            cycle_number, pair_id, side, amount, limit_price,
+                            block_number, tx_hash, log_index,
+                        ) {
+                            Ok(event) => Some(APEvent::TradeRequest(event)),
+                            Err(e) => {
+                                tracing::warn!(error = %e, "Failed to convert SSE TradeRequest");
+                                None
+                            }
+                        }
+                    }
+                    ChainEvent::AssetTradeRequest {
+                        cycle_number, asset, side, usdc_amount, price, quote_token,
+                        block_number, tx_hash, log_index,
+                    } => {
+                        let event = ap::event_types::AssetTradeRequestEvent::from_chain_fields(
+                            cycle_number, asset, side, usdc_amount, price, quote_token,
+                            block_number, tx_hash, log_index,
+                        );
+                        Some(APEvent::AssetTradeRequest(event))
+                    }
+                    ChainEvent::WithdrawalRequest {
+                        itp_id, amount, destination, block_number, tx_hash, log_index,
+                    } => {
+                        let event = ap::event_types::WithdrawalRequestEvent::from_chain_fields(
+                            itp_id, amount, destination, block_number, tx_hash, log_index,
+                        );
+                        Some(APEvent::WithdrawalRequest(event))
+                    }
+                    // OrderSubmitted, FillConfirmed, etc. are not AP events
+                    other => {
+                        tracing::debug!(?other, "Ignoring non-AP chain event from SSE");
+                        None
+                    }
+                };
+
+                if let Some(event) = ap_event {
+                    if event_tx_clone.send(event).await.is_err() {
+                        tracing::info!("AP event channel closed, stopping SSE->APEvent bridge");
+                        break;
+                    }
+                }
+            }
+        });
+
+        (event_rx, rpc_writer, Some(provider))
     } else {
-        // Real chain mode
+        // Real chain mode — direct RPC reads + EventMonitor polling
         let deployment_path = config.effective_deployment_file()
             .ok_or("Real chain mode requires --deployment-file or AP_DEPLOYMENT_FILE")?;
         let deployment = DeploymentConfig::from_file(&deployment_path)

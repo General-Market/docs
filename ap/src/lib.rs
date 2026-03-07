@@ -26,6 +26,7 @@ pub mod event_types;
 pub mod external;
 pub mod limit_enforcer;
 pub mod metrics;
+pub mod sse_client;
 pub mod timeout;
 
 pub use block_tracker::BlockTracker;

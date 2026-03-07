@@ -4,19 +4,16 @@
 //! instead of making direct RPC calls to the L3 chain. This centralizes
 //! all chain reads through data-node, reducing RPC load.
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use ethers::types::{Address, U256};
+use ethers::types::{Address, Bytes, H256, U256};
 use reqwest::Client;
 use serde::Deserialize;
-use tokio::sync::broadcast;
-use tracing::{debug, warn};
 
 use crate::error::Error;
 use crate::traits::{
-    ChainEvent, ChainReader, EventFilter, EventStream, ItpInventoryState, PendingRebalance,
+    ChainReader, EventFilter, EventStream, ItpInventoryState, PendingRebalance,
 };
 use crate::types::{ITPCore, Issuer, LimitOrder, OrderStatus, Price, Side};
 
@@ -107,13 +104,17 @@ impl DataNodeChainReader {
             .map_err(|e| Error::ChainRead(format!("data-node GET {} parse failed: {}", path, e)))
     }
 
-    fn convert_order(o: CachedOrder) -> LimitOrder {
-        let itp_id_hex = o.itp_id.strip_prefix("0x").unwrap_or(&o.itp_id);
-        let itp_bytes = hex::decode(itp_id_hex).unwrap_or_else(|_| vec![0u8; 32]);
-        let mut itp_id = [0u8; 32];
-        let len = itp_bytes.len().min(32);
-        itp_id[..len].copy_from_slice(&itp_bytes[..len]);
+    fn parse_h256(hex_str: &str) -> H256 {
+        let hex = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+        let bytes = hex::decode(hex).unwrap_or_else(|_| vec![0u8; 32]);
+        let mut arr = [0u8; 32];
+        let len = bytes.len().min(32);
+        arr[..len].copy_from_slice(&bytes[..len]);
+        H256::from(arr)
+    }
 
+    fn convert_order(o: CachedOrder) -> LimitOrder {
+        let itp_id = Self::parse_h256(&o.itp_id);
         let user: Address = o.user.parse().unwrap_or_default();
 
         LimitOrder {
@@ -123,7 +124,7 @@ impl DataNodeChainReader {
             side: if o.side == 0 { Side::Buy } else { Side::Sell },
             amount: U256::from_dec_str(&o.amount).unwrap_or_default(),
             limit_price: U256::from_dec_str(&o.limit_price).unwrap_or_default(),
-            slippage_tier: o.slippage_tier,
+            slippage_tier: U256::from(o.slippage_tier),
             deadline: U256::from_dec_str(&o.deadline).unwrap_or_default(),
             itp_id,
             timestamp: U256::from(o.timestamp),
@@ -169,11 +170,18 @@ impl ChainReader for DataNodeChainReader {
                 let addr: Address = c.address.parse().unwrap_or_default();
                 let pubkey_hex = c.bls_pubkey.strip_prefix("0x").unwrap_or(&c.bls_pubkey);
                 let pubkey_bytes = hex::decode(pubkey_hex).unwrap_or_default();
+                // Pack endpoint string into H256 (IP bytes32 field)
+                let mut ip_bytes = [0u8; 32];
+                let ep_bytes = c.endpoint.as_bytes();
+                let len = ep_bytes.len().min(32);
+                ip_bytes[..len].copy_from_slice(&ep_bytes[..len]);
                 Issuer {
-                    address: addr,
-                    endpoint: c.endpoint,
-                    bls_pubkey: pubkey_bytes,
-                    index: i as u8,
+                    id: (i + 1) as u64,
+                    addr,
+                    ip: H256::from(ip_bytes),
+                    bls_pubkey: Bytes::from(pubkey_bytes),
+                    status: U256::from(1), // active
+                    registered_at: U256::zero(),
                 }
             })
             .collect())
