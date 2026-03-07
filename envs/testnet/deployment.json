@@ -21,7 +21,8 @@
     "USDC": "0x58Dafa70BAF2A6B5260C7f281d687E4792efF737",
     "SettlementIssuerRegistry": "0x8C4Fb7FccF4967d0D3425ebD888635d5E91c3876",
     "L3BridgeProxy": "0xCCa7b200E79289fe695f2d913F4485984d306bEB",
-    "SettlementBridgeProxy": "0x2F1131174EbF2B59d33cdA5bbbd1930fCf19D4D7"
+    "SettlementBridgeProxy": "0x2F1131174EbF2B59d33cdA5bbbd1930fCf19D4D7",
+    "Vision": "0xD5Dd84dDD6793497c0277785149B2E34E8B1C48b"
   },
   "accounts": {
     "admin": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",

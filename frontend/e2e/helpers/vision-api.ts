@@ -90,6 +90,8 @@ function getDeployment() {
 
 export function getVisionAddress(): string {
   return getDeployment().contracts.Vision
+    || process.env.NEXT_PUBLIC_VISION_ADDRESS
+    || ''
 }
 
 /** Vision uses L3_WUSDC (18 decimals) on L3 */
