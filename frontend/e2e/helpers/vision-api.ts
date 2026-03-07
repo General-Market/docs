@@ -590,8 +590,21 @@ export async function fullJoinBatch(
 
   // 2. Approve USDC and deposit to Vision balance (dual-balance architecture)
   await approveVision(player, depositAmount)
-  // On testnet, wait for approve state to propagate before deposit
-  if (!IS_ANVIL) await new Promise(r => setTimeout(r, 2000))
+  // On testnet, poll until allowance is confirmed before deposit (L3 state propagation)
+  if (!IS_ANVIL) {
+    for (let i = 0; i < 10; i++) {
+      const allowanceData = encodeFunctionData({
+        abi: [{ name: 'allowance', type: 'function', stateMutability: 'view',
+          inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
+          outputs: [{ type: 'uint256' }] }] as const,
+        functionName: 'allowance',
+        args: [player as `0x${string}`, getVisionAddress() as `0x${string}`],
+      })
+      const raw = await l3EthCall(getL3UsdcAddress(), allowanceData)
+      if (BigInt(raw) >= depositAmount) break
+      await new Promise(r => setTimeout(r, 1000))
+    }
+  }
   const depositBalanceData = encodeFunctionData({
     abi: [{
       name: 'depositBalance',
