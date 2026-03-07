@@ -488,7 +488,8 @@ _start_issuers() {
 
     # Read contract addresses from deployment file
     VISION_ADDR=$(read_deployment_addr "Vision")
-    BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
+    BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
+    [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
 
     for i in 1 2 3; do
         PORT=$((9000 + i))
