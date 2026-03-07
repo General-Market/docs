@@ -419,8 +419,9 @@ cmd_start() {
     fi
     echo -e "  ${GREEN}Deployment files present${NC}"
 
-    # Start data-node on VPS 1
+    # Start Sonic RPC proxy on VPS 1 (rate-limited caching proxy)
     echo -e "${BLUE}[3/4] Starting services on VPS 1...${NC}"
+    _start_sonic_proxy
     _start_data_node
     _start_issuers
 
@@ -431,6 +432,28 @@ cmd_start() {
     echo ""
     echo -e "${GREEN}All services started. Check status: ./testnet.sh status${NC}"
 }
+
+_start_sonic_proxy() {
+    # Start rate-limiting proxy for Sonic testnet RPC on VPS 1
+    if vps_be_ssh "pgrep -f sonic-rpc-proxy > /dev/null 2>&1"; then
+        echo -e "  ${GREEN}Sonic RPC proxy already running${NC}"
+        return
+    fi
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/scripts/sonic-rpc-proxy.py" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/scripts/sonic-rpc-proxy.py"
+    _remote_start vps_be_ssh "cd $VPS_BE_DIR
+mkdir -p logs
+exec python3 scripts/sonic-rpc-proxy.py 8547 $SETTLEMENT_RPC_URL" "$VPS_BE_DIR/logs/sonic-proxy.log"
+    sleep 1
+    if vps_be_ssh "pgrep -f sonic-rpc-proxy > /dev/null 2>&1"; then
+        echo -e "  ${GREEN}Sonic RPC proxy started on :8547${NC}"
+    else
+        echo -e "  ${YELLOW}Sonic proxy failed — using direct RPC${NC}"
+    fi
+}
+
+# Settlement RPC for VPS services (through local proxy to avoid 429s)
+SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
 
 _start_data_node() {
     if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" < /dev/null 2>/dev/null; then
@@ -459,7 +482,7 @@ exec ./target/release/data-node serve \\
     --database-url postgres:///$DB_NAME \\
     --symbol-map data/symbol-map.json \\
     --rpc-url $RPC_URL \\
-    --settlement-rpc-url $SETTLEMENT_RPC_URL \\
+    --settlement-rpc-url $SETTLEMENT_RPC_VPS \\
     --deployment-file $DEPLOYMENT_FILE \\
     --morpho-deployment-file deployments/morpho-e2e.json \\
     --ecb-enabled \\
@@ -535,7 +558,7 @@ mkdir -p logs
 export ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt
 export ISSUER_PEERS=$PEERS
 export ISSUER_RPC_URL=$RPC_URL
-export ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_URL
+export ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_VPS
 export ISSUER_SETTLEMENT_CHAIN_ID=$SETTLEMENT_CHAIN_ID
 export DATA_NODE_URL=http://localhost:$DATA_NODE_PORT
 export EXCHANGE_MODE=mock
@@ -614,7 +637,7 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1 (issuers + data-node)...${NC}"
-    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; true"
+    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; pkill -f sonic-rpc-proxy 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 1 stopped${NC}"
 
     echo -e "${BLUE}VPS 2 (AP)...${NC}"
