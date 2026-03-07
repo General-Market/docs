@@ -19,6 +19,7 @@ export const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:30
 export const ISSUER_URLS = (
   process.env.E2E_ISSUER_URLS || 'http://localhost:10001,http://localhost:10002,http://localhost:10003'
 ).split(',').map(s => s.trim())
+export const AP_URL = process.env.E2E_AP_URL || process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 
 // ── Chain IDs ───────────────────────────────────────────────
 export const CHAIN_ID = Number(process.env.E2E_CHAIN_ID || 111222333)

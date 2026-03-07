@@ -573,9 +573,10 @@ impl<'a> ConsensusBuilder<'a> {
             "BridgeOrchestrator initialized"
         );
 
+        let order_reader = Arc::new(crate::chain::SettlementOrderReader(settlement_reader.clone()));
         let orchestrator = BridgeOrchestrator::new(
             bridge_config,
-            settlement_reader.clone(),
+            order_reader,
             chain_writer.clone(),
             bls_keypair.clone(),
             keys.peer_id,

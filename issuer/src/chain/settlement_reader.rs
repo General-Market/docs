@@ -23,11 +23,15 @@ use ethers::prelude::*;
 use tokio::sync::RwLock;
 use tracing::{debug, warn, info};
 
-use crate::bridge::{BridgeError, CrossChainOrderReader};
-use crate::consensus::ConsensusError;
+// CrossChainOrderReader impl moved to settlement_trait.rs (blanket on dyn SettlementReader)
 use crate::chain::events::{
-    CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,
+    CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainOrderParseError,
     CrossChainSellOrderEvent, cross_chain_sell_order_topic,
+    cross_chain_event_into_full_order, cross_chain_order_is_expired_at,
+    cross_chain_order_log_if_suspicious_amount,
+    parse_create_itp_requested, parse_itp_created,
+    parse_cross_chain_order_event, parse_cross_chain_sell_order_event,
+    validate_itp_creation_request,
     ItpCreatedEvent, ItpCreationRequest, ParseError, CREATE_ITP_REQUESTED_SIGNATURE,
     CROSS_CHAIN_ORDER_CREATED_SIGNATURE,
     ITP_CREATED_SIGNATURE,
@@ -202,10 +206,10 @@ impl<M: Middleware> SettlementChainReader<M> {
 
         let mut requests = Vec::with_capacity(logs.len());
         for log in logs {
-            match ItpCreationRequest::from_log(&log) {
+            match parse_create_itp_requested(&log) {
                 Ok(request) => {
                     // Validate the request
-                    if let Err(e) = request.validate() {
+                    if let Err(e) = validate_itp_creation_request(&request) {
                         warn!(
                             nonce = %request.nonce,
                             error = %e,
@@ -278,7 +282,7 @@ impl<M: Middleware> SettlementChainReader<M> {
 
         let mut events = Vec::with_capacity(logs.len());
         for log in logs {
-            match ItpCreatedEvent::from_log(&log) {
+            match parse_itp_created(&log) {
                 Ok(event) => {
                     debug!(
                         nonce = %event.nonce,
@@ -492,7 +496,7 @@ impl<M: Middleware> SettlementChainReader<M> {
 
         let mut events = Vec::with_capacity(logs.len());
         for log in logs {
-            match CrossChainOrderEvent::from_log(&log) {
+            match parse_cross_chain_order_event(&log) {
                 Ok(event) => {
                     debug!(
                         order_id = %event.order_id,
@@ -659,7 +663,8 @@ impl<M: Middleware> SettlementChainReader<M> {
                     }
 
                     // Build full order
-                    let full_order = event.into_full_order(
+                    let full_order = cross_chain_event_into_full_order(
+                        event,
                         order_data.limit_price,
                         order_data.slippage_tier,
                         order_data.deadline,
@@ -668,10 +673,10 @@ impl<M: Middleware> SettlementChainReader<M> {
                     );
 
                     // Story 7-6b: Check for suspicious amounts that might indicate decimal confusion
-                    full_order.log_if_suspicious_amount();
+                    cross_chain_order_log_if_suspicious_amount(&full_order);
 
                     // Check expiration using block timestamp (not system clock)
-                    if full_order.is_expired_at(block_timestamp) {
+                    if cross_chain_order_is_expired_at(&full_order, block_timestamp) {
                         warn!(
                             order_id = %full_order.order_id,
                             deadline = %full_order.deadline,
@@ -835,7 +840,7 @@ impl<M: Middleware> SettlementChainReader<M> {
 
         let mut events = Vec::with_capacity(logs.len());
         for log in logs {
-            match CrossChainSellOrderEvent::from_log(&log) {
+            match parse_cross_chain_sell_order_event(&log) {
                 Ok(event) => {
                     debug!(
                         order_id = %event.order_id,
@@ -1014,25 +1019,6 @@ impl<M: Middleware> SettlementChainReader<M> {
         }
         result
     }
-}
-
-/// Data returned from getCrossChainOrder() call
-#[derive(Debug, Clone)]
-pub struct CrossChainOrderData {
-    /// ITP identifier (bytes32)
-    pub itp_id: H256,
-    /// User who placed the order
-    pub user: Address,
-    /// USDC amount (18 decimals)
-    pub amount: U256,
-    /// Maximum price per ITP token (18 decimals)
-    pub limit_price: U256,
-    /// Slippage tier: 0=strict(0.3%), 1=normal(1%), 2=relaxed(3%)
-    pub slippage_tier: u8,
-    /// Unix timestamp when order expires
-    pub deadline: U256,
-    /// Timestamp when order was created on-chain
-    pub created_at: U256,
 }
 
 /// Parse getCrossChainOrder response into CrossChainOrderData
@@ -1256,28 +1242,119 @@ pub enum SettlementReaderError {
 }
 
 // ============================================================================
-// CrossChainOrderReader trait implementation for BridgeOrchestrator integration
-// Story 7.1: Wire up BridgeOrchestrator into issuer main loop
+// SettlementReader trait implementation — delegates to inherent methods
 // ============================================================================
 
+use crate::chain::settlement_trait::SettlementReader;
+
 #[async_trait]
-impl<M: Middleware + Send + Sync + 'static> CrossChainOrderReader for SettlementChainReader<M> {
-    /// Get a cross-chain order by ID for BridgeOrchestrator validation
-    ///
-    /// Adapts the SettlementChainReader::get_cross_chain_order() method to the
-    /// CrossChainOrderReader trait expected by BridgeOrchestrator.
-    async fn get_cross_chain_order(&self, order_id: U256) -> Result<CrossChainOrderData, BridgeError> {
-        match self.get_cross_chain_order(order_id).await {
-            Ok(Some(data)) => Ok(data),
-            Ok(None) => Err(ConsensusError::ChainReaderError {
-                reason: format!("Order {} not found on-chain (user is zero address)", order_id),
-            }
-            .into()),
-            Err(e) => Err(ConsensusError::ChainReaderError {
-                reason: format!("Failed to fetch order {}: {}", order_id, e),
-            }
-            .into()),
-        }
+impl<M: Middleware + Send + Sync + 'static> SettlementReader for SettlementChainReader<M> {
+    fn chain_id(&self) -> u64 {
+        self.config.chain_id
+    }
+
+    async fn get_confirmed_block(&self) -> Result<u64, SettlementReaderError> {
+        self.get_confirmed_block().await
+    }
+
+    async fn get_create_itp_events(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<Vec<ItpCreationRequest>, SettlementReaderError> {
+        self.get_create_itp_events(from_block, to_block).await
+    }
+
+    async fn get_itp_created_events(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<Vec<ItpCreatedEvent>, SettlementReaderError> {
+        self.get_itp_created_events(from_block, to_block).await
+    }
+
+    async fn is_pending(&self, nonce: U256) -> Result<bool, SettlementReaderError> {
+        self.is_pending(nonce).await
+    }
+
+    async fn get_next_nonce(&self) -> Result<U256, SettlementReaderError> {
+        self.get_next_nonce().await
+    }
+
+    async fn get_pending_creation(
+        &self,
+        nonce: U256,
+    ) -> Result<Option<ItpCreationRequest>, SettlementReaderError> {
+        self.get_pending_creation(nonce).await
+    }
+
+    async fn get_all_pending_requests(
+        &self,
+    ) -> Result<Vec<ItpCreationRequest>, SettlementReaderError> {
+        self.get_all_pending_requests().await
+    }
+
+    async fn get_cross_chain_order_events(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<Vec<CrossChainOrderEvent>, SettlementReaderError> {
+        self.get_cross_chain_order_events(from_block, to_block).await
+    }
+
+    async fn get_cross_chain_order(
+        &self,
+        order_id: U256,
+    ) -> Result<Option<CrossChainOrderData>, SettlementReaderError> {
+        self.get_cross_chain_order(order_id).await
+    }
+
+    async fn get_confirmed_cross_chain_orders(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<Vec<CrossChainOrder>, SettlementReaderError> {
+        self.get_confirmed_cross_chain_orders(from_block, to_block).await
+    }
+
+    async fn mark_order_processed(&self, chain_id: u64, order_id: U256) {
+        self.mark_order_processed(chain_id, order_id).await
+    }
+
+    async fn increment_retry_count(&self, chain_id: u64, order_id: U256) -> u8 {
+        self.increment_retry_count(chain_id, order_id).await
+    }
+
+    async fn remove_seen_order(&self, chain_id: u64, order_id: U256) {
+        self.remove_seen_order(chain_id, order_id).await
+    }
+
+    async fn clear_old_seen_orders(&self, max_size: usize) {
+        self.clear_old_seen_orders(max_size).await
+    }
+
+    async fn get_confirmed_cross_chain_sell_orders(
+        &self,
+        from_block: u64,
+        to_block: u64,
+    ) -> Result<Vec<CrossChainSellOrderEvent>, SettlementReaderError> {
+        self.get_confirmed_cross_chain_sell_orders(from_block, to_block).await
+    }
+
+    async fn mark_sell_order_processed(&self, chain_id: u64, order_id: U256) {
+        self.mark_sell_order_processed(chain_id, order_id).await
+    }
+
+    async fn increment_sell_retry_count(&self, chain_id: u64, order_id: U256) -> u8 {
+        self.increment_sell_retry_count(chain_id, order_id).await
+    }
+
+    async fn remove_seen_sell_order(&self, chain_id: u64, order_id: U256) {
+        self.remove_seen_sell_order(chain_id, order_id).await
+    }
+
+    async fn clear_old_seen_sell_orders(&self, max_size: usize) {
+        self.clear_old_seen_sell_orders(max_size).await
     }
 }
 

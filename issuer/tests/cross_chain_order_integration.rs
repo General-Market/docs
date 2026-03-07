@@ -6,6 +6,9 @@
 use ethers::types::{Address, Bytes, H256, Log, U256, U64};
 use issuer::chain::events::{
     CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,
+    cross_chain_event_into_full_order, cross_chain_order_dedup_key,
+    cross_chain_order_is_expired, cross_chain_order_validate,
+    parse_cross_chain_order_event,
     CROSS_CHAIN_ORDER_CREATED_SIGNATURE,
 };
 
@@ -72,7 +75,7 @@ fn test_parse_cross_chain_order_event_full_flow() {
     );
 
     // Parse the event
-    let event = CrossChainOrderEvent::from_log(&log).unwrap();
+    let event = parse_cross_chain_order_event(&log).unwrap();
 
     // Verify all fields parsed correctly
     assert_eq!(event.order_id, U256::from(12345));
@@ -95,7 +98,7 @@ fn test_convert_event_to_full_order() {
         [0xDD; 32],                          // tx_hash
     );
 
-    let event = CrossChainOrderEvent::from_log(&log).unwrap();
+    let event = parse_cross_chain_order_event(&log).unwrap();
 
     // Simulate data from getCrossChainOrder() call
     let limit_price = U256::from(1_500_000_000_000_000_000u64); // 1.5 in 18 decimals
@@ -105,7 +108,7 @@ fn test_convert_event_to_full_order() {
     let chain_id = 42161u64; // Settlement
 
     // Convert to full order
-    let full_order = event.into_full_order(limit_price, slippage_tier, deadline, created_at, chain_id);
+    let full_order = cross_chain_event_into_full_order(event, limit_price, slippage_tier, deadline, created_at, chain_id);
 
     // Verify all fields
     assert_eq!(full_order.order_id, U256::from(42));
@@ -137,8 +140,8 @@ fn test_order_not_expired() {
         tx_hash: H256::from([0xCC; 32]),
     };
 
-    assert!(!order.is_expired());
-    assert!(order.validate().is_none()); // Valid order
+    assert!(!cross_chain_order_is_expired(&order));
+    assert!(cross_chain_order_validate(&order).is_none()); // Valid order
 }
 
 #[test]
@@ -157,8 +160,8 @@ fn test_order_expired() {
         tx_hash: H256::from([0xCC; 32]),
     };
 
-    assert!(order.is_expired());
-    assert_eq!(order.validate(), Some("order has expired"));
+    assert!(cross_chain_order_is_expired(&order));
+    assert_eq!(cross_chain_order_validate(&order), Some("order has expired"));
 }
 
 #[test]
@@ -190,13 +193,13 @@ fn test_dedup_key_uniqueness() {
     };
 
     // Same chain + same order_id = same dedup key
-    assert_eq!(order1.dedup_key(), (42161, U256::from(1)));
+    assert_eq!(cross_chain_order_dedup_key(&order1), (42161, U256::from(1)));
 
     // Different chain = different dedup key (even with same order_id)
-    assert_ne!(order1.dedup_key(), order2.dedup_key());
+    assert_ne!(cross_chain_order_dedup_key(&order1), cross_chain_order_dedup_key(&order2));
 
     // Different order_id = different dedup key
-    assert_ne!(order1.dedup_key(), order3.dedup_key());
+    assert_ne!(cross_chain_order_dedup_key(&order1), cross_chain_order_dedup_key(&order3));
 }
 
 #[test]
@@ -232,7 +235,7 @@ fn test_parse_malformed_log_missing_data() {
     // Set data to be too short (less than 32 bytes)
     log.data = Bytes::from(vec![0u8; 16]);
 
-    let result = CrossChainOrderEvent::from_log(&log);
+    let result = parse_cross_chain_order_event(&log);
     assert!(matches!(
         result,
         Err(CrossChainOrderParseError::DecodeError { .. })
@@ -250,7 +253,7 @@ fn test_parse_log_with_zero_user_fails() {
         [0xCC; 32],
     );
 
-    let result = CrossChainOrderEvent::from_log(&log);
+    let result = parse_cross_chain_order_event(&log);
     assert!(matches!(
         result,
         Err(CrossChainOrderParseError::ZeroUserAddress)
@@ -268,7 +271,7 @@ fn test_parse_log_with_zero_amount_fails() {
         [0xCC; 32],
     );
 
-    let result = CrossChainOrderEvent::from_log(&log);
+    let result = parse_cross_chain_order_event(&log);
     assert!(matches!(
         result,
         Err(CrossChainOrderParseError::ZeroAmount)
@@ -293,7 +296,7 @@ fn test_multiple_events_parsing() {
 
     let events: Vec<CrossChainOrderEvent> = logs
         .iter()
-        .map(|log| CrossChainOrderEvent::from_log(log).unwrap())
+        .map(|log| parse_cross_chain_order_event(log).unwrap())
         .collect();
 
     assert_eq!(events.len(), 5);

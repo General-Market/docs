@@ -12,6 +12,7 @@ mod itp;
 mod order;
 mod p2p;
 mod price;
+mod settlement;
 
 pub use bridge::*;
 pub use exchange_mode::*;
@@ -21,3 +22,4 @@ pub use itp::*;
 pub use order::{EnumConversionError, LimitOrder, OrderId, OrderStatus, Side};
 pub use p2p::*;
 pub use price::*;
+pub use settlement::*;

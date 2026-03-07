@@ -3,8 +3,8 @@
 use super::{BootstrapError, BootstrapParams, ChainComponents};
 use crate::{
     SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter,
-    SettlementChainWriterConfig, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
-    EthersChainReader, EthersChainWriter, GasConfig, IssuerConfig,
+    SettlementChainWriterConfig, SettlementReader, ChainReaderConfig, ChainWriterConfig,
+    ContractAddresses, EthersChainReader, EthersChainWriter, GasConfig, IssuerConfig,
 };
 use common::mocks::MockChainBuilder;
 use common::traits::ChainReader;
@@ -194,7 +194,7 @@ impl<'a> ChainBuilder<'a> {
         &self,
         node_id: u32,
     ) -> Result<(
-        Option<Arc<SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
+        Option<Arc<dyn SettlementReader>>,
         Option<Arc<SettlementChainWriter>>,
     ), BootstrapError> {
         let bridge_proxy = match &self.params.bridge_proxy {
@@ -211,7 +211,7 @@ impl<'a> ChainBuilder<'a> {
             .map_err(|e| BootstrapError::Chain(e))?;
 
         // Build SettlementChainReader
-        let settlement_reader = {
+        let settlement_reader: Option<Arc<dyn SettlementReader>> = {
             let settlement_config = SettlementChainReaderConfig {
                 rpc_url: settlement_rpc.clone(),
                 bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
@@ -224,7 +224,7 @@ impl<'a> ChainBuilder<'a> {
             match SettlementChainReader::new(settlement_config) {
                 Ok(reader) => {
                     info!(node_id, bridge_proxy = %bridge_proxy, settlement_rpc = %settlement_rpc, "SettlementChainReader initialized");
-                    Some(Arc::new(reader))
+                    Some(Arc::new(reader) as Arc<dyn SettlementReader>)
                 }
                 Err(e) => {
                     warn!(node_id, error = %e, "Failed to create SettlementChainReader");

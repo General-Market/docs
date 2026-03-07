@@ -1,13 +1,19 @@
 //! RebalanceRequested Event Types (Story 7-14, Task 4.1)
 //!
-//! This module provides types for parsing RebalanceRequested events
+//! This module provides parsing for RebalanceRequested events
 //! from the Index contract on L3.
+//!
+//! Types are defined in `common::types::settlement` and re-exported here.
+//! Parsing logic (from raw logs) stays in this module.
 //!
 //! Events:
 //! - `RebalanceRequested` - ITP creator requests a rebalance with asset changes and new weights
 
 use ethers::types::{H256, Log, U256, U64};
 use thiserror::Error;
+
+// Re-export shared type from common
+pub use common::types::RebalanceRequestedEvent;
 
 /// Event signature for RebalanceRequested
 /// `keccak256("RebalanceRequested(address,bytes32,uint256[],address[],uint256[],string)")`
@@ -21,27 +27,6 @@ use thiserror::Error;
 /// - ABI-encoded: removeIndices (uint256[]), addAssets (address[]), newWeights (uint256[]), note (string)
 pub const REBALANCE_REQUESTED_SIGNATURE: &str =
     "RebalanceRequested(address,bytes32,uint256[],address[],uint256[],string)";
-
-/// Parsed RebalanceRequested event from Index.sol on L3
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RebalanceRequestedEvent {
-    /// Address that requested the rebalance (indexed)
-    pub requester: ethers::types::Address,
-    /// ITP identifier (bytes32, indexed)
-    pub itp_id: H256,
-    /// Indices of assets to remove from the ITP
-    pub remove_indices: Vec<U256>,
-    /// Addresses of new assets to add to the ITP
-    pub add_assets: Vec<ethers::types::Address>,
-    /// New target weights (18 decimals each)
-    pub new_weights: Vec<U256>,
-    /// Human-readable note describing the rebalance reason
-    pub note: String,
-    /// Block number where event was emitted
-    pub block_number: u64,
-    /// Transaction hash
-    pub tx_hash: H256,
-}
 
 /// Error parsing RebalanceRequested events from logs
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -59,172 +44,170 @@ pub enum RebalanceParseError {
     EmptyWeights,
 }
 
-impl RebalanceRequestedEvent {
-    /// Parse RebalanceRequested event from a raw log
-    ///
-    /// Event: RebalanceRequested(address indexed requester, bytes32 indexed itpId,
-    ///        uint256[] removeIndices, address[] addAssets, uint256[] newWeights, string note)
-    ///
-    /// Topics:
-    /// - [0]: event signature hash
-    /// - [1]: requester (address, indexed — left-padded to 32 bytes)
-    /// - [2]: itpId (bytes32, indexed)
-    ///
-    /// Data (ABI-encoded dynamic fields):
-    /// - offset to removeIndices
-    /// - offset to addAssets
-    /// - offset to newWeights
-    /// - offset to note
-    /// - removeIndices array (length + elements)
-    /// - addAssets array (length + elements)
-    /// - newWeights array (length + elements)
-    /// - note string (length + UTF-8 bytes, padded to 32)
-    pub fn from_log(log: &Log) -> Result<Self, RebalanceParseError> {
-        // Verify we have enough topics (signature + 2 indexed params)
-        if log.topics.len() < 3 {
-            return Err(RebalanceParseError::MissingTopic {
-                index: log.topics.len(),
-            });
-        }
-
-        // Extract requester from topic[1] (last 20 bytes of H256)
-        let requester_bytes = log.topics[1].as_bytes();
-        let requester = ethers::types::Address::from_slice(&requester_bytes[12..32]);
-
-        // Extract itpId from topic[2]
-        let itp_id = log.topics[2];
-
-        // Decode dynamic fields from data
-        let data = &log.data.0;
-
-        // We need at least 4 offsets (4 * 32 = 128 bytes)
-        if data.len() < 128 {
-            return Err(RebalanceParseError::DecodeError {
-                reason: format!("data too short: expected at least 128, got {}", data.len()),
-            });
-        }
-
-        // Read offsets to each dynamic field
-        let remove_indices_offset = U256::from_big_endian(&data[0..32]).as_usize();
-        let add_assets_offset = U256::from_big_endian(&data[32..64]).as_usize();
-        let new_weights_offset = U256::from_big_endian(&data[64..96]).as_usize();
-        let note_offset = U256::from_big_endian(&data[96..128]).as_usize();
-
-        // Parse removeIndices (uint256[])
-        let remove_indices = Self::parse_u256_array(data, remove_indices_offset)?;
-
-        // Parse addAssets (address[]) — stored as uint256[] in ABI, take last 20 bytes
-        let add_assets = Self::parse_address_array(data, add_assets_offset)?;
-
-        // Parse newWeights (uint256[])
-        let new_weights = Self::parse_u256_array(data, new_weights_offset)?;
-
-        // Parse note (string)
-        let note = Self::parse_string(data, note_offset)?;
-
-        if new_weights.is_empty() {
-            return Err(RebalanceParseError::EmptyWeights);
-        }
-
-        // Get block metadata
-        let block_number = log
-            .block_number
-            .ok_or(RebalanceParseError::MissingBlockMetadata)?
-            .as_u64();
-        let tx_hash = log
-            .transaction_hash
-            .ok_or(RebalanceParseError::MissingBlockMetadata)?;
-
-        Ok(Self {
-            requester,
-            itp_id,
-            remove_indices,
-            add_assets,
-            new_weights,
-            note,
-            block_number,
-            tx_hash,
-        })
+/// Parse RebalanceRequested event from a raw log
+///
+/// Event: RebalanceRequested(address indexed requester, bytes32 indexed itpId,
+///        uint256[] removeIndices, address[] addAssets, uint256[] newWeights, string note)
+///
+/// Topics:
+/// - [0]: event signature hash
+/// - [1]: requester (address, indexed — left-padded to 32 bytes)
+/// - [2]: itpId (bytes32, indexed)
+///
+/// Data (ABI-encoded dynamic fields):
+/// - offset to removeIndices
+/// - offset to addAssets
+/// - offset to newWeights
+/// - offset to note
+/// - removeIndices array (length + elements)
+/// - addAssets array (length + elements)
+/// - newWeights array (length + elements)
+/// - note string (length + UTF-8 bytes, padded to 32)
+pub fn parse_rebalance_requested(log: &Log) -> Result<RebalanceRequestedEvent, RebalanceParseError> {
+    // Verify we have enough topics (signature + 2 indexed params)
+    if log.topics.len() < 3 {
+        return Err(RebalanceParseError::MissingTopic {
+            index: log.topics.len(),
+        });
     }
 
-    /// Parse a dynamic uint256[] from ABI-encoded data at the given offset
-    fn parse_u256_array(data: &[u8], offset: usize) -> Result<Vec<U256>, RebalanceParseError> {
-        if offset + 32 > data.len() {
-            return Err(RebalanceParseError::DecodeError {
-                reason: format!("array offset {} exceeds data length {}", offset, data.len()),
-            });
-        }
+    // Extract requester from topic[1] (last 20 bytes of H256)
+    let requester_bytes = log.topics[1].as_bytes();
+    let requester = ethers::types::Address::from_slice(&requester_bytes[12..32]);
 
-        let length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
-        let elements_start = offset + 32;
+    // Extract itpId from topic[2]
+    let itp_id = log.topics[2];
 
-        if elements_start + length * 32 > data.len() {
-            return Err(RebalanceParseError::DecodeError {
-                reason: format!(
-                    "array data exceeds buffer: need {} bytes at offset {}, have {}",
-                    length * 32,
-                    elements_start,
-                    data.len()
-                ),
-            });
-        }
+    // Decode dynamic fields from data
+    let data = &log.data.0;
 
-        let mut result = Vec::with_capacity(length);
-        for i in 0..length {
-            let start = elements_start + i * 32;
-            result.push(U256::from_big_endian(&data[start..start + 32]));
-        }
-        Ok(result)
+    // We need at least 4 offsets (4 * 32 = 128 bytes)
+    if data.len() < 128 {
+        return Err(RebalanceParseError::DecodeError {
+            reason: format!("data too short: expected at least 128, got {}", data.len()),
+        });
     }
 
-    /// Parse a dynamic address[] from ABI-encoded data at the given offset.
-    /// In ABI encoding, addresses are stored as 32-byte words (left-padded with zeros).
-    /// We extract the last 20 bytes of each word to get the address.
-    fn parse_address_array(
-        data: &[u8],
-        offset: usize,
-    ) -> Result<Vec<ethers::types::Address>, RebalanceParseError> {
-        let u256_values = Self::parse_u256_array(data, offset)?;
-        let mut addresses = Vec::with_capacity(u256_values.len());
-        for val in &u256_values {
-            let mut buf = [0u8; 32];
-            val.to_big_endian(&mut buf);
-            // Address is the last 20 bytes of the 32-byte word
-            addresses.push(ethers::types::Address::from_slice(&buf[12..32]));
-        }
-        Ok(addresses)
+    // Read offsets to each dynamic field
+    let remove_indices_offset = U256::from_big_endian(&data[0..32]).as_usize();
+    let add_assets_offset = U256::from_big_endian(&data[32..64]).as_usize();
+    let new_weights_offset = U256::from_big_endian(&data[64..96]).as_usize();
+    let note_offset = U256::from_big_endian(&data[96..128]).as_usize();
+
+    // Parse removeIndices (uint256[])
+    let remove_indices = parse_u256_array(data, remove_indices_offset)?;
+
+    // Parse addAssets (address[]) — stored as uint256[] in ABI, take last 20 bytes
+    let add_assets = parse_address_array(data, add_assets_offset)?;
+
+    // Parse newWeights (uint256[])
+    let new_weights = parse_u256_array(data, new_weights_offset)?;
+
+    // Parse note (string)
+    let note = parse_string(data, note_offset)?;
+
+    if new_weights.is_empty() {
+        return Err(RebalanceParseError::EmptyWeights);
     }
 
-    /// Parse a dynamic string from ABI-encoded data at the given offset.
-    /// ABI encoding: [length (32 bytes)][UTF-8 bytes padded to 32-byte boundary]
-    fn parse_string(data: &[u8], offset: usize) -> Result<String, RebalanceParseError> {
-        if offset + 32 > data.len() {
-            return Err(RebalanceParseError::DecodeError {
-                reason: format!(
-                    "string offset {} exceeds data length {}",
-                    offset,
-                    data.len()
-                ),
-            });
-        }
+    // Get block metadata
+    let block_number = log
+        .block_number
+        .ok_or(RebalanceParseError::MissingBlockMetadata)?
+        .as_u64();
+    let tx_hash = log
+        .transaction_hash
+        .ok_or(RebalanceParseError::MissingBlockMetadata)?;
 
-        let byte_length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
-        let bytes_start = offset + 32;
+    Ok(RebalanceRequestedEvent {
+        requester,
+        itp_id,
+        remove_indices,
+        add_assets,
+        new_weights,
+        note,
+        block_number,
+        tx_hash,
+    })
+}
 
-        if bytes_start + byte_length > data.len() {
-            return Err(RebalanceParseError::DecodeError {
-                reason: format!(
-                    "string data exceeds buffer: need {} bytes at offset {}, have {}",
-                    byte_length, bytes_start, data.len()
-                ),
-            });
-        }
-
-        let raw_bytes = &data[bytes_start..bytes_start + byte_length];
-        String::from_utf8(raw_bytes.to_vec()).map_err(|e| RebalanceParseError::DecodeError {
-            reason: format!("invalid UTF-8 in string: {}", e),
-        })
+/// Parse a dynamic uint256[] from ABI-encoded data at the given offset
+fn parse_u256_array(data: &[u8], offset: usize) -> Result<Vec<U256>, RebalanceParseError> {
+    if offset + 32 > data.len() {
+        return Err(RebalanceParseError::DecodeError {
+            reason: format!("array offset {} exceeds data length {}", offset, data.len()),
+        });
     }
+
+    let length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
+    let elements_start = offset + 32;
+
+    if elements_start + length * 32 > data.len() {
+        return Err(RebalanceParseError::DecodeError {
+            reason: format!(
+                "array data exceeds buffer: need {} bytes at offset {}, have {}",
+                length * 32,
+                elements_start,
+                data.len()
+            ),
+        });
+    }
+
+    let mut result = Vec::with_capacity(length);
+    for i in 0..length {
+        let start = elements_start + i * 32;
+        result.push(U256::from_big_endian(&data[start..start + 32]));
+    }
+    Ok(result)
+}
+
+/// Parse a dynamic address[] from ABI-encoded data at the given offset.
+/// In ABI encoding, addresses are stored as 32-byte words (left-padded with zeros).
+/// We extract the last 20 bytes of each word to get the address.
+fn parse_address_array(
+    data: &[u8],
+    offset: usize,
+) -> Result<Vec<ethers::types::Address>, RebalanceParseError> {
+    let u256_values = parse_u256_array(data, offset)?;
+    let mut addresses = Vec::with_capacity(u256_values.len());
+    for val in &u256_values {
+        let mut buf = [0u8; 32];
+        val.to_big_endian(&mut buf);
+        // Address is the last 20 bytes of the 32-byte word
+        addresses.push(ethers::types::Address::from_slice(&buf[12..32]));
+    }
+    Ok(addresses)
+}
+
+/// Parse a dynamic string from ABI-encoded data at the given offset.
+/// ABI encoding: [length (32 bytes)][UTF-8 bytes padded to 32-byte boundary]
+fn parse_string(data: &[u8], offset: usize) -> Result<String, RebalanceParseError> {
+    if offset + 32 > data.len() {
+        return Err(RebalanceParseError::DecodeError {
+            reason: format!(
+                "string offset {} exceeds data length {}",
+                offset,
+                data.len()
+            ),
+        });
+    }
+
+    let byte_length = U256::from_big_endian(&data[offset..offset + 32]).as_usize();
+    let bytes_start = offset + 32;
+
+    if bytes_start + byte_length > data.len() {
+        return Err(RebalanceParseError::DecodeError {
+            reason: format!(
+                "string data exceeds buffer: need {} bytes at offset {}, have {}",
+                byte_length, bytes_start, data.len()
+            ),
+        });
+    }
+
+    let raw_bytes = &data[bytes_start..bytes_start + byte_length];
+    String::from_utf8(raw_bytes.to_vec()).map_err(|e| RebalanceParseError::DecodeError {
+        reason: format!("invalid UTF-8 in string: {}", e),
+    })
 }
 
 #[cfg(test)]
@@ -363,7 +346,7 @@ mod tests {
             &new_weights,
             "rebalance to 70/30",
         );
-        let event = RebalanceRequestedEvent::from_log(&log).unwrap();
+        let event = parse_rebalance_requested(&log).unwrap();
 
         assert_eq!(event.requester, ethers::types::Address::from(requester));
         assert_eq!(event.itp_id, H256::from([0xAAu8; 32]));
@@ -388,7 +371,7 @@ mod tests {
         );
         log.topics.truncate(2); // Remove itpId topic, only sig + requester remain
 
-        let result = RebalanceRequestedEvent::from_log(&log);
+        let result = parse_rebalance_requested(&log);
         assert!(matches!(
             result,
             Err(RebalanceParseError::MissingTopic { index: 2 })
@@ -408,7 +391,7 @@ mod tests {
         );
         log.block_number = None;
 
-        let result = RebalanceRequestedEvent::from_log(&log);
+        let result = parse_rebalance_requested(&log);
         assert!(matches!(
             result,
             Err(RebalanceParseError::MissingBlockMetadata)
@@ -437,7 +420,7 @@ mod tests {
             &new_weights,
             "diversify portfolio",
         );
-        let event = RebalanceRequestedEvent::from_log(&log).unwrap();
+        let event = parse_rebalance_requested(&log).unwrap();
 
         assert_eq!(event.requester, ethers::types::Address::from(requester));
         assert_eq!(event.itp_id, H256::from([0xBBu8; 32]));
@@ -466,7 +449,7 @@ mod tests {
             &new_weights,
             "",              // empty note
         );
-        let event = RebalanceRequestedEvent::from_log(&log).unwrap();
+        let event = parse_rebalance_requested(&log).unwrap();
 
         assert!(event.remove_indices.is_empty());
         assert!(event.add_assets.is_empty());
@@ -484,7 +467,7 @@ mod tests {
             &[],        // empty weights → should error
             "bad rebalance",
         );
-        let result = RebalanceRequestedEvent::from_log(&log);
+        let result = parse_rebalance_requested(&log);
         assert!(matches!(result, Err(RebalanceParseError::EmptyWeights)));
     }
 
@@ -501,7 +484,7 @@ mod tests {
             &new_weights,
             long_note,
         );
-        let event = RebalanceRequestedEvent::from_log(&log).unwrap();
+        let event = parse_rebalance_requested(&log).unwrap();
         assert_eq!(event.note, long_note);
     }
 
@@ -522,7 +505,7 @@ mod tests {
             &new_weights,
             "test",
         );
-        let event = RebalanceRequestedEvent::from_log(&log).unwrap();
+        let event = parse_rebalance_requested(&log).unwrap();
 
         assert_eq!(event.requester, ethers::types::Address::from(requester));
     }

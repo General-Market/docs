@@ -28,9 +28,9 @@ pub mod state;
 pub use batcher::{BatchResult, OrderBatcher, PauseState, ValidationResult, DEFAULT_MAX_BATCH_SIZE};
 pub use chain::{
     SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter, SettlementChainWriterConfig,
-    SettlementReaderError, SettlementWriterError, ChainReaderConfig, ChainWriterConfig, ContractAddresses,
-    CustodyWriter, CustodyWriterConfig, CustodyWriterError, EthersChainReader, EthersChainWriter,
-    GasConfig, ItpCreationRequest, NonceManager, RetryConfig, WriterContractAddresses,
+    SettlementReader, SettlementReaderError, SettlementWriterError, ChainReaderConfig, ChainWriterConfig,
+    ContractAddresses, CustodyWriter, CustodyWriterConfig, CustodyWriterError, EthersChainReader,
+    EthersChainWriter, GasConfig, ItpCreationRequest, NonceManager, RetryConfig, WriterContractAddresses,
 };
 pub use common;
 pub use config::{ConfigBuilder, ConfigError, IssuerConfig};

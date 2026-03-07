@@ -1084,7 +1084,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                     issuer::bridge::BridgeOrderStatus::BridgedToL3
                                                 ) {
                                                     if let Some(ref settlement_reader) = settlement_reader_for_task {
-                                                        let chain_id = settlement_reader.config().chain_id;
+                                                        let chain_id = settlement_reader.chain_id();
                                                         settlement_reader.remove_seen_order(chain_id, *order_id).await;
                                                     }
                                                 }
@@ -1422,7 +1422,7 @@ async fn run_price_update<P, W, K, PF>(
 
 async fn run_itp_creation_phase<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_reader: Arc<dyn issuer::SettlementReader>,
     settlement_writer: Arc<issuer::SettlementChainWriter>,
     l3_writer: Option<Arc<issuer::EthersChainWriter>>,
     itp_config: issuer::ItpCreationConfig,
@@ -1529,7 +1529,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 
 async fn run_cross_chain_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_reader: Arc<dyn issuer::SettlementReader>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
     _settlement_writer: Arc<issuer::SettlementChainWriter>,
     _chain_reader: Arc<dyn common::traits::ChainReader>,
@@ -1588,7 +1588,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 }
             }
 
-            let chain_id = settlement_reader.config().chain_id;
+            let chain_id = settlement_reader.chain_id();
             let mut handles = Vec::new();
             for order in new_orders {
                 let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
@@ -1668,7 +1668,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 /// hold buy_active during the slow batch/fills/mint pipeline.
 async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    _settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    _settlement_reader: Arc<dyn issuer::SettlementReader>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
     settlement_writer: Arc<issuer::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
@@ -2046,7 +2046,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 /// Phase C: Complete sell on Settlement (consensus) — completeSellOrder()
 async fn run_cross_chain_sell_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>,
+    settlement_reader: Arc<dyn issuer::SettlementReader>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
     settlement_writer: Arc<issuer::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
@@ -2100,7 +2100,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 }
             }
 
-            let chain_id = settlement_reader.config().chain_id;
+            let chain_id = settlement_reader.chain_id();
             let mut handles = Vec::new();
             for sell_order in new_sell_orders {
                 let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
@@ -3220,7 +3220,7 @@ async fn run_mock_consensus(
     current_cycle: u64,
     metrics: &Arc<IssuerMetrics>,
     start_time: std::time::Instant,
-    settlement_reader: &Option<Arc<issuer::SettlementChainReader<ethers::providers::Provider<ethers::providers::Http>>>>,
+    settlement_reader: &Option<Arc<dyn issuer::SettlementReader>>,
 ) {
     let prices_result = chain_reader.get_prices().await;
     let orders_result = chain_reader.get_pending_orders().await;

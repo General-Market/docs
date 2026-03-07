@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { checkHealth, checkRpc } from '../helpers/backend-api';
 import { RPC_URL, L3_RPC_URL } from '../fixtures/wallet';
+import { AP_URL } from '../env';
 
 test.describe('Health Check', () => {
   test('frontend loads — Vision on root', async ({ page }) => {
@@ -29,6 +30,14 @@ test.describe('Health Check', () => {
   test('L3 RPC is reachable', async () => {
     const ok = await checkRpc(L3_RPC_URL);
     expect(ok).toBe(true);
+  });
+
+  test('AP is reachable', async () => {
+    const res = await fetch(`${AP_URL}/health`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    expect(res.ok).toBe(true);
   });
 
   test('ITP listing appears with at least one ITP', async ({ page }) => {
