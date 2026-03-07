@@ -1,8 +1,12 @@
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use ethers::prelude::*;
 use tracing::warn;
 use crate::api::AppState;
-use crate::chain_cache::{NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot, UserCostBasis, FillRecord};
+use crate::chain_cache::{
+    NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
+    UserCostBasis, FillRecord, CachedLimitOrder, CachedIssuer,
+};
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
 abigen!(
@@ -59,6 +63,28 @@ abigen!(
     IrmReader,
     r#"[
         function rates(bytes32 marketId) external view returns (uint256)
+    ]"#
+);
+
+abigen!(
+    IssuerRegistryPoller,
+    r#"[{"type":"function","name":"getActiveIssuerEndpoints","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"endpoint","type":"string"},{"name":"blsPubkey","type":"bytes"}]}],"stateMutability":"view"},{"type":"function","name":"activeIssuerCount","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"registryNonce","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"aggregatedPubkey","inputs":[],"outputs":[{"name":"","type":"bytes"}],"stateMutability":"view"},{"type":"function","name":"consensusPaused","inputs":[],"outputs":[{"name":"","type":"bool"}],"stateMutability":"view"}]"#
+);
+
+abigen!(
+    CycleReader,
+    r#"[
+        function lastProcessedCycleNumber() external view returns (uint256)
+        function nextOrderId() external view returns (uint256)
+    ]"#
+);
+
+abigen!(
+    BridgeProxySettlementReader,
+    r#"[
+        function nextCreationNonce() external view returns (uint256)
+        function isPendingCreation(uint256 nonce) external view returns (bool)
+        function pendingCreations(uint256 nonce) external view returns (address admin, string name, string symbol, uint256[] weights, address[] assets)
     ]"#
 );
 
@@ -599,5 +625,206 @@ pub async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn s
         uc.last_scanned_block = latest_block;
     }
 
+    Ok(())
+}
+
+// ── Global L3 backend state pollers ──
+
+/// Poll pending orders (status == 0) from the Index contract.
+/// Scans the last 100 order IDs for pending status.
+pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
+    let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
+
+    let next_id = reader.next_order_id().call().await?.as_u64();
+    let start = next_id.saturating_sub(100);
+
+    let mut pending = Vec::new();
+    for oid in start..next_id {
+        let order = match reader.get_order(U256::from(oid)).call().await {
+            Ok(o) => o,
+            Err(_) => continue,
+        };
+        // status field is index 10; status 0 = pending
+        if order.10 == 0 {
+            pending.push(CachedLimitOrder {
+                order_id: order.0.as_u64(),
+                user: format!("{:?}", order.1),
+                itp_id: format!("0x{}", hex::encode(order.8)),
+                side: order.3,
+                amount: order.4.to_string(),
+                limit_price: order.5.to_string(),
+                slippage_tier: order.6.as_u64() as u8,
+                deadline: order.7.to_string(),
+                timestamp: order.9.as_u64(),
+                status: order.10,
+            });
+        }
+    }
+
+    let mut cache = state.chain_cache.pending_orders.write().await;
+    *cache = pending;
+    state.chain_cache.pending_orders_gen.bump();
+    Ok(())
+}
+
+/// Poll batched orders (status == 1) from the Index contract.
+/// Scans the last 100 order IDs for batched status.
+pub async fn poll_batched_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
+    let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
+
+    let next_id = reader.next_order_id().call().await?.as_u64();
+    let start = next_id.saturating_sub(100);
+
+    let mut batched = Vec::new();
+    for oid in start..next_id {
+        let order = match reader.get_order(U256::from(oid)).call().await {
+            Ok(o) => o,
+            Err(_) => continue,
+        };
+        // status 1 = batched
+        if order.10 == 1 {
+            batched.push(CachedLimitOrder {
+                order_id: order.0.as_u64(),
+                user: format!("{:?}", order.1),
+                itp_id: format!("0x{}", hex::encode(order.8)),
+                side: order.3,
+                amount: order.4.to_string(),
+                limit_price: order.5.to_string(),
+                slippage_tier: order.6.as_u64() as u8,
+                deadline: order.7.to_string(),
+                timestamp: order.9.as_u64(),
+                status: order.10,
+            });
+        }
+    }
+
+    let mut cache = state.chain_cache.batched_orders.write().await;
+    *cache = batched;
+    state.chain_cache.batched_orders_gen.bump();
+    Ok(())
+}
+
+/// Poll the IssuerRegistry for active issuer endpoints + BLS pubkeys.
+pub async fn poll_issuer_registry_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let registry_addr = crate::api::deployment_addr(&state.deployment, "IssuerRegistry")?;
+    let registry = IssuerRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
+
+    // Returns Vec<(Address, String, Bytes)> — (addr, endpoint, blsPubkey)
+    let issuers = registry.get_active_issuer_endpoints().call().await?;
+
+    let cached: Vec<CachedIssuer> = issuers
+        .into_iter()
+        .map(|(addr, endpoint, bls_pubkey)| CachedIssuer {
+            address: format!("{:?}", addr),
+            endpoint,
+            bls_pubkey: format!("0x{}", hex::encode(&bls_pubkey)),
+        })
+        .collect();
+
+    let mut cache = state.chain_cache.issuer_registry.write().await;
+    *cache = cached;
+    state.chain_cache.issuer_registry_gen.bump();
+    Ok(())
+}
+
+/// Poll cycle metadata: lastProcessedCycleNumber and nextOrderId from Index.
+pub async fn poll_cycle_metadata_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
+    let reader = CycleReader::new(index_addr, Arc::clone(&state.l3_provider));
+
+    // Bind call builders to let-variables to extend their lifetimes
+    let c_last_cycle = reader.last_processed_cycle_number();
+    let c_next_order = reader.next_order_id();
+    let (last_cycle, next_order_id) = tokio::join!(
+        c_last_cycle.call(),
+        c_next_order.call()
+    );
+
+    if let Ok(c) = last_cycle {
+        state.chain_cache.last_cycle.store(c.as_u64(), Ordering::Relaxed);
+    }
+    if let Ok(n) = next_order_id {
+        state.chain_cache.next_order_id.store(n.as_u64(), Ordering::Relaxed);
+    }
+
+    Ok(())
+}
+
+/// Poll IssuerRegistry metadata: activeIssuerCount, aggregatedPubkey, consensusPaused.
+pub async fn poll_registry_metadata_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let registry_addr = crate::api::deployment_addr(&state.deployment, "IssuerRegistry")?;
+    let registry = IssuerRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
+
+    // Bind call builders to let-variables to extend their lifetimes
+    let c_active = registry.active_issuer_count();
+    let c_pubkey = registry.aggregated_pubkey();
+    let c_paused = registry.consensus_paused();
+    let (active_count, agg_pubkey, paused) = tokio::join!(
+        c_active.call(),
+        c_pubkey.call(),
+        c_paused.call()
+    );
+
+    if let Ok(count) = active_count {
+        state.chain_cache.active_issuer_count.store(count.as_u64(), Ordering::Relaxed);
+    }
+    if let Ok(pk) = agg_pubkey {
+        let mut cache = state.chain_cache.aggregated_pubkey.write().await;
+        *cache = pk.to_vec();
+        state.chain_cache.aggregated_pubkey_gen.bump();
+    }
+    if let Ok(p) = paused {
+        state.chain_cache.consensus_paused.store(p, Ordering::Relaxed);
+    }
+
+    Ok(())
+}
+
+/// Poll settlement chain state: confirmed block, next creation nonce, and pending creations.
+pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Get confirmed block (latest - 10 for finality buffer)
+    let latest_block = state.settlement_provider.get_block_number().await?.as_u64();
+    let confirmed = latest_block.saturating_sub(10);
+    state.chain_cache.settlement_confirmed_block.store(confirmed, Ordering::Relaxed);
+
+    // Read BridgeProxy on settlement chain
+    let bridge_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
+    let bridge = BridgeProxySettlementReader::new(bridge_addr, Arc::clone(&state.settlement_provider));
+
+    let next_nonce = bridge.next_creation_nonce().call().await?.as_u64();
+    state.chain_cache.settlement_next_nonce.store(next_nonce, Ordering::Relaxed);
+
+    // Scan all nonces for pending creations
+    let mut pending = Vec::new();
+    for nonce in 0..next_nonce {
+        let is_pending = match bridge.is_pending_creation(U256::from(nonce)).call().await {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+        if !is_pending {
+            continue;
+        }
+        match bridge.pending_creations(U256::from(nonce)).call().await {
+            Ok((admin, name, symbol, weights, assets)) => {
+                pending.push(serde_json::json!({
+                    "nonce": nonce,
+                    "admin": format!("{:?}", admin),
+                    "name": name,
+                    "symbol": symbol,
+                    "weights": weights.iter().map(|w| w.to_string()).collect::<Vec<_>>(),
+                    "assets": assets.iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>(),
+                }));
+            }
+            Err(e) => {
+                warn!(nonce, %e, "Failed to read pending creation");
+            }
+        }
+    }
+
+    let mut cache = state.chain_cache.pending_creations.write().await;
+    *cache = pending;
+    state.chain_cache.pending_creations_gen.bump();
     Ok(())
 }

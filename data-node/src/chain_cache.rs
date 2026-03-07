@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use serde::Serialize;
@@ -33,6 +33,41 @@ pub struct OracleSnapshot {
     pub last_updated: u64,
     pub last_cycle: u64,
     pub borrow_rate_ray: String,
+}
+
+/// Serialized L3 limit order for the backend cache
+#[derive(Clone, Serialize, Default)]
+pub struct CachedLimitOrder {
+    pub order_id: u64,
+    pub user: String,
+    pub itp_id: String,
+    pub side: u8,
+    pub amount: String,
+    pub limit_price: String,
+    pub slippage_tier: u8,
+    pub deadline: String,
+    pub timestamp: u64,
+    pub status: u8,
+}
+
+/// Serialized issuer info
+#[derive(Clone, Serialize, Default)]
+pub struct CachedIssuer {
+    pub address: String,
+    pub endpoint: String,
+    pub bls_pubkey: String,
+}
+
+/// Serialized pending rebalance
+#[derive(Clone, Serialize, Default)]
+pub struct CachedPendingRebalance {
+    pub itp_id: String,
+    pub requester: String,
+    pub remove_indices: Vec<String>,
+    pub add_assets: Vec<String>,
+    pub new_weights: Vec<String>,
+    pub note: String,
+    pub block_number: u64,
 }
 
 // ── Per-user data ──
@@ -117,6 +152,28 @@ pub struct ChainCache {
     pub oracle: RwLock<OracleSnapshot>,
     pub oracle_gen: Generation,
     pub users: RwLock<HashMap<String, Arc<RwLock<UserCache>>>>,
+
+    // L3 backend state
+    pub pending_orders: RwLock<Vec<CachedLimitOrder>>,
+    pub pending_orders_gen: Generation,
+    pub batched_orders: RwLock<Vec<CachedLimitOrder>>,
+    pub batched_orders_gen: Generation,
+    pub issuer_registry: RwLock<Vec<CachedIssuer>>,
+    pub issuer_registry_gen: Generation,
+    pub last_cycle: AtomicU64,
+    pub next_order_id: AtomicU64,
+    pub pending_rebalances: RwLock<Vec<CachedPendingRebalance>>,
+    pub pending_rebalances_gen: Generation,
+    pub active_issuer_count: AtomicU64,
+    pub aggregated_pubkey: RwLock<Vec<u8>>,
+    pub aggregated_pubkey_gen: Generation,
+    pub consensus_paused: AtomicBool,
+
+    // Settlement state
+    pub settlement_confirmed_block: AtomicU64,
+    pub pending_creations: RwLock<Vec<serde_json::Value>>,
+    pub pending_creations_gen: Generation,
+    pub settlement_next_nonce: AtomicU64,
 }
 
 impl ChainCache {
@@ -127,6 +184,28 @@ impl ChainCache {
             oracle: RwLock::new(OracleSnapshot::default()),
             oracle_gen: Generation::default(),
             users: RwLock::new(HashMap::new()),
+
+            // L3 backend state
+            pending_orders: RwLock::new(Vec::new()),
+            pending_orders_gen: Generation::default(),
+            batched_orders: RwLock::new(Vec::new()),
+            batched_orders_gen: Generation::default(),
+            issuer_registry: RwLock::new(Vec::new()),
+            issuer_registry_gen: Generation::default(),
+            last_cycle: AtomicU64::new(0),
+            next_order_id: AtomicU64::new(0),
+            pending_rebalances: RwLock::new(Vec::new()),
+            pending_rebalances_gen: Generation::default(),
+            active_issuer_count: AtomicU64::new(0),
+            aggregated_pubkey: RwLock::new(Vec::new()),
+            aggregated_pubkey_gen: Generation::default(),
+            consensus_paused: AtomicBool::new(false),
+
+            // Settlement state
+            settlement_confirmed_block: AtomicU64::new(0),
+            pending_creations: RwLock::new(Vec::new()),
+            pending_creations_gen: Generation::default(),
+            settlement_next_nonce: AtomicU64::new(0),
         }
     }
 

@@ -6,6 +6,7 @@ mod bitget_init;
 mod cg_backfill;
 mod cg_collector;
 pub mod chain_cache;
+pub mod chain_event_scanner;
 mod chain_pollers;
 mod coingecko;
 mod collector;
