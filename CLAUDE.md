@@ -4,7 +4,7 @@ Commit after each completed task/feature to enable rollback. Use descriptive com
 
 ## Parallelism
 
-Max 3 agents running at the same time.
+Max 6 agents running at the same time.
 
 ## Environment Switching
 

@@ -249,6 +249,8 @@ pub struct AppState {
     pub vision_batch_cache: Arc<crate::vision_batch_cache::VisionBatchCache>,
     /// Shared HMAC secret for authenticating snapshot responses (IS-7)
     pub snapshot_hmac_secret: Option<String>,
+    /// Chain event broadcast channel for backend SSE consumers (issuers, AP)
+    pub chain_event_tx: tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -394,6 +396,21 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/admin/sources/:source_id/force-sync", axum::routing::post(admin_force_sync))
         .route("/sse/system-status", get(sse_system_status))
         .route("/sse/stream", get(sse_stream))
+        .route("/sse/chain-events", get(sse_chain_events))
+        // Chain state endpoints for issuers/AP
+        .route("/chain/l3/pending-orders", get(chain_l3_pending_orders))
+        .route("/chain/l3/batched-orders", get(chain_l3_batched_orders))
+        .route("/chain/l3/issuer-registry", get(chain_l3_issuer_registry))
+        .route("/chain/l3/last-cycle", get(chain_l3_last_cycle))
+        .route("/chain/l3/next-order-id", get(chain_l3_next_order_id))
+        .route("/chain/l3/pending-rebalances", get(chain_l3_pending_rebalances))
+        .route("/chain/l3/active-issuer-count", get(chain_l3_active_issuer_count))
+        .route("/chain/l3/aggregated-pubkey", get(chain_l3_aggregated_pubkey))
+        .route("/chain/l3/consensus-paused", get(chain_l3_consensus_paused))
+        .route("/chain/settlement/confirmed-block", get(chain_settlement_confirmed_block))
+        .route("/chain/settlement/pending-creations", get(chain_settlement_pending_creations))
+        .route("/chain/settlement/is-pending/:nonce", get(chain_settlement_is_pending))
+        .route("/chain/settlement/next-nonce", get(chain_settlement_next_nonce))
         .layer(CompressionLayer::new())
         .layer(cors)
         .with_state(state)
@@ -6608,4 +6625,179 @@ async fn admin_source_history(
         hours,
         buckets,
     }))
+}
+
+// ===========================================================================
+// Chain Events SSE + Chain State HTTP endpoints
+// ===========================================================================
+
+#[derive(Deserialize)]
+struct ChainEventsQuery {
+    topics: Option<String>, // comma-separated: "l3-orders,settlement-orders,..." — if empty, all events
+}
+
+async fn sse_chain_events(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<ChainEventsQuery>,
+) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+    let topics: Option<Vec<String>> = params
+        .topics
+        .map(|t| t.split(',').map(|s| s.trim().to_string()).collect());
+
+    let mut rx = state.chain_event_tx.subscribe();
+    let (tx, mpsc_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
+
+    tokio::spawn(async move {
+        loop {
+            match rx.recv().await {
+                Ok(envelope) => {
+                    // Filter by topic if topics specified
+                    if let Some(ref topic_list) = topics {
+                        if !topic_list.contains(&envelope.event_type) {
+                            continue;
+                        }
+                    }
+                    let json = serde_json::to_string(&envelope).unwrap_or_default();
+                    if tx
+                        .send(Ok(Event::default()
+                            .event(&envelope.event_type)
+                            .data(json)))
+                        .await
+                        .is_err()
+                    {
+                        break;
+                    }
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                    tracing::warn!(lagged = n, "SSE chain-events consumer lagged");
+                    continue;
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    Sse::new(ReceiverStream::new(mpsc_rx)).keep_alive(
+        axum::response::sse::KeepAlive::new()
+            .interval(Duration::from_secs(15))
+            .text("ping"),
+    )
+}
+
+// ---- Chain state HTTP handlers (read from chain_cache) ----
+
+async fn chain_l3_pending_orders(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<crate::chain_cache::CachedLimitOrder>> {
+    let data = state.chain_cache.pending_orders.read().await;
+    Json(data.clone())
+}
+
+async fn chain_l3_batched_orders(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<crate::chain_cache::CachedLimitOrder>> {
+    let data = state.chain_cache.batched_orders.read().await;
+    Json(data.clone())
+}
+
+async fn chain_l3_issuer_registry(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<crate::chain_cache::CachedIssuer>> {
+    let data = state.chain_cache.issuer_registry.read().await;
+    Json(data.clone())
+}
+
+async fn chain_l3_last_cycle(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let cycle = state
+        .chain_cache
+        .last_cycle
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "cycle": cycle }))
+}
+
+async fn chain_l3_next_order_id(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let id = state
+        .chain_cache
+        .next_order_id
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "next_order_id": id }))
+}
+
+async fn chain_l3_pending_rebalances(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<crate::chain_cache::CachedPendingRebalance>> {
+    let data = state.chain_cache.pending_rebalances.read().await;
+    Json(data.clone())
+}
+
+async fn chain_l3_active_issuer_count(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let count = state
+        .chain_cache
+        .active_issuer_count
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "active_issuer_count": count }))
+}
+
+async fn chain_l3_aggregated_pubkey(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let pubkey = state.chain_cache.aggregated_pubkey.read().await;
+    Json(serde_json::json!({ "pubkey": format!("0x{}", hex::encode(&*pubkey)) }))
+}
+
+async fn chain_l3_consensus_paused(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let paused = state
+        .chain_cache
+        .consensus_paused
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "paused": paused }))
+}
+
+async fn chain_settlement_confirmed_block(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let block = state
+        .chain_cache
+        .settlement_confirmed_block
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "confirmed_block": block }))
+}
+
+async fn chain_settlement_pending_creations(
+    State(state): State<Arc<AppState>>,
+) -> Json<Vec<serde_json::Value>> {
+    let data = state.chain_cache.pending_creations.read().await;
+    Json(data.clone())
+}
+
+async fn chain_settlement_is_pending(
+    State(state): State<Arc<AppState>>,
+    AxumPath(nonce): AxumPath<u64>,
+) -> Json<serde_json::Value> {
+    let creations = state.chain_cache.pending_creations.read().await;
+    let pending = creations.iter().any(|c| {
+        c.get("nonce")
+            .and_then(|n| n.as_str())
+            .and_then(|s| s.parse::<u64>().ok())
+            == Some(nonce)
+    });
+    Json(serde_json::json!({ "pending": pending }))
+}
+
+async fn chain_settlement_next_nonce(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let nonce = state
+        .chain_cache
+        .settlement_next_nonce
+        .load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({ "next_nonce": nonce }))
 }

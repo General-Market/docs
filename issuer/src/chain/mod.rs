@@ -8,6 +8,7 @@
 //!
 //! Both use ethers-rs to interact with the Index L3 chain.
 
+pub mod data_node_settlement_reader;
 pub mod settlement_reader;
 pub mod settlement_trait;
 pub mod settlement_writer;
@@ -22,6 +23,7 @@ mod writer;
 pub use settlement_reader::{
     SettlementChainReader, SettlementChainReaderConfig, SettlementReaderError,
 };
+pub use data_node_settlement_reader::DataNodeSettlementReader;
 pub use settlement_trait::{SettlementOrderReader, SettlementReader};
 pub use settlement_writer::{SettlementChainWriter, SettlementChainWriterConfig, SettlementWriterError};
 pub use custody_writer::{CustodyWriter, CustodyWriterConfig, CustodyWriterError};

@@ -2039,6 +2039,11 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     let orderbook_cache = Arc::new(orderbook_aggregator::OrderbookCache::new(2)); // 2s TTL for live ticking
 
+    // Chain event broadcast channel for SSE consumers
+    let (chain_event_tx, _) = tokio::sync::broadcast::channel::<crate::chain_event_scanner::ChainEventEnvelope>(
+        crate::chain_event_scanner::CHAIN_EVENT_CHANNEL_SIZE,
+    );
+
     // HTTP server
     let app_state = Arc::new(AppState {
         pool,
@@ -2065,6 +2070,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             format!("http://{}:{}", args.bind, args.port),
         )),
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
+        chain_event_tx: chain_event_tx.clone(),
     });
 
     // Spawn chain pollers via run_collector_loop
@@ -2084,7 +2090,26 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("orders",       1, chain_pollers::poll_user_orders_once);
     spawn_poller!("positions",    3, chain_pollers::poll_user_positions_once);
     spawn_poller!("cost_basis",   5, chain_pollers::poll_user_cost_basis_once);
-    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s)");
+    // Backend chain state pollers (for issuer/AP HTTP endpoints)
+    spawn_poller!("pending_orders",     1, chain_pollers::poll_pending_orders_once);
+    spawn_poller!("batched_orders",     2, chain_pollers::poll_batched_orders_once);
+    spawn_poller!("issuer_registry",   10, chain_pollers::poll_issuer_registry_once);
+    spawn_poller!("cycle_metadata",     2, chain_pollers::poll_cycle_metadata_once);
+    spawn_poller!("registry_metadata", 10, chain_pollers::poll_registry_metadata_once);
+    spawn_poller!("settlement_state",   5, chain_pollers::poll_settlement_state_once);
+    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=5s)");
+
+    // Spawn chain event scanner (L3 + Settlement log subscriptions)
+    {
+        let scanner = crate::chain_event_scanner::ChainEventScanner::new(
+            Arc::clone(&app_state.l3_provider),
+            Arc::clone(&app_state.settlement_provider),
+            app_state.deployment.clone(),
+            chain_event_tx.clone(),
+        );
+        let (_l3_handle, _settlement_handle) = scanner.start().await;
+        info!("Chain event scanner started (L3 + Settlement)");
+    }
 
     let app = api::router(app_state);
     // P2.9: Use configurable bind address
