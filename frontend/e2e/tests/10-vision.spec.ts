@@ -26,6 +26,7 @@ import {
   getL3UsdcBalance,
   getVisionUsdcBalance,
   getVisionAddress,
+  getVisionUsdcAddress,
   ensureUsdcBalance,
   impersonateAccount,
   randomBets,
@@ -90,16 +91,18 @@ test.describe('Vision', () => {
 
     // 2. Pre-fund players so ensureUsdcBalance inside fullJoinBatch is a no-op
     //    (minting between "before" and "after" would break the balance diff assertion)
+    //    Use Vision's own USDC address (may differ from deployment L3_WUSDC)
     const deposit = BigInt(10) * BigInt(10 ** 18) // 10 USDC (18 decimals, L3_WUSDC)
+    const visionUsdc = await getVisionUsdcAddress()
     await impersonateAccount(PLAYER1)
-    await ensureUsdcBalance(PLAYER1, deposit)
+    await ensureUsdcBalance(PLAYER1, deposit, visionUsdc)
     await impersonateAccount(PLAYER2)
-    await ensureUsdcBalance(PLAYER2, deposit)
+    await ensureUsdcBalance(PLAYER2, deposit, visionUsdc)
 
     // Record initial balances (after pre-funding, before deposits)
     const [p1BalBefore, p2BalBefore, visionBalBefore] = await Promise.all([
-      getL3UsdcBalance(PLAYER1),
-      getL3UsdcBalance(PLAYER2),
+      getL3UsdcBalance(PLAYER1, visionUsdc),
+      getL3UsdcBalance(PLAYER2, visionUsdc),
       getVisionUsdcBalance(),
     ])
 
@@ -135,8 +138,8 @@ test.describe('Vision', () => {
 
     // 7. Verify USDC moved from players to Vision contract
     const [p1BalAfter, p2BalAfter, visionBalAfter] = await Promise.all([
-      getL3UsdcBalance(PLAYER1),
-      getL3UsdcBalance(PLAYER2),
+      getL3UsdcBalance(PLAYER1, visionUsdc),
+      getL3UsdcBalance(PLAYER2, visionUsdc),
       getVisionUsdcBalance(),
     ])
 

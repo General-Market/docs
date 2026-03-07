@@ -94,9 +94,30 @@ export function getVisionAddress(): string {
     || ''
 }
 
-/** Vision uses L3_WUSDC (18 decimals) on L3 */
+/** Vision uses L3_WUSDC (18 decimals) on L3.
+ *  On testnet, Vision may have been deployed with a different USDC than what's in deployment.json.
+ *  Use getVisionUsdcAddress() for Vision-related approve/deposit operations. */
 function getL3UsdcAddress(): string {
   return getDeployment().contracts.L3_WUSDC
+}
+
+/** Cache for the USDC address that Vision actually uses (read from contract) */
+let _visionUsdcAddress: string | null = null
+export async function getVisionUsdcAddress(): Promise<string> {
+  if (_visionUsdcAddress) return _visionUsdcAddress
+  if (IS_ANVIL) {
+    _visionUsdcAddress = getL3UsdcAddress()
+    return _visionUsdcAddress
+  }
+  // Read from Vision contract's USDC() immutable
+  const data = encodeFunctionData({
+    abi: [{ name: 'USDC', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] }] as const,
+    functionName: 'USDC',
+    args: [],
+  })
+  const raw = await l3EthCall(getVisionAddress(), data)
+  _visionUsdcAddress = '0x' + raw.replace('0x', '').slice(24)
+  return _visionUsdcAddress
 }
 
 // ── ABI fragments ────────────────────────────────────────────
@@ -348,9 +369,11 @@ async function clearPosition(batchId: number, player: string): Promise<void> {
   }
 }
 
-/** Mint L3_WUSDC to an address via deployer. Ensures player has enough for deposits. */
-export async function ensureUsdcBalance(address: string, minAmount: bigint): Promise<void> {
-  const balance = await getL3UsdcBalance(address)
+/** Mint L3_WUSDC to an address via deployer. Ensures player has enough for deposits.
+ *  @param usdcOverride  Use a specific USDC address (e.g. Vision's USDC) instead of deployment default */
+export async function ensureUsdcBalance(address: string, minAmount: bigint, usdcOverride?: string): Promise<void> {
+  const usdc = usdcOverride || getL3UsdcAddress()
+  const balance = await getL3UsdcBalance(address, usdcOverride)
   if (balance >= minAmount) return
 
   const mintAmount = minAmount * 10n // Mint 10x the minimum to avoid repeated mints
@@ -359,30 +382,32 @@ export async function ensureUsdcBalance(address: string, minAmount: bigint): Pro
   const data = `0x40c10f19${addrPadded}${amountHex}` // mint(address,uint256)
 
   // On testnet, deployer = PLAYER1 which has a private key in TEST_KEYS
-  await l3SendTx(DEPLOYER, getL3UsdcAddress(), data)
+  await l3SendTx(DEPLOYER, usdc, data)
 }
 
 // ── ERC20 helpers ────────────────────────────────────────────
 
-export async function getL3UsdcBalance(address: string): Promise<bigint> {
+export async function getL3UsdcBalance(address: string, usdcOverride?: string): Promise<bigint> {
+  const usdc = usdcOverride || getL3UsdcAddress()
   const data = encodeFunctionData({
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
     args: [address as `0x${string}`],
   })
-  const result = await l3EthCall(getL3UsdcAddress(), data)
+  const result = await l3EthCall(usdc, data)
   return safeBigInt(result)
 }
 
 async function approveVision(from: string, _amount: bigint): Promise<void> {
   // Approve max uint256 to avoid race conditions when parallel tests share the same player
   const MAX_UINT256 = (1n << 256n) - 1n
+  const usdcAddr = await getVisionUsdcAddress()
   const data = encodeFunctionData({
     abi: ERC20_APPROVE_ABI,
     functionName: 'approve',
     args: [getVisionAddress() as `0x${string}`, MAX_UINT256],
   })
-  await l3SendTx(from, getL3UsdcAddress(), data)
+  await l3SendTx(from, usdcAddr, data)
 }
 
 // ── Bitmap encoding (matches frontend/lib/vision/bitmap.ts) ──
@@ -580,31 +605,17 @@ export async function fullJoinBatch(
   // 0.1. Clear any existing position (Anvil only — cannot clear on testnet)
   await clearPosition(batchId, player)
 
-  // 0.5. Ensure player has enough USDC (mint via deployer if needed)
-  await ensureUsdcBalance(player, depositAmount)
+  // 0.5. Ensure player has enough of Vision's USDC (may differ from deployment L3_WUSDC)
+  const visionUsdc = await getVisionUsdcAddress()
+  await ensureUsdcBalance(player, depositAmount, visionUsdc)
 
   // 1. Encode bitmap
   const bitmap = encodeBitmap(bets, marketCount)
   const bmHash = hashBitmap(bitmap)
   const bmHex = bitmapToHex(bitmap)
 
-  // 2. Approve USDC and deposit to Vision balance (dual-balance architecture)
+  // 2. Approve Vision's USDC and deposit to Vision balance (dual-balance architecture)
   await approveVision(player, depositAmount)
-  // On testnet, poll until allowance is confirmed before deposit (L3 state propagation)
-  if (!IS_ANVIL) {
-    for (let i = 0; i < 10; i++) {
-      const allowanceData = encodeFunctionData({
-        abi: [{ name: 'allowance', type: 'function', stateMutability: 'view',
-          inputs: [{ name: 'owner', type: 'address' }, { name: 'spender', type: 'address' }],
-          outputs: [{ type: 'uint256' }] }] as const,
-        functionName: 'allowance',
-        args: [player as `0x${string}`, getVisionAddress() as `0x${string}`],
-      })
-      const raw = await l3EthCall(getL3UsdcAddress(), allowanceData)
-      if (BigInt(raw) >= depositAmount) break
-      await new Promise(r => setTimeout(r, 1000))
-    }
-  }
   const depositBalanceData = encodeFunctionData({
     abi: [{
       name: 'depositBalance',
@@ -634,7 +645,8 @@ export async function fullJoinBatch(
  * Get Vision contract's USDC balance on L3 (total locked value).
  */
 export async function getVisionUsdcBalance(): Promise<bigint> {
-  return getL3UsdcBalance(getVisionAddress())
+  const visionUsdc = await getVisionUsdcAddress()
+  return getL3UsdcBalance(getVisionAddress(), visionUsdc)
 }
 
 /**
