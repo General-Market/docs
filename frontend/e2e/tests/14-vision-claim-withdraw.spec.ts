@@ -15,6 +15,7 @@ import {
   getVisionPlayerBalance,
   getVisionRealBalance,
   getL3UsdcBalance,
+  getVisionUsdcAddress,
   depositToVisionBalance,
 } from '../helpers/vision-api'
 
@@ -35,7 +36,8 @@ test.describe('Vision Claim + Withdraw', () => {
 
     // 1. Record balances before
     const visionBalBefore = await getVisionPlayerBalance(PLAYER1)
-    const l3UsdcBefore = await getL3UsdcBalance(PLAYER1)
+    const visionUsdc = await getVisionUsdcAddress()
+    const l3UsdcBefore = await getL3UsdcBalance(PLAYER1, visionUsdc)
 
     // 2. Navigate to Vision page and connect wallet
     try {
@@ -214,7 +216,7 @@ test.describe('Vision Claim + Withdraw', () => {
     await doneBtn.click()
 
     // 12. Verify USDC arrived in L3 wallet
-    const l3UsdcAfter = await getL3UsdcBalance(PLAYER1)
+    const l3UsdcAfter = await getL3UsdcBalance(PLAYER1, visionUsdc)
     expect(l3UsdcAfter).toBeGreaterThan(l3UsdcBefore)
 
     console.log(`Withdraw complete: L3 USDC ${l3UsdcBefore} → ${l3UsdcAfter}`)
