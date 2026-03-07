@@ -184,19 +184,24 @@ cmd_deploy() {
     fi
     echo -e "  ${GREEN}L3 OK (chain $VPS_CHAIN_ID)${NC}"
 
-    # Build bls-tool (needed for FFI in deploy scripts)
-    echo -e "${BLUE}[2/7] Building bls-tool (FFI)...${NC}"
-    cargo build --release -p bls-tool 2>&1 | tail -3
+    # Check bls-tool binary (needed for FFI in deploy scripts)
+    echo -e "${BLUE}[2/7] Checking bls-tool (FFI)...${NC}"
+    if [ ! -f "target/release/bls-tool" ]; then
+        echo -e "  ${RED}bls-tool binary not found at target/release/bls-tool${NC}"
+        echo -e "  ${YELLOW}Build it manually: cargo build --release -p bls-tool${NC}"
+        exit 1
+    fi
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
-    # Deploy core system
+    # Deploy core system (must run from contracts/ for foundry.toml remappings)
     echo -e "${BLUE}[3/7] Deploying core contracts (Index, IssuerRegistry, USDC, BridgeProxy)...${NC}"
-    forge script contracts/script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+    forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow \
+        --slow) \
         > logs/deploy-core.log 2>&1
 
     if [ ! -f "$DEPLOYMENT_FILE" ]; then
@@ -221,35 +226,39 @@ cmd_deploy() {
     # Deploy Morpho (no timelock wait)
     echo -e "${BLUE}[5/7] Deploying Morpho (forked, no timelock)...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
-    ITP_VAULT=$(read_deployment_addr "ITP_Vault")
+    ITP_VAULT=$(read_deployment_addr "BridgedItpFactory")
     ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
 
+    (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
     SETTLEMENT_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ISSUER_REGISTRY="$ISSUER_REGISTRY" \
-    forge script contracts/script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
+    forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow \
+        --slow) \
         >> logs/deploy-morpho.log 2>&1 || echo -e "  ${YELLOW}Morpho deploy had warnings — check logs/deploy-morpho.log${NC}"
     echo -e "  ${GREEN}Morpho deployed${NC}"
 
     # Deploy Vision
     echo -e "${BLUE}[6/7] Deploying Vision + batches...${NC}"
-    forge script contracts/script/DeployVision.s.sol:DeployVision \
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+    ISSUER_REGISTRY="$ISSUER_REGISTRY" USDC_ADDRESS="$L3_USDC" \
+    forge script script/DeployVision.s.sol:DeployVision \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow \
+        --slow) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
-    forge script contracts/script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+    forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow \
+        --slow) \
         >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
     echo -e "  ${GREEN}Vision deployed${NC}"
 
