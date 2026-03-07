@@ -127,7 +127,7 @@ export async function checkRpc(url: string): Promise<boolean> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(15_000),
     });
     const json = await res.json();
     return !!json.result;
