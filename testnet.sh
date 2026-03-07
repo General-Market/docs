@@ -196,7 +196,7 @@ cmd_setup_be() {
 
     echo -e "${BLUE}[5/5] Building binaries...${NC}"
     echo -e "  ${YELLOW}This may take several minutes on first build...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}Build complete${NC}"
 
     # Sync .env for data-node
@@ -715,8 +715,8 @@ cmd_update() {
     vps_chain_ssh "cd $VPS_CHAIN_DIR && git pull origin main 2>&1 | tail -5"
     echo -e "  ${GREEN}VPS 2 updated${NC}"
 
-    echo -e "${BLUE}[3/4] Rebuilding on VPS 1 (data-node + issuer)...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
+    echo -e "${BLUE}[3/4] Rebuilding on VPS 1 (data-node + issuer + curator)...${NC}"
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}VPS 1 build complete${NC}"
 
     echo -e "${BLUE}[4/4] Rebuilding on VPS 2 (AP)...${NC}"
