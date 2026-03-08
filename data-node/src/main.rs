@@ -15,6 +15,7 @@ mod config;
 mod db;
 mod defillama;
 mod evm_init;
+mod explorer_api;
 mod dl_backfill;
 mod dl_collector;
 mod fng_client;
@@ -2127,7 +2128,15 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Chain event scanner started (L3 + Settlement)");
     }
 
-    let app = api::router(app_state);
+    // Clone pool for explorer API before app_state is moved into the main router
+    let explorer_pool = app_state.pool.clone();
+    let mut app = api::router(app_state);
+
+    // Explorer API — only registered if token is configured (fail-closed)
+    if let Some(ref token) = args.explorer_token {
+        app = app.merge(explorer_api::explorer_routes(explorer_pool, token.clone()));
+    }
+
     // P2.9: Use configurable bind address
     let bind_ip: std::net::IpAddr = args.bind.parse().unwrap_or_else(|e| {
         tracing::warn!(bind = %args.bind, error = %e, "Invalid bind address, falling back to 0.0.0.0");

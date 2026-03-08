@@ -57,6 +57,9 @@ md5 = "0.7"
 hmac = "0.12"
 sha2 = "0.10"
 
+# Constant-time comparison (explorer auth)
+subtle = "2"
+
 # Protobuf (GTFS-RT)
 prost = "0.13"
 
