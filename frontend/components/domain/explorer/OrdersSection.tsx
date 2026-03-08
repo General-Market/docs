@@ -109,7 +109,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
           title="Avg Cycle Duration"
           subtitle={
             latest
-              ? `Current: ${latest.avg_cycle_duration_ms.toFixed(0)}ms`
+              ? `Current: ${(latest.avg_cycle_duration_ms ?? 0).toFixed(0)}ms`
               : undefined
           }
           loading={loading}

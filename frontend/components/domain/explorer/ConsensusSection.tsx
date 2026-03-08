@@ -242,7 +242,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
           title="Avg Consensus Duration"
           subtitle={
             latest
-              ? `Current: ${latest.avg_consensus_time_ms.toFixed(0)}ms`
+              ? `Current: ${(latest.avg_consensus_time_ms ?? 0).toFixed(0)}ms`
               : undefined
           }
           loading={loading}
