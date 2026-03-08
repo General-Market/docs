@@ -268,6 +268,18 @@ pub struct ServeArgs {
     /// The signature is sent as the X-Snapshot-HMAC header.
     #[arg(long, env = "SNAPSHOT_HMAC_SECRET")]
     pub snapshot_hmac_secret: Option<String>,
+
+    /// Comma-separated issuer health endpoint URLs (e.g., "http://localhost:8100,http://localhost:8101,http://localhost:8102")
+    #[arg(long, env = "ISSUER_HEALTH_URLS")]
+    pub issuer_health_urls: Option<String>,
+
+    /// Issuer health polling interval in seconds (default: 300 = 5 minutes)
+    #[arg(long, default_value = "300", env = "ISSUER_HEALTH_POLL_INTERVAL_SECS")]
+    pub issuer_health_poll_interval: u64,
+
+    /// Shared secret token for authenticating explorer API requests (frontend-only access)
+    #[arg(long, env = "EXPLORER_TOKEN")]
+    pub explorer_token: Option<String>,
 }
 
 #[derive(Parser, Debug)]
