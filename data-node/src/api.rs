@@ -6788,7 +6788,13 @@ async fn chain_settlement_is_pending(
     let pending = creations.iter().any(|c| {
         c.get("nonce")
             .and_then(|n| n.as_str())
-            .and_then(|s| s.parse::<u64>().ok())
+            .and_then(|s| {
+                if let Some(hex) = s.strip_prefix("0x") {
+                    u64::from_str_radix(hex, 16).ok()
+                } else {
+                    s.parse::<u64>().ok()
+                }
+            })
             == Some(nonce)
     });
     Json(serde_json::json!({ "pending": pending }))

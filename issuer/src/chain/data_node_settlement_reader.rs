@@ -45,12 +45,12 @@ pub struct DataNodeSettlementReader {
 
 #[derive(Deserialize)]
 struct ConfirmedBlockResp {
-    block: u64,
+    confirmed_block: u64,
 }
 
 #[derive(Deserialize)]
 struct NonceResp {
-    nonce: u64,
+    next_nonce: u64,
 }
 
 #[derive(Deserialize)]
@@ -116,7 +116,7 @@ impl SettlementReader for DataNodeSettlementReader {
     async fn get_confirmed_block(&self) -> Result<u64, SettlementReaderError> {
         let resp: ConfirmedBlockResp =
             self.get_json("/chain/settlement/confirmed-block").await?;
-        Ok(resp.block)
+        Ok(resp.confirmed_block)
     }
 
     // ── ITP Creation ────────────────────────────────────────────
@@ -152,7 +152,7 @@ impl SettlementReader for DataNodeSettlementReader {
 
     async fn get_next_nonce(&self) -> Result<U256, SettlementReaderError> {
         let resp: NonceResp = self.get_json("/chain/settlement/next-nonce").await?;
-        Ok(U256::from(resp.nonce))
+        Ok(U256::from(resp.next_nonce))
     }
 
     async fn get_pending_creation(
