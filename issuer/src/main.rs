@@ -726,7 +726,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
 
-        // Throttle settlement RPC calls — only poll every 5 seconds to avoid 429s on public RPCs
+        // Throttle settlement calls — poll every 2 seconds (data-node caches, no direct RPC)
         let mut last_settlement_poll = std::time::Instant::now() - std::time::Duration::from_secs(10);
 
         loop {
@@ -864,7 +864,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // Settlement tasks — throttled to avoid 429s on public RPCs (e.g. Sonic testnet)
-                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_secs(5);
+                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_secs(2);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }

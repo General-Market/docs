@@ -2096,8 +2096,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("issuer_registry",   10, chain_pollers::poll_issuer_registry_once);
     spawn_poller!("cycle_metadata",     2, chain_pollers::poll_cycle_metadata_once);
     spawn_poller!("registry_metadata", 10, chain_pollers::poll_registry_metadata_once);
-    spawn_poller!("settlement_state",   5, chain_pollers::poll_settlement_state_once);
-    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=5s)");
+    spawn_poller!("settlement_state",   2, chain_pollers::poll_settlement_state_once);
+    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {
