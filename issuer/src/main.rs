@@ -767,7 +767,12 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let sr = settlement_reader.clone();
         let buy_arc = startup_buy_orders.clone();
         let sell_arc = startup_sell_orders.clone();
+        let stagger_secs = (node_id - 1) as u64 * 5; // node 1: 0s, node 2: 5s, node 3: 10s
         tokio::spawn(async move {
+            if stagger_secs > 0 {
+                info!(stagger_secs, "Staggering startup ID scan to avoid RPC rate limits");
+                tokio::time::sleep(std::time::Duration::from_secs(stagger_secs)).await;
+            }
             match sr.get_all_unfilled_orders().await {
                 Ok((buys, sells)) => {
                     if !buys.is_empty() || !sells.is_empty() {
