@@ -554,26 +554,35 @@ async function submitBitmapToIssuers(
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
   const issuerUrls = ISSUER_URLS
+  const maxAttempts = 5
 
-  const results = await Promise.allSettled(
-    issuerUrls.map(async (url) => {
-      const res = await fetch(`${url}/vision/bitmap`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player,
-          batch_id: batchId,
-          bitmap_hex: bitmapHex,
-          expected_hash: expectedHash,
-        }),
-        signal: AbortSignal.timeout(RPC_TIMEOUT),
+  // Retry loop: issuers need time to index PlayerJoined event from L3
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 3_000))
+
+    const results = await Promise.allSettled(
+      issuerUrls.map(async (url) => {
+        const res = await fetch(`${url}/vision/bitmap`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            player,
+            batch_id: batchId,
+            bitmap_hex: bitmapHex,
+            expected_hash: expectedHash,
+          }),
+          signal: AbortSignal.timeout(RPC_TIMEOUT),
+        })
+        return res.ok
       })
-      return res.ok
-    })
-  )
+    )
 
-  const accepted = results.filter(r => r.status === 'fulfilled' && r.value).length
-  return { accepted, total: issuerUrls.length }
+    const accepted = results.filter(r => r.status === 'fulfilled' && r.value).length
+    if (accepted >= 2 || attempt === maxAttempts - 1) return { accepted, total: issuerUrls.length }
+    console.log(`Bitmap attempt ${attempt + 1}: ${accepted}/${issuerUrls.length} accepted, retrying...`)
+  }
+
+  return { accepted: 0, total: issuerUrls.length }
 }
 
 // ── Convenience: full join flow ──────────────────────────────
