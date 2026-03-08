@@ -45,6 +45,8 @@ test.describe('Decimal Regression Tests', () => {
   test('ITP NAV values are in sane range ($0.01–$1000)', async ({ walletPage: page }) => {
     test.setTimeout(120_000);
 
+    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+
     // Wait for ITP cards to render
     const itpCards = page.locator('[id^="itp-card-"]');
     await expect(itpCards.first()).toBeVisible({ timeout: 30_000 });

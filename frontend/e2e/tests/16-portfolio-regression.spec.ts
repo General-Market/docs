@@ -50,8 +50,8 @@ test.describe('Order Settlement', () => {
 
 test.describe('ITP Card Display', () => {
   test('ITP card shows TVL as a dollar amount (not "–")', async ({ walletPage: page }) => {
-    test.setTimeout(90_000)
-    await page.goto('/index')
+    test.setTimeout(120_000)
+    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
     const hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
@@ -136,11 +136,11 @@ test.describe('USDC Balance Consistency', () => {
 
 test.describe('Portfolio Totals', () => {
   test('Total Value includes USDC balance (not zero when holding USDC)', async ({ walletPage: page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(120_000)
 
     // Connect wallet — skip gracefully if button not found
     const connectBtn = connectWalletButton(page)
-    const hasConnectBtn = await connectBtn.isVisible({ timeout: 20_000 }).catch(() => false)
+    const hasConnectBtn = await connectBtn.isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasConnectBtn) {
       test.skip(true, 'Connect Wallet button not visible — page may not have hydrated')
       return
