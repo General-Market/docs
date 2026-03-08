@@ -816,6 +816,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let settlement_sell_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
         // Grace period: skip bridge processing until P2P mesh is likely established
         let bridge_ready_after = std::time::Instant::now() + std::time::Duration::from_secs(15);
+        // One-time: recover pending mints (CBO'd but not yet minted) on startup
+        let pending_mint_recovery_done = Arc::new(AtomicBool::new(false));
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -978,6 +980,75 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                 run_cross_chain_buy_post_processing(
                                     p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
                                 ).await;
+                            });
+                        }
+                    }
+
+                    // One-time: recover pending mints from crash between CBO and mint
+                    if bridge_ready && !pending_mint_recovery_done.load(Ordering::Acquire) {
+                        pending_mint_recovery_done.store(true, Ordering::Release);
+                        if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
+                            (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
+                        {
+                            let p = protocol.clone();
+                            let ar = Arc::clone(settlement_reader);
+                            let orch = Arc::clone(orchestrator);
+                            let aw = Arc::clone(settlement_writer);
+                            let iid = itp_id_for_task.clone();
+                            let cycle = current_cycle;
+                            let ni = node_index_for_task;
+                            let nu = consensus_config.num_issuers;
+                            tokio::spawn(async move {
+                                let bridge_proxy = orch.read().await.config().bridge_proxy;
+                                match ar.get_pending_mints(bridge_proxy).await {
+                                    Ok(pending) if !pending.is_empty() => {
+                                        warn!(count = pending.len(), "Recovering pending mints from previous crash");
+                                        for (order_id, itp_id, user, amount) in pending {
+                                            let shares = amount;
+                                            let batch_am_leader = (order_id.low_u64() % nu as u64) as u8 == ni;
+                                            info!(%order_id, ?itp_id, ?user, %shares, am_leader = batch_am_leader,
+                                                "Recovering pending mint");
+                                            // Inject order metadata into orchestrator for BLS consensus
+                                            orch.write().await.set_order_itp_id(order_id, itp_id).await;
+                                            match p.run_mint_bridged_shares_phase(
+                                                cycle, itp_id, user, shares, bridge_proxy, order_id, batch_am_leader,
+                                            ).await {
+                                                Ok(mint_result) => {
+                                                    if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
+                                                        match aw.mint_bridged_shares(itp_id, user, shares, order_id, mint_result.aggregated_signature.0.clone(), p.registry_nonce(), mint_result.signer_bitmap).await {
+                                                            Ok(tx_hash) => {
+                                                                info!(?tx_hash, %order_id, "Pending mint recovered — submitted");
+                                                                match aw.wait_for_receipt(tx_hash, 60).await {
+                                                                    Ok(receipt) => {
+                                                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                                        if success {
+                                                                            info!(?tx_hash, %order_id, "Pending mint CONFIRMED");
+                                                                            orch.write().await.mark_orders_shares_bridged(&[order_id]).await;
+                                                                        } else {
+                                                                            warn!(?tx_hash, %order_id, "Pending mint REVERTED — will retry next startup");
+                                                                        }
+                                                                    }
+                                                                    Err(e) => warn!(error = %e, %order_id, "Pending mint receipt timeout"),
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                let err_str = format!("{}", e);
+                                                                if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
+                                                                    info!(%order_id, "Pending mint already processed (E139)");
+                                                                } else {
+                                                                    warn!(error = %e, %order_id, "Pending mint recovery failed");
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                Err(e) => warn!(error = %e, %order_id, "Pending mint BLS consensus failed"),
+                                            }
+                                        }
+                                    }
+                                    Ok(_) => info!("No pending mints to recover"),
+                                    Err(e) => warn!(error = %e, "Failed to scan for pending mints"),
+                                }
                             });
                         }
                     }
@@ -2026,8 +2097,13 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                     }
                                                 }
                                             }
-                                            // Followers do NOT mark SharesBridged. They stay at Batched.
-                                            // With on-chain replay protection (Task 6), watchdog retry is safe and idempotent.
+                                            if !batch_am_leader {
+                                                // Followers mark SharesBridged after BLS consensus succeeds.
+                                                // The leader handles on-chain submission; if it fails, on-chain
+                                                // replay protection (E139) makes the leader's retry idempotent.
+                                                let orch = orchestrator.write().await;
+                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                            }
                                         }
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
@@ -2145,12 +2221,9 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                         Ok(fills_result) => {
                             info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed (after E021 batch skip)");
-                            {
-                                let orch = orchestrator.write().await;
-                                for oid in &submitted_orders {
-                                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
-                                }
-                            }
+                            // NOTE: Do NOT mark Filled here — Filled is terminal in the watchdog.
+                            // Orders stay Batched so watchdog can retry if mint fails below.
+                            // They transition directly to SharesBridged on successful mint.
 
                             // Step 8: Mint BridgedITP shares on Settlement (E021 path, per-order itp_id)
                             {
@@ -2202,7 +2275,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                         }
                                                     }
                                                 }
-                                                // Followers do NOT mark SharesBridged (E021 path)
+                                                if !batch_am_leader {
+                                                    let orch = orchestrator.write().await;
+                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                }
                                             }
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
                                         }
@@ -2213,14 +2289,9 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         Err(e) => {
                             let fills_err = format!("{}", e);
                             if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
-                                // Order already filled on-chain. Mark as Filled and proceed to mint.
+                                // Order already filled on-chain. Proceed directly to mint.
+                                // NOTE: Do NOT mark Filled — it's terminal in watchdog. Stay Batched for retry safety.
                                 info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
-                                {
-                                    let orch = orchestrator.write().await;
-                                    for oid in &submitted_orders {
-                                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
-                                    }
-                                }
 
                                 // Mint BridgedITP shares (already-filled path, per-order itp_id)
                                 {
@@ -2272,7 +2343,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                             }
                                                         }
                                                     }
-                                                    // Followers do NOT mark SharesBridged (already-filled path)
+                                                    if !batch_am_leader {
+                                                        let orch = orchestrator.write().await;
+                                                        orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                    }
                                                 }
                                                 Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
                                             }

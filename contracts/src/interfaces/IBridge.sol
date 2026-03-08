@@ -143,6 +143,26 @@ interface ISettlementBridgeCustody {
     /// @notice Emitted when a buy order is completed (USDC sent to vault)
     event BuyOrderCompleted(uint256 indexed orderId, address indexed vault, uint256 usdcAmount);
 
+    /// @notice Clear pending mint data after successful mintBridgedShares
+    /// @param orderId The order whose pending mint to clear
+    function clearPendingMint(uint256 orderId) external;
+
+    /// @notice Refund a failed/expired buy order — returns escrowed USDC to user
+    /// @dev Emergency escape hatch for permanently unfillable orders
+    /// @param orderId The cross-chain order ID
+    /// @param blsSignature Aggregated BLS signature
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask Bitmask of signing issuers
+    function refundBuyOrder(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Emitted when a buy order is refunded (USDC returned to user)
+    event BuyOrderRefunded(uint256 indexed orderId, address indexed user, uint256 usdcAmount);
+
     // ============ VIEW FUNCTIONS ============
 
     /// @notice Check if a nonce has been used (release completed)

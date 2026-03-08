@@ -90,11 +90,16 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @notice USDC reserve tracker for Vision pool (6 decimals, tracks Settlement-side USDC)
     uint256 public visionReserve;
 
+    /// @notice Pending mints: orderId => mint data needed for crash recovery
+    /// @dev Written in completeBuyOrder, queried by issuers on restart to find un-minted orders
+    mapping(uint256 => TypesLib.PendingMint) public pendingMints;
+
     /// @notice Storage gap for future upgrades
     /// @dev Used: issuerRegistry, usdc, l3Index, bridgeCompleted, crossChainOrderId,
     ///      crossChainOrders, pendingUpgradeImpl, pendingUpgradeProposedAt, pendingUpgradeIsEmergency,
-    ///      bridgeProxy, crossChainSellOrders, visionDeposits, withdrawProcessed, visionReserve = 14 slots
-    uint256[36] private __gap;
+    ///      bridgeProxy, crossChainSellOrders, visionDeposits, withdrawProcessed, visionReserve,
+    ///      pendingMints = 15 slots
+    uint256[35] private __gap;
 
     // ============ INITIALIZER ============
 
@@ -280,6 +285,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
+        // Store pending mint data BEFORE deleting order — crash recovery anchor.
+        // Issuers query this on restart to find CBO'd orders that still need minting.
+        pendingMints[orderId] = TypesLib.PendingMint({
+            itpId: order.itpId,
+            user: order.user,
+            amount: order.amount
+        });
+
         uint256 internalAmount = order.amount;
         delete crossChainOrders[orderId];
 
@@ -287,6 +300,41 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         if (usdcAmount > 0) usdc.safeTransfer(vault, usdcAmount);
 
         emit BuyOrderCompleted(orderId, vault, usdcAmount);
+    }
+
+    /// @notice Clear pending mint after successful mintBridgedShares
+    /// @dev Called by issuers after confirming mint succeeded on BridgeProxy.
+    ///      No access control needed — this is pure cleanup (mint already happened).
+    /// @param orderId The order whose pending mint to clear
+    function clearPendingMint(uint256 orderId) external {
+        delete pendingMints[orderId];
+    }
+
+    /// @inheritdoc ISettlementBridgeCustody
+    function refundBuyOrder(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        TypesLib.CrossChainOrder storage order = crossChainOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E125_BuyOrderNotFound(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "refundBuyOrder", orderId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        address user = order.user;
+        uint256 internalAmount = order.amount;
+
+        // Delete order before external calls (CEI pattern)
+        delete crossChainOrders[orderId];
+
+        uint256 usdcAmount = DecimalLib.toUsdc(internalAmount);
+        if (usdcAmount > 0) usdc.safeTransfer(user, usdcAmount);
+
+        emit BuyOrderRefunded(orderId, user, usdcAmount);
     }
 
     // ============ VIEW FUNCTIONS ============
@@ -423,13 +471,11 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
             usdc.safeTransferFrom(vault, user, usdcProceeds);
         }
 
-        // Burn escrowed BridgedITP (hygiene — try/catch so payment isn't blocked)
+        // Burn escrowed BridgedITP atomically — revert entire tx if burn fails
+        // to prevent USDC payment without corresponding BridgedITP destruction.
+        // This preserves the 1:1 backing invariant: no USDC out without burn.
         if (shareAmount > 0) {
-            try IBridgeProxy(bridgeProxy).burnFromCustody(itpId, address(this), shareAmount) {
-                // burned successfully
-            } catch {
-                emit BurnFailed(orderId, itpId, shareAmount);
-            }
+            IBridgeProxy(bridgeProxy).burnFromCustody(itpId, address(this), shareAmount);
         }
 
         emit SellOrderCompleted(orderId, usdcProceeds);

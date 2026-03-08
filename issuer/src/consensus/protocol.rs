@@ -71,7 +71,7 @@ use crate::bridge::{
 // 8-step bridge: RecordCollateralMove + MintBridgedShares consensus
 use crate::bridge::{
     build_record_collateral_move_hash, RecordCollateralMoveProposal, RecordCollateralMoveResult,
-    build_mint_bridged_shares_hash, MintBridgedSharesResult,
+    build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
 };
 
 // completeBuyOrder BLS consensus
@@ -8955,42 +8955,59 @@ where
             ));
         }
 
-        // Reconstruct proposal with the hash from the leader's data
-        // Followers don't need to know collateral_registry address — they verify the hash
-        let proposal = RecordCollateralMoveProposal {
-            leader_id,
-            cycle_number,
-            itp_id,
-            from_chain,
-            to_chain,
-            amount,
-            tx_type,
-            leader_signature: leader_signature.clone(),
-            message_hash: H256::zero(), // Will be recomputed by sign function
+        // Reconstruct proposal with properly computed hash
+        let proposal = {
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+
+            let message_hash = build_record_collateral_move_hash(
+                config.l3_chain_id,
+                config.collateral_registry,
+                itp_id,
+                from_chain,
+                to_chain,
+                amount,
+                tx_type,
+            );
+
+            RecordCollateralMoveProposal {
+                leader_id,
+                cycle_number,
+                itp_id,
+                from_chain,
+                to_chain,
+                amount,
+                tx_type,
+                leader_signature: leader_signature.clone(),
+                message_hash,
+            }
         };
 
-        // For now, sign with a simplified approach: sign the leader's signature hash
-        // In production, followers would have the collateral_registry address in config
-        let orch = bridge_orch.read().await;
-        let config = orch.config();
+        // Validate proposal (duplicate check, hash consistency)
+        {
+            let orch = bridge_orch.read().await;
+            match orch.validate_record_collateral_move_proposal(&proposal, orch.config().collateral_registry).await {
+                Ok(true) => {
+                    debug!(cycle_number, "RecordCollateralMove proposal validation passed");
+                }
+                Ok(false) => {
+                    warn!(code = "INFRA-007", cycle_number, "RecordCollateralMove proposal validation failed — refusing to sign");
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", cycle_number, error = %e, "RecordCollateralMove proposal validation error — refusing to sign");
+                    return Ok(());
+                }
+            }
+        }
 
-        let message_hash = build_record_collateral_move_hash(
-            config.l3_chain_id,
-            config.collateral_registry,
-            itp_id,
-            from_chain,
-            to_chain,
-            amount,
-            tx_type,
-        );
-
-        let hash_bytes: [u8; 32] = message_hash.into();
+        // Sign the proposal
+        let hash_bytes: [u8; 32] = proposal.message_hash.into();
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign RecordCollateralMove: {}", e)))?;
 
-        drop(orch);
         drop(bridge_orch_guard);
 
         let message = P2PMessage::RecordCollateralMoveSign {
@@ -9228,26 +9245,57 @@ where
             ));
         }
 
+        // Reconstruct proposal and validate before signing
+        let proposal = {
+            let orch = bridge_orch.read().await;
+            let config = orch.config();
+
+            let message_hash = build_mint_bridged_shares_hash(
+                config.settlement_chain_id,
+                config.bridge_proxy,
+                itp_id,
+                user,
+                amount,
+                order_id,
+            );
+
+            MintBridgedSharesProposal {
+                leader_id,
+                cycle_number,
+                itp_id,
+                user,
+                amount,
+                order_id,
+                leader_signature: leader_signature.clone(),
+                message_hash,
+            }
+        };
+
+        // Validate proposal (duplicate check, hash consistency, zero-amount guard)
+        {
+            let orch = bridge_orch.read().await;
+            match orch.validate_mint_bridged_shares_proposal(&proposal, orch.config().bridge_proxy).await {
+                Ok(true) => {
+                    debug!(cycle_number, "MintBridgedShares proposal validation passed");
+                }
+                Ok(false) => {
+                    warn!(code = "INFRA-007", cycle_number, "MintBridgedShares proposal validation failed — refusing to sign");
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-007", cycle_number, error = %e, "MintBridgedShares proposal validation error — refusing to sign");
+                    return Ok(());
+                }
+            }
+        }
+
         // Sign the proposal
-        let orch = bridge_orch.read().await;
-        let config = orch.config();
-
-        let message_hash = build_mint_bridged_shares_hash(
-            config.settlement_chain_id,
-            config.bridge_proxy,
-            itp_id,
-            user,
-            amount,
-            order_id,
-        );
-
-        let hash_bytes: [u8; 32] = message_hash.into();
+        let hash_bytes: [u8; 32] = proposal.message_hash.into();
         let signature = self
             .bls_signer
             .sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign MintBridgedShares: {}", e)))?;
 
-        drop(orch);
         drop(bridge_orch_guard);
 
         let message = P2PMessage::MintBridgedSharesSign {

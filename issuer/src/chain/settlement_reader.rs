@@ -704,6 +704,93 @@ impl<M: Middleware> SettlementChainReader<M> {
         Ok((buy_orders, sell_orders))
     }
 
+    /// Scan pendingMints mapping for CBO'd orders that still need minting.
+    /// Returns (orderId, itpId, user, amount) for each pending mint.
+    /// Called on startup to recover from crash between completeBuyOrder and mintBridgedShares.
+    pub async fn get_pending_mints(
+        &self,
+        bridge_proxy: Address,
+    ) -> Result<Vec<(U256, H256, Address, U256)>, SettlementReaderError> {
+        if self.config.settlement_custody_address.is_zero() {
+            return Ok(Vec::new());
+        }
+
+        // Get max order ID
+        let selector = &ethers::utils::keccak256("currentOrderId()")[..4];
+        let tx = TransactionRequest::new()
+            .to(self.config.settlement_custody_address)
+            .data(selector.to_vec());
+        let next_id_data = self.provider.call(&tx.into(), None).await.map_err(|e| {
+            SettlementReaderError::ProviderError(format!("currentOrderId: {}", e))
+        })?;
+        let next_id = U256::from_big_endian(&next_id_data);
+        let max_id = std::cmp::min(next_id.low_u64(), 100_000);
+
+        let mut pending = Vec::new();
+
+        // pendingMints(uint256) selector
+        let pm_selector = &ethers::utils::keccak256("pendingMints(uint256)")[..4];
+        // mintProcessed(uint256) selector on BridgeProxy
+        let mp_selector = &ethers::utils::keccak256("mintProcessed(uint256)")[..4];
+
+        for id in 0..max_id {
+            let order_id = U256::from(id);
+
+            // Rate limit to avoid RPC spam
+            if id > 0 && id % 10 == 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+
+            // Query pendingMints(orderId) → returns (bytes32 itpId, address user, uint256 amount)
+            let mut calldata = pm_selector.to_vec();
+            let mut id_bytes = [0u8; 32];
+            order_id.to_big_endian(&mut id_bytes);
+            calldata.extend_from_slice(&id_bytes);
+
+            let pm_tx = TransactionRequest::new()
+                .to(self.config.settlement_custody_address)
+                .data(calldata);
+            let pm_data = match self.provider.call(&pm_tx.into(), None).await {
+                Ok(d) => d,
+                Err(_) => continue,
+            };
+
+            if pm_data.len() < 96 { continue; }
+            let itp_id = H256::from_slice(&pm_data[0..32]);
+            let user = Address::from_slice(&pm_data[44..64]);
+            let amount = U256::from_big_endian(&pm_data[64..96]);
+
+            // Skip empty entries (user == address(0))
+            if user.is_zero() { continue; }
+
+            // Check if already minted on BridgeProxy
+            let mut mp_calldata = mp_selector.to_vec();
+            mp_calldata.extend_from_slice(&id_bytes);
+            let mp_tx = TransactionRequest::new()
+                .to(bridge_proxy)
+                .data(mp_calldata);
+            let mp_data = match self.provider.call(&mp_tx.into(), None).await {
+                Ok(d) => d,
+                Err(_) => continue,
+            };
+            let already_minted = if mp_data.len() >= 32 {
+                U256::from_big_endian(&mp_data[0..32]) != U256::zero()
+            } else {
+                false
+            };
+
+            if !already_minted {
+                info!(order_id = id, ?itp_id, ?user, %amount, "Found pending mint needing recovery");
+                pending.push((order_id, itp_id, user, amount));
+            }
+        }
+
+        if !pending.is_empty() {
+            warn!(count = pending.len(), "Pending mints found — these orders need mint recovery");
+        }
+        Ok(pending)
+    }
+
     /// Get confirmed CrossChainOrderCreated events and enrich with full order data
     ///
     /// This is the main entry point for fetching cross-chain orders. It:
@@ -1509,6 +1596,13 @@ impl<M: Middleware + Send + Sync + 'static> SettlementReader for SettlementChain
 
     async fn clear_old_seen_sell_orders(&self, max_size: usize) {
         self.clear_old_seen_sell_orders(max_size).await
+    }
+
+    async fn get_pending_mints(
+        &self,
+        bridge_proxy: Address,
+    ) -> Result<Vec<(U256, H256, Address, U256)>, SettlementReaderError> {
+        self.get_pending_mints(bridge_proxy).await
     }
 }
 

@@ -327,4 +327,14 @@ impl SettlementReader for DataNodeSettlementReader {
             }
         }
     }
+
+    async fn get_pending_mints(
+        &self,
+        _bridge_proxy: Address,
+    ) -> Result<Vec<(U256, H256, Address, U256)>, SettlementReaderError> {
+        // DataNodeSettlementReader doesn't have direct RPC access for contract reads.
+        // Pending mint recovery only works with direct SettlementChainReader.
+        warn!("get_pending_mints not supported via data-node — skipping crash recovery scan");
+        Ok(Vec::new())
+    }
 }

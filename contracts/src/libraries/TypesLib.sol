@@ -209,6 +209,17 @@ library TypesLib {
         uint256 createdAt;
     }
 
+    /// @notice Pending mint data for crash recovery
+    /// @dev Stored when completeBuyOrder succeeds, queried on issuer restart
+    /// @param itpId The ITP being purchased
+    /// @param user User who should receive BridgedITP shares
+    /// @param amount Internal amount (18 decimals) from the original order
+    struct PendingMint {
+        bytes32 itpId;
+        address user;
+        uint256 amount;
+    }
+
     /// @notice Cross-chain sell order from Settlement
     /// @dev Stores order parameters for issuer nodes to sell ITP on L3
     /// @param itpId The ITP to sell

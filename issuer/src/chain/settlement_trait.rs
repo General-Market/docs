@@ -4,7 +4,7 @@
 //! data-node-backed (DataNodeSettlementReader) implementations.
 
 use async_trait::async_trait;
-use ethers::types::U256;
+use ethers::types::{Address, H256, U256};
 
 use crate::bridge::{BridgeError, CrossChainOrderReader};
 use crate::chain::events::{
@@ -89,6 +89,13 @@ pub trait SettlementReader: Send + Sync {
     async fn get_all_unfilled_orders(
         &self,
     ) -> Result<(Vec<CrossChainOrder>, Vec<CrossChainSellOrderEvent>), SettlementReaderError>;
+
+    /// Scan pendingMints for CBO'd orders that still need minting (crash recovery).
+    /// Returns (orderId, itpId, user, amount) for each un-minted pending order.
+    async fn get_pending_mints(
+        &self,
+        bridge_proxy: Address,
+    ) -> Result<Vec<(U256, H256, Address, U256)>, SettlementReaderError>;
 
     /// Get confirmed, deduplicated cross-chain orders ready for processing
     async fn get_confirmed_cross_chain_orders(
