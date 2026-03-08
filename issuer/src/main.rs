@@ -2121,6 +2121,15 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                             let amount = o.get_order_amount(settlement_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
+                            // Check limit price (E126 guard — same as normal path)
+                            if let Some((limit_price, side)) = o.get_order_limit_price(settlement_id).await {
+                                let order_side = common::types::Side::from(side);
+                                if !fill_price_respects_limit(order_nav, limit_price, order_side) {
+                                    warn!(order_id = %settlement_id, l3_id = %l3_id, nav = %order_nav, limit_price = %limit_price,
+                                        "Skipping cross-chain fill (E021): NAV violates limit price (E126 guard)");
+                                    continue;
+                                }
+                            }
                             fills.push(Fill {
                                 order_id: *l3_id, // L3 ID for on-chain confirmFills
                                 fill_price: order_nav,
