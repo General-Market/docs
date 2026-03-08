@@ -268,7 +268,20 @@ impl<'a> ChainBuilder<'a> {
 
                 match SettlementChainWriter::new(settlement_config, private_key) {
                     Ok(writer) => {
-                        info!(node_id, bridge_proxy = %bridge_proxy, "SettlementChainWriter initialized");
+                        info!(node_id, bridge_proxy = %bridge_proxy, address = ?writer.address(), "SettlementChainWriter initialized");
+                        // Startup gas balance warning
+                        if let Ok(balance) = writer.get_balance().await {
+                            let min_balance = ethers::types::U256::from(50_000_000_000_000_000u64);
+                            if balance < min_balance {
+                                warn!(
+                                    address = ?writer.address(),
+                                    balance = %balance,
+                                    "Settlement wallet has low gas — settlement txs will fail until funded"
+                                );
+                            } else {
+                                info!(address = ?writer.address(), balance = %balance, "Settlement wallet gas OK");
+                            }
+                        }
                         Some(Arc::new(writer))
                     }
                     Err(e) => {

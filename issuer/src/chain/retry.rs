@@ -77,10 +77,13 @@ impl RetryConfig {
 /// - `server error (5xx)` - Wait and retry
 ///
 /// # Non-retryable errors (permanent):
-/// - `insufficient funds` - Fatal, cannot proceed
 /// - `execution reverted` - Contract logic failed
 /// - `invalid signature` - BLS verification failed
 /// - `gas limit exceeded` - Tx too expensive
+///
+/// Note: "insufficient funds/balance" is NOT here — gas exhaustion is transient.
+/// The pre-flight check (check_gas_available) is the primary defense. If gas runs out
+/// mid-operation, the retry framework should allow another attempt after funding.
 pub fn is_retryable_error(error_msg: &str) -> bool {
     let error_lower = error_msg.to_lowercase();
 
@@ -89,8 +92,6 @@ pub fn is_retryable_error(error_msg: &str) -> bool {
     // before entering with_retry — retrying with the same stale nonce always fails.
     // The nonce manager resyncs on failure, so the NEXT operation gets a fresh nonce.
     let non_retryable_patterns = [
-        "insufficient funds",
-        "insufficient balance",
         "execution reverted",
         "revert",
         "invalid signature",
@@ -124,6 +125,8 @@ pub fn is_retryable_error(error_msg: &str) -> bool {
         "rate limit",
         "too many requests",
         "429",
+        "insufficient funds",
+        "insufficient balance",
     ];
 
     for pattern in retryable_patterns {
@@ -273,9 +276,10 @@ mod tests {
     }
 
     #[test]
-    fn test_not_retryable_insufficient_funds() {
-        assert!(!is_retryable_error("insufficient funds for transfer"));
-        assert!(!is_retryable_error("Insufficient balance"));
+    fn test_retryable_insufficient_funds() {
+        // Gas exhaustion is transient — pre-flight check is the primary defense
+        assert!(is_retryable_error("insufficient funds for transfer"));
+        assert!(is_retryable_error("Insufficient balance"));
     }
 
     #[test]

@@ -118,6 +118,13 @@ impl SettlementChainWriter {
         self.client.address()
     }
 
+    /// Get the native token balance of the signer wallet
+    pub async fn get_balance(&self) -> Result<U256, SettlementWriterError> {
+        use ethers::providers::Middleware;
+        self.client.get_balance(self.client.address(), None).await
+            .map_err(|e| SettlementWriterError::ProviderError(format!("get_balance: {}", e)))
+    }
+
     /// Check if the settlement wallet has enough native gas. Returns error if not.
     /// DOES NOT BLOCK — caller decides what to do (skip cycle, retry later).
     async fn check_gas_available(&self) -> Result<(), SettlementWriterError> {
