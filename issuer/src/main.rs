@@ -83,6 +83,11 @@ struct Args {
     #[arg(long, default_value = "50")]
     min_cycle_gap_ms: u64,
 
+    /// BLS sign timeout for consensus rounds in milliseconds (default: 300).
+    /// All issuers are co-located on the same VPS (~1ms P2P latency), so 300ms is generous.
+    #[arg(long, default_value = "300")]
+    sign_timeout_ms: u64,
+
     /// Disable TLS for P2P connections (development only)
     #[arg(long)]
     no_tls: bool,
@@ -704,6 +709,24 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         }
     }
 
+    // Continuous NAV computation — background task computes from on-chain inventory + Bitget prices
+    // every 200ms. All consumers read from the watch channel instead of computing inline or HTTP fetching.
+    let (nav_tx, nav_rx) = tokio::sync::watch::channel(ethers::types::U256::exp10(18));
+    {
+        let nav_chain_reader = consensus_chain_reader.clone();
+        let nav_price_fetcher = price_fetcher_for_task.clone();
+        let nav_itp_id = itp_id_for_task.clone();
+        let nav_shutdown = shutdown.clone();
+        tokio::spawn(async move {
+            loop {
+                if nav_shutdown.load(Ordering::Relaxed) { break; }
+                let nav = compute_nav(&nav_chain_reader, &nav_price_fetcher, &nav_itp_id).await;
+                let _ = nav_tx.send(nav);
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            }
+        });
+    }
+
     // Channel for price task result reporting (success/failure tracking)
     let (price_result_tx, mut price_result_rx) = tokio::sync::mpsc::channel::<bool>(4);
 
@@ -726,7 +749,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
 
-        // Throttle settlement calls — poll every 500ms (fast bridge detection)
+        // Throttle settlement calls — poll every 100ms (near-instant bridge detection)
         let mut last_settlement_poll = std::time::Instant::now() - std::time::Duration::from_secs(10);
         // Track last scanned settlement block to avoid re-scanning 10k blocks every poll
         let settlement_buy_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
@@ -779,69 +802,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
                 if let Some(ref protocol) = consensus_protocol_for_task {
 
-                    // Compute local NAV from on-chain inventory + Bitget prices.
-                    // Used as fallback when data-node backend is unavailable (e.g. no PostgreSQL).
-                    // Stays inline because it's fast and the result is needed by spawned tasks.
-                    // MUST be computed BEFORE price task spawn since run_price_update uses it.
-                    let local_nav_fallback = {
-                        let itp_bytes: [u8; 32] = {
-                            let hex = itp_id_for_task.trim_start_matches("0x");
-                            let mut b = [0u8; 32];
-                            if hex.len() == 64 { hex::decode_to_slice(hex, &mut b).ok(); }
-                            b
-                        };
-                        match consensus_chain_reader.get_itp_inventory_state(itp_bytes).await {
-                            Ok(state) if !state.assets.is_empty() => {
-                                let asset_count = state.assets.len();
-                                let qty_count = state.quantities.len();
-                                match price_fetcher_for_task.fetch_prices(&state.assets).await {
-                                    Ok(prices) if !prices.is_empty() => {
-                                        let price_count = prices.len();
-                                        let price_map: std::collections::HashMap<ethers::types::Address, ethers::types::U256> =
-                                            prices.into_iter().map(|p| (p.asset, p.price)).collect();
-                                        let scale = ethers::types::U256::exp10(18);
-                                        let mut nav = ethers::types::U256::zero();
-                                        let mut matched = 0u32;
-                                        for (asset, qty) in state.assets.iter().zip(state.quantities.iter()) {
-                                            if let Some(price) = price_map.get(asset) {
-                                                matched += 1;
-                                                if let Some(contribution) = qty.checked_mul(*price) {
-                                                    nav = nav + contribution / scale;
-                                                }
-                                            }
-                                        }
-                                        if nav.is_zero() {
-                                            info!(cycle = current_cycle, asset_count, price_count, matched, "Local NAV = 0, falling back to $1");
-                                            ethers::types::U256::exp10(18)
-                                        } else {
-                                            info!(cycle = current_cycle, nav = %nav, asset_count, price_count, matched, "Local NAV computed from chain+Bitget");
-                                            nav
-                                        }
-                                    }
-                                    Ok(_) => {
-                                        info!(cycle = current_cycle, asset_count, qty_count, "Prices empty, falling back to $1");
-                                        ethers::types::U256::exp10(18)
-                                    }
-                                    Err(e) => {
-                                        info!(cycle = current_cycle, error = %e, "Price fetch error, falling back to $1");
-                                        ethers::types::U256::exp10(18)
-                                    }
-                                }
-                            }
-                            Ok(_) => {
-                                if current_cycle % 50 == 1 {
-                                    info!(cycle = current_cycle, "ITP inventory empty, falling back to $1");
-                                }
-                                ethers::types::U256::exp10(18)
-                            }
-                            Err(e) => {
-                                if current_cycle % 50 == 1 {
-                                    info!(cycle = current_cycle, error = %e, "ITP inventory read error, falling back to $1");
-                                }
-                                ethers::types::U256::exp10(18)
-                            }
-                        }
-                    };
+                    // Read cached NAV from background computation task (updated every 200ms)
+                    let local_nav_fallback = *nav_rx.borrow();
 
                     // Price update — spawn if not already running
                     if !price_active.load(Ordering::Acquire) {
@@ -868,10 +830,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         });
                     }
 
-                    // Settlement tasks — poll every 500ms (reduced from 2s for faster bridge detection)
+                    // Settlement tasks — poll every 100ms for near-instant bridge detection
                     // Skip bridge processing during P2P startup grace period (15s)
                     let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
-                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_millis(500);
+                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_millis(100);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
@@ -899,7 +861,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Cross-chain BUY — spawn if not already running (throttled)
+                    // Cross-chain BUY — detect + bridge + submit + immediate batch/fills/mint (merged pipeline)
                     if settlement_poll_due && !buy_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
@@ -919,17 +881,19 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             let cursor = settlement_buy_cursor.clone();
+                            let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr,
                                 ).await;
                             });
                         }
                     }
 
-                    // Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
-                    // Runs independently from detection+bridge+submit so buy_active isn't held during the slow 8-step flow (throttled)
+                    // Cross-chain BUY post-processing (RECOVERY) — picks up orders stuck at SubmittedOnL3
+                    // (e.g., node crashed between submit and batch). Normally finds nothing because
+                    // Phase 1 now handles batch/fills/mint inline.
                     if settlement_poll_due && !bridge_buy_post_active.load(Ordering::Acquire) {
                         if let (Some(ref settlement_reader), Some(ref orchestrator), Some(ref settlement_writer)) =
                             (&settlement_reader_for_task, &bridge_orchestrator_for_task, &settlement_writer_for_task)
@@ -1540,16 +1504,17 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     settlement_reader: Arc<dyn issuer::SettlementReader>,
     orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    _settlement_writer: Arc<issuer::SettlementChainWriter>,
-    _chain_reader: Arc<dyn common::traits::ChainReader>,
+    settlement_writer: Arc<issuer::SettlementChainWriter>,
+    chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    _data_node_url_for_task: Option<String>,
-    _itp_id_for_task: String,
-    _local_nav_fallback: ethers::types::U256,
-    _quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    data_node_url_for_task: Option<String>,
+    itp_id_for_task: String,
+    local_nav_fallback: ethers::types::U256,
+    quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
+    _bridge_post_ready: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1661,6 +1626,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                 .as_secs(),
                                         }).await;
                                     }
+                                    // Immediately continue to batch/fills/mint (merged Phase 1+2)
+                                    // instead of returning and waiting for poll-driven Phase 2
+                                    info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
                                 }
                                 Err(e) => {
                                     warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
@@ -1675,6 +1643,23 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     }
                 }
             }
+
+            // Merged Phase 2: immediately run batch/fills/mint for all SubmittedOnL3 orders
+            // (no poll wait — orders were just submitted above)
+            run_cross_chain_buy_post_processing(
+                protocol.clone(),
+                settlement_reader.clone(),
+                orchestrator.clone(),
+                settlement_writer.clone(),
+                chain_reader.clone(),
+                current_cycle,
+                node_index,
+                num_issuers,
+                data_node_url_for_task.clone(),
+                itp_id_for_task.clone(),
+                local_nav_fallback,
+                quote_tokens.clone(),
+            ).await;
         }
         Ok(_) => { /* no new orders — silent at info level */ }
         Err(e) => {
@@ -1695,8 +1680,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
 /// Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
 ///
-/// Split from run_cross_chain_processing so detection+bridge+submit (fast) doesn't
-/// hold buy_active during the slow batch/fills/mint pipeline.
+/// Primary path: called inline from run_cross_chain_processing after submit completes.
+/// Recovery path: spawned on settlement_poll_due for orders stuck at SubmittedOnL3
+/// (e.g., if the node crashed between submit and batch).
 async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     _settlement_reader: Arc<dyn issuer::SettlementReader>,
@@ -1706,7 +1692,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    data_node_url_for_task: Option<String>,
+    _data_node_url_for_task: Option<String>,
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
@@ -1762,7 +1748,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 let nav = if let Some(cached) = nav_cache.get(&itp_id_str) {
                     *cached
                 } else {
-                    let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                    let fetched = local_nav_fallback;
                     nav_cache.insert(itp_id_str.clone(), fetched);
                     fetched
                 };
@@ -1784,34 +1770,19 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                 }
 
-                // Emit per-asset trades for cross-chain buy orders (using each order's actual itp_id)
-                {
-                    let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
-                        let o = orchestrator.read().await;
-                        let mut trades = Vec::new();
-                        for order_id in &submitted_orders {
-                            let order_itp = o.get_order_itp_id(order_id).await
-                                .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                            let amount = o.get_order_amount(order_id).await
-                                .unwrap_or(ethers::types::U256::exp10(18));
-                            trades.push((order_itp, 0u8 /* BUY */, amount));
-                        }
-                        trades
-                    };
-
-                    match protocol.run_asset_trades_phase(current_cycle, &asset_trade_orders, &chain_reader, batch_am_leader, quote_tokens.as_ref()).await {
-                        Ok(at_result) => {
-                            info!(
-                                cycle = current_cycle,
-                                signer_count = at_result.signature_count,
-                                "Cross-chain asset trades emitted"
-                            );
-                        }
-                        Err(e) => {
-                            warn!(cycle = current_cycle, error = %e, "Asset trades emission failed (fills will proceed)");
-                        }
+                // Collect asset trade data upfront (needed for fire-and-forget after fills)
+                let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = {
+                    let o = orchestrator.read().await;
+                    let mut trades = Vec::new();
+                    for order_id in &submitted_orders {
+                        let order_itp = o.get_order_itp_id(order_id).await
+                            .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
+                        let amount = o.get_order_amount(order_id).await
+                            .unwrap_or(ethers::types::U256::exp10(18));
+                        trades.push((order_itp, 0u8 /* BUY */, amount));
                     }
-                }
+                    trades
+                };
 
                 // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
                 {
@@ -1909,6 +1880,20 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     warn!(order_id = %fill.order_id, "No order mapping found — cannot bridge shares");
                                 }
                             }
+                        }
+
+                        // Fire-and-forget: emit asset trades after critical path completes
+                        {
+                            let p = protocol.clone();
+                            let cr = chain_reader.clone();
+                            let qt = quote_tokens.clone();
+                            let at = asset_trade_orders.clone();
+                            tokio::spawn(async move {
+                                match p.run_asset_trades_phase(current_cycle, &at, &cr, batch_am_leader, qt.as_ref()).await {
+                                    Ok(at_result) => info!(cycle = current_cycle, signer_count = at_result.signature_count, "Cross-chain asset trades emitted"),
+                                    Err(e) => warn!(cycle = current_cycle, error = %e, "Asset trades emission failed (non-critical)"),
+                                }
+                            });
                         }
                     }
                     Err(e) => { warn!(cycle = current_cycle, error = %e, "Fills confirmation failed"); }
@@ -2084,7 +2069,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     current_cycle: u64,
     node_index: u8,
     num_issuers: u8,
-    data_node_url_for_task: Option<String>,
+    _data_node_url_for_task: Option<String>,
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
@@ -2228,7 +2213,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 let nav = if let Some(cached) = sell_nav_cache.get(&itp_id_str) {
                     *cached
                 } else {
-                    let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                    let fetched = local_nav_fallback;
                     sell_nav_cache.insert(itp_id_str.clone(), fetched);
                     fetched
                 };
@@ -2382,13 +2367,13 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             let o = orchestrator.read().await;
             let amount = o.get_sell_order_amount(&order_id).await
                 .unwrap_or(ethers::types::U256::exp10(18));
-            let itp_id_str = if let Some(itp_h256) = o.get_sell_order_itp_id(&order_id).await {
+            let _itp_id_str = if let Some(itp_h256) = o.get_sell_order_itp_id(&order_id).await {
                 format!("{:#066x}", itp_h256)
             } else {
                 itp_id_for_task.clone()
             };
-            drop(o); // release read lock before async fetch
-            let nav = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+            drop(o);
+            let nav = local_nav_fallback;
             // proceeds_18dec = amount * nav / 1e18, then convert to 6dec
             let proceeds_18dec = amount * nav / ethers::types::U256::exp10(18);
             proceeds_18dec / ethers::types::U256::exp10(12)
@@ -2824,7 +2809,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     node_index: u8,
     num_issuers: u8,
     first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>>,
-    data_node_url_for_task: Option<String>,
+    _data_node_url_for_task: Option<String>,
     _itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
@@ -2908,7 +2893,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             let nav = if let Some(cached) = l3_nav_cache.get(&itp_id_str) {
                 *cached
             } else {
-                let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                let fetched = local_nav_fallback;
                 l3_nav_cache.insert(itp_id_str.clone(), fetched);
                 fetched
             };
@@ -3108,7 +3093,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             let mut order_nav = if let Some(cached) = batched_nav_cache.get(&itp_id_str) {
                 *cached
             } else {
-                let fetched = fetch_nav(&data_node_url_for_task, &itp_id_str, local_nav_fallback).await;
+                let fetched = local_nav_fallback;
                 batched_nav_cache.insert(itp_id_str.clone(), fetched);
                 fetched
             };
@@ -3165,71 +3150,43 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     }
 }
 
-/// Fetch live NAV from the data-node backend.
+/// Compute NAV from on-chain ITP inventory + live Bitget prices.
 ///
-/// Returns NAV as U256 (18 decimals). Falls back to `local_nav_fallback` if unavailable.
-/// The fallback is computed from on-chain inventory + live Bitget prices in the caller.
-async fn fetch_nav(
-    data_node_url: &Option<String>,
+/// NAV = sum(qty[i] * price[i]) / 1e18 — same formula as the contract.
+/// Returns $1 (1e18) if inventory is empty or prices are unavailable.
+async fn compute_nav(
+    chain_reader: &Arc<dyn common::traits::ChainReader>,
+    price_fetcher: &Arc<dyn PriceFetcher>,
     itp_id: &str,
-    local_nav_fallback: ethers::types::U256,
 ) -> ethers::types::U256 {
-    let url = match data_node_url {
-        Some(ref base) => format!("{}/itp-price?itp_id={}", base, itp_id),
-        None => {
-            if local_nav_fallback != ethers::types::U256::exp10(18) {
-                debug!(nav = %local_nav_fallback, "No data_node_url, using local NAV from chain+Bitget");
-            } else {
-                debug!("No data_node_url configured, using $1 fallback for NAV");
+    let one = ethers::types::U256::exp10(18);
+    let itp_bytes: [u8; 32] = {
+        let hex = itp_id.trim_start_matches("0x");
+        let mut b = [0u8; 32];
+        if hex.len() == 64 { hex::decode_to_slice(hex, &mut b).ok(); }
+        b
+    };
+    match chain_reader.get_itp_inventory_state(itp_bytes).await {
+        Ok(state) if !state.assets.is_empty() => {
+            match price_fetcher.fetch_prices(&state.assets).await {
+                Ok(prices) if !prices.is_empty() => {
+                    let price_map: std::collections::HashMap<ethers::types::Address, ethers::types::U256> =
+                        prices.into_iter().map(|p| (p.asset, p.price)).collect();
+                    let scale = ethers::types::U256::exp10(18);
+                    let mut nav = ethers::types::U256::zero();
+                    for (asset, qty) in state.assets.iter().zip(state.quantities.iter()) {
+                        if let Some(price) = price_map.get(asset) {
+                            if let Some(contribution) = qty.checked_mul(*price) {
+                                nav = nav + contribution / scale;
+                            }
+                        }
+                    }
+                    if nav.is_zero() { one } else { nav }
+                }
+                _ => one,
             }
-            return local_nav_fallback;
         }
-    };
-
-    let client = match reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(5))
-        .build()
-    {
-        Ok(c) => c,
-        Err(_) => return local_nav_fallback,
-    };
-
-    #[derive(serde::Deserialize)]
-    struct ItpPriceResp {
-        nav: String,
-    }
-
-    let resp = match client.get(&url).send().await {
-        Ok(r) if r.status().is_success() => r,
-        Ok(r) => {
-            if local_nav_fallback != ethers::types::U256::exp10(18) {
-                debug!(url = %url, status = %r.status(), nav = %local_nav_fallback, "Data-node failed, using local NAV");
-            } else {
-                debug!(url = %url, status = %r.status(), "NAV fetch failed, using $1 fallback");
-            }
-            return local_nav_fallback;
-        }
-        Err(e) => {
-            if local_nav_fallback != ethers::types::U256::exp10(18) {
-                debug!(url = %url, error = %e, nav = %local_nav_fallback, "Data-node failed, using local NAV");
-            } else {
-                debug!(url = %url, error = %e, "NAV fetch failed, using $1 fallback");
-            }
-            return local_nav_fallback;
-        }
-    };
-
-    let body: ItpPriceResp = match resp.json().await {
-        Ok(b) => b,
-        Err(_) => return local_nav_fallback,
-    };
-
-    let parsed = ethers::types::U256::from_dec_str(&body.nav).unwrap_or(local_nav_fallback);
-    if parsed.is_zero() {
-        warn!("Backend returned nav=0, using local NAV fallback for fills");
-        local_nav_fallback
-    } else {
-        parsed
+        _ => one,
     }
 }
 
@@ -3601,6 +3558,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         wal_path: args.wal_path.clone(),
         wal_sync_mode: args.wal_sync_mode.clone(),
         skip_wal_replay: args.skip_wal_replay,
+        sign_timeout_ms: args.sign_timeout_ms,
     };
 
     // Deprecation warning for --signature-threshold

@@ -155,12 +155,13 @@ pub struct ConsensusTimeouts {
 impl Default for ConsensusTimeouts {
     fn default() -> Self {
         Self {
-            // Total must fit within 1s cycle: 200+150+200+250 = 800ms
-            price_proposal_timeout: Duration::from_millis(200),
-            price_vote_timeout: Duration::from_millis(150),
-            batch_proposal_timeout: Duration::from_millis(200),
-            batch_sign_timeout: Duration::from_millis(250),
-            polling_interval: Duration::from_millis(10),
+            // Price phases only used by standalone run_price_cycle (no orders).
+            // Regular run_cycle skips price round → batch only: 50+60 = 110ms.
+            price_proposal_timeout: Duration::from_millis(50),
+            price_vote_timeout: Duration::from_millis(40),
+            batch_proposal_timeout: Duration::from_millis(50),
+            batch_sign_timeout: Duration::from_millis(60),
+            polling_interval: Duration::from_millis(2),
         }
     }
 }
@@ -393,18 +394,19 @@ mod tests {
     #[test]
     fn test_consensus_timeouts_default() {
         let timeouts = ConsensusTimeouts::default();
-        // Must fit within 1s cycle: 200+150+200+250 = 800ms
-        assert_eq!(timeouts.price_proposal_timeout, Duration::from_millis(200));
-        assert_eq!(timeouts.price_vote_timeout, Duration::from_millis(150));
-        assert_eq!(timeouts.batch_proposal_timeout, Duration::from_millis(200));
-        assert_eq!(timeouts.batch_sign_timeout, Duration::from_millis(250));
-        assert_eq!(timeouts.polling_interval, Duration::from_millis(10));
+        // Price phases only used by standalone run_price_cycle.
+        // Regular run_cycle skips price → batch only: 50+60 = 110ms.
+        assert_eq!(timeouts.price_proposal_timeout, Duration::from_millis(50));
+        assert_eq!(timeouts.price_vote_timeout, Duration::from_millis(40));
+        assert_eq!(timeouts.batch_proposal_timeout, Duration::from_millis(50));
+        assert_eq!(timeouts.batch_sign_timeout, Duration::from_millis(60));
+        assert_eq!(timeouts.polling_interval, Duration::from_millis(2));
     }
 
     #[test]
     fn test_consensus_timeouts_total_fits_in_cycle() {
         let timeouts = ConsensusTimeouts::default();
-        assert_eq!(timeouts.total_timeout_ms(), 800);
+        assert_eq!(timeouts.total_timeout_ms(), 200);
         // Must be less than 1s cycle
         timeouts.assert_fits_in_cycle(1000);
     }
@@ -445,11 +447,11 @@ mod tests {
         let timeouts = ConsensusTimeouts::default();
         assert_eq!(
             timeouts.get_timeout(ConsensusPhase::PriceProposal),
-            Some(Duration::from_millis(200))
+            Some(Duration::from_millis(50))
         );
         assert_eq!(
             timeouts.get_timeout(ConsensusPhase::PriceVoting),
-            Some(Duration::from_millis(150))
+            Some(Duration::from_millis(40))
         );
         assert_eq!(timeouts.get_timeout(ConsensusPhase::Idle), None);
         assert_eq!(timeouts.get_timeout(ConsensusPhase::Complete), None);

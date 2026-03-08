@@ -68,6 +68,8 @@ pub struct BootstrapParams {
     pub wal_sync_mode: Option<String>,
     /// Skip WAL replay on startup.
     pub skip_wal_replay: bool,
+    /// BLS sign timeout for consensus rounds in milliseconds (default: 300).
+    pub sign_timeout_ms: u64,
 }
 
 /// Main bootstrap orchestrator

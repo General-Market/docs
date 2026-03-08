@@ -1,5 +1,18 @@
 # Design Decision Backlog
 
+## Session: 20260308-sub1s (Universal Sub-Second Consensus Pipeline)
+
+- [DECISION] Renamed `bridge_sign_timeout_ms` → `sign_timeout_ms` globally — applies to bridge, ITP creation, and NavOracle timeouts (300ms default for all, was 2000ms hardcoded for ITP/NavOracle)
+- [DECISION] Consensus timeouts reduced: price_proposal 50ms, price_vote 40ms, batch_proposal 50ms, batch_sign 60ms, polling 2ms — total 200ms budget (was 800ms). Price phases only used by standalone run_price_cycle.
+- [DECISION] Settlement poll reduced 500ms → 100ms for near-instant bridge order detection
+- [DECISION] Eliminated price consensus round from regular `run_cycle` (leader skips `leader_price_consensus`, follower timeout uses batch-only phases). All issuers compute same NAV from shared inventory + Bitget feed — no agreement round needed. Price round preserved in standalone `run_price_cycle` for no-order cycles.
+- [DECISION] Background NAV computation task (every 200ms) publishes to `tokio::sync::watch` channel. Replaced inline per-cycle NAV computation and all `fetch_nav` HTTP calls. Processing functions read cached NAV via `*nav_rx.borrow()` — sub-microsecond instead of 500ms HTTP timeout.
+- [DECISION] Removed `fetch_nav` function entirely — dead code after watch channel adoption. `data_node_url` HTTP path for NAV is no longer used.
+- [DECISION] Merged Phase 1 (detect/bridge/submit) and Phase 2 (batch/fills/mint) into single end-to-end flow. After submit completes, `run_cross_chain_processing` calls `run_cross_chain_buy_post_processing` inline instead of returning and waiting for poll-driven Phase 2.
+- [DECISION] Kept `run_cross_chain_buy_post_processing` as recovery path — spawned on settlement_poll_due for orders stuck at SubmittedOnL3 (crash between submit and batch). Normally finds nothing.
+- [DECISION] Removed `bridge_post_ready` AtomicBool handoff — no longer needed with merged phases.
+- [DECISION] NavOracle timeout now reads from BridgeOrchestrator config (sign_timeout_ms, fallback 300ms) instead of hardcoded 2000ms.
+
 ## Session: 20260307-2330-m4p7 (AP data-node chain reader + SSE events)
 
 - [DECISION] AP uses existing `--data-node-url` CLI flag (already present) to switch between direct RPC and data-node mode. When `data_node_url` is set AND `mock_chain` is false, AP creates `DataNodeChainReader` for L3 state reads and connects to data-node SSE for real-time events. When `data_node_url` is NOT set, existing direct RPC + EventMonitor behavior is preserved (backward compatible).
@@ -4571,3 +4584,12 @@ The backtester currently supports one rebalance method: **periodic time-based re
 - [DECISION] Source detail pool TVL test: changed from /source/coingecko to /source/pumpfun (where test 13 deposits) and added ensureBatchExists + depositToVisionBalance setup to guarantee pool has data.
 [DECISION] 20260307-0210-40fa Renaming all Arb/Arbitrum chain references → Settlement across entire codebase. Settlement chain on testnet = Sonic Testnet (chain ID 14601, RPC https://rpc.testnet.soniclabs.com). arbitration/ directory excluded (dispute arbitration, not Arbitrum).
 - [DECISION] 20260307-dual-chain: Dual-chain testnet — deploy settlement contracts to Sonic Testnet (14601) separately from L3 (111222333). testnet.sh now deploys DeployFullSystemE2E to both chains, saves per-chain JSONs (e2e-full-system-l3.json, e2e-full-system-sonic.json), merges settlement addresses (SettlementBridgeCustody, SETTLEMENT_USDC, MockBitgetVault, etc.) from Sonic into active-deployment.json. Issuers/AP/data-node start with SETTLEMENT_RPC_URL pointing to Sonic. envs/testnet/.env updated with Sonic settlement chain ID + RPC.
+
+## 20260308-1030-b4x9
+
+[DECISION] Settlement poll throttle 2s → 500ms — Sonic has instant finality, no need for 2s gaps between settlement checks.
+[DECISION] Block re-scan 10k → incremental cursor — was re-scanning 10,000 blocks of settlement history every poll cycle. Now uses AtomicU64 cursor that advances after each successful scan. First scan starts from tip - 200 blocks.
+[DECISION] Settlement confirmations 2 → 1 — Sonic has instant finality (FTM/Fantom DAG consensus). 1 confirmation is sufficient.
+[DECISION] Vision deposit poll 5s → 1s, finality 15 → 3 — deposit detection was unnecessarily slow.
+[DECISION] Data-node settlement scanner 3s → 1s — consistency with reduced issuer polling.
+[FAILED] Uploaded macOS ARM binaries to Linux VPS — `file` check before upload would have caught this. VPS must build from source.

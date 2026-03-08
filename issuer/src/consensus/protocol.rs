@@ -383,7 +383,7 @@ macro_rules! collect_sigs_loop {
                 return Err(ConsensusError::SigningTimeout { received: 0, timeout_ms: $timeout_ms }.into());
             }
             drop(bridge_orch_guard);
-            sleep(std::time::Duration::from_millis(10)).await;
+            sleep(std::time::Duration::from_millis(2)).await;
         }
     }};
 }
@@ -866,8 +866,15 @@ where
         };
         self.p2p.broadcast(proposal).await?;
 
-        // 5. Wait for signature threshold (poll with ~2s timeout)
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(2000);
+        // 5. Wait for signature threshold (use bridge config sign_timeout_ms, fallback 300ms)
+        let timeout_ms = {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            bridge_orch_guard.as_ref().map(|b| {
+                // Can't await inside map, use try_read
+                b.try_read().map(|o| o.config().sign_timeout_ms).unwrap_or(300)
+            }).unwrap_or(300)
+        };
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
         loop {
             {
                 let bridge_orch_guard = self.bridge_orchestrator.read().await;
@@ -889,11 +896,11 @@ where
             }
 
             if tokio::time::Instant::now() >= deadline {
-                warn!(cycle_number, ?itp_address, "NavOracle signature collection timed out (2s)");
+                warn!(cycle_number, ?itp_address, timeout_ms, "NavOracle signature collection timed out");
                 return Err(Error::BlsVerification("NavOracle signature collection timed out".to_string()));
             }
 
-            sleep(std::time::Duration::from_millis(10)).await;
+            sleep(std::time::Duration::from_millis(2)).await;
         }
     }
 
@@ -964,30 +971,18 @@ where
     }
 
     /// Run the leader protocol
+    ///
+    /// Price consensus is eliminated from the regular cycle — all issuers compute
+    /// the same NAV from on-chain inventory + shared price feed, so they always agree.
+    /// Price updates are handled by standalone `run_price_cycle` when there are no orders.
     async fn run_leader_protocol(
         &self,
         cycle_number: u64,
-        prices: Vec<(u32, U256)>,
+        _prices: Vec<(u32, U256)>,
         order_ids: Vec<u64>,
         fills: Vec<Fill>,
     ) -> ConsensusResult {
-        // Phase 1: Price consensus
-        match self.leader_price_consensus(cycle_number, prices).await {
-            Ok(()) => {
-                debug!(cycle_number, "Price consensus achieved");
-            }
-            Err(e) => {
-                if e.to_string().contains("emergency pause") {
-                    return ConsensusResult::EmergencyPause { cycle_number };
-                }
-                return ConsensusResult::Failed {
-                    reason: e.to_string(),
-                    cycle_number,
-                };
-            }
-        }
-
-        // Phase 2: Batch consensus
+        // Batch consensus only — price round eliminated (all issuers compute same NAV)
         match self
             .leader_batch_consensus(cycle_number, order_ids, fills)
             .await
@@ -1302,18 +1297,16 @@ where
 
     /// Run the follower protocol
     ///
-    /// The follower waits for messages from the leader and responds accordingly.
-    /// This implementation polls for state changes that are triggered by incoming
-    /// messages processed via `handle_message`.
+    /// Price round is eliminated from regular cycles — follower waits directly for
+    /// BatchProposal from the leader. Price phases still work for standalone run_price_cycle.
     async fn run_follower_protocol(&self, cycle_number: u64) -> ConsensusResult {
-        let total_timeout = self.config.timeouts.price_proposal_timeout
-            + self.config.timeouts.price_vote_timeout
-            + self.config.timeouts.batch_proposal_timeout
+        // Batch-only timeout — price round eliminated from regular cycle
+        let total_timeout = self.config.timeouts.batch_proposal_timeout
             + self.config.timeouts.batch_sign_timeout;
 
         let deadline = tokio::time::Instant::now() + total_timeout;
 
-        debug!(cycle_number, "Follower waiting for consensus messages");
+        debug!(cycle_number, "Follower waiting for batch consensus messages");
 
         // Poll for state changes driven by incoming messages
         loop {
@@ -1343,24 +1336,21 @@ where
                 match round.phase {
                     ConsensusPhase::Complete => {
                         info!(cycle_number, "Follower consensus completed");
-                        // Follower doesn't have the aggregated signature
-                        // The leader broadcasts the result or we confirm via chain
                         return ConsensusResult::Success {
                             aggregated_signature: BLSSignature(vec![0; 64]),
-                            signer_count: 0, // Follower doesn't track this
+                            signer_count: 0,
                             cycle_number,
                         };
                     }
                     ConsensusPhase::Idle => {
-                        // Waiting for price proposal from leader
-                        debug!(cycle_number, "Follower waiting for price proposal");
+                        // Waiting for batch proposal from leader (price round skipped)
+                        debug!(cycle_number, "Follower waiting for batch proposal");
                     }
                     ConsensusPhase::PriceProposal | ConsensusPhase::PriceVoting => {
-                        // Price phase in progress
-                        debug!(cycle_number, phase = %round.phase, "Follower in price phase");
+                        // Price messages may still arrive from run_price_cycle path — handle gracefully
+                        debug!(cycle_number, phase = %round.phase, "Follower in price phase (standalone price cycle)");
                     }
                     ConsensusPhase::BatchProposal | ConsensusPhase::BatchSigning => {
-                        // Batch phase in progress
                         debug!(cycle_number, phase = %round.phase, "Follower in batch phase");
                     }
                 }
@@ -3450,7 +3440,7 @@ where
                 }
             }
 
-            sleep(std::time::Duration::from_millis(10)).await;
+            sleep(std::time::Duration::from_millis(2)).await;
         }
 
         // Aggregate signatures and compute signer bitmap + aggregated pubkey
@@ -3952,7 +3942,7 @@ where
                     }
                     .into());
                 }
-                sleep(std::time::Duration::from_millis(10)).await;
+                sleep(std::time::Duration::from_millis(2)).await;
             }
         }
     }
