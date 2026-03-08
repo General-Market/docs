@@ -66,6 +66,7 @@ import {
   TeamNatPerformance,
   TeamAgeSpreadPerformance,
   TeamEduPerformance,
+  FoundersDashboard,
 } from "@/components/learn/diagrams/founders";
 
 function extractTextFromReactNode(node: ReactNode): string {
@@ -262,4 +263,5 @@ export const mdxComponents: MDXComponents = {
   TeamNatPerformance,
   TeamAgeSpreadPerformance,
   TeamEduPerformance,
+  FoundersDashboard,
 };

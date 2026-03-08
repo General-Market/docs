@@ -53,3 +53,9 @@ export const TeamEduPerformance = dynamic(
     import("./TeamCompPerformance").then((m) => m.TeamEduPerformance),
   { ssr: false, loading: () => <Placeholder h="240px" /> }
 );
+
+export const FoundersDashboard = dynamic(
+  () =>
+    import("./FoundersDashboard").then((m) => m.FoundersDashboard),
+  { ssr: false, loading: () => <Placeholder h="2000px" /> }
+);
