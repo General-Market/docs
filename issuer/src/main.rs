@@ -2624,31 +2624,40 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             const RECEIPT_TIMEOUT_SECS: u64 = 60;
                             match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
                                 Ok(receipt) => {
-                                    info!(
-                                        order_id = %order_id,
-                                        tx_hash = ?tx_hash,
-                                        block = ?receipt.block_number,
-                                        "completeSellOrder confirmed"
-                                    );
-                                    let orch = orchestrator.write().await;
-                                    orch.mark_sell_order_processed(order_id, tx_hash).await;
+                                    let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                    if success {
+                                        info!(
+                                            order_id = %order_id,
+                                            tx_hash = ?tx_hash,
+                                            block = ?receipt.block_number,
+                                            "completeSellOrder CONFIRMED"
+                                        );
+                                        let orch = orchestrator.write().await;
+                                        orch.mark_sell_order_processed(order_id, tx_hash).await;
+                                    } else {
+                                        warn!(order_id = %order_id, tx_hash = ?tx_hash, "completeSellOrder REVERTED — leaving SellFilled for retry");
+                                    }
                                 }
                                 Err(e) => {
-                                    warn!(order_id = %order_id, error = %e, "completeSellOrder receipt timeout");
-                                    // Still mark as completed to avoid re-processing
-                                    let orch = orchestrator.write().await;
-                                    orch.mark_sell_order_processed(order_id, tx_hash).await;
+                                    warn!(order_id = %order_id, error = %e, "completeSellOrder receipt timeout — leaving SellFilled for retry");
+                                    // Do NOT mark as completed — order stays SellFilled for watchdog retry
                                 }
                             }
                         }
                         Err(e) => {
-                            warn!(order_id = %order_id, error = %e, "completeSellOrder transaction failed");
+                            let err_str = format!("{}", e);
+                            if err_str.contains("E119") || err_str.contains("SellOrderNotFound") {
+                                info!(order_id = %order_id, "completeSellOrder already done (E119) — marking completed");
+                                let orch = orchestrator.write().await;
+                                orch.mark_sell_order_processed(order_id, ethers::types::H256::zero()).await;
+                            } else {
+                                warn!(order_id = %order_id, error = %e, "completeSellOrder failed — leaving SellFilled for retry");
+                            }
                         }
                     }
                 } else if !am_leader {
-                    // Follower: mark as completed (leader handles the tx)
-                    let orch = orchestrator.write().await;
-                    orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellCompleted).await;
+                    // Follower: stays at SellFilled (non-terminal). If leader succeeded,
+                    // retry will hit E119 (benign). If leader failed, retry re-attempts.
                 }
             }
             Err(e) => {
