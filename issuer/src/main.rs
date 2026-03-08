@@ -1089,9 +1089,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Signal CycleManager: check if any task is still running or has pending work
-                    let has_spawned = price_active.load(Ordering::Acquire)
-                        || buy_active.load(Ordering::Acquire)
+                    // Signal CycleManager: check if any order-processing task is still running.
+                    // Exclude price_active — price consensus is fire-and-forget, doesn't
+                    // need WorkDriven cycle acceleration (which causes rapid cycle overlap).
+                    let has_spawned = buy_active.load(Ordering::Acquire)
                         || bridge_buy_post_active.load(Ordering::Acquire)
                         || sell_active.load(Ordering::Acquire)
                         || l3_active.load(Ordering::Acquire)
