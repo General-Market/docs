@@ -1569,18 +1569,30 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
         Ok(orders) if !orders.is_empty() => {
+            let now_secs = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+
             // Filter out orders already known to orchestrator (already processed or in-progress)
+            // and orders whose deadline has passed (expired)
             let mut new_orders = Vec::new();
             {
                 let orch = orchestrator.read().await;
                 for order in orders {
-                    if orch.get_order_status(&order.order_id).await.is_none() {
-                        new_orders.push(order);
+                    if orch.get_order_status(&order.order_id).await.is_some() {
+                        continue; // already processed or in-progress
                     }
+                    let deadline_secs = order.deadline.as_u64();
+                    if deadline_secs > 0 && deadline_secs < now_secs {
+                        info!(order_id = %order.order_id, deadline = deadline_secs, now = now_secs, "Skipping expired cross-chain order");
+                        continue;
+                    }
+                    new_orders.push(order);
                 }
             }
             if new_orders.is_empty() {
-                debug!(cycle = current_cycle, "All cross-chain orders already processed");
+                // all filtered out (processed or expired)
             } else {
                 info!(cycle = current_cycle, order_count = new_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain orders");
             }
@@ -1597,17 +1609,19 @@ async fn run_cross_chain_processing<P, W, K, PF>(
             }
 
             let chain_id = settlement_reader.chain_id();
-            let mut handles = Vec::new();
+            // Process orders SEQUENTIALLY to avoid P2P consensus contention.
+            // When multiple bridge proposals are in-flight simultaneously, leaders
+            // time out because followers are also busy being leaders for other orders.
             for order in new_orders {
                 let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
                 info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
 
-                let p = protocol.clone();
-                let ar = settlement_reader.clone();
-                let orch = orchestrator.clone();
-                let cid = chain_id;
+                {
+                    let p = protocol.clone();
+                    let ar = settlement_reader.clone();
+                    let orch = orchestrator.clone();
+                    let cid = chain_id;
 
-                handles.push(tokio::spawn(async move {
                     match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
                         Ok(result) => {
                             if result.signature_count == 0 {
@@ -1652,11 +1666,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                             ar.increment_retry_count(cid, order.order_id).await;
                         }
                     }
-                }));
-            }
-            // Wait for all order tasks to complete
-            for handle in handles {
-                let _ = handle.await;
+                }
             }
         }
         Ok(_) => { /* no new orders — silent at info level */ }
