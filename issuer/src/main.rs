@@ -2842,7 +2842,6 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    info!(cycle = current_cycle, "run_l3_native_order_processing entered");
     // Guard: Skip L3-native PENDING processing when bridge orders are in pre-submission
     // states (Pending/BridgedToL3 for buys, SellPending for sells). These orders don't
     // have L3 order IDs mapped yet, so the step 2 filter can't catch them.
@@ -2857,7 +2856,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     };
 
     if skip_pending {
-        debug!(
+        info!(
             cycle = current_cycle,
             "Skipping L3-native PENDING processing: unmapped bridge orders in-flight"
         );
@@ -2865,9 +2864,14 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
     // 1. Fetch all pending orders from L3
     let pending_orders = match chain_reader.get_pending_orders().await {
-        Ok(orders) => orders,
+        Ok(orders) => {
+            if current_cycle % 60 == 0 || !orders.is_empty() {
+                info!(cycle = current_cycle, count = orders.len(), "L3-native: fetched pending orders");
+            }
+            orders
+        }
         Err(e) => {
-            debug!(cycle = current_cycle, error = %e, "Failed to fetch pending orders for L3-native processing");
+            info!(cycle = current_cycle, error = %e, "Failed to fetch pending orders for L3-native processing");
             vec![]
         }
     };
