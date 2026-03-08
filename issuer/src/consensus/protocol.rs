@@ -1005,9 +1005,9 @@ where
         let mut retry_count = 0u8;
 
         loop {
-            // Advance to PriceProposal phase
+            // Advance to PriceProposal phase (use price_state, not shared state)
             {
-                let mut state = self.state.write().await;
+                let mut state = self.price_state.write().await;
                 if let Some(round) = state.current_round_mut() {
                     round.set_phase(ConsensusPhase::PriceProposal);
                 }
@@ -1030,9 +1030,9 @@ where
             debug!(cycle_number, "Broadcasting PRICE_PROPOSAL");
             self.p2p.broadcast(message).await?;
 
-            // Advance to PriceVoting phase
+            // Advance to PriceVoting phase (use price_state, not shared state)
             {
-                let mut state = self.state.write().await;
+                let mut state = self.price_state.write().await;
                 state.advance();
             }
 
@@ -1063,9 +1063,9 @@ where
                             ));
                         }
 
-                        // Reset for retry
+                        // Reset for retry (use price_state, not shared state)
                         {
-                            let mut state = self.state.write().await;
+                            let mut state = self.price_state.write().await;
                             if let Some(round) = state.current_round_mut() {
                                 round.reset_for_retry();
                             }
@@ -1098,7 +1098,7 @@ where
         loop {
             if tokio::time::Instant::now() >= deadline {
                 // Timeout - calculate with votes we have
-                let state = self.state.read().await;
+                let state = self.price_state.read().await;
                 if let Some(round) = state.current_round() {
                     return Ok(round.disagreement_percent());
                 }
@@ -1108,8 +1108,8 @@ where
             // Small sleep to avoid busy loop
             sleep(self.config.timeouts.polling_interval).await;
 
-            // Check current vote counts
-            let state = self.state.read().await;
+            // Check current vote counts (read from price_state, matching vote storage)
+            let state = self.price_state.read().await;
             if let Some(round) = state.current_round() {
                 // If we have enough votes, we can evaluate early
                 let total_votes = round.price_votes.len();
@@ -1540,7 +1540,8 @@ where
                 signature,
             } => {
                 debug!(?from, approved, "Processing PriceVote");
-                let mut state = self.state.write().await;
+                // Store in price_state (not shared state) — matches leader_price_consensus
+                let mut state = self.price_state.write().await;
                 if let Some(round) = state.current_round_mut() {
                     round.price_votes.insert(
                         from,
