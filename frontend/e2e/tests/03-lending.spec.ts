@@ -1,6 +1,6 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
 import {
-  connectWalletButton,
+  ensureWalletConnected,
   borrowButtonOnCard,
   itpCard,
   lendingModal,
@@ -13,12 +13,7 @@ test.describe('Lending (Deposit → Borrow → Repay → Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
     test.setTimeout(300_000); // 5 min — includes potential buy flow on testnet
     // ── Setup: connect wallet ────────────────────────────────
-    const connectBtn = connectWalletButton(page);
-    await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-    await connectBtn.click();
-    await page.mouse.move(0, 0);
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 30_000 });
+    await ensureWalletConnected(page, TEST_ADDRESS);
 
     // Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });

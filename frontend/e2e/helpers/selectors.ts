@@ -3,12 +3,32 @@
  * Since the codebase doesn't use data-testid attributes, we target
  * elements by role, text content, and CSS hierarchy.
  */
-import { type Page, type Locator } from '@playwright/test';
+import { type Page, type Locator, expect } from '@playwright/test';
 
 // ── Wallet ──────────────────────────────────────────────────
 
 export function connectWalletButton(page: Page): Locator {
   return page.getByRole('button', { name: /Connect Wallet|Log\s?In|Login on Base/ });
+}
+
+/**
+ * Ensures the wallet is connected. Handles both auto-connect (via seeded
+ * wagmi localStorage) and manual connect (clicking the Connect button).
+ */
+export async function ensureWalletConnected(page: Page, address: string): Promise<void> {
+  const truncated = address.slice(0, 6) + '...' + address.slice(-4);
+  const addrBtn = page.getByRole('button', { name: truncated });
+
+  // Check if already auto-connected
+  const autoConnected = await addrBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+  if (autoConnected) return;
+
+  // Fall back to manual connect
+  const connectBtn = connectWalletButton(page);
+  await expect(connectBtn).toBeVisible({ timeout: 15_000 });
+  await connectBtn.click();
+  await page.mouse.move(0, 0);
+  await expect(addrBtn).toBeVisible({ timeout: 30_000 });
 }
 
 // ── ITP Listing ─────────────────────────────────────────────

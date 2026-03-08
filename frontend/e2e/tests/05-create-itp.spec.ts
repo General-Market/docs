@@ -1,5 +1,5 @@
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
-import { connectWalletButton, itpCard } from '../helpers/selectors';
+import { ensureWalletConnected, itpCard } from '../helpers/selectors';
 import {
   getItpStateL3,
   getItpCountL3,
@@ -16,12 +16,7 @@ test.describe('Create ITP', () => {
 
     try {
       // 1. Connect wallet
-      const connectBtn = connectWalletButton(page);
-      await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-      await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
+      await ensureWalletConnected(page, TEST_ADDRESS);
 
       // 2. Wait for page to fully load (ITP listing may be empty on fresh testnet)
       await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });

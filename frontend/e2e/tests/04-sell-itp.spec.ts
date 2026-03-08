@@ -1,6 +1,6 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
 import {
-  connectWalletButton,
+  ensureWalletConnected,
   sellButton,
   sellModal,
   itpCard,
@@ -12,12 +12,7 @@ test.describe('Sell ITP', () => {
     test.setTimeout(240_000); // 4 min — issuer consensus can take 30-90s
 
     // 1. Connect wallet
-    const connectBtn = connectWalletButton(page);
-    await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-    await connectBtn.click();
-    await page.mouse.move(0, 0);
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
+    await ensureWalletConnected(page, TEST_ADDRESS);
 
     // 2. Wait for ITP listing
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });

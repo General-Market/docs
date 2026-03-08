@@ -95,9 +95,8 @@ export function getInjectWalletScript(
           return [ADDRESS];
 
         case 'eth_accounts':
-          // Only return address if user has explicitly connected
-          // (prevents wagmi auto-connect on page load)
-          return window.__mockWalletConnected ? [ADDRESS] : [];
+          // Always return address — mock wallet is pre-authorized
+          return [ADDRESS];
 
         case 'eth_chainId':
           return currentChainIdHex;
@@ -198,6 +197,13 @@ export function getInjectWalletScript(
   window.addEventListener('eip6963:requestProvider', () => {
     window.dispatchEvent(announceEvent);
   });
+
+  // Emit EIP-1193 connect + accountsChanged events after a delay
+  // so wagmi detects the pre-connected wallet state.
+  setTimeout(() => {
+    emit('connect', { chainId: CHAIN_ID });
+    emit('accountsChanged', [ADDRESS]);
+  }, 100);
 })();
 `;
 }

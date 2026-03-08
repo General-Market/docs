@@ -1,5 +1,5 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
-import { connectWalletButton, buyButton, buyModal, itpCard } from '../helpers/selectors';
+import { ensureWalletConnected, buyButton, buyModal, itpCard } from '../helpers/selectors';
 import { getL3UserShares, getItpStateL3, getOrder } from '../helpers/backend-api';
 
 test.describe('Buy ITP', () => {
@@ -7,12 +7,7 @@ test.describe('Buy ITP', () => {
     test.setTimeout(300_000); // 5 min — issuer consensus can take 30-90s, parallel load slows it further
 
     // 1. Connect wallet
-    const connectBtn = connectWalletButton(page);
-    await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-    await connectBtn.click();
-    await page.mouse.move(0, 0);
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
+    await ensureWalletConnected(page, TEST_ADDRESS);
 
     // 2. Wait for ITP listing to load
     await expect(itpCard(page).first()).toBeVisible({ timeout: 30_000 });

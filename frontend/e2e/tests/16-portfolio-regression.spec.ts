@@ -11,7 +11,7 @@
  */
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet'
 import {
-  connectWalletButton,
+  ensureWalletConnected,
   itpCard,
 } from '../helpers/selectors'
 import { getL3UserShares, getL3UsdcBalance } from '../helpers/backend-api'
@@ -82,17 +82,7 @@ test.describe('USDC Balance Consistency', () => {
   test('header and portfolio show same USDC balance', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Connect wallet — skip gracefully if button not found (timing/hydration issue)
-    const connectBtn = connectWalletButton(page)
-    const hasConnectBtn = await connectBtn.isVisible({ timeout: 20_000 }).catch(() => false)
-    if (!hasConnectBtn) {
-      test.skip(true, 'Connect Wallet button not visible — page may not have hydrated')
-      return
-    }
-    await connectBtn.click()
-    await page.mouse.move(0, 0)
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 })
+    await ensureWalletConnected(page, TEST_ADDRESS)
 
     // Wait for page data to load
     await page.waitForTimeout(5_000)
@@ -138,17 +128,7 @@ test.describe('Portfolio Totals', () => {
   test('Total Value includes USDC balance (not zero when holding USDC)', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Connect wallet — skip gracefully if button not found
-    const connectBtn = connectWalletButton(page)
-    const hasConnectBtn = await connectBtn.isVisible({ timeout: 30_000 }).catch(() => false)
-    if (!hasConnectBtn) {
-      test.skip(true, 'Connect Wallet button not visible — page may not have hydrated')
-      return
-    }
-    await connectBtn.click()
-    await page.mouse.move(0, 0)
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 })
+    await ensureWalletConnected(page, TEST_ADDRESS)
 
     // Verify user has USDC on-chain
     const l3Usdc = await getL3UsdcBalance(TEST_ADDRESS)

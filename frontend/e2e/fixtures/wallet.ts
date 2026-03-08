@@ -112,19 +112,48 @@ export const test = base.extend<{ walletPage: Page }>({
     const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, TEST_ADDRESS, RPC_URL, SETTLEMENT_CHAIN_ID);
     await context.addInitScript({ content: script });
 
+    // Seed wagmi localStorage so it auto-reconnects on page load.
+    // Without this, wagmi v2 in App Router won't auto-connect on a fresh browser context.
+    const wagmiState = JSON.stringify({
+      state: {
+        connections: {
+          __type: 'Map',
+          value: [
+            [
+              'injected',
+              {
+                accounts: [TEST_ADDRESS.toLowerCase() as `0x${string}`],
+                chainId: CHAIN_ID,
+                connector: { id: 'injected', name: 'Injected', type: 'injected', uid: 'injected' },
+              },
+            ],
+          ],
+        },
+        chainId: CHAIN_ID,
+        current: 'injected',
+      },
+      version: 3,
+    });
+    await context.addInitScript({ content: `localStorage.setItem('wagmi.store', ${JSON.stringify(wagmiState)});` });
+
     // Intercept backend API calls that may 404 on stale binary
     await installApiInterceptors(page);
 
     // Navigate to trigger the init script
     const startUrl = `${FRONTEND_URL}/index`;
-    await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 }).catch(() => {
-      return page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+    await page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 }).catch(() => {
+      return page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 })
     });
 
-    // Wait for React hydration
+    // Wait for React hydration — App Router doesn't use __NEXT_DATA__.props.
+    // Instead, check for React fiber keys on DOM elements (proves React has hydrated).
     await page.waitForFunction(
-      () => !!(window as any).__NEXT_DATA__?.props,
-      { timeout: 15_000 }
+      () => {
+        const btn = document.querySelector('button');
+        if (!btn) return false;
+        return Object.keys(btn).some(k => k.startsWith('__reactFiber') || k.startsWith('__reactProps'));
+      },
+      { timeout: 30_000 }
     ).catch(() => {});
     // Extra buffer for wagmi connector initialization
     await page.waitForTimeout(2_000);
