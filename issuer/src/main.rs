@@ -987,14 +987,6 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // L3-native — spawn if not already running
-                    {
-                        let la = l3_active.load(Ordering::Acquire);
-                        let has_orch = bridge_orchestrator_for_task.is_some();
-                        let has_proto = consensus_protocol_for_task.is_some();
-                        if current_cycle % 60 == 0 {
-                            info!(cycle = current_cycle, l3_active = la, has_orch, has_proto, "L3-native spawn check");
-                        }
-                    }
                     if !l3_active.load(Ordering::Acquire) {
                         if let (Some(ref orchestrator), Some(ref protocol)) =
                             (&bridge_orchestrator_for_task, &consensus_protocol_for_task)
@@ -2842,25 +2834,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    // Guard: Skip L3-native PENDING processing when bridge orders are in pre-submission
-    // states (Pending/BridgedToL3 for buys, SellPending for sells). These orders don't
-    // have L3 order IDs mapped yet, so the step 2 filter can't catch them.
-    // Once orders reach SubmittedOnL3 or later, they have L3 IDs in order_mappings and
-    // get filtered by get_all_tracked_l3_order_ids() at step 2.
-    // NOTE: This guard only blocks PENDING order processing, NOT BATCHED fills.
-    // BATCHED fills are safe to process regardless of bridge activity because the orders
-    // are already submitted on-chain and confirmFills is idempotent.
-    let skip_pending = {
-        let orch = orchestrator.read().await;
-        orch.has_unmapped_bridge_orders().await
-    };
-
-    if skip_pending {
-        info!(
-            cycle = current_cycle,
-            "Skipping L3-native PENDING processing: unmapped bridge orders in-flight"
-        );
-    } else {
+    // Note: The old has_unmapped_bridge_orders() guard was removed because:
+    // 1. Bridge orders in Pending/BridgedToL3 state don't have L3 counterparts on-chain yet,
+    //    so get_pending_orders() won't see them anyway.
+    // 2. Once they reach SubmittedOnL3, they have L3 IDs in order_mappings and step 2 filters them.
+    // 3. The guard caused permanent blocking when bridge orders got stuck at Pending status.
+    {
 
     // 1. Fetch all pending orders from L3
     let pending_orders = match chain_reader.get_pending_orders().await {
@@ -3070,7 +3049,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         }
     }
     } // end if !l3_native_orders.is_empty()
-    } // end if !skip_pending
+    } // end pending orders block
 
     // Also process orders that are already BATCHED but not yet FILLED
     // (e.g., batched by regular consensus which doesn't handle fills)
