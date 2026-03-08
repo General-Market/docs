@@ -3,6 +3,15 @@
 import { useState } from 'react'
 import { useExplorerHealth, type TimeRange } from '@/hooks/useExplorerHealth'
 import { ExplorerSummaryBar } from '@/components/domain/explorer/ExplorerSummaryBar'
+import { ConsensusSection } from '@/components/domain/explorer/ConsensusSection'
+import { OrdersSection } from '@/components/domain/explorer/OrdersSection'
+import { PriceFeedSection } from '@/components/domain/explorer/PriceFeedSection'
+import { P2PSection } from '@/components/domain/explorer/P2PSection'
+import { CycleSection } from '@/components/domain/explorer/CycleSection'
+import { ITPSection } from '@/components/domain/explorer/ITPSection'
+import { VisionSection } from '@/components/domain/explorer/VisionSection'
+import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSection'
+import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 
 const TABS = [
   { id: 'consensus', label: 'Consensus' },
@@ -86,28 +95,17 @@ export default function ExplorerPageClient() {
         )}
 
         <div className="py-6 pb-16">
-          <SectionPlaceholder tab={activeTab} snapshots={snapshots} latest={latest} loading={loading} />
+          {activeTab === 'consensus' && <ConsensusSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'orders' && <OrdersSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'prices' && <PriceFeedSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'p2p' && <P2PSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'cycles' && <CycleSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'itp' && <ITPSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'vision' && <VisionSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'health' && <SystemHealthSection snapshots={snapshots} latest={latest} loading={loading} />}
+          {activeTab === 'chain' && <ChainGasSection snapshots={snapshots} latest={latest} loading={loading} />}
         </div>
       </div>
     </main>
-  )
-}
-
-// Placeholder — will be replaced by real section components in Task 9
-function SectionPlaceholder({ tab, snapshots, latest, loading }: {
-  tab: string
-  snapshots: any[]
-  latest: any
-  loading: boolean
-}) {
-  return (
-    <div className="bg-white border border-border-light rounded-card p-8 text-center">
-      <p className="text-[14px] font-semibold text-text-muted">
-        {tab.charAt(0).toUpperCase() + tab.slice(1)} section — {snapshots.length} data points loaded
-      </p>
-      <p className="text-[12px] text-text-muted mt-1">
-        Charts will be implemented in Task 9
-      </p>
-    </div>
   )
 }
