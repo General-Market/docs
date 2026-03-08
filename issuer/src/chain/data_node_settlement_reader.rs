@@ -188,7 +188,7 @@ impl SettlementReader for DataNodeSettlementReader {
         _from_block: u64,
         _to_block: u64,
     ) -> Result<Vec<CrossChainOrderEvent>, SettlementReaderError> {
-        // Events come via SSE; no block-range HTTP endpoint yet
+        // Events are fetched as full orders via get_confirmed_cross_chain_orders
         Ok(vec![])
     }
 
@@ -196,28 +196,46 @@ impl SettlementReader for DataNodeSettlementReader {
         &self,
         order_id: U256,
     ) -> Result<Option<CrossChainOrderData>, SettlementReaderError> {
-        let path = format!("/chain/settlement/cross-chain-order/{}", order_id);
-        match self.get_json::<CrossChainOrderData>(&path).await {
-            Ok(data) => {
-                if data.user == Address::zero() {
-                    Ok(None)
-                } else {
-                    Ok(Some(data))
+        // Look in cached orders from data-node
+        let all_orders: Vec<serde_json::Value> = self
+            .get_json("/chain/settlement/cross-chain-orders")
+            .await?;
+        for val in all_orders {
+            if let Ok(order) = serde_json::from_value::<CrossChainOrder>(val) {
+                if order.order_id == order_id {
+                    return Ok(Some(CrossChainOrderData {
+                        itp_id: order.itp_id,
+                        user: order.user,
+                        amount: order.amount,
+                        limit_price: order.limit_price,
+                        slippage_tier: order.slippage_tier,
+                        deadline: order.deadline,
+                        created_at: order.created_at,
+                    }));
                 }
             }
-            Err(SettlementReaderError::ProviderError(msg)) if msg.contains("404") => Ok(None),
-            Err(e) => Err(e),
         }
+        Ok(None)
     }
 
     async fn get_confirmed_cross_chain_orders(
         &self,
-        _from_block: u64,
-        _to_block: u64,
+        from_block: u64,
+        to_block: u64,
     ) -> Result<Vec<CrossChainOrder>, SettlementReaderError> {
-        // Cross-chain orders come via SSE events; the issuer's main loop
-        // will receive them through the event stream and process individually.
-        Ok(vec![])
+        let path = format!(
+            "/chain/settlement/cross-chain-orders?from={}&to={}",
+            from_block, to_block
+        );
+        let values: Vec<serde_json::Value> = self.get_json(&path).await?;
+        let mut orders = Vec::new();
+        for val in values {
+            match serde_json::from_value::<CrossChainOrder>(val) {
+                Ok(order) => orders.push(order),
+                Err(e) => warn!("Failed to parse cross-chain order: {}", e),
+            }
+        }
+        Ok(orders)
     }
 
     async fn mark_order_processed(&self, chain_id: u64, order_id: U256) {
@@ -254,11 +272,22 @@ impl SettlementReader for DataNodeSettlementReader {
 
     async fn get_confirmed_cross_chain_sell_orders(
         &self,
-        _from_block: u64,
-        _to_block: u64,
+        from_block: u64,
+        to_block: u64,
     ) -> Result<Vec<CrossChainSellOrderEvent>, SettlementReaderError> {
-        // Sell orders come via SSE events
-        Ok(vec![])
+        let path = format!(
+            "/chain/settlement/cross-chain-sell-orders?from={}&to={}",
+            from_block, to_block
+        );
+        let values: Vec<serde_json::Value> = self.get_json(&path).await?;
+        let mut orders = Vec::new();
+        for val in values {
+            match serde_json::from_value::<CrossChainSellOrderEvent>(val) {
+                Ok(order) => orders.push(order),
+                Err(e) => warn!("Failed to parse cross-chain sell order: {}", e),
+            }
+        }
+        Ok(orders)
     }
 
     async fn mark_sell_order_processed(&self, chain_id: u64, order_id: U256) {

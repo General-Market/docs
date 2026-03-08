@@ -411,6 +411,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/chain/settlement/pending-creations", get(chain_settlement_pending_creations))
         .route("/chain/settlement/is-pending/:nonce", get(chain_settlement_is_pending))
         .route("/chain/settlement/next-nonce", get(chain_settlement_next_nonce))
+        .route("/chain/settlement/cross-chain-orders", get(chain_settlement_cross_chain_orders))
+        .route("/chain/settlement/cross-chain-sell-orders", get(chain_settlement_cross_chain_sell_orders))
         .layer(CompressionLayer::new())
         .layer(cors)
         .with_state(state)
@@ -6800,4 +6802,38 @@ async fn chain_settlement_next_nonce(
         .settlement_next_nonce
         .load(std::sync::atomic::Ordering::Relaxed);
     Json(serde_json::json!({ "next_nonce": nonce }))
+}
+
+async fn chain_settlement_cross_chain_orders(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<Vec<serde_json::Value>> {
+    let data = state.chain_cache.cross_chain_buy_orders.read().await;
+    let from_block = params.get("from").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+    let to_block = params.get("to").and_then(|s| s.parse::<u64>().ok()).unwrap_or(u64::MAX);
+    let filtered: Vec<_> = data.iter()
+        .filter(|v| {
+            let bn = v.get("block_number").and_then(|n| n.as_u64()).unwrap_or(0);
+            bn >= from_block && bn <= to_block
+        })
+        .cloned()
+        .collect();
+    Json(filtered)
+}
+
+async fn chain_settlement_cross_chain_sell_orders(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<Vec<serde_json::Value>> {
+    let data = state.chain_cache.cross_chain_sell_orders.read().await;
+    let from_block = params.get("from").and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
+    let to_block = params.get("to").and_then(|s| s.parse::<u64>().ok()).unwrap_or(u64::MAX);
+    let filtered: Vec<_> = data.iter()
+        .filter(|v| {
+            let bn = v.get("block_number").and_then(|n| n.as_u64()).unwrap_or(0);
+            bn >= from_block && bn <= to_block
+        })
+        .cloned()
+        .collect();
+    Json(filtered)
 }

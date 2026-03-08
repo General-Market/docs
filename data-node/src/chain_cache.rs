@@ -174,6 +174,11 @@ pub struct ChainCache {
     pub pending_creations: RwLock<Vec<serde_json::Value>>,
     pub pending_creations_gen: Generation,
     pub settlement_next_nonce: AtomicU64,
+    // Cross-chain orders (recent events from SettlementBridgeCustody)
+    pub cross_chain_buy_orders: RwLock<Vec<serde_json::Value>>,
+    pub cross_chain_buy_orders_gen: Generation,
+    pub cross_chain_sell_orders: RwLock<Vec<serde_json::Value>>,
+    pub cross_chain_sell_orders_gen: Generation,
 }
 
 impl ChainCache {
@@ -206,6 +211,10 @@ impl ChainCache {
             pending_creations: RwLock::new(Vec::new()),
             pending_creations_gen: Generation::default(),
             settlement_next_nonce: AtomicU64::new(0),
+            cross_chain_buy_orders: RwLock::new(Vec::new()),
+            cross_chain_buy_orders_gen: Generation::default(),
+            cross_chain_sell_orders: RwLock::new(Vec::new()),
+            cross_chain_sell_orders_gen: Generation::default(),
         }
     }
 

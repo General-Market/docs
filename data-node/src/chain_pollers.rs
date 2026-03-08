@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use ethers::prelude::*;
 use tracing::warn;
+use common::types::{CrossChainOrder, CrossChainSellOrderEvent, ItpCreationRequest};
 use crate::api::AppState;
 use crate::chain_cache::{
     NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
@@ -83,8 +84,18 @@ abigen!(
     BridgeProxySettlementReader,
     r#"[
         function nextCreationNonce() external view returns (uint256)
-        function isPendingCreation(uint256 nonce) external view returns (bool)
-        function pendingCreations(uint256 nonce) external view returns (address admin, string name, string symbol, uint256[] weights, address[] assets)
+        function isPending(uint256 nonce) external view returns (bool)
+        function getPendingCreation(uint256 nonce) external view returns (address admin, string name, string symbol, uint256[] weights, address[] assets, uint256[] prices, uint64 createdAt, bool completed)
+    ]"#
+);
+
+abigen!(
+    SettlementCustodyReader,
+    r#"[
+        function getCrossChainOrder(uint256 orderId) external view returns (bytes32 itpId, address user, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, uint256 createdAt)
+        function getCrossChainSellOrder(uint256 orderId) external view returns (bytes32 itpId, address user, address bridgedItpAddress, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, uint256 createdAt)
+        event CrossChainOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, uint256 amount)
+        event CrossChainSellOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, address bridgedItpAddress, uint256 amount)
     ]"#
 );
 
@@ -799,23 +810,33 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     // Scan all nonces for pending creations
     let mut pending = Vec::new();
     for nonce in 0..next_nonce {
-        let is_pending = match bridge.is_pending_creation(U256::from(nonce)).call().await {
+        let is_pending = match bridge.is_pending(U256::from(nonce)).call().await {
             Ok(p) => p,
             Err(_) => continue,
         };
         if !is_pending {
             continue;
         }
-        match bridge.pending_creations(U256::from(nonce)).call().await {
-            Ok((admin, name, symbol, weights, assets)) => {
-                pending.push(serde_json::json!({
-                    "nonce": nonce,
-                    "admin": format!("{:?}", admin),
-                    "name": name,
-                    "symbol": symbol,
-                    "weights": weights.iter().map(|w| w.to_string()).collect::<Vec<_>>(),
-                    "assets": assets.iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>(),
-                }));
+        match bridge.get_pending_creation(U256::from(nonce)).call().await {
+            Ok((admin, name, symbol, weights, assets, prices, _created_at, completed)) => {
+                if completed || admin.is_zero() {
+                    continue;
+                }
+                let req = ItpCreationRequest {
+                    admin,
+                    nonce: U256::from(nonce),
+                    name,
+                    symbol,
+                    weights,
+                    assets,
+                    prices,
+                    block_number: 0, // Not available from view call
+                    tx_hash: H256::zero(),
+                };
+                match serde_json::to_value(&req) {
+                    Ok(val) => pending.push(val),
+                    Err(e) => warn!(nonce, %e, "Failed to serialize pending creation"),
+                }
             }
             Err(e) => {
                 warn!(nonce, %e, "Failed to read pending creation");
@@ -826,5 +847,82 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     let mut cache = state.chain_cache.pending_creations.write().await;
     *cache = pending;
     state.chain_cache.pending_creations_gen.bump();
+
+    // ── Cross-chain order event scanning ─────────────────────────────
+    let custody_addr = crate::api::deployment_addr(&state.deployment, "SettlementBridgeCustody")
+        .unwrap_or_default();
+    if !custody_addr.is_zero() && confirmed > 0 {
+        let custody = SettlementCustodyReader::new(custody_addr, Arc::clone(&state.settlement_provider));
+        let from_block = confirmed.saturating_sub(10000);
+
+        // Scan CrossChainOrderCreated events
+        let buy_filter = custody.cross_chain_order_created_filter()
+            .from_block(from_block)
+            .to_block(confirmed);
+        let buy_events = buy_filter.query_with_meta().await.unwrap_or_default();
+
+        let chain_id = state.settlement_provider.get_chainid().await.unwrap_or_default().as_u64();
+        let mut buy_orders = Vec::new();
+        for (event, meta) in &buy_events {
+            // Enrich with full order data via view call
+            match custody.get_cross_chain_order(event.order_id).call().await {
+                Ok((itp_id, user, amount, limit_price, slippage_tier, deadline, created_at)) => {
+                    if user.is_zero() {
+                        continue;
+                    }
+                    let order = CrossChainOrder {
+                        order_id: event.order_id,
+                        itp_id: H256::from(itp_id),
+                        user,
+                        amount,
+                        limit_price,
+                        slippage_tier: slippage_tier.as_u64() as u8,
+                        deadline,
+                        created_at,
+                        chain_id,
+                        block_number: meta.block_number.as_u64(),
+                        tx_hash: meta.transaction_hash,
+                    };
+                    if let Ok(val) = serde_json::to_value(&order) {
+                        buy_orders.push(val);
+                    }
+                }
+                Err(e) => {
+                    warn!(order_id = %event.order_id, %e, "Failed to read cross-chain order");
+                }
+            }
+        }
+
+        let mut buy_cache = state.chain_cache.cross_chain_buy_orders.write().await;
+        *buy_cache = buy_orders;
+        state.chain_cache.cross_chain_buy_orders_gen.bump();
+
+        // Scan CrossChainSellOrderCreated events
+        let sell_filter = custody.cross_chain_sell_order_created_filter()
+            .from_block(from_block)
+            .to_block(confirmed);
+        let sell_events = sell_filter.query_with_meta().await.unwrap_or_default();
+
+        let mut sell_orders = Vec::new();
+        for (event, meta) in &sell_events {
+            let sell_event = CrossChainSellOrderEvent {
+                order_id: event.order_id,
+                itp_id: H256::from(event.itp_id),
+                user: event.user,
+                bridged_itp_address: event.bridged_itp_address,
+                amount: event.amount,
+                block_number: meta.block_number.as_u64(),
+                tx_hash: meta.transaction_hash,
+            };
+            if let Ok(val) = serde_json::to_value(&sell_event) {
+                sell_orders.push(val);
+            }
+        }
+
+        let mut sell_cache = state.chain_cache.cross_chain_sell_orders.write().await;
+        *sell_cache = sell_orders;
+        state.chain_cache.cross_chain_sell_orders_gen.bump();
+    }
+
     Ok(())
 }
