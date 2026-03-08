@@ -1089,27 +1089,21 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Signal CycleManager: check if any order-processing task is still running.
-                    // Exclude price_active — price consensus is fire-and-forget, doesn't
-                    // need WorkDriven cycle acceleration (which causes rapid cycle overlap).
-                    let has_spawned = buy_active.load(Ordering::Acquire)
-                        || bridge_buy_post_active.load(Ordering::Acquire)
-                        || sell_active.load(Ordering::Acquire)
-                        || l3_active.load(Ordering::Acquire)
-                        || itp_active.load(Ordering::Acquire)
-                        || rebalance_active.load(Ordering::Acquire)
-                        || mirror_sync_active.load(Ordering::Acquire);
-                    // Non-blocking: use try_read() to avoid deadlocking the main loop
-                    // if a spawned task holds the orchestrator write lock.
-                    let has_pending = has_spawned || if let Some(ref orch) = bridge_orchestrator_for_task {
+                    // Signal CycleManager: only trigger WorkDriven when bridge has
+                    // in-flight orders. Active task flags (l3_active, buy_active, etc.)
+                    // must NOT trigger WorkDriven — they cause a feedback loop where
+                    // running tasks → work signal → cycle advance → re-check → still running
+                    // → work signal → ... causing rapid cycle divergence across issuers
+                    // and 0-signature consensus failures.
+                    let has_bridge_work = if let Some(ref orch) = bridge_orchestrator_for_task {
                         match orch.try_read() {
                             Ok(o) => o.has_in_flight_orders().await,
-                            Err(_) => true, // write lock held by spawned task → assume work pending
+                            Err(_) => false, // write lock held → don't trigger extra cycles
                         }
                     } else {
                         false
                     };
-                    let _ = work_tx_for_task.try_send(has_pending);
+                    let _ = work_tx_for_task.try_send(has_bridge_work);
                 } else {
                     // Mock consensus
                     run_mock_consensus(
