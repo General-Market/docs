@@ -1,2 +1,5 @@
 export { ExplorerChartCard } from './ExplorerChartCard'
 export { ExplorerSummaryBar } from './ExplorerSummaryBar'
+export { ConsensusSection } from './ConsensusSection'
+export { OrdersSection } from './OrdersSection'
+export { PriceFeedSection } from './PriceFeedSection'
