@@ -1994,20 +1994,40 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     ).await {
                                         Ok(mint_result) => {
                                             info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
-                                            // Leader executes the Settlement transaction
+                                            // Only LEADER marks SharesBridged after confirmed receipt
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                 match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
-                                                        info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Settlement");
+                                                        info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted, waiting for receipt");
+                                                        const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                        match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                            Ok(receipt) => {
+                                                                let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                                if success {
+                                                                    info!(?tx_hash, "mintBridgedShares CONFIRMED");
+                                                                    let orch = orchestrator.write().await;
+                                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                                } else {
+                                                                    warn!(?tx_hash, "mintBridgedShares REVERTED — order stays Batched for retry");
+                                                                }
+                                                            }
+                                                            Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout — stays Batched for retry"),
+                                                        }
                                                     }
-                                                    Err(e) => warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares tx failed"),
+                                                    Err(e) => {
+                                                        let err_str = format!("{}", e);
+                                                        if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
+                                                            info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
+                                                            let orch = orchestrator.write().await;
+                                                            orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                        } else {
+                                                            warn!(error = %e, user = ?mapping.original_user, "mintBridgedShares failed — stays Batched");
+                                                        }
+                                                    }
                                                 }
                                             }
-                                            // All nodes mark order as SharesBridged after consensus completes
-                                            // (not just leader — otherwise followers keep orders in Batched
-                                            // status forever, permanently blocking L3-native PENDING processing)
-                                            let orch = orchestrator.write().await;
-                                            orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                            // Followers do NOT mark SharesBridged. They stay at Batched.
+                                            // With on-chain replay protection (Task 6), watchdog retry is safe and idempotent.
                                         }
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }
@@ -2145,14 +2165,35 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                 if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                     match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
-                                                            info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
+                                                            info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (E021), waiting for receipt");
+                                                            const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                            match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                                Ok(receipt) => {
+                                                                    let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                                    if success {
+                                                                        info!(?tx_hash, "mintBridgedShares CONFIRMED (E021)");
+                                                                        let orch = orchestrator.write().await;
+                                                                        orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                                    } else {
+                                                                        warn!(?tx_hash, "mintBridgedShares REVERTED (E021) — stays Batched");
+                                                                    }
+                                                                }
+                                                                Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (E021) — stays Batched"),
+                                                            }
                                                         }
-                                                        Err(e) => warn!(error = %e, "mintBridgedShares tx failed (E021 path)"),
+                                                        Err(e) => {
+                                                            let err_str = format!("{}", e);
+                                                            if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
+                                                                info!(order_id = %settlement_id, "mintBridgedShares already processed (E021) — marking SharesBridged");
+                                                                let orch = orchestrator.write().await;
+                                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                            } else {
+                                                                warn!(error = %e, "mintBridgedShares failed (E021) — stays Batched");
+                                                            }
+                                                        }
                                                     }
                                                 }
-                                                // All nodes mark order as SharesBridged
-                                                let orch = orchestrator.write().await;
-                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                // Followers do NOT mark SharesBridged (E021 path)
                                             }
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
                                         }
@@ -2194,14 +2235,35 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                         match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
-                                                                info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
+                                                                info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (already-filled), waiting for receipt");
+                                                                const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                                match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                                    Ok(receipt) => {
+                                                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                                        if success {
+                                                                            info!(?tx_hash, "mintBridgedShares CONFIRMED (already-filled)");
+                                                                            let orch = orchestrator.write().await;
+                                                                            orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                                        } else {
+                                                                            warn!(?tx_hash, "mintBridgedShares REVERTED (already-filled) — stays Batched");
+                                                                        }
+                                                                    }
+                                                                    Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (already-filled) — stays Batched"),
+                                                                }
                                                             }
-                                                            Err(e) => warn!(error = %e, "mintBridgedShares tx failed (already-filled path)"),
+                                                            Err(e) => {
+                                                                let err_str = format!("{}", e);
+                                                                if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
+                                                                    info!(order_id = %settlement_id, "mintBridgedShares already processed (already-filled) — marking SharesBridged");
+                                                                    let orch = orchestrator.write().await;
+                                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                                } else {
+                                                                    warn!(error = %e, "mintBridgedShares failed (already-filled) — stays Batched");
+                                                                }
+                                                            }
                                                         }
                                                     }
-                                                    // All nodes mark order as SharesBridged
-                                                    let orch = orchestrator.write().await;
-                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
+                                                    // Followers do NOT mark SharesBridged (already-filled path)
                                                 }
                                                 Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
                                             }
