@@ -211,7 +211,7 @@ impl BridgeOrchestrator {
             asset_trades_sigs: SignatureCollectionManager::new("asset_trades"),
             confirmed_asset_trades: RwLock::new(HashMap::new()),
             watchdog: RwLock::new(super::watchdog::StaleOrderWatchdog::new(
-                Duration::from_secs(10),
+                Duration::from_secs(300), // 5 min — must exceed receipt-wait pipeline (60s CBO + 60s mint = 120s+)
             )),
             sell_order_status: RwLock::new(HashMap::new()),
             processed_sell_orders: RwLock::new(HashMap::new()),
