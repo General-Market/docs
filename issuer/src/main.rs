@@ -1882,8 +1882,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 };
 
                 // completeBuyOrder: SettlementBridgeCustody → vault (BLS consensus required)
-                {
+                // Track which orders are confirmed — only confirmed orders proceed to fills
+                let cbo_confirmed_orders: Vec<ethers::types::U256> = {
                     let vault = orchestrator.read().await.config().bitget_vault;
+                    let mut confirmed = Vec::new();
                     for order_id in &submitted_orders {
                         match protocol.run_complete_buy_order_phase(
                             current_cycle, *order_id, vault, batch_am_leader,
@@ -1892,15 +1894,44 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
                                 if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
                                     match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
-                                        Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted"),
-                                        Err(e) => warn!(error = %e, order_id = %order_id, "completeBuyOrder failed"),
+                                        Ok(tx_hash) => {
+                                            info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted, waiting for receipt");
+                                            const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                            match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                Ok(receipt) => {
+                                                    let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                    if success {
+                                                        info!(?tx_hash, order_id = %order_id, "completeBuyOrder CONFIRMED");
+                                                        confirmed.push(*order_id);
+                                                    } else {
+                                                        warn!(?tx_hash, order_id = %order_id, "completeBuyOrder REVERTED — will NOT mint");
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    warn!(order_id = %order_id, error = %e, "completeBuyOrder receipt timeout — will NOT mint");
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            let err_str = format!("{}", e);
+                                            if err_str.contains("E125") || err_str.contains("BuyOrderNotFound") {
+                                                info!(order_id = %order_id, "completeBuyOrder already done (E125) — confirmed");
+                                                confirmed.push(*order_id);
+                                            } else {
+                                                warn!(error = %e, order_id = %order_id, "completeBuyOrder failed — will NOT mint");
+                                            }
+                                        }
                                     }
+                                } else if !batch_am_leader {
+                                    // Followers trust consensus — if consensus succeeded, CBO is confirmed
+                                    confirmed.push(*order_id);
                                 }
                             }
-                            Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed"),
+                            Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed — will NOT mint"),
                         }
                     }
-                }
+                    confirmed
+                };
 
                 // Build fills with L3 order IDs (for BLS hash + on-chain), amounts from Settlement ID lookup
                 // Filter out orders where fill price violates limit (E126 guard)
@@ -1909,6 +1940,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     let o = orchestrator.read().await;
                     let mut fills = Vec::new();
                     for (i, (l3_id, settlement_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                        // Only include orders confirmed by completeBuyOrder
+                        if !cbo_confirmed_orders.contains(settlement_id) {
+                            continue;
+                        }
                         let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                         let amount = o.get_order_amount(settlement_id).await
                             .unwrap_or(ethers::types::U256::exp10(18));
@@ -1930,6 +1965,9 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     fills
                 };
 
+                if cbo_confirmed_orders.is_empty() {
+                    warn!(cycle = current_cycle, "No orders had completeBuyOrder confirmed — skipping fills to prevent unbacked ITP");
+                } else {
                 match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                     Ok(fills_result) => {
                         info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed");
@@ -1995,6 +2033,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     }
                     Err(e) => { warn!(cycle = current_cycle, error = %e, "Fills confirmation failed"); }
                 }
+                } // end cbo_confirmed_orders guard
             }
             Err(e) => {
                 let err_str = format!("{}", e);
@@ -2002,9 +2041,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     // Order was already batched (e.g. by regular consensus). Skip to fills directly.
                     info!(cycle = current_cycle, "Orders already batched (E021), skipping to fills");
 
-                    // E021: completeBuyOrder (may already be done, E125 is benign)
-                    {
+                    // E021 path: completeBuyOrder with receipt gating
+                    let cbo_confirmed_e021: Vec<ethers::types::U256> = {
                         let vault = orchestrator.read().await.config().bitget_vault;
+                        let mut confirmed = Vec::new();
                         for order_id in &submitted_orders {
                             match protocol.run_complete_buy_order_phase(
                                 current_cycle, *order_id, vault, batch_am_leader,
@@ -2013,15 +2053,40 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus (E021 path)");
                                     if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
                                         match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
-                                            Ok(tx_hash) => info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted (E021 path)"),
-                                            Err(e) => info!(error = %e, order_id = %order_id, "completeBuyOrder already done or failed (E021 path)"),
+                                            Ok(tx_hash) => {
+                                                const RECEIPT_TIMEOUT_SECS: u64 = 60;
+                                                match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
+                                                    Ok(receipt) => {
+                                                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                                                        if success {
+                                                            info!(?tx_hash, order_id = %order_id, "completeBuyOrder CONFIRMED (E021)");
+                                                            confirmed.push(*order_id);
+                                                        } else {
+                                                            warn!(?tx_hash, order_id = %order_id, "completeBuyOrder REVERTED (E021) — will NOT mint");
+                                                        }
+                                                    }
+                                                    Err(e) => warn!(order_id = %order_id, error = %e, "completeBuyOrder receipt timeout (E021) — will NOT mint"),
+                                                }
+                                            }
+                                            Err(e) => {
+                                                let err_str = format!("{}", e);
+                                                if err_str.contains("E125") || err_str.contains("BuyOrderNotFound") {
+                                                    info!(order_id = %order_id, "completeBuyOrder already done (E125/E021) — confirmed");
+                                                    confirmed.push(*order_id);
+                                                } else {
+                                                    warn!(error = %e, order_id = %order_id, "completeBuyOrder failed (E021) — will NOT mint");
+                                                }
+                                            }
                                         }
+                                    } else if !batch_am_leader {
+                                        confirmed.push(*order_id);
                                     }
                                 }
-                                Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed (E021 path)"),
+                                Err(e) => warn!(error = %e, order_id = %order_id, "CompleteBuyOrder consensus failed (E021)"),
                             }
                         }
-                    }
+                        confirmed
+                    };
 
                     // E021 fallback: use L3 IDs for fills, Settlement IDs for internal tracking
                     // Uses per-order NAV from prices vector (multi-ITP support)
@@ -2029,6 +2094,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
                         for (i, (l3_id, settlement_id)) in l3_order_ids.iter().zip(submitted_orders.iter()).enumerate() {
+                            // Only include orders confirmed by completeBuyOrder
+                            if !cbo_confirmed_e021.contains(settlement_id) {
+                                continue;
+                            }
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
                             let amount = o.get_order_amount(settlement_id).await
                                 .unwrap_or(ethers::types::U256::exp10(18));
@@ -2041,6 +2110,9 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         fills
                     };
 
+                    if cbo_confirmed_e021.is_empty() {
+                        warn!(cycle = current_cycle, "No orders had completeBuyOrder confirmed (E021) — skipping fills to prevent unbacked ITP");
+                    } else {
                     match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                         Ok(fills_result) => {
                             info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Fills confirmed (after E021 batch skip)");
@@ -2143,6 +2215,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             }
                         }
                     }
+                    } // end cbo_confirmed_e021 guard
                 } else {
                     warn!(cycle = current_cycle, error = %e, "Batch confirmation failed");
                 }
