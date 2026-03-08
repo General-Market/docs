@@ -5,6 +5,7 @@ import { Footer } from '@/components/layout/Footer'
 import { HeroBand } from '@/components/ui/HeroBand'
 import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
+import Image from 'next/image'
 
 const STATS = [
   { label: 'ITPs', value: '42' },
@@ -145,9 +146,13 @@ export default async function AboutPage() {
 
         <div className="border border-border-light">
           <div className="flex items-center gap-6 p-6 md:p-8">
-            <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center text-white text-[20px] font-black shrink-0">
-              M
-            </div>
+            <Image
+              src="/images/max.png"
+              alt="Max"
+              width={56}
+              height={56}
+              className="w-14 h-14 rounded-full object-cover shrink-0"
+            />
             <div>
               <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black">
                 Max

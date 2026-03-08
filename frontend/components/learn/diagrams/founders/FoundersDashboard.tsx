@@ -504,6 +504,26 @@ export function FoundersDashboard() {
         </Section>
       </div>
 
+      <Section title="ATH — Education" accent="#f58231">
+        <Comment>
+          Education composition of founders whose tokens hit ATH each quarter. Bear market ATHs (2022-2023) show higher PhD representation — technical depth outperforms when capital is scarce.
+        </Comment>
+        <ChartBox h="300px">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={athData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }} stackOffset="expand">
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="quarter" tick={{ fontSize: 9, fill: "#999" }} tickLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+              <Tooltip contentStyle={ttStyle} formatter={(v: number) => [`${v}%`, ""]} />
+              <Legend wrapperStyle={{ fontSize: 9 }} iconType="square" />
+              {EDU_LEVELS.map((e) => (
+                <Area key={e} type="monotone" dataKey={e} stackId="1" fill={EDU_COLORS[e]} stroke={EDU_COLORS[e]} fillOpacity={0.7} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </Section>
+
       <div className="border-t-[3px] border-black pt-6 mt-6">
         <div className="text-[16px] font-black text-black mb-2">Tokens That Hit All-Time Low</div>
         <Comment>
@@ -545,6 +565,26 @@ export function FoundersDashboard() {
           </ChartBox>
         </Section>
       </div>
+
+      <Section title="ATL — Education" accent="#e6194b">
+        <Comment>
+          Education composition of founders whose tokens hit ATL. Bear market ATLs show lower PhD representation — projects without strong technical foundations are the first to collapse.
+        </Comment>
+        <ChartBox h="300px">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={atlData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }} stackOffset="expand">
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="quarter" tick={{ fontSize: 9, fill: "#999" }} tickLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+              <Tooltip contentStyle={ttStyle} formatter={(v: number) => [`${v}%`, ""]} />
+              <Legend wrapperStyle={{ fontSize: 9 }} iconType="square" />
+              {EDU_LEVELS.map((e) => (
+                <Area key={e} type="monotone" dataKey={e} stackId="1" fill={EDU_COLORS[e]} stroke={EDU_COLORS[e]} fillOpacity={0.7} />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </Section>
 
       {/* ═══════════════ TGE PERFORMANCE ═══════════════ */}
 
