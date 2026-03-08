@@ -1554,18 +1554,18 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 {
     let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
-        Err(e) => { debug!(cycle = current_cycle, error = %e, "Failed to get confirmed block"); return; }
+        Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to get confirmed block"); return; }
     };
 
     if confirmed_block == 0 {
-        debug!(cycle = current_cycle, "Cross-chain detection: confirmed_block=0, skipping");
+        info!(cycle = current_cycle, "Cross-chain detection: confirmed_block=0, skipping");
         return;
     }
 
     // Use cursor for incremental scanning (fallback: 5000 blocks back on first run ~83 min on Sonic)
     let cursor_val = block_cursor.load(Ordering::Relaxed);
     let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(5000) };
-    debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
+    info!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
         Ok(orders) if !orders.is_empty() => {
@@ -1659,7 +1659,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 let _ = handle.await;
             }
         }
-        Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain orders"); }
+        Ok(_) => { /* no new orders — silent at info level */ }
         Err(e) => {
             warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain orders");
             // Don't advance cursor on error — retry from same block
