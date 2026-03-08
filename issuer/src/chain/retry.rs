@@ -374,7 +374,7 @@ mod tests {
             let count = attempt_count_clone.clone();
             async move {
                 count.fetch_add(1, Ordering::SeqCst);
-                Err::<i32, _>("insufficient funds")
+                Err::<i32, _>("execution reverted")
             }
         })
         .await;
