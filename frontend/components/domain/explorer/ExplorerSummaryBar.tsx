@@ -1,6 +1,14 @@
 'use client'
 
-import type { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
+export interface AggregatedSnapshot {
+  worst_status: 'healthy' | 'degraded' | 'unhealthy'
+  quorum_met: boolean
+  consensus_rounds_total: number
+  consensus_success_total: number
+  avg_consensus_time_ms: number
+  pending_order_count: number
+  total_peers: number
+}
 
 interface ExplorerSummaryBarProps {
   latest: AggregatedSnapshot | null
