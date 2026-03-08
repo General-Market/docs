@@ -265,8 +265,8 @@ contract E2ECrossChainBuyTest is TestHelper {
     }
 
     /// @notice Sign BridgeProxy.mintBridgedShares
-    function _signMintBridgedShares(address bridgeProxAddr, bytes32 _itpId, address user, uint256 amount) internal returns (bytes memory) {
-        bytes32 message = keccak256(abi.encode(block.chainid, bridgeProxAddr, "mintBridgedShares", _itpId, user, amount));
+    function _signMintBridgedShares(address bridgeProxAddr, bytes32 _itpId, address user, uint256 amount, uint256 orderId) internal returns (bytes memory) {
+        bytes32 message = keccak256(abi.encode(block.chainid, bridgeProxAddr, "mintBridgedShares", _itpId, user, amount, orderId));
         return signWithTestIssuers(message);
     }
 
@@ -848,7 +848,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(itpVault.balanceOf(user1), expectedShares, "User should have L3 ITP");
 
         // ====== STEP 8: Mint BridgedITP shares on Settlement ======
-        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares), 3, 7);
+        bridgeProx.mintBridgedShares(itpId, user1, expectedShares, settlementOrderId, _signMintBridgedShares(address(bridgeProx), itpId, user1, expectedShares, settlementOrderId), 3, 7);
 
         // Verify BridgedITP minted
         assertGt(IERC20(bridgedItpAddr).balanceOf(user1), 0, "User should have BridgedITP on Settlement");

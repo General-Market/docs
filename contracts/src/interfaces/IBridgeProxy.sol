@@ -191,6 +191,7 @@ interface IBridgeProxy {
         bytes32 itpId,
         address user,
         uint256 amount,
+        uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -200,11 +201,13 @@ interface IBridgeProxy {
     /// @param itpId The L3 ITP identifier
     /// @param from Address holding the BridgedITP tokens
     /// @param amount Amount of shares to burn (18 decimals)
+    /// @param orderId Settlement order ID for replay protection
     /// @param blsSignature Aggregated BLS signature
     function burnBridgedShares(
         bytes32 itpId,
         address from,
         uint256 amount,
+        uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask

@@ -595,6 +595,8 @@ pub enum P2PMessage {
         itp_id: H256,
         user: Address,
         amount: U256,
+        /// Settlement order ID for replay protection
+        order_id: U256,
         /// Registry snapshot nonce for historical BLS verification
         reference_nonce: u64,
         leader_signature: BLSSignature,

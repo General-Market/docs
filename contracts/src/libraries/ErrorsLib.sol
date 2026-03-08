@@ -803,4 +803,14 @@ library ErrorsLib {
     /// @param orderId The order ID
     /// @param currentStatus The current order status
     error E138_OrderNotCancellable(uint256 orderId, uint256 currentStatus);
+
+    // ============ REPLAY PROTECTION ERRORS ============
+
+    /// @notice E139: Mint already processed for this order
+    /// @param orderId The order that was already processed
+    error E139_MintAlreadyProcessed(uint256 orderId);
+
+    /// @notice E140: Burn already processed for this order
+    /// @param orderId The order that was already processed
+    error E140_BurnAlreadyProcessed(uint256 orderId);
 }

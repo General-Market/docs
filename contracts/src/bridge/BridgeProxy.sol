@@ -69,6 +69,12 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice Pending metadata for ITP creation (nonce => metadata, consumed by completeCreateItp)
     mapping(uint256 => ItpMetadata) private _pendingMetadata;
 
+    /// @notice Replay protection: orderId => already minted
+    mapping(uint256 => bool) public mintProcessed;
+
+    /// @notice Replay protection: orderId => already burned
+    mapping(uint256 => bool) public burnProcessed;
+
     // ============ CONSTRUCTOR ============
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -390,6 +396,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 itpId,
         address user,
         uint256 amount,
+        uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -397,11 +404,14 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        if (mintProcessed[orderId]) revert ErrorsLib.E139_MintAlreadyProcessed(orderId);
 
         bytes32 message = keccak256(abi.encode(
-            block.chainid, address(this), "mintBridgedShares", itpId, user, amount
+            block.chainid, address(this), "mintBridgedShares", itpId, user, amount, orderId
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        mintProcessed[orderId] = true;
 
         IBridgedITP(bridgedItp).mint(user, amount);
 
@@ -417,6 +427,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         bytes32 itpId,
         address from,
         uint256 amount,
+        uint256 orderId,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -424,11 +435,14 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        if (burnProcessed[orderId]) revert ErrorsLib.E140_BurnAlreadyProcessed(orderId);
 
         bytes32 message = keccak256(abi.encode(
-            block.chainid, address(this), "burnBridgedShares", itpId, from, amount
+            block.chainid, address(this), "burnBridgedShares", itpId, from, amount, orderId
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        burnProcessed[orderId] = true;
 
         IBridgedITP(bridgedItp).burn(from, amount);
 

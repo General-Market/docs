@@ -720,6 +720,7 @@ impl ConsensusMessageHandler {
                 itp_id,
                 user,
                 amount,
+                order_id,
                 reference_nonce: _,
                 leader_signature,
             } => {
@@ -737,6 +738,7 @@ impl ConsensusMessageHandler {
                     itp_id,
                     user,
                     amount,
+                    order_id,
                     leader_signature,
                 }
             }
@@ -1501,6 +1503,7 @@ pub enum MessageHandleResult {
         itp_id: H256,
         user: Address,
         amount: U256,
+        order_id: U256,
         leader_signature: P2PBLSSignature,
     },
     ProcessMintBridgedSharesSign {

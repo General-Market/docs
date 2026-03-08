@@ -4627,6 +4627,7 @@ impl BridgeOrchestrator {
         user: Address,
         amount: U256,
         bridge_proxy: Address,
+        order_id: U256,
     ) -> Result<MintBridgedSharesProposal, BridgeError> {
         let message_hash = build_mint_bridged_shares_hash(
             self.config.settlement_chain_id,
@@ -4634,6 +4635,7 @@ impl BridgeOrchestrator {
             itp_id,
             user,
             amount,
+            order_id,
         );
 
         let hash_bytes: [u8; 32] = message_hash.into();
@@ -4649,6 +4651,7 @@ impl BridgeOrchestrator {
             itp_id = ?itp_id,
             user = ?user,
             amount = %amount,
+            order_id = %order_id,
             message_hash = ?message_hash,
             "MintBridgedShares proposal created"
         );
@@ -4659,6 +4662,7 @@ impl BridgeOrchestrator {
             itp_id,
             user,
             amount,
+            order_id,
             leader_signature,
             message_hash,
         })
@@ -4684,6 +4688,7 @@ impl BridgeOrchestrator {
             proposal.itp_id,
             proposal.user,
             proposal.amount,
+            proposal.order_id,
         );
 
         if expected_hash != proposal.message_hash {
@@ -4709,6 +4714,7 @@ impl BridgeOrchestrator {
             itp_id = ?proposal.itp_id,
             user = ?proposal.user,
             amount = %proposal.amount,
+            order_id = %proposal.order_id,
             "MintBridgedShares proposal validation passed"
         );
 
@@ -4727,6 +4733,7 @@ impl BridgeOrchestrator {
             proposal.itp_id,
             proposal.user,
             proposal.amount,
+            proposal.order_id,
         );
 
         if expected_hash != proposal.message_hash {

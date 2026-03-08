@@ -864,6 +864,8 @@ pub struct MintBridgedSharesProposal {
     pub user: Address,
     /// Number of shares to mint (18 decimals)
     pub amount: U256,
+    /// Settlement order ID for replay protection
+    pub order_id: U256,
     /// Leader's BLS signature
     pub leader_signature: BLSSignature,
     /// Message hash that was signed
@@ -925,17 +927,19 @@ pub fn build_mint_bridged_shares_hash(
     itp_id: H256,
     user: Address,
     amount: U256,
+    order_id: U256,
 ) -> H256 {
-    // abi.encode(uint256, address, string, bytes32, address, uint256)
-    // Head: 6 slots (chain_id, address, string_offset, itp_id, user, amount)
+    // abi.encode(uint256, address, string, bytes32, address, uint256, uint256)
+    // Head: 7 slots (chain_id, address, string_offset, itp_id, user, amount, order_id)
     // Tail: string length + padded data for "mintBridgedShares"
-    let hash = AbiEncoder::with_capacity(320)
+    let hash = AbiEncoder::with_capacity(352)
         .u256(U256::from(chain_id))
         .address_padded(bridge_proxy)
-        .u256(U256::from(192)) // string offset (6 * 32)
+        .u256(U256::from(224)) // string offset (7 * 32)
         .h256(itp_id)
         .address_padded(user)
         .u256(amount)
+        .u256(order_id)
         .string_with_length(b"mintBridgedShares")
         .keccak256();
     tracing::debug!(
@@ -944,6 +948,7 @@ pub fn build_mint_bridged_shares_hash(
         itp_id = ?itp_id,
         user = ?user,
         amount = %amount,
+        order_id = %order_id,
         hash = ?hash,
         "build_mint_bridged_shares_hash"
     );
@@ -1002,23 +1007,25 @@ pub fn build_record_collateral_move_calldata(
     data
 }
 
-/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, blsSignature, referenceNonce, signersBitmask)
+/// Build calldata for BridgeProxy.mintBridgedShares(itpId, user, amount, orderId, blsSignature, referenceNonce, signersBitmask)
 pub fn build_mint_bridged_shares_calldata(
     itp_id: H256,
     user: Address,
     amount: U256,
+    order_id: U256,
     bls_signature: &[u8],
     reference_nonce: u64,
     signers_bitmask: U256,
 ) -> Vec<u8> {
-    // mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)
-    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,bytes,uint256,uint256)")[..4];
+    // mintBridgedShares(bytes32,address,uint256,uint256,bytes,uint256,uint256)
+    let selector = &ethers::utils::keccak256("mintBridgedShares(bytes32,address,uint256,uint256,bytes,uint256,uint256)")[..4];
     let mut data = selector.to_vec();
     let tail = AbiEncoder::new()
         .h256(itp_id)
         .address_padded(user)
         .u256(amount)
-        .u256(U256::from(192)) // blsSignature offset (6 * 32)
+        .u256(order_id)
+        .u256(U256::from(224)) // blsSignature offset (7 * 32)
         .u256(U256::from(reference_nonce))
         .u256(signers_bitmask)
         .bytes_with_length(bls_signature)

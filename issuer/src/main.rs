@@ -1952,13 +1952,13 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     };
 
                                     match protocol.run_mint_bridged_shares_phase(
-                                        current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                        current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
                                     ).await {
                                         Ok(mint_result) => {
                                             info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
                                             // Leader executes the Settlement transaction
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted on Settlement");
                                                     }
@@ -2067,11 +2067,11 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         };
 
                                         match protocol.run_mint_bridged_shares_phase(
-                                            current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                            current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
                                         ).await {
                                             Ok(mint_result) => {
                                                 if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                    match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                    match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                         Ok(tx_hash) => {
                                                             info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (E021 path)");
                                                         }
@@ -2116,11 +2116,11 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                             };
 
                                             match protocol.run_mint_bridged_shares_phase(
-                                                current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, batch_am_leader,
+                                                current_cycle, order_itp, mapping.original_user, shares, bridge_proxy, settlement_id, batch_am_leader,
                                             ).await {
                                                 Ok(mint_result) => {
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                        match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                        match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, user = ?mapping.original_user, shares = %shares, "mintBridgedShares tx submitted (already-filled path)");
                                                             }

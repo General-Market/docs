@@ -2524,6 +2524,7 @@ where
                 itp_id,
                 user,
                 amount,
+                order_id,
                 leader_signature,
             } => {
                 debug!(
@@ -2534,7 +2535,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_mint_bridged_shares_proposal(
-                        from, leader_id, msg_cycle, itp_id, user, amount, leader_signature,
+                        from, leader_id, msg_cycle, itp_id, user, amount, order_id, leader_signature,
                     )
                     .await
                 {
@@ -9046,6 +9047,7 @@ where
         user: Address,
         amount: U256,
         bridge_proxy: Address,
+        order_id: U256,
         am_leader: bool,
     ) -> Result<MintBridgedSharesResult, BridgeError> {
         info!(
@@ -9053,6 +9055,7 @@ where
             itp_id = ?itp_id,
             user = ?user,
             amount = %amount,
+            order_id = %order_id,
             am_leader,
             "Starting MintBridgedShares consensus (8-step bridge Step 8)"
         );
@@ -9073,7 +9076,7 @@ where
 
         if am_leader {
             drop(bridge_orch_guard);
-            self.run_mint_bridged_shares_as_leader(cycle_number, itp_id, user, amount, bridge_proxy).await
+            self.run_mint_bridged_shares_as_leader(cycle_number, itp_id, user, amount, bridge_proxy, order_id).await
         } else {
             drop(bridge_orch_guard);
             Ok(MintBridgedSharesResult {
@@ -9091,10 +9094,11 @@ where
         user: Address,
         amount: U256,
         bridge_proxy: Address,
+        order_id: U256,
     ) -> Result<MintBridgedSharesResult, BridgeError> {
         let ref_nonce = self.key_registry.registry_nonce();
 
-        info!(cycle_number, itp_id = ?itp_id, user = ?user, "Leader: Creating MintBridgedShares proposal");
+        info!(cycle_number, itp_id = ?itp_id, user = ?user, order_id = %order_id, "Leader: Creating MintBridgedShares proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
@@ -9105,7 +9109,7 @@ where
 
         let proposal = {
             let orch = bridge_orch.read().await;
-            orch.propose_mint_bridged_shares(cycle_number, itp_id, user, amount, bridge_proxy)?
+            orch.propose_mint_bridged_shares(cycle_number, itp_id, user, amount, bridge_proxy, order_id)?
         };
         let leader_signature = proposal.leader_signature.clone();
 
@@ -9120,6 +9124,7 @@ where
             itp_id,
             user,
             amount,
+            order_id,
             leader_signature: proposal.leader_signature.clone(),
             reference_nonce: ref_nonce,
         };
@@ -9169,9 +9174,10 @@ where
         itp_id: H256,
         user: Address,
         amount: U256,
+        order_id: U256,
         leader_signature: BLSSignature,
     ) -> Result<(), Error> {
-        info!(cycle_number, itp_id = ?itp_id, user = ?user, "Follower: Received MintBridgedShares proposal");
+        info!(cycle_number, itp_id = ?itp_id, user = ?user, order_id = %order_id, "Follower: Received MintBridgedShares proposal");
 
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = match bridge_orch_guard.as_ref() {
@@ -9193,6 +9199,7 @@ where
                 itp_id,
                 user,
                 amount,
+                order_id,
             );
 
             let hash_bytes: [u8; 32] = message_hash.into();
@@ -9231,6 +9238,7 @@ where
             itp_id,
             user,
             amount,
+            order_id,
         );
 
         let hash_bytes: [u8; 32] = message_hash.into();

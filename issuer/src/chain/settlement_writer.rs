@@ -1256,6 +1256,7 @@ impl SettlementChainWriter {
         itp_id: H256,
         user: Address,
         amount: U256,
+        order_id: U256,
         bls_signature: Vec<u8>,
         reference_nonce: u64,
         signers_bitmask: U256,
@@ -1264,12 +1265,13 @@ impl SettlementChainWriter {
             itp_id = ?itp_id,
             user = ?user,
             amount = %amount,
+            order_id = %order_id,
             sig_len = bls_signature.len(),
             "Submitting mintBridgedShares transaction"
         );
 
         let calldata = crate::bridge::build_mint_bridged_shares_calldata(
-            itp_id, user, amount, &bls_signature, reference_nonce, signers_bitmask,
+            itp_id, user, amount, order_id, &bls_signature, reference_nonce, signers_bitmask,
         );
 
         let max_attempts = self.config.retry_config.max_retries + 1;

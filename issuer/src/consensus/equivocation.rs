@@ -717,6 +717,7 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             itp_id,
             user,
             amount,
+            order_id,
             reference_nonce: _, // exclude from equivocation hash
             leader_signature: _, // exclude BLS sig
         } => {
@@ -727,6 +728,8 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(user.as_bytes());
             let mut buf = [0u8; 32];
             amount.to_little_endian(&mut buf);
+            h.update(buf);
+            order_id.to_little_endian(&mut buf);
             h.update(buf);
         }
         P2PMessage::MintBridgedSharesSign {
