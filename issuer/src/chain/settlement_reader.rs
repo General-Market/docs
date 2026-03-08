@@ -649,9 +649,10 @@ impl<M: Middleware> SettlementChainReader<M> {
         for id in 0..max_id {
             let order_id = U256::from(id);
 
-            // Rate-limit between order queries (skip delay on first iteration)
+            // Rate-limit between order queries to avoid public RPC rate limits.
+            // 200ms per pair × 74 orders = ~15s total. 3 issuers concurrent = ~5 req/s each.
             if id > 0 {
-                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                tokio::time::sleep(std::time::Duration::from_millis(200)).await;
             }
 
             // Check buy order: getCrossChainOrder(id)
