@@ -731,6 +731,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // Track last scanned settlement block to avoid re-scanning 10k blocks every poll
         let settlement_buy_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
         let settlement_sell_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        // Grace period: skip bridge processing until P2P mesh is likely established
+        let bridge_ready_after = std::time::Instant::now() + std::time::Duration::from_secs(15);
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -867,7 +869,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     }
 
                     // Settlement tasks — poll every 500ms (reduced from 2s for faster bridge detection)
-                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_millis(500);
+                    // Skip bridge processing during P2P startup grace period (15s)
+                    let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
+                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_millis(500);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
