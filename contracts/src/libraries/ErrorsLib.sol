@@ -813,4 +813,7 @@ library ErrorsLib {
     /// @notice E140: Burn already processed for this order
     /// @param orderId The order that was already processed
     error E140_BurnAlreadyProcessed(uint256 orderId);
+
+    /// @notice E141: Only the settlement custody contract can call this function
+    error E141_OnlyCustody();
 }

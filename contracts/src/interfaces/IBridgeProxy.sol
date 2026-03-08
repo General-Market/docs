@@ -186,6 +186,7 @@ interface IBridgeProxy {
     /// @param itpId The L3 ITP identifier
     /// @param user The user who bought ITP via bridge
     /// @param amount Amount of shares to mint (18 decimals)
+    /// @param orderId Settlement order ID for replay protection
     /// @param blsSignature Aggregated BLS signature
     function mintBridgedShares(
         bytes32 itpId,
@@ -212,6 +213,16 @@ interface IBridgeProxy {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external;
+
+    /// @notice Burn BridgedITP held by custody contract (no BLS, custody-permissioned)
+    /// @param itpId The L3 ITP identifier
+    /// @param from Address holding the tokens (custody contract)
+    /// @param amount Amount of shares to burn
+    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external;
+
+    /// @notice Set the settlement custody contract address
+    /// @param _settlementBridgeCustody Address of the SettlementBridgeCustody contract
+    function setSettlementBridgeCustody(address _settlementBridgeCustody) external;
 
     /// @notice Set the Investment contract address for atomic ITP creation
     /// @param indexContract_ Address of the Investment contract on L3

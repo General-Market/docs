@@ -75,6 +75,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @notice Replay protection: orderId => already burned
     mapping(uint256 => bool) public burnProcessed;
 
+    /// @notice Settlement custody contract (only caller for burnFromCustody)
+    address public settlementBridgeCustody;
+
     // ============ CONSTRUCTOR ============
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -391,6 +394,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     /// @param itpId The L3 ITP identifier
     /// @param user The user who bought ITP via bridge
     /// @param amount Amount of shares to mint (18 decimals)
+    /// @param orderId Settlement order ID for replay protection
     /// @param blsSignature Aggregated BLS signature (empty = skip in testing)
     function mintBridgedShares(
         bytes32 itpId,
@@ -449,6 +453,19 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         emit BridgedSharesBurned(itpId, from, amount);
     }
 
+    /// @notice Burn BridgedITP held by custody contract. No BLS needed — only custody can call.
+    /// @dev Called atomically from SettlementBridgeCustody.completeSellOrder
+    /// @param itpId The L3 ITP identifier
+    /// @param from Address holding the tokens (custody contract)
+    /// @param amount Amount of shares to burn
+    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external {
+        if (msg.sender != settlementBridgeCustody) revert ErrorsLib.E141_OnlyCustody();
+        address bridgedItp = orbitToSettlement[itpId];
+        if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
+        IBridgedITP(bridgedItp).burn(from, amount);
+        emit BridgedSharesBurned(itpId, from, amount);
+    }
+
     // ============ ADMIN FUNCTIONS ============
 
     function setIssuerRegistry(address _issuerRegistry) external override onlyOwner {
@@ -461,6 +478,10 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     function setIndexContract(address indexContract_) external override onlyOwner {
         indexContract = IIndex(indexContract_);
+    }
+
+    function setSettlementBridgeCustody(address _settlementBridgeCustody) external onlyOwner {
+        settlementBridgeCustody = _settlementBridgeCustody;
     }
 
     function pause() external override onlyOwner {

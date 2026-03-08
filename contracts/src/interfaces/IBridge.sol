@@ -260,6 +260,12 @@ interface ISettlementBridgeCustody {
     /// @param orderId The sell order ID
     event SellOrderRefunded(uint256 indexed orderId);
 
+    /// @notice Emitted when BridgedITP burn fails during sell order completion
+    /// @param orderId The sell order ID
+    /// @param itpId The ITP identifier
+    /// @param amount Amount that failed to burn
+    event BurnFailed(uint256 indexed orderId, bytes32 indexed itpId, uint256 amount);
+
     // ============ VISION DEPOSIT/WITHDRAW ============
 
     /// @notice Deposit USDC for Vision on L3 (locks on Settlement, credited on L3)

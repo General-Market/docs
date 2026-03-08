@@ -412,6 +412,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         address user = order.user;
+        bytes32 itpId = order.itpId;
+        uint256 shareAmount = order.amount;
 
         // Delete order before external calls (CEI pattern)
         delete crossChainSellOrders[orderId];
@@ -419,6 +421,15 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         // Transfer USDC proceeds from vault directly to user (6 decimals)
         if (usdcProceeds > 0) {
             usdc.safeTransferFrom(vault, user, usdcProceeds);
+        }
+
+        // Burn escrowed BridgedITP (hygiene — try/catch so payment isn't blocked)
+        if (shareAmount > 0) {
+            try IBridgeProxy(bridgeProxy).burnFromCustody(itpId, address(this), shareAmount) {
+                // burned successfully
+            } catch {
+                emit BurnFailed(orderId, itpId, shareAmount);
+            }
         }
 
         emit SellOrderCompleted(orderId, usdcProceeds);
