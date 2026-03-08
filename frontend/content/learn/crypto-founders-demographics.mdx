@@ -1,18 +1,20 @@
 ---
 title: "Who Built Crypto? Demographics of 4,675 Founders Behind the Top Tokens"
-description: "We analyzed 4,675 founders across 2,741 crypto projects — their ages, nationalities, education, gender, and team composition — and tracked how these demographics shift across market cap tiers and over time."
-keywords: ["crypto founders", "crypto demographics", "crypto founder age", "crypto founder nationality", "crypto team composition", "crypto education"]
+description: "We analyzed 4,675 founders across 2,741 crypto projects — their ages, nationalities, education, gender, and team composition — and tracked how these demographics correlate with token performance from TGE to ATH."
+keywords: ["crypto founders", "crypto demographics", "crypto founder age", "crypto founder nationality", "crypto team composition", "crypto education", "TGE to ATH", "token performance"]
 date: "2026-03-08"
 author: "General Market"
 slug: "crypto-founders-demographics"
 category: "Education"
-readingTime: "12 min read"
+readingTime: "14 min read"
 tldr:
   - "Average founder age in the <strong>Top 100 is 39.7</strong> — and the gap between Top 100 and Top 2000 is less than 1 year"
   - "Gender split is <strong>93% male</strong> across all tiers, with almost no change over 5 years"
   - "American founders dominate at <strong>~25%</strong>, but Chinese and European founders are gaining share in lower tiers"
   - "Founders who launched tokens at age <strong>20-24 reach ATH fastest</strong> (106 days median) vs 180 days for 45-49 year-olds"
-  - "Teams with <strong>mixed nationalities</strong> make up ~15-20% of top projects — the rest are single-nationality teams"
+  - "<strong>Mixed-gender teams</strong> hit 5.3x ATH multiplier vs 2.8x for all-male teams"
+  - "Teams with <strong>10-19 year age spread</strong> achieve the highest ATH multiplier at 5.9x"
+  - "All-PhD teams reach ATH fastest (66 days) but <strong>no-education teams</strong> hit the highest multiplier (3.5x)"
 ---
 
 We built a database of 4,675 founders across 2,741 crypto projects and cross-referenced it with five years of CoinGecko market cap data. Every week from January 2021 to March 2026, we ranked tokens by market cap, matched them to their founders, and computed demographics for the Top 100, Top 500, and Top 2000.
@@ -20,6 +22,8 @@ We built a database of 4,675 founders across 2,741 crypto projects and cross-ref
 The tiers use only validated tokens — "Top 100" means the 100 highest-market-cap tokens that we have confirmed founder data for, not the literal CoinGecko top 100. This ensures every data point represents a real, identified founding team.
 
 All ages are adjusted per snapshot year. Someone listed as 40 in 2026 was 35 in 2021. This matters more than you'd think — without this correction, historical age data is systematically wrong.
+
+<FoundersStats />
 
 ## Average Founder Age
 
@@ -29,11 +33,7 @@ The gap between tiers is surprisingly small — less than one year separating th
 
 Over the five-year period, average age has climbed by about 2.8 years across all tiers. Part of this is biological — founders age — but part reflects the maturation of the space. The projects that dominated in 2021 are still largely the same projects dominating in 2026. New entrants tend to be founded by people in their early 30s, but the top tier is increasingly occupied by veterans who built their projects during the 2017-2020 era.
 
-| Tier | Avg Age | Age Change (2021-2026) | Founders |
-|------|---------|----------------------|----------|
-| Top 100 | 39.7 | +2.8 | 198 |
-| Top 500 | 39.3 | +2.7 | 947 |
-| Top 2000 | 38.8 | +2.8 | 2,143 |
+<FoundersAgeTimeline />
 
 The age distribution isn't normal. There's a heavy concentration in the 30-40 range and a surprisingly long tail above 50. Several Top 100 projects were founded by people in their 50s and 60s — mostly in infrastructure and DeFi protocols.
 
@@ -89,16 +89,12 @@ Education data is the noisiest in our dataset — many founders don't publicly d
 
 PhD holders are overrepresented in the Top 100 relative to the broader market. Protocol-layer founders — the people who designed consensus mechanisms, zero-knowledge systems, and novel cryptographic primitives — disproportionately hold advanced degrees. MIT, Stanford, and ETH Zurich appear most frequently among top university matches.
 
-The education gap between tiers is modest. The Top 100 has slightly more PhDs and slightly fewer "Unknown" entries, which may simply reflect that higher-profile founders have better-documented backgrounds.
-
 ### Team Education Composition
 
 - **All PhD teams** — Rare but concentrated in infrastructure protocols
 - **Mixed Higher Ed** — Teams combining PhD, Masters, and Bachelor holders
 - **Mixed with Unknown** — Most common category — at least one founder with known education and others without
 - **No Education data** — Teams where no founder has documented education
-
-The trend is toward more educational diversity within teams. Mixed education teams have been gradually increasing as crypto projects become more operationally complex, requiring a mix of technical depth (PhDs in cryptography) and business execution (MBAs, or no formal degree at all).
 
 ## University Representation
 
@@ -115,26 +111,11 @@ Among founders with identifiable university affiliations, the top schools are:
 9. **UPenn / Wharton** — Business-oriented founders, often in DeFi or CeFi bridges
 10. **NUS (Singapore)** — Growing presence, especially in Southeast Asian projects
 
-The university share charts show these concentrations shifting over time as different sectors rise and fall in market cap. During DeFi summer, Stanford and MIT shares spiked. During the NFT boom, university representation became more diffuse.
-
-## Age Diversity in Teams
-
-We measured the age spread within each founding team:
-
-| Spread | Meaning |
-|--------|---------|
-| 0-4 years | Same generation — founders within a few years of each other |
-| 5-9 years | Moderate gap — perhaps a senior and junior co-founder |
-| 10-19 years | Significant gap — different career stages |
-| 20+ years | Multi-generational — rare but present in established projects |
-
-The vast majority of teams have 0-4 year age spread — co-founders tend to be peers. Teams with 10+ year spreads make up roughly 5-10% of the top tiers and haven't changed much over time. Multi-generational teams (20+ years) are extremely rare, under 2%.
-
-There's no strong correlation between age diversity and market cap tier. Same-age teams and diverse-age teams appear at similar rates across Top 100, Top 500, and Top 2000.
-
 ## When Do Different Age Groups Peak?
 
 We tracked every token from its first CoinGecko listing (TGE) to its all-time high (ATH) and grouped by the founder's age at the time of TGE.
+
+<TGEAgePerformance />
 
 | Age at TGE | Median Days to ATH | Median ATH Multiplier | Sample Size |
 |------------|-------------------|----------------------|-------------|
@@ -163,6 +144,40 @@ The TGE-to-ATH dynamics vary dramatically by launch year:
 - **2023-2024 launches:** Moderate timelines across all age groups. More mature market conditions.
 - **2025 launches:** Shortest across the board. New projects reaching ATH in weeks, driven by memecoin dynamics and faster market cycles.
 
+## TGE-to-ATH Performance by Team Composition
+
+Beyond individual founder age, we analyzed how team structure correlates with token performance. For each of the 1,193 tokens with valid TGE and ATH data, we classified the founding team by gender mix, nationality composition, age spread, and education level — then measured median days to ATH and ATH multiplier.
+
+<TeamCompPerformanceGrid />
+
+### By Gender
+
+Mixed-gender teams (at least one male and one female co-founder) hit a median 5.3x ATH multiplier — nearly double the 2.8x of all-male teams. They take longer to get there (145 days vs 97), suggesting these teams build projects with more sustained growth rather than quick pumps. The sample size is small (n=103), but the gap is striking.
+
+All-female teams (n=29) reach ATH in 136 days with a 2.4x multiplier. Too few data points to draw firm conclusions.
+
+### By Nationality
+
+All-Chinese teams reach ATH fastest (70 days median) with a solid 3.0x multiplier. All-US teams are next at 88 days but have the lowest multiplier at 2.1x — possibly reflecting the larger, more established US projects that appreciate slower.
+
+The highest multipliers come from mixed teams: "Has EU" and "Has CN" (both 3.7x) — mixed-nationality teams that include European or Chinese founders alongside others. These teams take much longer (185-188 days), but the payoff is bigger.
+
+### By Age Spread
+
+Teams with 10-19 years of age spread between co-founders achieve the highest ATH multiplier at 5.9x — far above any other category. Multi-generational teams (20y+) also show elevated multipliers at 4.7x.
+
+Same-age teams (0-4y spread) reach ATH fastest at 91 days with a solid 2.9x, while the 5-9y spread group is fastest at 68 days but has the lowest multiplier (1.9x).
+
+The pattern suggests that intergenerational founding teams — combining the energy and risk appetite of younger founders with the network and execution ability of older ones — produce the most explosive returns, even if they take longer to materialize.
+
+### By Education
+
+All-PhD teams reach ATH fastest (66 days median) but have the lowest multiplier (1.7x). They build technically sound projects that the market recognizes quickly, but the upside is modest. These are infrastructure protocols, not moonshots.
+
+No-education teams (no founder with documented academic background) hit the highest multiplier at 3.5x in 101 days. This is the memecoin and community-project effect — founders who come from outside academia build projects with more speculative appeal and higher variance.
+
+All-Masters teams land at 3.1x in 108 days — a balanced profile. Mixed Higher Ed teams (79 days, 2.1x) are efficient but modest, similar to all-PhD teams.
+
 ## ATH and ATL Demographics
 
 When we group tokens by the month their absolute ATH occurred and look at the founders behind them:
@@ -173,6 +188,21 @@ When we group tokens by the month their absolute ATH occurred and look at the fo
 
 **ATL patterns** (tokens hitting all-time lows) show roughly inverse demographics. Bear market ATL clusters are dominated by younger founders with less documented education. Bull market ATLs are rare and idiosyncratic.
 
+## Age Diversity in Teams
+
+We measured the age spread within each founding team:
+
+| Spread | Meaning |
+|--------|---------|
+| 0-4 years | Same generation — founders within a few years of each other |
+| 5-9 years | Moderate gap — perhaps a senior and junior co-founder |
+| 10-19 years | Significant gap — different career stages |
+| 20+ years | Multi-generational — rare but present in established projects |
+
+The vast majority of teams have 0-4 year age spread — co-founders tend to be peers. Teams with 10+ year spreads make up roughly 5-10% of the top tiers and haven't changed much over time. Multi-generational teams (20+ years) are extremely rare, under 2%.
+
+There's no strong correlation between age diversity and market cap tier. Same-age teams and diverse-age teams appear at similar rates across Top 100, Top 500, and Top 2000. But as the TGE-to-ATH data above shows, age-diverse teams produce significantly higher returns.
+
 ## Methodology
 
 **Data sources:**
@@ -180,6 +210,7 @@ When we group tokens by the month their absolute ATH occurred and look at the fo
 - **Market data:** CoinGecko daily market cap snapshots from January 2021 to March 2026, sampled weekly
 - **ATH/ATL:** Computed from maximum and minimum historical USD prices per token across the full CoinGecko dataset (since 2013 for some tokens)
 - **TGE dates:** First appearance in CoinGecko data used as proxy for token generation event
+- **Performance:** 1,193 tokens with valid TGE price, ATH price, and confirmed founder data used for TGE-to-ATH analysis
 
 **Matching:** 1,362 of 2,741 companies (49.7%) have CoinGecko IDs. Only matched tokens are included in all analysis. Unmatched companies are typically pre-token, defunct, or listed on exchanges not tracked by CoinGecko.
 
@@ -191,6 +222,7 @@ When we group tokens by the month their absolute ATH occurred and look at the fo
 - Age data depends on public disclosure accuracy
 - Survivorship bias affects ATH analysis (dead tokens still appear in ATL data but not in top tier rankings)
 - "Founder" includes co-founders; a company with 3 co-founders contributes 3 data points to individual metrics but 1 data point to team composition metrics
+- Small sample sizes for some categories (All Female n=29, Has CN n=26, 20y+ age spread n=28) limit statistical confidence
 
 ## Further Reading
 

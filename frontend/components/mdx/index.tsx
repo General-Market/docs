@@ -57,6 +57,16 @@ import {
   HistoryTimeline3D,
   SocialProof3D,
 } from "@/components/learn/diagrams/eip8141-v2";
+import {
+  FoundersStats,
+  FoundersAgeTimeline,
+  TGEAgePerformance,
+  TeamCompPerformanceGrid,
+  TeamGenderPerformance,
+  TeamNatPerformance,
+  TeamAgeSpreadPerformance,
+  TeamEduPerformance,
+} from "@/components/learn/diagrams/founders";
 
 function extractTextFromReactNode(node: ReactNode): string {
   if (typeof node === "string") return node;
@@ -243,4 +253,13 @@ export const mdxComponents: MDXComponents = {
   PayoffScene3D,
   HistoryTimeline3D,
   SocialProof3D,
+  // Founders demographics article
+  FoundersStats,
+  FoundersAgeTimeline,
+  TGEAgePerformance,
+  TeamCompPerformanceGrid,
+  TeamGenderPerformance,
+  TeamNatPerformance,
+  TeamAgeSpreadPerformance,
+  TeamEduPerformance,
 };
