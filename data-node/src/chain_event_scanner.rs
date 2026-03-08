@@ -184,7 +184,7 @@ impl ChainEventScanner {
             sigs.rebalance_requested,
         ));
 
-        // Spawn Settlement scanner (polls every 3s)
+        // Spawn Settlement scanner (polls every 1s — Sonic has instant finality)
         let settlement_handle = tokio::spawn(scan_settlement_loop(
             settlement_provider,
             settlement_tx,
@@ -193,7 +193,7 @@ impl ChainEventScanner {
             custody_addr,
             settlement_topics,
             SETTLEMENT_REORG_BUFFER,
-            std::time::Duration::from_secs(3),
+            std::time::Duration::from_secs(1),
             sigs.create_itp_requested,
             sigs.cross_chain_order_created,
             sigs.cross_chain_sell_order_created,

@@ -89,8 +89,8 @@ impl Default for VisionConfig {
             settlement_rpc_url: "https://arb1.arbitrum.io/rpc".into(),
             settlement_bridge_custody_address: String::new(),
             settlement_chain_id: 42161,
-            deposit_poll_interval_ms: 5000,
-            deposit_finality_confirmations: 15,
+            deposit_poll_interval_ms: 1000,  // Fast polling for bridge speed
+            deposit_finality_confirmations: 3,  // Sonic has instant finality (was 15)
             gas_drip_amount_wei: "10000000000000000".into(), // 0.01 GM
             gas_drip_threshold_wei: "5000000000000000".into(), // 0.005 GM
             deposit_auto_refund_timeout_secs: 7200, // 2 hours

@@ -229,8 +229,8 @@ impl<'a> ChainBuilder<'a> {
                 bridge_proxy_address: bridge_proxy.parse().unwrap_or_default(),
                 settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
                 chain_id: settlement_chain_id,
-                confirmations: 2,
-                max_block_range: 10_000,
+                confirmations: 1,  // Sonic has instant finality
+                max_block_range: 1_000,
             };
 
             match SettlementChainReader::new(settlement_config) {

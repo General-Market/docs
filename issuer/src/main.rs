@@ -726,8 +726,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
 
-        // Throttle settlement calls — poll every 2 seconds (data-node caches, no direct RPC)
+        // Throttle settlement calls — poll every 500ms (fast bridge detection)
         let mut last_settlement_poll = std::time::Instant::now() - std::time::Duration::from_secs(10);
+        // Track last scanned settlement block to avoid re-scanning 10k blocks every poll
+        let settlement_buy_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let settlement_sell_cursor: Arc<std::sync::atomic::AtomicU64> = Arc::new(std::sync::atomic::AtomicU64::new(0));
 
         loop {
             if consensus_shutdown.load(Ordering::Relaxed) {
@@ -863,8 +866,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         });
                     }
 
-                    // Settlement tasks — throttled to avoid 429s on public RPCs (e.g. Sonic testnet)
-                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_secs(2);
+                    // Settlement tasks — poll every 500ms (reduced from 2s for faster bridge detection)
+                    let settlement_poll_due = last_settlement_poll.elapsed() >= std::time::Duration::from_millis(500);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
@@ -911,10 +914,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
+                            let cursor = settlement_buy_cursor.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor,
                                 ).await;
                             });
                         }
@@ -968,10 +972,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
+                            let cursor = settlement_sell_cursor.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_sell_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor,
                                 ).await;
                             });
                         }
@@ -1540,6 +1545,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     _itp_id_for_task: String,
     _local_nav_fallback: ethers::types::U256,
     _quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    block_cursor: Arc<std::sync::atomic::AtomicU64>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1556,7 +1562,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         return;
     }
 
-    let from_block = confirmed_block.saturating_sub(10000);
+    // Use cursor for incremental scanning (fallback: 200 blocks back on first run)
+    let cursor_val = block_cursor.load(Ordering::Relaxed);
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
     debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
@@ -1652,9 +1660,15 @@ async fn run_cross_chain_processing<P, W, K, PF>(
             }
         }
         Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain orders"); }
-        Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain orders"); }
+        Err(e) => {
+            warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain orders");
+            // Don't advance cursor on error — retry from same block
+            return;
+        }
     }
 
+    // Advance cursor to confirmed_block (next poll starts from here)
+    block_cursor.store(confirmed_block, Ordering::Relaxed);
 
     if current_cycle % 1000 == 0 {
         settlement_reader.clear_old_seen_orders(100_000).await;
@@ -2057,6 +2071,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    block_cursor: Arc<std::sync::atomic::AtomicU64>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2070,7 +2085,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     if confirmed_block == 0 { return; }
 
-    let from_block = confirmed_block.saturating_sub(10000);
+    // Use cursor for incremental scanning (fallback: 200 blocks back on first run)
+    let cursor_val = block_cursor.load(Ordering::Relaxed);
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
 
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
     match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
@@ -2434,6 +2451,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             }
         }
     }
+
+    // Advance cursor to confirmed_block (next poll starts from here)
+    block_cursor.store(confirmed_block, Ordering::Relaxed);
 
     // Periodic cleanup
     if current_cycle % 1000 == 0 {
