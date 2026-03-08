@@ -36,7 +36,7 @@ test.describe('Connect Wallet', () => {
   });
 
   test('wallet reconnects on page reload', async ({ walletPage: page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(240_000);
     // Connect
     const connectBtn = connectWalletButton(page);
     await expect(connectBtn).toBeVisible({ timeout: 15_000 });

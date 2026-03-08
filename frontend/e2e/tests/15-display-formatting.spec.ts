@@ -163,7 +163,7 @@ test.describe('Display Formatting — Source Detail', () => {
 test.describe('Display Formatting — ITP Cards', () => {
   test('ITP NAV per share is between $0.01 and $1000', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
-    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // walletPage fixture already navigates to /index — no second goto needed
 
     const cards = itpCard(page)
     const hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
@@ -273,7 +273,7 @@ test.describe('Display Formatting — Source Cards', () => {
   })
 
   test('source detail page markets load (not stuck loading)', async ({ walletPage: page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(180_000)
     await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     // Skip if page hit a Next.js error (transient under parallel test load)

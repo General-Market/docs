@@ -51,7 +51,7 @@ test.describe('Order Settlement', () => {
 test.describe('ITP Card Display', () => {
   test('ITP card shows TVL as a dollar amount (not "–")', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
-    await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // walletPage fixture already navigates to /index — no need for second goto
 
     const cards = itpCard(page)
     const hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
