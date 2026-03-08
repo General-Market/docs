@@ -1569,7 +1569,10 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     // Use cursor for incremental scanning (fallback: 5000 blocks back on first run ~83 min on Sonic)
     let cursor_val = block_cursor.load(Ordering::Relaxed);
     let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(5000) };
-    info!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
+    // Log every 60th scan to avoid spamming (scans every ~1s)
+    if current_cycle % 60 == 0 {
+        info!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
+    }
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
         Ok(orders) if !orders.is_empty() => {

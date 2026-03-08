@@ -3,8 +3,25 @@
  * All E2E helpers and test specs import from here instead of
  * redeclaring env vars and IS_TESTNET ternaries locally.
  */
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
+
+// Load .env.local so E2E_* vars are available to Playwright
+const envLocalPath = join(__dirname, '..', '.env.local')
+if (existsSync(envLocalPath)) {
+  const lines = readFileSync(envLocalPath, 'utf-8').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIdx = trimmed.indexOf('=')
+    if (eqIdx === -1) continue
+    const key = trimmed.slice(0, eqIdx)
+    const val = trimmed.slice(eqIdx + 1)
+    if (!(key in process.env)) {
+      process.env[key] = val
+    }
+  }
+}
 
 // ── Behavioral flag ─────────────────────────────────────────
 /** true when running against local Anvil (not a real testnet) */
