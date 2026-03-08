@@ -1562,9 +1562,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
         return;
     }
 
-    // Use cursor for incremental scanning (fallback: 200 blocks back on first run)
+    // Use cursor for incremental scanning (fallback: 5000 blocks back on first run ~83 min on Sonic)
     let cursor_val = block_cursor.load(Ordering::Relaxed);
-    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(5000) };
     debug!(cycle = current_cycle, confirmed_block, from_block, "Cross-chain detection: scanning Settlement chain");
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
@@ -2085,9 +2085,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     if confirmed_block == 0 { return; }
 
-    // Use cursor for incremental scanning (fallback: 200 blocks back on first run)
+    // Use cursor for incremental scanning (fallback: 5000 blocks back on first run ~83 min on Sonic)
     let cursor_val = block_cursor.load(Ordering::Relaxed);
-    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
+    let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(5000) };
 
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
     match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
