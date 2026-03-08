@@ -282,23 +282,24 @@ impl BridgeOrchestrator {
         self.watchdog.read().await.get_stale_orders()
     }
 
-    /// Reset a stale order for retry. Removes from all tracking maps so it can be re-discovered.
+    /// Reset a stale order for retry. Clears transient state but preserves order metadata
+    /// (amounts, itp_ids, mappings, limit_prices) so retry uses correct fill values.
     pub async fn reset_stale_order(&self, order_id: &U256) {
-        warn!(order_id = %order_id, "Resetting stale order for retry");
+        warn!(order_id = %order_id, "Resetting stale order for retry (preserving metadata)");
         self.order_status.write().await.remove(order_id);
         self.processed_orders.write().await.remove(order_id);
-        self.order_amounts.write().await.remove(order_id);
-        self.order_itp_ids.write().await.remove(order_id);
+        // NOTE: Do NOT remove order_amounts, order_itp_ids, order_mappings, order_limit_prices.
+        // These contain the original order data needed for correct retry (fill amount, ITP ID, user address).
         self.watchdog.write().await.clear(order_id);
     }
 
-    /// Reset a stale SELL order for retry. Removes from all sell-side tracking maps.
+    /// Reset a stale SELL order for retry. Clears transient state but preserves order metadata.
     pub async fn reset_stale_sell_order(&self, order_id: &U256) {
-        warn!(order_id = %order_id, "Resetting stale sell order for retry");
+        warn!(order_id = %order_id, "Resetting stale sell order for retry (preserving metadata)");
         self.sell_order_status.write().await.remove(order_id);
         self.processed_sell_orders.write().await.remove(order_id);
-        self.sell_order_amounts.write().await.remove(order_id);
-        self.sell_order_itp_ids.write().await.remove(order_id);
+        // NOTE: Do NOT remove sell_order_amounts, sell_order_itp_ids.
+        // These contain the original order data needed for correct retry.
         self.watchdog.write().await.clear(order_id);
     }
 
