@@ -11,6 +11,7 @@
  * Depends on test 12 having deposited Vision balance for the test user.
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
+import { ensureWalletConnected } from '../helpers/selectors'
 import {
   PLAYER1,
   getPosition,
@@ -38,14 +39,7 @@ test.describe('Vision Enter Batch (UI)', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // 2. Connect wallet
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await connectBtn.click()
-      await page.mouse.move(0, 0)
-      // Wait for wallet connection
-      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-      await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 })
-    }
+    await ensureWalletConnected(page, TEST_ADDRESS)
 
     // 3. Wait for markets to load (UP/DN buttons should appear)
     // Pumpfun has ~1200 markets — first snapshot fetch can take 60-90s on cold start

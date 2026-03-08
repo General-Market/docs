@@ -94,11 +94,8 @@ test.describe('Vision Settlement Bridge Deposit', () => {
 
     // Navigate and connect
     await page.goto('/')
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await connectBtn.click()
-      await page.mouse.move(0, 0)
-    }
+    const { ensureWalletConnected } = await import('../helpers/selectors')
+    await ensureWalletConnected(page, TEST_ADDRESS)
 
     // Balance bar should be visible
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 60_000 })

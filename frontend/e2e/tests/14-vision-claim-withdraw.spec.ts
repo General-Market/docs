@@ -48,37 +48,10 @@ test.describe('Vision Claim + Withdraw', () => {
       return
     }
 
-    // Wait for React hydration before attempting wallet connect
-    await page.waitForFunction(() => !!(window as any).__NEXT_DATA__?.props, { timeout: 15_000 }).catch(() => {})
-    await page.waitForTimeout(2_000)
-
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await connectBtn.click()
-      await page.mouse.move(0, 0)
-      await page.waitForTimeout(3_000)
-
-      // Retry connect if wallet didn't respond (init script may have reset state)
-      const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-      const connected = await page.getByRole('button', { name: truncated }).isVisible({ timeout: 5_000 }).catch(() => false)
-        || await page.getByText(/Balance:.*USDC/).isVisible({ timeout: 5_000 }).catch(() => false)
-      if (!connected) {
-        // Retry — click connect again
-        const retryBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-        if (await retryBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-          await retryBtn.click()
-          await page.waitForTimeout(3_000)
-        }
-      }
-
-      // Final wait for connection confirmation
-      await Promise.race([
-        expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 30_000 }),
-        expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 }),
-      ]).catch(() => {
-        console.log('Wallet connect did not confirm — continuing with balance bar check')
-      })
-    }
+    const { ensureWalletConnected } = await import('../helpers/selectors')
+    await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {
+      console.log('Wallet connect did not confirm — continuing with balance bar check')
+    })
 
     // Wait for balance bar (Vision balance exists from deposit above)
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 })
@@ -147,35 +120,12 @@ test.describe('Vision Claim + Withdraw', () => {
 
     // 4. Withdraw from Vision balance to L3 wallet via BalanceWithdrawModal
     // Reload to refresh balances
-    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 })
-    await page.waitForFunction(() => !!(window as any).__NEXT_DATA__?.props, { timeout: 15_000 }).catch(() => {})
+    await page.goto('/', { waitUntil: 'load', timeout: 90_000 })
     await page.waitForTimeout(2_000)
 
-    const connectBtn2 = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn2.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await connectBtn2.click()
-      await page.mouse.move(0, 0)
-      await page.waitForTimeout(3_000)
-
-      const truncated2 = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4)
-      const connected2 = await page.getByRole('button', { name: truncated2 }).isVisible({ timeout: 5_000 }).catch(() => false)
-        || await page.getByText(/Balance:.*USDC/).isVisible({ timeout: 5_000 }).catch(() => false)
-      if (!connected2) {
-        // Retry click
-        const retryBtn2 = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-        if (await retryBtn2.isVisible({ timeout: 3_000 }).catch(() => false)) {
-          await retryBtn2.click()
-          await page.waitForTimeout(3_000)
-        }
-      }
-
-      await Promise.race([
-        expect(page.getByRole('button', { name: truncated2 })).toBeVisible({ timeout: 30_000 }),
-        expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 }),
-      ]).catch(() => {
-        console.log('Wallet reconnect did not confirm — continuing with balance bar check')
-      })
-    }
+    await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {
+      console.log('Wallet reconnect did not confirm — continuing with balance bar check')
+    })
     await expect(page.getByText(/Balance:.*USDC/)).toBeVisible({ timeout: 30_000 })
 
     // Check current Vision real balance (only real balance can be withdrawn to L3)

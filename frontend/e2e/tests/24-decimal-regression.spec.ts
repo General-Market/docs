@@ -89,12 +89,8 @@ test.describe('Decimal Regression Tests', () => {
     await page.waitForTimeout(3_000);
 
     // Connect wallet
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ });
-    if (await connectBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await connectBtn.click();
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(3_000);
-    }
+    const { ensureWalletConnected } = await import('../helpers/selectors');
+    await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {});
 
     // Look for balance display — skip if not visible (wallet may not connect under load)
     const balanceText = page.getByText(/Balance:.*USDC/);

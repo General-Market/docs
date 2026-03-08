@@ -42,15 +42,10 @@ test.describe('Vision Withdraw to Settlement', () => {
       return
     }
 
-    await page.waitForFunction(() => !!(window as any).__NEXT_DATA__?.props, { timeout: 15_000 }).catch(() => {})
     await page.waitForTimeout(2_000)
 
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await connectBtn.click()
-      await page.mouse.move(0, 0)
-      await page.waitForTimeout(3_000)
-    }
+    const { ensureWalletConnected } = await import('../helpers/selectors')
+    await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {})
 
     // Wait for balance bar — skip if wallet doesn't connect or balance doesn't show
     const hasBalance = await page.getByText(/Balance:.*USDC/).isVisible({ timeout: 30_000 }).catch(() => false)
@@ -147,15 +142,10 @@ test.describe('Vision Withdraw to Settlement', () => {
       return
     }
 
-    await page.waitForFunction(() => !!(window as any).__NEXT_DATA__?.props, { timeout: 15_000 }).catch(() => {})
     await page.waitForTimeout(2_000)
 
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet|Log\s?In/ })
-    if (await connectBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await connectBtn.click()
-      await page.mouse.move(0, 0)
-      await page.waitForTimeout(3_000)
-    }
+    const { ensureWalletConnected: ensureConnected } = await import('../helpers/selectors')
+    await ensureConnected(page, TEST_ADDRESS).catch(() => {})
 
     // 3. Wait for balance bar and click WITHDRAW
     const hasBalance = await page.getByText(/Balance:.*USDC/).isVisible({ timeout: 30_000 }).catch(() => false)
