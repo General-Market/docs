@@ -19,6 +19,7 @@ mod dl_backfill;
 mod dl_collector;
 mod fng_client;
 mod fng_collector;
+mod issuer_health_collector;
 mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
@@ -1951,6 +1952,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             tracker.record_not_started("adzuna", "Missing --adzuna-app-id / --adzuna-app-key");
         }
 
+    }
+
+    // Issuer health collector
+    if let Some(ref urls_str) = args.issuer_health_urls {
+        let urls: Vec<String> = urls_str.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+        if !urls.is_empty() {
+            issuer_health_collector::validate_issuer_urls(&urls);
+            let node_count = urls.len();
+            let pool_clone = pool.clone();
+            let interval = args.issuer_health_poll_interval;
+            tokio::spawn(async move {
+                issuer_health_collector::run_issuer_health_collector(pool_clone, urls, interval).await;
+            });
+            info!(node_count, poll_secs = args.issuer_health_poll_interval, "Issuer health collector spawned");
+        }
     }
 
     // Create live ticker cache and start fast poller

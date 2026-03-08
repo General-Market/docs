@@ -66,6 +66,12 @@ tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 # XML parsing (SEC 13F)
 quick-xml = { version = "0.37", features = ["serialize"] }
 
+# URL parsing (issuer health collector)
+url = "2"
+
+# Randomization (issuer health collector)
+rand = "0.8"
+
 # Market data providers (from AA)
 async-trait = "0.1"
 anyhow = "1"
