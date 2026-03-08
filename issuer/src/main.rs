@@ -772,7 +772,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
             let is_heartbeat = state.is_heartbeat();
             let trigger = state.get_trigger();
 
-            if current_cycle != last_cycle {
+            if current_cycle > last_cycle {
                 last_cycle = current_cycle;
                 info!(cycle = current_cycle, trigger = ?trigger, "Entering consensus cycle");
 
@@ -833,7 +833,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // Settlement tasks — poll every 100ms for near-instant bridge detection
                     // Skip bridge processing during P2P startup grace period (15s)
                     let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
-                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_millis(100);
+                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_millis(500);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
