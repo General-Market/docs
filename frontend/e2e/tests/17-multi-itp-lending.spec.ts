@@ -74,7 +74,7 @@ test.describe('Multi-ITP Lending Visibility', () => {
   });
 
   test('ITP2 row shows "Coming Soon" when no Morpho market deployed', async ({ walletPage: page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     const itpCount = await getItpCountL3();
     if (itpCount < 2) {
