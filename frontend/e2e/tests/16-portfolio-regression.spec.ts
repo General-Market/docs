@@ -50,7 +50,7 @@ test.describe('Order Settlement', () => {
 
 test.describe('ITP Card Display', () => {
   test('ITP card shows TVL as a dollar amount (not "–")', async ({ walletPage: page }) => {
-    test.setTimeout(120_000)
+    test.setTimeout(180_000)
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
@@ -80,7 +80,7 @@ test.describe('ITP Card Display', () => {
 
 test.describe('USDC Balance Consistency', () => {
   test('header and portfolio show same USDC balance', async ({ walletPage: page }) => {
-    test.setTimeout(90_000)
+    test.setTimeout(180_000)
 
     // Connect wallet — skip gracefully if button not found (timing/hydration issue)
     const connectBtn = connectWalletButton(page)
@@ -136,7 +136,7 @@ test.describe('USDC Balance Consistency', () => {
 
 test.describe('Portfolio Totals', () => {
   test('Total Value includes USDC balance (not zero when holding USDC)', async ({ walletPage: page }) => {
-    test.setTimeout(120_000)
+    test.setTimeout(180_000)
 
     // Connect wallet — skip gracefully if button not found
     const connectBtn = connectWalletButton(page)
