@@ -644,8 +644,15 @@ impl<M: Middleware> SettlementChainReader<M> {
         let mut sell_orders = Vec::new();
 
         // 2. Iterate 0..next_id (first order is ID 0), query each
+        //    Rate-limit: 50ms between calls to avoid hitting public RPC rate limits
+        //    (74 orders × ~100ms per pair = ~7.4s total — acceptable for one-time startup scan)
         for id in 0..max_id {
             let order_id = U256::from(id);
+
+            // Rate-limit between order queries (skip delay on first iteration)
+            if id > 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            }
 
             // Check buy order: getCrossChainOrder(id)
             match self.get_cross_chain_order(order_id).await {
