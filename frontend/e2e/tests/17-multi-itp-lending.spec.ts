@@ -72,17 +72,7 @@ test.describe('Multi-ITP Lending Visibility', () => {
       return;
     }
 
-    // Connect wallet — skip gracefully if button not found
-    const connectBtn = connectWalletButton(page);
-    const hasConnect2 = await connectBtn.isVisible({ timeout: 20_000 }).catch(() => false);
-    if (!hasConnect2) {
-      test.skip(true, 'Connect Wallet button not visible');
-      return;
-    }
-    await connectBtn.click();
-    await page.mouse.move(0, 0);
-    const truncated = TEST_ADDRESS.slice(0, 6) + '...' + TEST_ADDRESS.slice(-4);
-    await expect(page.getByRole('button', { name: truncated })).toBeVisible({ timeout: 15_000 });
+    await ensureWalletConnected(page, TEST_ADDRESS);
 
     const hasCards2 = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
     if (!hasCards2) {
