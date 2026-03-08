@@ -18,7 +18,7 @@ use tracing::{debug, warn};
 
 use common::types::{
     CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainSellOrderEvent,
-    ItpCreatedEvent, ItpCreationRequest,
+    CrossChainSellOrderData, ItpCreatedEvent, ItpCreationRequest,
 };
 
 use super::settlement_reader::SettlementReaderError;
@@ -216,6 +216,14 @@ impl SettlementReader for DataNodeSettlementReader {
             }
         }
         Ok(None)
+    }
+
+    async fn get_cross_chain_sell_order(&self, _order_id: U256) -> Result<Option<CrossChainSellOrderData>, SettlementReaderError> {
+        Err(SettlementReaderError::ConfigError("ID-based sell order query not supported via data node".into()))
+    }
+
+    async fn get_all_unfilled_orders(&self) -> Result<(Vec<CrossChainOrder>, Vec<CrossChainSellOrderEvent>), SettlementReaderError> {
+        Err(SettlementReaderError::ConfigError("ID-based scan not supported via data node".into()))
     }
 
     async fn get_confirmed_cross_chain_orders(

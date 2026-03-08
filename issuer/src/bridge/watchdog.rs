@@ -42,7 +42,14 @@ impl StaleOrderWatchdog {
         let mut stale = Vec::new();
         for (order_id, (status, last_change)) in &self.order_timestamps {
             // Skip terminal statuses
-            if matches!(status, BridgeOrderStatus::Filled | BridgeOrderStatus::ReleasedToVault | BridgeOrderStatus::Failed) {
+            if matches!(status,
+                BridgeOrderStatus::Filled | BridgeOrderStatus::ReleasedToVault | BridgeOrderStatus::Failed |
+                BridgeOrderStatus::SharesBridged | BridgeOrderStatus::BridgedBackToSettlement |
+                BridgeOrderStatus::SellCompleted
+            ) {
+                // NOTE: SellFilled is NOT terminal — Phase C (completeSellOrder) still needs to run.
+                // If Phase C permanently fails, the watchdog will detect SellFilled as stale after 10s
+                // and route it through reset_stale_sell_order for retry.
                 continue;
             }
             if last_change.elapsed() > self.stale_threshold {
@@ -66,7 +73,11 @@ impl StaleOrderWatchdog {
     /// Remove all completed/terminal orders to prevent unbounded growth.
     pub fn cleanup_terminal(&mut self) {
         self.order_timestamps.retain(|_, (status, _)| {
-            !matches!(status, BridgeOrderStatus::Filled | BridgeOrderStatus::ReleasedToVault | BridgeOrderStatus::Failed)
+            !matches!(status,
+                BridgeOrderStatus::Filled | BridgeOrderStatus::ReleasedToVault | BridgeOrderStatus::Failed |
+                BridgeOrderStatus::SharesBridged | BridgeOrderStatus::BridgedBackToSettlement |
+                BridgeOrderStatus::SellCompleted
+            )
         });
     }
 

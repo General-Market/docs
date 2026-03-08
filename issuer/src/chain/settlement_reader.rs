@@ -24,6 +24,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, warn, info};
 
 // CrossChainOrderReader impl moved to settlement_trait.rs (blanket on dyn SettlementReader)
+use common::types::CrossChainSellOrderData;
 use crate::chain::events::{
     CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainOrderParseError,
     CrossChainSellOrderEvent, cross_chain_sell_order_topic,
@@ -561,6 +562,138 @@ impl<M: Middleware> SettlementChainReader<M> {
 
         // Parse the response
         parse_cross_chain_order_response(&result, order_id)
+    }
+
+    /// Query a single cross-chain sell order by ID from SettlementBridgeCustody.
+    /// Returns None if the order has been deleted (user = address(0)).
+    pub async fn get_cross_chain_sell_order(
+        &self,
+        order_id: U256,
+    ) -> Result<Option<CrossChainSellOrderData>, SettlementReaderError> {
+        if self.config.settlement_custody_address.is_zero() {
+            return Err(SettlementReaderError::ConfigError(
+                "settlement_custody_address not configured".to_string(),
+            ));
+        }
+
+        // getCrossChainSellOrder(uint256) selector
+        let selector = &ethers::utils::keccak256("getCrossChainSellOrder(uint256)")[..4];
+        let mut call_data = selector.to_vec();
+        let mut order_id_bytes = [0u8; 32];
+        order_id.to_big_endian(&mut order_id_bytes);
+        call_data.extend_from_slice(&order_id_bytes);
+
+        let tx = TransactionRequest::new()
+            .to(self.config.settlement_custody_address)
+            .data(call_data);
+
+        let result = self.provider.call(&tx.into(), None).await.map_err(|e| {
+            SettlementReaderError::ProviderError(format!("Failed to call getCrossChainSellOrder: {}", e))
+        })?;
+
+        // ABI: itpId(32) + user(32) + bridgedItpAddress(32) + amount(32) + limitPrice(32) + slippageTier(32) + deadline(32) + createdAt(32) = 256 bytes
+        if result.len() < 256 {
+            return Ok(None);
+        }
+        let user = Address::from_slice(&result[44..64]);
+        if user.is_zero() {
+            return Ok(None); // Deleted order
+        }
+
+        Ok(Some(CrossChainSellOrderData {
+            itp_id: H256::from_slice(&result[0..32]),
+            user,
+            bridged_itp_address: Address::from_slice(&result[76..96]),
+            amount: U256::from_big_endian(&result[96..128]),
+            limit_price: U256::from_big_endian(&result[128..160]),
+            slippage_tier: result[191] as u8,
+            deadline: U256::from_big_endian(&result[192..224]),
+            created_at: U256::from_big_endian(&result[224..256]),
+        }))
+    }
+
+    /// Scan ALL cross-chain orders by ID (not events). Returns unfilled buy and sell orders.
+    /// Used on startup to eliminate the 5000-block event scan window.
+    /// Vision deposits share the same ID counter but return zeroed structs from
+    /// getCrossChainOrder/getCrossChainSellOrder — safely skipped.
+    pub async fn get_all_unfilled_orders(&self) -> Result<(Vec<CrossChainOrder>, Vec<CrossChainSellOrderEvent>), SettlementReaderError> {
+        if self.config.settlement_custody_address.is_zero() {
+            return Err(SettlementReaderError::ConfigError(
+                "settlement_custody_address not configured".to_string(),
+            ));
+        }
+
+        // 1. Call currentOrderId() on SettlementBridgeCustody
+        let selector = &ethers::utils::keccak256("currentOrderId()")[..4];
+        let tx = TransactionRequest::new()
+            .to(self.config.settlement_custody_address)
+            .data(selector.to_vec());
+
+        let next_id_data = self.provider.call(&tx.into(), None).await.map_err(|e| {
+            SettlementReaderError::ProviderError(format!("currentOrderId: {}", e))
+        })?;
+        let next_id = U256::from_big_endian(&next_id_data);
+
+        // Safety: cap at 100k to avoid unbounded RPC calls on corrupted state
+        let max_id = std::cmp::min(next_id.low_u64(), 100_000);
+        if next_id.low_u64() > 100_000 {
+            warn!("currentOrderId() returned {} — capping ID scan at 100,000", next_id);
+        }
+
+        let mut buy_orders = Vec::new();
+        let mut sell_orders = Vec::new();
+
+        // 2. Iterate 0..next_id (first order is ID 0), query each
+        for id in 0..max_id {
+            let order_id = U256::from(id);
+
+            // Check buy order: getCrossChainOrder(id)
+            match self.get_cross_chain_order(order_id).await {
+                Ok(Some(data)) => {
+                    buy_orders.push(CrossChainOrder {
+                        order_id,
+                        itp_id: data.itp_id,
+                        user: data.user,
+                        amount: data.amount,
+                        limit_price: data.limit_price,
+                        slippage_tier: data.slippage_tier,
+                        deadline: data.deadline,
+                        created_at: data.created_at,
+                        chain_id: self.config.chain_id,
+                        block_number: 0, // Not from event — unknown
+                        tx_hash: H256::zero(),
+                    });
+                    continue; // Same ID can't be both buy and sell
+                }
+                Ok(None) => {} // Deleted, Vision deposit, or doesn't exist as buy
+                Err(e) => {
+                    warn!(order_id = id, error = %e, "Failed to query buy order in ID scan");
+                }
+            }
+
+            // Check sell order: getCrossChainSellOrder(id)
+            match self.get_cross_chain_sell_order(order_id).await {
+                Ok(Some(data)) => {
+                    sell_orders.push(CrossChainSellOrderEvent {
+                        order_id,
+                        itp_id: data.itp_id,
+                        user: data.user,
+                        bridged_itp_address: data.bridged_itp_address,
+                        amount: data.amount,
+                        block_number: 0,
+                        tx_hash: H256::zero(),
+                    });
+                }
+                Ok(None) => {} // Deleted, Vision deposit, or doesn't exist as sell
+                Err(e) => {
+                    warn!(order_id = id, error = %e, "Failed to query sell order in ID scan");
+                }
+            }
+        }
+
+        info!(buys = buy_orders.len(), sells = sell_orders.len(), total_scanned = max_id,
+            "Settlement ID scan: found unfilled orders");
+        Ok((buy_orders, sell_orders))
     }
 
     /// Get confirmed CrossChainOrderCreated events and enrich with full order data
@@ -1307,6 +1440,19 @@ impl<M: Middleware + Send + Sync + 'static> SettlementReader for SettlementChain
         order_id: U256,
     ) -> Result<Option<CrossChainOrderData>, SettlementReaderError> {
         self.get_cross_chain_order(order_id).await
+    }
+
+    async fn get_cross_chain_sell_order(
+        &self,
+        order_id: U256,
+    ) -> Result<Option<CrossChainSellOrderData>, SettlementReaderError> {
+        self.get_cross_chain_sell_order(order_id).await
+    }
+
+    async fn get_all_unfilled_orders(
+        &self,
+    ) -> Result<(Vec<CrossChainOrder>, Vec<CrossChainSellOrderEvent>), SettlementReaderError> {
+        self.get_all_unfilled_orders().await
     }
 
     async fn get_confirmed_cross_chain_orders(

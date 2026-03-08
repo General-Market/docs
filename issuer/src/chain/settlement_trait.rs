@@ -11,6 +11,7 @@ use crate::chain::events::{
     CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainSellOrderEvent,
     ItpCreatedEvent, ItpCreationRequest,
 };
+use common::types::CrossChainSellOrderData;
 use crate::chain::settlement_reader::SettlementReaderError;
 use crate::consensus::ConsensusError;
 
@@ -76,6 +77,18 @@ pub trait SettlementReader: Send + Sync {
         &self,
         order_id: U256,
     ) -> Result<Option<CrossChainOrderData>, SettlementReaderError>;
+
+    /// Query a single cross-chain sell order by ID. Returns None if deleted (user = address(0)).
+    async fn get_cross_chain_sell_order(
+        &self,
+        order_id: U256,
+    ) -> Result<Option<CrossChainSellOrderData>, SettlementReaderError>;
+
+    /// Scan all cross-chain orders by ID (not events). Returns unfilled buy and sell orders.
+    /// Used on startup to eliminate the 5000-block event scan window.
+    async fn get_all_unfilled_orders(
+        &self,
+    ) -> Result<(Vec<CrossChainOrder>, Vec<CrossChainSellOrderEvent>), SettlementReaderError>;
 
     /// Get confirmed, deduplicated cross-chain orders ready for processing
     async fn get_confirmed_cross_chain_orders(

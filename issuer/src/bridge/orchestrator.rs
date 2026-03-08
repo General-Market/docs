@@ -211,7 +211,7 @@ impl BridgeOrchestrator {
             asset_trades_sigs: SignatureCollectionManager::new("asset_trades"),
             confirmed_asset_trades: RwLock::new(HashMap::new()),
             watchdog: RwLock::new(super::watchdog::StaleOrderWatchdog::new(
-                Duration::from_secs(30),
+                Duration::from_secs(10),
             )),
             sell_order_status: RwLock::new(HashMap::new()),
             processed_sell_orders: RwLock::new(HashMap::new()),
@@ -289,6 +289,16 @@ impl BridgeOrchestrator {
         self.processed_orders.write().await.remove(order_id);
         self.order_amounts.write().await.remove(order_id);
         self.order_itp_ids.write().await.remove(order_id);
+        self.watchdog.write().await.clear(order_id);
+    }
+
+    /// Reset a stale SELL order for retry. Removes from all sell-side tracking maps.
+    pub async fn reset_stale_sell_order(&self, order_id: &U256) {
+        warn!(order_id = %order_id, "Resetting stale sell order for retry");
+        self.sell_order_status.write().await.remove(order_id);
+        self.processed_sell_orders.write().await.remove(order_id);
+        self.sell_order_amounts.write().await.remove(order_id);
+        self.sell_order_itp_ids.write().await.remove(order_id);
         self.watchdog.write().await.clear(order_id);
     }
 
@@ -370,6 +380,7 @@ impl BridgeOrchestrator {
 
     /// Update the status of a sell order
     pub async fn set_sell_order_status(&self, order_id: U256, status: BridgeOrderStatus) {
+        self.watchdog.write().await.record_status_change(order_id, status.clone());
         self.sell_order_status.write().await.insert(order_id, status);
     }
 
@@ -389,17 +400,15 @@ impl BridgeOrchestrator {
         }
         self.sell_order_status.read().await.values().any(|s| matches!(s,
             BridgeOrderStatus::SellPending |
-            BridgeOrderStatus::SellSubmittedOnL3
+            BridgeOrderStatus::SellSubmittedOnL3 |
+            BridgeOrderStatus::SellFilled
         ))
     }
 
     /// Mark a sell order as fully processed
     pub async fn mark_sell_order_processed(&self, order_id: U256, tx_hash: H256) {
         self.processed_sell_orders.write().await.insert(order_id, tx_hash);
-        self.sell_order_status
-            .write()
-            .await
-            .insert(order_id, BridgeOrderStatus::SellCompleted);
+        self.set_sell_order_status(order_id, BridgeOrderStatus::SellCompleted).await;
         info!(
             order_id = %order_id,
             tx_hash = ?tx_hash,
@@ -2100,6 +2109,13 @@ impl BridgeOrchestrator {
         let current = nonces.get(&custody_address).copied().unwrap_or(U256::zero());
         nonces.insert(custody_address, current + 1);
         current
+    }
+
+    /// Initialize custody nonce from on-chain state (called once at startup)
+    pub async fn init_custody_nonce(&self, custody_address: Address, on_chain_nonce: U256) {
+        let mut nonces = self.custody_nonces.write().await;
+        nonces.insert(custody_address, on_chain_nonce);
+        tracing::info!(?custody_address, nonce = %on_chain_nonce, "Initialized custody nonce from on-chain state");
     }
 
     /// Execute an ERC20.approve() through BLSCustody
@@ -4919,9 +4935,8 @@ impl BridgeOrchestrator {
 
     /// Mark orders as SharesBridged (Step 8 complete)
     pub async fn mark_orders_shares_bridged(&self, order_ids: &[U256]) {
-        let mut status = self.order_status.write().await;
         for order_id in order_ids {
-            status.insert(*order_id, BridgeOrderStatus::SharesBridged);
+            self.set_order_status(*order_id, BridgeOrderStatus::SharesBridged).await;
         }
     }
 }

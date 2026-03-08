@@ -1,5 +1,27 @@
 # Design Decision Backlog
 
+## Session: 20260308-stale-r4 (Stale Orders Plan — Round 4 Plan-Only Audit)
+
+- [FAILED] Plan v3 called `get_all_unfilled_orders()` through `Arc<dyn SettlementReader>` but method was only on concrete `SettlementChainReader`. Fixed by adding to trait + stub for data_node reader.
+- [FAILED] Plan v3 Task 3 used nonexistent `bridge_config` variable and `chain_reader.provider()`. Fixed: read custody addr from `orchestrator.read().await.config()`, create one-off provider from `components.chain.rpc_url`.
+- [FAILED] Plan v3 `remove_seen_sell_order` only for `SellPending` — sell orders in `SellSubmittedOnL3`/`SellFilled` after stale reset can't be re-discovered (no L3-native fallback for sells, unlike buys). Fixed: unconditional for all Sell* statuses.
+- [FAILED] Plan v3 event-scan + startup injection both push same order before status set → duplicate in `new_orders`. Fixed: dedup by order_id after merge.
+- [DECISION] Added `SellFilled` to `has_in_flight_orders()` — Phase C needs WorkDriven fast cycles, not heartbeat-only
+- [DECISION] Buy-side `remove_seen_order` stays conditional on `Pending | BridgedToL3` — buy orders in SubmittedOnL3/Batched are re-discovered by L3-native `get_pending_orders()`/`get_batched_orders()`, so event scan re-discovery isn't needed
+- [NOTED] `Filled` terminal in watchdog but mid-pipeline for cross-chain buys — tracked in backlog, mitigated by timer-based retry in `run_cross_chain_buy_post_processing`
+- [NOTED] `mark_orders_shares_bridged` per-order locking TOCTOU — mitigated by `any_order_task_active` guard preventing watchdog from firing during active tasks
+
+## Session: 20260308-stale-r3 (Stale Orders Plan — Round 3 Security Audit)
+
+- [DECISION] Promoted cross-chain sell failure cleanup from backlog → Task 1 Steps 4-6 — same class of bug as L3-native (3 failure paths with no Failed cleanup), researchers unanimously agreed it belongs in the fix PR
+- [DECISION] Startup ID scan spawned as tokio::spawn background task instead of blocking .await — avoids node absence from consensus during scan
+- [DECISION] Match arms restructured: removed `if !orders.is_empty()` guard from `Ok(orders)` — startup injection must fire even when event scan returns empty (the primary use case for old orders)
+- [DECISION] Stale handler expanded to match ALL Sell* variants (SellPending + SellSubmittedOnL3 + SellFilled) — SellFilled stuck = completeSellOrder Phase C failed, needs reset not silent passthrough to buy-side no-op
+- [DECISION] Added remove_seen_sell_order after sell stale reset — without it, settlement reader dedup set blocks re-discovery
+- [FAILED] Plan v2 placed startup injection inside `Ok(orders) if !orders.is_empty()` match arm — injection never fires when event scan returns empty, which is the EXACT scenario it exists for. Fixed by removing guard.
+- [FAILED] Plan v2 stale handler only matched SellPending|SellSubmittedOnL3 — SellFilled orders fell through to buy-side reset_stale_order (no-op on sell maps). Fixed by matching all Sell* variants.
+- [FAILED] Plan v2 ID scan blocked startup synchronously — node absent from consensus during scan. Fixed by spawning as background task.
+
 ## Session: 20260308-sub1s-deploy (Sub-Second Pipeline Deployment & Fixes)
 
 - [DECISION] Increased consensus timeouts from 50/40/50/60ms to 100/100/150/200ms — original values too aggressive, caused 0-signature rounds

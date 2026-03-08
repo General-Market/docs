@@ -660,6 +660,32 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let settlement_writer_for_task = components.chain.settlement_writer.clone();
     let itp_creation_config_for_task = components.consensus.itp_creation_config.clone();
     let bridge_orchestrator_for_task = components.consensus.bridge_orchestrator.clone();
+
+    // Initialize BLSCustody nonce from on-chain state on startup
+    if let Some(ref orchestrator) = bridge_orchestrator_for_task {
+        let orch = orchestrator.read().await;
+        let custody_addr = orch.config().issuer_custody_l3;
+        drop(orch);
+        if !custody_addr.is_zero() {
+            let l3_rpc = components.chain.rpc_url.clone();
+            if let Ok(provider) = ethers::providers::Provider::<ethers::providers::Http>::try_from(l3_rpc.as_str()) {
+                use ethers::providers::Middleware;
+                let nonce_selector = &ethers::utils::keccak256("nonce()")[..4];
+                let tx = ethers::types::TransactionRequest::new()
+                    .to(custody_addr)
+                    .data(nonce_selector.to_vec());
+                match provider.call(&tx.into(), None).await {
+                    Ok(data) if data.len() >= 32 => {
+                        let nonce = ethers::types::U256::from_big_endian(&data);
+                        orchestrator.write().await.init_custody_nonce(custody_addr, nonce).await;
+                    }
+                    Ok(_) => warn!("Unexpected nonce() response length"),
+                    Err(e) => warn!(error = %e, "Failed to read custody nonce on startup"),
+                }
+            }
+        }
+    }
+
     let node_index_for_task = components.consensus.keys.node_index;
     let consensus_config = components.consensus.config.clone();
     let price_fetcher_for_task: Arc<dyn PriceFetcher> = components.price.fetcher.clone();
@@ -729,6 +755,35 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
     // Channel for price task result reporting (success/failure tracking)
     let (price_result_tx, mut price_result_rx) = tokio::sync::mpsc::channel::<bool>(4);
+
+    // Startup: scan ALL Settlement orders by ID (non-blocking background task)
+    let startup_buy_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainOrder>>> =
+        Arc::new(tokio::sync::Mutex::new(Vec::new()));
+    let startup_sell_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainSellOrderEvent>>> =
+        Arc::new(tokio::sync::Mutex::new(Vec::new()));
+
+    // Spawn as background task so main loop starts immediately
+    if let Some(ref settlement_reader) = settlement_reader_for_task {
+        let sr = settlement_reader.clone();
+        let buy_arc = startup_buy_orders.clone();
+        let sell_arc = startup_sell_orders.clone();
+        tokio::spawn(async move {
+            match sr.get_all_unfilled_orders().await {
+                Ok((buys, sells)) => {
+                    if !buys.is_empty() || !sells.is_empty() {
+                        info!(buys = buys.len(), sells = sells.len(),
+                            "Startup ID scan complete: found unfilled Settlement orders");
+                        *buy_arc.lock().await = buys;
+                        *sell_arc.lock().await = sells;
+                    } else {
+                        info!("Startup ID scan complete: no unfilled orders found");
+                    }
+                }
+                Err(e) => warn!(error = %e, "Startup Settlement ID scan failed, falling back to event scan"),
+            }
+        });
+    }
+    // Main loop starts immediately — doesn't wait for scan to complete
 
     let consensus_handle = tokio::spawn(async move {
         let mut state_rx = cycle_state_rx;
@@ -882,10 +937,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let nu = consensus_config.num_issuers;
                             let cursor = settlement_buy_cursor.clone();
                             let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
+                            let sbo = startup_buy_orders.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo,
                                 ).await;
                             });
                         }
@@ -941,10 +997,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
                             let cursor = settlement_sell_cursor.clone();
+                            let sso = startup_sell_orders.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_sell_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso,
                                 ).await;
                             });
                         }
@@ -1050,15 +1107,32 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                     status = ?status,
                                                     "Resetting stale order"
                                                 );
-                                                orch.reset_stale_order(order_id).await;
-
                                                 if matches!(status,
-                                                    issuer::bridge::BridgeOrderStatus::Pending |
-                                                    issuer::bridge::BridgeOrderStatus::BridgedToL3
+                                                    issuer::bridge::BridgeOrderStatus::SellPending |
+                                                    issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
+                                                    issuer::bridge::BridgeOrderStatus::SellFilled
                                                 ) {
+                                                    orch.reset_stale_sell_order(order_id).await;
+                                                    // Clear from seen_sell_orders dedup so event scan re-discovers it.
+                                                    // MUST be unconditional for ALL sell statuses — unlike buy orders where
+                                                    // SubmittedOnL3/Batched are re-discovered by L3-native get_pending_orders(),
+                                                    // sell orders have NO L3-native fallback discovery. The settlement event
+                                                    // scan is the ONLY way to re-discover them.
                                                     if let Some(ref settlement_reader) = settlement_reader_for_task {
                                                         let chain_id = settlement_reader.chain_id();
-                                                        settlement_reader.remove_seen_order(chain_id, *order_id).await;
+                                                        settlement_reader.remove_seen_sell_order(chain_id, *order_id).await;
+                                                    }
+                                                } else {
+                                                    orch.reset_stale_order(order_id).await;
+                                                    // Clear from seen_orders dedup so event scan re-discovers it
+                                                    if matches!(status,
+                                                        issuer::bridge::BridgeOrderStatus::Pending |
+                                                        issuer::bridge::BridgeOrderStatus::BridgedToL3
+                                                    ) {
+                                                        if let Some(ref settlement_reader) = settlement_reader_for_task {
+                                                            let chain_id = settlement_reader.chain_id();
+                                                            settlement_reader.remove_seen_order(chain_id, *order_id).await;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1510,6 +1584,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
     _bridge_post_ready: Arc<AtomicBool>,
+    startup_buy_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainOrder>>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1535,20 +1610,19 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     }
 
     match settlement_reader.get_confirmed_cross_chain_orders(from_block, confirmed_block).await {
-        Ok(orders) if !orders.is_empty() => {
+        Ok(orders) => {
             let now_secs = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs();
 
-            // Filter out orders already known to orchestrator (already processed or in-progress)
-            // and orders whose deadline has passed (expired)
+            // Filter event-discovered orders (same as before)
             let mut new_orders = Vec::new();
             {
                 let orch = orchestrator.read().await;
                 for order in orders {
                     if orch.get_order_status(&order.order_id).await.is_some() {
-                        continue; // already processed or in-progress
+                        continue;
                     }
                     let deadline_secs = order.deadline.as_u64();
                     if deadline_secs > 0 && deadline_secs < now_secs {
@@ -1558,105 +1632,128 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     new_orders.push(order);
                 }
             }
-            if new_orders.is_empty() {
-                // all filtered out (processed or expired)
-            } else {
-                info!(cycle = current_cycle, order_count = new_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain orders");
-            }
 
-            // Set initial status for all orders before spawning (serialized write lock)
+            // Merge startup-discovered orders (one-time drain from background scan)
             {
-                let orch_write = orchestrator.write().await;
-                for order in &new_orders {
-                    orch_write.set_order_amount(order.order_id, order.amount).await;
-                    orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
-                    orch_write.set_order_itp_id(order.order_id, order.itp_id).await;
-                    orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
-                }
-            }
-
-            let chain_id = settlement_reader.chain_id();
-            // Process orders SEQUENTIALLY to avoid P2P consensus contention.
-            // When multiple bridge proposals are in-flight simultaneously, leaders
-            // time out because followers are also busy being leaders for other orders.
-            for order in new_orders {
-                let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
-                info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
-
-                {
-                    let p = protocol.clone();
-                    let ar = settlement_reader.clone();
-                    let orch = orchestrator.clone();
-                    let cid = chain_id;
-
-                    match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
-                        Ok(result) => {
-                            if result.signature_count == 0 {
-                                debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: no signatures collected (follower placeholder)");
-                                continue;
-                            }
-                            info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
-
-                            match p.run_submit_order_phase(&order, am_leader).await {
-                                Ok(submit_result) => {
-                                    if submit_result.signature_count == 0 {
-                                        debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
-                                        continue;
-                                    }
-                                    info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
-
-                                    ar.mark_order_processed(cid, order.order_id).await;
-                                    {
-                                        let orch_w = orch.write().await;
-                                        orch_w.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
-                                        orch_w.set_order_amount(order.order_id, order.amount).await;
-                                        let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
-                                        orch_w.store_order_mapping(issuer::bridge::OrderMapping {
-                                            settlement_order_id: order.order_id,
-                                            l3_order_id: l3_id,
-                                            original_user: order.user,
-                                            created_at: std::time::SystemTime::now()
-                                                .duration_since(std::time::UNIX_EPOCH)
-                                                .unwrap_or_default()
-                                                .as_secs(),
-                                        }).await;
-                                    }
-                                    // Immediately continue to batch/fills/mint (merged Phase 1+2)
-                                    // instead of returning and waiting for poll-driven Phase 2
-                                    info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
-                                }
-                                Err(e) => {
-                                    warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
-                                    ar.increment_retry_count(cid, order.order_id).await;
-                                }
-                            }
+                let mut startup = startup_buy_orders.lock().await;
+                if !startup.is_empty() {
+                    let extra_orders = std::mem::take(&mut *startup);
+                    info!(count = extra_orders.len(), "Injecting startup-discovered buy orders into pipeline");
+                    let orch = orchestrator.read().await;
+                    for order in extra_orders {
+                        if orch.get_order_status(&order.order_id).await.is_some() {
+                            continue;
                         }
-                        Err(e) => {
-                            warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Settlement→L3 consensus failed");
-                            ar.increment_retry_count(cid, order.order_id).await;
+                        if order.deadline.as_u64() > 0 && order.deadline.as_u64() < now_secs {
+                            continue;
                         }
+                        new_orders.push(order);
                     }
                 }
             }
 
-            // Merged Phase 2: immediately run batch/fills/mint for all SubmittedOnL3 orders
-            // (no poll wait — orders were just submitted above)
-            run_cross_chain_buy_post_processing(
-                protocol.clone(),
-                settlement_reader.clone(),
-                orchestrator.clone(),
-                settlement_writer.clone(),
-                chain_reader.clone(),
-                current_cycle,
-                node_index,
-                num_issuers,
-                data_node_url_for_task.clone(),
-                itp_id_for_task.clone(),
-                local_nav_fallback,
-                quote_tokens.clone(),
-            ).await;
+            // Deduplicate by order_id (event scan + startup injection may overlap)
+            new_orders.sort_by_key(|o| o.order_id);
+            new_orders.dedup_by_key(|o| o.order_id);
+
+            if new_orders.is_empty() {
+                debug!(cycle = current_cycle, "No new cross-chain orders");
+            } else {
+                info!(cycle = current_cycle, order_count = new_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain orders");
+
+                // Set initial status for all orders before spawning (serialized write lock)
+                {
+                    let orch_write = orchestrator.write().await;
+                    for order in &new_orders {
+                        orch_write.set_order_amount(order.order_id, order.amount).await;
+                        orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
+                        orch_write.set_order_itp_id(order.order_id, order.itp_id).await;
+                        orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
+                    }
+                }
+
+                let chain_id = settlement_reader.chain_id();
+                // Process orders SEQUENTIALLY to avoid P2P consensus contention.
+                // When multiple bridge proposals are in-flight simultaneously, leaders
+                // time out because followers are also busy being leaders for other orders.
+                for order in new_orders {
+                    let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
+                    info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
+
+                    {
+                        let p = protocol.clone();
+                        let ar = settlement_reader.clone();
+                        let orch = orchestrator.clone();
+                        let cid = chain_id;
+
+                        match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
+                            Ok(result) => {
+                                if result.signature_count == 0 {
+                                    debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: no signatures collected (follower placeholder)");
+                                    continue;
+                                }
+                                info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
+
+                                match p.run_submit_order_phase(&order, am_leader).await {
+                                    Ok(submit_result) => {
+                                        if submit_result.signature_count == 0 {
+                                            debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
+                                            continue;
+                                        }
+                                        info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
+
+                                        ar.mark_order_processed(cid, order.order_id).await;
+                                        {
+                                            let orch_w = orch.write().await;
+                                            orch_w.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
+                                            orch_w.set_order_amount(order.order_id, order.amount).await;
+                                            let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
+                                            orch_w.store_order_mapping(issuer::bridge::OrderMapping {
+                                                settlement_order_id: order.order_id,
+                                                l3_order_id: l3_id,
+                                                original_user: order.user,
+                                                created_at: std::time::SystemTime::now()
+                                                    .duration_since(std::time::UNIX_EPOCH)
+                                                    .unwrap_or_default()
+                                                    .as_secs(),
+                                            }).await;
+                                        }
+                                        // Immediately continue to batch/fills/mint (merged Phase 1+2)
+                                        // instead of returning and waiting for poll-driven Phase 2
+                                        info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
+                                    }
+                                    Err(e) => {
+                                        warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
+                                        ar.increment_retry_count(cid, order.order_id).await;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                warn!(order_id = %order.order_id, error = %e, am_leader, "Bridge Settlement→L3 consensus failed");
+                                ar.increment_retry_count(cid, order.order_id).await;
+                            }
+                        }
+                    }
+                }
+
+                // Merged Phase 2: immediately run batch/fills/mint for all SubmittedOnL3 orders
+                // (no poll wait — orders were just submitted above)
+                run_cross_chain_buy_post_processing(
+                    protocol.clone(),
+                    settlement_reader.clone(),
+                    orchestrator.clone(),
+                    settlement_writer.clone(),
+                    chain_reader.clone(),
+                    current_cycle,
+                    node_index,
+                    num_issuers,
+                    data_node_url_for_task.clone(),
+                    itp_id_for_task.clone(),
+                    local_nav_fallback,
+                    quote_tokens.clone(),
+                ).await;
+            }
         }
-        Ok(_) => { /* no new orders — silent at info level */ }
         Err(e) => {
             warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain orders");
             // Don't advance cursor on error — retry from same block
@@ -2069,6 +2166,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
+    startup_sell_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainSellOrderEvent>>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2088,7 +2186,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
     match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
-        Ok(sell_orders) if !sell_orders.is_empty() => {
+        Ok(sell_orders) => {
+            // Filter event-discovered sell orders
             let mut new_sell_orders = Vec::new();
             {
                 let orch = orchestrator.read().await;
@@ -2098,71 +2197,91 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     }
                 }
             }
-            if new_sell_orders.is_empty() {
-                debug!(cycle = current_cycle, "All cross-chain sell orders already processed");
-            } else {
-                info!(cycle = current_cycle, order_count = new_sell_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain sell orders");
-            }
 
-            // Set initial status for all sell orders before spawning
+            // Merge startup-discovered sell orders (one-time drain)
             {
-                let orch_write = orchestrator.write().await;
-                for sell_order in &new_sell_orders {
-                    orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
-                    orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
-                    orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
+                let mut startup = startup_sell_orders.lock().await;
+                if !startup.is_empty() {
+                    let extra_orders = std::mem::take(&mut *startup);
+                    info!(count = extra_orders.len(), "Injecting startup-discovered sell orders into pipeline");
+                    let orch = orchestrator.read().await;
+                    for order in extra_orders {
+                        if orch.get_sell_order_status(&order.order_id).await.is_some() {
+                            continue;
+                        }
+                        new_sell_orders.push(order);
+                    }
                 }
             }
 
-            let chain_id = settlement_reader.chain_id();
-            // Process sell orders SEQUENTIALLY to avoid P2P consensus contention.
-            for sell_order in new_sell_orders {
-                let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
-                info!(
-                    order_id = %sell_order.order_id,
-                    itp_id = ?sell_order.itp_id,
-                    user = ?sell_order.user,
-                    bridged_itp_address = ?sell_order.bridged_itp_address,
-                    amount = %sell_order.amount,
-                    am_leader,
-                    "Processing cross-chain sell order"
-                );
+            // Deduplicate by order_id (event scan + startup injection may overlap)
+            new_sell_orders.sort_by_key(|o| o.order_id);
+            new_sell_orders.dedup_by_key(|o| o.order_id);
 
+            if new_sell_orders.is_empty() {
+                debug!(cycle = current_cycle, "No new cross-chain sell orders");
+            } else {
+                info!(cycle = current_cycle, order_count = new_sell_orders.len(), from_block, to_block = confirmed_block, "Found cross-chain sell orders");
+
+                // Set initial status for all sell orders before spawning
                 {
-                    let p = protocol.clone();
-                    let ar = settlement_reader.clone();
-                    let orch = orchestrator.clone();
-                    let cid = chain_id;
+                    let orch_write = orchestrator.write().await;
+                    for sell_order in &new_sell_orders {
+                        orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
+                        orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
+                        orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
+                    }
+                }
 
-                    match p.run_submit_sell_order_phase(
-                        sell_order.order_id,
-                        sell_order.itp_id,
-                        sell_order.user,
-                        sell_order.bridged_itp_address,
-                        sell_order.amount,
+                let chain_id = settlement_reader.chain_id();
+                // Process sell orders SEQUENTIALLY to avoid P2P consensus contention.
+                for sell_order in new_sell_orders {
+                    let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
+                    info!(
+                        order_id = %sell_order.order_id,
+                        itp_id = ?sell_order.itp_id,
+                        user = ?sell_order.user,
+                        bridged_itp_address = ?sell_order.bridged_itp_address,
+                        amount = %sell_order.amount,
                         am_leader,
-                    ).await {
-                        Ok(submit_result) => {
-                            info!(
-                                order_id = %sell_order.order_id,
-                                signer_count = submit_result.signature_count,
-                                "Submit sell order consensus completed"
-                            );
-                            {
-                                let orch_write = orch.write().await;
-                                orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                        "Processing cross-chain sell order"
+                    );
+
+                    {
+                        let p = protocol.clone();
+                        let ar = settlement_reader.clone();
+                        let orch = orchestrator.clone();
+                        let cid = chain_id;
+
+                        match p.run_submit_sell_order_phase(
+                            sell_order.order_id,
+                            sell_order.itp_id,
+                            sell_order.user,
+                            sell_order.bridged_itp_address,
+                            sell_order.amount,
+                            am_leader,
+                        ).await {
+                            Ok(submit_result) => {
+                                info!(
+                                    order_id = %sell_order.order_id,
+                                    signer_count = submit_result.signature_count,
+                                    "Submit sell order consensus completed"
+                                );
+                                {
+                                    let orch_write = orch.write().await;
+                                    orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                                }
+                                ar.mark_sell_order_processed(cid, sell_order.order_id).await;
                             }
-                            ar.mark_sell_order_processed(cid, sell_order.order_id).await;
-                        }
-                        Err(e) => {
-                            warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
-                            ar.increment_sell_retry_count(cid, sell_order.order_id).await;
+                            Err(e) => {
+                                warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
+                                ar.increment_sell_retry_count(cid, sell_order.order_id).await;
+                            }
                         }
                     }
                 }
             }
         }
-        Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain sell orders"); }
         Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain sell orders"); }
     }
 
@@ -2289,6 +2408,11 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             }
                         } else {
                             warn!(cycle = current_cycle, error = %e, "Sell fills confirmation failed");
+                            let orch = orchestrator.write().await;
+                            for oid in &submitted_sell_orders {
+                                orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                            }
+                            drop(orch);
                         }
                     }
                 }
@@ -2331,11 +2455,21 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 }
                             } else {
                                 warn!(cycle = current_cycle, error = %e, "Sell fills also failed after E021");
+                                let orch = orchestrator.write().await;
+                                for oid in &submitted_sell_orders {
+                                    orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                                }
+                                drop(orch);
                             }
                         }
                     }
                 } else {
                     warn!(cycle = current_cycle, error = %e, "Sell batch confirmation failed");
+                    let orch = orchestrator.write().await;
+                    for oid in &submitted_sell_orders {
+                        orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                    }
+                    drop(orch);
                 }
             }
         }
@@ -2973,6 +3107,11 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 }
                 Err(e) => {
                     warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native fills confirmation failed");
+                    let orch = orchestrator.write().await;
+                    for oid in &order_ids {
+                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                    }
+                    drop(orch);
                 }
             }
         }
@@ -3013,10 +3152,20 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                     }
                     Err(e) => {
                         warn!(cycle = current_cycle, error = %e, "L3-native fills also failed");
+                        let orch = orchestrator.write().await;
+                        for oid in &order_ids {
+                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                        }
+                        drop(orch);
                     }
                 }
             } else {
                 warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native batch confirmation failed");
+                let orch = orchestrator.write().await;
+                for oid in &order_ids {
+                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                }
+                drop(orch);
             }
 
             // Clean up orchestrator tracking on failure so orders can be retried next cycle

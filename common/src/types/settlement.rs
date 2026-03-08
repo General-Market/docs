@@ -111,6 +111,27 @@ pub struct CrossChainOrderData {
     pub created_at: U256,
 }
 
+/// Data returned from getCrossChainSellOrder() view call
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrossChainSellOrderData {
+    /// ITP identifier (bytes32)
+    pub itp_id: H256,
+    /// User who placed the order
+    pub user: Address,
+    /// Bridged ITP token address
+    pub bridged_itp_address: Address,
+    /// ITP amount (18 decimals)
+    pub amount: U256,
+    /// Minimum sell price (18 decimals)
+    pub limit_price: U256,
+    /// Slippage tier
+    pub slippage_tier: u8,
+    /// Unix timestamp when order expires
+    pub deadline: U256,
+    /// Timestamp when order was created on-chain
+    pub created_at: U256,
+}
+
 /// Parsed ItpCreated event from BridgeProxy on Settlement chain
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ItpCreatedEvent {
