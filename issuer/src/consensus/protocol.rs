@@ -866,13 +866,13 @@ where
         };
         self.p2p.broadcast(proposal).await?;
 
-        // 5. Wait for signature threshold (use bridge config sign_timeout_ms, fallback 300ms)
+        // 5. Wait for signature threshold (use bridge config sign_timeout_ms, fallback 500ms)
         let timeout_ms = {
             let bridge_orch_guard = self.bridge_orchestrator.read().await;
             bridge_orch_guard.as_ref().map(|b| {
                 // Can't await inside map, use try_read
-                b.try_read().map(|o| o.config().sign_timeout_ms).unwrap_or(300)
-            }).unwrap_or(300)
+                b.try_read().map(|o| o.config().sign_timeout_ms).unwrap_or(500)
+            }).unwrap_or(500)
         };
         let deadline = tokio::time::Instant::now() + std::time::Duration::from_millis(timeout_ms);
         loop {

@@ -83,9 +83,9 @@ struct Args {
     #[arg(long, default_value = "50")]
     min_cycle_gap_ms: u64,
 
-    /// BLS sign timeout for consensus rounds in milliseconds (default: 300).
-    /// All issuers are co-located on the same VPS (~1ms P2P latency), so 300ms is generous.
-    #[arg(long, default_value = "300")]
+    /// BLS sign timeout for consensus rounds in milliseconds (default: 500).
+    /// All issuers are co-located on the same VPS (~1ms P2P latency), so 500ms is generous.
+    #[arg(long, default_value = "500")]
     sign_timeout_ms: u64,
 
     /// Disable TLS for P2P connections (development only)
