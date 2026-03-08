@@ -350,6 +350,8 @@ where
     wal: Option<std::sync::Mutex<crate::p2p::wal::ConsensusWAL>>,
     /// When true, suppress P2P broadcasts (during WAL replay)
     replay_mode: std::sync::atomic::AtomicBool,
+    /// Cache of last successfully fetched prices (asset → (price, timestamp_secs))
+    last_prices: RwLock<std::collections::HashMap<Address, (U256, u64)>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -437,6 +439,7 @@ where
             equivocation_detector: EquivocationDetector::new(),
             wal: None,
             replay_mode: std::sync::atomic::AtomicBool::new(false),
+            last_prices: RwLock::new(std::collections::HashMap::new()),
         }
     }
 
@@ -2978,24 +2981,67 @@ where
             })
             .collect();
 
-        // Fetch our own prices from the price fetcher
+        // Fetch our own prices from the price fetcher.
+        // On failure, fall back to last known prices if they are <30s old.
+        // If stale (>30s), reject the proposal — don't blindly approve.
         let my_prices = match self.price_fetcher.fetch_prices(&asset_addresses).await {
-            Ok(prices) => prices,
+            Ok(prices) => {
+                // Cache successful prices
+                let now_secs = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                let mut cache = self.last_prices.write().await;
+                for p in &prices {
+                    cache.insert(p.asset, (p.price, now_secs));
+                }
+                prices
+            }
             Err(e) => {
-                warn!(code = "INFRA-007", cycle_number, error = %e, "Failed to fetch local prices, approving leader proposal");
-                // If we can't fetch prices, approve the proposal
-                // (conservative approach - don't block consensus on local failures)
-                let vote_bytes = self.encode_price_vote(cycle_number, true);
-                let signature = self
-                    .bls_signer
-                    .sign_with_keypair(&self.bls_keypair, &vote_bytes)?;
-                let message = P2PMessage::PriceVote {
-                    cycle_number,
-                    voter_id: self.config.peer_id,
-                    approved: true,
-                    signature: BLSSignature(signature.0),
-                };
-                return self.p2p.send_to(leader_id, message).await;
+                // Try last known prices
+                let now_secs = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                let cache = self.last_prices.read().await;
+                let mut fallback = Vec::new();
+                let mut stale = false;
+                for addr in &asset_addresses {
+                    if let Some((price, ts)) = cache.get(addr) {
+                        if now_secs.saturating_sub(*ts) > 30 {
+                            stale = true;
+                            break;
+                        }
+                        fallback.push(Price {
+                            asset: *addr,
+                            price: *price,
+                            timestamp: U256::from(*ts),
+                            source: U256::zero(),
+                        });
+                    } else {
+                        stale = true; // no cached price for this asset
+                        break;
+                    }
+                }
+                drop(cache);
+
+                if stale || fallback.is_empty() {
+                    warn!(code = "INFRA-007", cycle_number, error = %e, "Failed to fetch prices and no recent cache — rejecting proposal");
+                    let vote_bytes = self.encode_price_vote(cycle_number, false);
+                    let signature = self
+                        .bls_signer
+                        .sign_with_keypair(&self.bls_keypair, &vote_bytes)?;
+                    let message = P2PMessage::PriceVote {
+                        cycle_number,
+                        voter_id: self.config.peer_id,
+                        approved: false,
+                        signature: BLSSignature(signature.0),
+                    };
+                    return self.p2p.send_to(leader_id, message).await;
+                }
+
+                warn!(code = "INFRA-007", cycle_number, error = %e, "Using cached prices (< 30s old) for validation");
+                fallback
             }
         };
 

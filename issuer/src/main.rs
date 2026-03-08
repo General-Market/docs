@@ -1633,7 +1633,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         Ok(result) => {
                             if result.signature_count == 0 {
                                 debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: no signatures collected (follower placeholder)");
-                                return;
+                                continue;
                             }
                             info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
 
@@ -1641,7 +1641,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                 Ok(submit_result) => {
                                     if submit_result.signature_count == 0 {
                                         debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
-                                        return;
+                                        continue;
                                     }
                                     info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
 
@@ -2135,7 +2135,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             }
 
             let chain_id = settlement_reader.chain_id();
-            let mut handles = Vec::new();
+            // Process sell orders SEQUENTIALLY to avoid P2P consensus contention.
             for sell_order in new_sell_orders {
                 let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
                 info!(
@@ -2148,12 +2148,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     "Processing cross-chain sell order"
                 );
 
-                let p = protocol.clone();
-                let ar = settlement_reader.clone();
-                let orch = orchestrator.clone();
-                let cid = chain_id;
+                {
+                    let p = protocol.clone();
+                    let ar = settlement_reader.clone();
+                    let orch = orchestrator.clone();
+                    let cid = chain_id;
 
-                handles.push(tokio::spawn(async move {
                     match p.run_submit_sell_order_phase(
                         sell_order.order_id,
                         sell_order.itp_id,
@@ -2179,11 +2179,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             ar.increment_sell_retry_count(cid, sell_order.order_id).await;
                         }
                     }
-                }));
-            }
-            // Wait for all sell order tasks to complete
-            for handle in handles {
-                let _ = handle.await;
+                }
             }
         }
         Ok(_) => { debug!(cycle = current_cycle, "No new cross-chain sell orders"); }
