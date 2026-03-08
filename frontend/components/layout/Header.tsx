@@ -194,6 +194,7 @@ export function Header() {
                 {t('nav.vision')}
               </Link>
               <div className="ml-4 flex items-center gap-3">
+                <Link href="/explorer" className="text-[12px] text-text-secondary hover:text-black transition-colors">Explorer</Link>
                 <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">About</Link>
               </div>
             </nav>
@@ -291,6 +292,7 @@ export function Header() {
                       </Link>
                     </div>
 
+                    <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">Explorer</Link>
                     <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">About</Link>
                     <a href="/docs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
                     <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
