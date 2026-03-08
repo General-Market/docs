@@ -118,6 +118,23 @@ impl SettlementChainWriter {
         self.client.address()
     }
 
+    /// Check if the settlement wallet has enough native gas. Returns error if not.
+    /// DOES NOT BLOCK — caller decides what to do (skip cycle, retry later).
+    async fn check_gas_available(&self) -> Result<(), SettlementWriterError> {
+        use ethers::providers::Middleware;
+        let min_balance = U256::from(50_000_000_000_000_000u64); // 0.05 native tokens
+        let balance = self.client.get_balance(self.client.address(), None).await
+            .map_err(|e| SettlementWriterError::ProviderError(format!("gas balance check: {}", e)))?;
+        if balance < min_balance {
+            return Err(SettlementWriterError::InsufficientGas {
+                address: self.client.address(),
+                balance,
+                required: min_balance,
+            });
+        }
+        Ok(())
+    }
+
     /// Perform a read-only static call to a contract on Settlement.
     pub async fn static_call(
         &self,
@@ -291,6 +308,8 @@ impl SettlementChainWriter {
             sig_len = bls_signature.len(),
             "Submitting completeCreateItp transaction"
         );
+
+        self.check_gas_available().await?;
 
         let max_attempts = self.config.retry_config.max_retries + 1;
 
@@ -808,6 +827,8 @@ impl SettlementChainWriter {
             "Submitting completeSellOrder transaction"
         );
 
+        self.check_gas_available().await?;
+
         let max_attempts = self.config.retry_config.max_retries + 1;
 
         for attempt in 0..max_attempts {
@@ -1162,6 +1183,8 @@ impl SettlementChainWriter {
             "Submitting completeBuyOrder transaction"
         );
 
+        self.check_gas_available().await?;
+
         let max_attempts = self.config.retry_config.max_retries + 1;
 
         for attempt in 0..max_attempts {
@@ -1269,6 +1292,8 @@ impl SettlementChainWriter {
             sig_len = bls_signature.len(),
             "Submitting mintBridgedShares transaction"
         );
+
+        self.check_gas_available().await?;
 
         let calldata = crate::bridge::build_mint_bridged_shares_calldata(
             itp_id, user, amount, order_id, &bls_signature, reference_nonce, signers_bitmask,
@@ -1392,6 +1417,9 @@ pub enum SettlementWriterError {
         tx_hash: H256,
         receipt: Box<TransactionReceipt>,
     },
+
+    #[error("insufficient gas: address {address:?} has {balance} but needs at least {required}")]
+    InsufficientGas { address: Address, balance: U256, required: U256 },
 }
 
 #[cfg(test)]
