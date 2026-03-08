@@ -1,5 +1,26 @@
 # Design Decision Backlog
 
+## Session: 20260308-sub1s-deploy (Sub-Second Pipeline Deployment & Fixes)
+
+- [DECISION] Increased consensus timeouts from 50/40/50/60ms to 100/100/150/200ms — original values too aggressive, caused 0-signature rounds
+- [DECISION] Increased sign_timeout_ms default from 300ms to 500ms — 300ms was too tight for first-boot timing
+- [DECISION] Changed cycle entry guard from `!=` to `>` — prevents backward cycling when Heartbeat resets wall-clock after WorkDriven advances
+- [DECISION] Restored settlement poll from 100ms back to 500ms — 100ms combined with WorkDriven caused feedback loop
+- [DECISION] WorkDriven signal only triggers for bridge in-flight orders — excluding task flags (l3_active, buy_active) prevents feedback loops
+- [FAILED] `leader_price_consensus` wrote phases to `self.state` (shared batch state) but `handle_message` read `self.price_state` for price messages — PriceVotes always rejected as "unexpected phase: Idle". Fixed all 5 locations to use `price_state` consistently.
+- [FAILED] `collect_price_votes` and PriceVote storage used `self.state` but price rounds only initialize `self.price_state` — votes stored/read in wrong state object. Fixed to use `price_state`.
+- [BUG] Contract `confirmBatch` reverts with E021_OrderAlreadyBatched — `submitOrder` sets initial status that conflicts with `confirmBatch` expectations. Order 72 stuck at status 2.
+- [BUG] Contract `confirmFills` reverts with E024_InvalidOrderStatus — downstream of confirmBatch failure.
+- [BUG] Stale bridge orders after tx reverts cause WorkDriven feedback loop — orchestrator `has_in_flight_orders()` stays true, triggering rapid cycle advances that desync issuers.
+
+### Verified Consensus Performance
+- Batch consensus: **10ms** (2/3 signers)
+- CompleteBuyOrder consensus: **7ms** (2/3 signers)
+- Fills consensus: **6ms** (2/3 signers)
+- Asset trades consensus: **9ms** (2/3 signers)
+- Price consensus (leader): **23-38ms** (2 votes)
+- Total order pipeline (detect→fills): **~555ms**
+
 ## Session: 20260308-sub1s (Universal Sub-Second Consensus Pipeline)
 
 - [DECISION] Renamed `bridge_sign_timeout_ms` → `sign_timeout_ms` globally — applies to bridge, ITP creation, and NavOracle timeouts (300ms default for all, was 2000ms hardcoded for ITP/NavOracle)
