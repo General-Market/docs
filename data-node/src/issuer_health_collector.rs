@@ -18,8 +18,8 @@ use sqlx::PgPool;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
-/// Maximum response body size from issuer /health endpoints (10 MB).
-const MAX_ISSUER_RESPONSE_BYTES: u64 = 10 * 1024 * 1024;
+/// Maximum response body size from issuer /health endpoints (64 KB — actual health response is ~2 KB).
+const MAX_ISSUER_RESPONSE_BYTES: u64 = 64 * 1024;
 
 /// Minimum poll interval in seconds (M6).
 const MIN_POLL_INTERVAL_SECS: u64 = 30;
@@ -203,26 +203,25 @@ async fn fetch_and_store(
     let consensus_success_total = consensus.get("success_total").and_then(|v| v.as_i64()).unwrap_or(0);
     let consensus_failed_total = consensus.get("failed_total").and_then(|v| v.as_i64()).unwrap_or(0);
     let signatures_collected = consensus.get("signatures_collected").and_then(|v| v.as_i64()).unwrap_or(0);
-    let last_consensus_time_ms = consensus.get("last_consensus_time_ms").and_then(|v| v.as_i64()).unwrap_or(0);
+    let last_consensus_time_ms = consensus.get("last_time_ms").and_then(|v| v.as_i64()).unwrap_or(0);
 
-    // Extract order fields
-    let orders = body.get("orders").unwrap_or(&serde_json::Value::Null);
-    let orders_processed_last_60s = orders.get("processed_last_60s").and_then(|v| v.as_i64()).unwrap_or(0);
-    let pending_order_count = orders.get("pending_count").and_then(|v| v.as_i64()).unwrap_or(0);
-    let last_cycle_duration_ms = orders.get("last_cycle_duration_ms").and_then(|v| v.as_i64()).unwrap_or(0);
+    // Extract order fields — top-level in issuer /health response
+    let orders_processed_last_60s = body.get("orders_processed_last_60s").and_then(|v| v.as_i64()).unwrap_or(0);
+    let pending_order_count = body.get("pending_order_count").and_then(|v| v.as_i64()).unwrap_or(0);
+    let last_cycle_duration_ms = body.get("last_cycle_duration_ms").and_then(|v| v.as_i64()).unwrap_or(0);
 
-    // Extract P2P fields — cast connected_peers safely
-    let p2p = body.get("p2p").unwrap_or(&serde_json::Value::Null);
-    let connected_peers_raw = p2p.get("connected_peers").and_then(|v| v.as_i64()).unwrap_or(0);
+    // Extract P2P fields — connected_peers is top-level, rest under "p2p" object
+    let connected_peers_raw = body.get("connected_peers").and_then(|v| v.as_i64()).unwrap_or(0);
     let connected_peers = connected_peers_raw.min(i32::MAX as i64) as i32;
+    let p2p = body.get("p2p").unwrap_or(&serde_json::Value::Null);
     let p2p_messages_received = p2p.get("messages_received").and_then(|v| v.as_i64()).unwrap_or(0);
     let p2p_messages_sent = p2p.get("messages_sent").and_then(|v| v.as_i64()).unwrap_or(0);
-    let p2p_wal_entries = p2p.get("wal_entries").and_then(|v| v.as_i64()).unwrap_or(0);
+    let p2p_wal_entries = p2p.get("wal_entries_written").and_then(|v| v.as_i64()).unwrap_or(0);
 
     // Extract heartbeat fields
     let heartbeat = body.get("heartbeat").unwrap_or(&serde_json::Value::Null);
-    let heartbeat_sent = heartbeat.get("sent").and_then(|v| v.as_i64()).unwrap_or(0);
-    let heartbeat_received = heartbeat.get("received").and_then(|v| v.as_i64()).unwrap_or(0);
+    let heartbeat_sent = heartbeat.get("sent_total").and_then(|v| v.as_i64()).unwrap_or(0);
+    let heartbeat_received = heartbeat.get("received_total").and_then(|v| v.as_i64()).unwrap_or(0);
     let peers_healthy_raw = heartbeat.get("peers_healthy").and_then(|v| v.as_i64()).unwrap_or(0);
     let peers_healthy = peers_healthy_raw.min(i32::MAX as i64) as i32;
     let peers_unhealthy_raw = heartbeat.get("peers_unhealthy").and_then(|v| v.as_i64()).unwrap_or(0);
@@ -268,7 +267,7 @@ async fn fetch_and_store(
 /// H2: Delete snapshots older than RETENTION_DAYS.
 async fn prune_old_snapshots(pool: &PgPool) -> Result<u64, sqlx::Error> {
     let cutoff = Utc::now() - chrono::Duration::days(RETENTION_DAYS);
-    let result = sqlx::query("DELETE FROM issuer_health_snapshots WHERE fetched_at < $1")
+    let result = sqlx::query("DELETE FROM issuer_health_snapshots WHERE poll_batch_ts < $1")
         .bind(cutoff)
         .execute(pool)
         .await?;

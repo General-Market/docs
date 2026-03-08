@@ -159,7 +159,7 @@ async fn health_history(
     .await;
 
     match rows {
-        Ok(data) => Ok(Json(data)),
+        Ok(data) => Ok(Json(serde_json::json!({"snapshots": data}))),
         Err(e) => {
             tracing::error!(error = %e, "explorer health_history query failed");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -214,7 +214,7 @@ async fn health_latest(
     .await;
 
     match row {
-        Ok(Some(data)) => Ok(Json(data)),
+        Ok(Some(data)) => Ok(Json(serde_json::json!({"network": data}))),
         Ok(None) => Err(StatusCode::NO_CONTENT),
         Err(e) => {
             tracing::error!(error = %e, "explorer health_latest query failed");

@@ -10,7 +10,9 @@ use axum::Router;
 use chrono::{DateTime, Utc};
 use ethers::prelude::*;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use sqlx::PgPool;
+use subtle::ConstantTimeEq;
 use tokio::sync::RwLock;
 use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
@@ -5589,8 +5591,21 @@ fn require_admin_auth(
         .or_else(|| headers.get("x-admin-token").and_then(|v| v.to_str().ok()));
 
     match provided {
-        Some(token) if token == expected => Ok(()),
-        _ => Err((
+        Some(token) => {
+            let expected_hash = Sha256::digest(expected.as_bytes());
+            let provided_hash = Sha256::digest(token.as_bytes());
+            if expected_hash.ct_eq(&provided_hash).unwrap_u8() == 1 {
+                Ok(())
+            } else {
+                Err((
+                    StatusCode::FORBIDDEN,
+                    Json(ErrorResponse {
+                        error: "Invalid or missing admin token".to_string(),
+                    }),
+                ))
+            }
+        }
+        None => Err((
             StatusCode::FORBIDDEN,
             Json(ErrorResponse {
                 error: "Invalid or missing admin token".to_string(),
@@ -6214,7 +6229,9 @@ async fn admin_force_sync(
 
 async fn admin_sources_health(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
 ) -> Result<Json<SourceHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
     let now = Utc::now();
 
     // All DB stats come from background cache (refreshed every 60s)
@@ -6441,8 +6458,10 @@ struct SourceAssetEntry {
 
 async fn admin_source_assets(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     AxumPath(source_id): AxumPath<String>,
 ) -> Result<Json<SourceAssetsResponse>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
     let pool = &state.pool;
     let now = Utc::now();
 
@@ -6582,9 +6601,11 @@ struct SourceHistoryBucket {
 
 async fn admin_source_history(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     AxumPath(source_id): AxumPath<String>,
     Query(params): Query<SourceHistoryQuery>,
 ) -> Result<Json<SourceHistoryResponse>, (StatusCode, Json<ErrorResponse>)> {
+    require_admin_auth(&headers, &state)?;
     let pool = &state.pool;
     let hours = params.hours.unwrap_or(24).max(1).min(168); // clamp to 1..168h (1 week max)
 

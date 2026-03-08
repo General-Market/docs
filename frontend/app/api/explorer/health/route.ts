@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json(filtered, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60' },
     })
   } catch {
     return NextResponse.json({ error: 'Upstream unavailable' }, { status: 502 })
