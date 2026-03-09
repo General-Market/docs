@@ -354,6 +354,10 @@ where
     replay_mode: std::sync::atomic::AtomicBool,
     /// Cache of last successfully fetched prices (asset → (price, timestamp_secs))
     last_prices: RwLock<std::collections::HashMap<Address, (U256, u64)>>,
+    /// Ordered list of known asset addresses — used by followers to convert
+    /// leader's (asset_index, price) tuples back to real addresses for independent
+    /// price verification. Index `i` maps to `known_assets[i]`.
+    known_assets: RwLock<Vec<Address>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -442,7 +446,14 @@ where
             wal: None,
             replay_mode: std::sync::atomic::AtomicBool::new(false),
             last_prices: RwLock::new(std::collections::HashMap::new()),
+            known_assets: RwLock::new(Vec::new()),
         }
+    }
+
+    /// Set the ordered list of known asset addresses for follower price validation.
+    /// Must match the same order the leader uses when building (index, price) tuples.
+    pub async fn set_known_assets(&self, assets: Vec<Address>) {
+        *self.known_assets.write().await = assets;
     }
 
     /// Get a handle to the pending config update cell for RegistrySyncHandler
@@ -2987,15 +2998,24 @@ where
                 .as_secs(),
         );
 
-        // Convert asset indices to addresses for fetching
+        // Convert asset indices to real addresses using the known_assets registry.
+        // The leader sends (index, price) where index maps to known_assets[index].
+        let known = self.known_assets.read().await;
         let asset_addresses: Vec<ethers::types::Address> = prices
             .iter()
             .map(|(asset_idx, _)| {
-                let mut asset_bytes = [0u8; 20];
-                asset_bytes[16..20].copy_from_slice(&asset_idx.to_be_bytes());
-                ethers::types::Address::from(asset_bytes)
+                let idx = *asset_idx as usize;
+                if idx < known.len() {
+                    known[idx]
+                } else {
+                    warn!(asset_idx, known_len = known.len(), "Asset index out of range — fabricating placeholder");
+                    let mut asset_bytes = [0u8; 20];
+                    asset_bytes[16..20].copy_from_slice(&asset_idx.to_be_bytes());
+                    ethers::types::Address::from(asset_bytes)
+                }
             })
             .collect();
+        drop(known);
 
         let leader_prices: Vec<Price> = prices
             .iter()

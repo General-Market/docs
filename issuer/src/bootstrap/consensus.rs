@@ -659,6 +659,12 @@ impl<'a> ConsensusBuilder<'a> {
             info!(self.node_id, "ConsensusProtocol configured with BridgeOrchestrator");
         }
 
+        // Set known asset addresses for follower price validation (index → address mapping)
+        let known_assets: Vec<ethers::types::Address> = price.symbol_map.assets().copied().collect();
+        let num_assets = known_assets.len();
+        protocol.set_known_assets(known_assets).await;
+        info!(self.node_id, num_assets, "ConsensusProtocol configured with known asset addresses");
+
         info!(self.node_id, "ConsensusProtocol constructed (real P2P + BLS + ChainWriter + KeyRegistry)");
         Some(protocol)
     }
