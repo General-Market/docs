@@ -303,10 +303,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     }
 
     /// @notice Clear pending mint after successful mintBridgedShares
-    /// @dev Called by issuers after confirming mint succeeded on BridgeProxy.
-    ///      No access control needed — this is pure cleanup (mint already happened).
+    /// @dev Only succeeds if mint has been processed on BridgeProxy.
+    ///      Prevents griefing of crash recovery by requiring proof that
+    ///      the mint actually happened before allowing deletion.
     /// @param orderId The order whose pending mint to clear
     function clearPendingMint(uint256 orderId) external {
+        if (!IBridgeProxy(bridgeProxy).mintProcessed(orderId)) {
+            revert ErrorsLib.E142_MintNotYetProcessed(orderId);
+        }
         delete pendingMints[orderId];
     }
 

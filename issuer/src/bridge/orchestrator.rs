@@ -4357,9 +4357,32 @@ impl BridgeOrchestrator {
     /// Follower: validate complete sell order proposal
     pub async fn validate_complete_sell_order_proposal(
         &self,
-        _proposal: &CompleteSellProposal,
+        proposal: &CompleteSellProposal,
     ) -> Result<bool, BridgeError> {
-        // Basic validation — in production, verify order state and proceeds
+        // Verify hash consistency: rebuild hash from proposal fields and our config
+        let expected_hash = build_complete_sell_order_consensus_hash(
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
+            proposal.order_id,
+            proposal.usdc_proceeds,
+            self.config.bitget_vault,
+        );
+
+        if expected_hash != proposal.message_hash {
+            warn!(
+                order_id = %proposal.order_id,
+                expected = ?expected_hash,
+                received = ?proposal.message_hash,
+                "CompleteSellOrder proposal: message hash mismatch (possible vault or proceeds manipulation)"
+            );
+            return Ok(false);
+        }
+
+        // Zero proceeds is suspicious but technically valid for dust orders
+        if proposal.usdc_proceeds.is_zero() {
+            warn!(order_id = %proposal.order_id, "CompleteSellOrder proposal: zero USDC proceeds");
+        }
+
         Ok(true)
     }
 

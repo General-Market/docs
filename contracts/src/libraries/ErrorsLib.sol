@@ -816,4 +816,8 @@ library ErrorsLib {
 
     /// @notice E141: Only the settlement custody contract can call this function
     error E141_OnlyCustody();
+
+    /// @notice E142: Cannot clear pending mint before mint is processed on BridgeProxy
+    /// @param orderId The order whose mint has not yet been processed
+    error E142_MintNotYetProcessed(uint256 orderId);
 }

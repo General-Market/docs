@@ -2097,13 +2097,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                     }
                                                 }
                                             }
-                                            if !batch_am_leader {
-                                                // Followers mark SharesBridged after BLS consensus succeeds.
-                                                // The leader handles on-chain submission; if it fails, on-chain
-                                                // replay protection (E139) makes the leader's retry idempotent.
-                                                let orch = orchestrator.write().await;
-                                                orch.mark_orders_shares_bridged(&[settlement_id]).await;
-                                            }
+                                            // Followers do NOT mark SharesBridged — they cannot know if
+                                            // the leader's on-chain tx succeeded. Marking terminal would
+                                            // prevent BLS participation in retry if leader's tx reverts.
+                                            // Memory cleanup happens on watchdog stale reset or process restart.
                                         }
                                         Err(e) => warn!(cycle = current_cycle, error = %e, order_id = %fill.order_id, "MintBridgedShares consensus failed"),
                                     }

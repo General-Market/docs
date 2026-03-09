@@ -220,6 +220,11 @@ interface IBridgeProxy {
     /// @param amount Amount of shares to burn
     function burnFromCustody(bytes32 itpId, address from, uint256 amount) external;
 
+    /// @notice Check if a mint has been processed for an order
+    /// @param orderId The order ID to check
+    /// @return True if mint was already processed
+    function mintProcessed(uint256 orderId) external view returns (bool);
+
     /// @notice Set the settlement custody contract address
     /// @param _settlementBridgeCustody Address of the SettlementBridgeCustody contract
     function setSettlementBridgeCustody(address _settlementBridgeCustody) external;
