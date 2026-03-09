@@ -795,10 +795,12 @@ pub async fn poll_registry_metadata_once(state: &AppState) -> Result<(), Box<dyn
 
 /// Poll settlement chain state: confirmed block, next creation nonce, and pending creations.
 pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Get confirmed block (latest - 10 for finality buffer)
+    // Get confirmed block (latest - 10 for finality buffer).
+    // IMPORTANT: confirmed_block is stored AFTER event caches are populated (end of function)
+    // to prevent race: issuer reads confirmed_block then queries events — if we store
+    // confirmed_block first, the issuer may see the new block height but get stale event data.
     let latest_block = state.settlement_provider.get_block_number().await?.as_u64();
     let confirmed = latest_block.saturating_sub(10);
-    state.chain_cache.settlement_confirmed_block.store(confirmed, Ordering::Relaxed);
 
     // Read BridgeProxy on settlement chain
     let bridge_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
@@ -924,6 +926,11 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
         *sell_cache = sell_orders;
         state.chain_cache.cross_chain_sell_orders_gen.bump();
     }
+
+    // Store confirmed_block LAST — after all event caches are populated.
+    // This guarantees that when an issuer reads confirmed_block=N, all events
+    // up to block N are already in the cache.
+    state.chain_cache.settlement_confirmed_block.store(confirmed, Ordering::Relaxed);
 
     Ok(())
 }
