@@ -2311,10 +2311,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                         }
                                                     }
                                                 }
-                                                if !batch_am_leader {
-                                                    let orch = orchestrator.write().await;
-                                                    orch.mark_orders_shares_bridged(&[settlement_id]).await;
-                                                }
+                                                // Followers do NOT mark SharesBridged — cannot know if leader's tx succeeded
                                             }
                                             Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (E021 path)"),
                                         }
@@ -2379,10 +2376,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                                             }
                                                         }
                                                     }
-                                                    if !batch_am_leader {
-                                                        let orch = orchestrator.write().await;
-                                                        orch.mark_orders_shares_bridged(&[settlement_id]).await;
-                                                    }
+                                                    // Followers do NOT mark SharesBridged — cannot know if leader's tx succeeded
                                                 }
                                                 Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
                                             }
@@ -2789,9 +2783,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             }
                         }
 
-                        // Mark all as SellFilled
+                        // Mark only FILLED orders as SellFilled (orders skipped by limit price stay SellSubmittedOnL3)
+                        let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                            .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                            .collect();
                         let orch = orchestrator.write().await;
-                        for oid in &submitted_sell_orders {
+                        for oid in &filled_settlement_ids {
                             orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                         }
                     }
@@ -2806,13 +2803,21 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                 orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                             }
-                            for oid in &submitted_sell_orders {
+                            // Mark only filled orders (skipped orders stay SellSubmittedOnL3)
+                            let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                                .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                                .collect();
+                            for oid in &filled_settlement_ids {
                                 orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                             }
                         } else {
                             warn!(cycle = current_cycle, error = %e, "Sell fills confirmation failed");
                             let orch = orchestrator.write().await;
-                            for oid in &submitted_sell_orders {
+                            // Mark only filled orders as Failed (skipped orders stay SellSubmittedOnL3)
+                            let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                                .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                                .collect();
+                            for oid in &filled_settlement_ids {
                                 orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
                             }
                             drop(orch);
@@ -2862,8 +2867,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                     orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                                 }
                             }
+                            // Mark only filled orders (skipped orders stay SellSubmittedOnL3)
+                            let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                                .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                                .collect();
                             let orch = orchestrator.write().await;
-                            for oid in &submitted_sell_orders {
+                            for oid in &filled_settlement_ids {
                                 orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                             }
                         }
@@ -2878,13 +2887,19 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                     orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                     orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                                 }
-                                for oid in &submitted_sell_orders {
+                                let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                                    .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                                    .collect();
+                                for oid in &filled_settlement_ids {
                                     orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                                 }
                             } else {
                                 warn!(cycle = current_cycle, error = %e, "Sell fills also failed after E021");
                                 let orch = orchestrator.write().await;
-                                for oid in &submitted_sell_orders {
+                                let filled_settlement_ids: Vec<ethers::types::U256> = fills.iter()
+                                    .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
+                                    .collect();
+                                for oid in &filled_settlement_ids {
                                     orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
                                 }
                                 drop(orch);
