@@ -258,10 +258,12 @@ impl ChainReader for DataNodeChainReader {
     }
 
     async fn get_registry_nonce(&self) -> Result<u64, Error> {
-        // Not yet cached — would need a dedicated endpoint
-        Err(Error::ChainRead(
-            "get_registry_nonce not yet cached in data-node".to_string(),
-        ))
+        #[derive(Deserialize)]
+        struct NonceResp {
+            nonce: u64,
+        }
+        let resp: NonceResp = self.get_json("/chain/l3/registry-nonce").await?;
+        Ok(resp.nonce)
     }
 
     async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error> {

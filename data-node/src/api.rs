@@ -409,6 +409,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/chain/l3/active-issuer-count", get(chain_l3_active_issuer_count))
         .route("/chain/l3/aggregated-pubkey", get(chain_l3_aggregated_pubkey))
         .route("/chain/l3/consensus-paused", get(chain_l3_consensus_paused))
+        .route("/chain/l3/registry-nonce", get(chain_l3_registry_nonce))
         .route("/chain/l3/itp-state", get(chain_l3_itp_state))
         .route("/chain/settlement/confirmed-block", get(chain_settlement_confirmed_block))
         .route("/chain/settlement/pending-creations", get(chain_settlement_pending_creations))
@@ -6783,6 +6784,34 @@ async fn chain_l3_consensus_paused(
         .consensus_paused
         .load(std::sync::atomic::Ordering::Relaxed);
     Json(serde_json::json!({ "paused": paused }))
+}
+
+// lastSnapshotNonce on IssuerRegistry
+abigen!(
+    RegistryNonceReader,
+    r#"[
+        function lastSnapshotNonce() external view returns (uint256)
+    ]"#
+);
+
+async fn chain_l3_registry_nonce(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let registry_addr_str = state.deployment["contracts"]["IssuerRegistry"]
+        .as_str()
+        .ok_or_else(|| {
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "IssuerRegistry address not in deployment".into() }))
+        })?;
+    let registry_addr: Address = registry_addr_str.parse().map_err(|_| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "invalid IssuerRegistry address".into() }))
+    })?;
+
+    let contract = RegistryNonceReader::new(registry_addr, state.l3_provider.clone());
+    let nonce = contract.last_snapshot_nonce().call().await.map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: format!("lastSnapshotNonce failed: {e}") }))
+    })?;
+
+    Ok(Json(serde_json::json!({ "nonce": nonce.as_u64() })))
 }
 
 // getITPState ABI — generated manually for data-node (no abigen! here)

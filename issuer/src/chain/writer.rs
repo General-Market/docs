@@ -467,6 +467,22 @@ impl EthersChainWriter {
                         .map_err(|e| e.to_string())?;
 
                     let tx_hash = pending_tx.tx_hash();
+
+                    // Wait for receipt and verify on-chain success.
+                    // L3 blocks are sub-second so this adds minimal latency.
+                    let receipt = pending_tx
+                        .confirmations(1)
+                        .await
+                        .map_err(|e| format!("waiting for receipt: {e}"))?
+                        .ok_or_else(|| "receipt not found after confirmation".to_string())?;
+
+                    // status == Some(0) means the TX reverted on-chain
+                    if receipt.status == Some(ethers::types::U64::zero()) {
+                        return Err(format!(
+                            "transaction {tx_hash:?} reverted on-chain (status=0)"
+                        ));
+                    }
+
                     Ok::<_, String>(tx_hash)
                 }
             })
