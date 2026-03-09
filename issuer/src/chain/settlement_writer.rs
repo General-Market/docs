@@ -436,7 +436,8 @@ impl SettlementChainWriter {
         tx_hash: H256,
         timeout_secs: u64,
     ) -> Result<TransactionReceipt, SettlementWriterError> {
-        let pending = PendingTransaction::new(tx_hash, self.client.provider());
+        let pending = PendingTransaction::new(tx_hash, self.client.provider())
+            .interval(std::time::Duration::from_millis(500));
 
         tokio::time::timeout(
             std::time::Duration::from_secs(timeout_secs),

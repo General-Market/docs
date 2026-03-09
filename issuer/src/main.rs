@@ -892,10 +892,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         });
                     }
 
-                    // Settlement tasks — poll every 5s for bridge detection
+                    // Settlement tasks — poll every 1s for bridge detection
                     // Skip bridge processing during P2P startup grace period (15s)
                     let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
-                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_secs(5);
+                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_secs(1);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
