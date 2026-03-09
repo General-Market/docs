@@ -487,6 +487,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     function setIssuerRegistry(address _issuerRegistry) external override onlyOwner {
         issuerRegistry = IIssuerRegistry(_issuerRegistry);
+        __BLSVerifier_init(_issuerRegistry);
     }
 
     function setBridgedItpFactory(address _bridgedItpFactory) external override onlyOwner {
