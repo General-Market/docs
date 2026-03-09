@@ -5502,183 +5502,29 @@ where
         })
     }
 
-    /// Handle incoming RebalanceBatchProposal message (as follower)
-    pub async fn handle_rebalance_batch_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        itp_ids: Vec<H256>,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
+    bridge_proposal_handler!(
+        handle_rebalance_batch_proposal,
+        label = "rebalance_batch",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, itp_ids: Vec<H256>, leader_signature: BLSSignature),
+        hash = |cfg| build_rebalance_batch_hash(
+            cfg.l3_chain_id, cfg.index_address, cycle_number, &itp_ids,
+        ),
+        sign = |orch, _hb| orch.sign_rebalance_batch(cycle_number, &itp_ids),
+        respond = |s, sig| P2PMessage::RebalanceBatchSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            itp_count = itp_ids.len(),
-            "Follower: Received rebalance batch proposal"
-        );
+            signature: sig,
+        },
+    );
 
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    "BridgeOrchestrator not configured"
-                );
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_rebalance_batch_hash(
-                config.l3_chain_id,
-                config.index_address,
-                cycle_number,
-                &itp_ids,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for rebalance batch");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Invalid leader signature on rebalance batch proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on rebalance batch proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to verify leader signature for rebalance batch"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_rebalance_batch(cycle_number, &itp_ids) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to sign rebalance batch proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign rebalance batch proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::RebalanceBatchSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
-            cycle_number,
-            signature,
-        };
-
-        debug!(
-            cycle_number,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending rebalance batch signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming RebalanceBatchSign message (as leader)
-    pub async fn handle_rebalance_batch_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            cycle_number,
-            "Leader: Received rebalance batch signature"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    cycle_number,
-                    "BridgeOrchestrator not configured, ignoring rebalance batch signature"
-                );
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_rebalance_batch_follower_signature(cycle_number, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    cycle_number,
-                    signature_count = result.signature_count,
-                    "Rebalance batch signature threshold reached"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    cycle_number,
-                    signer_index,
-                    "Rebalance batch signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    error = %e,
-                    "Failed to add rebalance batch signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_rebalance_batch_sign,
+        label = "rebalance_batch",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_rebalance_batch_follower_signature(cycle_number, si, sig).await,
+    );
 
     // =========================================================================
     // Story 7-14: Update Weights Consensus Phase (Task 4.3)
@@ -5852,187 +5698,29 @@ where
         })
     }
 
-    /// Handle incoming UpdateWeightsProposal message (as follower)
-    pub async fn handle_update_weights_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        itp_id: H256,
-        new_weights: Vec<U256>,
-        new_inventory: Vec<U256>,
-        nav: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            itp_id = ?itp_id,
-            weight_count = new_weights.len(),
-            "Follower: Received update weights proposal"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    itp_id = ?itp_id,
-                    "BridgeOrchestrator not configured"
-                );
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_update_weights_hash(
-                config.l3_chain_id,
-                config.index_address,
-                itp_id,
-                &new_weights,
-                &new_inventory,
-                nav,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(itp_id = ?itp_id, "Leader signature verified for update weights");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        itp_id = ?itp_id,
-                        "Invalid leader signature on update weights proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on update weights proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        itp_id = ?itp_id,
-                        error = %e,
-                        "Failed to verify leader signature for update weights"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                itp_id = ?itp_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_update_weights(itp_id, &new_weights, &new_inventory, nav) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        itp_id = ?itp_id,
-                        error = %e,
-                        "Failed to sign update weights proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign update weights proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::UpdateWeightsSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_update_weights_proposal,
+        label = "update_weights",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, itp_id: H256, new_weights: Vec<U256>, new_inventory: Vec<U256>, nav: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_update_weights_hash(
+            cfg.l3_chain_id, cfg.index_address, itp_id, &new_weights, &new_inventory, nav,
+        ),
+        sign = |orch, _hb| orch.sign_update_weights(itp_id, &new_weights, &new_inventory, nav),
+        respond = |s, sig| P2PMessage::UpdateWeightsSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             itp_id,
-            signature,
-        };
+            signature: sig,
+        },
+    );
 
-        debug!(
-            itp_id = ?itp_id,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending update weights signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming UpdateWeightsSign message (as leader)
-    pub async fn handle_update_weights_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        itp_id: H256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            itp_id = ?itp_id,
-            "Leader: Received update weights signature"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    itp_id = ?itp_id,
-                    "BridgeOrchestrator not configured, ignoring update weights signature"
-                );
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_update_weights_follower_signature(itp_id, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    itp_id = ?itp_id,
-                    signature_count = result.signature_count,
-                    "Update weights signature threshold reached"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    itp_id = ?itp_id,
-                    signer_index,
-                    "Update weights signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    itp_id = ?itp_id,
-                    error = %e,
-                    "Failed to add update weights signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_update_weights_sign,
+        label = "update_weights",
+        key_param = (itp_id: H256),
+        add_sig = |orch, si, sig| orch.add_update_weights_follower_signature(itp_id, si, sig).await,
+    );
 
     // =========================================================================
     // Single-Phase Rebalance Consensus (replaces 2-phase for on-chain call)
@@ -6188,139 +5876,31 @@ where
         })
     }
 
-    /// Handle incoming RebalanceProposal message (as follower)
-    pub async fn handle_rebalance_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        itp_id: H256,
-        remove_indices: Vec<U256>,
-        add_assets: Vec<Address>,
-        new_weights: Vec<U256>,
-        prices: Vec<U256>,
-        quote_tokens: Vec<Address>,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(itp_id = ?itp_id, "Follower: Received rebalance proposal");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(code = "INFRA-007", itp_id = ?itp_id, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_rebalance_hash(
-                config.l3_chain_id,
-                config.index_address,
-                itp_id,
-                &remove_indices,
-                &add_assets,
-                &new_weights,
-                &prices,
-                &quote_tokens,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(itp_id = ?itp_id, "Leader signature verified for rebalance");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", itp_id = ?itp_id, "Invalid leader signature on rebalance proposal");
-                    return Err(Error::BlsVerification("Invalid leader signature on rebalance proposal".to_string()));
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to verify leader signature for rebalance");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                itp_id = ?itp_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            let message_hash = build_rebalance_hash(
-                config.l3_chain_id,
-                config.index_address,
-                itp_id,
-                &remove_indices,
-                &add_assets,
-                &new_weights,
-                &prices,
-                &quote_tokens,
-            );
-            let hash_bytes: [u8; 32] = message_hash.into();
-            self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
-                .map_err(|e| Error::BlsVerification(format!("Failed to sign rebalance proposal: {}", e)))?
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::RebalanceSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_rebalance_proposal,
+        label = "rebalance",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, itp_id: H256, remove_indices: Vec<U256>, add_assets: Vec<Address>,
+                  new_weights: Vec<U256>, prices: Vec<U256>, quote_tokens: Vec<Address>, leader_signature: BLSSignature),
+        hash = |cfg| build_rebalance_hash(
+            cfg.l3_chain_id, cfg.index_address, itp_id,
+            &remove_indices, &add_assets, &new_weights, &prices, &quote_tokens,
+        ),
+        direct_sign = true,
+        respond = |s, sig| P2PMessage::RebalanceSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             itp_id,
-            signature,
-        };
+            signature: sig,
+        },
+    );
 
-        debug!(itp_id = ?itp_id, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending rebalance signature to leader");
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming RebalanceSign message (as leader)
-    pub async fn handle_rebalance_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        itp_id: H256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(?from, signer_index, itp_id = ?itp_id, "Leader: Received rebalance signature");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(itp_id = ?itp_id, "BridgeOrchestrator not configured, ignoring rebalance signature");
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_rebalance_signature(itp_id, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(itp_id = ?itp_id, signature_count = result.signature_count, "Rebalance signature threshold reached");
-            }
-            Ok(None) => {
-                debug!(itp_id = ?itp_id, signer_index, "Rebalance signature added, threshold not yet reached");
-            }
-            Err(e) => {
-                warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to add rebalance signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_rebalance_sign,
+        label = "rebalance",
+        key_param = (itp_id: H256),
+        add_sig = |orch, si, sig| orch.add_rebalance_signature(itp_id, si, sig).await,
+    );
 
     // ============================================================================
     // setItpNav BLS Consensus (pre-rebalance NAV push)
@@ -6448,127 +6028,29 @@ where
         })
     }
 
-    /// Handle incoming SetItpNavProposal message (as follower)
-    pub async fn handle_set_itp_nav_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        itp_id: H256,
-        nav: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(itp_id = ?itp_id, nav = %nav, "Follower: Received setItpNav proposal");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(code = "INFRA-007", itp_id = ?itp_id, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_set_itp_nav_hash(
-                config.l3_chain_id,
-                config.index_address,
-                itp_id,
-                nav,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(itp_id = ?itp_id, "Leader signature verified for setItpNav");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", itp_id = ?itp_id, "Invalid leader signature on setItpNav proposal");
-                    return Err(Error::BlsVerification("Invalid leader signature on setItpNav proposal".to_string()));
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to verify leader signature for setItpNav");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                itp_id = ?itp_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            let message_hash = build_set_itp_nav_hash(
-                config.l3_chain_id,
-                config.index_address,
-                itp_id,
-                nav,
-            );
-            let hash_bytes: [u8; 32] = message_hash.into();
-            self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
-                .map_err(|e| Error::BlsVerification(format!("Failed to sign setItpNav proposal: {}", e)))?
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::SetItpNavSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_set_itp_nav_proposal,
+        label = "set_itp_nav",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, itp_id: H256, nav: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_set_itp_nav_hash(
+            cfg.l3_chain_id, cfg.index_address, itp_id, nav,
+        ),
+        direct_sign = true,
+        respond = |s, sig| P2PMessage::SetItpNavSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             itp_id,
-            signature,
-        };
+            signature: sig,
+        },
+    );
 
-        debug!(itp_id = ?itp_id, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending setItpNav signature to leader");
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming SetItpNavSign message (as leader)
-    pub async fn handle_set_itp_nav_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        itp_id: H256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(?from, signer_index, itp_id = ?itp_id, "Leader: Received setItpNav signature");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(itp_id = ?itp_id, "BridgeOrchestrator not configured, ignoring setItpNav signature");
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_nav_signature(itp_id, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(itp_id = ?itp_id, signature_count = result.signature_count, "setItpNav signature threshold reached");
-            }
-            Ok(None) => {
-                debug!(itp_id = ?itp_id, signer_index, "setItpNav signature added, threshold not yet reached");
-            }
-            Err(e) => {
-                warn!(code = "INFRA-007", itp_id = ?itp_id, error = %e, "Failed to add setItpNav signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_set_itp_nav_sign,
+        label = "set_itp_nav",
+        key_param = (itp_id: H256),
+        add_sig = |orch, si, sig| orch.add_nav_signature(itp_id, si, sig).await,
+    );
 
     // ============================================================================
     // NAV Oracle (ITPNAVOracle on Arb) — Phase 2B
@@ -7424,169 +6906,39 @@ where
         })
     }
 
-    /// Handle incoming RecordCollateralMoveProposal message (as follower)
-    pub async fn handle_record_collateral_move_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        itp_id: H256,
-        from_chain: U256,
-        to_chain: U256,
-        amount: U256,
-        tx_type: u8,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(cycle_number, itp_id = ?itp_id, "Follower: Received RecordCollateralMove proposal");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(code = "INFRA-007", cycle_number, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_record_collateral_move_hash(
-                config.l3_chain_id,
-                config.collateral_registry,
-                itp_id,
-                from_chain,
-                to_chain,
-                amount,
-                tx_type,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for RecordCollateralMove");
-                }
-                Ok(false) => {
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on RecordCollateralMove".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    return Err(Error::BlsVerification(
-                        format!("Failed to verify RecordCollateralMove sig: {}", e),
-                    ));
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Reconstruct proposal with properly computed hash
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_record_collateral_move_hash(
-                config.l3_chain_id,
-                config.collateral_registry,
-                itp_id,
-                from_chain,
-                to_chain,
-                amount,
-                tx_type,
-            );
-
-            RecordCollateralMoveProposal {
-                leader_id,
-                cycle_number,
-                itp_id,
-                from_chain,
-                to_chain,
-                amount,
-                tx_type,
+    bridge_proposal_handler!(
+        handle_record_collateral_move_proposal,
+        label = "record_collateral_move",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, itp_id: H256, from_chain: U256,
+                  to_chain: U256, amount: U256, tx_type: u8, leader_signature: BLSSignature),
+        hash = |cfg| build_record_collateral_move_hash(
+            cfg.l3_chain_id, cfg.collateral_registry,
+            itp_id, from_chain, to_chain, amount, tx_type,
+        ),
+        validate = |orch, msg_hash| orch.validate_record_collateral_move_proposal(
+            &RecordCollateralMoveProposal {
+                leader_id, cycle_number, itp_id, from_chain, to_chain, amount, tx_type,
                 leader_signature: leader_signature.clone(),
-                message_hash,
-            }
-        };
-
-        // Validate proposal (duplicate check, hash consistency)
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_record_collateral_move_proposal(&proposal, orch.config().collateral_registry).await {
-                Ok(true) => {
-                    debug!(cycle_number, "RecordCollateralMove proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", cycle_number, "RecordCollateralMove proposal validation failed — refusing to sign");
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", cycle_number, error = %e, "RecordCollateralMove proposal validation error — refusing to sign");
-                    return Ok(());
-                }
-            }
-        }
-
-        // Sign the proposal
-        let hash_bytes: [u8; 32] = proposal.message_hash.into();
-        let signature = self
-            .bls_signer
-            .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| Error::BlsVerification(format!("Failed to sign RecordCollateralMove: {}", e)))?;
-
-        drop(bridge_orch_guard);
-
-        let message = P2PMessage::RecordCollateralMoveSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+                message_hash: msg_hash,
+            },
+            orch.config().collateral_registry,
+        ).await,
+        direct_sign = true,
+        respond = |s, sig| P2PMessage::RecordCollateralMoveSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            signature,
-        };
+            signature: sig,
+        },
+    );
 
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming RecordCollateralMoveSign message (as leader)
-    pub async fn handle_record_collateral_move_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(?from, signer_index, cycle_number, "Leader: Received RecordCollateralMove signature");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => return Ok(()),
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_collateral_move_follower_signature(cycle_number, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(cycle_number, signature_count = result.signature_count, "RecordCollateralMove threshold reached");
-            }
-            Ok(None) => {
-                debug!(cycle_number, signer_index, "RecordCollateralMove signature added, waiting for more");
-            }
-            Err(e) => {
-                warn!(cycle_number, error = %e, "Failed to add RecordCollateralMove signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_record_collateral_move_sign,
+        label = "record_collateral_move",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_collateral_move_follower_signature(cycle_number, si, sig).await,
+    );
 
     // ========================================================================
     // 8-step bridge: MintBridgedShares consensus phase
@@ -7718,163 +7070,39 @@ where
         })
     }
 
-    /// Handle incoming MintBridgedSharesProposal message (as follower)
-    pub async fn handle_mint_bridged_shares_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        itp_id: H256,
-        user: Address,
-        amount: U256,
-        order_id: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(cycle_number, itp_id = ?itp_id, user = ?user, order_id = %order_id, "Follower: Received MintBridgedShares proposal");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(code = "INFRA-007", cycle_number, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_mint_bridged_shares_hash(
-                config.settlement_chain_id,
-                config.bridge_proxy,
-                itp_id,
-                user,
-                amount,
-                order_id,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => debug!(cycle_number, "Leader signature verified for MintBridgedShares"),
-                Ok(false) => {
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on MintBridgedShares".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    return Err(Error::BlsVerification(
-                        format!("Failed to verify MintBridgedShares sig: {}", e),
-                    ));
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Reconstruct proposal and validate before signing
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_mint_bridged_shares_hash(
-                config.settlement_chain_id,
-                config.bridge_proxy,
-                itp_id,
-                user,
-                amount,
-                order_id,
-            );
-
-            MintBridgedSharesProposal {
-                leader_id,
-                cycle_number,
-                itp_id,
-                user,
-                amount,
-                order_id,
+    bridge_proposal_handler!(
+        handle_mint_bridged_shares_proposal,
+        label = "mint_bridged_shares",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, itp_id: H256, user: Address,
+                  amount: U256, order_id: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_mint_bridged_shares_hash(
+            cfg.settlement_chain_id, cfg.bridge_proxy,
+            itp_id, user, amount, order_id,
+        ),
+        validate = |orch, msg_hash| orch.validate_mint_bridged_shares_proposal(
+            &MintBridgedSharesProposal {
+                leader_id, cycle_number, itp_id, user, amount, order_id,
                 leader_signature: leader_signature.clone(),
-                message_hash,
-            }
-        };
-
-        // Validate proposal (duplicate check, hash consistency, zero-amount guard)
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_mint_bridged_shares_proposal(&proposal, orch.config().bridge_proxy).await {
-                Ok(true) => {
-                    debug!(cycle_number, "MintBridgedShares proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", cycle_number, "MintBridgedShares proposal validation failed — refusing to sign");
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", cycle_number, error = %e, "MintBridgedShares proposal validation error — refusing to sign");
-                    return Ok(());
-                }
-            }
-        }
-
-        // Sign the proposal
-        let hash_bytes: [u8; 32] = proposal.message_hash.into();
-        let signature = self
-            .bls_signer
-            .sign_message_hash(&self.bls_keypair, &hash_bytes)
-            .map_err(|e| Error::BlsVerification(format!("Failed to sign MintBridgedShares: {}", e)))?;
-
-        drop(bridge_orch_guard);
-
-        let message = P2PMessage::MintBridgedSharesSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+                message_hash: msg_hash,
+            },
+            orch.config().bridge_proxy,
+        ).await,
+        direct_sign = true,
+        respond = |s, sig| P2PMessage::MintBridgedSharesSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            signature,
-        };
+            signature: sig,
+        },
+    );
 
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming MintBridgedSharesSign message (as leader)
-    pub async fn handle_mint_bridged_shares_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(?from, signer_index, cycle_number, "Leader: Received MintBridgedShares signature");
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => return Ok(()),
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_mint_shares_follower_signature(cycle_number, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(cycle_number, signature_count = result.signature_count, "MintBridgedShares threshold reached");
-            }
-            Ok(None) => {
-                debug!(cycle_number, signer_index, "MintBridgedShares signature added, waiting for more");
-            }
-            Err(e) => {
-                warn!(cycle_number, error = %e, "Failed to add MintBridgedShares signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_mint_bridged_shares_sign,
+        label = "mint_bridged_shares",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_mint_shares_follower_signature(cycle_number, si, sig).await,
+    );
 
     // ========================================================================
     // completeBuyOrder BLS consensus
