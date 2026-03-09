@@ -17,7 +17,7 @@ use common::traits::ChainReader;
 use ethers::prelude::Middleware;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use super::types::generate_peer_id;
 
@@ -542,6 +542,9 @@ impl<'a> ConsensusBuilder<'a> {
                 .and_then(|a| a.parse::<ethers::types::Address>().ok())
                 .or_else(|| self.config.effective_bridge_proxy_address())
                 .unwrap_or_default(),
+            mirror_registry_address: self.config.mirror_registry_address
+                .as_ref()
+                .and_then(|a| a.parse::<ethers::types::Address>().ok()),
         };
 
         // Validate critical bridge config addresses

@@ -4,7 +4,6 @@
 //! Story 7.3: Submit Order for User
 //! Story 7.4: Batch and Fill Orchestration
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -63,6 +62,8 @@ pub struct BridgeConfig {
     pub collateral_registry: Address,
     /// BridgeProxy contract address on Settlement (8-step bridge Step 8)
     pub bridge_proxy: Address,
+    /// MirrorIssuerRegistry address on Settlement (for follower validation)
+    pub mirror_registry_address: Option<Address>,
 }
 
 impl Default for BridgeConfig {
@@ -83,6 +84,7 @@ impl Default for BridgeConfig {
             signer_address: Address::zero(),
             collateral_registry: Address::zero(), // 8-step bridge
             bridge_proxy: Address::zero(),        // 8-step bridge
+            mirror_registry_address: None,
         }
     }
 }
@@ -919,7 +921,7 @@ pub fn build_record_collateral_move_hash(
 
 /// Build message hash for MintBridgedShares consensus
 ///
-/// Matches: keccak256(abi.encode(chainid, bridgeProxy, "mintBridgedShares", itpId, user, amount))
+/// Matches: keccak256(abi.encode(chainid, bridgeProxy, "mintBridgedShares", itpId, user, amount, orderId))
 /// Uses ABI encoding with dynamic string.
 pub fn build_mint_bridged_shares_hash(
     chain_id: u64,

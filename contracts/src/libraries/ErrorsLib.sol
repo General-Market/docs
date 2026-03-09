@@ -820,4 +820,34 @@ library ErrorsLib {
     /// @notice E142: Cannot clear pending mint before mint is processed on BridgeProxy
     /// @param orderId The order whose mint has not yet been processed
     error E142_MintNotYetProcessed(uint256 orderId);
+
+    /// @notice E143: BridgeProxy already set (one-shot setter)
+    error E143_BridgeProxyAlreadySet();
+
+    // ============ SELL FLOW V5 ERRORS ============
+
+    /// @notice E147: Sell order shares already burned
+    /// @param orderId The order whose shares were already burned
+    error E147_SellOrderAlreadyBurned(uint256 orderId);
+
+    /// @notice E148: Sell order shares not yet burned (completeSellOrder requires burn first)
+    /// @param orderId The order whose shares have not been burned
+    error E148_SellSharesNotBurned(uint256 orderId);
+
+    /// @notice E149: burnBridgedShares cannot burn custody-held tokens (use burnFromCustody)
+    error E149_UseBurnFromCustody();
+
+    /// @notice E150: Cannot clear pending mint before mint is processed
+    /// @param orderId The order whose mint has not been processed
+    error E150_MintNotProcessed(uint256 orderId);
+
+    /// @notice E151: Remint too early — must wait MIN_REMINT_DELAY after burn
+    /// @param orderId The order ID
+    /// @param earliestRemint Earliest allowed remint timestamp
+    error E151_RemintTooEarly(uint256 orderId, uint256 earliestRemint);
+
+    /// @notice E152: Sell amount below minimum threshold
+    /// @param amount The submitted amount
+    /// @param minimum The required minimum
+    error E152_BelowMinSellAmount(uint256 amount, uint256 minimum);
 }

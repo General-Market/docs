@@ -376,6 +376,10 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         if (bridgeProxy_ == address(0)) {
             revert ErrorsLib.E118_ZeroBridgeProxy();
         }
+        // One-shot: cannot overwrite once set (prevents BLS-quorum proxy hijack)
+        if (address(bridgeProxy) != address(0)) {
+            revert ErrorsLib.E143_BridgeProxyAlreadySet();
+        }
 
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setBridgeProxy", bridgeProxy_));
 
