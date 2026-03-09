@@ -904,7 +904,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         let bo_some = bridge_orchestrator_for_task.is_some();
                         let sw_some = settlement_writer_for_task.is_some();
                         let ba = buy_active.load(Ordering::Relaxed);
-                        info!(cycle = current_cycle, bridge_ready, settlement_poll_due, sr_some, bo_some, sw_some, ba, "Settlement poll debug");
+                        let poll_elapsed_ms = last_settlement_poll.elapsed().as_millis() as u64;
+                        info!(cycle = current_cycle, bridge_ready, settlement_poll_due, poll_elapsed_ms, sr_some, bo_some, sw_some, ba, "Settlement poll debug");
                     }
 
                     // ITP creation — spawn if not already running (throttled)
