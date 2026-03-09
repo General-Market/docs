@@ -221,11 +221,35 @@ impl ChainReader for DataNodeChainReader {
     }
 
     async fn get_itp_inventory_state(&self, itp_id: [u8; 32]) -> Result<ItpInventoryState, Error> {
-        // Not yet cached in data-node — needs dedicated endpoint
-        Err(Error::NotFound(format!(
-            "get_itp_inventory_state not yet via data-node (0x{})",
-            hex::encode(itp_id)
-        )))
+        let itp_hex = format!("0x{}", hex::encode(itp_id));
+        let resp: serde_json::Value = self
+            .get_json(&format!("/chain/l3/itp-state?itp_id={}", itp_hex))
+            .await?;
+
+        let assets: Vec<Address> = resp["assets"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|v| v.as_str()?.parse().ok())
+            .collect();
+
+        let quantities: Vec<U256> = resp["quantities"]
+            .as_array()
+            .unwrap_or(&vec![])
+            .iter()
+            .filter_map(|v| U256::from_dec_str(v.as_str()?).ok())
+            .collect();
+
+        let nav = resp["nav"]
+            .as_str()
+            .and_then(|s| U256::from_dec_str(s).ok())
+            .unwrap_or_default();
+
+        Ok(ItpInventoryState {
+            assets,
+            quantities,
+            nav,
+        })
     }
 
     async fn get_active_issuer_count(&self) -> Result<u64, Error> {

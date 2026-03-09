@@ -409,6 +409,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/chain/l3/active-issuer-count", get(chain_l3_active_issuer_count))
         .route("/chain/l3/aggregated-pubkey", get(chain_l3_aggregated_pubkey))
         .route("/chain/l3/consensus-paused", get(chain_l3_consensus_paused))
+        .route("/chain/l3/itp-state", get(chain_l3_itp_state))
         .route("/chain/settlement/confirmed-block", get(chain_settlement_confirmed_block))
         .route("/chain/settlement/pending-creations", get(chain_settlement_pending_creations))
         .route("/chain/settlement/is-pending/:nonce", get(chain_settlement_is_pending))
@@ -6782,6 +6783,56 @@ async fn chain_l3_consensus_paused(
         .consensus_paused
         .load(std::sync::atomic::Ordering::Relaxed);
     Json(serde_json::json!({ "paused": paused }))
+}
+
+// getITPState ABI — generated manually for data-node (no abigen! here)
+abigen!(
+    ItpStateReader,
+    r#"[
+        function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
+    ]"#
+);
+
+async fn chain_l3_itp_state(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let itp_hex = params.get("itp_id").ok_or_else(|| {
+        (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "missing itp_id".into() }))
+    })?;
+
+    // Parse itp_id hex string into [u8; 32]
+    let stripped = itp_hex.strip_prefix("0x").unwrap_or(itp_hex);
+    let bytes = hex::decode(stripped).map_err(|_| {
+        (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "invalid itp_id hex".into() }))
+    })?;
+    if bytes.len() != 32 {
+        return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "itp_id must be 32 bytes".into() })));
+    }
+    let mut itp_id = [0u8; 32];
+    itp_id.copy_from_slice(&bytes);
+
+    // Get Index contract address from deployment
+    let index_addr_str = state.deployment["contracts"]["Index"]
+        .as_str()
+        .ok_or_else(|| {
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "Index address not in deployment".into() }))
+        })?;
+    let index_addr: Address = index_addr_str.parse().map_err(|_| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "invalid Index address".into() }))
+    })?;
+
+    let contract = ItpStateReader::new(index_addr, state.l3_provider.clone());
+    let (_creator, _total_supply, nav, assets, _weights, inventory) =
+        contract.get_itp_state(itp_id).call().await.map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: format!("getITPState failed: {e}") }))
+        })?;
+
+    Ok(Json(serde_json::json!({
+        "assets": assets.iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>(),
+        "quantities": inventory.iter().map(|q| q.to_string()).collect::<Vec<_>>(),
+        "nav": nav.to_string(),
+    })))
 }
 
 async fn chain_settlement_confirmed_block(
