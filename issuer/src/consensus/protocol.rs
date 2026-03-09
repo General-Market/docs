@@ -1106,6 +1106,13 @@ where
         cycle_number: u64,
         vote_timeout: std::time::Duration,
     ) -> Result<u8, Error> {
+        let expected_voters = (self.runtime_config.num_issuers() - 1) as usize;
+        info!(
+            cycle_number,
+            vote_timeout_ms = vote_timeout.as_millis() as u64,
+            expected_voters,
+            "Leader collecting price votes"
+        );
         let deadline = tokio::time::Instant::now() + vote_timeout;
 
         loop {
@@ -1113,6 +1120,8 @@ where
                 // Timeout - calculate with votes we have
                 let state = self.price_state.read().await;
                 if let Some(round) = state.current_round() {
+                    let votes = round.price_votes.len();
+                    info!(cycle_number, votes, expected_voters, "Vote collection timed out");
                     return Ok(round.disagreement_percent());
                 }
                 return Ok(0);
@@ -1126,9 +1135,9 @@ where
             if let Some(round) = state.current_round() {
                 // If we have enough votes, we can evaluate early
                 let total_votes = round.price_votes.len();
-                let expected_voters = (self.runtime_config.num_issuers() - 1) as usize; // Exclude self
 
                 if total_votes >= expected_voters {
+                    info!(cycle_number, total_votes, expected_voters, "All votes collected");
                     return Ok(round.disagreement_percent());
                 }
             }
@@ -3131,7 +3140,7 @@ where
             signature: BLSSignature(signature.0),
         };
 
-        debug!(cycle_number, approved, "Sending PriceVote to leader");
+        info!(cycle_number, approved, "Sending PriceVote to leader");
         self.p2p.send_to(leader_id, message).await
     }
 
