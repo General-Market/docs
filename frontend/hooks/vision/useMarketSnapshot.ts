@@ -126,23 +126,19 @@ export function useSourceSnapshot(dataNodeSourceId: string | undefined) {
   })
 }
 
-/** Full snapshot with all prices (~3MB gzipped) */
+/** Full snapshot with all prices (~3MB gzipped) — too large for localStorage */
 export function useMarketSnapshot() {
+  // Clear any legacy cached snapshot that was eating localStorage
+  if (typeof window !== 'undefined') {
+    try { localStorage.removeItem(CACHE_KEY_SNAPSHOT) } catch {}
+  }
+
   return useQuery<SnapshotResponse>({
     queryKey: ['market-snapshot'],
     queryFn: async () => {
-      try {
-        const res = await fetchWithTimeout(`${VISION_API_URL}/api/vision/snapshot`, 45_000)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        saveCache(CACHE_KEY_SNAPSHOT, data)
-        return data
-      } catch (err) {
-        // Fall back to localStorage cache
-        const cached = loadCache<SnapshotResponse>(CACHE_KEY_SNAPSHOT)
-        if (cached) return cached
-        throw err
-      }
+      const res = await fetchWithTimeout(`${VISION_API_URL}/api/vision/snapshot`, 45_000)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
     },
     refetchInterval: 60_000,
     staleTime: 30_000,

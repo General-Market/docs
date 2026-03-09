@@ -798,7 +798,12 @@ pub async fn run(
                         let sem = semaphore.clone();
                         let secret = secret.clone();
                         async move {
-                            let _permit = sem.acquire().await.unwrap();
+                            let _permit = match sem.acquire().await {
+                                Ok(permit) => permit,
+                                Err(_) => {
+                                    return (source, Err("semaphore closed during snapshot fetch".into()));
+                                }
+                            };
                             let result = fetch_snapshot_data_inner_with_secret(&url, &source, &secret).await;
                             (source, result)
                         }

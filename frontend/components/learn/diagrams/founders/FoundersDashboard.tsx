@@ -31,6 +31,11 @@ import {
   NAT_SHARE,
   TOP_UNIS,
   UNI_SHARE,
+  ATH_NAT,
+  ATL_NAT,
+  TIER_100_UNI,
+  TIER_500_UNI,
+  TIER_2000_UNI,
 } from "./tierData";
 import {
   TGE_AGE_DATA,
@@ -42,6 +47,7 @@ import {
 } from "./data";
 
 const TIERS = { "100": TIER_100, "500": TIER_500, "2000": TIER_2000 } as const;
+const UNI_COMP = { "100": TIER_100_UNI, "500": TIER_500_UNI, "2000": TIER_2000_UNI } as const;
 type TierKey = keyof typeof TIERS;
 
 const REGIONS = ["Americas", "Europe", "Asia", "Middle East", "Oceania", "Africa"] as const;
@@ -173,6 +179,16 @@ export function FoundersDashboard() {
     []
   );
 
+  const uniComp = UNI_COMP[tier];
+  const uniCompData = useMemo(() =>
+    TIER_DATES.map((d, i) => ({
+      date: d,
+      sameUni: uniComp.sameUni[i],
+      mixUni: uniComp.mixUni[i],
+    })),
+    [uniComp]
+  );
+
   const athData = useMemo(() =>
     ATH_DATA.quarters.map((q, i) => ({
       quarter: q,
@@ -181,6 +197,7 @@ export function FoundersDashboard() {
       btc: ATH_BTC[i],
       ...Object.fromEntries(REGIONS.map((r) => [r, ATH_DATA.region[r][i]])),
       ...Object.fromEntries(EDU_LEVELS.map((e) => [e, ATH_DATA.edu[e][i]])),
+      ...Object.fromEntries(TOP_NATS.map((n) => [n, ATH_NAT[n]?.[i] ?? 0])),
     })),
     []
   );
@@ -192,6 +209,8 @@ export function FoundersDashboard() {
       avgAge: ATL_DATA.avgAge[i],
       btc: ATL_BTC[i],
       ...Object.fromEntries(REGIONS.map((r) => [r, ATL_DATA.region[r][i]])),
+      ...Object.fromEntries(EDU_LEVELS.map((e) => [e, ATL_DATA.edu?.[e]?.[i] ?? 0])),
+      ...Object.fromEntries(TOP_NATS.map((n) => [n, ATL_NAT[n]?.[i] ?? 0])),
     })),
     []
   );
@@ -460,6 +479,25 @@ export function FoundersDashboard() {
         </ChartBox>
       </Section>
 
+      <Section title="University Composition (Same vs Mix)">
+        <Comment>
+          Among teams where founders attended named universities — what fraction went to the same school vs different ones? Same-university teams are surprisingly common at 30-40%, suggesting crypto founding teams often form through university networks.
+        </Comment>
+        <ChartBox h="300px">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={uniCompData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }} stackOffset="expand">
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#999" }} tickLine={false} interval={8} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+              <Tooltip contentStyle={ttStyle} formatter={(v: number) => [`${v}%`, ""]} />
+              <Legend wrapperStyle={{ fontSize: 10 }} iconType="square" />
+              <Area type="monotone" dataKey="sameUni" name="Same University" stackId="1" fill="#667eea" stroke="#667eea" fillOpacity={0.7} />
+              <Area type="monotone" dataKey="mixUni" name="Mixed Universities" stackId="1" fill="#f58231" stroke="#f58231" fillOpacity={0.7} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </Section>
+
       {/* ═══════════════ ATH / ATL ═══════════════ */}
 
       <div className="border-t-[3px] border-black pt-6 mt-10">
@@ -524,6 +562,26 @@ export function FoundersDashboard() {
         </ChartBox>
       </Section>
 
+      <Section title="ATH — Nationality (Top 10)" accent="#f58231">
+        <Comment>
+          Nationality breakdown of founders whose tokens hit ATH each quarter. American founders spike during bull market ATH clusters. Chinese founders are more present in early periods.
+        </Comment>
+        <ChartBox h="360px">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={athData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="quarter" tick={{ fontSize: 9, fill: "#999" }} tickLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} tickLine={false} axisLine={false} unit="%" />
+              <Tooltip contentStyle={ttStyle} />
+              <Legend wrapperStyle={{ fontSize: 9 }} iconType="plainline" />
+              {TOP_NATS.map((n, i) => (
+                <Line key={n} type="monotone" dataKey={n} name={n} stroke={NAT_LINE_COLORS[i]} strokeWidth={i < 5 ? 2 : 1} dot={false} connectNulls />
+              ))}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </Section>
+
       <div className="border-t-[3px] border-black pt-6 mt-6">
         <div className="text-[16px] font-black text-black mb-2">Tokens That Hit All-Time Low</div>
         <Comment>
@@ -582,6 +640,26 @@ export function FoundersDashboard() {
                 <Area key={e} type="monotone" dataKey={e} stackId="1" fill={EDU_COLORS[e]} stroke={EDU_COLORS[e]} fillOpacity={0.7} />
               ))}
             </AreaChart>
+          </ResponsiveContainer>
+        </ChartBox>
+      </Section>
+
+      <Section title="ATL — Nationality (Top 10)" accent="#e6194b">
+        <Comment>
+          Nationality breakdown of founders whose tokens hit ATL. More volatile than ATH patterns due to smaller sample sizes in bear market quarters.
+        </Comment>
+        <ChartBox h="360px">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={atlData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="quarter" tick={{ fontSize: 9, fill: "#999" }} tickLine={false} interval={2} />
+              <YAxis tick={{ fontSize: 10, fill: "#999" }} tickLine={false} axisLine={false} unit="%" />
+              <Tooltip contentStyle={ttStyle} />
+              <Legend wrapperStyle={{ fontSize: 9 }} iconType="plainline" />
+              {TOP_NATS.map((n, i) => (
+                <Line key={n} type="monotone" dataKey={n} name={n} stroke={NAT_LINE_COLORS[i]} strokeWidth={i < 5 ? 2 : 1} dot={false} connectNulls />
+              ))}
+            </ComposedChart>
           </ResponsiveContainer>
         </ChartBox>
       </Section>

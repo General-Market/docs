@@ -70,6 +70,16 @@ NAV = sum(qty[i] * price[i]) / 1e18
 - Issuer: `nav.rs` — `calculate_nav()`, reads inventory via `getITPState`
 - Frontend: `useItpNav.ts` — inventory-first, weight fallback for legacy ITPs
 
+## ITP Backing Invariant
+
+**NEVER mint ITP shares without confirmed backing.** Every minted share MUST be 1:1 backed by its underlying tokens.
+
+- `completeBuyOrder` on settlement (which releases USDC to AP for asset purchases) MUST succeed BEFORE shares are minted on L3
+- If `completeBuyOrder` fails (gas, revert, timeout), the entire order MUST be rolled back — no shares minted
+- The bridge buy flow MUST be atomic: either the full pipeline succeeds (USDC released + assets bought + shares minted) or nothing happens
+- Unbacked ITP is the single worst failure mode — worse than stuck orders, worse than slow consensus
+- Never "optimistically mint" shares assuming settlement will complete later
+
 ## BLS Signature Verification
 
 **NEVER skip BLS verification.** Not in local dev, not in tests, not anywhere.

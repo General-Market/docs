@@ -108,12 +108,31 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
         // Compute this player's matched stake:
         //   matched_stake = effective_stake * matched / side_total
         // Using checked math: multiply first, then divide, to maintain precision.
-        let matched_stake = input
-            .effective_stake
-            .checked_mul(matched)
-            .expect("matched_stake overflow")
-            .checked_div(side_total)
-            .expect("side_total is non-zero");
+        // On overflow or zero-division, refund everyone — this indicates corrupted data
+        // and refunding is the safest financial outcome.
+        let product = match input.effective_stake.checked_mul(matched) {
+            Some(v) => v,
+            None => {
+                tracing::error!(
+                    player = ?input.player,
+                    effective_stake = %input.effective_stake,
+                    matched = %matched,
+                    "matched_stake overflow in side matching — refunding all players"
+                );
+                return refund_all(inputs);
+            }
+        };
+        let matched_stake = match product.checked_div(side_total) {
+            Some(v) => v,
+            None => {
+                tracing::error!(
+                    player = ?input.player,
+                    side_total = %side_total,
+                    "side_total division by zero in side matching — refunding all players"
+                );
+                return refund_all(inputs);
+            }
+        };
 
         // Refund = unmatched portion
         let refund = input.effective_stake - matched_stake;

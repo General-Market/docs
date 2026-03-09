@@ -213,20 +213,19 @@ impl PeerScorer {
     // ── Internal ─────────────────────────────────────────────────────
 
     fn get_or_create(&self, peer: &PeerId) -> dashmap::mapref::one::Ref<'_, PeerId, PeerScore> {
-        if !self.scores.contains_key(peer) {
-            self.scores.insert(
-                *peer,
-                PeerScore {
-                    score: AtomicI64::new(0),
-                    invalid_messages: AtomicU32::new(0),
-                    rate_limit_hits: AtomicU32::new(0),
-                    decode_failures: AtomicU32::new(0),
-                    banned_until: Mutex::new(None),
-                    ban_count: AtomicU32::new(0),
-                },
-            );
-        }
-        self.scores.get(peer).unwrap()
+        // Use entry() for atomic insert-or-get, then downgrade the write ref
+        // to a read ref. This avoids the TOCTOU race of contains_key + get.
+        self.scores
+            .entry(*peer)
+            .or_insert_with(|| PeerScore {
+                score: AtomicI64::new(0),
+                invalid_messages: AtomicU32::new(0),
+                rate_limit_hits: AtomicU32::new(0),
+                decode_failures: AtomicU32::new(0),
+                banned_until: Mutex::new(None),
+                ban_count: AtomicU32::new(0),
+            })
+            .downgrade()
     }
 }
 

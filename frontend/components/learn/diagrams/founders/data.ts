@@ -50,6 +50,20 @@ export const TIER_SUMMARY = [
   { tier: "Top 2000", avgAge: 38.8, ageChange: "+2.8", malePct: 93.1, founders: 2143 },
 ];
 
+export const LINKEDIN_DATA = [
+  { tier: "Top 100", hasLinkedin: 74, noLinkedin: 104, total: 178, pct: 42, noPct: 58 },
+  { tier: "Top 500", hasLinkedin: 394, noLinkedin: 458, total: 852, pct: 46, noPct: 54 },
+  { tier: "Top 2000", hasLinkedin: 772, noLinkedin: 1257, total: 2029, pct: 38, noPct: 62 },
+  { tier: "All (5288)", hasLinkedin: 3153, noLinkedin: 1484, total: 4637, pct: 68, noPct: 32 },
+];
+
+// LinkedIn vs No-LinkedIn TGE-to-ATH performance (ATH/ATL, capped at 500x)
+export const LINKEDIN_PERF = [
+  { tier: "Top 100", liMult: 26.0, noLiMult: 13.8, liDays: 366, noLiDays: 120, liN: 41, noLiN: 27 },
+  { tier: "Top 500", liMult: 26.8, noLiMult: 20.7, liDays: 215, noLiDays: 165, liN: 232, noLiN: 136 },
+  { tier: "All", liMult: 35.9, noLiMult: 43.6, liDays: 228, noLiDays: 254, liN: 466, noLiN: 407 },
+];
+
 export const AGE_TIMELINE = [
   { date: "2021-Q1", t100: 36.4, t500: 35.8, t2000: 35.8 },
   { date: "2021-Q2", t100: 36.8, t500: 36.3, t2000: 36.3 },
