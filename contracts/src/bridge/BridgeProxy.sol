@@ -436,6 +436,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override whenNotPaused {
+        // v5: Custody-held tokens must be burned via burnFromCustody (called by burnSellOrderShares)
+        if (from == settlementBridgeCustody) revert ErrorsLib.E149_UseBurnFromCustody();
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         if (amount == 0) revert ErrorsLib.E106_ZeroAddressNotAllowed();
@@ -454,16 +456,31 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     /// @notice Burn BridgedITP held by custody contract. No BLS needed — only custody can call.
-    /// @dev Called atomically from SettlementBridgeCustody.completeSellOrder
+    /// @dev Called atomically from SettlementBridgeCustody.burnSellOrderShares
     /// @param itpId The L3 ITP identifier
     /// @param from Address holding the tokens (custody contract)
     /// @param amount Amount of shares to burn
-    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external {
+    function burnFromCustody(bytes32 itpId, address from, uint256 amount) external whenNotPaused {
         if (msg.sender != settlementBridgeCustody) revert ErrorsLib.E141_OnlyCustody();
         address bridgedItp = orbitToSettlement[itpId];
         if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
         IBridgedITP(bridgedItp).burn(from, amount);
         emit BridgedSharesBurned(itpId, from, amount);
+    }
+
+    /// @notice Mint BridgedITP for custody contract — recovery for failed sells.
+    /// @dev Only callable by settlementBridgeCustody. No BLS needed at this level.
+    ///      Intentionally NOT whenNotPaused: recovery must work even when paused
+    ///      to prevent permanent fund trapping after burnSellOrderShares.
+    /// @param itpId The L3 ITP identifier
+    /// @param to Address to receive minted tokens (user)
+    /// @param amount Amount of shares to mint
+    function mintFromCustody(bytes32 itpId, address to, uint256 amount) external {
+        if (msg.sender != settlementBridgeCustody) revert ErrorsLib.E141_OnlyCustody();
+        address bridgedItp = orbitToSettlement[itpId];
+        if (bridgedItp == address(0)) revert ErrorsLib.E099_BridgeItpNotFound(itpId);
+        IBridgedITP(bridgedItp).mint(to, amount);
+        emit BridgedSharesMinted(itpId, to, amount);
     }
 
     // ============ ADMIN FUNCTIONS ============
@@ -481,6 +498,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     }
 
     function setSettlementBridgeCustody(address _settlementBridgeCustody) external onlyOwner {
+        if (_settlementBridgeCustody == address(0)) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        // One-shot: cannot overwrite once set (mirrors SettlementBridgeCustody.setBridgeProxy)
+        if (settlementBridgeCustody != address(0)) revert ErrorsLib.E143_BridgeProxyAlreadySet();
         settlementBridgeCustody = _settlementBridgeCustody;
     }
 

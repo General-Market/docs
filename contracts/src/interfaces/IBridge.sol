@@ -257,19 +257,49 @@ interface ISettlementBridgeCustody {
     /// @return order The cross-chain sell order struct
     function getCrossChainSellOrder(uint256 orderId) external view returns (TypesLib.CrossChainSellOrder memory order);
 
+    /// @notice Burn escrowed BridgedITP for a sell order — MUST be called before L3 confirmFills
+    /// @dev This is the sell-side gate: BridgedITP destroyed before L3 shares burned.
+    /// @param orderId The sell order ID
+    /// @param blsSignature Aggregated BLS signature
+    function burnSellOrderShares(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Atomic recovery: re-mint BridgedITP to user after permanently failed sell
+    /// @dev One-shot: mints to user + deletes order. No intermediate state, no replay.
+    /// @param orderId The sell order ID
+    /// @param blsSignature Aggregated BLS signature
+    function remintAndRefundFailedSell(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
     /// @notice Emitted when a cross-chain sell order is created
     /// @param orderId The sell order ID
     /// @param itpId The ITP being sold
     /// @param user The user who initiated the sell
     /// @param bridgedItpAddress The BridgedITP token address
     /// @param amount Amount of BridgedITP escrowed
+    /// @param limitPrice User's minimum acceptable price per ITP token
     event CrossChainSellOrderCreated(
         uint256 indexed orderId,
         bytes32 indexed itpId,
         address indexed user,
         address bridgedItpAddress,
-        uint256 amount
+        uint256 amount,
+        uint256 limitPrice
     );
+
+    /// @notice Emitted when sell order BridgedITP shares are burned (gate passed)
+    /// @param orderId The sell order ID
+    /// @param itpId The ITP identifier
+    /// @param amount Amount of BridgedITP burned
+    event SellOrderSharesBurned(uint256 indexed orderId, bytes32 indexed itpId, uint256 amount);
 
     /// @notice Emitted when a sell order is completed
     /// @param orderId The sell order ID
@@ -279,6 +309,12 @@ interface ISettlementBridgeCustody {
     /// @notice Emitted when a sell order is refunded
     /// @param orderId The sell order ID
     event SellOrderRefunded(uint256 indexed orderId);
+
+    /// @notice Emitted when a failed sell order is recovered via remint
+    /// @param orderId The sell order ID
+    /// @param itpId The ITP identifier
+    /// @param amount Amount of BridgedITP reminted to user
+    event SellOrderReminted(uint256 indexed orderId, bytes32 indexed itpId, uint256 amount);
 
     /// @notice Emitted when BridgedITP burn fails during sell order completion
     /// @param orderId The sell order ID

@@ -34,6 +34,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @dev This is the 6-decimal minimum that users must provide
     uint256 public constant MIN_USDC_AMOUNT = 1000;
 
+    /// @notice Minimum sell amount — matches L3 MIN_ORDER_AMOUNT to prevent dust orders
+    /// that burn BridgedITP on Settlement but revert on L3, forcing costly remint recovery.
+    uint256 public constant MIN_SELL_AMOUNT = 1e15; // 0.001 shares
+
+    /// @notice Minimum delay after burn before remintAndRefundFailedSell is allowed
+    /// @dev Gives L3 ample time to finalize. Prevents TOCTOU with stale L3 view.
+    uint256 public constant MIN_REMINT_DELAY = 1 hours;
+
     /// @notice Standard operation threshold (11/20)
     uint256 public constant STANDARD_THRESHOLD = 11;
 
@@ -406,6 +414,11 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
             revert ErrorsLib.E117_CrossChainSellZeroAmount();
         }
 
+        // Validate minimum sell amount (prevents dust orders that burn BridgedITP but revert on L3)
+        if (amount < MIN_SELL_AMOUNT) {
+            revert ErrorsLib.E152_BelowMinSellAmount(amount, MIN_SELL_AMOUNT);
+        }
+
         // Validate slippage tier
         if (slippageTier > MAX_SLIPPAGE_TIER) {
             revert ErrorsLib.E011_InvalidSlippageTier(slippageTier);
@@ -440,10 +453,12 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
             limitPrice: limitPrice,
             slippageTier: slippageTier,
             deadline: deadline,
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            burned: false,
+            burnedAt: 0
         });
 
-        emit CrossChainSellOrderCreated(orderId, itpId, msg.sender, bridgedItpAddress, amount);
+        emit CrossChainSellOrderCreated(orderId, itpId, msg.sender, bridgedItpAddress, amount, limitPrice);
     }
 
     /// @inheritdoc ISettlementBridgeCustody
@@ -459,6 +474,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         if (order.user == address(0)) {
             revert ErrorsLib.E119_SellOrderNotFound(orderId);
         }
+        // v5: BridgedITP must already be burned via burnSellOrderShares
+        if (!order.burned) revert ErrorsLib.E148_SellSharesNotBurned(orderId);
 
         // Build message for BLS verification (includes vault for atomic fund+complete)
         bytes32 message = keccak256(abi.encode(
@@ -468,22 +485,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         address user = order.user;
-        bytes32 itpId = order.itpId;
-        uint256 shareAmount = order.amount;
 
         // Delete order before external calls (CEI pattern)
         delete crossChainSellOrders[orderId];
 
         // Transfer USDC proceeds from vault directly to user (6 decimals)
+        // BridgedITP was already burned in burnSellOrderShares — no burn needed here.
         if (usdcProceeds > 0) {
             usdc.safeTransferFrom(vault, user, usdcProceeds);
-        }
-
-        // Burn escrowed BridgedITP atomically — revert entire tx if burn fails
-        // to prevent USDC payment without corresponding BridgedITP destruction.
-        // This preserves the 1:1 backing invariant: no USDC out without burn.
-        if (shareAmount > 0) {
-            IBridgeProxy(bridgeProxy).burnFromCustody(itpId, address(this), shareAmount);
         }
 
         emit SellOrderCompleted(orderId, usdcProceeds);
@@ -500,6 +509,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         if (order.user == address(0)) {
             revert ErrorsLib.E119_SellOrderNotFound(orderId);
         }
+        // v5: Cannot refund after burn — BridgedITP is destroyed. Use remintAndRefundFailedSell instead.
+        if (order.burned) revert ErrorsLib.E147_SellOrderAlreadyBurned(orderId);
 
         // Build message for BLS verification
         bytes32 message = keccak256(abi.encode(
@@ -519,6 +530,66 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         IERC20(bridgedItpAddress).safeTransfer(user, amount);
 
         emit SellOrderRefunded(orderId);
+    }
+
+    /// @inheritdoc ISettlementBridgeCustody
+    function burnSellOrderShares(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
+        if (order.burned) revert ErrorsLib.E147_SellOrderAlreadyBurned(orderId);
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "burnSellOrderShares", orderId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        order.burned = true;
+        order.burnedAt = block.timestamp;
+
+        // Burn the escrowed BridgedITP via BridgeProxy
+        IBridgeProxy(bridgeProxy).burnFromCustody(order.itpId, address(this), order.amount);
+
+        emit SellOrderSharesBurned(orderId, order.itpId, order.amount);
+    }
+
+    /// @inheritdoc ISettlementBridgeCustody
+    function remintAndRefundFailedSell(
+        uint256 orderId,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external override {
+        TypesLib.CrossChainSellOrder storage order = crossChainSellOrders[orderId];
+        if (order.user == address(0)) revert ErrorsLib.E119_SellOrderNotFound(orderId);
+        if (!order.burned) revert ErrorsLib.E148_SellSharesNotBurned(orderId);
+
+        // Enforce minimum delay after burn before allowing remint
+        if (block.timestamp < order.burnedAt + MIN_REMINT_DELAY) {
+            revert ErrorsLib.E151_RemintTooEarly(orderId, order.burnedAt + MIN_REMINT_DELAY);
+        }
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(this), "remintAndRefundFailedSell", orderId
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        // Cache before delete
+        address user = order.user;
+        bytes32 itpId = order.itpId;
+        uint256 amount = order.amount;
+
+        // Delete order FIRST — prevents any replay (refund, burn, remint all revert with E119)
+        delete crossChainSellOrders[orderId];
+
+        // Mint BridgedITP directly to user (NOT to custody)
+        IBridgeProxy(bridgeProxy).mintFromCustody(itpId, user, amount);
+
+        emit SellOrderReminted(orderId, itpId, amount);
     }
 
     /// @inheritdoc ISettlementBridgeCustody

@@ -220,6 +220,13 @@ interface IBridgeProxy {
     /// @param amount Amount of shares to burn
     function burnFromCustody(bytes32 itpId, address from, uint256 amount) external;
 
+    /// @notice Mint BridgedITP for custody contract — recovery for failed sells
+    /// @dev Only callable by settlementBridgeCustody. No BLS needed at this level.
+    /// @param itpId The L3 ITP identifier
+    /// @param to Address to receive minted tokens (user)
+    /// @param amount Amount of shares to mint
+    function mintFromCustody(bytes32 itpId, address to, uint256 amount) external;
+
     /// @notice Check if a mint has been processed for an order
     /// @param orderId The order ID to check
     /// @return True if mint was already processed

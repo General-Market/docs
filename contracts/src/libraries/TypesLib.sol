@@ -230,6 +230,8 @@ library TypesLib {
     /// @param slippageTier 0=strict(0.3%), 1=normal(1%), 2=relaxed(3%)
     /// @param deadline Unix timestamp when order expires
     /// @param createdAt Timestamp when order was created
+    /// @param burned Whether BridgedITP shares have been burned (gate for confirmFills)
+    /// @param burnedAt Timestamp when shares were burned (for remint cooldown)
     struct CrossChainSellOrder {
         bytes32 itpId;
         address user;
@@ -239,6 +241,8 @@ library TypesLib {
         uint256 slippageTier;
         uint256 deadline;
         uint256 createdAt;
+        bool burned;
+        uint256 burnedAt;
     }
 
     /// @notice Issuer node registration data
