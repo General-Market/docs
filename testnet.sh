@@ -588,6 +588,7 @@ exec ./target/release/issuer \\
     --wal-path logs/consensus-$i.wal \\
     --log-level info \\
     --from-block $L3_FROM_BLOCK \\
+    --sign-timeout-ms 5000 \\
     --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \\
     $BRIDGE_ARG \\
     $VISION_ARGS" "$VPS_BE_DIR/logs/issuer-$i.log"

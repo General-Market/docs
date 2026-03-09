@@ -1804,18 +1804,23 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
                             Ok(result) => {
                                 if result.signature_count == 0 {
-                                    debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: no signatures collected (follower placeholder)");
-                                    continue;
+                                    // Follower: don't skip — continue to submit phase so we store
+                                    // the mapping needed for MintBridgedShares later
+                                    debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: follower — proceeding to submit phase");
+                                } else {
+                                    info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
                                 }
-                                info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
 
                                 match p.run_submit_order_phase(&order, am_leader).await {
                                     Ok(submit_result) => {
                                         if submit_result.signature_count == 0 {
-                                            debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
-                                            continue;
+                                            // Follower: still store mapping so we can mint BridgedITP later.
+                                            // Use settlement_order_id as L3 ID placeholder — the batch phase
+                                            // receives actual L3 IDs from leader's P2P proposal.
+                                            debug!(order_id = %order.order_id, am_leader, "Submit order: follower — storing mapping for mint phase");
+                                        } else {
+                                            info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
                                         }
-                                        info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
 
                                         ar.mark_order_processed(cid, order.order_id).await;
                                         {
@@ -1835,7 +1840,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         }
                                         // Immediately continue to batch/fills/mint (merged Phase 1+2)
                                         // instead of returning and waiting for poll-driven Phase 2
-                                        info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
+                                        info!(order_id = %order.order_id, am_leader, "Phase 1 complete, continuing to batch/fills/mint inline");
                                     }
                                     Err(e) => {
                                         warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
