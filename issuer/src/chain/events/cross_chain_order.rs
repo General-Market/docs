@@ -20,7 +20,7 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ethers::types::{Address, H256, Log, U256, U64};
+use ethers::types::{Address, H256, Log, U256};
 use thiserror::Error;
 use tracing::warn;
 
@@ -375,7 +375,7 @@ pub fn cross_chain_order_log_if_suspicious_amount(order: &CrossChainOrder) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::types::Bytes;
+    use ethers::types::{Bytes, U64};
 
     fn create_test_log(
         order_id: u64,

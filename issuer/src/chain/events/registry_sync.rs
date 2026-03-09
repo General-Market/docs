@@ -14,7 +14,7 @@
 //! Used by issuers to sync their local state with the on-chain registry
 //! and serve signed proofs via GET /api/registry-sync endpoint.
 
-use ethers::types::{H256, Log, U256, U64};
+use ethers::types::{H256, Log, U256};
 use thiserror::Error;
 
 /// Event signature for RegistryStateChanged
@@ -139,7 +139,7 @@ impl RegistryStateChangedEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::types::{Address, Bytes};
+    use ethers::types::{Address, Bytes, U64};
 
     fn create_test_log(nonce: u64, active_count: u64, state_hash: [u8; 32]) -> Log {
         // Build topics

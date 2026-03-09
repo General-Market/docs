@@ -2,7 +2,6 @@
 //!
 //! Story 7.12: MockPriceFetcher moved from issuer to common/src/mocks for test-only use.
 
-use async_trait::async_trait;
 use ethers::types::{Address, U256};
 use std::collections::HashMap;
 use std::sync::RwLock;

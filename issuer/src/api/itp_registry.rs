@@ -9,7 +9,7 @@ use ethers::types::{Address, U256};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, warn};
+use tracing::debug;
 
 use super::nav_sign::{ItpInfo, ItpRegistryReader};
 

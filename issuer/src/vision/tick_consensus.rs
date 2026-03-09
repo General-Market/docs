@@ -16,7 +16,7 @@ use ethers::types::{Address, H256, U256};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-use super::types::{PlayerBalance, TickResult};
+use super::types::TickResult;
 use crate::consensus::aggregator::{compute_threshold, AggregationStatus, SignatureAggregator};
 
 /// Compute the deterministic hash of a tick result.

@@ -8,7 +8,7 @@
 use async_trait::async_trait;
 use common::integrations::oneinch::{
     CachedQuoteClient, OneInchError, OneInchQuoteClient, OneInchRateLimitHandler, Quote,
-    QuoteCacheConfig, SupportedChain,
+    SupportedChain,
 };
 use common::types::{Price, PriceSource};
 use ethers::types::{Address, U256};

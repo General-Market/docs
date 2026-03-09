@@ -2,7 +2,7 @@
 
 use crate::{
     SettlementChainWriter, SettlementReader, BridgeOrchestrator, ConsensusConfig,
-    ConsensusProtocol, CycleConfig, CycleManager, EthersChainReader, EthersChainWriter,
+    ConsensusProtocol, CycleConfig, CycleManager, EthersChainWriter,
     HeartbeatMetrics, HeartbeatMonitor, InMemoryKeyRegistry, IssuerState, ItpCreationConfig,
     PeerHealthTracker, PriceFetcher, RegistrySyncCache,
 };

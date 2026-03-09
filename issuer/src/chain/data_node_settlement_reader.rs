@@ -6,7 +6,6 @@
 //! per-issuer instance.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -14,7 +13,7 @@ use ethers::types::{Address, H256, U256};
 use reqwest::Client;
 use serde::Deserialize;
 use tokio::sync::RwLock;
-use tracing::{debug, warn};
+use tracing::warn;
 
 use common::types::{
     CrossChainOrder, CrossChainOrderData, CrossChainOrderEvent, CrossChainSellOrderEvent,

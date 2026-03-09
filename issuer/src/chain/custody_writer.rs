@@ -10,7 +10,7 @@ use ethers::utils::keccak256;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Errors from CustodyWriter operations
 #[derive(Debug, Error)]

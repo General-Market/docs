@@ -9,7 +9,7 @@
 //! Events:
 //! - `RebalanceRequested` - ITP creator requests a rebalance with asset changes and new weights
 
-use ethers::types::{H256, Log, U256, U64};
+use ethers::types::{Log, U256};
 use thiserror::Error;
 
 // Re-export shared type from common
@@ -213,7 +213,7 @@ fn parse_string(data: &[u8], offset: usize) -> Result<String, RebalanceParseErro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::types::Bytes;
+    use ethers::types::{Bytes, H256, U64};
 
     /// Helper: encode a RebalanceRequested event log with the new format.
     ///

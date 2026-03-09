@@ -10,8 +10,7 @@
 //! - `CreateItpRequested` - User requests ITP creation on Settlement chain
 //! - `ItpCreated` - ITP creation completed with bridged token deployed
 
-use ethers::prelude::*;
-use ethers::types::{Address, H256, Log, U256};
+use ethers::types::{Address, Log, U256};
 use std::collections::HashSet;
 use thiserror::Error;
 
@@ -396,6 +395,7 @@ fn decode_address_array(data: &[u8], offset: usize) -> Result<Vec<Address>, Pars
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ethers::types::H256;
 
     fn create_test_request() -> ItpCreationRequest {
         ItpCreationRequest {
