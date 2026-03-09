@@ -2599,6 +2599,18 @@ where
                 let orch = bridge_orch.read().await;
                 let config = orch.config();
 
+                // Validate vault address matches our config — prevents leader redirecting USDC
+                if vault != config.bitget_vault {
+                    warn!(
+                        code = "INFRA-007",
+                        cycle_number = msg_cycle,
+                        expected = ?config.bitget_vault,
+                        received = ?vault,
+                        "CompleteBuyOrder proposal rejected: vault address mismatch"
+                    );
+                    return Ok(());
+                }
+
                 let message_hash = build_complete_buy_order_hash(
                     config.settlement_chain_id,
                     config.settlement_custody_address,
@@ -2901,6 +2913,61 @@ where
         }
 
         Ok(())
+    }
+
+    /// Verify a leader's BLS signature on a pre-hashed message.
+    ///
+    /// Returns Ok(()) if valid. Returns Err(BlsVerification) if:
+    /// - Leader not in key registry (unknown issuer)
+    /// - Signature invalid (tampered or wrong key)
+    /// - Verification failed (BLS error)
+    fn verify_leader_bls(
+        &self,
+        leader_id: &PeerId,
+        message_hash: &H256,
+        leader_signature: &BLSSignature,
+        label: &str,
+    ) -> Result<(), Error> {
+        let leader_pubkey = self.key_registry.get_public_key(leader_id).ok_or_else(|| {
+            warn!(
+                code = "INFRA-007",
+                ?leader_id,
+                label,
+                "Leader public key not found in registry, REJECTING proposal"
+            );
+            Error::BlsVerification(format!(
+                "Leader {:?} not found in key registry -- refusing to sign {}",
+                leader_id, label
+            ))
+        })?;
+
+        let hash_bytes: [u8; 32] = (*message_hash).into();
+        match self
+            .bls_signer
+            .verify_message_hash(&leader_pubkey, &hash_bytes, leader_signature)
+        {
+            Ok(true) => Ok(()),
+            Ok(false) => {
+                warn!(
+                    code = "INFRA-007",
+                    label,
+                    "Invalid leader signature on proposal"
+                );
+                Err(Error::BlsVerification(format!(
+                    "Invalid leader signature on {} proposal",
+                    label
+                )))
+            }
+            Err(e) => {
+                warn!(
+                    code = "INFRA-007",
+                    label,
+                    error = %e,
+                    "Failed to verify leader signature"
+                );
+                Err(e)
+            }
+        }
     }
 
     /// Follower: Handle price proposal
