@@ -892,12 +892,19 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         });
                     }
 
-                    // Settlement tasks — poll every 100ms for near-instant bridge detection
+                    // Settlement tasks — poll every 5s for bridge detection
                     // Skip bridge processing during P2P startup grace period (15s)
                     let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
                     let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_secs(5);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
+                    }
+                    if current_cycle % 30 == 0 {
+                        let sr_some = settlement_reader_for_task.is_some();
+                        let bo_some = bridge_orchestrator_for_task.is_some();
+                        let sw_some = settlement_writer_for_task.is_some();
+                        let ba = buy_active.load(Ordering::Relaxed);
+                        info!(cycle = current_cycle, bridge_ready, settlement_poll_due, sr_some, bo_some, sw_some, ba, "Settlement poll debug");
                     }
 
                     // ITP creation — spawn if not already running (throttled)
