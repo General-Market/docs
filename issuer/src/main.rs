@@ -3460,9 +3460,11 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     };
 
     if !l3_native_orders.is_empty() {
-    // 3. Leader assignment: cycle derived from min order ID (deterministic across issuers)
-    let min_order_id = l3_native_orders.iter().map(|o| o.id.as_u64()).min().unwrap();
-    let l3_cycle = min_order_id + 500_000_000;
+    // 3. Leader assignment: cycle derived from max order ID (deterministic across issuers).
+    // Using max ensures that when NEW orders arrive, the cycle number changes, avoiding
+    // collision with previously-confirmed (or reverted) cycles from stale order sets.
+    let max_order_id = l3_native_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
+    let l3_cycle = max_order_id + 500_000_000;
 
     // 4. Leader election with infinite failover rotation
     let detected_at = {
@@ -3627,7 +3629,18 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                         }
                     }
                     Err(e) => {
-                        warn!(cycle = current_cycle, error = %e, "L3-native fills also failed");
+                        let e_str = format!("{}", e);
+                        if e_str.contains("already") {
+                            // Both batch AND fills already confirmed for this cycle but orders
+                            // are still Pending on-chain. Previous TX likely reverted.
+                            // Clean up tracking so next iteration with a potentially different
+                            // order set (and thus different max-based cycle) can proceed.
+                            warn!(cycle = current_cycle, l3_cycle,
+                                "Both batch and fills already confirmed but orders still pending — clearing stale cycle");
+                            first_seen_orders.lock().await.remove(&l3_cycle);
+                        } else {
+                            warn!(cycle = current_cycle, error = %e, "L3-native fills also failed");
+                        }
                         let orch = orchestrator.write().await;
                         for oid in &order_ids {
                             orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
@@ -3675,9 +3688,9 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         return;
     }
 
-    // Leader assignment for fills: cycle derived from min order ID (deterministic across issuers)
-    let min_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).min().unwrap();
-    let fills_cycle = min_batched_id + 500_000_001;
+    // Leader assignment for fills: cycle derived from max order ID (deterministic across issuers)
+    let max_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
+    let fills_cycle = max_batched_id + 500_000_001;
 
     let detected_at = {
         let mut fso = first_seen_orders.lock().await;
