@@ -538,6 +538,34 @@ pub enum P2PMessage {
         signature: BLSSignature,
     },
 
+    /// Burn sell order proposal (burn BridgedITP before L3 sell)
+    /// Timeout: 500ms, Retry: 1
+    /// Cross-chain sell flow
+    BurnSellOrderProposal {
+        /// Leader's peer ID
+        leader_id: PeerId,
+        /// Arb sell order ID
+        order_id: U256,
+        /// Leader's BLS signature
+        leader_signature: BLSSignature,
+        /// Registry snapshot nonce for historical BLS verification
+        reference_nonce: u64,
+    },
+
+    /// Burn sell order follower signature
+    /// Timeout: 300ms, Retry: 0
+    /// Cross-chain sell flow
+    BurnSellOrderSign {
+        /// Signer's peer ID
+        signer_id: PeerId,
+        /// Signer's index in the issuer set (for bitmap)
+        signer_index: u8,
+        /// Arb sell order ID (identifies proposal)
+        order_id: U256,
+        /// Follower's BLS signature
+        signature: BLSSignature,
+    },
+
     /// Leader proposes emitting per-asset trades after cross-ITP netting
     /// Timeout: 500ms, Retry: 1
     /// Issuer-driven per-asset settlement

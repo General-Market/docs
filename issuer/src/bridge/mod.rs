@@ -31,6 +31,9 @@ pub use types::{
     build_sell_bridge_hash, SellBridgeProposal, build_complete_sell_order_calldata,
     build_complete_sell_order_consensus_hash, SellSubmitOrderResult, CompleteSellOrderResult,
     CompleteSellProposal,
+    // Burn sell order (Task 4)
+    build_burn_sell_order_hash, build_burn_sell_order_calldata,
+    BurnSellOrderProposal, BurnSellOrderResult,
     // Story 7.3: Submit Order for User
     build_erc20_approve_calldata, build_submit_order_calldata, build_submit_order_hash,
     OrderMapping, SubmitOrderProposal, SubmitOrderResult,

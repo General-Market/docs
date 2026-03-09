@@ -1185,15 +1185,34 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                 );
                                                 if matches!(status,
                                                     issuer::bridge::BridgeOrderStatus::SellPending |
+                                                    issuer::bridge::BridgeOrderStatus::SellBurnPending |
+                                                    issuer::bridge::BridgeOrderStatus::SellBurned |
                                                     issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
                                                     issuer::bridge::BridgeOrderStatus::SellFilled
                                                 ) {
-                                                    orch.reset_stale_sell_order(order_id).await;
-                                                    // Clear from seen_sell_orders dedup so event scan re-discovers it.
-                                                    // MUST be unconditional for ALL sell statuses — unlike buy orders where
-                                                    // SubmittedOnL3/Batched are re-discovered by L3-native get_pending_orders(),
-                                                    // sell orders have NO L3-native fallback discovery. The settlement event
-                                                    // scan is the ONLY way to re-discover them.
+                                                    // Task 4: Status-aware reset for burn states
+                                                    if matches!(status, issuer::bridge::BridgeOrderStatus::SellBurnPending) {
+                                                        // Check on-chain state to resolve ambiguous SellBurnPending
+                                                        if let Some(ref settlement_reader) = settlement_reader_for_task {
+                                                            let on_chain_burned = settlement_reader
+                                                                .get_cross_chain_sell_order(*order_id).await
+                                                                .ok().flatten().map(|o| o.burned)
+                                                                .unwrap_or(false);
+                                                            if on_chain_burned {
+                                                                warn!(order_id = %order_id, "Stale SellBurnPending but burn confirmed on-chain — advancing to SellBurned");
+                                                                orch.set_sell_order_status(*order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                                            } else {
+                                                                warn!(order_id = %order_id, "Stale SellBurnPending and burn NOT on-chain — resetting to SellPending");
+                                                                orch.set_sell_order_status(*order_id, issuer::BridgeOrderStatus::SellPending).await;
+                                                            }
+                                                        }
+                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellBurned) {
+                                                        // Don't reset to SellPending — keep at SellBurned, only retry L3 submit
+                                                        warn!(order_id = %order_id, "Stale SellBurned order — retrying L3 submit only");
+                                                    } else {
+                                                        orch.reset_stale_sell_order(order_id).await;
+                                                    }
+                                                    // Clear from seen_sell_orders dedup so event scan re-discovers it
                                                     if let Some(ref settlement_reader) = settlement_reader_for_task {
                                                         let chain_id = settlement_reader.chain_id();
                                                         settlement_reader.remove_seen_sell_order(chain_id, *order_id).await;
@@ -1945,8 +1964,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                     for order_id in &submitted_orders {
                         let order_itp = o.get_order_itp_id(order_id).await
                             .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                        let amount = o.get_order_amount(order_id).await
-                            .unwrap_or(ethers::types::U256::exp10(18));
+                        let amount = match o.get_order_amount(order_id).await {
+                            Some(a) => a,
+                            None => { warn!(order_id = %order_id, "Buy order amount missing — skipping trade"); continue; }
+                        };
                         trades.push((order_itp, 0u8 /* BUY */, amount));
                     }
                     trades
@@ -2016,8 +2037,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             continue;
                         }
                         let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                        let amount = o.get_order_amount(settlement_id).await
-                            .unwrap_or(ethers::types::U256::exp10(18));
+                        let amount = match o.get_order_amount(settlement_id).await {
+                            Some(a) => a,
+                            None => { warn!(order_id = %settlement_id, "Buy order amount missing — skipping fill"); continue; }
+                        };
                         // Check limit price from orchestrator (stored when order was first tracked)
                         if let Some((limit_price, side)) = o.get_order_limit_price(settlement_id).await {
                             let order_side = common::types::Side::from(side);
@@ -2192,8 +2215,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 continue;
                             }
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                            let amount = o.get_order_amount(settlement_id).await
-                                .unwrap_or(ethers::types::U256::exp10(18));
+                            let amount = match o.get_order_amount(settlement_id).await {
+                                Some(a) => a,
+                                None => { warn!(order_id = %settlement_id, "Buy order amount missing (E021 path) — skipping"); continue; }
+                            };
                             // Check limit price (E126 guard — same as normal path)
                             if let Some((limit_price, side)) = o.get_order_limit_price(settlement_id).await {
                                 let order_side = common::types::Side::from(side);
@@ -2450,59 +2475,170 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
                         orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
                         orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
+                        // Task 2: store limit price from settlement event
+                        orch_write.set_sell_order_limit_price(sell_order.order_id, sell_order.limit_price).await;
                     }
                 }
 
                 let chain_id = settlement_reader.chain_id();
-                // Process sell orders SEQUENTIALLY to avoid P2P consensus contention.
+                // Task 4: Phase A sub-step 1 — burn BridgedITP on Settlement (non-blocking)
+                // Process SellPending orders: run burn consensus, submit burn tx, advance to SellBurnPending
                 for sell_order in new_sell_orders {
                     let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
                     info!(
                         order_id = %sell_order.order_id,
                         itp_id = ?sell_order.itp_id,
                         user = ?sell_order.user,
-                        bridged_itp_address = ?sell_order.bridged_itp_address,
                         amount = %sell_order.amount,
                         am_leader,
-                        "Processing cross-chain sell order"
+                        "Phase A burn: Processing cross-chain sell order"
                     );
 
-                    {
-                        let p = protocol.clone();
-                        let ar = settlement_reader.clone();
-                        let orch = orchestrator.clone();
-                        let cid = chain_id;
-
-                        match p.run_submit_sell_order_phase(
-                            sell_order.order_id,
-                            sell_order.itp_id,
-                            sell_order.user,
-                            sell_order.bridged_itp_address,
-                            sell_order.amount,
-                            am_leader,
-                        ).await {
-                            Ok(submit_result) => {
-                                info!(
-                                    order_id = %sell_order.order_id,
-                                    signer_count = submit_result.signature_count,
-                                    "Submit sell order consensus completed"
-                                );
-                                {
-                                    let orch_write = orch.write().await;
-                                    orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                    match protocol.run_burn_sell_order_phase(sell_order.order_id, am_leader).await {
+                        Ok(burn_result) => {
+                            if am_leader && !burn_result.aggregated_signature.0.is_empty() {
+                                // Leader: submit burn tx (fire-and-forget, don't wait for receipt)
+                                match settlement_writer.burn_sell_order_shares(
+                                    sell_order.order_id,
+                                    burn_result.aggregated_signature.0.clone(),
+                                    protocol.registry_nonce(),
+                                    burn_result.signer_bitmap,
+                                ).await {
+                                    Ok(tx_hash) => {
+                                        info!(order_id = %sell_order.order_id, ?tx_hash, "burnSellOrderShares tx submitted (non-blocking)");
+                                        let orch = orchestrator.write().await;
+                                        orch.set_sell_burn_tx_hash(sell_order.order_id, tx_hash).await;
+                                        orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurnPending).await;
+                                    }
+                                    Err(e) => {
+                                        // Check on-chain state instead of string matching
+                                        let on_chain_burned = settlement_reader
+                                            .get_cross_chain_sell_order(sell_order.order_id).await
+                                            .ok().flatten().map(|o| o.burned)
+                                            .unwrap_or(false);
+                                        if on_chain_burned {
+                                            info!(order_id = %sell_order.order_id, "burnSellOrderShares already confirmed on-chain — marking SellBurned");
+                                            let orch = orchestrator.write().await;
+                                            orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                        } else {
+                                            warn!(order_id = %sell_order.order_id, error = %e, "burn tx failed — stays SellPending for retry");
+                                        }
+                                    }
                                 }
-                                ar.mark_sell_order_processed(cid, sell_order.order_id).await;
-                            }
-                            Err(e) => {
-                                warn!(order_id = %sell_order.order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
-                                ar.increment_sell_retry_count(cid, sell_order.order_id).await;
+                            } else if !am_leader {
+                                // Follower: query on-chain burned state directly
+                                let on_chain_burned = settlement_reader
+                                    .get_cross_chain_sell_order(sell_order.order_id).await
+                                    .ok().flatten().map(|o| o.burned)
+                                    .unwrap_or(false);
+                                if on_chain_burned {
+                                    info!(order_id = %sell_order.order_id, "Burn confirmed on-chain — follower advancing to SellBurned");
+                                    let orch = orchestrator.write().await;
+                                    orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                }
                             }
                         }
+                        Err(e) => warn!(order_id = %sell_order.order_id, error = %e, "Burn consensus failed — stays SellPending"),
                     }
+
+                    settlement_reader.mark_sell_order_processed(chain_id, sell_order.order_id).await;
                 }
             }
         }
         Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain sell orders"); }
+    }
+
+    // ====== Phase A sub-step 2: Check SellBurnPending receipts (non-blocking) ======
+    let burn_pending_orders = {
+        let o = orchestrator.read().await;
+        o.get_burn_pending_sell_orders().await
+    };
+    for order_id in burn_pending_orders {
+        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+        if am_leader {
+            // Leader: check receipt for stored tx_hash
+            if let Some(tx_hash) = orchestrator.read().await.get_sell_burn_tx_hash(&order_id).await {
+                match settlement_writer.wait_for_receipt(tx_hash, 5).await {
+                    Ok(receipt) => {
+                        let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
+                        if success {
+                            info!(order_id = %order_id, ?tx_hash, "burnSellOrderShares CONFIRMED on-chain");
+                            let orch = orchestrator.write().await;
+                            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                            orch.clear_sell_burn_tx_hash(&order_id).await;
+                        } else {
+                            warn!(order_id = %order_id, ?tx_hash, "burnSellOrderShares REVERTED — resetting to SellPending");
+                            let orch = orchestrator.write().await;
+                            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellPending).await;
+                            orch.clear_sell_burn_tx_hash(&order_id).await;
+                        }
+                    }
+                    Err(_) => {
+                        // Receipt not ready yet — stay SellBurnPending, will check next cycle
+                        debug!(order_id = %order_id, "burnSellOrderShares receipt not ready yet");
+                    }
+                }
+            }
+        } else {
+            // Follower: query on-chain burned state
+            let on_chain_burned = settlement_reader
+                .get_cross_chain_sell_order(order_id).await
+                .ok().flatten().map(|o| o.burned)
+                .unwrap_or(false);
+            if on_chain_burned {
+                info!(order_id = %order_id, "Burn confirmed on-chain — follower advancing to SellBurned");
+                let orch = orchestrator.write().await;
+                orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+            }
+        }
+    }
+
+    // ====== Phase A sub-step 3: Submit SellBurned orders on L3 ======
+    let burned_sell_orders = {
+        let o = orchestrator.read().await;
+        o.get_burned_sell_orders().await
+    };
+    for order_id in burned_sell_orders {
+        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+        let orch_r = orchestrator.read().await;
+        let itp_id = orch_r.get_sell_order_itp_id(&order_id).await.unwrap_or_default();
+        let amount = match orch_r.get_sell_order_amount(&order_id).await {
+            Some(a) => a,
+            None => {
+                warn!(order_id = %order_id, "Sell order amount not found — skipping");
+                continue;
+            }
+        };
+        // Reconstruct sell_order fields from orchestrator for the submit phase
+        // (user and bridged_itp_address are read from the settlement event cache)
+        let sell_order_data = settlement_reader.get_cross_chain_sell_order(order_id).await;
+        let (user, bridged_itp_address) = match sell_order_data {
+            Ok(Some(ref data)) => (data.user, data.bridged_itp_address),
+            Ok(None) => {
+                warn!(order_id = %order_id, "Sell order not found on settlement — skipping L3 submit");
+                continue;
+            }
+            Err(e) => {
+                warn!(order_id = %order_id, error = %e, "Cannot read sell order from settlement — skipping L3 submit");
+                continue;
+            }
+        };
+        drop(orch_r);
+
+        info!(order_id = %order_id, am_leader, "Phase A sub-step 3: Submitting burned sell order on L3");
+
+        match protocol.run_submit_sell_order_phase(
+            order_id, itp_id, user, bridged_itp_address, amount, am_leader,
+        ).await {
+            Ok(submit_result) => {
+                info!(order_id = %order_id, signer_count = submit_result.signature_count, "Submit sell order consensus completed");
+                let orch_write = orchestrator.write().await;
+                orch_write.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+            }
+            Err(e) => {
+                warn!(order_id = %order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
+            }
+        }
     }
 
     // ====== Phase B: Batch/trades/fills for SellSubmittedOnL3 orders ======
@@ -2569,8 +2705,10 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         for order_id in &submitted_sell_orders {
                             let order_itp = o.get_sell_order_itp_id(order_id).await
                                 .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                            let amount = o.get_sell_order_amount(order_id).await
-                                .unwrap_or(ethers::types::U256::exp10(18));
+                            let amount = match o.get_sell_order_amount(order_id).await {
+                                Some(a) => a,
+                                None => { warn!(order_id = %order_id, "Sell order amount missing — skipping trade"); continue; }
+                            };
                             trades.push((order_itp, 1u8 /* SELL */, amount));
                         }
                         trades
@@ -2597,8 +2735,17 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     for (i, order_id) in order_ids_for_batch.iter().enumerate() {
                         let settlement_order_id = submitted_sell_orders.get(i).unwrap_or(order_id);
                         let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                        let amount = o.get_sell_order_amount(settlement_order_id).await
-                            .unwrap_or(ethers::types::U256::exp10(18));
+                        let amount = match o.get_sell_order_amount(settlement_order_id).await {
+                            Some(a) => a,
+                            None => { warn!(order_id = %order_id, "Sell order amount missing — skipping fill"); continue; }
+                        };
+                        // Task 2: Check limit price before filling
+                        if let Some(limit_price) = o.get_sell_order_limit_price(settlement_order_id).await {
+                            if !limit_price.is_zero() && !fill_price_respects_limit(order_nav, limit_price, common::types::Side::Sell) {
+                                warn!(order_id = %order_id, nav = %order_nav, limit = %limit_price, "Skipping sell fill: NAV violates limit price");
+                                continue;
+                            }
+                        }
                         fills.push(Fill {
                             order_id: *order_id,
                             fill_price: order_nav,
@@ -2608,9 +2755,19 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     fills
                 };
 
-                match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
+                match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                     Ok(fills_result) => {
                         info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Sell fills confirmed");
+
+                        // Task 3: Store actual fill data for Phase C proceeds calculation
+                        {
+                            let orch = orchestrator.write().await;
+                            for (i, fill) in fills.iter().enumerate() {
+                                let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
+                                orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
+                            }
+                        }
 
                         // Mark all as SellFilled
                         let orch = orchestrator.write().await;
@@ -2646,8 +2803,10 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         let mut fills = Vec::new();
                         for (i, order_id) in order_ids_for_batch.iter().enumerate() {
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                            let amount = o.get_sell_order_amount(order_id).await
-                                .unwrap_or(ethers::types::U256::exp10(18));
+                            let amount = match o.get_sell_order_amount(order_id).await {
+                                Some(a) => a,
+                                None => { warn!(order_id = %order_id, "Sell order amount missing (E021 path) — skipping"); continue; }
+                            };
                             fills.push(Fill {
                                 order_id: *order_id,
                                 fill_price: order_nav,
@@ -2657,9 +2816,18 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         fills
                     };
 
-                    match protocol.run_fills_confirm_phase(current_cycle, fills, batch_am_leader).await {
+                    match protocol.run_fills_confirm_phase(current_cycle, fills.clone(), batch_am_leader).await {
                         Ok(fills_result) => {
                             info!(cycle = current_cycle, signer_count = fills_result.signature_count, "Sell fills confirmed (after E021)");
+                            // Store fill data for Phase C
+                            {
+                                let orch = orchestrator.write().await;
+                                for (i, fill) in fills.iter().enumerate() {
+                                    let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                    orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
+                                    orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
+                                }
+                            }
                             let orch = orchestrator.write().await;
                             for oid in &submitted_sell_orders {
                                 orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
@@ -2708,24 +2876,39 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     for order_id in filled_sell_orders {
         let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
 
-        // Calculate usdc_proceeds = (fill_amount * nav) / 1e18, then convert to 6 decimals
-        // amount is 18-dec shares, nav is 18-dec price → result is 18-dec USDC value
-        // SETTLEMENT_USDC has 6 decimals, so divide by 1e12 to convert
-        // Uses per-order ITP ID for NAV fetch (multi-ITP support)
+        // Task 3/12: Use STORED fill price (not fresh NAV) for proceeds — prevents NAV drift
         let usdc_proceeds = {
             let o = orchestrator.read().await;
-            let amount = o.get_sell_order_amount(&order_id).await
-                .unwrap_or(ethers::types::U256::exp10(18));
-            let _itp_id_str = if let Some(itp_h256) = o.get_sell_order_itp_id(&order_id).await {
-                format!("{:#066x}", itp_h256)
-            } else {
-                itp_id_for_task.clone()
+            let fill_amount = o.get_sell_order_fill_amount(&order_id).await;
+            let fill_price = o.get_sell_order_fill_price(&order_id).await;
+
+            let fill_amount = match fill_amount {
+                Some(a) if !a.is_zero() => a,
+                _ => {
+                    warn!(order_id = %order_id, "Cannot calculate proceeds — no fill amount");
+                    continue;
+                }
             };
-            drop(o);
-            let nav = local_nav_fallback;
-            // proceeds_18dec = amount * nav / 1e18, then convert to 6dec
-            let proceeds_18dec = amount * nav / ethers::types::U256::exp10(18);
-            proceeds_18dec / ethers::types::U256::exp10(12)
+            let fill_price = match fill_price {
+                Some(p) if !p.is_zero() => p,
+                _ => {
+                    warn!(order_id = %order_id, "Cannot calculate proceeds — no fill price");
+                    continue;
+                }
+            };
+
+            // proceeds_18dec = fill_amount * fill_price / 1e18, then /1e12 for 6-dec
+            let proceeds_18dec = fill_amount * fill_price / ethers::types::U256::exp10(18);
+            let proceeds_6dec = proceeds_18dec / ethers::types::U256::exp10(12);
+
+            // If proceeds round to zero, DON'T skip — call completeSellOrder with 0
+            // to cleanly delete the order on-chain (contract handles usdcProceeds=0 gracefully)
+            if proceeds_6dec.is_zero() {
+                warn!(order_id = %order_id, fill_amount = %fill_amount, fill_price = %fill_price,
+                      "Proceeds round to zero after decimal conversion — completing with 0 to close order");
+            }
+
+            proceeds_6dec
         };
 
         info!(

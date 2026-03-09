@@ -112,6 +112,10 @@ pub enum BridgeOrderStatus {
     Failed,
     /// Sell order received from Settlement, waiting for consensus
     SellPending,
+    /// Burn tx submitted on Settlement, awaiting receipt (non-blocking)
+    SellBurnPending,
+    /// BridgedITP burned on Settlement, ready for L3 sell
+    SellBurned,
     /// Sell order submitted on L3 via Index.submitOrderFor()
     SellSubmittedOnL3,
     /// Sell order filled on L3, USDC returned
@@ -192,6 +196,22 @@ pub struct CompleteSellProposal {
     /// Message hash that was signed
     pub message_hash: H256,
 }
+
+/// Burn sell order proposal for BLS consensus on Settlement
+#[derive(Debug, Clone)]
+pub struct BurnSellOrderProposal {
+    /// Leader's peer ID
+    pub leader_id: PeerId,
+    /// Settlement sell order ID
+    pub order_id: U256,
+    /// Leader's BLS signature
+    pub leader_signature: BLSSignature,
+    /// Message hash that was signed
+    pub message_hash: H256,
+}
+
+/// Result of successful burnSellOrderShares consensus
+pub type BurnSellOrderResult = SignedConsensusResult;
 
 /// Result of successful bridge execution
 pub type BridgeResult = SignedConsensusResult;
@@ -497,6 +517,54 @@ pub fn build_bridge_settlement_to_l3_hash(
 // ============================================================================
 // Cross-Chain Sell Order Hash and Calldata Builders
 // ============================================================================
+
+/// Build the consensus hash for burnSellOrderShares
+///
+/// Must match the contract's verification:
+/// `keccak256(abi.encode(block.chainid, address(this), "burnSellOrderShares", orderId))`
+pub fn build_burn_sell_order_hash(
+    chain_id: u64,
+    custody_address: Address,
+    order_id: U256,
+) -> H256 {
+    // abi.encode(uint256, address, string, uint256)
+    // Head: 4 slots (chain_id, address, string_offset, order_id)
+    // Tail: string length + padded data for "burnSellOrderShares"
+    AbiEncoder::with_capacity(224)
+        .u256(U256::from(chain_id))
+        .address_padded(custody_address)
+        .u256(U256::from(128)) // string offset (4 * 32)
+        .u256(order_id)
+        .string_with_length(b"burnSellOrderShares")
+        .keccak256()
+}
+
+/// Build calldata for SettlementBridgeCustody.burnSellOrderShares()
+///
+/// Selector: keccak256("burnSellOrderShares(uint256,bytes,uint256,uint256)")[0:4]
+///
+/// ABI encodes: orderId, blsSignature, referenceNonce, signersBitmask
+pub fn build_burn_sell_order_calldata(
+    order_id: U256,
+    bls_signature: &[u8],
+    reference_nonce: u64,
+    signers_bitmask: U256,
+) -> Vec<u8> {
+    let selector = &ethers::utils::keccak256(
+        "burnSellOrderShares(uint256,bytes,uint256,uint256)"
+    )[..4];
+
+    let mut calldata = selector.to_vec();
+    let tail = AbiEncoder::new()
+        .u256(order_id)
+        .u256(U256::from(128)) // blsSignature offset (4 * 32)
+        .u256(U256::from(reference_nonce))
+        .u256(signers_bitmask)
+        .bytes_with_length(bls_signature)
+        .finish();
+    calldata.extend_from_slice(&tail);
+    calldata
+}
 
 /// Build the message hash for sell bridge consensus
 ///

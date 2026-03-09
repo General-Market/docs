@@ -638,6 +638,31 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             order_id.to_little_endian(&mut buf);
             h.update(buf);
         }
+        P2PMessage::BurnSellOrderProposal {
+            leader_id,
+            order_id,
+            reference_nonce: _,
+            leader_signature: _,
+        } => {
+            h.update(b"BurnSellOrderProposal");
+            h.update(leader_id);
+            let mut buf = [0u8; 32];
+            order_id.to_little_endian(&mut buf);
+            h.update(buf);
+        }
+        P2PMessage::BurnSellOrderSign {
+            signer_id,
+            signer_index,
+            order_id,
+            signature: _,
+        } => {
+            h.update(b"BurnSellOrderSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            let mut buf = [0u8; 32];
+            order_id.to_little_endian(&mut buf);
+            h.update(buf);
+        }
 
         // ── Asset trades ────────────────────────────────────────
         P2PMessage::AssetTradesProposal {
@@ -1027,6 +1052,8 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::SubmitSellOrderSign { .. } => "SubmitSellOrderSign",
         P2PMessage::CompleteSellOrderProposal { .. } => "CompleteSellOrderProposal",
         P2PMessage::CompleteSellOrderSign { .. } => "CompleteSellOrderSign",
+        P2PMessage::BurnSellOrderProposal { .. } => "BurnSellOrderProposal",
+        P2PMessage::BurnSellOrderSign { .. } => "BurnSellOrderSign",
         P2PMessage::AssetTradesProposal { .. } => "AssetTradesProposal",
         P2PMessage::AssetTradesSign { .. } => "AssetTradesSign",
         P2PMessage::RecordCollateralMoveProposal { .. } => "RecordCollateralMoveProposal",
@@ -1073,6 +1100,7 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::RebalanceSign { .. }
             | P2PMessage::SubmitSellOrderSign { .. }
             | P2PMessage::CompleteSellOrderSign { .. }
+            | P2PMessage::BurnSellOrderSign { .. }
             | P2PMessage::AssetTradesSign { .. }
             | P2PMessage::RecordCollateralMoveSign { .. }
             | P2PMessage::MintBridgedSharesSign { .. }

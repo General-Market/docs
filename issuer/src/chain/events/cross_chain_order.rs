@@ -120,18 +120,19 @@ pub fn parse_cross_chain_sell_order_event(
     // Extract user from topic[3] (last 20 bytes of 32-byte topic)
     let user = Address::from_slice(&log.topics[3].as_bytes()[12..32]);
 
-    // Decode bridgedItpAddress and amount from data (non-indexed params)
+    // Decode bridgedItpAddress, amount, and limitPrice from data (non-indexed params)
     let data = &log.data.0;
-    if data.len() < 64 {
+    if data.len() < 96 {
         return Err(CrossChainOrderParseError::DecodeError {
             reason: format!(
-                "data too short for sell order: expected 64, got {}",
+                "data too short for sell order: expected 96, got {}",
                 data.len()
             ),
         });
     }
     let bridged_itp_address = Address::from_slice(&data[12..32]);
     let amount = U256::from_big_endian(&data[32..64]);
+    let limit_price = U256::from_big_endian(&data[64..96]);
 
     // Get block metadata
     let block_number = log
@@ -156,6 +157,7 @@ pub fn parse_cross_chain_sell_order_event(
         user,
         bridged_itp_address,
         amount,
+        limit_price,
         block_number,
         tx_hash,
     })

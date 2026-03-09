@@ -591,8 +591,9 @@ impl<M: Middleware> SettlementChainReader<M> {
             SettlementReaderError::ProviderError(format!("Failed to call getCrossChainSellOrder: {}", e))
         })?;
 
-        // ABI: itpId(32) + user(32) + bridgedItpAddress(32) + amount(32) + limitPrice(32) + slippageTier(32) + deadline(32) + createdAt(32) = 256 bytes
-        if result.len() < 256 {
+        // ABI: itpId(32) + user(32) + bridgedItpAddress(32) + amount(32) + limitPrice(32)
+        //      + slippageTier(32) + deadline(32) + createdAt(32) + burned(32) + burnedAt(32) = 320 bytes
+        if result.len() < 320 {
             return Ok(None);
         }
         let user = Address::from_slice(&result[44..64]);
@@ -609,6 +610,8 @@ impl<M: Middleware> SettlementChainReader<M> {
             slippage_tier: result[191] as u8,
             deadline: U256::from_big_endian(&result[192..224]),
             created_at: U256::from_big_endian(&result[224..256]),
+            burned: !U256::from_big_endian(&result[256..288]).is_zero(),
+            burned_at: U256::from_big_endian(&result[288..320]),
         }))
     }
 
@@ -688,6 +691,7 @@ impl<M: Middleware> SettlementChainReader<M> {
                         user: data.user,
                         bridged_itp_address: data.bridged_itp_address,
                         amount: data.amount,
+                        limit_price: data.limit_price,
                         block_number: 0,
                         tx_hash: H256::zero(),
                     });

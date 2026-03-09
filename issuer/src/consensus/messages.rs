@@ -662,6 +662,43 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            P2PMessage::BurnSellOrderProposal {
+                leader_id,
+                order_id,
+                reference_nonce: _,
+                leader_signature,
+            } => {
+                debug!(
+                    ?leader_id,
+                    ?order_id,
+                    "Received burn sell order proposal"
+                );
+                MessageHandleResult::ProcessBurnSellOrderProposal {
+                    from,
+                    leader_id,
+                    order_id,
+                    leader_signature,
+                }
+            }
+            P2PMessage::BurnSellOrderSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?signer_id,
+                    signer_index,
+                    ?order_id,
+                    "Received burn sell order signature"
+                );
+                MessageHandleResult::ProcessBurnSellOrderSign {
+                    from: signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
             // 8-step bridge: RecordCollateralMove consensus messages
             P2PMessage::RecordCollateralMoveProposal {
                 leader_id,
@@ -1477,6 +1514,21 @@ pub enum MessageHandleResult {
         order_id: U256,
         signature: P2PBLSSignature,
     },
+    /// Process a burn sell order proposal
+    ProcessBurnSellOrderProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: U256,
+        leader_signature: P2PBLSSignature,
+    },
+    /// Process a burn sell order signature
+    ProcessBurnSellOrderSign {
+        from: PeerId,
+        /// Signer's index in the issuer set (for bitmap calculation)
+        signer_index: u8,
+        order_id: U256,
+        signature: P2PBLSSignature,
+    },
     // 8-step bridge: RecordCollateralMove
     ProcessRecordCollateralMoveProposal {
         from: PeerId,
@@ -1611,6 +1663,7 @@ impl MessageHandleResult {
             Self::ProcessAssetTradesProposal { from, .. } => Some(*from),
             Self::ProcessSubmitSellOrderProposal { from, .. } => Some(*from),
             Self::ProcessCompleteSellOrderProposal { from, .. } => Some(*from),
+            Self::ProcessBurnSellOrderProposal { from, .. } => Some(*from),
             Self::ProcessRecordCollateralMoveProposal { from, .. } => Some(*from),
             Self::ProcessMintBridgedSharesProposal { from, .. } => Some(*from),
             Self::ProcessCompleteBuyOrderProposal { from, .. } => Some(*from),

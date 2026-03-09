@@ -86,6 +86,8 @@ pub struct CrossChainSellOrderEvent {
     pub bridged_itp_address: Address,
     /// ITP amount to sell (18 decimals)
     pub amount: U256,
+    /// Minimum sell price (18 decimals)
+    pub limit_price: U256,
     /// Block number where event was emitted
     pub block_number: u64,
     /// Transaction hash
@@ -130,6 +132,10 @@ pub struct CrossChainSellOrderData {
     pub deadline: U256,
     /// Timestamp when order was created on-chain
     pub created_at: U256,
+    /// Whether BridgedITP has been burned (sell-side gate)
+    pub burned: bool,
+    /// Timestamp when shares were burned (for remint cooldown)
+    pub burned_at: U256,
 }
 
 /// Parsed ItpCreated event from BridgeProxy on Settlement chain

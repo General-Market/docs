@@ -67,6 +67,7 @@ use crate::netting::{decompose_and_net_orders, ItpDecompState};
 use crate::bridge::{
     build_sell_bridge_hash, build_complete_sell_order_consensus_hash,
     SellBridgeProposal, SellSubmitOrderResult, CompleteSellProposal, CompleteSellOrderResult,
+    build_burn_sell_order_hash, BurnSellOrderProposal, BurnSellOrderResult,
 };
 
 // 8-step bridge: RecordCollateralMove + MintBridgedShares consensus
@@ -2417,6 +2418,56 @@ where
                         order_id = %order_id,
                         error = %e,
                         "Failed to handle CompleteSellOrderSign"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessBurnSellOrderProposal {
+                from,
+                leader_id,
+                order_id,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id = %order_id,
+                    "Received BurnSellOrderProposal - routing to handler"
+                );
+                if let Err(e) = self
+                    .handle_burn_sell_order_proposal(
+                        from, leader_id, order_id, leader_signature,
+                    )
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        order_id = %order_id,
+                        error = %e,
+                        "Failed to handle BurnSellOrderProposal"
+                    );
+                }
+            }
+            MessageHandleResult::ProcessBurnSellOrderSign {
+                from,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    signer_index,
+                    order_id = %order_id,
+                    "Received BurnSellOrderSign - adding to collector"
+                );
+                if let Err(e) = self
+                    .handle_burn_sell_order_sign(from, signer_index, order_id, signature)
+                    .await
+                {
+                    warn!(
+                        code = "INFRA-007",
+                        order_id = %order_id,
+                        error = %e,
+                        "Failed to handle BurnSellOrderSign"
                     );
                 }
             }
@@ -6527,6 +6578,146 @@ where
         label = "submit_sell_order",
         key_param = (order_id: U256),
         add_sig = |orch, si, sig| orch.add_submit_sell_order_follower_signature(order_id, si, sig).await,
+    );
+
+    // ========================================================================
+    // Burn Sell Order Consensus (Task 4)
+    // ========================================================================
+
+    pub async fn run_burn_sell_order_phase(
+        &self,
+        order_id: U256,
+        am_leader: bool,
+    ) -> Result<BurnSellOrderResult, BridgeError> {
+        info!(
+            order_id = %order_id,
+            am_leader,
+            "Starting burn sell order consensus"
+        );
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let _bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            ConsensusError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        if am_leader {
+            drop(bridge_orch_guard);
+            self.run_burn_sell_order_as_leader(order_id).await
+        } else {
+            drop(bridge_orch_guard);
+            Ok(BurnSellOrderResult {
+                aggregated_signature: BLSSignature(vec![]),
+                signer_bitmap: U256::zero(),
+                signature_count: 0,
+            })
+        }
+    }
+
+    async fn run_burn_sell_order_as_leader(
+        &self,
+        order_id: U256,
+    ) -> Result<BurnSellOrderResult, BridgeError> {
+        let ref_nonce = self.key_registry.registry_nonce();
+
+        info!(order_id = %order_id, "Leader: Creating burn sell order proposal");
+
+        let bridge_orch_guard = self.bridge_orchestrator.read().await;
+        let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
+            ConsensusError::ChainWriterError {
+                reason: "BridgeOrchestrator not configured".to_string(),
+            }
+        })?;
+
+        let proposal = {
+            let orch = bridge_orch.read().await;
+            orch.propose_burn_sell_order(order_id).await?
+        };
+        let leader_signature = proposal.leader_signature.clone();
+
+        {
+            let orch = bridge_orch.write().await;
+            orch.start_burn_sell_order_signature_collection(order_id, leader_signature).await;
+        }
+
+        let message = P2PMessage::BurnSellOrderProposal {
+            leader_id: self.config.peer_id,
+            order_id,
+            leader_signature: proposal.leader_signature.clone(),
+            reference_nonce: ref_nonce,
+        };
+
+        let config = {
+            let orch = bridge_orch.read().await;
+            orch.config().clone()
+        };
+        drop(bridge_orch_guard);
+
+        self.p2p.broadcast(message).await.map_err(|e| ConsensusError::ChainWriterError {
+            reason: format!("Failed to broadcast burn sell order proposal: {}", e),
+        })?;
+
+        info!(order_id = %order_id, "Leader: Burn sell order proposal broadcast");
+
+        let result = self.collect_burn_sell_order_signatures(
+            order_id,
+            config.sign_timeout_ms,
+            config.min_signatures,
+        ).await?;
+
+        info!(
+            order_id = %order_id,
+            signer_count = result.signature_count,
+            "Leader: Burn sell order signature threshold reached"
+        );
+
+        Ok(result)
+    }
+
+    async fn collect_burn_sell_order_signatures(
+        &self,
+        order_id: U256,
+        timeout_ms: u64,
+        _min_signatures: usize,
+    ) -> Result<BurnSellOrderResult, BridgeError> {
+        collect_sigs_loop!(self, timeout_ms, |orch| {
+            check: orch.check_burn_sell_order_threshold_reached(&order_id).await,
+            count: orch.get_burn_sell_order_signature_count(&order_id).await.unwrap_or(0),
+        })
+    }
+
+    bridge_proposal_handler!(
+        handle_burn_sell_order_proposal,
+        label = "burn_sell_order",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, order_id: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_burn_sell_order_hash(
+            cfg.settlement_chain_id, cfg.settlement_custody_address, order_id,
+        ),
+        validate = |orch, mh| orch.validate_burn_sell_order_proposal(&BurnSellOrderProposal {
+            leader_id, order_id,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_burn_sell_order_proposal(&BurnSellOrderProposal {
+            leader_id, order_id,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::BurnSellOrderSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
+            order_id,
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
+
+    bridge_sign_handler!(
+        handle_burn_sell_order_sign,
+        label = "burn_sell_order",
+        key_param = (order_id: U256),
+        add_sig = |orch, si, sig| orch.add_burn_sell_order_follower_signature(order_id, si, sig).await,
     );
 
     // ---- Complete Sell Order Consensus ----

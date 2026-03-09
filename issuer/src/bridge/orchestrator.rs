@@ -50,6 +50,8 @@ use super::types::{
     // Cross-chain sell consensus
     build_sell_bridge_hash, SellBridgeProposal, SellSubmitOrderResult,
     build_complete_sell_order_consensus_hash, CompleteSellProposal, CompleteSellOrderResult,
+    // Burn sell order consensus
+    build_burn_sell_order_hash, BurnSellOrderProposal, BurnSellOrderResult,
     // 8-step bridge: RecordCollateralMove + MintBridgedShares
     build_record_collateral_move_hash, RecordCollateralMoveProposal, RecordCollateralMoveResult,
     build_mint_bridged_shares_hash, MintBridgedSharesProposal, MintBridgedSharesResult,
@@ -128,6 +130,8 @@ pub struct BridgeOrchestrator {
     sell_order_status: RwLock<HashMap<U256, BridgeOrderStatus>>,
     /// Processed sell order IDs (for replay protection)
     processed_sell_orders: RwLock<HashMap<U256, H256>>, // order_id -> tx_hash
+    /// Generic signature manager for burn sell order proposals
+    burn_sell_sigs: SignatureCollectionManager<U256>,
     /// Generic signature manager for submit sell order proposals
     sell_bridge_sigs: SignatureCollectionManager<U256>,
     /// Generic signature manager for complete sell order proposals
@@ -136,6 +140,14 @@ pub struct BridgeOrchestrator {
     sell_order_mappings: RwLock<HashMap<U256, OrderMapping>>,
     /// Sell order amounts: order_id → amount
     sell_order_amounts: RwLock<HashMap<U256, U256>>,
+    /// Sell order limit prices: order_id → limit_price
+    sell_order_limit_prices: RwLock<HashMap<U256, U256>>,
+    /// Sell order fill prices: order_id → fill_price (stored after Phase B)
+    sell_order_fill_prices: RwLock<HashMap<U256, U256>>,
+    /// Sell order fill amounts: order_id → fill_amount (stored after Phase B)
+    sell_order_fill_amounts: RwLock<HashMap<U256, U256>>,
+    /// Pending burn tx hashes: order_id → tx_hash (for non-blocking receipt check)
+    sell_burn_tx_hashes: RwLock<HashMap<U256, H256>>,
     /// Order ITP IDs: order_id → itp_id (for multi-ITP support)
     order_itp_ids: RwLock<HashMap<U256, H256>>,
     /// Sell order ITP IDs: order_id → itp_id (for multi-ITP support)
@@ -198,10 +210,15 @@ impl BridgeOrchestrator {
             )),
             sell_order_status: RwLock::new(HashMap::new()),
             processed_sell_orders: RwLock::new(HashMap::new()),
+            burn_sell_sigs: SignatureCollectionManager::new("burn_sell"),
             sell_bridge_sigs: SignatureCollectionManager::new("sell_bridge"),
             complete_sell_sigs: SignatureCollectionManager::new("complete_sell"),
             sell_order_mappings: RwLock::new(HashMap::new()),
             sell_order_amounts: RwLock::new(HashMap::new()),
+            sell_order_limit_prices: RwLock::new(HashMap::new()),
+            sell_order_fill_prices: RwLock::new(HashMap::new()),
+            sell_order_fill_amounts: RwLock::new(HashMap::new()),
+            sell_burn_tx_hashes: RwLock::new(HashMap::new()),
             order_itp_ids: RwLock::new(HashMap::new()),
             sell_order_itp_ids: RwLock::new(HashMap::new()),
             collateral_move_phase: PhaseState::new("collateral_move"),
@@ -384,6 +401,8 @@ impl BridgeOrchestrator {
         }
         self.sell_order_status.read().await.values().any(|s| matches!(s,
             BridgeOrderStatus::SellPending |
+            BridgeOrderStatus::SellBurnPending |
+            BridgeOrderStatus::SellBurned |
             BridgeOrderStatus::SellSubmittedOnL3 |
             BridgeOrderStatus::SellFilled
         ))
@@ -452,6 +471,7 @@ impl BridgeOrchestrator {
         // races with the sell pipeline's fills consensus.
         self.sell_order_status.read().await.values().any(|status| matches!(status,
             BridgeOrderStatus::SellPending |
+            BridgeOrderStatus::SellBurnPending |
             BridgeOrderStatus::SellSubmittedOnL3
         ))
     }
@@ -473,7 +493,9 @@ impl BridgeOrchestrator {
             return true;
         }
         self.sell_order_status.read().await.values().any(|status| matches!(status,
-            BridgeOrderStatus::SellPending
+            BridgeOrderStatus::SellPending |
+            BridgeOrderStatus::SellBurnPending |
+            BridgeOrderStatus::SellBurned
         ))
     }
 
@@ -906,6 +928,7 @@ impl BridgeOrchestrator {
         self.rebalance_batch_phase.sigs.cleanup_stale(max_age_ms).await;
         self.update_weights_sigs.cleanup_stale(max_age_ms).await;
         self.asset_trades_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.burn_sell_sigs.cleanup_stale(max_age_ms).await;
         self.sell_bridge_sigs.cleanup_stale(max_age_ms).await;
         self.complete_sell_sigs.cleanup_stale(max_age_ms).await;
         self.collateral_move_phase.sigs.cleanup_stale(max_age_ms).await;
@@ -4105,6 +4128,77 @@ impl BridgeOrchestrator {
         self.sell_order_amounts.read().await.get(order_id).copied()
     }
 
+    /// Store sell order limit price
+    pub async fn set_sell_order_limit_price(&self, order_id: U256, limit_price: U256) {
+        self.sell_order_limit_prices.write().await.insert(order_id, limit_price);
+    }
+
+    /// Get sell order limit price
+    pub async fn get_sell_order_limit_price(&self, order_id: &U256) -> Option<U256> {
+        self.sell_order_limit_prices.read().await.get(order_id).copied()
+    }
+
+    /// Store sell order fill price (after Phase B confirmFills)
+    pub async fn set_sell_order_fill_price(&self, order_id: U256, fill_price: U256) {
+        self.sell_order_fill_prices.write().await.insert(order_id, fill_price);
+    }
+
+    /// Get sell order fill price
+    pub async fn get_sell_order_fill_price(&self, order_id: &U256) -> Option<U256> {
+        self.sell_order_fill_prices.read().await.get(order_id).copied()
+    }
+
+    /// Store sell order fill amount (after Phase B confirmFills)
+    pub async fn set_sell_order_fill_amount(&self, order_id: U256, fill_amount: U256) {
+        self.sell_order_fill_amounts.write().await.insert(order_id, fill_amount);
+    }
+
+    /// Get sell order fill amount
+    pub async fn get_sell_order_fill_amount(&self, order_id: &U256) -> Option<U256> {
+        self.sell_order_fill_amounts.read().await.get(order_id).copied()
+    }
+
+    /// Store pending burn tx hash (for non-blocking receipt check)
+    pub async fn set_sell_burn_tx_hash(&self, order_id: U256, tx_hash: H256) {
+        self.sell_burn_tx_hashes.write().await.insert(order_id, tx_hash);
+    }
+
+    /// Get pending burn tx hash
+    pub async fn get_sell_burn_tx_hash(&self, order_id: &U256) -> Option<H256> {
+        self.sell_burn_tx_hashes.read().await.get(order_id).copied()
+    }
+
+    /// Remove pending burn tx hash (after receipt confirmed or reset)
+    pub async fn clear_sell_burn_tx_hash(&self, order_id: &U256) {
+        self.sell_burn_tx_hashes.write().await.remove(order_id);
+    }
+
+    /// Get sell orders with SellBurned status (ready for L3 submit)
+    pub async fn get_burned_sell_orders(&self) -> Vec<U256> {
+        let mut ids: Vec<U256> = self.sell_order_status
+            .read()
+            .await
+            .iter()
+            .filter(|(_, status)| **status == BridgeOrderStatus::SellBurned)
+            .map(|(id, _)| *id)
+            .collect();
+        ids.sort();
+        ids
+    }
+
+    /// Get sell orders with SellBurnPending status (awaiting receipt)
+    pub async fn get_burn_pending_sell_orders(&self) -> Vec<U256> {
+        let mut ids: Vec<U256> = self.sell_order_status
+            .read()
+            .await
+            .iter()
+            .filter(|(_, status)| **status == BridgeOrderStatus::SellBurnPending)
+            .map(|(id, _)| *id)
+            .collect();
+        ids.sort();
+        ids
+    }
+
     /// Get a snapshot of all sell order statuses
     pub async fn sell_order_status_snapshot(&self) -> HashMap<U256, BridgeOrderStatus> {
         self.sell_order_status.read().await.clone()
@@ -4247,6 +4341,127 @@ impl BridgeOrchestrator {
             .map_err(Into::into)
     }
 
+    // ============================================================================
+    // Burn Sell Order Consensus Methods (Task 4)
+    // ============================================================================
+
+    /// Propose burn sell order — leader builds hash and signs
+    pub async fn propose_burn_sell_order(
+        &self,
+        order_id: U256,
+    ) -> Result<BurnSellOrderProposal, BridgeError> {
+        let message_hash = build_burn_sell_order_hash(
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
+            order_id,
+        );
+
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let leader_signature = self
+            .bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| ConsensusError::BlsSigningError {
+                reason: e.to_string(),
+            })?;
+
+        Ok(BurnSellOrderProposal {
+            leader_id: self.peer_id,
+            order_id,
+            leader_signature,
+            message_hash,
+        })
+    }
+
+    /// Validate burn sell order proposal — follower verifies hash consistency
+    pub async fn validate_burn_sell_order_proposal(
+        &self,
+        proposal: &BurnSellOrderProposal,
+    ) -> Result<bool, BridgeError> {
+        let expected_hash = build_burn_sell_order_hash(
+            self.config.settlement_chain_id,
+            self.config.settlement_custody_address,
+            proposal.order_id,
+        );
+
+        if expected_hash != proposal.message_hash {
+            warn!(
+                order_id = %proposal.order_id,
+                expected = ?expected_hash,
+                received = ?proposal.message_hash,
+                "BurnSellOrder proposal: message hash mismatch"
+            );
+            return Ok(false);
+        }
+
+        Ok(true)
+    }
+
+    /// Sign burn sell order proposal (follower signs the message hash)
+    pub fn sign_burn_sell_order_proposal(
+        &self,
+        proposal: &BurnSellOrderProposal,
+    ) -> Result<BLSSignature, BridgeError> {
+        let hash_bytes: [u8; 32] = proposal.message_hash.into();
+        self.bls_signer
+            .sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| ConsensusError::BlsSigningError {
+                reason: format!("Failed to sign burn sell order proposal: {}", e),
+            })
+            .map_err(Into::into)
+    }
+
+    /// Start collecting signatures for burn sell order
+    pub async fn start_burn_sell_order_signature_collection(
+        &self,
+        order_id: U256,
+        leader_signature: BLSSignature,
+    ) {
+        self.burn_sell_sigs
+            .start_collection(order_id, self.node_index, leader_signature)
+            .await;
+    }
+
+    /// Add follower signature for burn sell order
+    pub async fn add_burn_sell_order_follower_signature(
+        &self,
+        order_id: U256,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<BurnSellOrderResult>, BridgeError> {
+        let result = self.burn_sell_sigs
+            .add_follower_signature(
+                &order_id,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await?;
+        Ok(result)
+    }
+
+    /// Check if burn sell order threshold reached
+    pub async fn check_burn_sell_order_threshold_reached(
+        &self,
+        order_id: &U256,
+    ) -> Option<BurnSellOrderResult> {
+        self.burn_sell_sigs
+            .check_threshold(order_id, self.config.min_signatures, &self.bls_signer)
+            .await
+    }
+
+    /// Get signature count for burn sell order
+    pub async fn get_burn_sell_order_signature_count(
+        &self,
+        order_id: &U256,
+    ) -> Option<usize> {
+        self.burn_sell_sigs.get_signature_count(order_id).await
+    }
+
+    // ============================================================================
+    // Submit Sell Order Consensus Methods
+    // ============================================================================
+
     /// Start collecting signatures for submit sell order
     pub async fn start_submit_sell_order_signature_collection(
         &self,
@@ -4353,7 +4568,7 @@ impl BridgeOrchestrator {
             itp_id,
             1, // SELL
             amount,
-            U256::zero(),        // limitPrice = 0 (no limit for sell)
+            self.get_sell_order_limit_price(&order_id).await.unwrap_or_default(), // Task 2: user's limit price
             U256::zero(),        // slippageTier = 0
             deadline,
         );
@@ -4457,6 +4672,60 @@ impl BridgeOrchestrator {
                 "CompleteSellOrder proposal: message hash mismatch (possible vault or proceeds manipulation)"
             );
             return Ok(false);
+        }
+
+        // Task 12: Independent proceeds verification — don't blindly trust leader's usdc_proceeds
+        // Compute expected proceeds from stored fill data
+        let fill_amount = self.get_sell_order_fill_amount(&proposal.order_id).await;
+        let fill_price = self.get_sell_order_fill_price(&proposal.order_id).await;
+
+        if let (Some(fa), Some(fp)) = (fill_amount, fill_price) {
+            // proceeds_18dec = fill_amount * fill_price / 1e18, then /1e12 for 6-dec
+            let expected_18dec = fa * fp / U256::exp10(18);
+            let expected_6dec = expected_18dec / U256::exp10(12);
+
+            // Allow ±1 unit rounding tolerance at 6 decimals
+            let diff = if proposal.usdc_proceeds > expected_6dec {
+                proposal.usdc_proceeds - expected_6dec
+            } else {
+                expected_6dec - proposal.usdc_proceeds
+            };
+
+            if diff > U256::from(1) {
+                warn!(
+                    order_id = %proposal.order_id,
+                    proposed = %proposal.usdc_proceeds,
+                    expected = %expected_6dec,
+                    fill_amount = %fa,
+                    fill_price = %fp,
+                    "REJECTING completeSellOrder proposal: proceeds mismatch"
+                );
+                return Ok(false);
+            }
+
+            // Also check limit price if available
+            if let Some(limit_price) = self.get_sell_order_limit_price(&proposal.order_id).await {
+                if !limit_price.is_zero() {
+                    let min_proceeds_18dec = fa * limit_price / U256::exp10(18);
+                    let min_proceeds_6dec = min_proceeds_18dec / U256::exp10(12);
+                    if proposal.usdc_proceeds < min_proceeds_6dec && !min_proceeds_6dec.is_zero() {
+                        warn!(
+                            order_id = %proposal.order_id,
+                            proposed = %proposal.usdc_proceeds,
+                            min_from_limit = %min_proceeds_6dec,
+                            "REJECTING completeSellOrder proposal: below user's limit price"
+                        );
+                        return Ok(false);
+                    }
+                }
+            }
+        } else {
+            // No fill data available — allow but warn (may happen after restart before recovery)
+            warn!(
+                order_id = %proposal.order_id,
+                usdc_proceeds = %proposal.usdc_proceeds,
+                "CompleteSellOrder: no fill data for independent verification — trusting leader"
+            );
         }
 
         // Zero proceeds is suspicious but technically valid for dust orders
