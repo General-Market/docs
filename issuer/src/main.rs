@@ -1024,6 +1024,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                                         if success {
                                                                             info!(?tx_hash, %order_id, "Pending mint CONFIRMED");
                                                                             orch.write().await.mark_orders_shares_bridged(&[order_id]).await;
+                                                                            // Clean up pendingMints entry on settlement
+                                                                            if let Err(e) = aw.clear_pending_mint(order_id).await {
+                                                                                debug!(%order_id, error = %e, "clearPendingMint failed (non-critical)");
+                                                                            }
                                                                         } else {
                                                                             warn!(?tx_hash, %order_id, "Pending mint REVERTED — will retry next startup");
                                                                         }
@@ -1035,6 +1039,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                                 let err_str = format!("{}", e);
                                                                 if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
                                                                     info!(%order_id, "Pending mint already processed (E139)");
+                                                                    orch.write().await.mark_orders_shares_bridged(&[order_id]).await;
+                                                                    if let Err(e) = aw.clear_pending_mint(order_id).await {
+                                                                        debug!(%order_id, error = %e, "clearPendingMint failed (non-critical)");
+                                                                    }
                                                                 } else {
                                                                     warn!(error = %e, %order_id, "Pending mint recovery failed");
                                                                 }

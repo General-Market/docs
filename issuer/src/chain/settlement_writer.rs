@@ -1555,6 +1555,52 @@ impl SettlementChainWriter {
         )))
     }
 
+    /// Call clearPendingMint(orderId) on SettlementBridgeCustody.
+    /// No BLS needed — anyone can call after mint is processed.
+    pub async fn clear_pending_mint(
+        &self,
+        order_id: U256,
+    ) -> Result<H256, SettlementWriterError> {
+        // selector: clearPendingMint(uint256)
+        let selector = &ethers::utils::keccak256(b"clearPendingMint(uint256)")[..4];
+        let mut calldata = Vec::with_capacity(36);
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&ethers::abi::encode(&[ethers::abi::Token::Uint(order_id)]));
+
+        if let Err(e) = self.nonce_manager.resync().await {
+            debug!(error = %e, "Nonce resync failed for clearPendingMint");
+        }
+        let tx_nonce = U256::from(self.nonce_manager.current_nonce());
+        let _ = self.nonce_manager.get_next_nonce().await;
+
+        let mut tx: TypedTransaction = Eip1559TransactionRequest::new()
+            .to(self.config.settlement_custody_address)
+            .data(calldata)
+            .chain_id(self.config.chain_id)
+            .into();
+        tx.set_nonce(tx_nonce);
+
+        let gas = self.gas_estimator.estimate_gas(&tx).await
+            .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
+        tx.set_gas(gas);
+
+        let gas_price = self.gas_estimator.get_gas_price().await
+            .map_err(|e| SettlementWriterError::GasEstimationError(e.to_string()))?;
+        if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx {
+            gas_price.apply_to_tx(eip1559_tx);
+        }
+
+        match self.client.send_transaction(tx, None).await {
+            Ok(pending_tx) => {
+                let tx_hash = pending_tx.tx_hash();
+                info!(%order_id, ?tx_hash, "clearPendingMint submitted");
+                self.nonce_manager.track_pending(tx_nonce, tx_hash);
+                Ok(tx_hash)
+            }
+            Err(e) => Err(SettlementWriterError::TransactionError(e.to_string())),
+        }
+    }
+
 }
 
 /// Errors for SettlementChainWriter operations
