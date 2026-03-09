@@ -47,6 +47,7 @@ pub enum ConsensusError {
 
 pub mod aggregator;
 pub mod equivocation;
+pub(crate) mod handler_macros;
 pub mod itp_creation;
 pub mod rebalance_request;
 mod keys;
