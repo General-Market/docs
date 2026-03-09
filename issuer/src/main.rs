@@ -1470,11 +1470,16 @@ async fn run_price_update<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    // 1. Fetch prices
+    // 1. Fetch prices — map each returned price to its index in known_assets
+    //    so followers can look up the correct address via known_assets[index].
+    //    fetch_prices may return results in a different order than the input.
     let prices: Vec<(u32, ethers::types::U256)> = if !known_assets.is_empty() {
         match price_fetcher.fetch_prices(&known_assets).await {
             Ok(p) if !p.is_empty() => {
-                p.iter().enumerate().map(|(i, price)| (i as u32, price.price)).collect()
+                p.iter().filter_map(|price| {
+                    known_assets.iter().position(|a| *a == price.asset)
+                        .map(|idx| (idx as u32, price.price))
+                }).collect()
             }
             Ok(_) | Err(_) => {
                 // Fallback to on-chain
