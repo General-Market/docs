@@ -58,7 +58,7 @@ impl EventSignatures {
                 "CrossChainOrderCreated(uint256,bytes32,address,uint256)",
             )),
             cross_chain_sell_order_created: H256::from(keccak256(
-                "CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256)",
+                "CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256,uint256)",
             )),
             itp_created: H256::from(keccak256(
                 "ItpCreated(bytes32,address,uint256,address)",

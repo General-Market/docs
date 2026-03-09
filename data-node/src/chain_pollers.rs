@@ -95,7 +95,7 @@ abigen!(
         function getCrossChainOrder(uint256 orderId) external view returns (bytes32 itpId, address user, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, uint256 createdAt)
         function getCrossChainSellOrder(uint256 orderId) external view returns (bytes32 itpId, address user, address bridgedItpAddress, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, uint256 createdAt)
         event CrossChainOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, uint256 amount)
-        event CrossChainSellOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, address bridgedItpAddress, uint256 amount)
+        event CrossChainSellOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, address bridgedItpAddress, uint256 amount, uint256 limitPrice)
     ]"#
 );
 

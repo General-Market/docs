@@ -35,7 +35,7 @@ pub use common::types::{
 const SUSPICIOUS_AMOUNT_THRESHOLD: u128 = 1_000_000_000_000; // 1e12
 
 /// Event signature for CrossChainSellOrderCreated
-/// `keccak256("CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256)")`
+/// `keccak256("CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256,uint256)")`
 ///
 /// Topics layout (3 indexed):
 /// - topics[0]: event signature hash
@@ -91,7 +91,7 @@ pub enum CrossChainOrderParseError {
 
 /// Parse CrossChainSellOrderCreated event from a raw log
 ///
-/// Event: CrossChainSellOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, address bridgedItpAddress, uint256 amount)
+/// Event: CrossChainSellOrderCreated(uint256 indexed orderId, bytes32 indexed itpId, address indexed user, address bridgedItpAddress, uint256 amount, uint256 limitPrice)
 ///
 /// Topics (3 indexed params):
 /// - [0]: event signature hash
