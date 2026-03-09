@@ -2242,48 +2242,7 @@ where
                     };
 
                     // Verify leader's BLS signature before signing
-                    {
-                        let hash_bytes: [u8; 32] = message_hash.into();
-                        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-                            match self
-                                .bls_signer
-                                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-                            {
-                                Ok(true) => {
-                                    debug!(cycle_number = msg_cycle, "Leader signature verified for AssetTrades");
-                                }
-                                Ok(false) => {
-                                    warn!(
-                                        code = "INFRA-007",
-                                        cycle_number = msg_cycle,
-                                        "Invalid leader signature on AssetTrades proposal"
-                                    );
-                                    return Err(Error::BlsVerification(
-                                        "Invalid leader signature on AssetTrades proposal".to_string(),
-                                    ));
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        code = "INFRA-007",
-                                        cycle_number = msg_cycle,
-                                        error = %e,
-                                        "Failed to verify leader signature for AssetTrades"
-                                    );
-                                    return Err(e);
-                                }
-                            }
-                        } else {
-                            warn!(
-                                code = "INFRA-007",
-                                cycle_number = msg_cycle,
-                                leader_id = ?leader_id,
-                                "Leader public key not found in registry, REJECTING proposal"
-                            );
-                            return Err(Error::BlsVerification(
-                                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-                            ));
-                        }
-                    }
+                    self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "asset_trades")?;
 
                     let proposal = AssetTradesProposal {
                         leader_id,
@@ -2619,51 +2578,10 @@ where
                     vault,
                 );
 
-                let hash_bytes: [u8; 32] = message_hash.into();
-
                 // Verify leader's BLS signature before signing
-                if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-                    match self
-                        .bls_signer
-                        .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-                    {
-                        Ok(true) => {
-                            debug!(cycle_number = msg_cycle, order_id = %order_id, "Leader signature verified for CompleteBuyOrder");
-                        }
-                        Ok(false) => {
-                            warn!(
-                                code = "INFRA-007",
-                                cycle_number = msg_cycle,
-                                order_id = %order_id,
-                                "Invalid leader signature on CompleteBuyOrder proposal"
-                            );
-                            return Err(Error::BlsVerification(
-                                "Invalid leader signature on CompleteBuyOrder proposal".to_string(),
-                            ));
-                        }
-                        Err(e) => {
-                            warn!(
-                                code = "INFRA-007",
-                                cycle_number = msg_cycle,
-                                order_id = %order_id,
-                                error = %e,
-                                "Failed to verify leader signature for CompleteBuyOrder"
-                            );
-                            return Err(e);
-                        }
-                    }
-                } else {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number = msg_cycle,
-                        ?leader_id,
-                        "Leader public key not found in registry, REJECTING proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-                    ));
-                }
+                self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "complete_buy_order")?;
 
+                let hash_bytes: [u8; 32] = message_hash.into();
                 let signature = self
                     .bls_signer
                     .sign_message_hash(&self.bls_keypair, &hash_bytes)
@@ -6082,36 +6000,11 @@ where
             timestamp,
             cycle_number,
         );
-        let hash_bytes: [u8; 32] = message_hash.into();
-
         // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(?itp_address, "Leader signature verified for NavOracleProposal");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", ?itp_address, ?leader_id, "Invalid leader signature on NavOracleProposal");
-                    return Err(Error::BlsVerification("Invalid leader signature on NavOracleProposal".to_string()));
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", ?itp_address, error = %e, "Failed to verify leader signature for NavOracleProposal");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                ?itp_address,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING NavOracleProposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign NavOracleProposal", leader_id)
-            ));
-        }
+        self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "nav_oracle")?;
 
         // Sign the oracle hash with own BLS key
+        let hash_bytes: [u8; 32] = message_hash.into();
         let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign NavOracleProposal: {}", e)))?;
 
@@ -6203,32 +6096,7 @@ where
         );
 
         // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(nonce, "Leader signature verified for MirrorSync");
-                }
-                Ok(false) => {
-                    warn!(code = "INFRA-007", nonce, "Invalid leader signature on MirrorSyncProposal");
-                    return Err(Error::BlsVerification("Invalid leader signature on MirrorSyncProposal".to_string()));
-                }
-                Err(e) => {
-                    warn!(code = "INFRA-007", nonce, error = %e, "Failed to verify leader signature for MirrorSync");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                nonce,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING MirrorSync proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign mirror sync", leader_id)
-            ));
-        }
+        self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "mirror_sync")?;
 
         // TODO: Optionally verify proposed state matches L3 IssuerRegistry via chain_reader
         // For now, trust the leader's proposal since the leader will have verified it.
