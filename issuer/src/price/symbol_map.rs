@@ -65,9 +65,16 @@ impl SymbolMap {
         self.map.is_empty()
     }
 
-    /// Get all mapped assets
+    /// Get all mapped assets in deterministic order (sorted by address).
+    ///
+    /// CRITICAL: The ordering must be identical across all issuer processes.
+    /// HashMap iteration order is non-deterministic, so we sort by address bytes.
+    /// This ensures leader and follower agree on asset index → address mapping
+    /// during price consensus.
     pub fn assets(&self) -> impl Iterator<Item = &Address> {
-        self.map.keys()
+        let mut keys: Vec<&Address> = self.map.keys().collect();
+        keys.sort();
+        keys.into_iter()
     }
 
     /// Create default symbol map with common Settlement chain tokens
