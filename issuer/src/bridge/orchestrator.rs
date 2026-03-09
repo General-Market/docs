@@ -167,6 +167,10 @@ pub struct BridgeOrchestrator {
     pub complete_buy_notify: Arc<Notify>,
     /// Generic signature manager for setItpNav proposals (rebalance NAV consensus)
     nav_sigs: SignatureCollectionManager<H256>,
+    /// Signature manager for NavOracle proposals (keyed by itp_address as H256)
+    nav_oracle_sigs: SignatureCollectionManager<H256>,
+    /// Signature manager for MirrorIssuerRegistry sync proposals (keyed by nonce as H256)
+    mirror_sync_sigs: SignatureCollectionManager<H256>,
 }
 
 impl BridgeOrchestrator {
@@ -229,6 +233,8 @@ impl BridgeOrchestrator {
             confirmed_complete_buy: RwLock::new(HashMap::new()),
             complete_buy_notify: Arc::new(Notify::new()),
             nav_sigs: SignatureCollectionManager::new("nav"),
+            nav_oracle_sigs: SignatureCollectionManager::new("nav_oracle"),
+            mirror_sync_sigs: SignatureCollectionManager::new("mirror_sync"),
         }
     }
 
@@ -2981,7 +2987,14 @@ impl BridgeOrchestrator {
         }
 
         // 5. Verify total_amount matches sum of individual order amounts (AC: #2)
-        // Only validate if we have tracked amounts (allows backwards compatibility)
+        if computed_total.is_zero() && !proposal.total_amount.is_zero() {
+            warn!(
+                cycle_number = proposal.cycle_number,
+                proposal_total = %proposal.total_amount,
+                "Custody release proposal: cannot verify total_amount — no local order amounts tracked"
+            );
+            return Ok(false);
+        }
         if computed_total > U256::zero() && computed_total != proposal.total_amount {
             warn!(
                 cycle_number = proposal.cycle_number,
@@ -3750,6 +3763,82 @@ impl BridgeOrchestrator {
             .await
     }
 
+    // ============ NavOracle Signature Collection (separate from nav_sigs) ============
+
+    /// Start signature collection for a NavOracle proposal
+    pub async fn start_nav_oracle_signature_collection(
+        &self,
+        itp_key: H256,
+        leader_signature: BLSSignature,
+    ) {
+        self.nav_oracle_sigs
+            .start_collection(itp_key, self.node_index, leader_signature)
+            .await;
+    }
+
+    /// Check if NavOracle signature threshold is reached
+    pub async fn check_nav_oracle_threshold(&self, itp_key: H256) -> Option<SetItpNavResult> {
+        self.nav_oracle_sigs
+            .check_threshold(&itp_key, self.config.min_signatures, &self.bls_signer)
+            .await
+    }
+
+    /// Add a follower signature for a NavOracle proposal
+    pub async fn add_nav_oracle_signature(
+        &self,
+        itp_key: H256,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<SetItpNavResult>, BridgeError> {
+        self.nav_oracle_sigs
+            .add_follower_signature(
+                &itp_key,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
+    }
+
+    // ============ MirrorSync Signature Collection (separate from nav_sigs) ============
+
+    /// Start signature collection for a MirrorSync proposal
+    pub async fn start_mirror_sync_signature_collection(
+        &self,
+        sync_key: H256,
+        leader_signature: BLSSignature,
+    ) {
+        self.mirror_sync_sigs
+            .start_collection(sync_key, self.node_index, leader_signature)
+            .await;
+    }
+
+    /// Check if MirrorSync signature threshold is reached
+    pub async fn check_mirror_sync_threshold(&self, sync_key: H256) -> Option<SetItpNavResult> {
+        self.mirror_sync_sigs
+            .check_threshold(&sync_key, self.config.min_signatures, &self.bls_signer)
+            .await
+    }
+
+    /// Add a follower signature for a MirrorSync proposal
+    pub async fn add_mirror_sync_signature(
+        &self,
+        sync_key: H256,
+        signer_index: u8,
+        signature: BLSSignature,
+    ) -> Result<Option<SetItpNavResult>, BridgeError> {
+        self.mirror_sync_sigs
+            .add_follower_signature(
+                &sync_key,
+                signer_index,
+                signature,
+                self.config.min_signatures,
+                &self.bls_signer,
+            )
+            .await
+    }
+
     /// Execute rebalance() on-chain after BLS consensus (leader only)
     pub async fn execute_rebalance(
         &self,
@@ -4140,14 +4229,29 @@ impl BridgeOrchestrator {
         &self,
         proposal: &SellBridgeProposal,
     ) -> Result<bool, BridgeError> {
-        // Fully lenient: accept any status — follower may have advanced past SellPending
-        // in its own processing loop before receiving the leader's proposal.
-        // The follower should always sign valid proposals regardless of local state.
+        // Validate amount is non-zero
+        if proposal.amount.is_zero() {
+            warn!(order_id = %proposal.order_id, "Rejecting sell order proposal with zero amount");
+            return Ok(false);
+        }
+
+        // Validate user is non-zero
+        if proposal.user == Address::zero() {
+            warn!(order_id = %proposal.order_id, "Rejecting sell order proposal with zero user");
+            return Ok(false);
+        }
+
+        // Validate bridged_itp_address is non-zero
+        if proposal.bridged_itp_address == Address::zero() {
+            warn!(order_id = %proposal.order_id, "Rejecting sell order proposal with zero bridged_itp_address");
+            return Ok(false);
+        }
+
         let status = self.get_sell_order_status(&proposal.order_id).await;
         debug!(
             order_id = %proposal.order_id,
             status = ?status,
-            "Validating submit sell order proposal (lenient)"
+            "Validating submit sell order proposal"
         );
         Ok(true)
     }

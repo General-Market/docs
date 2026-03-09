@@ -846,7 +846,7 @@ where
             let bridge_orch_guard = self.bridge_orchestrator.read().await;
             if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
                 let orch = bridge_orch.read().await;
-                orch.start_nav_signature_collection(itp_key, leader_sig.clone()).await;
+                orch.start_nav_oracle_signature_collection(itp_key, leader_sig.clone()).await;
             } else {
                 return Err(Error::BlsVerification("BridgeOrchestrator not configured for oracle signing".to_string()));
             }
@@ -881,7 +881,7 @@ where
                 let bridge_orch_guard = self.bridge_orchestrator.read().await;
                 if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
                     let orch = bridge_orch.read().await;
-                    if let Some(result) = orch.check_nav_threshold(itp_key).await {
+                    if let Some(result) = orch.check_nav_oracle_threshold(itp_key).await {
                         info!(
                             ?itp_address,
                             signature_count = result.signature_count,
@@ -5991,6 +5991,23 @@ where
     ) -> Result<(), Error> {
         info!(?itp_address, nav_price = %nav_price, "Follower: Received NavOracleProposal");
 
+        // Validate chain_id against own config (prevents cross-chain replay / misdirection)
+        {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                let cfg = orch.config();
+                if chain_id != cfg.settlement_chain_id {
+                    warn!(
+                        proposed_chain_id = chain_id,
+                        expected_chain_id = cfg.settlement_chain_id,
+                        "NavOracle: Rejecting proposal with wrong chain_id"
+                    );
+                    return Ok(());
+                }
+            }
+        }
+
         // Compute oracle hash
         let message_hash = build_nav_oracle_hash(
             chain_id,
@@ -6040,10 +6057,10 @@ where
             }
         };
 
-        // Reuse nav_signatures collection keyed by H256(itp_address)
+        // Use dedicated nav_oracle signature collection keyed by H256(itp_address)
         let itp_key = H256::from(itp_address);
         let orch = bridge_orch.write().await;
-        match orch.add_nav_signature(itp_key, signer_index, signature).await {
+        match orch.add_nav_oracle_signature(itp_key, signer_index, signature).await {
             Ok(Some(result)) => {
                 info!(?itp_address, signature_count = result.signature_count, "NavOracle signature threshold reached");
             }
@@ -6083,6 +6100,33 @@ where
     ) -> Result<(), Error> {
         info!(nonce, active_count, "Follower: Received MirrorSyncProposal");
 
+        // Validate chain_id and mirror_address against own config
+        {
+            let bridge_orch_guard = self.bridge_orchestrator.read().await;
+            if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
+                let orch = bridge_orch.read().await;
+                let cfg = orch.config();
+                if chain_id != cfg.settlement_chain_id {
+                    warn!(
+                        proposed_chain_id = chain_id,
+                        expected_chain_id = cfg.settlement_chain_id,
+                        "MirrorSync: Rejecting proposal with wrong chain_id"
+                    );
+                    return Ok(());
+                }
+                if let Some(expected_mirror) = cfg.mirror_registry_address {
+                    if mirror_address != expected_mirror {
+                        warn!(
+                            ?mirror_address,
+                            ?expected_mirror,
+                            "MirrorSync: Rejecting proposal with wrong mirror_address"
+                        );
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
         // Compute the sync hash
         let message_hash = build_mirror_registry_sync_hash(
             chain_id,
@@ -6098,8 +6142,9 @@ where
         // Verify leader's BLS signature
         self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "mirror_sync")?;
 
-        // TODO: Optionally verify proposed state matches L3 IssuerRegistry via chain_reader
-        // For now, trust the leader's proposal since the leader will have verified it.
+        // TODO: Verify proposed state matches L3 IssuerRegistry via chain_reader
+        // Currently trusts leader's proposal after chain_id + address validation above.
+        // Full L3 state verification should be added as defense-in-depth.
 
         // Sign the sync hash with own BLS key
         let hash_bytes: [u8; 32] = message_hash.into();
@@ -6140,10 +6185,10 @@ where
             }
         };
 
-        // Use H256::from_low_u64_be(nonce) as key to avoid collision with NAV signatures
+        // Use dedicated mirror_sync signature collection keyed by H256(nonce)
         let sync_key = H256::from_low_u64_be(nonce);
         let orch = bridge_orch.write().await;
-        match orch.add_nav_signature(sync_key, signer_index, signature).await {
+        match orch.add_mirror_sync_signature(sync_key, signer_index, signature).await {
             Ok(Some(result)) => {
                 info!(nonce, signature_count = result.signature_count, "MirrorSync signature threshold reached");
             }
@@ -6199,7 +6244,7 @@ where
                 let orch = bridge_orch.write().await;
                 let sync_key = H256::from_low_u64_be(l3_nonce);
                 let my_index = self.runtime_config.issuer_registry_index();
-                let _ = orch.add_nav_signature(sync_key, my_index, leader_sig.clone()).await;
+                let _ = orch.add_mirror_sync_signature(sync_key, my_index, leader_sig.clone()).await;
             }
         }
 
@@ -6229,7 +6274,7 @@ where
             let bridge_orch_guard = self.bridge_orchestrator.read().await;
             if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
                 let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_nav_threshold(sync_key).await {
+                if let Some(result) = orch.check_mirror_sync_threshold(sync_key).await {
                     info!(
                         nonce = l3_nonce,
                         signature_count = result.signature_count,
