@@ -24,6 +24,7 @@ use common::types::{BLSSignature, PeerId};
 use crate::chain::{CrossChainOrder, CrossChainOrderData};
 use crate::consensus::ConsensusError;
 
+use super::phase_state::PhaseState;
 use super::signature_manager::SignatureCollectionManager;
 use super::types::{
     build_bridge_settlement_to_l3_hash, build_bridge_l3_to_settlement_hash, build_confirm_batch_calldata,
@@ -87,39 +88,29 @@ pub struct BridgeOrchestrator {
     /// Signature collectors for pending submit order proposals (Story 7.3)
     /// SPECIAL CASE: SubmitOrderResult has extra l3_order_id field, kept hand-written
     submit_order_signatures: RwLock<HashMap<U256, SignatureCollector>>,
-    /// Generic signature manager for batch confirmation proposals (Story 7.4)
-    batch_sigs: SignatureCollectionManager<u64>,
-    /// Generic signature manager for fills confirmation proposals (Story 7.4)
-    fills_sigs: SignatureCollectionManager<u64>,
+    /// Consolidated phase state for batch confirmation (Story 7.4)
+    batch_phase: PhaseState<u64>,
+    /// Consolidated phase state for fills confirmation (Story 7.4)
+    fills_phase: PhaseState<u64>,
     /// Order status tracking
     order_status: RwLock<HashMap<U256, BridgeOrderStatus>>,
     /// Processed order IDs (for replay protection)
     processed_orders: RwLock<HashMap<U256, H256>>, // order_id -> tx_hash
     /// Order ID mappings: settlement_order_id → OrderMapping (Story 7.3)
     order_mappings: RwLock<HashMap<U256, OrderMapping>>,
-    /// Confirmed batch cycles (for deduplication) - Story 7.4
-    confirmed_batches: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
-    /// Confirmed fills cycles (for deduplication) - Story 7.4
-    confirmed_fills: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
     /// Custody nonces (for BLSCustody.execute replay protection) - Story 7.4 Task 7.5
     /// Maps custody_address -> next_nonce to use
     custody_nonces: RwLock<HashMap<Address, U256>>,
-    /// Generic signature manager for L3→Settlement bridge proposals (Story 7.5)
-    l3_to_settlement_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed L3→Settlement bridge cycles (for deduplication) - Story 7.5
-    confirmed_l3_to_settlement: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
-    /// Generic signature manager for custody release to vault proposals (Story 7.6)
-    release_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed custody releases (for deduplication) - Story 7.6
-    confirmed_releases: RwLock<HashMap<u64, H256>>, // cycle_number -> tx_hash
+    /// Consolidated phase state for L3→Settlement bridge (Story 7.5)
+    l3_to_settlement_phase: PhaseState<u64>,
+    /// Consolidated phase state for custody release to vault (Story 7.6)
+    release_phase: PhaseState<u64>,
     /// Order amounts tracking: order_id → amount (for validation) - Story 7.6 code review fix
     order_amounts: RwLock<HashMap<U256, U256>>,
     /// Order limit prices: order_id → limit_price (for E126 fill price validation)
     order_limit_prices: RwLock<HashMap<U256, (U256, u8)>>, // (limit_price, side)
-    /// Generic signature manager for rebalance batch proposals (Story 7-14)
-    rebalance_batch_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed rebalance batches (for deduplication) - Story 7-14
-    confirmed_rebalance_batches: RwLock<HashMap<u64, H256>>,
+    /// Consolidated phase state for rebalance batch (Story 7-14)
+    rebalance_batch_phase: PhaseState<u64>,
     /// Generic signature manager for update weights / rebalance proposals (Story 7-14)
     /// Also used by single-phase rebalance (same key space: itp_id)
     update_weights_sigs: SignatureCollectionManager<H256>,
@@ -129,10 +120,8 @@ pub struct BridgeOrchestrator {
     /// Prevents concurrent cycles from racing on the same rebalance.
     /// Entries auto-expire after 60s to handle leader crashes.
     processing_rebalances: RwLock<HashMap<H256, Instant>>,
-    /// Generic signature manager for asset trades proposals (issuer-driven settlement)
-    asset_trades_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed asset trades (for deduplication)
-    confirmed_asset_trades: RwLock<HashMap<u64, H256>>,
+    /// Consolidated phase state for asset trades (issuer-driven settlement)
+    asset_trades_phase: PhaseState<u64>,
     /// Stale order watchdog for detecting stuck orders
     watchdog: RwLock<super::watchdog::StaleOrderWatchdog>,
     /// Sell order status tracking
@@ -151,14 +140,10 @@ pub struct BridgeOrchestrator {
     order_itp_ids: RwLock<HashMap<U256, H256>>,
     /// Sell order ITP IDs: order_id → itp_id (for multi-ITP support)
     sell_order_itp_ids: RwLock<HashMap<U256, H256>>,
-    /// Generic signature manager for record collateral move proposals (8-step bridge)
-    collateral_move_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed collateral moves (for deduplication)
-    confirmed_collateral_moves: RwLock<HashMap<u64, H256>>,
-    /// Generic signature manager for mint bridged shares proposals (8-step bridge)
-    mint_shares_sigs: SignatureCollectionManager<u64>,
-    /// Confirmed mint bridged shares (for deduplication)
-    confirmed_mint_shares: RwLock<HashMap<u64, H256>>,
+    /// Consolidated phase state for record collateral move (8-step bridge)
+    collateral_move_phase: PhaseState<u64>,
+    /// Consolidated phase state for mint bridged shares (8-step bridge)
+    mint_shares_phase: PhaseState<u64>,
     /// Generic signature manager for completeBuyOrder proposals
     complete_buy_sigs: SignatureCollectionManager<u64>,
     /// Confirmed completeBuyOrder (for deduplication)
@@ -193,27 +178,21 @@ impl BridgeOrchestrator {
             node_index,
             bridge_sigs: SignatureCollectionManager::new("bridge"),
             submit_order_signatures: RwLock::new(HashMap::new()),
-            batch_sigs: SignatureCollectionManager::new("batch"),
-            fills_sigs: SignatureCollectionManager::new("fills"),
+            batch_phase: PhaseState::new("batch"),
+            fills_phase: PhaseState::new("fills"),
             order_status: RwLock::new(HashMap::new()),
             processed_orders: RwLock::new(HashMap::new()),
             order_mappings: RwLock::new(HashMap::new()),
-            confirmed_batches: RwLock::new(HashMap::new()),
-            confirmed_fills: RwLock::new(HashMap::new()),
             custody_nonces: RwLock::new(HashMap::new()),
-            l3_to_settlement_sigs: SignatureCollectionManager::new("l3_to_settlement"),
-            confirmed_l3_to_settlement: RwLock::new(HashMap::new()),
-            release_sigs: SignatureCollectionManager::new("release"),
-            confirmed_releases: RwLock::new(HashMap::new()),
+            l3_to_settlement_phase: PhaseState::new("l3_to_settlement"),
+            release_phase: PhaseState::new("release"),
             order_amounts: RwLock::new(HashMap::new()),
             order_limit_prices: RwLock::new(HashMap::new()),
-            rebalance_batch_sigs: SignatureCollectionManager::new("rebalance_batch"),
-            confirmed_rebalance_batches: RwLock::new(HashMap::new()),
+            rebalance_batch_phase: PhaseState::new("rebalance_batch"),
             update_weights_sigs: SignatureCollectionManager::new("update_weights"),
             confirmed_weight_updates: RwLock::new(HashMap::new()),
             processing_rebalances: RwLock::new(HashMap::new()),
-            asset_trades_sigs: SignatureCollectionManager::new("asset_trades"),
-            confirmed_asset_trades: RwLock::new(HashMap::new()),
+            asset_trades_phase: PhaseState::new("asset_trades"),
             watchdog: RwLock::new(super::watchdog::StaleOrderWatchdog::new(
                 Duration::from_secs(300), // 5 min — must exceed receipt-wait pipeline (60s CBO + 60s mint = 120s+)
             )),
@@ -225,10 +204,8 @@ impl BridgeOrchestrator {
             sell_order_amounts: RwLock::new(HashMap::new()),
             order_itp_ids: RwLock::new(HashMap::new()),
             sell_order_itp_ids: RwLock::new(HashMap::new()),
-            collateral_move_sigs: SignatureCollectionManager::new("collateral_move"),
-            confirmed_collateral_moves: RwLock::new(HashMap::new()),
-            mint_shares_sigs: SignatureCollectionManager::new("mint_shares"),
-            confirmed_mint_shares: RwLock::new(HashMap::new()),
+            collateral_move_phase: PhaseState::new("collateral_move"),
+            mint_shares_phase: PhaseState::new("mint_shares"),
             complete_buy_sigs: SignatureCollectionManager::new("complete_buy"),
             confirmed_complete_buy: RwLock::new(HashMap::new()),
             complete_buy_notify: Arc::new(Notify::new()),
@@ -922,17 +899,17 @@ impl BridgeOrchestrator {
         drop(submit_collectors);
 
         // Clean up all migrated signature managers
-        self.batch_sigs.cleanup_stale(max_age_ms).await;
-        self.fills_sigs.cleanup_stale(max_age_ms).await;
-        self.l3_to_settlement_sigs.cleanup_stale(max_age_ms).await;
-        self.release_sigs.cleanup_stale(max_age_ms).await;
-        self.rebalance_batch_sigs.cleanup_stale(max_age_ms).await;
+        self.batch_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.fills_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.l3_to_settlement_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.release_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.rebalance_batch_phase.sigs.cleanup_stale(max_age_ms).await;
         self.update_weights_sigs.cleanup_stale(max_age_ms).await;
-        self.asset_trades_sigs.cleanup_stale(max_age_ms).await;
+        self.asset_trades_phase.sigs.cleanup_stale(max_age_ms).await;
         self.sell_bridge_sigs.cleanup_stale(max_age_ms).await;
         self.complete_sell_sigs.cleanup_stale(max_age_ms).await;
-        self.collateral_move_sigs.cleanup_stale(max_age_ms).await;
-        self.mint_shares_sigs.cleanup_stale(max_age_ms).await;
+        self.collateral_move_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.mint_shares_phase.sigs.cleanup_stale(max_age_ms).await;
         self.complete_buy_sigs.cleanup_stale(max_age_ms).await;
         self.nav_sigs.cleanup_stale(max_age_ms).await;
     }
@@ -1629,7 +1606,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.batch_sigs
+        self.batch_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -1643,7 +1620,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<BatchResult>, BridgeError> {
-        self.batch_sigs
+        self.batch_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -1658,14 +1635,14 @@ impl BridgeOrchestrator {
     ///
     /// Returns Some(BatchResult) if threshold is reached, None otherwise.
     pub async fn check_batch_threshold_reached(&self, cycle_number: u64) -> Option<BatchResult> {
-        self.batch_sigs
+        self.batch_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Get the current batch confirmation signature count (for timeout diagnostics)
     pub async fn get_batch_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.batch_sigs.get_signature_count(&cycle_number).await
+        self.batch_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -1842,7 +1819,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.fills_sigs
+        self.fills_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -1856,7 +1833,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<FillsResult>, BridgeError> {
-        self.fills_sigs
+        self.fills_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -1871,14 +1848,14 @@ impl BridgeOrchestrator {
     ///
     /// Returns Some(FillsResult) if threshold is reached, None otherwise.
     pub async fn check_fills_threshold_reached(&self, cycle_number: u64) -> Option<FillsResult> {
-        self.fills_sigs
+        self.fills_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Get the current fills confirmation signature count (for timeout diagnostics)
     pub async fn get_fills_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.fills_sigs.get_signature_count(&cycle_number).await
+        self.fills_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -1928,8 +1905,8 @@ impl BridgeOrchestrator {
 
     /// Clean up stale batch/fills signature collectors (Story 7.4)
     pub async fn cleanup_stale_batch_fills_collectors(&self, max_age_ms: u64) {
-        self.batch_sigs.cleanup_stale(max_age_ms).await;
-        self.fills_sigs.cleanup_stale(max_age_ms).await;
+        self.batch_phase.sigs.cleanup_stale(max_age_ms).await;
+        self.fills_phase.sigs.cleanup_stale(max_age_ms).await;
     }
 
     // ========================================================================
@@ -1949,7 +1926,7 @@ impl BridgeOrchestrator {
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if let Some(existing_tx) = self.confirmed_batches.read().await.get(&cycle_number) {
+        if let Some(existing_tx) = self.batch_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
                 cycle_number = cycle_number,
                 existing_tx = ?existing_tx,
@@ -1987,7 +1964,7 @@ impl BridgeOrchestrator {
             })?;
 
         // Record as confirmed (deduplication)
-        self.confirmed_batches
+        self.batch_phase.confirmed
             .write()
             .await
             .insert(cycle_number, tx_hash);
@@ -2027,7 +2004,7 @@ impl BridgeOrchestrator {
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if let Some(existing_tx) = self.confirmed_fills.read().await.get(&cycle_number) {
+        if let Some(existing_tx) = self.fills_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
                 cycle_number = cycle_number,
                 existing_tx = ?existing_tx,
@@ -2062,7 +2039,7 @@ impl BridgeOrchestrator {
             })?;
 
         // Record as confirmed (deduplication)
-        self.confirmed_fills
+        self.fills_phase.confirmed
             .write()
             .await
             .insert(cycle_number, tx_hash);
@@ -2084,12 +2061,12 @@ impl BridgeOrchestrator {
 
     /// Check if a batch cycle has already been confirmed
     pub async fn is_batch_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_batches.read().await.contains_key(&cycle_number)
+        self.batch_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Check if a fills cycle has already been confirmed
     pub async fn is_fills_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_fills.read().await.contains_key(&cycle_number)
+        self.fills_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     // ========================================================================
@@ -2382,7 +2359,7 @@ impl BridgeOrchestrator {
         order_ids: Vec<U256>,
     ) -> Result<BridgeL3ToSettlementProposal, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if self.confirmed_l3_to_settlement.read().await.contains_key(&cycle_number) {
+        if self.l3_to_settlement_phase.confirmed.read().await.contains_key(&cycle_number) {
             return Err(BridgeError::BridgeL3ToSettlementAlreadyProcessed { cycle_number });
         }
 
@@ -2508,7 +2485,7 @@ impl BridgeOrchestrator {
         proposal: &BridgeL3ToSettlementProposal,
     ) -> Result<bool, BridgeError> {
         // 1. Check not already processed
-        if self.confirmed_l3_to_settlement.read().await.contains_key(&proposal.cycle_number) {
+        if self.l3_to_settlement_phase.confirmed.read().await.contains_key(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 "Bridge L3→Settlement already processed for this cycle"
@@ -2646,7 +2623,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.l3_to_settlement_sigs
+        self.l3_to_settlement_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -2660,7 +2637,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<BridgeL3ToSettlementResult>, BridgeError> {
-        self.l3_to_settlement_sigs
+        self.l3_to_settlement_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -2688,7 +2665,7 @@ impl BridgeOrchestrator {
         _aggregated: &BridgeL3ToSettlementResult,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if let Some(existing_tx) = self.confirmed_l3_to_settlement.read().await.get(&proposal.cycle_number) {
+        if let Some(existing_tx) = self.l3_to_settlement_phase.confirmed.read().await.get(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 existing_tx = ?existing_tx,
@@ -2753,7 +2730,7 @@ impl BridgeOrchestrator {
             })?;
 
         // Record as confirmed (deduplication)
-        self.confirmed_l3_to_settlement
+        self.l3_to_settlement_phase.confirmed
             .write()
             .await
             .insert(proposal.cycle_number, tx_hash);
@@ -2790,12 +2767,12 @@ impl BridgeOrchestrator {
 
     /// Check if a bridge L3→Settlement cycle has already been confirmed
     pub async fn is_l3_to_settlement_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_l3_to_settlement.read().await.contains_key(&cycle_number)
+        self.l3_to_settlement_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Clean up stale L3→Settlement signature collectors
     pub async fn cleanup_stale_l3_to_settlement_collectors(&self, max_age_ms: u64) {
-        self.l3_to_settlement_sigs.cleanup_stale(max_age_ms).await;
+        self.l3_to_settlement_phase.sigs.cleanup_stale(max_age_ms).await;
     }
 
     /// Check if L3→Settlement signature threshold is reached (Story 7.10)
@@ -2805,14 +2782,14 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<BridgeL3ToSettlementResult> {
-        self.l3_to_settlement_sigs
+        self.l3_to_settlement_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Get the current L3→Settlement signature count for a cycle (Story 7.10)
     pub async fn get_l3_to_settlement_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.l3_to_settlement_sigs.get_signature_count(&cycle_number).await
+        self.l3_to_settlement_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -2832,7 +2809,7 @@ impl BridgeOrchestrator {
         total_amount: U256,
     ) -> Result<ReleaseToVaultProposal, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if self.confirmed_releases.read().await.contains_key(&cycle_number) {
+        if self.release_phase.confirmed.read().await.contains_key(&cycle_number) {
             return Err(BridgeError::ReleaseAlreadyProcessed { cycle_number });
         }
 
@@ -2906,7 +2883,7 @@ impl BridgeOrchestrator {
         proposal: &ReleaseToVaultProposal,
     ) -> Result<bool, BridgeError> {
         // 1. Check not already processed
-        if self.confirmed_releases.read().await.contains_key(&proposal.cycle_number) {
+        if self.release_phase.confirmed.read().await.contains_key(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 "Custody release already processed for this cycle"
@@ -3077,7 +3054,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.release_sigs
+        self.release_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -3091,7 +3068,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<ReleaseToVaultResult>, BridgeError> {
-        self.release_sigs
+        self.release_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -3117,7 +3094,7 @@ impl BridgeOrchestrator {
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Check for duplicate cycle (deduplication)
-        if let Some(existing_tx) = self.confirmed_releases.read().await.get(&proposal.cycle_number) {
+        if let Some(existing_tx) = self.release_phase.confirmed.read().await.get(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 existing_tx = ?existing_tx,
@@ -3166,7 +3143,7 @@ impl BridgeOrchestrator {
             })?;
 
         // Record as confirmed (deduplication)
-        self.confirmed_releases
+        self.release_phase.confirmed
             .write()
             .await
             .insert(proposal.cycle_number, tx_hash);
@@ -3203,12 +3180,12 @@ impl BridgeOrchestrator {
 
     /// Check if a custody release cycle has already been confirmed
     pub async fn is_release_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_releases.read().await.contains_key(&cycle_number)
+        self.release_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Clean up stale custody release signature collectors
     pub async fn cleanup_stale_release_collectors(&self, max_age_ms: u64) {
-        self.release_sigs.cleanup_stale(max_age_ms).await;
+        self.release_phase.sigs.cleanup_stale(max_age_ms).await;
     }
 
     /// Check if custody release signature threshold is reached (Story 7.10)
@@ -3218,14 +3195,14 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<ReleaseToVaultResult> {
-        self.release_sigs
+        self.release_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Get the current custody release signature count for a cycle (Story 7.10)
     pub async fn get_release_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.release_sigs.get_signature_count(&cycle_number).await
+        self.release_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -3239,7 +3216,7 @@ impl BridgeOrchestrator {
         itp_ids: Vec<H256>,
     ) -> Result<(H256, BLSSignature), BridgeError> {
         // Check for duplicate cycle
-        if self.confirmed_rebalance_batches.read().await.contains_key(&cycle_number) {
+        if self.rebalance_batch_phase.confirmed.read().await.contains_key(&cycle_number) {
             return Err(BridgeError::ReleaseAlreadyProcessed { cycle_number });
         }
 
@@ -3304,7 +3281,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.rebalance_batch_sigs
+        self.rebalance_batch_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -3316,7 +3293,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<RebalanceBatchResult>, BridgeError> {
-        self.rebalance_batch_sigs
+        self.rebalance_batch_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -3332,24 +3309,24 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<RebalanceBatchResult> {
-        self.rebalance_batch_sigs
+        self.rebalance_batch_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Get rebalance batch signature count
     pub async fn get_rebalance_batch_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.rebalance_batch_sigs.get_signature_count(&cycle_number).await
+        self.rebalance_batch_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     /// Check if a rebalance batch has been confirmed
     pub async fn is_rebalance_batch_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_rebalance_batches.read().await.contains_key(&cycle_number)
+        self.rebalance_batch_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Mark a rebalance batch as confirmed
     pub async fn mark_rebalance_batch_confirmed(&self, cycle_number: u64, tx_hash: H256) {
-        self.confirmed_rebalance_batches.write().await.insert(cycle_number, tx_hash);
+        self.rebalance_batch_phase.confirmed.write().await.insert(cycle_number, tx_hash);
     }
 
     // ========================================================================
@@ -3496,7 +3473,7 @@ impl BridgeOrchestrator {
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check
-        if let Some(existing_tx) = self.confirmed_rebalance_batches.read().await.get(&cycle_number) {
+        if let Some(existing_tx) = self.rebalance_batch_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
                 cycle_number,
                 existing_tx = ?existing_tx,
@@ -3525,7 +3502,7 @@ impl BridgeOrchestrator {
                 reason: e.to_string(),
             })?;
 
-        self.confirmed_rebalance_batches
+        self.rebalance_batch_phase.confirmed
             .write()
             .await
             .insert(cycle_number, tx_hash);
@@ -4020,7 +3997,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.asset_trades_sigs
+        self.asset_trades_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -4034,7 +4011,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<AssetTradesResult>, BridgeError> {
-        self.asset_trades_sigs
+        self.asset_trades_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -4057,7 +4034,7 @@ impl BridgeOrchestrator {
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Deduplication check
-        if let Some(existing_tx) = self.confirmed_asset_trades.read().await.get(&cycle_number) {
+        if let Some(existing_tx) = self.asset_trades_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
                 cycle_number = cycle_number,
                 existing_tx = ?existing_tx,
@@ -4086,7 +4063,7 @@ impl BridgeOrchestrator {
                 reason: e.to_string(),
             })?;
 
-        self.confirmed_asset_trades
+        self.asset_trades_phase.confirmed
             .write()
             .await
             .insert(cycle_number, tx_hash);
@@ -4104,12 +4081,12 @@ impl BridgeOrchestrator {
 
     /// Get the current asset trades signature count for a cycle
     pub async fn asset_trades_signature_count(&self, cycle_number: u64) -> usize {
-        self.asset_trades_sigs.get_signature_count(&cycle_number).await.unwrap_or(0)
+        self.asset_trades_phase.sigs.get_signature_count(&cycle_number).await.unwrap_or(0)
     }
 
     /// Check if asset trades signature threshold is reached
     pub async fn check_asset_trades_threshold_reached(&self, cycle_number: u64) -> Option<AssetTradesResult> {
-        self.asset_trades_sigs
+        self.asset_trades_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
@@ -4611,7 +4588,7 @@ impl BridgeOrchestrator {
         proposal: &RecordCollateralMoveProposal,
         collateral_registry: Address,
     ) -> Result<bool, BridgeError> {
-        if self.confirmed_collateral_moves.read().await.contains_key(&proposal.cycle_number) {
+        if self.collateral_move_phase.confirmed.read().await.contains_key(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 "CollateralMove already recorded for this cycle"
@@ -4695,7 +4672,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.collateral_move_sigs
+        self.collateral_move_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -4707,7 +4684,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<RecordCollateralMoveResult>, BridgeError> {
-        self.collateral_move_sigs
+        self.collateral_move_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -4723,24 +4700,24 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<RecordCollateralMoveResult> {
-        self.collateral_move_sigs
+        self.collateral_move_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Check if RecordCollateralMove is already confirmed for this cycle
     pub async fn is_collateral_move_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_collateral_moves.read().await.contains_key(&cycle_number)
+        self.collateral_move_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Record a confirmed collateral move (deduplication)
     pub async fn confirm_collateral_move(&self, cycle_number: u64, tx_hash: H256) {
-        self.confirmed_collateral_moves.write().await.insert(cycle_number, tx_hash);
+        self.collateral_move_phase.confirmed.write().await.insert(cycle_number, tx_hash);
     }
 
     /// Get collateral move signature count for diagnostics
     pub async fn get_collateral_move_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.collateral_move_sigs.get_signature_count(&cycle_number).await
+        self.collateral_move_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================
@@ -4802,7 +4779,7 @@ impl BridgeOrchestrator {
         proposal: &MintBridgedSharesProposal,
         bridge_proxy: Address,
     ) -> Result<bool, BridgeError> {
-        if self.confirmed_mint_shares.read().await.contains_key(&proposal.cycle_number) {
+        if self.mint_shares_phase.confirmed.read().await.contains_key(&proposal.cycle_number) {
             warn!(
                 cycle_number = proposal.cycle_number,
                 "MintBridgedShares already processed for this cycle"
@@ -4895,7 +4872,7 @@ impl BridgeOrchestrator {
         cycle_number: u64,
         leader_signature: BLSSignature,
     ) {
-        self.mint_shares_sigs
+        self.mint_shares_phase.sigs
             .start_collection(cycle_number, self.node_index, leader_signature)
             .await;
     }
@@ -4907,7 +4884,7 @@ impl BridgeOrchestrator {
         signer_index: u8,
         signature: BLSSignature,
     ) -> Result<Option<MintBridgedSharesResult>, BridgeError> {
-        self.mint_shares_sigs
+        self.mint_shares_phase.sigs
             .add_follower_signature(
                 &cycle_number,
                 signer_index,
@@ -4923,24 +4900,24 @@ impl BridgeOrchestrator {
         &self,
         cycle_number: u64,
     ) -> Option<MintBridgedSharesResult> {
-        self.mint_shares_sigs
+        self.mint_shares_phase.sigs
             .check_threshold(&cycle_number, self.config.min_signatures, &self.bls_signer)
             .await
     }
 
     /// Check if MintBridgedShares is already confirmed for this cycle
     pub async fn is_mint_shares_confirmed(&self, cycle_number: u64) -> bool {
-        self.confirmed_mint_shares.read().await.contains_key(&cycle_number)
+        self.mint_shares_phase.confirmed.read().await.contains_key(&cycle_number)
     }
 
     /// Record a confirmed mint bridged shares (deduplication)
     pub async fn confirm_mint_shares(&self, cycle_number: u64, tx_hash: H256) {
-        self.confirmed_mint_shares.write().await.insert(cycle_number, tx_hash);
+        self.mint_shares_phase.confirmed.write().await.insert(cycle_number, tx_hash);
     }
 
     /// Get mint shares signature count for diagnostics
     pub async fn get_mint_shares_signature_count(&self, cycle_number: u64) -> Option<usize> {
-        self.mint_shares_sigs.get_signature_count(&cycle_number).await
+        self.mint_shares_phase.sigs.get_signature_count(&cycle_number).await
     }
 
     // ========================================================================

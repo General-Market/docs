@@ -13,6 +13,7 @@
 //! Story 7.6: Custody Release to MockBitgetVault
 
 mod orchestrator;
+pub mod phase_state;
 pub mod signature_manager;
 mod types;
 pub mod watchdog;
