@@ -250,8 +250,9 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             // BUY: Transfer USDC from payer to contract
             usdc.safeTransferFrom(payer, address(this), amount);
         } else {
-            // SELL: Escrow ITP shares (deduct from user's internal balance)
+            // SELL: Escrow ITP shares (deduct from user balance AND total supply)
             _userShares[itpId][user] -= amount;
+            _itps[itpId].totalSupply -= amount;
         }
 
         // Increment pending order count (checked arithmetic for safety)
@@ -472,10 +473,8 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
             uint256 usdcToReturn = (fill.fillAmount * fill.fillPrice) / 1e18;
 
             TypesLib.ITPCore storage itp = _itps[order.itpId];
-            // H3 fix: decrement by fill.fillAmount, not order.amount
-            if (itp.totalSupply >= fill.fillAmount) {
-                itp.totalSupply -= fill.fillAmount;
-            }
+            // totalSupply already decremented at escrow (_createOrder SELL path).
+            // Only totalValue needs updating here.
             if (itp.totalValue >= usdcToReturn) {
                 itp.totalValue -= usdcToReturn;
             }
