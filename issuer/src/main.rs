@@ -2683,6 +2683,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             submitted_sell_orders.clone()
         };
 
+        // Build fill-order-id → settlement-id lookup (handles skips correctly)
+        let fill_to_settlement: HashMap<ethers::types::U256, ethers::types::U256> =
+            order_ids_for_batch.iter().zip(submitted_sell_orders.iter())
+                .map(|(l3_id, settlement_id)| (*l3_id, *settlement_id))
+                .collect();
+
         // Fetch NAV per unique ITP for sell orders (multi-ITP support)
         let mut sell_nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
         let prices: Vec<ethers::types::U256> = {
@@ -2776,8 +2782,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         // Task 3: Store actual fill data for Phase C proceeds calculation
                         {
                             let orch = orchestrator.write().await;
-                            for (i, fill) in fills.iter().enumerate() {
-                                let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                            for fill in fills.iter() {
+                                let settlement_id = fill_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                 orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                 orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                             }
@@ -2795,8 +2801,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             info!(cycle = current_cycle, "Sell order already filled on-chain, marking as SellFilled");
                             // Store fill data even on already-filled path (H2 fix)
                             let orch = orchestrator.write().await;
-                            for (i, fill) in fills.iter().enumerate() {
-                                let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                            for fill in fills.iter() {
+                                let settlement_id = fill_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                 orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                 orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                             }
@@ -2850,8 +2856,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             // Store fill data for Phase C
                             {
                                 let orch = orchestrator.write().await;
-                                for (i, fill) in fills.iter().enumerate() {
-                                    let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                for fill in fills.iter() {
+                                    let settlement_id = fill_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                     orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                     orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                                 }
@@ -2867,8 +2873,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 info!(cycle = current_cycle, "Sell order already filled (E021), marking as SellFilled");
                                 // Store fill data even on already-filled path (H2 fix)
                                 let orch = orchestrator.write().await;
-                                for (i, fill) in fills.iter().enumerate() {
-                                    let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                for fill in fills.iter() {
+                                    let settlement_id = fill_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                     orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
                                     orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
                                 }
@@ -3016,9 +3022,11 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     }
                 } else if !am_leader {
                     // Follower: consensus succeeded, leader will submit tx.
-                    // Mark completed to prevent stale watchdog retry loop.
+                    // Set SellCompleted to prevent stale watchdog retry loop.
+                    // Do NOT call mark_sell_order_processed — keep fill data
+                    // intact so we can still verify proceeds if leader retries.
                     let orch = orchestrator.write().await;
-                    orch.mark_sell_order_processed(order_id, ethers::types::H256::zero()).await;
+                    orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellCompleted).await;
                 }
             }
             Err(e) => {
