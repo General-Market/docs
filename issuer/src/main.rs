@@ -1804,23 +1804,35 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         match p.run_bridge_settlement_to_l3_phase(&order, am_leader).await {
                             Ok(result) => {
                                 if result.signature_count == 0 {
-                                    // Follower: don't skip — continue to submit phase so we store
-                                    // the mapping needed for MintBridgedShares later
-                                    debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: follower — proceeding to submit phase");
-                                } else {
-                                    info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
+                                    // Follower: store mapping for MintBridgedShares, but don't run
+                                    // inline pipeline (batch/fills/mint happen via P2P handlers)
+                                    debug!(order_id = %order.order_id, am_leader, "Bridge Settlement→L3: follower — storing mapping only");
+                                    ar.mark_order_processed(cid, order.order_id).await;
+                                    {
+                                        let orch_w = orch.write().await;
+                                        // Don't set SubmittedOnL3 — let P2P handlers manage status
+                                        orch_w.set_order_amount(order.order_id, order.amount).await;
+                                        orch_w.store_order_mapping(issuer::bridge::OrderMapping {
+                                            settlement_order_id: order.order_id,
+                                            l3_order_id: order.order_id, // placeholder — leader knows actual L3 ID
+                                            original_user: order.user,
+                                            created_at: std::time::SystemTime::now()
+                                                .duration_since(std::time::UNIX_EPOCH)
+                                                .unwrap_or_default()
+                                                .as_secs(),
+                                        }).await;
+                                    }
+                                    continue;
                                 }
+                                info!(order_id = %order.order_id, signer_count = result.signature_count, "Bridge Settlement→L3 consensus completed");
 
                                 match p.run_submit_order_phase(&order, am_leader).await {
                                     Ok(submit_result) => {
                                         if submit_result.signature_count == 0 {
-                                            // Follower: still store mapping so we can mint BridgedITP later.
-                                            // Use settlement_order_id as L3 ID placeholder — the batch phase
-                                            // receives actual L3 IDs from leader's P2P proposal.
-                                            debug!(order_id = %order.order_id, am_leader, "Submit order: follower — storing mapping for mint phase");
-                                        } else {
-                                            info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
+                                            debug!(order_id = %order.order_id, am_leader, "Submit order: no signatures collected (follower placeholder)");
+                                            continue;
                                         }
+                                        info!(order_id = %order.order_id, signer_count = submit_result.signature_count, "Submit order consensus completed");
 
                                         ar.mark_order_processed(cid, order.order_id).await;
                                         {
@@ -1840,7 +1852,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         }
                                         // Immediately continue to batch/fills/mint (merged Phase 1+2)
                                         // instead of returning and waiting for poll-driven Phase 2
-                                        info!(order_id = %order.order_id, am_leader, "Phase 1 complete, continuing to batch/fills/mint inline");
+                                        info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
                                     }
                                     Err(e) => {
                                         warn!(order_id = %order.order_id, error = %e, "Submit order consensus failed");
@@ -2128,7 +2140,8 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                             let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                             let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                 .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                            let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await;
+                            let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
+                                .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
                             if let Some(mapping) = mapping {
                                 // shares = fill_amount * 1e18 / fill_price
                                 let shares = if fill.fill_price > ethers::types::U256::zero() {
@@ -2218,7 +2231,8 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                 let settlement_id = l3_to_settlement.get(&fill.order_id).copied().unwrap_or(fill.order_id);
                                 let order_itp = orchestrator.read().await.get_order_itp_id(&settlement_id).await
                                     .unwrap_or_else(|| itp_id_for_task.parse::<ethers::types::H256>().unwrap_or_default());
-                                let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await;
+                                let mapping = orchestrator.read().await.get_order_mapping(&settlement_id).await
+                                    .or(orchestrator.read().await.get_mapping_by_l3_id(&fill.order_id).await);
                                 if let Some(mapping) = mapping {
                                     let shares = if fill.fill_price > ethers::types::U256::zero() {
                                         (fill.fill_amount * ethers::types::U256::exp10(18)) / fill.fill_price

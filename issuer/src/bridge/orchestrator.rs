@@ -1359,6 +1359,19 @@ impl BridgeOrchestrator {
         self.order_mappings.read().await.get(settlement_order_id).cloned()
     }
 
+    /// Get order mapping by L3 order ID (reverse lookup).
+    /// Falls back to checking if the L3 ID matches a settlement ID (for cases
+    /// where settlement_order_id == l3_order_id).
+    pub async fn get_mapping_by_l3_id(&self, l3_order_id: &U256) -> Option<OrderMapping> {
+        let mappings = self.order_mappings.read().await;
+        // First: direct lookup (settlement_id == l3_id case)
+        if let Some(m) = mappings.get(l3_order_id) {
+            return Some(m.clone());
+        }
+        // Second: scan for matching l3_order_id
+        mappings.values().find(|m| m.l3_order_id == *l3_order_id).cloned()
+    }
+
     /// Mark order as submitted on L3 (status update)
     pub async fn mark_order_submitted_on_l3(&self, settlement_order_id: U256) {
         self.set_order_status(settlement_order_id, BridgeOrderStatus::SubmittedOnL3)
