@@ -17,6 +17,7 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
 use super::ConsensusError;
+use super::handler_macros::{bridge_proposal_handler, bridge_sign_handler};
 use super::itp_creation::{
     build_message_hash, compute_assets_hash, compute_weights_hash, verify_proposal_matches_request,
     ItpCreationConfig, ItpCreationError, ItpCreationResult,
@@ -4660,241 +4661,38 @@ where
         })
     }
 
-    /// Handle incoming BridgeSettlementToL3Proposal message (as follower) - Task 5
-    ///
-    /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_bridge_settlement_to_l3_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        order_id: U256,
-        itp_id: H256,
-        user: Address,
-        amount: U256,
-        deadline: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            order_id = %order_id,
-            itp_id = ?itp_id,
-            user = ?user,
-            amount = %amount,
-            "Follower: Received bridge Settlement→L3 proposal"
-        );
-
-        // Step 1: Get bridge orchestrator
-        // Note: Returns Ok(()) if not configured - this can happen during node startup
-        // before set_bridge_orchestrator() is called, or if bridge is intentionally disabled
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    order_id = %order_id,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
-
-        // Step 2: Verify leader's BLS signature
-        // Use verify_message_hash since build_bridge_settlement_to_l3_hash returns a pre-hashed H256
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash
-            let message_hash = build_bridge_settlement_to_l3_hash(
-                config.settlement_chain_id,
-                order_id,
-                itp_id,
-                user,
-                amount,
-                deadline,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(order_id = %order_id, "Leader signature verified");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        order_id = %order_id,
-                        "Invalid leader signature on bridge proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on bridge proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        order_id = %order_id,
-                        error = %e,
-                        "Failed to verify leader signature"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                order_id = %order_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct BridgeProposal and validate
-        let orch = bridge_orch.read().await;
-        let proposal = BridgeProposal {
-            leader_id,
-            order_id,
-            itp_id,
-            user,
-            amount,
-            deadline,
+    bridge_proposal_handler!(
+        handle_bridge_settlement_to_l3_proposal,
+        label = "bridge_settlement_to_l3",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, order_id: U256, itp_id: H256, user: Address, amount: U256, deadline: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_bridge_settlement_to_l3_hash(
+            cfg.settlement_chain_id, order_id, itp_id, user, amount, deadline,
+        ),
+        validate = |orch, mh| orch.validate_bridge_proposal(&BridgeProposal {
+            leader_id, order_id, itp_id, user, amount, deadline,
             leader_signature: leader_signature.clone(),
-            message_hash: build_bridge_settlement_to_l3_hash(
-                orch.config().settlement_chain_id,
-                order_id,
-                itp_id,
-                user,
-                amount,
-                deadline,
-            ),
-        };
-
-        // Validate proposal against on-chain data
-        match orch.validate_bridge_proposal(&proposal).await {
-            Ok(true) => {
-                debug!(order_id = %order_id, "Bridge proposal validation passed");
-            }
-            Ok(false) => {
-                warn!(
-                    code = "INFRA-007",
-                    order_id = %order_id,
-                    "Bridge proposal validation failed"
-                );
-                return Ok(()); // Don't sign invalid proposals
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    order_id = %order_id,
-                    error = %e,
-                    "Bridge proposal validation error"
-                );
-                return Ok(()); // Don't sign on validation errors
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = match orch.sign_bridge_proposal(&proposal) {
-            Ok(sig) => sig,
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    order_id = %order_id,
-                    error = %e,
-                    "Failed to sign bridge proposal"
-                );
-                return Err(Error::BlsVerification(format!(
-                    "Failed to sign bridge proposal: {}",
-                    e
-                )));
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(orch);
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::BridgeSettlementToL3Sign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_bridge_proposal(&BridgeProposal {
+            leader_id, order_id, itp_id, user, amount, deadline,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::BridgeSettlementToL3Sign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             order_id,
-            signature: signature.clone(),
-        };
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        debug!(
-            order_id = %order_id,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending bridge signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming BridgeSettlementToL3Sign message (as leader) - Task 6
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_bridge_settlement_to_l3_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        order_id: U256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            order_id = %order_id,
-            "Leader: Received bridge signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    order_id = %order_id,
-                    "BridgeOrchestrator not configured, ignoring signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch.add_follower_signature(order_id, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(
-                    order_id = %order_id,
-                    signature_count = result.signature_count,
-                    "Bridge signature threshold reached via add_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    order_id = %order_id,
-                    signer_index,
-                    "Bridge signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    order_id = %order_id,
-                    error = %e,
-                    "Failed to add bridge signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_bridge_settlement_to_l3_sign,
+        label = "bridge_settlement_to_l3",
+        key_param = (order_id: U256),
+        add_sig = |orch, si, sig| orch.add_follower_signature(order_id, si, sig).await,
+    );
 
     // =========================================================================
     // Story 7.10: Bridge L3→Settlement Phase Methods (Task 1)

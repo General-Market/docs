@@ -21,7 +21,10 @@
 //! macro hygiene rules.
 //!
 //! `leader_id` and `leader_signature` are included in the `params` list at the
-//! call site, giving them call-site syntax context.
+//! call site, giving them call-site syntax context. They are ALSO captured
+//! via `leader = ($lid, $lsig)` so that `verify_leader_bls()` can reference
+//! them with call-site context (bare identifiers in macro body have macro
+//! context and cannot see `$pname`-expanded function params).
 
 /// Generate a `handle_*_proposal()` method for a BLS consensus phase (follower side).
 ///
@@ -42,6 +45,7 @@ macro_rules! bridge_proposal_handler {
     (
         $fn_name:ident,
         label = $label:expr,
+        leader = ($lid:ident, $lsig:ident),
         params = ( $( $pname:ident : $pty:ty ),* $(,)? ),
         hash = |$cfg:ident| $hash_expr:expr,
         validate = |$vorch:ident, $vmh:ident| $validate_expr:expr,
@@ -69,7 +73,7 @@ macro_rules! bridge_proposal_handler {
                 let $cfg = $cfg.config();
                 $hash_expr
             };
-            self.verify_leader_bls(&leader_id, &message_hash_internal, &leader_signature, $label)?;
+            self.verify_leader_bls(&$lid, &message_hash_internal, &$lsig, $label)?;
 
             // Step 3+4: Validate and sign under SINGLE read lock (TOCTOU-safe)
             // message_hash_internal was BLS-verified in step 2. Bridge to call-site context.
@@ -120,6 +124,7 @@ macro_rules! bridge_proposal_handler {
     (
         $fn_name:ident,
         label = $label:expr,
+        leader = ($lid:ident, $lsig:ident),
         params = ( $( $pname:ident : $pty:ty ),* $(,)? ),
         hash = |$cfg:ident| $hash_expr:expr,
         sign = |$sorch:ident, $shash:ident| $sign_expr:expr,
@@ -146,7 +151,7 @@ macro_rules! bridge_proposal_handler {
                 let $cfg = $cfg.config();
                 $hash_expr
             };
-            self.verify_leader_bls(&leader_id, &message_hash_internal, &leader_signature, $label)?;
+            self.verify_leader_bls(&$lid, &message_hash_internal, &$lsig, $label)?;
 
             // Step 3: Sign (no validate for this pattern)
             let signature = {
@@ -179,6 +184,7 @@ macro_rules! bridge_proposal_handler {
     (
         $fn_name:ident,
         label = $label:expr,
+        leader = ($lid:ident, $lsig:ident),
         params = ( $( $pname:ident : $pty:ty ),* $(,)? ),
         hash = |$cfg:ident| $hash_expr:expr,
         direct_sign = true,
@@ -205,7 +211,7 @@ macro_rules! bridge_proposal_handler {
                 let $cfg = cfg_guard.config();
                 $hash_expr
             };
-            self.verify_leader_bls(&leader_id, &message_hash_internal, &leader_signature, $label)?;
+            self.verify_leader_bls(&$lid, &message_hash_internal, &$lsig, $label)?;
 
             // Step 3: Sign directly with BLS signer (no orch lock needed)
             // Uses the BLS-verified hash from step 2 — intentionally NOT re-reading config.
@@ -236,6 +242,7 @@ macro_rules! bridge_proposal_handler {
     (
         $fn_name:ident,
         label = $label:expr,
+        leader = ($lid:ident, $lsig:ident),
         params = ( $( $pname:ident : $pty:ty ),* $(,)? ),
         hash = |$cfg:ident| $hash_expr:expr,
         validate = |$vorch:ident, $vmsg_hash:ident| $validate_expr:expr,
@@ -263,7 +270,7 @@ macro_rules! bridge_proposal_handler {
                 let $cfg = cfg_guard.config();
                 $hash_expr
             };
-            self.verify_leader_bls(&leader_id, &message_hash_internal, &leader_signature, $label)?;
+            self.verify_leader_bls(&$lid, &message_hash_internal, &$lsig, $label)?;
 
             // Step 3: Validate under orch lock (dedup check, hash consistency)
             {
