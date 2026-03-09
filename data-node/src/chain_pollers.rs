@@ -911,6 +911,7 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
                 user: event.user,
                 bridged_itp_address: event.bridged_itp_address,
                 amount: event.amount,
+                limit_price: event.limit_price,
                 block_number: meta.block_number.as_u64(),
                 tx_hash: meta.transaction_hash,
             };
