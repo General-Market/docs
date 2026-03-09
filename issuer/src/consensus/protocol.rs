@@ -4902,244 +4902,38 @@ where
         })
     }
 
-    /// Handle incoming BridgeL3ToSettlementProposal message (as follower) - Task 2
-    ///
-    /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_bridge_l3_to_settlement_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        order_ids: Vec<U256>,
-        total_amount: U256,
-        destination: Address,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
+    bridge_proposal_handler!(
+        handle_bridge_l3_to_settlement_proposal,
+        label = "bridge_l3_to_settlement",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, order_ids: Vec<U256>, total_amount: U256, destination: Address, leader_signature: BLSSignature),
+        hash = |cfg| build_bridge_l3_to_settlement_hash(
+            cfg.l3_chain_id, cycle_number, &order_ids, total_amount, destination,
+        ),
+        validate = |orch, mh| orch.validate_bridge_l3_to_settlement_proposal(&BridgeL3ToSettlementProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), total_amount, destination,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_bridge_l3_to_settlement_proposal(&BridgeL3ToSettlementProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), total_amount, destination,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::BridgeL3ToSettlementSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            order_count = order_ids.len(),
-            total_amount = %total_amount,
-            destination = ?destination,
-            "Follower: Received bridge L3→Settlement proposal"
-        );
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        // Step 1: Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
-
-        // Step 2: Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash
-            let message_hash = build_bridge_l3_to_settlement_hash(
-                config.l3_chain_id,
-                cycle_number,
-                &order_ids,
-                total_amount,
-                destination,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for L3→Settlement proposal");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Invalid leader signature on L3→Settlement bridge proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on L3→Settlement bridge proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to verify leader signature for L3→Settlement proposal"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct BridgeL3ToSettlementProposal and validate
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            BridgeL3ToSettlementProposal {
-                leader_id,
-                cycle_number,
-                order_ids: order_ids.clone(),
-                total_amount,
-                destination,
-                leader_signature: leader_signature.clone(),
-                message_hash: build_bridge_l3_to_settlement_hash(
-                    orch.config().l3_chain_id,
-                    cycle_number,
-                    &order_ids,
-                    total_amount,
-                    destination,
-                ),
-            }
-        };
-
-        // Validate proposal against on-chain data
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_bridge_l3_to_settlement_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(cycle_number, "L3→Settlement bridge proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "L3→Settlement bridge proposal validation failed"
-                    );
-                    return Ok(()); // Don't sign invalid proposals
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "L3→Settlement bridge proposal validation error"
-                    );
-                    return Ok(()); // Don't sign on validation errors
-                }
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_bridge_l3_to_settlement_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to sign L3→Settlement bridge proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign L3→Settlement bridge proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::BridgeL3ToSettlementSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
-            cycle_number,
-            signature: signature.clone(),
-        };
-
-        debug!(
-            cycle_number,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending L3→Settlement bridge signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming BridgeL3ToSettlementSign message (as leader) - Task 3
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_bridge_l3_to_settlement_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            cycle_number,
-            "Leader: Received L3→Settlement bridge signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    cycle_number,
-                    "BridgeOrchestrator not configured, ignoring L3→Settlement signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_l3_to_settlement_follower_signature(cycle_number, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    cycle_number,
-                    signature_count = result.signature_count,
-                    "L3→Settlement bridge signature threshold reached via add_l3_to_settlement_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    cycle_number,
-                    signer_index,
-                    "L3→Settlement bridge signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    error = %e,
-                    "Failed to add L3→Settlement bridge signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_bridge_l3_to_settlement_sign,
+        label = "bridge_l3_to_settlement",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_l3_to_settlement_follower_signature(cycle_number, si, sig).await,
+    );
 
     // =========================================================================
     // Story 7.10: Custody Release Phase Methods (Task 4)
@@ -5350,975 +5144,145 @@ where
         })
     }
 
-    /// Handle incoming ReleaseToVaultProposal message (as follower) - Task 5
-    ///
-    /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_release_to_vault_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        order_ids: Vec<U256>,
-        total_amount: U256,
-        vault_address: Address,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
+    bridge_proposal_handler!(
+        handle_release_to_vault_proposal,
+        label = "release_to_vault",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, order_ids: Vec<U256>, total_amount: U256, vault_address: Address, leader_signature: BLSSignature),
+        hash = |cfg| build_release_to_vault_hash(
+            cfg.settlement_chain_id, cfg.issuer_custody_settlement, cycle_number, &order_ids, total_amount, vault_address,
+        ),
+        validate = |orch, mh| orch.validate_release_proposal(&ReleaseToVaultProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), total_amount, vault_address,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_release_proposal(&ReleaseToVaultProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), total_amount, vault_address,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::ReleaseToVaultSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            order_count = order_ids.len(),
-            total_amount = %total_amount,
-            vault_address = ?vault_address,
-            "Follower: Received custody release to vault proposal"
-        );
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        // Step 1: Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
-
-        // Step 2: Verify leader's BLS signature
-        // IMPORTANT: build_release_to_vault_hash takes 6 parameters including custody_address
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash (6 parameters including custody_address)
-            let message_hash = build_release_to_vault_hash(
-                config.settlement_chain_id,
-                config.issuer_custody_settlement, // custody_address from config
-                cycle_number,
-                &order_ids,
-                total_amount,
-                vault_address,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for custody release proposal");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Invalid leader signature on custody release proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on custody release proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to verify leader signature for custody release proposal"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct ReleaseToVaultProposal and validate
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            ReleaseToVaultProposal {
-                leader_id,
-                cycle_number,
-                order_ids: order_ids.clone(),
-                total_amount,
-                vault_address,
-                leader_signature: leader_signature.clone(),
-                message_hash: build_release_to_vault_hash(
-                    config.settlement_chain_id,
-                    config.issuer_custody_settlement,
-                    cycle_number,
-                    &order_ids,
-                    total_amount,
-                    vault_address,
-                ),
-            }
-        };
-
-        // Validate proposal against on-chain data
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_release_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(cycle_number, "Custody release proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Custody release proposal validation failed"
-                    );
-                    return Ok(()); // Don't sign invalid proposals
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Custody release proposal validation error"
-                    );
-                    return Ok(()); // Don't sign on validation errors
-                }
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_release_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to sign custody release proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign custody release proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::ReleaseToVaultSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
-            cycle_number,
-            signature: signature.clone(),
-        };
-
-        debug!(
-            cycle_number,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending custody release signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming ReleaseToVaultSign message (as leader) - Task 6
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_release_to_vault_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            cycle_number,
-            "Leader: Received custody release signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    cycle_number,
-                    "BridgeOrchestrator not configured, ignoring custody release signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_release_follower_signature(cycle_number, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    cycle_number,
-                    signature_count = result.signature_count,
-                    "Custody release signature threshold reached via add_release_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    cycle_number,
-                    signer_index,
-                    "Custody release signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    error = %e,
-                    "Failed to add custody release signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_release_to_vault_sign,
+        label = "release_to_vault",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_release_follower_signature(cycle_number, si, sig).await,
+    );
 
     // =========================================================================
     // Story 7.3: Submit Order for User Handler Methods
     // =========================================================================
 
-    /// Handle incoming SubmitOrderForUserProposal message (as follower)
-    ///
-    /// Validates the proposal, signs it, and sends signature back to leader.
-    pub async fn handle_submit_order_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        settlement_order_id: U256,
-        itp_id: H256,
-        user: Address,
-        amount: U256,
-        limit_price: U256,
-        slippage_tier: U256,
-        deadline: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            settlement_order_id = %settlement_order_id,
-            itp_id = ?itp_id,
-            user = ?user,
-            amount = %amount,
-            "Follower: Received submit order proposal"
-        );
-
-        // Step 1: Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    settlement_order_id = %settlement_order_id,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
-
-        // Step 2: Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash using the same parameters
-            let message_hash = build_submit_order_hash(
-                config.l3_chain_id,
-                settlement_order_id,
-                itp_id,
-                user,
-                amount,
-                limit_price,
-                slippage_tier,
-                deadline,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(settlement_order_id = %settlement_order_id, "Leader signature verified for submit order proposal");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        settlement_order_id = %settlement_order_id,
-                        "Invalid leader signature on submit order proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on submit order proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        settlement_order_id = %settlement_order_id,
-                        error = %e,
-                        "Failed to verify leader signature for submit order proposal"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                settlement_order_id = %settlement_order_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct SubmitOrderProposal and validate
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            SubmitOrderProposal {
-                leader_id,
-                settlement_order_id,
-                itp_id,
-                user,
-                amount,
-                limit_price,
-                slippage_tier,
-                deadline,
-                leader_signature: leader_signature.clone(),
-                message_hash: build_submit_order_hash(
-                    config.l3_chain_id,
-                    settlement_order_id,
-                    itp_id,
-                    user,
-                    amount,
-                    limit_price,
-                    slippage_tier,
-                    deadline,
-                ),
-            }
-        };
-
-        // Validate proposal against on-chain data
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_submit_order_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(settlement_order_id = %settlement_order_id, "Submit order proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        settlement_order_id = %settlement_order_id,
-                        "Submit order proposal validation failed"
-                    );
-                    return Ok(()); // Don't sign invalid proposals
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        settlement_order_id = %settlement_order_id,
-                        error = %e,
-                        "Submit order proposal validation error"
-                    );
-                    return Ok(()); // Don't sign on validation errors
-                }
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_submit_order_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        settlement_order_id = %settlement_order_id,
-                        error = %e,
-                        "Failed to sign submit order proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign submit order proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::SubmitOrderForUserSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_submit_order_proposal,
+        label = "submit_order",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, settlement_order_id: U256, itp_id: H256, user: Address, amount: U256, limit_price: U256, slippage_tier: U256, deadline: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_submit_order_hash(
+            cfg.l3_chain_id, settlement_order_id, itp_id, user, amount, limit_price, slippage_tier, deadline,
+        ),
+        validate = |orch, mh| orch.validate_submit_order_proposal(&SubmitOrderProposal {
+            leader_id, settlement_order_id, itp_id, user, amount, limit_price, slippage_tier, deadline,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_submit_order_proposal(&SubmitOrderProposal {
+            leader_id, settlement_order_id, itp_id, user, amount, limit_price, slippage_tier, deadline,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::SubmitOrderForUserSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             settlement_order_id,
-            signature: signature.clone(),
-        };
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        debug!(
-            settlement_order_id = %settlement_order_id,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending submit order signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming SubmitOrderForUserSign message (as leader)
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_submit_order_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        settlement_order_id: U256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            settlement_order_id = %settlement_order_id,
-            "Leader: Received submit order signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    settlement_order_id = %settlement_order_id,
-                    "BridgeOrchestrator not configured, ignoring submit order signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_submit_order_follower_signature(settlement_order_id, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    settlement_order_id = %settlement_order_id,
-                    signature_count = result.signature_count,
-                    "Submit order signature threshold reached via add_submit_order_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    settlement_order_id = %settlement_order_id,
-                    signer_index,
-                    "Submit order signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    settlement_order_id = %settlement_order_id,
-                    error = %e,
-                    "Failed to add submit order signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_submit_order_sign,
+        label = "submit_order",
+        key_param = (settlement_order_id: U256),
+        add_sig = |orch, si, sig| orch.add_submit_order_follower_signature(settlement_order_id, si, sig).await,
+    );
 
     // =========================================================================
     // Story 7.4: Batch and Fill Confirmation Handler Methods
     // =========================================================================
 
-    /// Handle incoming ConfirmBatchProposal message (as follower)
-    ///
-    /// Validates the batch proposal, signs it, and sends signature back to leader.
-    pub async fn handle_confirm_batch_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        order_ids: Vec<U256>,
-        prices: Vec<U256>,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
+    bridge_proposal_handler!(
+        handle_confirm_batch_proposal,
+        label = "confirm_batch",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, order_ids: Vec<U256>, prices: Vec<U256>, leader_signature: BLSSignature),
+        hash = |cfg| build_confirm_batch_hash(
+            cfg.l3_chain_id, cfg.index_address, cycle_number, &order_ids,
+        ),
+        validate = |orch, mh| orch.validate_batch_proposal(&BatchProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), prices: prices.clone(),
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_batch_proposal(&BatchProposal {
+            leader_id, cycle_number, order_ids: order_ids.clone(), prices: prices.clone(),
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::ConfirmBatchSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            order_count = order_ids.len(),
-            "Follower: Received confirm batch proposal"
-        );
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        // Step 1: Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
+    bridge_sign_handler!(
+        handle_confirm_batch_sign,
+        label = "confirm_batch",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_batch_follower_signature(cycle_number, si, sig).await,
+    );
 
-        // Step 2: Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash
-            let message_hash = build_confirm_batch_hash(
-                config.l3_chain_id,
-                config.index_address,
-                cycle_number,
-                &order_ids,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for confirm batch proposal");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Invalid leader signature on confirm batch proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on confirm batch proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to verify leader signature for confirm batch proposal"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct BatchProposal and validate
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            BatchProposal {
-                leader_id,
-                cycle_number,
-                order_ids: order_ids.clone(),
-                prices: prices.clone(),
-                leader_signature: leader_signature.clone(),
-                message_hash: build_confirm_batch_hash(
-                    config.l3_chain_id,
-                    config.index_address,
-                    cycle_number,
-                    &order_ids,
-                ),
-            }
-        };
-
-        // Validate proposal
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_batch_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(cycle_number, "Confirm batch proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Confirm batch proposal validation failed"
-                    );
-                    return Ok(()); // Don't sign invalid proposals
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Confirm batch proposal validation error"
-                    );
-                    return Ok(()); // Don't sign on validation errors
-                }
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_batch_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to sign confirm batch proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign confirm batch proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::ConfirmBatchSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_confirm_fills_proposal,
+        label = "confirm_fills",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, cycle_number: u64, fills: Vec<crate::bridge::Fill>, leader_signature: BLSSignature),
+        hash = |cfg| build_confirm_fills_hash(
+            cfg.l3_chain_id, cfg.index_address, cycle_number, &fills,
+        ),
+        validate = |orch, mh| orch.validate_fills_proposal(&FillsProposal {
+            leader_id, cycle_number, fills: fills.clone(),
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_fills_proposal(&FillsProposal {
+            leader_id, cycle_number, fills: fills.clone(),
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::ConfirmFillsSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             cycle_number,
-            signature: signature.clone(),
-        };
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        debug!(
-            cycle_number,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending confirm batch signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming ConfirmBatchSign message (as leader)
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_confirm_batch_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            cycle_number,
-            "Leader: Received confirm batch signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    cycle_number,
-                    "BridgeOrchestrator not configured, ignoring confirm batch signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_batch_follower_signature(cycle_number, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    cycle_number,
-                    signature_count = result.signature_count,
-                    "Confirm batch signature threshold reached via add_batch_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    cycle_number,
-                    signer_index,
-                    "Confirm batch signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    error = %e,
-                    "Failed to add confirm batch signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Handle incoming ConfirmFillsProposal message (as follower)
-    ///
-    /// Validates the fills proposal, signs it, and sends signature back to leader.
-    pub async fn handle_confirm_fills_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        cycle_number: u64,
-        fills: Vec<crate::bridge::Fill>,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            cycle_number,
-            fill_count = fills.len(),
-            "Follower: Received confirm fills proposal"
-        );
-
-        // Step 1: Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    "BridgeOrchestrator not configured - ensure set_bridge_orchestrator() was called"
-                );
-                return Ok(());
-            }
-        };
-
-        // Step 2: Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            // Rebuild message hash using the bridge::Fill type directly
-            let message_hash = build_confirm_fills_hash(
-                config.l3_chain_id,
-                config.index_address,
-                cycle_number,
-                &fills,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self
-                .bls_signer
-                .verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature)
-            {
-                Ok(true) => {
-                    debug!(cycle_number, "Leader signature verified for confirm fills proposal");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Invalid leader signature on confirm fills proposal"
-                    );
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on confirm fills proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to verify leader signature for confirm fills proposal"
-                    );
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                cycle_number,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Step 3: Reconstruct FillsProposal and validate
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            FillsProposal {
-                leader_id,
-                cycle_number,
-                fills: fills.clone(),
-                leader_signature: leader_signature.clone(),
-                message_hash: build_confirm_fills_hash(
-                    config.l3_chain_id,
-                    config.index_address,
-                    cycle_number,
-                    &fills,
-                ),
-            }
-        };
-
-        // Validate proposal
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_fills_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(cycle_number, "Confirm fills proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        "Confirm fills proposal validation failed"
-                    );
-                    return Ok(()); // Don't sign invalid proposals
-                }
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Confirm fills proposal validation error"
-                    );
-                    return Ok(()); // Don't sign on validation errors
-                }
-            }
-        }
-
-        // Step 4: Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_fills_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(
-                        code = "INFRA-007",
-                        cycle_number,
-                        error = %e,
-                        "Failed to sign confirm fills proposal"
-                    );
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign confirm fills proposal: {}",
-                        e
-                    )));
-                }
-            }
-        };
-
-        // Release orchestrator lock before P2P
-        drop(bridge_orch_guard);
-
-        // Step 5: Send signature back to leader
-        let message = P2PMessage::ConfirmFillsSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
-            cycle_number,
-            signature: signature.clone(),
-        };
-
-        debug!(
-            cycle_number,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending confirm fills signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Handle incoming ConfirmFillsSign message (as leader)
-    ///
-    /// Adds the follower's signature to the collection.
-    pub async fn handle_confirm_fills_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        cycle_number: u64,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            cycle_number,
-            "Leader: Received confirm fills signature"
-        );
-
-        // Get bridge orchestrator
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(
-                    cycle_number,
-                    "BridgeOrchestrator not configured, ignoring confirm fills signature"
-                );
-                return Ok(());
-            }
-        };
-
-        // Add signature to collector
-        let orch = bridge_orch.write().await;
-        match orch
-            .add_fills_follower_signature(cycle_number, signer_index, signature)
-            .await
-        {
-            Ok(Some(result)) => {
-                info!(
-                    cycle_number,
-                    signature_count = result.signature_count,
-                    "Confirm fills signature threshold reached via add_fills_follower_signature"
-                );
-            }
-            Ok(None) => {
-                debug!(
-                    cycle_number,
-                    signer_index,
-                    "Confirm fills signature added, threshold not yet reached"
-                );
-            }
-            Err(e) => {
-                warn!(
-                    code = "INFRA-007",
-                    cycle_number,
-                    error = %e,
-                    "Failed to add confirm fills signature"
-                );
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_confirm_fills_sign,
+        label = "confirm_fills",
+        key_param = (cycle_number: u64),
+        add_sig = |orch, si, sig| orch.add_fills_follower_signature(cycle_number, si, sig).await,
+    );
 
     // =========================================================================
     // Encoding helpers
@@ -8137,188 +7101,38 @@ where
         })
     }
 
-    /// Follower: handle submit sell order proposal
-    pub async fn handle_submit_sell_order_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        order_id: U256,
-        itp_id: H256,
-        user: Address,
-        bridged_itp_address: Address,
-        amount: U256,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            order_id = %order_id,
-            itp_id = ?itp_id,
-            user = ?user,
-            amount = %amount,
-            "Follower: Received submit sell order proposal"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(order_id = %order_id, "BridgeOrchestrator not configured for sell order");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_sell_bridge_hash(
-                config.settlement_chain_id,
-                order_id,
-                itp_id,
-                user,
-                bridged_itp_address,
-                amount,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(order_id = %order_id, "Leader signature verified for submit sell order");
-                }
-                Ok(false) => {
-                    warn!(order_id = %order_id, "Invalid leader signature on submit sell order proposal");
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on submit sell order proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Failed to verify leader signature for submit sell order");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                order_id = %order_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Reconstruct and validate proposal
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            SellBridgeProposal {
-                leader_id,
-                order_id,
-                itp_id,
-                user,
-                bridged_itp_address,
-                amount,
-                leader_signature: leader_signature.clone(),
-                message_hash: build_sell_bridge_hash(
-                    config.settlement_chain_id, order_id, itp_id, user, bridged_itp_address, amount,
-                ),
-            }
-        };
-
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_submit_sell_order_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(order_id = %order_id, "Submit sell order proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(order_id = %order_id, "Submit sell order proposal validation failed");
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Submit sell order proposal validation error");
-                    return Ok(());
-                }
-            }
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_submit_sell_order_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Failed to sign submit sell order proposal");
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign submit sell order proposal: {}", e
-                    )));
-                }
-            }
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::SubmitSellOrderSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_submit_sell_order_proposal,
+        label = "submit_sell_order",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, order_id: U256, itp_id: H256, user: Address, bridged_itp_address: Address, amount: U256, leader_signature: BLSSignature),
+        hash = |cfg| build_sell_bridge_hash(
+            cfg.settlement_chain_id, order_id, itp_id, user, bridged_itp_address, amount,
+        ),
+        validate = |orch, mh| orch.validate_submit_sell_order_proposal(&SellBridgeProposal {
+            leader_id, order_id, itp_id, user, bridged_itp_address, amount,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_submit_sell_order_proposal(&SellBridgeProposal {
+            leader_id, order_id, itp_id, user, bridged_itp_address, amount,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::SubmitSellOrderSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             order_id,
-            signature,
-        };
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        debug!(
-            order_id = %order_id,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending submit sell order signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Leader: handle submit sell order sign
-    pub async fn handle_submit_sell_order_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        order_id: U256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            order_id = %order_id,
-            "Leader: Received submit sell order signature"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(order_id = %order_id, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_submit_sell_order_follower_signature(order_id, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(
-                    order_id = %order_id,
-                    signature_count = result.signature_count,
-                    "Submit sell order signature threshold reached"
-                );
-            }
-            Ok(None) => {
-                debug!(order_id = %order_id, signer_index, "Submit sell order signature added, waiting for more");
-            }
-            Err(e) => {
-                warn!(order_id = %order_id, error = %e, "Failed to add submit sell order signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_submit_sell_order_sign,
+        label = "submit_sell_order",
+        key_param = (order_id: U256),
+        add_sig = |orch, si, sig| orch.add_submit_sell_order_follower_signature(order_id, si, sig).await,
+    );
 
     // ---- Complete Sell Order Consensus ----
 
@@ -8441,181 +7255,38 @@ where
         })
     }
 
-    /// Follower: handle complete sell order proposal
-    pub async fn handle_complete_sell_order_proposal(
-        &self,
-        from: PeerId,
-        leader_id: PeerId,
-        order_id: U256,
-        usdc_proceeds: U256,
-        vault: Address,
-        leader_signature: BLSSignature,
-    ) -> Result<(), Error> {
-        info!(
-            order_id = %order_id,
-            usdc_proceeds = %usdc_proceeds,
-            ?vault,
-            "Follower: Received complete sell order proposal"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(order_id = %order_id, "BridgeOrchestrator not configured for complete sell order");
-                return Ok(());
-            }
-        };
-
-        // Verify leader's BLS signature
-        if let Some(leader_pubkey) = self.key_registry.get_public_key(&leader_id) {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-
-            let message_hash = build_complete_sell_order_consensus_hash(
-                config.settlement_chain_id,
-                config.settlement_custody_address,
-                order_id,
-                usdc_proceeds,
-                vault,
-            );
-
-            let hash_bytes: [u8; 32] = message_hash.into();
-            match self.bls_signer.verify_message_hash(&leader_pubkey, &hash_bytes, &leader_signature) {
-                Ok(true) => {
-                    debug!(order_id = %order_id, "Leader signature verified for complete sell order");
-                }
-                Ok(false) => {
-                    warn!(order_id = %order_id, "Invalid leader signature on complete sell order proposal");
-                    return Err(Error::BlsVerification(
-                        "Invalid leader signature on complete sell order proposal".to_string(),
-                    ));
-                }
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Failed to verify leader signature for complete sell order");
-                    return Err(e);
-                }
-            }
-        } else {
-            warn!(
-                code = "INFRA-007",
-                order_id = %order_id,
-                ?leader_id,
-                "Leader public key not found in registry, REJECTING proposal"
-            );
-            return Err(Error::BlsVerification(
-                format!("Leader {:?} not found in key registry -- refusing to sign", leader_id)
-            ));
-        }
-
-        // Reconstruct and validate proposal
-        let proposal = {
-            let orch = bridge_orch.read().await;
-            let config = orch.config();
-            CompleteSellProposal {
-                leader_id,
-                order_id,
-                usdc_proceeds,
-                leader_signature: leader_signature.clone(),
-                message_hash: build_complete_sell_order_consensus_hash(
-                    config.settlement_chain_id, config.settlement_custody_address, order_id, usdc_proceeds, vault,
-                ),
-            }
-        };
-
-        {
-            let orch = bridge_orch.read().await;
-            match orch.validate_complete_sell_order_proposal(&proposal).await {
-                Ok(true) => {
-                    debug!(order_id = %order_id, "Complete sell order proposal validation passed");
-                }
-                Ok(false) => {
-                    warn!(order_id = %order_id, "Complete sell order proposal validation failed");
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Complete sell order proposal validation error");
-                    return Ok(());
-                }
-            }
-        }
-
-        // Sign the proposal
-        let signature = {
-            let orch = bridge_orch.read().await;
-            match orch.sign_complete_sell_order_proposal(&proposal) {
-                Ok(sig) => sig,
-                Err(e) => {
-                    warn!(order_id = %order_id, error = %e, "Failed to sign complete sell order proposal");
-                    return Err(Error::BlsVerification(format!(
-                        "Failed to sign complete sell order proposal: {}", e
-                    )));
-                }
-            }
-        };
-
-        drop(bridge_orch_guard);
-
-        // Send signature back to leader
-        let message = P2PMessage::CompleteSellOrderSign {
-            signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+    bridge_proposal_handler!(
+        handle_complete_sell_order_proposal,
+        label = "complete_sell_order",
+        leader = (leader_id, leader_signature),
+        params = (leader_id: PeerId, order_id: U256, usdc_proceeds: U256, vault: Address, leader_signature: BLSSignature),
+        hash = |cfg| build_complete_sell_order_consensus_hash(
+            cfg.settlement_chain_id, cfg.settlement_custody_address, order_id, usdc_proceeds, vault,
+        ),
+        validate = |orch, mh| orch.validate_complete_sell_order_proposal(&CompleteSellProposal {
+            leader_id, order_id, usdc_proceeds,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }).await,
+        sign = |orch, mh| orch.sign_complete_sell_order_proposal(&CompleteSellProposal {
+            leader_id, order_id, usdc_proceeds,
+            leader_signature: leader_signature.clone(),
+            message_hash: mh,
+        }),
+        respond = |s, sig| P2PMessage::CompleteSellOrderSign {
+            signer_id: s.config.peer_id,
+            signer_index: s.runtime_config.issuer_registry_index(),
             order_id,
-            signature,
-        };
+            signature: common::types::BLSSignature(sig.0),
+        },
+    );
 
-        debug!(
-            order_id = %order_id,
-            signer_index = self.runtime_config.issuer_registry_index(),
-            "Follower: Sending complete sell order signature to leader"
-        );
-
-        self.p2p.send_to(from, message).await
-    }
-
-    /// Leader: handle complete sell order sign
-    pub async fn handle_complete_sell_order_sign(
-        &self,
-        from: PeerId,
-        signer_index: u8,
-        order_id: U256,
-        signature: BLSSignature,
-    ) -> Result<(), Error> {
-        debug!(
-            ?from,
-            signer_index,
-            order_id = %order_id,
-            "Leader: Received complete sell order signature"
-        );
-
-        let bridge_orch_guard = self.bridge_orchestrator.read().await;
-        let bridge_orch = match bridge_orch_guard.as_ref() {
-            Some(orch) => orch,
-            None => {
-                warn!(order_id = %order_id, "BridgeOrchestrator not configured");
-                return Ok(());
-            }
-        };
-
-        let orch = bridge_orch.write().await;
-        match orch.add_complete_sell_order_follower_signature(order_id, signer_index, signature).await {
-            Ok(Some(result)) => {
-                info!(
-                    order_id = %order_id,
-                    signature_count = result.signature_count,
-                    "Complete sell order signature threshold reached"
-                );
-            }
-            Ok(None) => {
-                debug!(order_id = %order_id, signer_index, "Complete sell order signature added, waiting for more");
-            }
-            Err(e) => {
-                warn!(order_id = %order_id, error = %e, "Failed to add complete sell order signature");
-            }
-        }
-
-        Ok(())
-    }
+    bridge_sign_handler!(
+        handle_complete_sell_order_sign,
+        label = "complete_sell_order",
+        key_param = (order_id: U256),
+        add_sig = |orch, si, sig| orch.add_complete_sell_order_follower_signature(order_id, si, sig).await,
+    );
 
     // ========================================================================
     // 8-step bridge: RecordCollateralMove consensus phase
