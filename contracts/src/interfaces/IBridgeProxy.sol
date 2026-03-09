@@ -242,7 +242,19 @@ interface IBridgeProxy {
 
     // ============ Admin Functions ============
 
-    /// @notice Admin: deploy BridgedITP and register mappings without BLS
+    /// @notice Admin: register an existing L3 ITP for bridge use (deploy BridgedITP + mappings)
+    /// @param orbitItpId The L3 ITP identifier
+    /// @param name BridgedITP token name
+    /// @param symbol BridgedITP token symbol
+    /// @param deployer The deployer/admin address for this ITP
+    /// @return bridgedItpAddress Deployed BridgedITP token address
+    function registerExistingItp(
+        bytes32 orbitItpId,
+        string calldata name,
+        string calldata symbol,
+        address deployer
+    ) external returns (address bridgedItpAddress);
+
     /// @notice Update IssuerRegistry address
     function setIssuerRegistry(address _issuerRegistry) external;
 

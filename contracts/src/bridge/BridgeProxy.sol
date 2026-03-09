@@ -485,6 +485,26 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     // ============ ADMIN FUNCTIONS ============
 
+    /// @notice Register an existing L3 ITP for bridge use (owner-only bootstrapping)
+    function registerExistingItp(
+        bytes32 orbitItpId,
+        string calldata name,
+        string calldata symbol,
+        address deployer
+    ) external override onlyOwner returns (address bridgedItpAddress) {
+        if (orbitItpId == bytes32(0)) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        if (deployer == address(0)) revert ErrorsLib.E106_ZeroAddressNotAllowed();
+        if (orbitToSettlement[orbitItpId] != address(0))
+            revert ErrorsLib.E07C_OrbitItpAlreadyMapped(orbitItpId, orbitToSettlement[orbitItpId]);
+
+        itpDeployer[orbitItpId] = deployer;
+        bridgedItpAddress = bridgedItpFactory.deployBridgedItp(name, symbol, orbitItpId);
+        orbitToSettlement[orbitItpId] = bridgedItpAddress;
+        settlementToOrbit[bridgedItpAddress] = orbitItpId;
+
+        emit ItpCreated(orbitItpId, bridgedItpAddress, type(uint256).max, deployer);
+    }
+
     function setIssuerRegistry(address _issuerRegistry) external override onlyOwner {
         issuerRegistry = IIssuerRegistry(_issuerRegistry);
         __BLSVerifier_init(_issuerRegistry);
