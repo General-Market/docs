@@ -173,7 +173,7 @@ impl EthersChainWriter {
         timeout_secs: u64,
     ) -> Result<TransactionReceipt, Error> {
         let pending = PendingTransaction::new(tx_hash, self.client.provider())
-            .interval(std::time::Duration::from_millis(500));
+            .interval(std::time::Duration::from_millis(50));
 
         tokio::time::timeout(
             std::time::Duration::from_secs(timeout_secs),
