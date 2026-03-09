@@ -2198,7 +2198,10 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 }
                 Err(e) => {
                     let fills_err = format!("{}", e);
-                    if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
+                    // confirmFills revert after successful BLS consensus can only mean:
+                    // - 0x6e6e29cb: OrderAlreadyFilled (regular cycle filled it first)
+                    // - "reverted on-chain": same error but without decoded selector
+                    if fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain") {
                         // Order already filled on-chain. Proceed directly to mint.
                         // NOTE: Do NOT mark Filled — it's terminal in watchdog. Stay Batched for retry safety.
                         info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
@@ -2667,7 +2670,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     }
                     Err(e) => {
                         let fills_err = format!("{}", e);
-                        if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
+                        if fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain") {
                             info!(cycle = current_cycle, "Sell order already filled on-chain, marking as SellFilled");
                             // Store fill data even on already-filled path (H2 fix)
                             let orch = orchestrator.write().await;
