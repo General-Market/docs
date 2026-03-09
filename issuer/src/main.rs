@@ -1215,8 +1215,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                             }
                                                         }
                                                     } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellBurned) {
-                                                        // Don't reset to SellPending — keep at SellBurned, only retry L3 submit
+                                                        // Don't reset — keep at SellBurned, Phase A sub-step 3 retries L3 submit
                                                         warn!(order_id = %order_id, "Stale SellBurned order — retrying L3 submit only");
+                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3) {
+                                                        // Don't reset — L3 order exists, Phase B retries fill confirmation
+                                                        warn!(order_id = %order_id, "Stale SellSubmittedOnL3 order — retrying fills only");
+                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellFilled) {
+                                                        // Don't reset — fills confirmed, Phase C retries completeSellOrder
+                                                        warn!(order_id = %order_id, "Stale SellFilled order — retrying complete only");
                                                     } else {
                                                         orch.reset_stale_sell_order(order_id).await;
                                                     }
@@ -2787,7 +2793,13 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         let fills_err = format!("{}", e);
                         if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
                             info!(cycle = current_cycle, "Sell order already filled on-chain, marking as SellFilled");
+                            // Store fill data even on already-filled path (H2 fix)
                             let orch = orchestrator.write().await;
+                            for (i, fill) in fills.iter().enumerate() {
+                                let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
+                                orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
+                            }
                             for oid in &submitted_sell_orders {
                                 orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                             }
@@ -2810,11 +2822,19 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         let o = orchestrator.read().await;
                         let mut fills = Vec::new();
                         for (i, order_id) in order_ids_for_batch.iter().enumerate() {
+                            let settlement_order_id = submitted_sell_orders.get(i).unwrap_or(order_id);
                             let order_nav = prices.get(i).copied().unwrap_or(local_nav_fallback);
-                            let amount = match o.get_sell_order_amount(order_id).await {
+                            let amount = match o.get_sell_order_amount(settlement_order_id).await {
                                 Some(a) => a,
                                 None => { warn!(order_id = %order_id, "Sell order amount missing (E021 path) — skipping"); continue; }
                             };
+                            // Limit price check (same as normal path)
+                            if let Some(limit_price) = o.get_sell_order_limit_price(settlement_order_id).await {
+                                if !limit_price.is_zero() && !fill_price_respects_limit(order_nav, limit_price, common::types::Side::Sell) {
+                                    warn!(order_id = %order_id, nav = %order_nav, limit = %limit_price, "Skipping sell fill (E021): NAV violates limit price");
+                                    continue;
+                                }
+                            }
                             fills.push(Fill {
                                 order_id: *order_id,
                                 fill_price: order_nav,
@@ -2844,8 +2864,14 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         Err(e) => {
                             let fills_err = format!("{}", e);
                             if fills_err.contains("6e6e29cb") || fills_err.contains("already") {
-                                info!(cycle = current_cycle, "Sell order already filled, marking as SellFilled");
+                                info!(cycle = current_cycle, "Sell order already filled (E021), marking as SellFilled");
+                                // Store fill data even on already-filled path (H2 fix)
                                 let orch = orchestrator.write().await;
+                                for (i, fill) in fills.iter().enumerate() {
+                                    let settlement_id = submitted_sell_orders.get(i).copied().unwrap_or(fill.order_id);
+                                    orch.set_sell_order_fill_price(settlement_id, fill.fill_price).await;
+                                    orch.set_sell_order_fill_amount(settlement_id, fill.fill_amount).await;
+                                }
                                 for oid in &submitted_sell_orders {
                                     orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
                                 }
@@ -2989,8 +3015,10 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         }
                     }
                 } else if !am_leader {
-                    // Follower: stays at SellFilled (non-terminal). If leader succeeded,
-                    // retry will hit E119 (benign). If leader failed, retry re-attempts.
+                    // Follower: consensus succeeded, leader will submit tx.
+                    // Mark completed to prevent stale watchdog retry loop.
+                    let orch = orchestrator.write().await;
+                    orch.mark_sell_order_processed(order_id, ethers::types::H256::zero()).await;
                 }
             }
             Err(e) => {

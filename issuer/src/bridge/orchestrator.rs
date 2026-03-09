@@ -408,10 +408,18 @@ impl BridgeOrchestrator {
         ))
     }
 
-    /// Mark a sell order as fully processed
+    /// Mark a sell order as fully processed and clean up transient state
     pub async fn mark_sell_order_processed(&self, order_id: U256, tx_hash: H256) {
         self.processed_sell_orders.write().await.insert(order_id, tx_hash);
         self.set_sell_order_status(order_id, BridgeOrderStatus::SellCompleted).await;
+        // Clean up transient in-memory data to prevent unbounded growth
+        self.sell_order_amounts.write().await.remove(&order_id);
+        self.sell_order_limit_prices.write().await.remove(&order_id);
+        self.sell_order_fill_prices.write().await.remove(&order_id);
+        self.sell_order_fill_amounts.write().await.remove(&order_id);
+        self.sell_burn_tx_hashes.write().await.remove(&order_id);
+        self.sell_order_itp_ids.write().await.remove(&order_id);
+        self.sell_order_mappings.write().await.remove(&order_id);
         info!(
             order_id = %order_id,
             tx_hash = ?tx_hash,
@@ -4248,11 +4256,11 @@ impl BridgeOrchestrator {
         bridged_itp_address: Address,
         amount: U256,
     ) -> Result<SellBridgeProposal, BridgeError> {
-        // Check order status is SellPending
+        // Check order status is SellBurned (burn gate passed, ready for L3 submission)
         let status = self.get_sell_order_status(&order_id).await;
-        if status != Some(BridgeOrderStatus::SellPending) {
+        if status != Some(BridgeOrderStatus::SellBurned) {
             return Err(ConsensusError::ChainWriterError {
-                reason: format!("Sell order {} not in SellPending status (got: {:?})", order_id, status),
+                reason: format!("Sell order {} not in SellBurned status (got: {:?})", order_id, status),
             }
             .into());
         }

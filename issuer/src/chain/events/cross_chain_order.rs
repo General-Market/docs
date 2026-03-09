@@ -43,11 +43,12 @@ const SUSPICIOUS_AMOUNT_THRESHOLD: u128 = 1_000_000_000_000; // 1e12
 /// - topics[2]: itpId (bytes32, indexed)
 /// - topics[3]: user (address, indexed - last 20 bytes of 32-byte topic)
 ///
-/// Data layout (2 non-indexed params):
+/// Data layout (3 non-indexed params):
 /// - data[0..32]: bridgedItpAddress (address at offset 12..32)
 /// - data[32..64]: amount (uint256)
+/// - data[64..96]: limitPrice (uint256)
 pub const CROSS_CHAIN_SELL_ORDER_CREATED_SIGNATURE: &str =
-    "CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256)";
+    "CrossChainSellOrderCreated(uint256,bytes32,address,address,uint256,uint256)";
 
 /// Event signature for CrossChainOrderCreated
 /// `keccak256("CrossChainOrderCreated(uint256,bytes32,address,uint256)")`
