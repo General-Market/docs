@@ -154,7 +154,14 @@ impl<'a> ChainBuilder<'a> {
             rpc_url: rpc_url.to_string(),
             contracts: writer_addresses,
             chain_id: self.target_chain_id,
-            gas_config: GasConfig::default().with_max_gas_limit(self.params.max_gas_limit),
+            gas_config: GasConfig::default()
+                .with_max_gas_limit(self.params.max_gas_limit)
+                // Static EIP-1559 values for L3 Orbit — eliminates getBlock RPC per tx.
+                // L3 gas is free; these values are generous and never limiting.
+                .with_eip1559(
+                    ethers::types::U256::from(1_500_000_000u64), // 1.5 gwei priority
+                    ethers::types::U256::from(10_000_000_000u64), // 10 gwei max fee
+                ),
             ..Default::default()
         };
 

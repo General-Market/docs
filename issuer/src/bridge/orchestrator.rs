@@ -168,6 +168,8 @@ pub struct BridgeOrchestrator {
     nav_oracle_sigs: SignatureCollectionManager<H256>,
     /// Signature manager for MirrorIssuerRegistry sync proposals (keyed by nonce as H256)
     mirror_sync_sigs: SignatureCollectionManager<H256>,
+    /// Whether we've already set max L3 USDC approval for Index (skips approve tx per order)
+    l3_usdc_approved: std::sync::atomic::AtomicBool,
 }
 
 impl BridgeOrchestrator {
@@ -229,6 +231,7 @@ impl BridgeOrchestrator {
             nav_sigs: SignatureCollectionManager::new("nav"),
             nav_oracle_sigs: SignatureCollectionManager::new("nav_oracle"),
             mirror_sync_sigs: SignatureCollectionManager::new("mirror_sync"),
+            l3_usdc_approved: std::sync::atomic::AtomicBool::new(false),
         }
     }
 
@@ -1393,26 +1396,33 @@ impl BridgeOrchestrator {
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<H256, BridgeError> {
-        // Step 1: Approve Index contract to spend L3 USDC from issuer signer
-        let approve_calldata = build_erc20_approve_calldata(
-            self.config.index_address,
-            order.amount,
-        );
-        self.l3_writer
-            .send_transaction(
-                self.config.l3_usdc_address,
-                approve_calldata,
-                U256::zero(),
-            )
-            .await
-            .map_err(|e| ConsensusError::ChainWriterError {
-                reason: format!("L3 USDC approve for Index failed: {}", e),
-            })?;
-        debug!(
-            order_id = %order.order_id,
-            amount = %order.amount,
-            "Approved Index to spend L3 USDC"
-        );
+        let submit_start = std::time::Instant::now();
+
+        // Step 1: Approve Index contract to spend L3 USDC from issuer signer.
+        // Use max approval (type(uint256).max) on first call, then skip on subsequent calls.
+        // This eliminates one full L3 transaction per order.
+        if !self.l3_usdc_approved.load(std::sync::atomic::Ordering::Relaxed) {
+            let approve_calldata = build_erc20_approve_calldata(
+                self.config.index_address,
+                U256::MAX,
+            );
+            self.l3_writer
+                .send_transaction(
+                    self.config.l3_usdc_address,
+                    approve_calldata,
+                    U256::zero(),
+                )
+                .await
+                .map_err(|e| ConsensusError::ChainWriterError {
+                    reason: format!("L3 USDC approve for Index failed: {}", e),
+                })?;
+            self.l3_usdc_approved.store(true, std::sync::atomic::Ordering::Relaxed);
+            info!(
+                order_id = %order.order_id,
+                elapsed_ms = submit_start.elapsed().as_millis(),
+                "Set max L3 USDC approval for Index (one-time)"
+            );
+        }
 
         // Step 2: Read nextOrderId before submitting to know what L3 order ID will be assigned
         let next_order_id_selector = &ethers::utils::keccak256("nextOrderId()")[..4];
@@ -1476,6 +1486,7 @@ impl BridgeOrchestrator {
             itp_id = ?order.itp_id,
             amount = %order.amount,
             tx_hash = ?tx_hash,
+            total_ms = submit_start.elapsed().as_millis(),
             "Index.submitOrder() executed successfully"
         );
 
@@ -1969,6 +1980,8 @@ impl BridgeOrchestrator {
         aggregated: &BatchResult,
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
+        let batch_start = std::time::Instant::now();
+
         // Check for duplicate cycle (deduplication)
         if let Some(existing_tx) = self.batch_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
@@ -2006,6 +2019,12 @@ impl BridgeOrchestrator {
             .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
+
+        info!(
+            cycle_number = cycle_number,
+            tx_ms = batch_start.elapsed().as_millis(),
+            "confirmBatch tx timing"
+        );
 
         // Record as confirmed (deduplication)
         self.batch_phase.confirmed
@@ -2047,6 +2066,8 @@ impl BridgeOrchestrator {
         aggregated: &FillsResult,
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
+        let fills_start = std::time::Instant::now();
+
         // Check for duplicate cycle (deduplication)
         if let Some(existing_tx) = self.fills_phase.confirmed.read().await.get(&cycle_number) {
             warn!(
@@ -2081,6 +2102,12 @@ impl BridgeOrchestrator {
             .map_err(|e| ConsensusError::ChainWriterError {
                 reason: e.to_string(),
             })?;
+
+        info!(
+            cycle_number = cycle_number,
+            tx_ms = fills_start.elapsed().as_millis(),
+            "confirmFills tx timing"
+        );
 
         // Record as confirmed (deduplication)
         self.fills_phase.confirmed

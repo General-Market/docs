@@ -96,7 +96,8 @@ impl EthersChainWriter {
     /// Returns error if unable to connect to RPC endpoint or parse private key
     pub fn new(config: ChainWriterConfig, private_key: &str) -> Result<Self, Error> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
-            .map_err(|e| Error::ChainWrite(format!("Failed to create provider: {}", e)))?;
+            .map_err(|e| Error::ChainWrite(format!("Failed to create provider: {}", e)))?
+            .interval(std::time::Duration::from_millis(50)); // L3 has instant finality, poll fast
 
         // Parse private key (handle both with and without 0x prefix)
         let key_hex = private_key.trim_start_matches("0x");
@@ -430,20 +431,26 @@ impl EthersChainWriter {
         const MAX_NONCE_RETRIES: u32 = 3;
 
         for nonce_attempt in 0..=MAX_NONCE_RETRIES {
+            let tx_start = std::time::Instant::now();
+
             // Get nonce (fresh on each attempt after resync)
             let nonce = self.nonce_manager.get_next_nonce().await?;
             let mut tx_with_nonce = tx.clone();
             tx_with_nonce.set_nonce(nonce);
 
             // Estimate gas
+            let t0 = std::time::Instant::now();
             let gas = self.gas_estimator.estimate_gas(&tx_with_nonce).await?;
             tx_with_nonce.set_gas(gas);
+            let gas_est_ms = t0.elapsed().as_millis();
 
             // Get gas price
+            let t1 = std::time::Instant::now();
             let gas_price = self.gas_estimator.get_gas_price().await?;
             if let TypedTransaction::Eip1559(ref mut eip1559_tx) = tx_with_nonce {
                 gas_price.apply_to_tx(eip1559_tx);
             }
+            let gas_price_ms = t1.elapsed().as_millis();
 
             debug!(
                 operation = operation,
@@ -451,6 +458,8 @@ impl EthersChainWriter {
                 gas = ?gas,
                 nonce_attempt = nonce_attempt,
                 to = ?tx_with_nonce.to(),
+                gas_est_ms = gas_est_ms,
+                gas_price_ms = gas_price_ms,
                 "Submitting transaction"
             );
 
@@ -458,24 +467,36 @@ impl EthersChainWriter {
             let client = self.client.clone();
             let retry_config = self.config.retry_config.clone();
 
+            let t2 = std::time::Instant::now();
             let result = with_retry(&retry_config, operation, || {
                 let tx_clone = tx_with_nonce.clone();
                 let client_clone = client.clone();
                 async move {
+                    let send_start = std::time::Instant::now();
                     let pending_tx = client_clone
                         .send_transaction(tx_clone, None)
                         .await
                         .map_err(|e| e.to_string())?;
 
                     let tx_hash = pending_tx.tx_hash();
+                    let send_ms = send_start.elapsed().as_millis();
 
                     // Wait for receipt and verify on-chain success.
-                    // L3 blocks are sub-second so this adds minimal latency.
+                    // L3 has instant finality — provider interval set to 50ms at construction.
+                    let receipt_start = std::time::Instant::now();
                     let receipt = pending_tx
-                        .confirmations(1)
+                        .confirmations(0)
                         .await
                         .map_err(|e| format!("waiting for receipt: {e}"))?
                         .ok_or_else(|| "receipt not found after confirmation".to_string())?;
+                    let receipt_ms = receipt_start.elapsed().as_millis();
+
+                    tracing::info!(
+                        ?tx_hash,
+                        send_ms = send_ms,
+                        receipt_ms = receipt_ms,
+                        "L3 tx timing breakdown"
+                    );
 
                     // status == Some(0) means the TX reverted on-chain
                     if receipt.status == Some(ethers::types::U64::zero()) {
@@ -488,6 +509,16 @@ impl EthersChainWriter {
                 }
             })
             .await;
+            let submit_total_ms = t2.elapsed().as_millis();
+
+            info!(
+                operation = operation,
+                gas_est_ms = gas_est_ms,
+                gas_price_ms = gas_price_ms,
+                submit_total_ms = submit_total_ms,
+                total_ms = tx_start.elapsed().as_millis(),
+                "submit_tx timing"
+            );
 
             match result {
                 Ok(tx_hash) => {

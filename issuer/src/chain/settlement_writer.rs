@@ -77,7 +77,8 @@ impl SettlementChainWriter {
         private_key: &str,
     ) -> Result<Self, SettlementWriterError> {
         let provider = Provider::<Http>::try_from(&config.rpc_url)
-            .map_err(|e| SettlementWriterError::ProviderError(format!("Failed to create provider: {}", e)))?;
+            .map_err(|e| SettlementWriterError::ProviderError(format!("Failed to create provider: {}", e)))?
+            .interval(std::time::Duration::from_millis(500)); // Sonic: 500ms blocks, poll faster than default 7s
 
         // Parse private key (handle both with and without 0x prefix)
         let key_hex = private_key.trim_start_matches("0x");

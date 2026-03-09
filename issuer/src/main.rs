@@ -978,7 +978,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_cross_chain_buy_post_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt,
+                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None,
                                 ).await;
                             });
                         }
@@ -1788,6 +1788,8 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 }
 
                 let chain_id = settlement_reader.chain_id();
+                // Track which orders successfully complete Phase 1 (submitOrder)
+                let mut just_submitted_ids: Vec<ethers::types::U256> = Vec::new();
                 // Process orders SEQUENTIALLY to avoid P2P consensus contention.
                 // When multiple bridge proposals are in-flight simultaneously, leaders
                 // time out because followers are also busy being leaders for other orders.
@@ -1850,6 +1852,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                                     .as_secs(),
                                             }).await;
                                         }
+                                        just_submitted_ids.push(order.order_id);
                                         // Immediately continue to batch/fills/mint (merged Phase 1+2)
                                         // instead of returning and waiting for poll-driven Phase 2
                                         info!(order_id = %order.order_id, "Phase 1 complete, continuing to batch/fills/mint inline");
@@ -1868,22 +1871,25 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                     }
                 }
 
-                // Merged Phase 2: immediately run batch/fills/mint for all SubmittedOnL3 orders
+                // Merged Phase 2: immediately run batch/fills/mint for the just-submitted orders
                 // (no poll wait — orders were just submitted above)
-                run_cross_chain_buy_post_processing(
-                    protocol.clone(),
-                    settlement_reader.clone(),
-                    orchestrator.clone(),
-                    settlement_writer.clone(),
-                    chain_reader.clone(),
-                    current_cycle,
-                    node_index,
-                    num_issuers,
-                    data_node_url_for_task.clone(),
-                    itp_id_for_task.clone(),
-                    local_nav_fallback,
-                    quote_tokens.clone(),
-                ).await;
+                if !just_submitted_ids.is_empty() {
+                    run_cross_chain_buy_post_processing(
+                        protocol.clone(),
+                        settlement_reader.clone(),
+                        orchestrator.clone(),
+                        settlement_writer.clone(),
+                        chain_reader.clone(),
+                        current_cycle,
+                        node_index,
+                        num_issuers,
+                        data_node_url_for_task.clone(),
+                        itp_id_for_task.clone(),
+                        local_nav_fallback,
+                        quote_tokens.clone(),
+                        Some(just_submitted_ids),
+                    ).await;
+                }
             }
         }
         Err(e) => {
@@ -1905,8 +1911,9 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 /// Cross-chain BUY post-processing — batch/fills/mint for SubmittedOnL3 orders
 ///
 /// Primary path: called inline from run_cross_chain_processing after submit completes.
+///   `target_orders = Some(ids)` — only process the just-submitted orders (avoids stale order pollution).
 /// Recovery path: spawned on settlement_poll_due for orders stuck at SubmittedOnL3
-/// (e.g., if the node crashed between submit and batch).
+///   `target_orders = None` — process all SubmittedOnL3 orders.
 async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
     _settlement_reader: Arc<dyn issuer::SettlementReader>,
@@ -1920,6 +1927,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    target_orders: Option<Vec<ethers::types::U256>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -1927,7 +1935,12 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
     // Process batch for SubmittedOnL3 orders
-    let submitted_orders = {
+    let submitted_orders = if let Some(ref targets) = target_orders {
+        // Inline path: only process the just-submitted orders (prevents stale L3-native orders
+        // from poisoning the batch — their L3 IDs can collide with settlement order IDs).
+        targets.clone()
+    } else {
+        // Recovery path: process all SubmittedOnL3 orders
         let o = orchestrator.read().await;
         o.get_submitted_bridged_orders().await
     };
@@ -2216,15 +2229,46 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                 }
                 Err(e) => {
                     let fills_err = format!("{}", e);
-                    // confirmFills revert after successful BLS consensus can only mean:
-                    // - 0x6e6e29cb: OrderAlreadyFilled (regular cycle filled it first)
-                    // - "reverted on-chain": same error but without decoded selector
-                    if fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain") {
-                        // Order already filled on-chain. Proceed directly to mint.
-                        // NOTE: Do NOT mark Filled — it's terminal in watchdog. Stay Batched for retry safety.
-                        info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
+                    // Determine if we should proceed to mint:
+                    // 1. Chain revert (already filled): 0x6e6e29cb / "already" / "reverted on-chain"
+                    // 2. BLS timeout: fills loop likely filled the order concurrently
+                    let is_already_filled = fills_err.contains("6e6e29cb") || fills_err.contains("already") || fills_err.contains("reverted on-chain");
+                    let is_timeout = fills_err.contains("signing timeout");
 
-                        // Mint BridgedITP shares (already-filled path)
+                    if is_already_filled || is_timeout {
+                        let should_mint = if is_timeout {
+                            // BLS timeout: fills loop may have confirmed. Wait briefly, then
+                            // verify on-chain before proceeding to mint.
+                            info!(cycle = current_cycle, "Fills BLS timeout — waiting for fills loop to confirm on-chain");
+                            let mut filled_on_chain = false;
+                            for attempt in 0..10u32 {
+                                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                                // Check if orders are now FILLED on L3 (no longer in batched set)
+                                match chain_reader.get_batched_orders().await {
+                                    Ok(batched) => {
+                                        let batched_ids: std::collections::HashSet<ethers::types::U256> =
+                                            batched.iter().map(|o| o.id).collect();
+                                        let all_filled = fills.iter().all(|f| !batched_ids.contains(&f.order_id));
+                                        if all_filled {
+                                            info!(cycle = current_cycle, attempt, "Orders confirmed FILLED on L3 by fills loop");
+                                            filled_on_chain = true;
+                                            break;
+                                        }
+                                    }
+                                    Err(e) => debug!(error = %e, "Failed to check batched orders"),
+                                }
+                            }
+                            if !filled_on_chain {
+                                warn!(cycle = current_cycle, "Orders still not filled after 10s wait — skipping mint");
+                            }
+                            filled_on_chain
+                        } else {
+                            info!(cycle = current_cycle, "Order already filled on-chain, proceeding to mint");
+                            true
+                        };
+
+                        // Mint BridgedITP shares (post-fills path)
+                        if should_mint
                         {
                             let bridge_proxy = orchestrator.read().await.config().bridge_proxy;
                             for fill in &fills {
@@ -2247,39 +2291,39 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
                                                 match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
-                                                        info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (already-filled), waiting for receipt");
+                                                        info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (post-fills), waiting for receipt");
                                                         const RECEIPT_TIMEOUT_SECS: u64 = 60;
                                                         match settlement_writer.wait_for_receipt(tx_hash, RECEIPT_TIMEOUT_SECS).await {
                                                             Ok(receipt) => {
                                                                 let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
                                                                 if success {
-                                                                    info!(?tx_hash, "mintBridgedShares CONFIRMED (already-filled)");
+                                                                    info!(?tx_hash, "mintBridgedShares CONFIRMED (post-fills)");
                                                                     let orch = orchestrator.write().await;
                                                                     orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                                                 } else {
-                                                                    warn!(?tx_hash, "mintBridgedShares REVERTED (already-filled) — stays Batched");
+                                                                    warn!(?tx_hash, "mintBridgedShares REVERTED (post-fills) — stays Batched");
                                                                 }
                                                             }
-                                                            Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (already-filled) — stays Batched"),
+                                                            Err(e) => warn!(error = %e, "mintBridgedShares receipt timeout (post-fills) — stays Batched"),
                                                         }
                                                     }
                                                     Err(e) => {
                                                         let err_str = format!("{}", e);
                                                         if err_str.contains("MintAlreadyProcessed") || err_str.contains("E139") {
-                                                            info!(order_id = %settlement_id, "mintBridgedShares already processed (already-filled) — marking SharesBridged");
+                                                            info!(order_id = %settlement_id, "mintBridgedShares already processed — marking SharesBridged");
                                                             let orch = orchestrator.write().await;
                                                             orch.mark_orders_shares_bridged(&[settlement_id]).await;
                                                         } else {
-                                                            warn!(error = %e, "mintBridgedShares failed (already-filled) — stays Batched");
+                                                            warn!(error = %e, "mintBridgedShares failed (post-fills) — stays Batched");
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                        Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (already-filled path)"),
+                                        Err(e) => warn!(cycle = current_cycle, error = %e, "MintBridgedShares failed (post-fills path)"),
                                     }
                                 } else {
-                                    warn!(order_id = %fill.order_id, "No order mapping found (already-filled path)");
+                                    warn!(order_id = %fill.order_id, "No order mapping found (post-fills path)");
                                 }
                             }
                         }
@@ -3371,12 +3415,13 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         "Processing L3-native pending orders"
     );
 
-    // 5. Register orders in orchestrator for BLS signature tracking
+    // 5. Register order amounts in orchestrator for BLS signature tracking.
+    // Do NOT set order_status here — L3-native order IDs can collide with
+    // Settlement order IDs in the orchestrator's status map (see 3443 comment).
     {
         let orch = orchestrator.write().await;
         for order in &l3_native_orders {
             orch.set_order_amount(order.id, order.amount).await;
-            orch.set_order_status(order.id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
         }
     }
 
@@ -3568,10 +3613,10 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         return;
     }
 
-    // Include all BATCHED orders — they need fills regardless of tracking source.
-    // The pending section may have set orchestrator entries, and bridge orders
-    // that are genuinely BATCHED also need fills. confirmFills is idempotent
-    // (reverts if already FILLED), so double-attempts are safe.
+    // The fills loop runs fills for ALL batched orders. For bridge orders,
+    // the inline pipeline also runs fills (with a different cycle number).
+    // When the fills loop wins the race, the inline path falls to the
+    // "already-filled" path which still handles mintBridgedShares correctly.
     let l3_batched_orders = batched_orders;
 
     if l3_batched_orders.is_empty() {
