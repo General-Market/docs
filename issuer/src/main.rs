@@ -4051,14 +4051,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vision_cfg.tick_poll_interval_ms = ms;
             }
             vision_cfg.data_node_token = args.data_node_token.clone();
-            // Cross-chain deposit config
+            // Cross-chain deposit config — CLI args first, then env var fallbacks
             if let Some(ref url) = args.vision_settlement_rpc_url {
                 vision_cfg.settlement_rpc_url = url.clone();
+            } else if let Ok(url) = std::env::var("ISSUER_SETTLEMENT_RPC_URL") {
+                vision_cfg.settlement_rpc_url = url;
             }
             if let Some(ref addr) = args.vision_settlement_bridge_custody {
                 vision_cfg.settlement_bridge_custody_address = addr.clone();
+            } else if let Ok(addr) = std::env::var("ISSUER_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS") {
+                vision_cfg.settlement_bridge_custody_address = addr;
+            } else if let Ok(addr) = std::env::var("ISSUER_SETTLEMENT_CUSTODY") {
+                vision_cfg.settlement_bridge_custody_address = addr;
             }
             if let Some(chain_id) = args.vision_settlement_chain_id {
+                vision_cfg.settlement_chain_id = chain_id;
+            } else if let Ok(chain_id) = std::env::var("ISSUER_SETTLEMENT_CHAIN_ID").and_then(|s| s.parse::<u64>().map_err(|_| std::env::VarError::NotPresent)) {
                 vision_cfg.settlement_chain_id = chain_id;
             }
             // BLS proof generation config
