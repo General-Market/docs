@@ -2366,10 +2366,10 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 {
     let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
-        Err(e) => { debug!(cycle = current_cycle, error = %e, "Failed to get confirmed block for sell orders"); return; }
+        Err(e) => { info!(cycle = current_cycle, error = %e, "Sell: failed to get confirmed block"); return; }
     };
 
-    if confirmed_block == 0 { return; }
+    if confirmed_block == 0 { info!(cycle = current_cycle, "Sell: confirmed_block=0, skipping"); return; }
 
     // Use cursor for incremental scanning (fallback: 200 blocks back on first run ~3 min on Sonic).
     // Kept short to avoid re-processing stale bridge orders from previous issuer sessions.
@@ -2379,15 +2379,19 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     // ====== Phase A: Detect new sell orders and submit on L3 via consensus ======
     match settlement_reader.get_confirmed_cross_chain_sell_orders(from_block, confirmed_block).await {
         Ok(sell_orders) => {
+            let raw_count = sell_orders.len();
             // Filter event-discovered sell orders
             let mut new_sell_orders = Vec::new();
             {
                 let orch = orchestrator.read().await;
-                for order in sell_orders {
+                for order in &sell_orders {
                     if orch.get_sell_order_status(&order.order_id).await.is_none() {
-                        new_sell_orders.push(order);
+                        new_sell_orders.push(order.clone());
                     }
                 }
+            }
+            if raw_count > 0 || cursor_val == 0 {
+                info!(cycle = current_cycle, from_block, to_block = confirmed_block, raw_count, new_count = new_sell_orders.len(), "Sell scan results");
             }
 
             // Merge startup-discovered sell orders (one-time drain)
