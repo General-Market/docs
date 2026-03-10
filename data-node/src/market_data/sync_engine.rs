@@ -441,6 +441,10 @@ impl SyncEngine {
                     for (asset_id, value) in cache_updates {
                         cache.insert(asset_id, value);
                     }
+                    // Prune stale entries for deactivated assets
+                    let active_set: std::collections::HashSet<&str> =
+                        asset_ids.iter().map(|s| s.as_str()).collect();
+                    cache.retain(|k, _| active_set.contains(k.as_str()));
                 }
                 SendResult::Full => {
                     // Channel full — prices dropped. Return (0, 0, fetched, active) so
@@ -496,33 +500,5 @@ impl SyncEngine {
     }
 }
 
-/// Classify an anyhow::Error into a SourceError for the circuit breaker.
-/// R4-5: Uses downcast_ref first. Checks is_closed() for WriterDead instead of string matching.
-fn classify_anyhow_for_cb(
-    e: &anyhow::Error,
-    write_channel: &PriceWriteChannel,
-) -> super::sources::error::SourceError {
-    // Try structured downcast first
-    if let Some(source_err) = e.downcast_ref::<super::sources::error::SourceError>() {
-        return source_err.clone();
-    }
-
-    // R4-5: Check actual channel state instead of string matching
-    if write_channel.is_closed() {
-        return super::sources::error::SourceError::WriterDead;
-    }
-
-    // Fallback: string matching for errors that don't use SourceError
-    let msg = format!("{:?}", e).to_lowercase();
-    if msg.contains("401")
-        || msg.contains("403")
-        || msg.contains("unauthorized")
-        || msg.contains("forbidden")
-    {
-        super::sources::error::SourceError::AuthFailed(format!("{:?}", e))
-    } else if msg.contains("429") || msg.contains("rate limit") {
-        super::sources::error::SourceError::RateLimited(None)
-    } else {
-        super::sources::error::SourceError::Transient(format!("{:?}", e))
-    }
-}
+// classify_anyhow_for_cb lives in sources::error — shared by both engines
+use super::sources::error::classify_anyhow_for_cb;

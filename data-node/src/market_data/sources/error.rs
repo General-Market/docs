@@ -159,6 +159,37 @@ impl Default for CircuitBreaker {
     }
 }
 
+/// Classify an anyhow::Error into a SourceError for the circuit breaker.
+/// Uses downcast_ref first. Checks is_closed() for WriterDead instead of string matching.
+pub fn classify_anyhow_for_cb(
+    e: &anyhow::Error,
+    write_channel: &crate::market_data::write_channel::PriceWriteChannel,
+) -> SourceError {
+    // Try structured downcast first
+    if let Some(source_err) = e.downcast_ref::<SourceError>() {
+        return source_err.clone();
+    }
+
+    // Check actual channel state instead of string matching
+    if write_channel.is_closed() {
+        return SourceError::WriterDead;
+    }
+
+    // Fallback: string matching for errors that don't use SourceError
+    let msg = format!("{:?}", e).to_lowercase();
+    if msg.contains("401")
+        || msg.contains("403")
+        || msg.contains("unauthorized")
+        || msg.contains("forbidden")
+    {
+        SourceError::AuthFailed(format!("{:?}", e))
+    } else if msg.contains("429") || msg.contains("rate limit") {
+        SourceError::RateLimited(None)
+    } else {
+        SourceError::Transient(format!("{:?}", e))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

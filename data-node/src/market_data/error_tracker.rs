@@ -178,11 +178,14 @@ fn classify_error(error: &str) -> ErrorCategory {
     }
 }
 
-/// Truncate a string to max_len, appending "..." if truncated
+/// Truncate a string to max_len, appending "..." if truncated.
+/// Safe for multi-byte UTF-8: finds a valid char boundary.
 fn truncate(s: &str, max_len: usize) -> String {
     if s.len() <= max_len {
         s.to_string()
     } else {
-        format!("{}...", &s[..max_len - 3])
+        // Find last valid char boundary at or before max_len - 3
+        let end = s.floor_char_boundary(max_len - 3);
+        format!("{}...", &s[..end])
     }
 }

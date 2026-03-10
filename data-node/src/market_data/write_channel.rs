@@ -318,11 +318,12 @@ impl BatchWriter {
             match self.insert_history_batch(&chunk).await {
                 Ok(n) => {
                     inserted += n;
+                    // Broadcast first (borrows only), then move into retry if latest fails
+                    self.broadcast_prices(&chunk);
                     if let Err(e) = self.update_latest_cache(&chunk).await {
                         warn!("[BatchWriter] Latest cache upsert failed ({} rows), queuing retry: {:?}", chunk.len(), e);
-                        self.push_to_latest_retry(chunk.clone());
+                        self.push_to_latest_retry(chunk);
                     }
-                    self.broadcast_prices(&chunk);
                 }
                 Err(e) => {
                     warn!(
@@ -341,11 +342,11 @@ impl BatchWriter {
             match self.insert_history_batch(&chunk).await {
                 Ok(n) => {
                     inserted += n;
+                    self.broadcast_prices(&chunk);
                     if let Err(e) = self.update_latest_cache(&chunk).await {
                         warn!("[BatchWriter] Latest cache upsert failed ({} rows), queuing retry: {:?}", chunk.len(), e);
-                        self.push_to_latest_retry(chunk.clone());
+                        self.push_to_latest_retry(chunk);
                     }
-                    self.broadcast_prices(&chunk);
                 }
                 Err(e) => {
                     warn!(
