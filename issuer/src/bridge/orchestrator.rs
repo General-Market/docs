@@ -152,6 +152,10 @@ pub struct BridgeOrchestrator {
     order_itp_ids: RwLock<HashMap<U256, H256>>,
     /// Sell order ITP IDs: order_id → itp_id (for multi-ITP support)
     sell_order_itp_ids: RwLock<HashMap<U256, H256>>,
+    /// Sell order users: order_id → user address (cached from event)
+    sell_order_users: RwLock<HashMap<U256, Address>>,
+    /// Sell order bridged ITP addresses: order_id → bridged_itp_address (cached from event)
+    sell_order_bridged_itps: RwLock<HashMap<U256, Address>>,
     /// Consolidated phase state for record collateral move (8-step bridge)
     collateral_move_phase: PhaseState<u64>,
     /// Consolidated phase state for mint bridged shares (8-step bridge)
@@ -223,6 +227,8 @@ impl BridgeOrchestrator {
             sell_burn_tx_hashes: RwLock::new(HashMap::new()),
             order_itp_ids: RwLock::new(HashMap::new()),
             sell_order_itp_ids: RwLock::new(HashMap::new()),
+            sell_order_users: RwLock::new(HashMap::new()),
+            sell_order_bridged_itps: RwLock::new(HashMap::new()),
             collateral_move_phase: PhaseState::new("collateral_move"),
             mint_shares_phase: PhaseState::new("mint_shares"),
             complete_buy_sigs: SignatureCollectionManager::new("complete_buy"),
@@ -368,6 +374,26 @@ impl BridgeOrchestrator {
         self.sell_order_itp_ids.read().await.get(order_id).copied()
     }
 
+    /// Store the user address for a sell order (cached from event)
+    pub async fn set_sell_order_user(&self, order_id: U256, user: Address) {
+        self.sell_order_users.write().await.insert(order_id, user);
+    }
+
+    /// Get the stored user address for a sell order
+    pub async fn get_sell_order_user(&self, order_id: &U256) -> Option<Address> {
+        self.sell_order_users.read().await.get(order_id).copied()
+    }
+
+    /// Store the bridged ITP address for a sell order (cached from event)
+    pub async fn set_sell_order_bridged_itp(&self, order_id: U256, addr: Address) {
+        self.sell_order_bridged_itps.write().await.insert(order_id, addr);
+    }
+
+    /// Get the stored bridged ITP address for a sell order
+    pub async fn get_sell_order_bridged_itp(&self, order_id: &U256) -> Option<Address> {
+        self.sell_order_bridged_itps.read().await.get(order_id).copied()
+    }
+
     // ========================================================================
     // Cross-Chain Sell Order Tracking
     // ========================================================================
@@ -422,6 +448,8 @@ impl BridgeOrchestrator {
         self.sell_order_fill_amounts.write().await.remove(&order_id);
         self.sell_burn_tx_hashes.write().await.remove(&order_id);
         self.sell_order_itp_ids.write().await.remove(&order_id);
+        self.sell_order_users.write().await.remove(&order_id);
+        self.sell_order_bridged_itps.write().await.remove(&order_id);
         self.sell_order_mappings.write().await.remove(&order_id);
         info!(
             order_id = %order_id,

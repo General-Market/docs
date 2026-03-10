@@ -2428,6 +2428,9 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
                         // Task 2: store limit price from settlement event
                         orch_write.set_sell_order_limit_price(sell_order.order_id, sell_order.limit_price).await;
+                        // Cache user + bridged_itp_address from event (avoids needing to re-read from settlement)
+                        orch_write.set_sell_order_user(sell_order.order_id, sell_order.user).await;
+                        orch_write.set_sell_order_bridged_itp(sell_order.order_id, sell_order.bridged_itp_address).await;
                     }
                 }
 
@@ -2559,30 +2562,36 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     info!(cycle = current_cycle, burned_count = burned_sell_orders.len(), "Phase A sub-step 3: checking SellBurned orders");
     for order_id in burned_sell_orders {
         let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
-        let orch_r = orchestrator.read().await;
-        let itp_id = orch_r.get_sell_order_itp_id(&order_id).await.unwrap_or_default();
-        let amount = match orch_r.get_sell_order_amount(&order_id).await {
+        // Read all cached fields from orchestrator (stored when event was first detected)
+        let (itp_id, amount, user, bridged_itp_address) = {
+            let orch_r = orchestrator.read().await;
+            let itp_id = orch_r.get_sell_order_itp_id(&order_id).await.unwrap_or_default();
+            let amount = orch_r.get_sell_order_amount(&order_id).await;
+            let user = orch_r.get_sell_order_user(&order_id).await;
+            let bridged_itp = orch_r.get_sell_order_bridged_itp(&order_id).await;
+            (itp_id, amount, user, bridged_itp)
+        };
+        let amount = match amount {
             Some(a) => a,
             None => {
                 warn!(order_id = %order_id, "Sell order amount not found — skipping");
                 continue;
             }
         };
-        // Reconstruct sell_order fields from orchestrator for the submit phase
-        // (user and bridged_itp_address are read from the settlement event cache)
-        let sell_order_data = settlement_reader.get_cross_chain_sell_order(order_id).await;
-        let (user, bridged_itp_address) = match sell_order_data {
-            Ok(Some(ref data)) => (data.user, data.bridged_itp_address),
-            Ok(None) => {
-                warn!(order_id = %order_id, "Sell order not found on settlement — skipping L3 submit");
-                continue;
-            }
-            Err(e) => {
-                warn!(order_id = %order_id, error = %e, "Cannot read sell order from settlement — skipping L3 submit");
+        let user = match user {
+            Some(u) => u,
+            None => {
+                warn!(order_id = %order_id, "Sell order user not cached — skipping");
                 continue;
             }
         };
-        drop(orch_r);
+        let bridged_itp_address = match bridged_itp_address {
+            Some(a) => a,
+            None => {
+                warn!(order_id = %order_id, "Sell order bridged_itp not cached — skipping");
+                continue;
+            }
+        };
 
         info!(order_id = %order_id, am_leader, "Phase A sub-step 3: Submitting burned sell order on L3");
 
