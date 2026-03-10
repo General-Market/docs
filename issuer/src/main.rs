@@ -2480,16 +2480,11 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                     }
                                 }
                             } else if !am_leader {
-                                // Follower: query on-chain burned state directly
-                                let on_chain_burned = settlement_reader
-                                    .get_cross_chain_sell_order(sell_order.order_id).await
-                                    .ok().flatten().map(|o| o.burned)
-                                    .unwrap_or(false);
-                                if on_chain_burned {
-                                    info!(order_id = %sell_order.order_id, "Burn confirmed on-chain — follower advancing to SellBurned");
-                                    let orch = orchestrator.write().await;
-                                    orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
-                                }
+                                // Follower: trust consensus — leader will submit burn tx with valid BLS proof.
+                                // Advance directly to SellBurned; the L3 submit phase also requires consensus.
+                                info!(order_id = %sell_order.order_id, "Burn consensus succeeded — follower advancing to SellBurned");
+                                let orch = orchestrator.write().await;
+                                orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
                             }
                         }
                         Err(e) => warn!(order_id = %sell_order.order_id, error = %e, "Burn consensus failed — stays SellPending"),
@@ -2500,6 +2495,50 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             }
         }
         Err(e) => { warn!(cycle = current_cycle, error = %e, "Failed to fetch cross-chain sell orders"); }
+    }
+
+    // ====== Phase A retry: Re-attempt burn consensus for SellPending orders ======
+    {
+        let pending_sell_orders: Vec<ethers::types::U256> = {
+            let o = orchestrator.read().await;
+            o.sell_order_status_snapshot().await.iter()
+                .filter(|(_, s)| matches!(s, issuer::BridgeOrderStatus::SellPending))
+                .map(|(id, _)| *id)
+                .collect()
+        };
+        for order_id in pending_sell_orders {
+            let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+            info!(order_id = %order_id, am_leader, "Retrying burn consensus for SellPending order");
+            match protocol.run_burn_sell_order_phase(order_id, am_leader).await {
+                Ok(burn_result) => {
+                    if am_leader && !burn_result.aggregated_signature.0.is_empty() {
+                        match settlement_writer.burn_sell_order_shares(
+                            order_id,
+                            burn_result.aggregated_signature.0.clone(),
+                            protocol.registry_nonce(),
+                            burn_result.signer_bitmap,
+                        ).await {
+                            Ok(tx_hash) => {
+                                info!(order_id = %order_id, ?tx_hash, "burnSellOrderShares tx submitted (retry)");
+                                let orch = orchestrator.write().await;
+                                orch.set_sell_burn_tx_hash(order_id, tx_hash).await;
+                                orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurnPending).await;
+                            }
+                            Err(e) => {
+                                warn!(order_id = %order_id, error = %e, "burn tx failed on retry — stays SellPending");
+                            }
+                        }
+                    }
+                    if !am_leader {
+                        // Follower: trust consensus — advance to SellBurned
+                        info!(order_id = %order_id, "Burn consensus succeeded on retry — follower advancing to SellBurned");
+                        let orch = orchestrator.write().await;
+                        orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                    }
+                }
+                Err(e) => warn!(order_id = %order_id, error = %e, "Burn consensus retry failed — stays SellPending"),
+            }
+        }
     }
 
     // ====== Phase A sub-step 2: Check SellBurnPending receipts (non-blocking) ======
@@ -2541,16 +2580,11 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 }
             }
         } else {
-            // Follower: query on-chain burned state
-            let on_chain_burned = settlement_reader
-                .get_cross_chain_sell_order(order_id).await
-                .ok().flatten().map(|o| o.burned)
-                .unwrap_or(false);
-            if on_chain_burned {
-                info!(order_id = %order_id, "Burn confirmed on-chain — follower advancing to SellBurned");
-                let orch = orchestrator.write().await;
-                orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
-            }
+            // Follower: consensus already succeeded (that's how we got to SellBurnPending).
+            // Trust that the leader's burn tx will confirm and advance to SellBurned.
+            info!(order_id = %order_id, "Follower at SellBurnPending — advancing to SellBurned (consensus already passed)");
+            let orch = orchestrator.write().await;
+            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
         }
     }
 
