@@ -2513,6 +2513,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             let orch = orchestrator.write().await;
                             orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
                             orch.clear_sell_burn_tx_hash(&order_id).await;
+                            drop(orch);
+                            info!(order_id = %order_id, "Status set to SellBurned, proceeding to sub-step 3");
                         } else {
                             warn!(order_id = %order_id, ?tx_hash, "burnSellOrderShares REVERTED — resetting to SellPending");
                             let orch = orchestrator.write().await;
@@ -2545,6 +2547,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         let o = orchestrator.read().await;
         o.get_burned_sell_orders().await
     };
+    info!(cycle = current_cycle, burned_count = burned_sell_orders.len(), "Phase A sub-step 3: checking SellBurned orders");
     for order_id in burned_sell_orders {
         let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
         let orch_r = orchestrator.read().await;
