@@ -269,7 +269,10 @@ impl NavCollector {
         Ok(CollectionResult { responses, errors })
     }
 
-    /// Validate that all responses agree on price and cycleNumber
+    /// Validate that a quorum of responses agree on price and cycleNumber.
+    ///
+    /// Groups responses by (cycleNumber, price), picks the largest group that
+    /// meets the BFT threshold, and returns consensus from that group.
     pub fn validate_consensus(
         responses: &[NavSignResponse],
         total_issuer_count: usize,
@@ -290,28 +293,46 @@ impl NavCollector {
             });
         }
 
-        let first = &responses[0];
-        let ref_price = &first.price;
-        let ref_cycle = first.cycle_number;
-
-        for r in &responses[1..] {
-            if &r.price != ref_price {
-                return Err(CollectorError::PriceDisagreement);
-            }
-            if r.cycle_number != ref_cycle {
-                return Err(CollectorError::CycleNumberDisagreement);
-            }
+        // Group by (cycle_number, price) and find the largest group
+        let mut groups: std::collections::HashMap<(u64, &str), Vec<&NavSignResponse>> =
+            std::collections::HashMap::new();
+        for r in responses {
+            groups
+                .entry((r.cycle_number, r.price.as_str()))
+                .or_default()
+                .push(r);
         }
 
-        let price = U256::from_dec_str(ref_price)
+        // Pick the largest group that meets threshold
+        let best_group = groups
+            .into_values()
+            .filter(|g| g.len() >= threshold)
+            .max_by_key(|g| g.len());
+
+        let group = best_group.ok_or_else(|| {
+            // No group meets threshold — report most useful error
+            let cycle_counts: std::collections::HashMap<u64, usize> =
+                responses.iter().fold(std::collections::HashMap::new(), |mut m, r| {
+                    *m.entry(r.cycle_number).or_default() += 1;
+                    m
+                });
+            if cycle_counts.len() > 1 {
+                CollectorError::CycleNumberDisagreement
+            } else {
+                CollectorError::PriceDisagreement
+            }
+        })?;
+
+        let first = group[0];
+        let price = U256::from_dec_str(&first.price)
             .map_err(|e| CollectorError::InvalidResponse(format!("Invalid price: {}", e)))?;
 
-        let signer_ids: Vec<u8> = responses.iter().map(|r| r.issuer_id).collect();
+        let signer_ids: Vec<u8> = group.iter().map(|r| r.issuer_id).collect();
 
         Ok(ConsensusResult {
             price,
             timestamp: first.timestamp,
-            cycle_number: ref_cycle,
+            cycle_number: first.cycle_number,
             signer_ids,
         })
     }
