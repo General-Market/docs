@@ -979,5 +979,108 @@ export async function deployBridgedItpDirect(
   return deployedAddr;
 }
 
+// ── Morpho collateral token (ITP Vault on L3) ──────────────
+
+/** Read collateral token address from morpho-deployment.json */
+function readMorphoCollateral(): string {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const morphoJson = JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+    return morphoJson.marketParams?.collateralToken || '';
+  } catch {
+    return '';
+  }
+}
+
+export const MORPHO_COLLATERAL = readMorphoCollateral();
+
+/**
+ * Mint Morpho collateral tokens (ITP Vault MockERC20) on L3.
+ * The MockERC20 has a public mint(address,uint256) function.
+ * Works on both Anvil and testnet (signed tx via deployer key).
+ */
+export async function mintMorphoCollateral(
+  user: string,
+  amount: bigint,
+): Promise<void> {
+  if (!MORPHO_COLLATERAL) throw new Error('MORPHO_COLLATERAL not found in morpho-deployment.json');
+  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+  const amountHex = amount.toString(16).padStart(64, '0');
+  // mint(address,uint256) selector = 0x40c10f19
+  const data = `0x40c10f19${userPadded}${amountHex}`;
+  await l3SignedSend(MORPHO_COLLATERAL, data);
+}
+
+// ── Morpho direct operations (bypass browser wallet) ────────
+
+/** Read full Morpho deployment config */
+function readMorphoDeployment() {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    return JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Withdraw collateral from Morpho directly via signed L3 TX.
+ * Bypasses the browser wallet — used for E2E reliability on testnet.
+ */
+export async function withdrawCollateralDirect(
+  user: string,
+  amount: bigint,
+): Promise<string> {
+  const morpho = readMorphoDeployment();
+  if (!morpho) throw new Error('morpho-deployment.json not found');
+
+  const mp = morpho.marketParams;
+  // withdrawCollateral((address,address,address,address,uint256),uint256,address,address)
+  // ABI-encode: marketParams struct (5 fields) + amount + onBehalf + receiver
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+
+  const data = '0x8720316d' // withdrawCollateral selector
+    + pad(mp.loanToken)
+    + pad(mp.collateralToken)
+    + pad(mp.oracle)
+    + pad(mp.irm)
+    + uint(BigInt(mp.lltv))
+    + uint(amount)
+    + pad(user)
+    + pad(user); // receiver = onBehalf
+
+  return l3SignedSend(morpho.contracts.MORPHO, data);
+}
+
+/**
+ * Read Morpho position for a user directly from L3 RPC.
+ */
+export async function getMorphoPositionDirect(user: string): Promise<{ collateral: bigint; borrowShares: bigint }> {
+  const morpho = readMorphoDeployment();
+  if (!morpho) throw new Error('morpho-deployment.json not found');
+
+  // position(bytes32,address) selector
+  const marketId = morpho.contracts.MARKET_ID.replace('0x', '');
+  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
+
+  // Compute selector via web3_sha3
+  const sigHex = '0x' + Buffer.from('position(bytes32,address)').toString('hex');
+  const selector = ((await l3RpcCall('web3_sha3', [sigHex])) as string).slice(0, 10);
+
+  const result = await l3RpcCall('eth_call', [
+    { to: morpho.contracts.MORPHO, data: selector + marketId + userPadded },
+    'latest',
+  ]) as string;
+
+  const hex = result.slice(2);
+  return {
+    collateral: BigInt('0x' + hex.slice(128, 192)),
+    borrowShares: BigInt('0x' + hex.slice(64, 128)),
+  };
+}
+
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */
 export { erc20BalanceOf, BRIDGED_ITP, SETTLEMENT_USDC, SETTLEMENT_CUSTODY, BRIDGE_PROXY, L3_WUSDC };
