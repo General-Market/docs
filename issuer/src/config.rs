@@ -401,11 +401,15 @@ impl IssuerConfig {
                         num_issuers: parse_env_var("ISSUER_VISION_NUM_ISSUERS").unwrap_or(1),
                         node_index: parse_env_var::<u8>("ISSUER_VISION_NODE_INDEX").unwrap_or(0),
                         // Cross-chain deposit fields (Vision First Deposit)
+                        // Falls back to global ISSUER_SETTLEMENT_* if vision-specific vars not set
                         settlement_rpc_url: std::env::var("ISSUER_VISION_SETTLEMENT_RPC_URL")
+                            .or_else(|_| std::env::var("ISSUER_SETTLEMENT_RPC_URL"))
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),
                         settlement_bridge_custody_address: std::env::var("ISSUER_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS")
                             .unwrap_or_default(),
-                        settlement_chain_id: parse_env_var("ISSUER_VISION_SETTLEMENT_CHAIN_ID").unwrap_or(42161),
+                        settlement_chain_id: parse_env_var("ISSUER_VISION_SETTLEMENT_CHAIN_ID")
+                            .or_else(|| parse_env_var("ISSUER_SETTLEMENT_CHAIN_ID"))
+                            .unwrap_or(42161),
                         deposit_poll_interval_ms: parse_env_var("ISSUER_VISION_DEPOSIT_POLL_INTERVAL_MS").unwrap_or(5000),
                         deposit_finality_confirmations: parse_env_var("ISSUER_VISION_DEPOSIT_FINALITY_CONFIRMATIONS").unwrap_or(15),
                         gas_drip_amount_wei: std::env::var("ISSUER_VISION_GAS_DRIP_AMOUNT_WEI")
