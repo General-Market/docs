@@ -181,13 +181,14 @@ impl ScheduledSyncEngine {
                 );
 
                 // Check circuit breaker before burst sync
-                {
+                let cb_blocked = {
                     let mut cb = self.circuit_breaker.lock().unwrap_or_else(|e| e.into_inner());
-                    if !cb.is_allowed() {
-                        debug!("[{}] Circuit breaker open, skipping burst sync", name);
-                        tokio::time::sleep(burst_interval).await;
-                        continue;
-                    }
+                    !cb.is_allowed()
+                };
+                if cb_blocked {
+                    debug!("[{}] Circuit breaker open, skipping burst sync", name);
+                    tokio::time::sleep(burst_interval).await;
+                    continue;
                 }
 
                 let count = self.sync_count.fetch_add(1, Ordering::Relaxed) + 1;
@@ -285,13 +286,14 @@ impl ScheduledSyncEngine {
                 }
             } else {
                 // next_fetch <= now: check circuit breaker before immediate fetch
-                {
+                let cb_blocked = {
                     let mut cb = self.circuit_breaker.lock().unwrap_or_else(|e| e.into_inner());
-                    if !cb.is_allowed() {
-                        debug!("[{}] Circuit breaker open, skipping sync", name);
-                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-                        continue;
-                    }
+                    !cb.is_allowed()
+                };
+                if cb_blocked {
+                    debug!("[{}] Circuit breaker open, skipping sync", name);
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    continue;
                 }
             }
 

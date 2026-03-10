@@ -355,6 +355,21 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Price broadcast hub — shared by all sync engines and AppState for WebSocket streaming
     let broadcast_hub = Arc::new(crate::market_data::broadcast::PriceBroadcastHub::new());
 
+    // Create batched write channel for all market data sources
+    let (price_writer, price_rx) = market_data::write_channel::channel();
+
+    // Spawn BatchWriter and store JoinHandle for graceful shutdown
+    let writer_handle: tokio::task::JoinHandle<()> = {
+        let writer_pool = pool.clone();
+        let writer_bh = broadcast_hub.clone();
+        tokio::spawn(async move {
+            let writer = market_data::write_channel::BatchWriter::new(writer_pool, price_rx, writer_bh);
+            writer.run().await;
+            tracing::error!("[BatchWriter] Exited");
+        })
+    };
+    info!("BatchWriter started — all market data writes go through channel");
+
     // Each provider is gated on its config key. We use SyncEngine (fixed interval)
     // for simple sources and ScheduledSyncEngine for schedule-aware sources.
 
@@ -364,13 +379,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("FINNHUB_SYNC_INTERVAL_SECS", args.finnhub_sync_interval.to_string());
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::finnhub::FinnhubClient::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("finnhub", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::finnhub::FinnhubClient::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Finnhub init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Finnhub init failed: {e}"),
             }
         });
         info!("Finnhub stock provider started");
@@ -381,13 +405,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("FRED_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::fred::FredMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("fred", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::fred::FredMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("FRED init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("FRED init failed: {e}"),
             }
         });
         info!("FRED interest rates provider started");
@@ -398,13 +431,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("BLS_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::bls::BlsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("bls", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::bls::BlsMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("BLS init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("BLS init failed: {e}"),
             }
         });
         info!("BLS employment/inflation provider started");
@@ -415,13 +457,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("NASDAQ_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::treasury::TreasuryMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("treasury", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::treasury::TreasuryMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Treasury init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Treasury init failed: {e}"),
             }
         });
         info!("Treasury yield provider started");
@@ -431,13 +482,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if args.ecb_enabled {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::ecb::EcbMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("ecb", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::ecb::EcbMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("ECB init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("ECB init failed: {e}"),
             }
         });
         info!("ECB euro rates provider started");
@@ -448,13 +508,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("EIA_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::eia::EiaMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("eia", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::eia::EiaMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("EIA init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("EIA init failed: {e}"),
             }
         });
         info!("EIA energy data provider started");
@@ -466,56 +535,100 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("NASDAQ_API_KEY", key);
 
         // CFTC
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::CftcMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        {
+            let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
+            let pw = price_writer.clone();
+            spawn_resilient("cftc", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::nasdaq::CftcMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("CFTC init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
+                    }
                 }
-                Err(e) => tracing::error!("CFTC init failed: {e}"),
-            }
-        });
+            });
+        }
 
         // CHRIS (continuous futures)
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::ChrisMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        {
+            let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
+            let pw = price_writer.clone();
+            spawn_resilient("chris", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::nasdaq::ChrisMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("CHRIS init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
+                    }
                 }
-                Err(e) => tracing::error!("CHRIS init failed: {e}"),
-            }
-        });
+            });
+        }
 
         // OPEC
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::OpecMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        {
+            let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
+            let pw = price_writer.clone();
+            spawn_resilient("opec", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::nasdaq::OpecMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("OPEC init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
+                    }
                 }
-                Err(e) => tracing::error!("OPEC init failed: {e}"),
-            }
-        });
+            });
+        }
 
         // IMF
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::ImfMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        {
+            let pool_c = pool.clone();
+            let bh = broadcast_hub.clone();
+            let pw = price_writer.clone();
+            spawn_resilient("imf", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::nasdaq::ImfMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("IMF init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
+                    }
                 }
-                Err(e) => tracing::error!("IMF init failed: {e}"),
-            }
-        });
+            });
+        }
 
         info!("Nasdaq Data Link providers started (CFTC, CHRIS, OPEC, IMF)");
     }
@@ -525,13 +638,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nasdaq::BchainMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("bchain", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::nasdaq::BchainMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("BCHAIN init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("BCHAIN init failed: {e}"),
             }
         });
         info!("BCHAIN blockchain metrics provider started (blockchain.info, no key needed)");
@@ -542,13 +664,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("OPENMETEO_SYNC_INTERVAL_SECS", args.openmeteo_sync_interval.to_string());
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::openmeteo::OpenMeteoMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("openmeteo", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::openmeteo::OpenMeteoMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("OpenMeteo init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("OpenMeteo init failed: {e}"),
             }
         });
         info!(interval_secs = args.openmeteo_sync_interval, "OpenMeteo weather provider started");
@@ -559,13 +690,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::sec_edgar::SecEdgarMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("sec_edgar", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::sec_edgar::SecEdgarMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("SEC EDGAR init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("SEC EDGAR init failed: {e}"),
             }
         });
     }
@@ -574,13 +714,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::sec_efts::SecEftsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("sec_efts", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::sec_efts::SecEftsMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("SEC EFTS init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("SEC EFTS init failed: {e}"),
             }
         });
     }
@@ -589,13 +738,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::sec_insider::SecInsiderMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("sec_insider", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::sec_insider::SecInsiderMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("SEC Insider init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("SEC Insider init failed: {e}"),
             }
         });
     }
@@ -607,13 +765,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("FINRA_CLIENT_SECRET", secret);
             let pool_c = pool.clone();
             let bh = broadcast_hub.clone();
-            tokio::spawn(async move {
-                match market_data::sources::finra::FinraMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                        engine.run().await;
+            let pw = price_writer.clone();
+            spawn_resilient("finra", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::finra::FinraMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("FINRA init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
                     }
-                    Err(e) => tracing::error!("FINRA init failed: {e}"),
                 }
             });
             info!("FINRA short volume provider started");
@@ -628,13 +795,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("finra_short_vol", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::finra_short_vol::FinraShortVolMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("FINRA Short Volume init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("FINRA Short Volume init failed: {e}"),
             }
         });
     }
@@ -643,13 +819,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::congress::CongressMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("congress", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::congress::CongressMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::warn!("Congress provider skipped: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::warn!("Congress provider skipped: {e}"),
             }
         });
     }
@@ -663,13 +848,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::npm::NpmMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("npm", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::npm::NpmMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("npm init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("npm init failed: {e}"),
             }
         });
     }
@@ -678,13 +872,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::pypi::PypiMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("pypi", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::pypi::PypiMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("PyPI init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("PyPI init failed: {e}"),
             }
         });
     }
@@ -693,13 +896,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::crates_io::CratesIoMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("crates_io", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::crates_io::CratesIoMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("crates.io init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("crates.io init failed: {e}"),
             }
         });
     }
@@ -708,13 +920,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::steam::SteamMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("steam", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::steam::SteamMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Steam init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Steam init failed: {e}"),
             }
         });
     }
@@ -723,13 +944,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::hackernews::HackerNewsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("hackernews", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::hackernews::HackerNewsMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("HackerNews init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("HackerNews init failed: {e}"),
             }
         });
     }
@@ -738,13 +968,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::fourchan::FourchanMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("fourchan", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::fourchan::FourchanMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("4chan init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("4chan init failed: {e}"),
             }
         });
     }
@@ -753,13 +992,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::anilist::AniListMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("anilist", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::anilist::AniListMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("AniList init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("AniList init failed: {e}"),
             }
         });
     }
@@ -768,13 +1016,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::twse::TwseMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("twse", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::twse::TwseMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("TWSE init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("TWSE init failed: {e}"),
             }
         });
     }
@@ -783,13 +1040,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::polymarket::PolymarketMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("polymarket", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::polymarket::PolymarketMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Polymarket init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Polymarket init failed: {e}"),
             }
         });
     }
@@ -798,13 +1064,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::defillama::DefiLlamaMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("defillama_market", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::defillama::DefiLlamaMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("DefiLlama market source init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("DefiLlama market source init failed: {e}"),
             }
         });
     }
@@ -813,13 +1088,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::zillow::ZillowMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("zillow", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::zillow::ZillowMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Zillow init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Zillow init failed: {e}"),
             }
         });
     }
@@ -835,13 +1119,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("TWITCH_CLIENT_SECRET", client_secret);
             let pool_c = pool.clone();
             let bh = broadcast_hub.clone();
-            tokio::spawn(async move {
-                match market_data::sources::twitch::TwitchMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                        engine.run().await;
+            let pw = price_writer.clone();
+            spawn_resilient("twitch", pw.clone(), move || {
+                let pool_c = pool_c.clone();
+                let bh = bh.clone();
+                let pw = pw.clone();
+                async move {
+                    match market_data::sources::twitch::TwitchMarketSource::from_env() {
+                        Ok(source) => {
+                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            engine.run().await;
+                        }
+                        Err(e) => {
+                            tracing::error!("Twitch init failed: {e}");
+                            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                        }
                     }
-                    Err(e) => tracing::error!("Twitch init failed: {e}"),
                 }
             });
             info!("Twitch live streaming provider started");
@@ -855,13 +1148,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("TMDB_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::tmdb::TmdbMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("tmdb", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::tmdb::TmdbMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("TMDb init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("TMDb init failed: {e}"),
             }
         });
         info!("TMDb movie/TV/celebrity provider started");
@@ -872,13 +1174,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("LASTFM_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::lastfm::LastfmMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("lastfm", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::lastfm::LastfmMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Last.fm init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Last.fm init failed: {e}"),
             }
         });
         info!("Last.fm music artist provider started");
@@ -889,13 +1200,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("BACKPACKTF_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::backpacktf::BackpackTfMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("backpacktf", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::backpacktf::BackpackTfMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("backpack.tf init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("backpack.tf init failed: {e}"),
             }
         });
         info!("backpack.tf TF2 item provider started");
@@ -908,13 +1228,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::github::GithubMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("github", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::github::GithubMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("GitHub init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("GitHub init failed: {e}"),
             }
         });
         info!("GitHub repository star provider started");
@@ -925,13 +1254,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("CLOUDFLARE_RADAR_TOKEN", token);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::cloudflare::CloudflareRadarMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("cloudflare", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::cloudflare::CloudflareRadarMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("Cloudflare Radar init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("Cloudflare Radar init failed: {e}"),
             }
         });
         info!("Cloudflare Radar internet metrics provider started");
@@ -947,19 +1285,29 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
         let cg_lim = cg_limiter.clone();
         let tier_label = match args.coingecko_api_key.as_deref().map(|k| k.trim()) {
             Some(k) if !k.is_empty() && k.starts_with("CG-") => "demo",
             Some(k) if !k.is_empty() => "pro",
             _ => "free (no API key)",
         };
-        tokio::spawn(async move {
-            match market_data::sources::coingecko::CoinGeckoMarketSource::from_env(cg_lim) {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        spawn_resilient("coingecko", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            let cg_lim = cg_lim.clone();
+            async move {
+                match market_data::sources::coingecko::CoinGeckoMarketSource::from_env(cg_lim) {
+                    Ok(source) => {
+                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("CoinGecko market source init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
                 }
-                Err(e) => tracing::error!("CoinGecko market source init failed: {e}"),
             }
         });
         info!("CoinGecko market source (crypto prices) started — tier: {}", tier_label);
@@ -971,13 +1319,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::volcano::VolcanoMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("volcano", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::volcano::VolcanoMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Volcano init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Volcano init failed: {e}"),
             }
         });
     }
@@ -986,13 +1335,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::earthquake::EarthquakeMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("earthquake", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::earthquake::EarthquakeMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Earthquake init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Earthquake init failed: {e}"),
             }
         });
     }
@@ -1001,13 +1351,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::spaceweather::SpaceweatherMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("spaceweather", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::spaceweather::SpaceweatherMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Space Weather init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Space Weather init failed: {e}"),
             }
         });
     }
@@ -1017,13 +1368,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("NASA_FIRMS_MAP_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::wildfire::WildfireMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("wildfire", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::wildfire::WildfireMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Wildfire init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Wildfire init failed: {e}"),
             }
         });
         info!("NASA FIRMS wildfire provider started");
@@ -1033,13 +1385,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::flights::FlightsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("flights", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::flights::FlightsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Flights init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Flights init failed: {e}"),
             }
         });
     }
@@ -1048,13 +1401,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::mil_aircraft::MilAircraftMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("mil_aircraft", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::mil_aircraft::MilAircraftMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("MilAircraft init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("MilAircraft init failed: {e}"),
             }
         });
     }
@@ -1063,13 +1417,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::maritime::MaritimeMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("maritime", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::maritime::MaritimeMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Maritime init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Maritime init failed: {e}"),
             }
         });
         info!("AIS maritime vessel provider started (Digitraffic)");
@@ -1078,14 +1433,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // AISstream WebSocket ship tracking (gated on API key)
     if let Some(ref key) = args.aisstream_api_key {
         std::env::set_var("AISSTREAM_API_KEY", key);
-
         let aisstream_key = key.clone();
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            let source = market_data::sources::aisstream::AisStreamMarketSource::new(aisstream_key);
-            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-            engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("aisstream", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            let aisstream_key = aisstream_key.clone();
+            async move {
+                let source = market_data::sources::aisstream::AisStreamMarketSource::new(aisstream_key);
+                let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                engine.run().await;
+            }
         });
         info!("AISstream ship tracking provider started");
     }
@@ -1094,13 +1453,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::epidemic::EpidemicMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("epidemic", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::epidemic::EpidemicMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Epidemic init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Epidemic init failed: {e}"),
             }
         });
     }
@@ -1109,13 +1469,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::sports::SportsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("sports", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::sports::SportsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Sports init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Sports init failed: {e}"),
             }
         });
     }
@@ -1124,13 +1485,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::iss::IssMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("iss", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::iss::IssMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("ISS init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("ISS init failed: {e}"),
             }
         });
     }
@@ -1139,13 +1501,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::weather_alerts::WeatherAlertsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("weather_alerts", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::weather_alerts::WeatherAlertsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Weather Alerts init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Weather Alerts init failed: {e}"),
             }
         });
     }
@@ -1154,13 +1517,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::animals::AnimalsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("animals", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::animals::AnimalsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Animals init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Animals init failed: {e}"),
             }
         });
     }
@@ -1172,13 +1536,15 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             let mb_pass_c = mb_pass.clone();
             let pool_c = pool.clone();
             let bh = broadcast_hub.clone();
-            tokio::spawn(async move {
-                match market_data::sources::movebank::MovebankMarketSource::new(mb_user_c, mb_pass_c) {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                        engine.run().await;
+            let pw = price_writer.clone();
+            spawn_resilient("movebank", pw.clone(), move || {
+                let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+                let mb_user_c = mb_user_c.clone(); let mb_pass_c = mb_pass_c.clone();
+                async move {
+                    match market_data::sources::movebank::MovebankMarketSource::new(mb_user_c, mb_pass_c) {
+                        Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                        Err(e) => { tracing::error!("Movebank init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                     }
-                    Err(e) => tracing::error!("Movebank init failed: {e}"),
                 }
             });
             info!("Movebank GPS animal tracking provider started");
@@ -1192,13 +1558,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("EBIRD_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::ebird::EbirdMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("ebird", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::ebird::EbirdMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("eBird init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("eBird init failed: {e}"),
             }
         });
         info!("eBird bird observation provider started");
@@ -1210,10 +1577,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            let source = market_data::sources::gtfs_rt::GtfsRtMarketSource::new();
-            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-            engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("gtfs_rt", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                let source = market_data::sources::gtfs_rt::GtfsRtMarketSource::new();
+                let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                engine.run().await;
+            }
         });
         info!("GTFS-RT transit provider started");
     }
@@ -1222,13 +1593,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::usa_spending::UsaSpendingMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("usa_spending", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::usa_spending::UsaSpendingMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("USASpending init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("USASpending init failed: {e}"),
             }
         });
         info!("USASpending.gov defense spending provider started");
@@ -1238,13 +1610,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("pumpfun", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::pumpfun::PumpfunMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("PumpFun init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("PumpFun init failed: {e}"),
             }
         });
         info!("Pump.fun token tracker started (Dexscreener)");
@@ -1260,13 +1633,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::reddit::RedditMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("reddit", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::reddit::RedditMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Reddit init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Reddit init failed: {e}"),
             }
         });
         info!("Reddit community tracker started");
@@ -1276,13 +1650,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::shelter::ShelterMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("shelter", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::shelter::ShelterMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Shelter init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Shelter init failed: {e}"),
             }
         });
         info!("Animal shelter tracker started");
@@ -1292,13 +1667,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if std::env::var("CHATURBATE_WM").is_ok() {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::chaturbate::ChaturbateMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("chaturbate", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::chaturbate::ChaturbateMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Chaturbate init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Chaturbate init failed: {e}"),
             }
         });
         info!("Chaturbate live cam tracker started");
@@ -1308,13 +1684,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::pandascore::PandascoreMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("pandascore", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::pandascore::PandascoreMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("PandaScore esports init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("PandaScore esports init failed: {e}"),
             }
         });
         info!("PandaScore esports tracker started");
@@ -1324,13 +1701,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::usgs_water::UsgsWaterMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("usgs_water", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::usgs_water::UsgsWaterMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("USGS Water init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("USGS Water init failed: {e}"),
             }
         });
         info!("USGS Water monitoring started");
@@ -1340,13 +1718,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::noaa_tides::NoaaTidesMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("noaa_tides", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::noaa_tides::NoaaTidesMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NOAA Tides init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NOAA Tides init failed: {e}"),
             }
         });
         info!("NOAA Tides & Currents monitoring started");
@@ -1356,13 +1735,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nrc_nuclear::NrcNuclearMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("nrc_nuclear", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::nrc_nuclear::NrcNuclearMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NRC Nuclear init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NRC Nuclear init failed: {e}"),
             }
         });
         info!("NRC Nuclear reactor status started");
@@ -1372,13 +1752,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::citybikes::CityBikesMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("citybikes", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::citybikes::CityBikesMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("CityBikes init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("CityBikes init failed: {e}"),
             }
         });
         info!("CityBikes bike sharing started");
@@ -1388,13 +1769,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::ndbc::NdbcMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("ndbc", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::ndbc::NdbcMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NDBC Buoys init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NDBC Buoys init failed: {e}"),
             }
         });
         info!("NDBC Ocean Buoys started");
@@ -1404,13 +1786,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::noaa_met::NoaaMetMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("noaa_met", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::noaa_met::NoaaMetMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NOAA Met init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NOAA Met init failed: {e}"),
             }
         });
         info!("NOAA Ocean Meteorology started");
@@ -1420,13 +1803,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nwps::NwpsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("nwps", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::nwps::NwpsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NWPS River Gauges init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NWPS River Gauges init failed: {e}"),
             }
         });
         info!("NWPS River Gauges started");
@@ -1436,13 +1820,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if std::env::var("AIRNOW_API_KEY").is_ok() {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::airnow::AirnowMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("airnow", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::airnow::AirnowMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("AirNow AQI init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("AirNow AQI init failed: {e}"),
             }
         });
         info!("AirNow Air Quality started");
@@ -1452,13 +1837,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::courtlistener::CourtListenerMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("courtlistener", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::courtlistener::CourtListenerMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("CourtListener init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("CourtListener init failed: {e}"),
             }
         });
         info!("CourtListener federal courts started");
@@ -1468,13 +1854,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::openalex::OpenAlexMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("openalex", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::openalex::OpenAlexMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("OpenAlex init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("OpenAlex init failed: {e}"),
             }
         });
         info!("OpenAlex scholarly works started");
@@ -1484,13 +1871,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::crossref::CrossrefMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("crossref", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::crossref::CrossrefMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Crossref init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Crossref init failed: {e}"),
             }
         });
         info!("Crossref DOI registry started");
@@ -1500,13 +1888,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::pubmed::PubMedMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("pubmed", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::pubmed::PubMedMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("PubMed init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("PubMed init failed: {e}"),
             }
         });
         info!("PubMed biomedical research started");
@@ -1516,13 +1905,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if std::env::var("STACKEXCHANGE_KEY").is_ok() {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::stackexchange::StackExchangeMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("stackexchange", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::stackexchange::StackExchangeMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Stack Exchange init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Stack Exchange init failed: {e}"),
             }
         });
         info!("Stack Exchange developer Q&A started");
@@ -1532,13 +1922,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::queue_times::QueueTimesMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("queue_times", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::queue_times::QueueTimesMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Queue-Times init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Queue-Times init failed: {e}"),
             }
         });
         info!("Queue-Times theme park wait times started");
@@ -1548,13 +1939,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::parking::ParkingMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("parking", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::parking::ParkingMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("ParkAPI Parking init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("ParkAPI Parking init failed: {e}"),
             }
         });
         info!("ParkAPI parking garages started");
@@ -1564,13 +1956,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if std::env::var("TOMTOM_API_KEY").is_ok() {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::tomtom_traffic::TomtomTrafficMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("tomtom_traffic", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::tomtom_traffic::TomtomTrafficMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("TomTom Traffic init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("TomTom Traffic init failed: {e}"),
             }
         });
         info!("TomTom Traffic flow started");
@@ -1580,13 +1973,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     if std::env::var("TOMTOM_API_KEY").is_ok() {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::tomtom_evcharge::TomtomEvchargeMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("tomtom_evcharge", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::tomtom_evcharge::TomtomEvchargeMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("TomTom EV Charging init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("TomTom EV Charging init failed: {e}"),
             }
         });
         info!("TomTom EV charging started");
@@ -1599,13 +1993,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::bgg::BggMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("bgg", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::bgg::BggMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("BGG init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("BGG init failed: {e}"),
             }
         });
         info!("BoardGameGeek hotness tracker started");
@@ -1616,13 +2011,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         std::env::set_var("BESTBUY_API_KEY", key);
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::bestbuy::BestBuyMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("bestbuy", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::bestbuy::BestBuyMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Best Buy init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Best Buy init failed: {e}"),
             }
         });
         info!("Best Buy product price tracker started");
@@ -1635,13 +2031,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             std::env::set_var("ADZUNA_APP_KEY", app_key);
             let pool_c = pool.clone();
             let bh = broadcast_hub.clone();
-            tokio::spawn(async move {
-                match market_data::sources::adzuna::AdzunaMarketSource::from_env() {
-                    Ok(source) => {
-                        let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                        engine.run().await;
+            let pw = price_writer.clone();
+            spawn_resilient("adzuna", pw.clone(), move || {
+                let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+                async move {
+                    match market_data::sources::adzuna::AdzunaMarketSource::from_env() {
+                        Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                        Err(e) => { tracing::error!("Adzuna init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                     }
-                    Err(e) => tracing::error!("Adzuna init failed: {e}"),
                 }
             });
             info!("Adzuna job market tracker started");
@@ -1654,13 +2051,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::cbp_border::CbpBorderMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("cbp_border", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::cbp_border::CbpBorderMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("CBP Border Wait Times init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("CBP Border Wait Times init failed: {e}"),
             }
         });
         info!("CBP Border Wait Times started");
@@ -1670,13 +2068,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::faa_delays::FaaDelaysMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("faa_delays", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::faa_delays::FaaDelaysMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("FAA Airport Delays init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("FAA Airport Delays init failed: {e}"),
             }
         });
         info!("FAA Airport Delays monitoring started");
@@ -1686,13 +2085,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::yahoo_drinks::YahooDrinksMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("yahoo_drinks", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::yahoo_drinks::YahooDrinksMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Yahoo Drink Markets init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Yahoo Drink Markets init failed: {e}"),
             }
         });
         info!("Yahoo Drink Markets started");
@@ -1702,13 +2102,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::db_trains::DbTrainsMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("db_trains", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::db_trains::DbTrainsMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Deutsche Bahn Train Delays init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Deutsche Bahn Train Delays init failed: {e}"),
             }
         });
         info!("Deutsche Bahn Train Delays started");
@@ -1718,13 +2119,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::nyc311::Nyc311MarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("nyc311", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::nyc311::Nyc311MarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("NYC 311 Complaints init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("NYC 311 Complaints init failed: {e}"),
             }
         });
         info!("NYC 311 Complaints started");
@@ -1734,13 +2136,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::mcbroken::McBrokenMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("mcbroken", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::mcbroken::McBrokenMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("McBroken Ice Cream init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("McBroken Ice Cream init failed: {e}"),
             }
         });
         info!("McBroken Ice Cream started");
@@ -1750,13 +2153,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::tfl_tube::TflTubeMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("tfl_tube", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::tfl_tube::TflTubeMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("TfL Tube Status init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("TfL Tube Status init failed: {e}"),
             }
         });
         info!("TfL Tube Status started");
@@ -1766,13 +2170,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::paris_metro::ParisMetroMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("paris_metro", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::paris_metro::ParisMetroMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Paris Metro Status init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Paris Metro Status init failed: {e}"),
             }
         });
         info!("Paris Metro Status started");
@@ -1782,13 +2187,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::mta_subway::MtaSubwayMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("mta_subway", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::mta_subway::MtaSubwayMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("MTA Subway Alerts init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("MTA Subway Alerts init failed: {e}"),
             }
         });
         info!("MTA Subway Alerts started");
@@ -1798,13 +2204,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::ryanair::RyanairMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("ryanair", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::ryanair::RyanairMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Ryanair Flight Delays init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("Ryanair Flight Delays init failed: {e}"),
             }
         });
         info!("Ryanair Flight Delays started");
@@ -1814,13 +2221,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::ioda::IodaMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("ioda", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::ioda::IodaMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("IODA Internet Outages init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("IODA Internet Outages init failed: {e}"),
             }
         });
         info!("IODA Internet Outages started");
@@ -1830,13 +2238,14 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
-        tokio::spawn(async move {
-            match market_data::sources::power_outages::PowerOutagesMarketSource::from_env() {
-                Ok(source) => {
-                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh);
-                    engine.run().await;
+        let pw = price_writer.clone();
+        spawn_resilient("power_outages", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::power_outages::PowerOutagesMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("US Power Outages init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
-                Err(e) => tracing::error!("US Power Outages init failed: {e}"),
             }
         });
         info!("US Power Outages started");
@@ -2114,7 +2523,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("cycle_metadata",     2, chain_pollers::poll_cycle_metadata_once);
     spawn_poller!("registry_metadata", 10, chain_pollers::poll_registry_metadata_once);
     spawn_poller!("settlement_state",   2, chain_pollers::poll_settlement_state_once);
-    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s)");
+    spawn_poller!("pending_rebalances", 5, chain_pollers::poll_pending_rebalances_once);
+    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {
@@ -2149,6 +2559,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;
+
+    // Graceful shutdown: drain the BatchWriter
+    drop(price_writer);
+    info!("Price writer sender dropped — BatchWriter draining...");
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        writer_handle,
+    ).await {
+        Ok(Ok(())) => info!("BatchWriter drained successfully"),
+        Ok(Err(e)) => tracing::error!("BatchWriter panicked during shutdown: {}", e),
+        Err(_) => tracing::warn!("BatchWriter drain timed out after 5s — some data may be lost"),
+    }
 
     info!("data-node shut down");
     Ok(())
@@ -2186,6 +2608,46 @@ fn load_tracked_symbols(assets_file: &str) -> Result<HashSet<String>, Box<dyn st
         .filter_map(|a| a.get("bitget").and_then(|v| v.as_str()).map(String::from))
         .collect();
     Ok(symbols)
+}
+
+/// Spawn a source with panic recovery.
+fn spawn_resilient<F, Fut>(
+    name: &'static str,
+    write_channel: market_data::write_channel::PriceWriteChannel,
+    make_fut: F,
+)
+where
+    F: Fn() -> Fut + Send + Sync + 'static,
+    Fut: std::future::Future<Output = ()> + Send + 'static,
+{
+    tokio::spawn(async move {
+        let mut restart_count = 0u32;
+        loop {
+            if write_channel.is_closed() {
+                tracing::error!("[{}] BatchWriter is dead (channel closed), stopping restart loop", name);
+                return;
+            }
+            let start_time = tokio::time::Instant::now();
+            let fut = make_fut();
+            match tokio::spawn(fut).await {
+                Ok(()) => {
+                    tracing::warn!("[{}] Source exited normally, restarting", name);
+                }
+                Err(e) => {
+                    tracing::error!("[{}] Source PANICKED (restart #{}): {}", name, restart_count + 1, e);
+                }
+            }
+            let runtime = start_time.elapsed();
+            if runtime > std::time::Duration::from_secs(300) {
+                restart_count = restart_count.saturating_sub(1);
+            } else {
+                restart_count += 1;
+            }
+            let delay_secs = 30u64 * (restart_count.min(10) as u64);
+            tracing::warn!("[{}] Restarting in {}s (restart #{})", name, delay_secs, restart_count);
+            tokio::time::sleep(std::time::Duration::from_secs(delay_secs)).await;
+        }
+    });
 }
 
 async fn shutdown_signal() {
