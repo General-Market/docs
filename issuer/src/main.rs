@@ -2504,7 +2504,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
         if am_leader {
             // Leader: check receipt for stored tx_hash
-            if let Some(tx_hash) = orchestrator.read().await.get_sell_burn_tx_hash(&order_id).await {
+            // Extract read into separate binding to ensure RwLockReadGuard drops before write
+            let maybe_tx_hash = {
+                let o = orchestrator.read().await;
+                o.get_sell_burn_tx_hash(&order_id).await
+            };
+            if let Some(tx_hash) = maybe_tx_hash {
                 match settlement_writer.wait_for_receipt(tx_hash, 5).await {
                     Ok(receipt) => {
                         let success = receipt.status.map(|s| s.as_u64() == 1).unwrap_or(false);
