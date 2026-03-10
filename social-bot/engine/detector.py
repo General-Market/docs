@@ -109,6 +109,10 @@ def _row_to_eval_data(row: dict, source: str, config: dict) -> dict:
         "sec": {"trade_value": "value"},
         "finra": {"short_volume_pct": "value"},
         "mcbroken": {"city_pct": "value"},
+        "airnow": {"aqi": "value"},
+        "cbp_border": {"wait_hours": "value"},
+        "queue_times": {"wait_min": "value"},
+        "congress": {"trade_value": "value"},
     }
     if source in field_map:
         for alias, field in field_map[source].items():
