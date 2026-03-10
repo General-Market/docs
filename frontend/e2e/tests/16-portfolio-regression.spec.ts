@@ -91,7 +91,7 @@ test.describe('USDC Balance Consistency', () => {
     const headerUsdcEl = page.locator('header').getByText(/[\d,]+\.\d{2}\s*USDC/)
     const hasHeaderUsdc = await headerUsdcEl.isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasHeaderUsdc) {
-      test.skip()
+      test.skip(true, 'Header USDC balance not visible — wallet may not be connected')
       return
     }
     const headerText = await headerUsdcEl.textContent() || ''
@@ -102,15 +102,14 @@ test.describe('USDC Balance Consistency', () => {
     const portfolioUsdcEl = page.getByText(/USDC\s*AVAILABLE/i).locator('..')
     const hasPortfolio = await portfolioUsdcEl.isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasPortfolio) {
-      // Portfolio section might not be visible (user has no positions). That's OK.
-      test.skip()
+      test.skip(true, 'Portfolio section not visible — user may have no positions')
       return
     }
 
     const portfolioText = await portfolioUsdcEl.textContent() || ''
     const portfolioMatch = portfolioText.match(/\$?([\d,]+\.\d{2})/)
     if (!portfolioMatch) {
-      test.skip()
+      test.skip(true, 'Portfolio USDC amount not parseable')
       return
     }
     const portfolioNum = parseFloat(portfolioMatch[1].replace(/,/g, ''))
@@ -133,7 +132,7 @@ test.describe('Portfolio Totals', () => {
     // Verify user has USDC on-chain
     const l3Usdc = await getL3UsdcBalance(TEST_ADDRESS)
     if (l3Usdc === 0n) {
-      test.skip()
+      test.skip(true, 'User has no USDC on L3')
       return
     }
 
@@ -143,7 +142,7 @@ test.describe('Portfolio Totals', () => {
     const totalValueLabel = page.getByText('TOTAL VALUE', { exact: true })
     const hasTotalValue = await totalValueLabel.isVisible({ timeout: 10_000 }).catch(() => false)
     if (!hasTotalValue) {
-      test.skip()
+      test.skip(true, 'TOTAL VALUE label not visible')
       return
     }
 
@@ -151,7 +150,7 @@ test.describe('Portfolio Totals', () => {
     const totalValueText = await totalValueContainer.textContent() || ''
     const match = totalValueText.match(/\$?([\d,]+\.\d{2})/)
     if (!match) {
-      test.skip()
+      test.skip(true, 'Total Value amount not parseable')
       return
     }
     const totalValue = parseFloat(match[1].replace(/,/g, ''))

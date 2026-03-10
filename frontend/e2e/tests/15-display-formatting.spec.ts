@@ -58,7 +58,7 @@ test.describe('Display Formatting — Leaderboard', () => {
     const topPlayersBar = page.locator('.section-bar').filter({ hasText: 'Top Players' })
     const hasLeaderboard = await topPlayersBar.isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasLeaderboard) {
-      test.skip()
+      test.skip(true, 'Top Players leaderboard not visible — no player data yet')
       return
     }
 
@@ -90,7 +90,7 @@ test.describe('Display Formatting — Leaderboard', () => {
     const topPlayersBar = page.locator('.section-bar').filter({ hasText: 'Top Players' })
     const hasLeaderboard = await topPlayersBar.isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasLeaderboard) {
-      test.skip()
+      test.skip(true, 'Top Players leaderboard not visible — no player data yet')
       return
     }
 
@@ -196,7 +196,7 @@ test.describe('Display Formatting — ITP Cards', () => {
 
     const rpcOk = await checkRpc()
     if (!rpcOk) {
-      test.skip()
+      test.skip(true, 'RPC not reachable')
       return
     }
 
@@ -205,7 +205,7 @@ test.describe('Display Formatting — ITP Cards', () => {
     const cards = itpCard(page)
     const hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
-      test.skip()
+      test.skip(true, 'ITP cards not visible')
       return
     }
 
@@ -239,7 +239,7 @@ test.describe('Display Formatting — Source Cards', () => {
       hasCards = await cards.first().isVisible({ timeout: 5_000 }).catch(() => false)
     }
     if (!hasCards) {
-      test.skip()
+      test.skip(true, 'Source cards not visible — page may still be loading')
       return
     }
 
@@ -256,7 +256,7 @@ test.describe('Display Formatting — Source Cards', () => {
     const bar = sourcesSectionBar(page)
     const hasBar = await bar.isVisible({ timeout: 20_000 }).catch(() => false)
     if (!hasBar) {
-      test.skip()
+      test.skip(true, 'Stats bar not visible')
       return
     }
 

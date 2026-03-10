@@ -6,6 +6,7 @@
 
 import { keccak256, encodeFunctionData, toHex, createWalletClient, http, defineChain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { mkdirSync, rmdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs'
 
 /** Wrap viem http transport to include Accept header (nginx requires it) */
 const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 'application/json' } } })
@@ -34,14 +35,85 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 2000):
   throw lastError
 }
 
-/** Simple async mutex to prevent parallel nonce conflicts on testnet L3 transactions. */
-let _l3NonceLock: Promise<void> = Promise.resolve()
-function withL3NonceLock<T>(fn: () => Promise<T>): Promise<T> {
-  const prev = _l3NonceLock
-  let resolve: () => void
-  _l3NonceLock = new Promise(r => { resolve = r })
-  return prev.then(fn).finally(() => resolve!())
+/**
+ * Cross-process nonce lock using filesystem mkdir (atomic on all OSes).
+ * Playwright workers run in separate Node processes, so the in-process async mutex
+ * isn't sufficient. Uses per-address lock dirs in /tmp.
+ */
+const LOCK_BASE = '/tmp/e2e-l3-nonce'
+const LOCK_STALE_MS = 30_000
+
+async function withL3NonceLock<T>(fn: () => Promise<T>, address?: string): Promise<T> {
+  // On Anvil, use simple in-process lock (no cross-worker issue with single-process)
+  if (IS_ANVIL) {
+    const prev = _l3InProcLock
+    let resolve: () => void
+    _l3InProcLock = new Promise(r => { resolve = r })
+    return prev.then(fn).finally(() => resolve!())
+  }
+
+  const lockDir = address
+    ? `${LOCK_BASE}-${address.toLowerCase().slice(2, 10)}`
+    : `${LOCK_BASE}-global`
+  const lockMeta = `${lockDir}.meta`
+  const start = Date.now()
+
+  // Acquire lock
+  while (true) {
+    try {
+      mkdirSync(lockDir)
+      // Write PID + timestamp for stale detection
+      try { writeFileSync(lockMeta, JSON.stringify({ pid: process.pid, time: Date.now() })) } catch {}
+      break
+    } catch {
+      // Lock exists — check if stale
+      try {
+        const meta = JSON.parse(readFileSync(lockMeta, 'utf-8'))
+        const isStale = Date.now() - meta.time > LOCK_STALE_MS
+        let pidDead = false
+        try { process.kill(meta.pid, 0) } catch { pidDead = true }
+        if (isStale || pidDead) {
+          try { rmdirSync(lockDir) } catch {}
+          try { unlinkSync(lockMeta) } catch {}
+          continue // Retry immediately
+        }
+      } catch {
+        // Can't read meta — force cleanup after 5s
+        if (Date.now() - start > 5000) {
+          try { rmdirSync(lockDir) } catch {}
+          continue
+        }
+      }
+      // Wait and retry
+      if (Date.now() - start > 60_000) throw new Error(`L3 nonce lock timeout for ${lockDir}`)
+      await new Promise(r => setTimeout(r, 50 + Math.random() * 150))
+    }
+  }
+
+  // Execute with lock held
+  try {
+    return await fn()
+  } finally {
+    try { rmdirSync(lockDir) } catch {}
+    try { unlinkSync(lockMeta) } catch {}
+  }
 }
+
+/** In-process fallback for Anvil mode */
+let _l3InProcLock: Promise<void> = Promise.resolve()
+
+// Cleanup stale locks on process exit
+process.on('exit', () => {
+  const { readdirSync } = require('fs')
+  try {
+    for (const f of readdirSync('/tmp')) {
+      if (f.startsWith('e2e-l3-nonce')) {
+        const p = `/tmp/${f}`
+        try { rmdirSync(p) } catch { try { unlinkSync(p) } catch {} }
+      }
+    }
+  } catch {}
+})
 
 // ── Constants ────────────────────────────────────────────────
 
@@ -232,7 +304,7 @@ async function l3EthCall(to: string, data: string): Promise<string> {
 }
 
 async function l3SendTx(from: string, to: string, data: string): Promise<string> {
-  // On testnet, serialize signed transactions to prevent nonce conflicts
+  // On testnet, serialize signed transactions per-address to prevent nonce conflicts
   if (!IS_ANVIL) {
     return withL3NonceLock(async () => {
       const key = getKeyForAddress(from)
@@ -250,14 +322,16 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
         gas: 2_000_000n,
       })
       return waitForReceipt(txHash, from, to, data)
-    })
+    }, from)
   }
 
-  // On Anvil, no nonce concerns — send directly
-  const txHash = await l3RpcCall('eth_sendTransaction', [{
-    from, to, data, gas: '0x200000',
-  }]) as string
-  return waitForReceipt(txHash, from, to, data)
+  // On Anvil, use in-process lock
+  return withL3NonceLock(async () => {
+    const txHash = await l3RpcCall('eth_sendTransaction', [{
+      from, to, data, gas: '0x200000',
+    }]) as string
+    return waitForReceipt(txHash, from, to, data)
+  }, from)
 }
 
 /** Poll for transaction receipt and throw on revert. */
@@ -288,19 +362,27 @@ export async function impersonateAccount(address: string): Promise<void> {
     // On testnet, ensure the account has ETH for gas (funded by deployer)
     const balance = await l3RpcCall('eth_getBalance', [address, 'latest']) as string
     if (BigInt(balance) < 10n ** 18n) {
-      // Send 10 ETH from deployer
-      const account = privateKeyToAccount(DEPLOYER_KEY)
-      const chain = defineChain({
-        id: ENV_CHAIN_ID,
-        name: 'Index L3',
-        nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-        rpcUrls: { default: { http: [L3_RPC] } },
-      })
-      const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
-      await client.sendTransaction({
-        to: address as `0x${string}`,
-        value: 10n * 10n ** 18n,
-      })
+      // Send 10 ETH from deployer — lock deployer's nonce across processes
+      await withL3NonceLock(async () => {
+        const account = privateKeyToAccount(DEPLOYER_KEY)
+        const chain = defineChain({
+          id: ENV_CHAIN_ID,
+          name: 'Index L3',
+          nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+          rpcUrls: { default: { http: [L3_RPC] } },
+        })
+        const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
+        const txHash = await client.sendTransaction({
+          to: address as `0x${string}`,
+          value: 10n * 10n ** 18n,
+        })
+        // Wait for confirmation
+        for (let i = 0; i < 10; i++) {
+          const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
+          if (receipt) return
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }, DEPLOYER_ADDRESS)
     }
     return
   }
@@ -732,53 +814,53 @@ export async function getBatchConfigHash(batchId: number): Promise<`0x${string}`
 }
 
 /**
- * Find a pre-created E2E test batch that nobody has joined yet.
- * The deploy script creates e2e_test_0..e2e_test_4 batches specifically for tests.
- * Returns { batchId, configHash } of the first available one.
+ * Find a batch that the given player hasn't joined yet.
+ * Scans vision-batches.json (deployed by testnet.sh refresh-batches) for unjoined batches.
+ * Falls back to on-chain scan if JSON is unavailable.
+ *
+ * Run `./testnet.sh refresh-batches` to create fresh batches with a new version
+ * when all existing batches have been joined by previous E2E runs.
  */
-export async function findAvailableE2eBatch(): Promise<{ batchId: number; configHash: `0x${string}` }> {
-  // Read vision-batches.json for pre-created batch mappings
+export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{ batchId: number; configHash: `0x${string}` }> {
+  // Read vision-batches.json for batch mappings (refreshed by testnet.sh refresh-batches)
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const batches = require('../../../deployments/vision-batches.json')
-    for (let i = 0; i <= 4; i++) {
-      const key = `e2e_test_${i}`
-      const entry = batches.batches?.[key]
-      if (entry) {
-        // Check if anyone has joined this batch
-        try {
-          const pos = await getPosition(entry.batchId, PLAYER1)
-          if (pos.stakePerTick === 0n) {
-            return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
-          }
-        } catch {
-          // Position read failed = nobody joined
+    const entries = Object.values(batches.batches || {}) as Array<{ batchId: number; configHash: string }>
+    // Sort by batchId descending (newest first = most likely unjoined)
+    entries.sort((a, b) => b.batchId - a.batchId)
+    for (const entry of entries) {
+      try {
+        const pos = await getPosition(entry.batchId, player)
+        if (pos.stakePerTick === 0n) {
           return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
         }
+      } catch {
+        // Position read failed = nobody joined
+        return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
       }
     }
   } catch {
     // vision-batches.json not available, fall back to on-chain scan
   }
 
-  // Fallback: scan batches from chain backwards, find one PLAYER1 hasn't joined
+  // Fallback: scan batches from chain backwards
   const allBatches = await getBatchesFromChain()
   if (allBatches.length === 0) throw new Error('No batches found on chain')
   for (let i = allBatches.length - 1; i >= 0; i--) {
     const batch = allBatches[i]
     try {
-      const pos = await getPosition(batch.id, PLAYER1)
+      const pos = await getPosition(batch.id, player)
       if (pos.stakePerTick === 0n) {
         const configHash = await getBatchConfigHash(batch.id)
         return { batchId: batch.id, configHash }
       }
     } catch {
-      // Position read failed = nobody joined
       const configHash = await getBatchConfigHash(batch.id)
       return { batchId: batch.id, configHash }
     }
   }
-  throw new Error('All batches already joined by PLAYER1 — redeploy Vision batches')
+  throw new Error(`All batches already joined by ${player} — run: ./testnet.sh refresh-batches`)
 }
 
 /**

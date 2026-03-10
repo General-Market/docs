@@ -831,6 +831,79 @@ cmd_logs() {
     esac
 }
 
+# ── refresh-batches: Redeploy Vision batches with bumped version ──
+cmd_refresh_batches() {
+    echo -e "${CYAN}Refreshing Vision batches...${NC}"
+
+    # Prerequisites
+    for cmd in forge cast python3; do
+        command -v $cmd &>/dev/null || { echo -e "${RED}$cmd not found${NC}"; exit 1; }
+    done
+    [ -f "target/release/bls-tool" ] || { echo -e "${RED}bls-tool not found — run: cargo build --release -p bls-tool${NC}"; exit 1; }
+
+    # Check L3 reachable
+    VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+    [ "$VPS_CHAIN_ID" = "$CHAIN_ID" ] || { echo -e "${RED}L3 not reachable${NC}"; exit 1; }
+
+    # Auto-increment BATCH_VERSION (persisted in .batch-version)
+    local VERSION_FILE="$SCRIPT_DIR/.batch-version"
+    local CURRENT_VERSION=1
+    if [ -f "$VERSION_FILE" ]; then
+        CURRENT_VERSION=$(cat "$VERSION_FILE")
+    fi
+    local NEW_VERSION=$((CURRENT_VERSION + 1))
+    echo "$NEW_VERSION" > "$VERSION_FILE"
+    local BATCH_VERSION="v${NEW_VERSION}"
+    echo -e "  ${BLUE}BATCH_VERSION: $BATCH_VERSION (was v$CURRENT_VERSION)${NC}"
+
+    # Refresh BLS registry snapshot to avoid SnapshotTooOld
+    echo -e "${BLUE}[1/3] Refreshing BLS registry snapshot...${NC}"
+    ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
+    if [ -n "$ISSUER_REGISTRY" ]; then
+        REG_NONCE=$(cast call --rpc-url "$RPC_URL" "$ISSUER_REGISTRY" "registryNonce()(uint256)" 2>/dev/null || echo "0")
+        AGG_PUBKEY=$(cast call --rpc-url "$RPC_URL" "$ISSUER_REGISTRY" "getAggregatedPubkey()(bytes)" 2>/dev/null || echo "")
+        if [ -n "$AGG_PUBKEY" ] && [ "$AGG_PUBKEY" != "" ]; then
+            cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                "$ISSUER_REGISTRY" "setAggregatedPubkey(bytes,uint256)" "$AGG_PUBKEY" "$REG_NONCE" \
+                > /dev/null 2>&1 || echo -e "  ${YELLOW}Snapshot refresh failed (non-fatal)${NC}"
+            echo -e "  ${GREEN}Registry snapshot refreshed (nonce $REG_NONCE)${NC}"
+        else
+            echo -e "  ${YELLOW}No aggregated pubkey found — skipping snapshot refresh${NC}"
+        fi
+    fi
+
+    # Deploy fresh batches
+    echo -e "${BLUE}[2/3] Deploying Vision batches (version $BATCH_VERSION)...${NC}"
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" BATCH_VERSION="$BATCH_VERSION" \
+    forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
+        --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --broadcast \
+        --chain-id $CHAIN_ID \
+        --slow) \
+        > logs/deploy-vision-batches.log 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo -e "  ${RED}Batch deployment failed — check logs/deploy-vision-batches.log${NC}"
+        # Rollback version
+        echo "$CURRENT_VERSION" > "$VERSION_FILE"
+        exit 1
+    fi
+    echo -e "  ${GREEN}Batches deployed${NC}"
+
+    # Sync vision-batches.json
+    echo -e "${BLUE}[3/3] Syncing deployment files...${NC}"
+    if [ -f "deployments/vision-batches.json" ]; then
+        [ -d "envs/testnet" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
+        # Also copy to frontend for E2E
+        cp deployments/vision-batches.json frontend/lib/contracts/vision-batches.json 2>/dev/null || true
+        BATCH_COUNT=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['batchCount'])" 2>/dev/null || echo "?")
+        echo -e "  ${GREEN}vision-batches.json updated ($BATCH_COUNT batches)${NC}"
+    fi
+
+    echo -e "${GREEN}Vision batches refreshed (version $BATCH_VERSION)${NC}"
+}
+
 # ── Main dispatcher ──────────────────────────────────────────
 case "${1:-help}" in
     setup-be)    cmd_setup_be ;;
@@ -840,19 +913,21 @@ case "${1:-help}" in
     stop)        cmd_stop ;;
     status)      cmd_status ;;
     update)      cmd_update ;;
+    refresh-batches) cmd_refresh_batches ;;
     logs)        cmd_logs "$2" ;;
     help|--help|-h)
         echo "Usage: ./testnet.sh <command> [args]"
         echo ""
         echo "Commands:"
-        echo "  setup-be       First-time VPS 1 setup (PostgreSQL, clone, build)"
-        echo "  setup-chain    First-time VPS 2 setup (clone, build AP)"
-        echo "  deploy         Deploy contracts from Mac to L3"
-        echo "  start          Start all services on VPSes"
-        echo "  stop           Stop all services on VPSes"
-        echo "  status         Check what's running"
-        echo "  update         git pull + rebuild + restart on both VPSes"
-        echo "  logs [svc]     Tail logs (data-node, issuer-1..3, ap, all)"
+        echo "  setup-be          First-time VPS 1 setup (PostgreSQL, clone, build)"
+        echo "  setup-chain       First-time VPS 2 setup (clone, build AP)"
+        echo "  deploy            Deploy contracts from Mac to L3"
+        echo "  start             Start all services on VPSes"
+        echo "  stop              Stop all services on VPSes"
+        echo "  status            Check what's running"
+        echo "  update            git pull + rebuild + restart on both VPSes"
+        echo "  refresh-batches   Redeploy Vision batches with fresh version"
+        echo "  logs [svc]        Tail logs (data-node, issuer-1..3, ap, curator, all)"
         echo ""
         echo "Architecture:"
         echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, Curator, PostgreSQL"

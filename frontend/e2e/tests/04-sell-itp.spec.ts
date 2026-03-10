@@ -69,12 +69,19 @@ test.describe('Sell ITP', () => {
     ]);
 
     // 9. Verify the sell was filled
-    if (fillDetected === null) {
-      // Order may still be pending — give issuer one more chance
-      await page.waitForTimeout(10_000);
+    // Wait for L3 state to propagate even after UI fill detection
+    await page.waitForTimeout(fillDetected === null ? 10_000 : 5_000);
+
+    // Poll for balance change (L3 RPC may lag behind fill by a few seconds)
+    let usdcAfter = usdcBefore;
+    let sharesAfter = sharesBefore;
+    const verifyDeadline = Date.now() + 30_000;
+    while (Date.now() < verifyDeadline) {
+      usdcAfter = await getL3UsdcBalance(TEST_ADDRESS);
+      sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+      if (usdcAfter > usdcBefore || sharesAfter < sharesBefore) break;
+      await page.waitForTimeout(2_000);
     }
-    const usdcAfter = await getL3UsdcBalance(TEST_ADDRESS);
-    const sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     console.log(`Sell test result: shares=${sharesBefore}→${sharesAfter}, USDC=${usdcBefore}→${usdcAfter}`);
     // Accept either USDC increase OR shares decrease as proof of fill
     const usdcIncreased = usdcAfter > usdcBefore;
