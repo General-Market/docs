@@ -226,7 +226,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     setIsFetchingMcap(true)
     try {
       const addresses = selectedAssets.map(a => a.address).join(',')
-      const res = await fetch(`${DATA_NODE_URL}/prices-by-address?addresses=${addresses}`, { signal: AbortSignal.timeout(10_000) })
+      const res = await fetch(`${DATA_NODE_URL}/prices-by-address?addresses=${addresses}`, { signal: AbortSignal.timeout(30_000) })
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       const priceMap: Record<string, number> = {}
@@ -281,7 +281,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     try {
       const query = `?addresses=${assets.join(',')}`
       console.log('[CreateITP] Fetching prices:', `${DATA_NODE_URL}/prices-by-address${query}`)
-      const res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(10000) })
+      const res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(30_000) })
       if (!res.ok) throw new Error(`AP returned ${res.status}`)
       const data = await res.json()
       console.log('[CreateITP] Price response:', data)
