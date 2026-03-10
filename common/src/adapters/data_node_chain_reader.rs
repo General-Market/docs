@@ -205,9 +205,47 @@ impl ChainReader for DataNodeChainReader {
     }
 
     async fn get_pending_rebalances(&self) -> Result<Vec<PendingRebalance>, Error> {
-        // The cached format is simplified — for full PendingRebalance we'd need
-        // the inventory data. Return empty for now.
-        Ok(vec![])
+        #[derive(Deserialize)]
+        struct CachedRebalance {
+            itp_id: String,
+            #[allow(dead_code)]
+            requester: String,
+            remove_indices: Vec<String>,
+            add_assets: Vec<String>,
+            new_weights: Vec<String>,
+            #[allow(dead_code)]
+            note: String,
+            block_number: u64,
+            #[serde(default)]
+            current_assets: Vec<String>,
+        }
+
+        let cached: Vec<CachedRebalance> = self.get_json("/chain/l3/pending-rebalances").await?;
+        Ok(cached
+            .into_iter()
+            .map(|c| {
+                let itp_h256 = Self::parse_h256(&c.itp_id);
+                let itp_id: [u8; 32] = itp_h256.into();
+                PendingRebalance {
+                    itp_id,
+                    new_weights: c.new_weights.iter()
+                        .filter_map(|w| U256::from_dec_str(w).ok())
+                        .collect(),
+                    proposed_at_block: c.block_number,
+                    new_inventory: vec![],
+                    nav: U256::zero(),
+                    remove_indices: c.remove_indices.iter()
+                        .filter_map(|i| U256::from_dec_str(i).ok())
+                        .collect(),
+                    add_assets: c.add_assets.iter()
+                        .filter_map(|a| a.parse().ok())
+                        .collect(),
+                    current_assets: c.current_assets.iter()
+                        .filter_map(|a| a.parse().ok())
+                        .collect(),
+                }
+            })
+            .collect())
     }
 
     async fn get_next_order_id(&self) -> Result<u64, Error> {

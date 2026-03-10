@@ -21,7 +21,7 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 
 test.describe('Rebalance Full Cycle', () => {
   test('rebalance preserves NAV and updates weights', async () => {
-    test.setTimeout(360_000); // 6 min — issuer consensus can take 2-4 min
+    test.setTimeout(CONSENSUS_TIMEOUT + 60_000); // Consensus + 60s overhead
 
     // 1. Read current state
     const stateBefore = await getItpStateL3(ITP_ID);
@@ -40,14 +40,9 @@ test.describe('Rebalance Full Cycle', () => {
 
     try {
       // 3. Execute rebalance (shifts 0.5% weight between asset[0] and asset[1])
+      // Use longer timeout on testnet — rebalance consensus can take 2-4 min
       console.log('Requesting rebalance...');
-      try {
-        await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT);
-      } catch (e) {
-        console.log(`Rebalance did not complete: ${(e as Error).message?.slice(0, 100)}`);
-        test.skip(true, 'Rebalance consensus did not complete — issuers may not be processing');
-        return;
-      }
+      await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT * 2);
       console.log('Rebalance completed');
 
       // Mine a few more blocks for finality

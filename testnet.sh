@@ -597,8 +597,9 @@ exec ./target/release/issuer \\
     $VISION_ARGS" "$VPS_BE_DIR/logs/issuer-$i.log"
 
         echo -e "  Issuer $i started on port $PORT"
-        # Stagger: let this issuer bind its port before the next one connects
-        [ $i -lt $ISSUER_COUNT ] && sleep 1
+        # Stagger: P2P needs peers to be listening before connecting.
+        # 1s is too short — exponential backoff gives up before peers start.
+        [ $i -lt $ISSUER_COUNT ] && sleep 5
     done
 
     echo -e "  ${GREEN}All $ISSUER_COUNT issuers started${NC}"

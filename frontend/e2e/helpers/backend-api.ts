@@ -560,8 +560,9 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     newWeights[1] = newWeights[1] + shift;
   }
 
-  // Call requestRebalance on L3 Index (emits RebalanceRequested on L3,
-  // which issuers monitor and process via BLS consensus)
+  // Send requestRebalance to L3 Index (emits RebalanceRequested event).
+  // On Anvil: issuers read events directly from L3 RPC.
+  // On testnet: issuers use DataNodeChainReader which may not forward RebalanceRequested events.
   const calldata = encodeFunctionData({
     abi: INDEX_ABI,
     functionName: 'requestRebalance',
@@ -575,7 +576,14 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
   });
 
   if (!IS_ANVIL) {
-    await l3SignedSend(L3_INDEX, calldata);
+    const txHash = await l3SignedSend(L3_INDEX, calldata);
+    console.log(`[rebalance] L3 requestRebalance tx: ${txHash}`);
+    await new Promise(r => setTimeout(r, 2000));
+    const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string; logs: unknown[] } | null;
+    if (!receipt || receipt.status !== '0x1') {
+      throw new Error(`requestRebalance tx reverted: ${txHash} status=${receipt?.status}`);
+    }
+    console.log(`[rebalance] TX confirmed with ${receipt.logs.length} events`);
   } else {
     await l3RpcCall('eth_sendTransaction', [{
       from: DEPLOYER,
@@ -776,6 +784,65 @@ export async function placeSellOrderDirect(
 }
 
 /**
+ * Place a sell order directly on L3 Index (no bridge, no BridgedITP needed).
+ * Calls Index.submitOrder(itpId, SELL=1, amount, limitPrice, slippageTier, deadline).
+ * User must have L3 ITP shares. Payout is L3 USDC (18 decimals).
+ * Returns the L3 orderId.
+ */
+export async function placeL3SellOrderDirect(
+  user: string,
+  itpId: string,
+  amount: bigint,
+  limitPrice: bigint,
+): Promise<number> {
+  // Read current L3 nextOrderId
+  const nextIdData = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'nextOrderId',
+    args: [],
+  });
+  const nextIdResult = await l3RpcCall('eth_call', [
+    { to: L3_INDEX, data: nextIdData },
+    'latest',
+  ]) as string;
+  const orderId = Number(safeBigInt(nextIdResult));
+
+  // Get L3 block timestamp for deadline
+  const latestBlock = await l3RpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+  const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
+  const deadline = BigInt(chainTimestamp + 3600);
+
+  const sellData = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'submitOrder',
+    args: [
+      itpId as `0x${string}`,
+      1, // SELL
+      amount,
+      limitPrice,
+      1n, // slippageTier
+      deadline,
+    ],
+  });
+
+  if (!IS_ANVIL) {
+    // On testnet: sign with deployer key (deployer = test user)
+    await l3SignedSend(L3_INDEX, sellData);
+  } else {
+    await l3RpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
+    await l3RpcCall('anvil_impersonateAccount', [user]);
+    await l3RpcCall('eth_sendTransaction', [{
+      from: user,
+      to: L3_INDEX,
+      data: sellData,
+      gas: '0x200000',
+    }]);
+  }
+
+  return orderId;
+}
+
+/**
  * Request rebalance via BridgeProxy (event-only, picked up by issuers).
  * Shifts 0.5% weight between asset[0] and asset[1].
  * Returns the rebalance nonce.
@@ -904,7 +971,30 @@ export async function deployBridgedItpDirect(
   }
 
   if (!IS_ANVIL) {
-    throw new Error('deployBridgedItpDirect not available on testnet — requires anvil_impersonateAccount + anvil_setStorageAt');
+    // On testnet: call BridgeProxy.registerExistingItp() via signed tx (onlyOwner)
+    const registerData = encodeFunctionData({
+      abi: [{
+        name: 'registerExistingItp',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'orbitItpId', type: 'bytes32' },
+          { name: 'name', type: 'string' },
+          { name: 'symbol', type: 'string' },
+          { name: 'deployer', type: 'address' },
+        ],
+        outputs: [{ name: 'bridgedItpAddress', type: 'address' }],
+      }],
+      functionName: 'registerExistingItp',
+      args: [itpId as `0x${string}`, name, symbol, DEPLOYER as `0x${string}`],
+    });
+    await settlementSignedSend(BRIDGE_PROXY, registerData);
+    // Read back the deployed address
+    const deployed = await getBridgedItpAddress(itpId);
+    if (deployed === '0x' + '0'.repeat(40)) {
+      throw new Error('registerExistingItp succeeded but BridgedITP address is still zero');
+    }
+    return deployed;
   }
 
   // Fund BridgeProxy with ETH for gas

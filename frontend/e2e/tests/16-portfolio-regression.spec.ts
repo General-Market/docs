@@ -125,35 +125,37 @@ test.describe('USDC Balance Consistency', () => {
 
 test.describe('Portfolio Totals', () => {
   test('Total Value includes USDC balance (not zero when holding USDC)', async ({ walletPage: page }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(120_000)
 
     await ensureWalletConnected(page, TEST_ADDRESS)
 
-    // Verify user has USDC on-chain
+    // Ensure user has USDC on-chain (mint if needed)
     const l3Usdc = await getL3UsdcBalance(TEST_ADDRESS)
     if (l3Usdc === 0n) {
-      test.skip(true, 'User has no USDC on L3')
-      return
+      const { mintL3Usdc } = await import('../helpers/backend-api')
+      const { parseUnits } = await import('viem')
+      await mintL3Usdc(TEST_ADDRESS, parseUnits('1000', 18))
     }
 
-    await page.waitForTimeout(5_000)
+    // Navigate to Portfolio tab
+    const portfolioTab = page.getByRole('link', { name: 'Portfolio' }).or(page.getByText('Portfolio', { exact: true }))
+    await expect(portfolioTab.first()).toBeVisible({ timeout: 15_000 })
+    await portfolioTab.first().click()
 
-    // Find Total Value in the portfolio stats
-    const totalValueLabel = page.getByText('TOTAL VALUE', { exact: true })
-    const hasTotalValue = await totalValueLabel.isVisible({ timeout: 10_000 }).catch(() => false)
-    if (!hasTotalValue) {
-      test.skip(true, 'TOTAL VALUE label not visible')
-      return
-    }
+    // Find Total Value in the portfolio stats — wait for SSE data
+    // Note: HTML may say "Total Value" with CSS text-transform: uppercase
+    const totalValueLabel = page.getByText(/total\s*value/i).first()
+    await expect(totalValueLabel).toBeVisible({ timeout: 45_000 })
 
+    // Wait for the value to actually load (not skeleton/loading state)
+    // The value is a sibling or child of the label's parent — look for a dollar amount
     const totalValueContainer = totalValueLabel.locator('..')
+    await expect(totalValueContainer).toContainText(/\$[\d,]+/, { timeout: 60_000 })
+
     const totalValueText = await totalValueContainer.textContent() || ''
-    const match = totalValueText.match(/\$?([\d,]+\.\d{2})/)
-    if (!match) {
-      test.skip(true, 'Total Value amount not parseable')
-      return
-    }
-    const totalValue = parseFloat(match[1].replace(/,/g, ''))
+    const match = totalValueText.match(/\$?([\d,]+\.?\d*)/)
+    expect(match).not.toBeNull()
+    const totalValue = parseFloat(match![1].replace(/,/g, ''))
 
     // Total Value should be > 0 when user holds USDC
     expect(totalValue).toBeGreaterThan(0)

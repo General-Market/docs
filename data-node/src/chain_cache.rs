@@ -68,6 +68,7 @@ pub struct CachedPendingRebalance {
     pub new_weights: Vec<String>,
     pub note: String,
     pub block_number: u64,
+    pub current_assets: Vec<String>,
 }
 
 // ── Per-user data ──

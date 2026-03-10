@@ -1,5 +1,16 @@
 # Design Decision Backlog
 
+## Session: 20260310-1540-e2e (E2E Reliability Fixes)
+
+- [FAILED] Rebalance E2E: issuers don't detect `RebalanceRequested` events on testnet. Root cause: issuers use `DataNodeChainReader` which doesn't forward RebalanceRequested events from L3 Index. TX confirmed (status 0x1, 1 event) but issuers never see it. Fix needed in data-node Rust code to forward RebalanceRequested events to issuer chain reader API.
+- [DECISION] P2P stagger increased from 1s to 5s in testnet.sh — 1s caused issuer-1 P2P connections to fail permanently (exponential backoff gives up before peers start listening)
+- [DECISION] ITP2 sell test changed from Settlement bridge sell to direct L3 sell (`placeL3SellOrderDirect`) — avoids BridgedITP token requirement on testnet, bridge sell already tested for ITP1 in test 08
+- [DECISION] `rebalanceItp()` sends to L3 Index (confirmed working) — Settlement BridgeProxy path also tried but issuers don't scan Settlement for RebalanceRequested either
+- [DECISION] Added `poll_pending_rebalances_once` poller to data-node — scans L3 for RebalanceRequested events, filters out already-executed ones, populates `pending_rebalances` cache. Fixed `DataNodeChainReader.get_pending_rebalances()` which was returning empty `vec![]` stub.
+- [DECISION] `ensureWalletConnected` made resilient to click-race — button can be detached mid-click when wallet auto-connects, now catches the error and waits for address button
+- [DECISION] Portfolio "Total Value" test waits for `$\d+` (dollar+digit) instead of just `\d` — prevents false match on skeleton loading state
+- [DECISION] SSH tunnels (ports 10001-10003) required for testnet E2E — issuer HTTP API runs on VPS, `E2E_VISION_API_URL=localhost:10001` needs forwarding
+
 ## Session: 20260308-stale-r4 (Stale Orders Plan — Round 4 Plan-Only Audit)
 
 - [FAILED] Plan v3 called `get_all_unfilled_orders()` through `Arc<dyn SettlementReader>` but method was only on concrete `SettlementChainReader`. Fixed by adding to trait + stub for data_node reader.

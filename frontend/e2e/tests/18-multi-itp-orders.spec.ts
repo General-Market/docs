@@ -25,6 +25,7 @@ import {
   mintBridgedItp,
   placeBuyOrderDirect,
   placeSellOrderDirect,
+  placeL3SellOrderDirect,
   pollUntil,
   startSettlementBlockMiner,
   getBridgedItpAddress,
@@ -59,10 +60,7 @@ test.describe('Multi-ITP Order Processing', () => {
 
     // 1. Verify ITP2 exists
     const itpCount = await getItpCountL3();
-    if (itpCount < 2) {
-      test.skip(true, `Only ${itpCount} ITP(s) on L3 — ITP2 not yet created`);
-      return;
-    }
+    expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const itp2Id = itpIdFromNumber(2);
 
@@ -109,10 +107,7 @@ test.describe('Multi-ITP Order Processing', () => {
 
     // 1. Verify ITP2 exists
     const itpCount = await getItpCountL3();
-    if (itpCount < 2) {
-      test.skip(true, `Only ${itpCount} ITP(s) on L3 — ITP2 not yet created`);
-      return;
-    }
+    expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const itp2Id = itpIdFromNumber(2);
 
@@ -132,67 +127,48 @@ test.describe('Multi-ITP Order Processing', () => {
             3_000,
           );
           console.log(`ITP2 buy filled — shares: ${newShares}`);
-        } catch {
-          test.skip(true, 'ITP2 buy order not filled within timeout');
-          return;
+        } catch (e) {
+          throw new Error(`ITP2 buy order not filled within 180s: ${(e as Error).message}`);
         }
       } else {
         await mintL3Shares(TEST_ADDRESS, itp2Id, 100n * 10n ** 18n);
       }
     }
 
-    // 3. Deploy BridgedITP for ITP2 if not yet deployed (test 05 may not have run)
-    let bridgedAddr = await getBridgedItpAddress(itp2Id);
-    if (bridgedAddr === '0x' + '0'.repeat(40)) {
-      if (!IS_ANVIL) {
-        test.skip(true, 'No BridgedITP for ITP2 on testnet — bridge deploy needed');
-        return;
-      }
-      console.log('No BridgedITP for ITP2, deploying directly...');
-      bridgedAddr = await deployBridgedItpDirect(itp2Id, 'E2E ITP2', 'E2ET');
-      console.log(`Deployed BridgedITP for ITP2: ${bridgedAddr}`);
-    }
-
-    if (IS_ANVIL) {
-      await mintBridgedItp(TEST_ADDRESS, itp2Id, 50n * 10n ** 18n);
-    }
-
-    // 4. Fund L3 Index with USDC so sell payouts don't fail
+    // 3. Fund L3 Index with USDC so sell payouts don't fail
     await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
-    // 5. Record Settlement USDC balance before sell (cross-chain sell returns Settlement USDC)
-    const settlementUsdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
+    // 4. Record L3 shares before sell
+    const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
+    console.log(`ITP2 L3 shares before sell: ${l3SharesBefore}`);
 
-    // 6. Start Settlement block miner
+    // 5. Start Settlement block miner (issuers need blocks for confirmation)
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
-      // 7. Place sell order for ITP2 (50 shares at low limit to ensure fill)
-      const sellAmount = 50n * 10n ** 18n;
+      // 6. Place L3 sell order for ITP2 (direct L3, no bridge/BridgedITP needed)
+      // Bridge sell is already tested for ITP1 in test 08. This tests multi-ITP issuer pipeline.
+      const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
       const limitPrice = 1n; // Very low limit price to guarantee fill
       let orderId: number;
       try {
-        orderId = await placeSellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
+        orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
       } catch (e) {
-        // Sell TX may revert if ITP2's BridgedITP contract isn't fully configured
-        console.log(`ITP2 sell TX reverted: ${(e as Error).message}`);
-        test.skip(true, 'ITP2 sell TX reverted — BridgedITP may not be fully configured for ITP2');
-        return;
+        throw new Error(`ITP2 L3 sell TX reverted: ${(e as Error).message}`);
       }
-      console.log(`Placed ITP2 sell order #${orderId}`);
+      console.log(`Placed ITP2 L3 sell order #${orderId}`);
 
-      // 8. Wait for Settlement USDC to increase (balance-based verification)
+      // 7. Wait for L3 shares to decrease (balance-based verification)
       try {
-        const settlementUsdcAfter = await pollUntil(
-          async () => BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS)),
-          (balance) => balance > settlementUsdcBefore,
+        const sharesAfter = await pollUntil(
+          () => getL3UserShares(TEST_ADDRESS, itp2Id),
+          (shares) => shares < l3SharesBefore,
           180_000,
           3_000,
         );
-        console.log(`ITP2 sell order #${orderId} filled — Settlement USDC: ${settlementUsdcBefore} → ${settlementUsdcAfter}`);
-      } catch {
-        console.log(`ITP2 sell order #${orderId} not filled — issuers may not support multi-ITP`);
-        test.skip(true, 'ITP2 sell not filled — multi-ITP issuer support may not be deployed');
+        console.log(`ITP2 sell order #${orderId} filled — L3 shares: ${l3SharesBefore} → ${sharesAfter}`);
+      } catch (e) {
+        throw new Error(`ITP2 sell order #${orderId} not filled within 180s: ${(e as Error).message}`);
       }
     } finally {
       stopMiner();

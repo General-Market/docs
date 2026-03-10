@@ -19,14 +19,25 @@ export async function ensureWalletConnected(page: Page, address: string): Promis
   const truncated = address.slice(0, 6) + '...' + address.slice(-4);
   const addrBtn = page.getByRole('button', { name: truncated });
 
-  // Check if already auto-connected
-  const autoConnected = await addrBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+  // Check if already auto-connected (longer timeout on testnet — SSR + hydration + wallet connect)
+  const autoConnected = await addrBtn.isVisible({ timeout: 15_000 }).catch(() => false);
   if (autoConnected) return;
 
   // Fall back to manual connect
   const connectBtn = connectWalletButton(page);
-  await expect(connectBtn).toBeVisible({ timeout: 15_000 });
-  await connectBtn.click();
+  const connectVisible = await connectBtn.isVisible({ timeout: 5_000 }).catch(() => false);
+  if (!connectVisible) {
+    // Neither button found — wallet may be mid-connect. Wait for address to appear.
+    await expect(addrBtn).toBeVisible({ timeout: 30_000 });
+    return;
+  }
+  // Click may race with auto-connect (button detaches as wallet connects).
+  // If click fails, just wait for the address to appear.
+  try {
+    await connectBtn.click({ timeout: 10_000 });
+  } catch {
+    // Button was detached — wallet likely auto-connected during click attempt
+  }
   await page.mouse.move(0, 0);
   await expect(addrBtn).toBeVisible({ timeout: 30_000 });
 }
@@ -47,7 +58,8 @@ export function sellButton(page: Page): Locator {
 }
 
 export function borrowButtonOnCard(page: Page): Locator {
-  return itpCard(page).first().getByRole('button', { name: 'Borrow', exact: true });
+  // Borrow button may not be on the first card (sorted by TVL) — find any card that has one
+  return itpCard(page).getByRole('button', { name: 'Borrow', exact: true }).first();
 }
 
 // ── Modal ───────────────────────────────────────────────────

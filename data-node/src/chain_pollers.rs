@@ -107,6 +107,14 @@ abigen!(
     ]"#
 );
 
+abigen!(
+    RebalanceScanner,
+    r#"[
+        event RebalanceRequested(address indexed requester, bytes32 indexed itpId, uint256[] removeIndices, address[] addAssets, uint256[] newWeights, string note)
+        function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
+    ]"#
+);
+
 pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
@@ -932,5 +940,79 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     // up to block N are already in the cache.
     state.chain_cache.settlement_confirmed_block.store(confirmed, Ordering::Relaxed);
 
+    Ok(())
+}
+
+/// Poll L3 Index for RebalanceRequested events and populate pending_rebalances cache.
+/// Scans the last 10,000 blocks for events, then checks if the rebalance was already
+/// executed (weights match target) and filters those out.
+pub async fn poll_pending_rebalances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    use crate::chain_cache::CachedPendingRebalance;
+
+    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
+    let scanner = RebalanceScanner::new(index_addr, Arc::clone(&state.l3_provider));
+
+    let latest_block = state.l3_provider.get_block_number().await?.as_u64();
+    let from_block = latest_block.saturating_sub(10_000);
+
+    let events = scanner
+        .rebalance_requested_filter()
+        .from_block(from_block)
+        .to_block(latest_block)
+        .query_with_meta()
+        .await
+        .unwrap_or_default();
+
+    // Keep latest event per ITP (dedup by itp_id, keep highest block)
+    let mut latest_per_itp: std::collections::HashMap<[u8; 32], (rebalance_scanner::RebalanceRequestedFilter, LogMeta)> =
+        std::collections::HashMap::new();
+    for (event, meta) in events {
+        let itp_id: [u8; 32] = event.itp_id.into();
+        let block = meta.block_number.as_u64();
+        let replace = match latest_per_itp.get(&itp_id) {
+            Some((_, existing_meta)) => block > existing_meta.block_number.as_u64(),
+            None => true,
+        };
+        if replace {
+            latest_per_itp.insert(itp_id, (event, meta));
+        }
+    }
+
+    let mut pending = Vec::new();
+
+    for (itp_id, (event, meta)) in &latest_per_itp {
+        // Check if rebalance was already executed (current weights == target weights)
+        let current_assets = match scanner.get_itp_state(*itp_id).call().await {
+            Ok((_creator, _total_supply, _nav, assets, current_weights, _inventory)) => {
+                if current_weights == event.new_weights
+                    && event.remove_indices.is_empty()
+                    && event.add_assets.is_empty()
+                {
+                    continue; // Already executed
+                }
+                assets
+            }
+            Err(e) => {
+                warn!(itp_id = %format!("0x{}", hex::encode(itp_id)), %e, "Failed to get ITP state for rebalance check");
+                // Include it anyway — better to have a stale entry than miss a pending one
+                vec![]
+            }
+        };
+
+        pending.push(CachedPendingRebalance {
+            itp_id: format!("0x{}", hex::encode(itp_id)),
+            requester: format!("{:?}", event.requester),
+            remove_indices: event.remove_indices.iter().map(|i| i.to_string()).collect(),
+            add_assets: event.add_assets.iter().map(|a| format!("{:?}", a)).collect(),
+            new_weights: event.new_weights.iter().map(|w| w.to_string()).collect(),
+            note: event.note.clone(),
+            block_number: meta.block_number.as_u64(),
+            current_assets: current_assets.iter().map(|a| format!("{:?}", a)).collect(),
+        });
+    }
+
+    let mut cache = state.chain_cache.pending_rebalances.write().await;
+    *cache = pending;
+    state.chain_cache.pending_rebalances_gen.bump();
     Ok(())
 }
