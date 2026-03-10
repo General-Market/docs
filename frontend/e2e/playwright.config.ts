@@ -14,7 +14,7 @@ export default defineConfig({
   globalSetup: IS_ANVIL ? require.resolve('./global-setup') : undefined,
   testDir: './tests',
   fullyParallel: false,
-  workers: 2,
+  workers: 1, // Must serialize — ITP and Vision share deployer address for L3 nonce space
   timeout: IS_ANVIL ? 120_000 : 180_000,
   expect: {
     timeout: IS_ANVIL ? 15_000 : 30_000,
