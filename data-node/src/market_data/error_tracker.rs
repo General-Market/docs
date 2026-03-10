@@ -38,6 +38,8 @@ pub enum ErrorCategory {
     CircuitBreakerOpen,
     /// Source init failed (code-level error, e.g. bad config)
     InitFailed,
+    /// Write channel closed — BatchWriter is dead
+    WriterDead,
     /// No error — source is running fine
     Ok,
 }
@@ -52,6 +54,7 @@ impl std::fmt::Display for ErrorCategory {
             ErrorCategory::DataError => write!(f, "data_error"),
             ErrorCategory::CircuitBreakerOpen => write!(f, "circuit_breaker_open"),
             ErrorCategory::InitFailed => write!(f, "init_failed"),
+            ErrorCategory::WriterDead => write!(f, "writer_dead"),
             ErrorCategory::Ok => write!(f, "ok"),
         }
     }
@@ -167,6 +170,8 @@ fn classify_error(error: &str) -> ErrorCategory {
         || lower.contains("expected") || lower.contains("invalid data")
     {
         ErrorCategory::DataError
+    } else if lower.contains("channel closed") || lower.contains("batchwriter") || lower.contains("writer_dead") {
+        ErrorCategory::WriterDead
     } else {
         // Timeout, connection refused, 5xx, network errors
         ErrorCategory::Transient

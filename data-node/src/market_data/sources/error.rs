@@ -10,7 +10,7 @@
 use std::time::Duration;
 
 /// Typed error for market data source operations
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum SourceError {
     /// API returned 429 — back off and retry
     #[error("Rate limited, retry after {0:?}")]
@@ -31,6 +31,10 @@ pub enum SourceError {
     /// Source is disabled (manually or by circuit breaker)
     #[error("Source disabled")]
     Disabled,
+
+    /// Write channel closed — BatchWriter is dead
+    #[error("Writer dead: channel closed")]
+    WriterDead,
 }
 
 impl SourceError {
@@ -73,6 +77,7 @@ pub struct CircuitBreaker {
     pub consecutive_failures: u32,
     pub max_failures: u32,
     pub cooldown: Duration,
+    pub probe_in_flight: bool,
 }
 
 impl CircuitBreaker {
@@ -83,6 +88,7 @@ impl CircuitBreaker {
             consecutive_failures: 0,
             max_failures: 5,
             cooldown: Duration::from_secs(300),
+            probe_in_flight: false,
         }
     }
 
@@ -98,18 +104,27 @@ impl CircuitBreaker {
                     false
                 }
             }
-            CircuitState::HalfOpen => true, // Allow test request
+            CircuitState::HalfOpen => {
+                if self.probe_in_flight {
+                    false // Already have a probe in flight, block concurrent probes
+                } else {
+                    self.probe_in_flight = true;
+                    true // Allow one test request
+                }
+            }
         }
     }
 
     /// Record a successful operation — reset to Closed
     pub fn record_success(&mut self) {
+        self.probe_in_flight = false;
         self.consecutive_failures = 0;
         self.state = CircuitState::Closed;
     }
 
     /// Record a failure — may trip to Open state
     pub fn record_failure(&mut self, error: &SourceError) {
+        self.probe_in_flight = false;
         self.consecutive_failures += 1;
 
         // Auth failures immediately open the circuit
@@ -226,6 +241,7 @@ mod tests {
             consecutive_failures: 5,
             max_failures: 5,
             cooldown: Duration::from_secs(300),
+            probe_in_flight: false,
         };
 
         // Should transition to HalfOpen
