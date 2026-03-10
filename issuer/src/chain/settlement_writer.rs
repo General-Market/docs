@@ -1605,6 +1605,58 @@ impl SettlementChainWriter {
 
 }
 
+// ── ChainWriter adapter for VisionDepositWatcher ──────────────────────
+// The deposit watcher expects `Arc<dyn ChainWriter>` for Settlement operations.
+// Only `send_transaction` and `static_call` are used; other methods are L3-specific.
+
+#[async_trait::async_trait]
+impl common::traits::ChainWriter for SettlementChainWriter {
+    async fn submit_batch(
+        &self, _: u64, _: Vec<u64>, _: Vec<u8>, _: u64, _: U256,
+    ) -> Result<common::types::TxHash, common::error::Error> {
+        Err(common::error::Error::ChainWrite("submit_batch not supported on Settlement".into()))
+    }
+
+    async fn confirm_fills(
+        &self, _: u64, _: Vec<common::types::Fill>, _: Vec<u8>, _: u64, _: U256,
+    ) -> Result<common::types::TxHash, common::error::Error> {
+        Err(common::error::Error::ChainWrite("confirm_fills not supported on Settlement".into()))
+    }
+
+    async fn submit_bridge(
+        &self, _: u64, _: U256, _: Vec<u8>, _: u64, _: U256,
+    ) -> Result<common::types::TxHash, common::error::Error> {
+        Err(common::error::Error::ChainWrite("submit_bridge not supported on Settlement".into()))
+    }
+
+    async fn create_itp(
+        &self, _: &str, _: &str, _: &[U256], _: &[Address], _: &[U256], _: U256,
+    ) -> Result<H256, common::error::Error> {
+        Err(common::error::Error::ChainWrite("create_itp not supported on Settlement".into()))
+    }
+
+    async fn send_transaction(
+        &self,
+        to: Address,
+        calldata: Vec<u8>,
+        value: U256,
+    ) -> Result<common::types::TxHash, common::error::Error> {
+        SettlementChainWriter::send_transaction(self, to, calldata, value)
+            .await
+            .map_err(|e| common::error::Error::ChainWrite(e.to_string()))
+    }
+
+    async fn static_call(
+        &self,
+        to: Address,
+        calldata: Vec<u8>,
+    ) -> Result<Vec<u8>, common::error::Error> {
+        SettlementChainWriter::static_call(self, to, calldata)
+            .await
+            .map_err(|e| common::error::Error::ChainWrite(e.to_string()))
+    }
+}
+
 /// Errors for SettlementChainWriter operations
 #[derive(Debug, thiserror::Error)]
 pub enum SettlementWriterError {

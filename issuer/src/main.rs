@@ -4461,10 +4461,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // L3 chain writer for creditBalance + gas drip
                         let dw_l3_writer: Option<Arc<dyn common::traits::ChainWriter>> =
                             components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
-                        // Settlement chain writer: SettlementChainWriter doesn't impl ChainWriter trait,
-                        // so Settlement operations (completeVisionDeposit, refund, completeWithdraw) will
-                        // be wired when the Settlement ChainWriter adapter is implemented.
-                        let dw_settlement_writer: Option<Arc<dyn common::traits::ChainWriter>> = None;
+                        // Settlement chain writer: delegates send_transaction/static_call to SettlementChainWriter
+                        let dw_settlement_writer: Option<Arc<dyn common::traits::ChainWriter>> =
+                            components.chain.settlement_writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
                         let dw_node_index = components.consensus.keys.node_index;
 
                         // IssuerRegistry address: used for reading lastSnapshotNonce (BLS referenceNonce).
