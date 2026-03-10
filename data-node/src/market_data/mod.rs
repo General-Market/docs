@@ -10,9 +10,11 @@ pub mod sources;
 pub mod sync_engine;
 pub mod sync_registry;
 pub mod traits;
+pub mod write_channel;
 
 pub use models::{MarketAsset, MarketPriceRecord, MarketPriceSummary, MarketSyncStats};
 pub use rate_limiter::{RateLimitConfig, RateWindow, SlidingWindowRateLimiter};
 pub use scheduled_sync_engine::ScheduledSyncEngine;
 pub use sync_engine::SyncEngine;
 pub use traits::{AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource};
+pub use write_channel::{PriceRow, PriceWriteChannel, SendResult};
