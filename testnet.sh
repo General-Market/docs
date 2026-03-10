@@ -2,8 +2,8 @@
 # testnet.sh — Manage Index testnet on VPSes
 #
 # Architecture:
-#   VPS 1 (be)       — data-node, 3 issuers, PostgreSQL
-#   VPS 2 (postgres)  — AP, Curator, L3 Orbit chain (Docker)
+#   VPS 1 (be)       — data-node, 3 issuers, Curator, PostgreSQL
+#   VPS 2 (postgres)  — AP, L3 Orbit chain (Docker)
 #   Mac (local)       — contract deployment (forge)
 #   Vercel            — frontend (www.generalmarket.io)
 #
@@ -221,8 +221,8 @@ cmd_setup_chain() {
     fi
     echo -e "  ${GREEN}Repo ready${NC}"
 
-    echo -e "${BLUE}[3/3] Building AP + Curator binaries...${NC}"
-    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
+    echo -e "${BLUE}[3/3] Building AP binary...${NC}"
+    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}VPS 2 setup complete${NC}"
 }
 
@@ -430,9 +430,11 @@ cmd_start() {
     _start_data_node
     _start_issuers
 
-    # Start AP + Curator on VPS 2
-    echo -e "${BLUE}[4/4] Starting AP + Curator on VPS 2...${NC}"
+    # Start AP on VPS 2
+    echo -e "${BLUE}[4/4] Starting AP on VPS 2...${NC}"
     _start_ap
+
+    # Start Curator on VPS 1 (needs local issuer access, reaches L3 via external IP)
     _start_curator
 
     echo ""
@@ -641,7 +643,7 @@ exec ./target/release/ap \\
 }
 
 _start_curator() {
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
+    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
         echo -e "  ${GREEN}Curator already running${NC}"
         return
     fi
@@ -659,14 +661,15 @@ _start_curator() {
         return
     fi
 
-    # Issuers run on VPS 1 — curator on VPS 2 reaches them via VPS 1 IP
-    ISSUER_URLS="http://$VPS_BE_IP:9001,http://$VPS_BE_IP:9002,http://$VPS_BE_IP:9003"
+    # Curator runs on VPS 1 (collocated with issuers) — reaches L3 via external IP
+    # HTTP API is on port+1000 (gRPC on 9001-9003, HTTP on 10001-10003)
+    ISSUER_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
-    _remote_start vps_chain_ssh "cd $VPS_CHAIN_DIR
+    _remote_start vps_be_ssh "cd $VPS_BE_DIR
 mkdir -p logs
 exec ./target/release/curator \\
     --unified-mode \\
-    --rpc-url http://localhost/ \\
+    --rpc-url $RPC_URL \\
     --private-key ${DEPLOYER_KEY#0x} \\
     --morpho-address $MORPHO_ADDR \\
     --vault-address $VAULT_ADDR \\
@@ -674,7 +677,7 @@ exec ./target/release/curator \\
     --oracle-address $ORACLE_ADDR \\
     --itp-address $ITP_ADDR \\
     --issuer-urls $ISSUER_URLS \\
-    --l3-rpc-url http://localhost/ \\
+    --l3-rpc-url $RPC_URL \\
     --mirror-registry-address $REGISTRY_ADDR \\
     --l3-registry-address $REGISTRY_ADDR \\
     --oracle-addresses $ORACLE_ADDR \\
@@ -682,14 +685,14 @@ exec ./target/release/curator \\
     --allocation-interval-secs 60 \\
     --update-interval-secs 300 \\
     --health-scan-interval-secs 300 \\
-    --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \\
-    --log-level info" "$VPS_CHAIN_DIR/logs/curator.log"
+    --data-node-url http://localhost:$DATA_NODE_PORT \\
+    --log-level info" "$VPS_BE_DIR/logs/curator.log"
     sleep 1
 
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}Curator started (unified mode)${NC}"
+    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
+        echo -e "  ${GREEN}Curator started (unified mode on VPS 1)${NC}"
     else
-        echo -e "  ${RED}Curator failed — check: ssh $VPS_CHAIN_HOST 'tail -50 $VPS_CHAIN_DIR/logs/curator.log'${NC}"
+        echo -e "  ${RED}Curator failed — check: ssh $VPS_BE_HOST 'tail -50 $VPS_BE_DIR/logs/curator.log'${NC}"
     fi
 }
 
@@ -697,12 +700,12 @@ exec ./target/release/curator \\
 cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
-    echo -e "${BLUE}VPS 1 (issuers + data-node)...${NC}"
-    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; pkill -f sonic-rpc-proxy 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; true"
+    echo -e "${BLUE}VPS 1 (issuers + data-node + curator)...${NC}"
+    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; pkill -x curator 2>/dev/null; pkill -f sonic-rpc-proxy 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 1 stopped${NC}"
 
-    echo -e "${BLUE}VPS 2 (AP + Curator)...${NC}"
-    vps_chain_ssh "pkill -x ap 2>/dev/null; pkill -x curator 2>/dev/null; sleep 1; pkill -9 -x ap 2>/dev/null; pkill -9 -x curator 2>/dev/null; true"
+    echo -e "${BLUE}VPS 2 (AP)...${NC}"
+    vps_chain_ssh "pkill -x ap 2>/dev/null; sleep 1; pkill -9 -x ap 2>/dev/null; true"
     echo -e "  ${GREEN}VPS 2 stopped${NC}"
 
     echo -e "${GREEN}All services stopped${NC}"
@@ -717,11 +720,11 @@ cmd_status() {
     check_service "$VPS_BE_HOST" "issuer-1" "node-id 1" || true
     check_service "$VPS_BE_HOST" "issuer-2" "node-id 2" || true
     check_service "$VPS_BE_HOST" "issuer-3" "node-id 3" || true
+    check_service "$VPS_BE_HOST" "Curator" "target/release/curator" || true
 
     echo ""
-    echo -e "${BLUE}VPS 2 ($VPS_CHAIN_IP) — Chain + AP + Curator:${NC}"
+    echo -e "${BLUE}VPS 2 ($VPS_CHAIN_IP) — Chain + AP:${NC}"
     check_service "$VPS_CHAIN_HOST" "AP" "target/release/ap" || true
-    check_service "$VPS_CHAIN_HOST" "Curator" "target/release/curator" || true
 
     # Check L3 chain
     echo ""
@@ -775,8 +778,8 @@ cmd_update() {
     vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}VPS 1 build complete${NC}"
 
-    echo -e "${BLUE}[4/4] Rebuilding on VPS 2 (AP + Curator)...${NC}"
-    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
+    echo -e "${BLUE}[4/4] Rebuilding on VPS 2 (AP)...${NC}"
+    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}VPS 2 build complete${NC}"
 
     # Sync config files and credentials to VPS 1
@@ -807,8 +810,8 @@ cmd_logs() {
             ssh "$VPS_CHAIN_HOST" "tail -f $VPS_CHAIN_DIR/logs/ap.log"
             ;;
         curator)
-            echo -e "${CYAN}Tailing Curator logs (VPS 2)...${NC}"
-            ssh "$VPS_CHAIN_HOST" "tail -f $VPS_CHAIN_DIR/logs/curator.log"
+            echo -e "${CYAN}Tailing Curator logs (VPS 1)...${NC}"
+            ssh "$VPS_BE_HOST" "tail -f $VPS_BE_DIR/logs/curator.log"
             ;;
         all|"")
             echo -e "${CYAN}Tailing issuer-1 + AP logs...${NC}"
@@ -852,8 +855,8 @@ case "${1:-help}" in
         echo "  logs [svc]     Tail logs (data-node, issuer-1..3, ap, all)"
         echo ""
         echo "Architecture:"
-        echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, PostgreSQL"
-        echo "  VPS 2 ($VPS_CHAIN_IP)  — AP, Curator, L3 Orbit chain"
+        echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, Curator, PostgreSQL"
+        echo "  VPS 2 ($VPS_CHAIN_IP)  — AP, L3 Orbit chain"
         echo "  L3 chain $CHAIN_ID     — $RPC_URL"
         echo "  Settlement chain $SETTLEMENT_CHAIN_ID  — $SETTLEMENT_RPC_URL"
         ;;
