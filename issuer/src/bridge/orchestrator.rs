@@ -4760,14 +4760,21 @@ impl BridgeOrchestrator {
             let expected_18dec = fa * fp / U256::exp10(18);
             let expected_6dec = expected_18dec / U256::exp10(12);
 
-            // Allow ±1 unit rounding tolerance at 6 decimals
+            // Allow tolerance for minor NAV drift between issuers.
+            // Each issuer independently computes fill_price from its own NAV calculation,
+            // which can differ slightly due to price feed timing.
+            // Tolerance: 0.1% of proceeds, minimum $0.01 (10_000 in 6-dec USDC)
             let diff = if proposal.usdc_proceeds > expected_6dec {
                 proposal.usdc_proceeds - expected_6dec
             } else {
                 expected_6dec - proposal.usdc_proceeds
             };
 
-            if diff > U256::from(1) {
+            let relative_tolerance = proposal.usdc_proceeds / U256::from(1000); // 0.1%
+            let min_tolerance = U256::from(10_000); // $0.01
+            let tolerance = std::cmp::max(relative_tolerance, min_tolerance);
+
+            if diff > tolerance {
                 warn!(
                     order_id = %proposal.order_id,
                     proposed = %proposal.usdc_proceeds,

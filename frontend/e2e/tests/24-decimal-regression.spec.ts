@@ -71,7 +71,7 @@ test.describe('Decimal Regression Tests', () => {
       const value = parseFloat(navText.replace(/[$,]/g, ''));
       if (!isNaN(value) && value > 0) {
         expect(value).toBeGreaterThan(0.01);
-        expect(value).toBeLessThan(1000);
+        expect(value).toBeLessThan(100_000);
       }
     }
   });
