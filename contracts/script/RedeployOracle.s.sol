@@ -9,46 +9,47 @@ import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// @title RedeployOracle - Redeploy ITPNAVOracle and reconfigure existing vault
-/// @notice Fixes stale oracle by deploying fresh oracle + market, reuses existing vault (timelock=0)
-contract RedeployOracle is Script {
+/// @title RedeployMorphoFull - Full Morpho redeploy with fresh collateral + oracle + market + vault
+/// @notice Deploys new collateral token, oracle, market, and vault. Reuses existing Morpho core + IRM.
+contract RedeployMorphoFull is Script {
     using MarketParamsLib for MarketParams;
 
     uint256 constant LLTV = 0.77e18;
-    uint256 constant INITIAL_ORACLE_PRICE = 100e24; // 100 USDC per ITP (24 decimal precision)
+    // Both L3_WUSDC (loan) and collateral are 18 decimals
+    // Precision = 36 + 18 - 18 = 36
+    uint256 constant INITIAL_ORACLE_PRICE = 1e36;
     uint256 constant SUPPLY_CAP = type(uint184).max;
-    uint256 constant INITIAL_VAULT_LIQUIDITY = 100_000 * 1e6; // 100k USDC
+    uint256 constant INITIAL_VAULT_LIQUIDITY = 100_000 * 1e18; // 100k USDC (18 decimals)
 
     function run() external {
         uint256 deployerKey = vm.envUint("DEPLOYER_KEY");
         address deployer = vm.addr(deployerKey);
 
-        // Existing addresses
+        // Existing addresses (Morpho core + IRM survive chain state)
         address morphoAddr = vm.envAddress("MORPHO");
         address irmAddr = vm.envAddress("ADAPTIVE_IRM");
         address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
-        address itpVault = vm.envAddress("ITP_VAULT");
         address mirrorRegistry = vm.envAddress("MIRROR_REGISTRY");
-        address vaultAddr = vm.envAddress("METAMORPHO_VAULT");
 
-        console.log("=== RedeployOracle ===");
+        console.log("=== RedeployMorphoFull ===");
         console.log("Deployer:", deployer);
-        console.log("Reusing vault:", vaultAddr);
 
         IMorpho morpho = IMorpho(morphoAddr);
-        MetaMorpho vault = MetaMorpho(vaultAddr);
 
         vm.startBroadcast(deployerKey);
 
-        // 1. Deploy fresh ITPNAVOracle
-        ITPNAVOracle oracle = new ITPNAVOracle(mirrorRegistry, itpVault, INITIAL_ORACLE_PRICE);
-        console.log("New ITPNAVOracle:", address(oracle));
-        console.log("  price():", oracle.price());
+        // 1. Deploy fresh collateral token (ITP Vault shares mock)
+        MockERC20 collateral = new MockERC20("E2E Test ITP", "E2ET", 18);
+        console.log("New collateral token:", address(collateral));
 
-        // 2. Create new Morpho market with new oracle
+        // 2. Deploy fresh ITPNAVOracle
+        ITPNAVOracle oracle = new ITPNAVOracle(mirrorRegistry, address(collateral), INITIAL_ORACLE_PRICE);
+        console.log("New ITPNAVOracle:", address(oracle));
+
+        // 3. Create new Morpho market
         MarketParams memory marketParams = MarketParams({
             loanToken: settlementUSDC,
-            collateralToken: itpVault,
+            collateralToken: address(collateral),
             oracle: address(oracle),
             irm: irmAddr,
             lltv: LLTV
@@ -58,18 +59,27 @@ contract RedeployOracle is Script {
         console.log("New market ID:");
         console.logBytes32(Id.unwrap(marketId));
 
-        // 3. Configure existing vault for new market (timelock=0, so instant)
+        // 4. Deploy new MetaMorpho vault (timelock=0 for testnet)
+        MetaMorpho vault = new MetaMorpho(
+            deployer,
+            morphoAddr,
+            0,
+            settlementUSDC,
+            "Index ITP Lending Vault",
+            "ilUSDC"
+        );
+        address vaultAddr = address(vault);
+        console.log("New vault:", vaultAddr);
+
+        // 5. Configure vault
         vault.submitCap(marketParams, SUPPLY_CAP);
         vault.acceptCap(marketParams);
-        console.log("Supply cap accepted on existing vault");
-
-        // 4. Set supply queue to new market only
         Id[] memory supplyQueue = new Id[](1);
         supplyQueue[0] = marketId;
         vault.setSupplyQueue(supplyQueue);
-        console.log("Supply queue updated");
+        console.log("Vault configured: cap accepted, queue set");
 
-        // 5. Seed vault with USDC liquidity
+        // 6. Seed vault with USDC liquidity
         MockERC20(settlementUSDC).mint(deployer, INITIAL_VAULT_LIQUIDITY);
         IERC20(settlementUSDC).approve(vaultAddr, INITIAL_VAULT_LIQUIDITY);
         vault.deposit(INITIAL_VAULT_LIQUIDITY, deployer);
@@ -77,7 +87,7 @@ contract RedeployOracle is Script {
 
         vm.stopBroadcast();
 
-        // 6. Write updated deployment JSON
+        // 7. Write deployment JSON
         string memory p1 = string.concat(
             '{\n  "chainId": ', vm.toString(block.chainid),
             ',\n  "deployer": "', vm.toString(deployer),
@@ -96,7 +106,7 @@ contract RedeployOracle is Script {
         string memory p3 = string.concat(
             '  "marketParams": {\n',
             '    "loanToken": "', vm.toString(settlementUSDC),
-            '",\n    "collateralToken": "', vm.toString(itpVault),
+            '",\n    "collateralToken": "', vm.toString(address(collateral)),
             '",\n    "oracle": "', vm.toString(address(oracle)),
             '",\n    "irm": "', vm.toString(irmAddr),
             '",\n    "lltv": "', vm.toString(LLTV),
