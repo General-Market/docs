@@ -1,0 +1,57 @@
+earthquake:
+  account: GeneralSkyWatch
+  dedup: "source+asset+day"
+  rules:
+    - condition: "magnitude >= 6.0"
+      outcome: FEAR
+      context: [frequency, comparison]
+    - condition: "magnitude >= 5.0 AND population_nearby >= 500000"
+      outcome: WATCH
+      context: [frequency, comparison]
+    - condition: "magnitude >= 5.0"
+      outcome: WATCH
+      context: [frequency, comparison]
+
+power_outages:
+  account: GeneralGridDown
+  dedup: "region+day"
+  rules:
+    - condition: "customers >= 100000"
+      outcome: FEAR
+      context: [frequency, comparison, human_scale]
+    - condition: "customers >= 50000"
+      outcome: WATCH
+      context: [frequency, delta]
+
+ioda:
+  account: GeneralGridDown
+  dedup: "region+day"
+  rules:
+    - condition: "connectivity <= 50"
+      outcome: FEAR
+      context: [frequency, comparison]
+    - condition: "connectivity <= 75"
+      outcome: WATCH
+      context: [comparison, trend]
+
+spaceweather:
+  account: GeneralSkyWatch
+  dedup: "source+day"
+  rules:
+    - condition: "kp >= 8"
+      outcome: LOOK
+      context: [comparison, frequency]
+    - condition: "kp >= 6"
+      outcome: WATCH
+      context: [comparison]
+
+sec:
+  account: GeneralInsiders
+  dedup: "source+asset+week"
+  rules:
+    - condition: "trade_value >= 5000000"
+      outcome: MONEY
+      context: [frequency, comparison]
+    - condition: "trade_value >= 1000000"
+      outcome: WATCH
+      context: [frequency]
