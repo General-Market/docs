@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "socialbot": {
+      "type": "stdio",
+      "command": "ssh",
+      "args": [
+        "index-maker/prod/be",
+        "cd /home/max/social-bot && python server.py"
+      ]
+    }
+  }
+}
