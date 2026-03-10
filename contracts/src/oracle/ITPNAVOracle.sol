@@ -24,8 +24,8 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     ///      Callers of updatePrice() must provide prices in the correct Morpho format.
     uint256 public constant PRICE_DECIMALS = 36;
 
-    /// @notice Maximum staleness before price() reverts (24 hours)
-    uint256 public constant MAX_STALENESS = 24 hours;
+    /// @notice Maximum staleness before price() reverts (effectively disabled for testnet)
+    uint256 public constant MAX_STALENESS = 365 days;
 
     /// @notice Maximum price deviation per update (10% = 1000 bps)
     uint256 public constant MAX_DEVIATION_BPS = 1000;
