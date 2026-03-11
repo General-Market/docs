@@ -9,7 +9,7 @@
  * Player 1 = TEST_USER (start.sh), Player 2 = VISION_BOT (start.sh)
  * Vision lives on L3 (port 8545), uses L3_WUSDC (18 decimals).
  */
-import { test, expect } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
 import { checkRpc } from '../helpers/backend-api'
 import {
   PLAYER1,

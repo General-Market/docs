@@ -8,7 +8,8 @@
  *
  * Depends on test 13 having entered a batch for the test user.
  */
-import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   PLAYER1,
   getPosition,

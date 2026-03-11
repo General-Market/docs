@@ -7,7 +7,8 @@
  * 3. Test the BalanceDepositModal (L3 path) to deposit more
  * 4. Verify updated balance
  */
-import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   PLAYER1,
   depositToVisionBalance,

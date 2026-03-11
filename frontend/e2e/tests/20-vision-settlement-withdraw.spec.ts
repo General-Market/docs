@@ -8,7 +8,8 @@
  *
  * Depends on player having virtual balance from prior Settlement deposits.
  */
-import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   PLAYER1,
   mintSettlementUsdc,

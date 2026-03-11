@@ -10,7 +10,8 @@
  *   /source/{id}   → SourceDetail (batch bar with Pool TVL, TopPlayers leaderboard)
  *   /index         → ITP listing (NAV per share, orderbook depth)
  */
-import { test, expect } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
+import { L3_RPC, VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   sourceCard,
   sourcesSectionBar,
@@ -194,7 +195,7 @@ test.describe('Display Formatting — ITP Cards', () => {
   test('orderbook loads on ITP hover (not stuck loading)', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
-    const rpcOk = await checkRpc()
+    const rpcOk = await checkRpc(L3_RPC)
     if (!rpcOk) {
       test.skip(true, 'RPC not reachable')
       return

@@ -127,11 +127,12 @@ function safeBigInt(hex: unknown): bigint {
 }
 
 // ── Test accounts ────────────────────────────────────────────
-// On Anvil: PLAYER1 = deployer (0xC0d3...), PLAYER2 = vision bot (0x71bE...)
-// On testnet: same addresses but using real private keys for signing
+// PLAYER1 uses VISION_PLAYER_KEY — separate nonce space from DEPLOYER_KEY
+// so vision-data and itp-data can run in parallel without nonce collisions.
+import { VISION_PLAYER_KEY, VISION_PLAYER_ADDRESS } from '../env'
 
-/** Test user — funded + impersonated on both chains by start.sh */
-export const PLAYER1 = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
+/** Vision test user — uses VISION_PLAYER_KEY, separate from ITP deployer */
+export const PLAYER1 = VISION_PLAYER_ADDRESS
 
 /** Vision bot 1 — on testnet uses Anvil #9 key (funded by deployer) */
 export const PLAYER2 = IS_ANVIL
@@ -140,7 +141,7 @@ export const PLAYER2 = IS_ANVIL
 
 /** Map of address → private key for testnet signing */
 const TEST_KEYS: Record<string, `0x${string}`> = {
-  [PLAYER1.toLowerCase()]: DEPLOYER_KEY,
+  [PLAYER1.toLowerCase()]: VISION_PLAYER_KEY,
   [PLAYER2.toLowerCase()]: PLAYER2_KEY,
 }
 

@@ -50,6 +50,16 @@ export const PLAYER2_KEY = (
   process.env.E2E_PLAYER2_KEY || '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6'
 ) as `0x${string}`
 
+// Anvil account #7 — used exclusively for vision-data E2E tests.
+// Separate nonce space from DEPLOYER_KEY so vision-data and itp-data can run in parallel.
+// Safe: default ISSUER_COUNT=3, only accounts #1-#3 used as issuers.
+export const VISION_PLAYER_KEY = (
+  process.env.E2E_VISION_PLAYER_KEY || '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356'
+) as `0x${string}`
+
+import { privateKeyToAccount } from 'viem/accounts'
+export const VISION_PLAYER_ADDRESS = privateKeyToAccount(VISION_PLAYER_KEY).address
+
 // ── Deployment — single load, crash if missing ──────────────
 export const DEPLOYMENT = (() => {
   const path = join(__dirname, '..', '..', 'deployments', 'active-deployment.json')

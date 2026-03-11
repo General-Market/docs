@@ -6,6 +6,10 @@
  * Supports two modes:
  * - Local (Anvil): eth_sendTransaction auto-accepted, no signing needed
  * - Testnet: transactions signed with real private key via exposed function
+ *
+ * Two fixtures:
+ * - `test` (walletPage) — DEPLOYER_KEY, starts at /index (for ITP tests)
+ * - `visionTest` (walletPage) — VISION_PLAYER_KEY, starts at / (for Vision tests)
  */
 import { test as base, type Page } from '@playwright/test';
 import { getInjectWalletScript } from '../helpers/inject-wallet';
@@ -15,6 +19,7 @@ import {
   FRONTEND_URL as ENV_FRONTEND_URL, CHAIN_ID as ENV_CHAIN_ID,
   SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, DEPLOYER_KEY,
   CONTRACTS as ENV_CONTRACTS, DEPLOYER_ADDRESS,
+  VISION_PLAYER_KEY, VISION_PLAYER_ADDRESS,
 } from '../env';
 
 // ── Constants ───────────────────────────────────────────────
@@ -55,16 +60,16 @@ export const CONTRACTS = {
   Vision: ENV_CONTRACTS.Vision ?? '',
 } as const;
 
-// ── Fixture ─────────────────────────────────────────────────
+// ── Wallet Fixture Factory ──────────────────────────────────
 
-export const test = base.extend<{ walletPage: Page }>({
-  walletPage: async ({ context, page }, use) => {
+function createWalletFixture(privateKey: `0x${string}`, address: string, startUrl: string) {
+  return async ({ context, page }: { context: any; page: Page }, use: (page: Page) => Promise<void>) => {
     // On testnet: expose signing function for real transaction signing
     if (!IS_ANVIL) {
       const { createWalletClient, http, defineChain } = await import('viem');
       const { privateKeyToAccount } = await import('viem/accounts');
 
-      const account = privateKeyToAccount(TEST_PRIVATE_KEY as `0x${string}`);
+      const account = privateKeyToAccount(privateKey);
       const l3Chain = defineChain({
         id: CHAIN_ID,
         name: 'Index L3',
@@ -77,6 +82,8 @@ export const test = base.extend<{ walletPage: Page }>({
         const tx = JSON.parse(txJson);
         const rpcUrl = tx.rpcUrl || L3_RPC_URL;
         const chainId = tx.chainId || CHAIN_ID;
+
+        console.log(`[e2e-wallet] sendTx chainId=${chainId} rpc=${rpcUrl} to=${tx.to} data=${(tx.data || '').slice(0, 10)}...`);
 
         const chain = chainId === CHAIN_ID ? l3Chain : defineChain({
           id: chainId,
@@ -91,29 +98,33 @@ export const test = base.extend<{ walletPage: Page }>({
           transport: http(rpcUrl, { fetchOptions: { headers: { Accept: 'application/json' } } }),
         });
 
-        const hash = await client.sendTransaction({
-          to: tx.to as `0x${string}`,
-          data: tx.data as `0x${string}` | undefined,
-          value: tx.value ? BigInt(tx.value) : undefined,
-          gas: tx.gas ? BigInt(tx.gas) : undefined,
-        });
-        return hash;
+        try {
+          const hash = await client.sendTransaction({
+            to: tx.to as `0x${string}`,
+            data: tx.data as `0x${string}` | undefined,
+            value: tx.value ? BigInt(tx.value) : undefined,
+            gas: tx.gas ? BigInt(tx.gas) : undefined,
+          });
+          console.log(`[e2e-wallet] tx sent: ${hash}`);
+          return hash;
+        } catch (err) {
+          console.error(`[e2e-wallet] tx FAILED: ${(err as Error).message}`);
+          throw err;
+        }
       });
 
       // Expose personal_sign
-      await page.exposeFunction('__e2ePersonalSign', async (message: string, _address: string) => {
-        const account = privateKeyToAccount(TEST_PRIVATE_KEY as `0x${string}`);
+      await page.exposeFunction('__e2ePersonalSign', async (message: string) => {
         const { signMessage } = await import('viem/accounts');
-        return signMessage({ message: { raw: message as `0x${string}` }, privateKey: TEST_PRIVATE_KEY as `0x${string}` });
+        return signMessage({ message: { raw: message as `0x${string}` }, privateKey });
       });
     }
 
     // Inject mock wallet into every page in the context (before any JS runs)
-    const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, TEST_ADDRESS, RPC_URL, SETTLEMENT_CHAIN_ID);
+    const script = getInjectWalletScript(L3_RPC_URL, CHAIN_ID, address, RPC_URL, SETTLEMENT_CHAIN_ID);
     await context.addInitScript({ content: script });
 
     // Seed wagmi localStorage so it auto-reconnects on page load.
-    // Without this, wagmi v2 in App Router won't auto-connect on a fresh browser context.
     const wagmiState = JSON.stringify({
       state: {
         connections: {
@@ -122,7 +133,7 @@ export const test = base.extend<{ walletPage: Page }>({
             [
               'injected',
               {
-                accounts: [TEST_ADDRESS.toLowerCase() as `0x${string}`],
+                accounts: [address.toLowerCase() as `0x${string}`],
                 chainId: CHAIN_ID,
                 connector: { id: 'injected', name: 'Injected', type: 'injected', uid: 'injected' },
               },
@@ -140,13 +151,11 @@ export const test = base.extend<{ walletPage: Page }>({
     await installApiInterceptors(page);
 
     // Navigate to trigger the init script
-    const startUrl = `${FRONTEND_URL}/index`;
     await page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 }).catch(() => {
       return page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 })
     });
 
-    // Wait for React hydration — App Router doesn't use __NEXT_DATA__.props.
-    // Instead, check for React fiber keys on DOM elements (proves React has hydrated).
+    // Wait for React hydration
     await page.waitForFunction(
       () => {
         const btn = document.querySelector('button');
@@ -159,7 +168,17 @@ export const test = base.extend<{ walletPage: Page }>({
     await page.waitForTimeout(2_000);
 
     await use(page);
-  },
+  };
+}
+
+// ── Deployer wallet (ITP tests) ─────────────────────────────
+export const test = base.extend<{ walletPage: Page }>({
+  walletPage: createWalletFixture(DEPLOYER_KEY, DEPLOYER_ADDRESS, `${FRONTEND_URL}/index`),
+});
+
+// ── Vision player wallet (Vision tests) ─────────────────────
+export const visionTest = base.extend<{ walletPage: Page }>({
+  walletPage: createWalletFixture(VISION_PLAYER_KEY, VISION_PLAYER_ADDRESS, `${FRONTEND_URL}/`),
 });
 
 export { expect } from '@playwright/test';

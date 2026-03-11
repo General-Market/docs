@@ -7,7 +7,8 @@
  * 3. Navigate to frontend and verify balance bar shows updated balance
  * 4. Test BalanceDepositModal "From Settlement" path UI elements
  */
-import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
+import { visionTest as test, expect } from '../fixtures/wallet'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   PLAYER1,
   mintSettlementUsdc,
