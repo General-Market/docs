@@ -440,6 +440,8 @@ impl P2PTransport for TcpP2PTransport {
 
         for (peer_id, conn) in connections.iter() {
             if conn.status() != ConnectionStatus::Connected {
+                let status = conn.status();
+                warn!(code = "INFRA-007", ?peer_id, ?status, "Broadcast skipped — peer not Connected");
                 continue;
             }
 
@@ -454,7 +456,7 @@ impl P2PTransport for TcpP2PTransport {
             }
         }
 
-        debug!(send_count, error_count, "Broadcast complete");
+        info!(send_count, error_count, "Broadcast complete");
 
         // Broadcast is best-effort, don't fail if some sends fail
         Ok(())

@@ -1042,6 +1042,7 @@ where
 
             debug!(cycle_number, "Broadcasting PRICE_PROPOSAL");
             self.p2p.broadcast(message).await?;
+            info!(cycle_number, "PriceProposal broadcast sent");
 
             // Advance to PriceVoting phase (use price_state, not shared state)
             {
@@ -1391,6 +1392,9 @@ where
         let total_timeout = self.config.timeouts.price_proposal_timeout
             + self.config.timeouts.price_vote_timeout;
         let deadline = tokio::time::Instant::now() + total_timeout;
+
+        let leader_index = self.leader_elector.read().await.last_leader_index();
+        info!(cycle_number, ?leader_index, "Follower waiting for PriceProposal from leader");
 
         debug!(cycle_number, "Price-only follower waiting for consensus messages");
 
