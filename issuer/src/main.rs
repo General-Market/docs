@@ -686,6 +686,29 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         }
     }
 
+    // Initialize registry nonce from mirror's lastSnapshotNonce on startup.
+    // CRITICAL: Without this, bridge operations before the first mirror sync use
+    // referenceNonce=0 (default), which fails BLSVerifier nonce range checks.
+    // This ensures all bridge ops have a valid referenceNonce from boot.
+    if let (Some(ref protocol), Some(ref settlement_writer), Some(mirror_addr)) =
+        (&consensus_protocol_for_task, &settlement_writer_for_task, mirror_registry_address)
+    {
+        let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+        match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+            Ok(bytes) if bytes.len() >= 32 => {
+                let mirror_nonce = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                if mirror_nonce > 0 {
+                    protocol.set_registry_nonce(mirror_nonce);
+                    info!(mirror_nonce, "Startup: initialized registry nonce from mirror lastSnapshotNonce");
+                } else {
+                    info!("Startup: mirror lastSnapshotNonce is 0, registry nonce stays at default");
+                }
+            }
+            Ok(_) => warn!("Startup: unexpected response length from mirror lastSnapshotNonce"),
+            Err(e) => warn!(error = %e, "Startup: failed to read mirror lastSnapshotNonce, bridge ops may fail until first sync"),
+        }
+    }
+
     let node_index_for_task = components.consensus.keys.node_index;
     let consensus_config = components.consensus.config.clone();
     let price_fetcher_for_task: Arc<dyn PriceFetcher> = components.price.fetcher.clone();
@@ -4098,12 +4121,56 @@ where
         "Mirror registry sync tx submitted"
     );
 
-    // Update the key registry nonce to match the mirror's lastSnapshotNonce.
-    // Bridge operations use this as reference_nonce for BLS verification on Settlement.
-    // Without this, bridge sends reference_nonce=L3_nonce but the mirror only has
-    // a snapshot at sync_nonce, causing BLSVerifier lookup failures.
-    protocol.set_registry_nonce(sync_nonce);
-    info!(cycle, sync_nonce, "Updated key registry nonce to mirror snapshot nonce");
+    // Step 7: Wait for receipt, then read back CONFIRMED lastSnapshotNonce from mirror.
+    // CRITICAL: Do NOT trust the computed sync_nonce — the tx may revert or the mirror
+    // may have a different nonce than expected. Always read the actual on-chain state.
+    // This eliminates race conditions where bridge ops use a referenceNonce that doesn't
+    // exist on-chain yet (causing NonceFuture) or points to a stale snapshot (SnapshotTooOld).
+    const MIRROR_SYNC_RECEIPT_TIMEOUT: u64 = 30;
+    match settlement_writer.wait_for_receipt(tx_hash, MIRROR_SYNC_RECEIPT_TIMEOUT).await {
+        Ok(receipt) => {
+            let status = receipt.status.map(|s| s.as_u64()).unwrap_or(0);
+            if status == 1 {
+                // Tx confirmed — read back actual lastSnapshotNonce from mirror
+                let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+                match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+                    Ok(bytes) if bytes.len() >= 32 => {
+                        let confirmed_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
+                        protocol.set_registry_nonce(confirmed_nonce);
+                        info!(cycle, confirmed_nonce, sync_nonce, "Mirror sync confirmed — registry nonce set from on-chain lastSnapshotNonce");
+                    }
+                    Ok(_) => {
+                        // Fallback: use sync_nonce if read fails (shouldn't happen)
+                        protocol.set_registry_nonce(sync_nonce);
+                        warn!(cycle, sync_nonce, "Mirror sync confirmed but lastSnapshotNonce read returned unexpected data, using sync_nonce");
+                    }
+                    Err(e) => {
+                        protocol.set_registry_nonce(sync_nonce);
+                        warn!(cycle, sync_nonce, error = %e, "Mirror sync confirmed but failed to read lastSnapshotNonce, using sync_nonce");
+                    }
+                }
+            } else {
+                // Tx reverted — do NOT update nonce, keep old valid one
+                warn!(cycle, sync_nonce, ?tx_hash, "Mirror sync tx reverted (status=0), keeping previous registry nonce");
+            }
+        }
+        Err(e) => {
+            // Receipt timeout — read current mirror state anyway (tx may have landed)
+            warn!(cycle, error = %e, "Mirror sync receipt timeout, reading current mirror nonce");
+            let lsn_selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
+            match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
+                Ok(bytes) if bytes.len() >= 32 => {
+                    let current_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
+                    protocol.set_registry_nonce(current_nonce);
+                    info!(cycle, current_nonce, "Set registry nonce from mirror lastSnapshotNonce after receipt timeout");
+                }
+                _ => {
+                    // Last resort: keep whatever nonce we had before
+                    warn!(cycle, "Could not read mirror nonce after receipt timeout, keeping previous registry nonce");
+                }
+            }
+        }
+    }
 
     Ok(())
 }
