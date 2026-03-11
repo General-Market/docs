@@ -3924,30 +3924,81 @@ where
     let sync_nonce = std::cmp::max(l3_nonce, mirror_nonce) + 1;
     info!(cycle, l3_nonce, mirror_nonce, sync_nonce, "Mirror registry sync: refreshing snapshot");
 
-    // Step 4: Read active issuers from L3
+    // Step 4: Read active issuers — try L3 chain reader first, fall back to mirror registry
     let issuers = chain_reader.get_issuer_registry().await
         .map_err(|e| format!("Failed to fetch L3 issuer registry: {}", e))?;
 
     let active_issuers: Vec<_> = issuers.iter().filter(|i| i.is_active()).collect();
-    if active_issuers.is_empty() {
-        return Err("No active issuers on L3".into());
+
+    let (issuer_pubkeys, issuer_ids, active_bitmask, active_count, threshold);
+    if !active_issuers.is_empty() {
+        // Use L3 registry data
+        let mut bitmask = U256::zero();
+        for issuer in &active_issuers {
+            bitmask = bitmask | (U256::one() << issuer.id as usize);
+        }
+        active_bitmask = bitmask;
+        active_count = active_issuers.len() as u64;
+        threshold = issuer::registry_sync::compute_threshold(active_count);
+        let mut sorted: Vec<_> = active_issuers.iter().collect();
+        sorted.sort_by_key(|i| i.id);
+        issuer_pubkeys = sorted.iter().map(|i| i.bls_pubkey.to_vec()).collect();
+        issuer_ids = sorted.iter().map(|i| i.id).collect();
+    } else {
+        // Fallback: read current state from mirror registry itself
+        // Read activeCount, activeBitmask, threshold from mirror
+        let ac_sel = &ethers::utils::keccak256(b"activeCount()")[..4];
+        let ab_sel = &ethers::utils::keccak256(b"activeBitmask()")[..4];
+        let th_sel = &ethers::utils::keccak256(b"threshold()")[..4];
+
+        let ac_bytes = settlement_writer.static_call(mirror_addr, ac_sel.to_vec()).await
+            .map_err(|e| format!("Failed to read mirror activeCount: {}", e))?;
+        let ab_bytes = settlement_writer.static_call(mirror_addr, ab_sel.to_vec()).await
+            .map_err(|e| format!("Failed to read mirror activeBitmask: {}", e))?;
+        let th_bytes = settlement_writer.static_call(mirror_addr, th_sel.to_vec()).await
+            .map_err(|e| format!("Failed to read mirror threshold: {}", e))?;
+
+        active_count = if ac_bytes.len() >= 32 { U256::from_big_endian(&ac_bytes[..32]).as_u64() } else { 0 };
+        active_bitmask = if ab_bytes.len() >= 32 { U256::from_big_endian(&ab_bytes[..32]) } else { U256::zero() };
+        threshold = if th_bytes.len() >= 32 { U256::from_big_endian(&th_bytes[..32]).as_u64() } else { 0 };
+
+        if active_count == 0 {
+            return Err("No active issuers on L3 or mirror".into());
+        }
+
+        // Read individual pubkeys from mirror for each active issuer ID
+        let mut ids = Vec::new();
+        let mut pubkeys = Vec::new();
+        for bit in 0..256u32 {
+            if !active_bitmask.bit(bit as usize) { continue; }
+            let id = bit as u64;
+            // Call getIssuerPubkey(uint256) — reads _issuerPubkeys[id]
+            let mut calldata = ethers::utils::keccak256(b"getIssuerPubkey(uint256)")[..4].to_vec();
+            calldata.extend_from_slice(&ethers::abi::encode(&[ethers::abi::Token::Uint(U256::from(id))]));
+            match settlement_writer.static_call(mirror_addr, calldata).await {
+                Ok(data) if data.len() >= 160 => {
+                    // ABI-encoded bytes: offset(32) + length(32) + data(128) = 192 bytes
+                    let offset = U256::from_big_endian(&data[..32]).as_usize();
+                    if offset + 32 <= data.len() {
+                        let len = U256::from_big_endian(&data[offset..offset+32]).as_usize();
+                        if offset + 32 + len <= data.len() {
+                            pubkeys.push(data[offset+32..offset+32+len].to_vec());
+                            ids.push(id);
+                        }
+                    }
+                }
+                _ => {
+                    warn!(cycle, id, "Failed to read issuer pubkey from mirror, skipping");
+                }
+            }
+        }
+        if pubkeys.is_empty() {
+            return Err("Failed to read any issuer pubkeys from mirror".into());
+        }
+        issuer_pubkeys = pubkeys;
+        issuer_ids = ids;
+        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry (L3 data-node returned empty)");
     }
-
-    // Compute active_bitmask (bit i set if issuer with on-chain id i is active)
-    let mut active_bitmask = U256::zero();
-    for issuer in &active_issuers {
-        active_bitmask = active_bitmask | (U256::one() << issuer.id as usize);
-    }
-
-    let active_count = active_issuers.len() as u64;
-    let threshold = issuer::registry_sync::compute_threshold(active_count);
-
-    // Extract pubkeys and IDs (sorted by ID for deterministic ordering)
-    let mut sorted_issuers: Vec<_> = active_issuers.iter().collect();
-    sorted_issuers.sort_by_key(|i| i.id);
-
-    let issuer_pubkeys: Vec<Vec<u8>> = sorted_issuers.iter().map(|i| i.bls_pubkey.to_vec()).collect();
-    let issuer_ids: Vec<u64> = sorted_issuers.iter().map(|i| i.id).collect();
 
     // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
     let reference_nonce = protocol.registry_nonce();
