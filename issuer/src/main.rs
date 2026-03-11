@@ -1143,9 +1143,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Mirror registry sync — spawn every 10 cycles if not already running (Step 12)
-                    // Reads L3 nonce + Settlement mirror nonce, runs BLS consensus if stale, submits sync tx.
-                    if current_cycle % 10 == 0 && !mirror_sync_active.load(Ordering::Acquire) {
+                    // Mirror registry sync — spawn every 500 cycles (~8 min) if not already running (Step 12)
+                    // Always refreshes the snapshot to prevent BLSVerifier__SnapshotTooOld (86400 block limit).
+                    if current_cycle % 500 == 0 && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {
@@ -3917,23 +3917,12 @@ where
         0u64
     };
 
-    // Step 3: Compare — only sync if L3 is ahead
-    if l3_nonce <= mirror_nonce {
-        debug!(
-            cycle,
-            l3_nonce,
-            mirror_nonce,
-            "Mirror registry in sync, skipping"
-        );
-        return Ok(());
-    }
-
-    info!(
-        cycle,
-        l3_nonce,
-        mirror_nonce,
-        "Mirror registry stale, initiating BLS consensus sync"
-    );
+    // Step 3: Determine sync nonce.
+    // Always sync with nonce = max(l3_nonce, mirror_nonce) + 1 to refresh snapshot.blockNumber.
+    // Without periodic refreshes, BLSVerifier__SnapshotTooOld fires after 86400 blocks
+    // even when the registry state hasn't changed. The contract accepts any nonce > current.
+    let sync_nonce = std::cmp::max(l3_nonce, mirror_nonce) + 1;
+    info!(cycle, l3_nonce, mirror_nonce, sync_nonce, "Mirror registry sync: refreshing snapshot");
 
     // Step 4: Read active issuers from L3
     let issuers = chain_reader.get_issuer_registry().await
@@ -3965,7 +3954,7 @@ where
 
     // Step 5: Run BLS consensus — returns calldata if threshold reached
     let calldata = protocol.run_mirror_sync_consensus(
-        l3_nonce,
+        sync_nonce,
         issuer_pubkeys,
         issuer_ids,
         active_bitmask,
@@ -3983,6 +3972,7 @@ where
 
     info!(
         cycle,
+        sync_nonce,
         l3_nonce,
         mirror_nonce,
         ?tx_hash,
