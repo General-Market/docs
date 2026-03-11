@@ -4038,9 +4038,17 @@ where
     ).await
         .map_err(|e| format!("Mirror sync BLS consensus failed: {}", e))?;
 
-    // Step 6: Submit sync transaction to Settlement
-    let tx_hash = settlement_writer.send_transaction(mirror_addr, calldata, U256::zero()).await
-        .map_err(|e| format!("Mirror sync tx submission failed: {}", e))?;
+    // Step 6: Submit sync transaction to Settlement (retry once on nonce errors)
+    let mut tx_result = settlement_writer.send_transaction(mirror_addr, calldata.clone(), U256::zero()).await;
+    if let Err(ref e) = tx_result {
+        let err_str = format!("{}", e);
+        if err_str.contains("nonce") || err_str.contains("underpriced") {
+            warn!(cycle, error = %e, "Mirror sync tx nonce collision, retrying in 3s");
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            tx_result = settlement_writer.send_transaction(mirror_addr, calldata, U256::zero()).await;
+        }
+    }
+    let tx_hash = tx_result.map_err(|e| format!("Mirror sync tx submission failed: {}", e))?;
 
     info!(
         cycle,

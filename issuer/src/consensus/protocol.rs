@@ -469,6 +469,11 @@ where
         self.key_registry.registry_nonce()
     }
 
+    /// Check if this node is the leader for a given cycle (for mirror sync leader election)
+    pub async fn is_leader_for_cycle(&self, cycle: u64) -> bool {
+        self.leader_elector.write().await.is_leader_for_cycle(cycle)
+    }
+
     /// Apply any pending config update at cycle start
     ///
     /// Updates leader elector (using dense node_index), signature aggregator
