@@ -3945,59 +3945,74 @@ where
         issuer_pubkeys = sorted.iter().map(|i| i.bls_pubkey.to_vec()).collect();
         issuer_ids = sorted.iter().map(|i| i.id).collect();
     } else {
-        // Fallback: read current state from mirror registry itself
-        // Read activeCount, activeBitmask, threshold from mirror
-        let ac_sel = &ethers::utils::keccak256(b"activeCount()")[..4];
-        let ab_sel = &ethers::utils::keccak256(b"activeBitmask()")[..4];
-        let th_sel = &ethers::utils::keccak256(b"threshold()")[..4];
+        // Fallback: read current state from mirror registry itself.
+        // NOTE: The deployed mirror implementation exposes explicit getter functions,
+        // NOT auto-generated public variable getters. Use the correct selectors:
+        //   activeIssuerCount() — NOT activeCount()
+        //   getActiveBitmask()  — NOT activeBitmask()
+        //   threshold is computed from activeCount (no getter deployed)
+        let ac_sel = &ethers::utils::keccak256(b"activeIssuerCount()")[..4];
+        let ab_sel = &ethers::utils::keccak256(b"getActiveBitmask()")[..4];
 
         let ac_bytes = settlement_writer.static_call(mirror_addr, ac_sel.to_vec()).await
-            .map_err(|e| format!("Failed to read mirror activeCount: {}", e))?;
+            .map_err(|e| format!("Failed to read mirror activeIssuerCount: {}", e))?;
         let ab_bytes = settlement_writer.static_call(mirror_addr, ab_sel.to_vec()).await
-            .map_err(|e| format!("Failed to read mirror activeBitmask: {}", e))?;
-        let th_bytes = settlement_writer.static_call(mirror_addr, th_sel.to_vec()).await
-            .map_err(|e| format!("Failed to read mirror threshold: {}", e))?;
+            .map_err(|e| format!("Failed to read mirror getActiveBitmask: {}", e))?;
 
         active_count = if ac_bytes.len() >= 32 { U256::from_big_endian(&ac_bytes[..32]).as_u64() } else { 0 };
         active_bitmask = if ab_bytes.len() >= 32 { U256::from_big_endian(&ab_bytes[..32]) } else { U256::zero() };
-        threshold = if th_bytes.len() >= 32 { U256::from_big_endian(&th_bytes[..32]).as_u64() } else { 0 };
+        threshold = issuer::registry_sync::compute_threshold(active_count);
 
         if active_count == 0 {
             return Err("No active issuers on L3 or mirror".into());
         }
 
-        // Read individual pubkeys from mirror for each active issuer ID
+        // Read individual pubkeys via batch call: getIssuerPubkeys(uint256[])
+        // The deployed mirror only has the batch getter, not singular getIssuerPubkey(uint256)
+        let mut id_list = Vec::new();
+        for bit in 0..256u32 {
+            if active_bitmask.bit(bit as usize) {
+                id_list.push(bit as u64);
+            }
+        }
+
+        // ABI-encode: getIssuerPubkeys(uint256[])
+        let tokens = vec![ethers::abi::Token::Array(
+            id_list.iter().map(|&id| ethers::abi::Token::Uint(U256::from(id))).collect()
+        )];
+        let mut calldata = ethers::utils::keccak256(b"getIssuerPubkeys(uint256[])")[..4].to_vec();
+        calldata.extend_from_slice(&ethers::abi::encode(&tokens));
+
+        let result_bytes = settlement_writer.static_call(mirror_addr, calldata).await
+            .map_err(|e| format!("Failed to read mirror getIssuerPubkeys: {}", e))?;
+
+        // Decode ABI response: bytes[] — outer offset + array length + per-element offsets + data
+        let decoded = ethers::abi::decode(
+            &[ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes))],
+            &result_bytes,
+        ).map_err(|e| format!("Failed to decode getIssuerPubkeys response: {}", e))?;
+
         let mut ids = Vec::new();
         let mut pubkeys = Vec::new();
-        for bit in 0..256u32 {
-            if !active_bitmask.bit(bit as usize) { continue; }
-            let id = bit as u64;
-            // Call getIssuerPubkey(uint256) — reads _issuerPubkeys[id]
-            let mut calldata = ethers::utils::keccak256(b"getIssuerPubkey(uint256)")[..4].to_vec();
-            calldata.extend_from_slice(&ethers::abi::encode(&[ethers::abi::Token::Uint(U256::from(id))]));
-            match settlement_writer.static_call(mirror_addr, calldata).await {
-                Ok(data) if data.len() >= 160 => {
-                    // ABI-encoded bytes: offset(32) + length(32) + data(128) = 192 bytes
-                    let offset = U256::from_big_endian(&data[..32]).as_usize();
-                    if offset + 32 <= data.len() {
-                        let len = U256::from_big_endian(&data[offset..offset+32]).as_usize();
-                        if offset + 32 + len <= data.len() {
-                            pubkeys.push(data[offset+32..offset+32+len].to_vec());
-                            ids.push(id);
-                        }
+        if let Some(ethers::abi::Token::Array(pk_tokens)) = decoded.into_iter().next() {
+            for (i, token) in pk_tokens.into_iter().enumerate() {
+                if let ethers::abi::Token::Bytes(pk) = token {
+                    if pk.len() == 128 {
+                        pubkeys.push(pk);
+                        ids.push(id_list[i]);
+                    } else if !pk.is_empty() {
+                        warn!(cycle, id = id_list[i], len = pk.len(), "Unexpected pubkey length from mirror, skipping");
                     }
-                }
-                _ => {
-                    warn!(cycle, id, "Failed to read issuer pubkey from mirror, skipping");
                 }
             }
         }
+
         if pubkeys.is_empty() {
             return Err("Failed to read any issuer pubkeys from mirror".into());
         }
         issuer_pubkeys = pubkeys;
         issuer_ids = ids;
-        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry (L3 data-node returned empty)");
+        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry (L3 returned empty)");
     }
 
     // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
