@@ -4026,6 +4026,16 @@ where
     // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
     let reference_nonce = protocol.registry_nonce();
 
+    // For the TOFU first sync (mirror_nonce == 0), the contract verifies against
+    // the full aggregated pubkey, so ALL issuers must sign. For subsequent syncs,
+    // the contract uses multi-pairing with threshold verification.
+    let min_signatures = if mirror_nonce == 0 {
+        active_count as usize
+    } else {
+        threshold as usize
+    };
+    info!(cycle, mirror_nonce, min_signatures, "Mirror sync min_signatures (TOFU={}, threshold={})", mirror_nonce == 0, threshold);
+
     // Step 5: Run BLS consensus — returns calldata if threshold reached
     let calldata = protocol.run_mirror_sync_consensus(
         sync_nonce,
@@ -4037,6 +4047,7 @@ where
         settlement_chain_id,
         mirror_addr,
         reference_nonce,
+        min_signatures,
     ).await
         .map_err(|e| format!("Mirror sync BLS consensus failed: {}", e))?;
 

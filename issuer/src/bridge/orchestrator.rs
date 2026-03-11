@@ -3891,9 +3891,9 @@ impl BridgeOrchestrator {
     }
 
     /// Check if MirrorSync signature threshold is reached
-    pub async fn check_mirror_sync_threshold(&self, sync_key: H256) -> Option<SetItpNavResult> {
+    pub async fn check_mirror_sync_threshold(&self, sync_key: H256, min_signatures: usize) -> Option<SetItpNavResult> {
         self.mirror_sync_sigs
-            .check_threshold(&sync_key, self.config.min_signatures, &self.bls_signer)
+            .check_threshold(&sync_key, min_signatures, &self.bls_signer)
             .await
     }
 

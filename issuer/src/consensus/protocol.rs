@@ -6309,6 +6309,7 @@ where
         settlement_chain_id: u64,
         mirror_registry_address: Address,
         reference_nonce: u64,
+        min_signatures: usize,
     ) -> Result<Vec<u8>, Error> {
         // Step 1: Compute sync hash and sign
         let message_hash = build_mirror_registry_sync_hash(
@@ -6362,7 +6363,7 @@ where
             let bridge_orch_guard = self.bridge_orchestrator.read().await;
             if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
                 let orch = bridge_orch.read().await;
-                if let Some(result) = orch.check_mirror_sync_threshold(sync_key).await {
+                if let Some(result) = orch.check_mirror_sync_threshold(sync_key, min_signatures).await {
                     info!(
                         nonce = l3_nonce,
                         signature_count = result.signature_count,
@@ -6374,7 +6375,6 @@ where
             drop(bridge_orch_guard);
 
             if tokio::time::Instant::now() >= deadline {
-                let min_signatures = self.config.signature_threshold;
                 warn!(
                     nonce = l3_nonce,
                     timeout_secs = ?timeout,
