@@ -1146,13 +1146,6 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // Mirror registry sync — spawn every 500 cycles (~8 min) if not already running (Step 12)
                     // Always refreshes the snapshot to prevent BLSVerifier__SnapshotTooOld (86400 block limit).
                     if current_cycle % 500 == 0 && !mirror_sync_active.load(Ordering::Acquire) {
-                        info!(current_cycle,
-                            has_protocol = consensus_protocol_for_task.is_some(),
-                            has_settlement_writer = settlement_writer_for_task.is_some(),
-                            has_mirror = mirror_registry_for_task.is_some(),
-                            has_issuer_reg = issuer_registry_for_sync_task.is_some(),
-                            "Mirror sync check"
-                        );
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {
@@ -4223,20 +4216,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
     let itp_token_address: Option<ethers::types::Address> = config.itp_token_address.as_ref().and_then(|s| s.parse().ok());
     let settlement_chain_id: Option<u64> = config.effective_settlement_chain_id().ok();
-    let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| {
-        match s.parse::<ethers::types::Address>() {
-            Ok(addr) => {
-                info!(raw = %s, parsed = ?addr, "Mirror registry address parsed");
-                Some(addr)
-            }
-            Err(e) => {
-                error!(raw = %s, error = %e, "Failed to parse mirror registry address");
-                None
-            }
-        }
-    });
-    if mirror_registry_address.is_none() {
-        warn!(raw_config = ?config.mirror_registry_address, "Mirror registry address is None after parse");
+    let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| s.parse().ok());
+    if let Some(addr) = mirror_registry_address {
+        info!(?addr, "Mirror registry sync enabled");
     }
     let issuer_registry_for_sync: Option<ethers::types::Address> = config.issuer_registry_address.as_ref().and_then(|s| s.parse().ok());
 

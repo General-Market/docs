@@ -589,6 +589,9 @@ impl IssuerConfig {
         if other.itp_token_address.is_some() {
             self.itp_token_address = other.itp_token_address.clone();
         }
+        if other.mirror_registry_address.is_some() {
+            self.mirror_registry_address = other.mirror_registry_address.clone();
+        }
     }
 
     /// Validate the configuration.
