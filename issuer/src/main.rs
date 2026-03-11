@@ -4223,7 +4223,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
     let itp_token_address: Option<ethers::types::Address> = config.itp_token_address.as_ref().and_then(|s| s.parse().ok());
     let settlement_chain_id: Option<u64> = config.effective_settlement_chain_id().ok();
-    let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| s.parse().ok());
+    let mirror_registry_address: Option<ethers::types::Address> = config.mirror_registry_address.as_ref().and_then(|s| {
+        match s.parse::<ethers::types::Address>() {
+            Ok(addr) => {
+                info!(raw = %s, parsed = ?addr, "Mirror registry address parsed");
+                Some(addr)
+            }
+            Err(e) => {
+                error!(raw = %s, error = %e, "Failed to parse mirror registry address");
+                None
+            }
+        }
+    });
+    if mirror_registry_address.is_none() {
+        warn!(raw_config = ?config.mirror_registry_address, "Mirror registry address is None after parse");
+    }
     let issuer_registry_for_sync: Option<ethers::types::Address> = config.issuer_registry_address.as_ref().and_then(|s| s.parse().ok());
 
     let bootstrap = IssuerBootstrap::new(config, params);
