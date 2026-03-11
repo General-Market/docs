@@ -102,12 +102,15 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @dev Written in completeBuyOrder, queried by issuers on restart to find un-minted orders
     mapping(uint256 => TypesLib.PendingMint) public pendingMints;
 
+    /// @notice Admin address for registry updates and emergency operations
+    address public custodyAdmin;
+
     /// @notice Storage gap for future upgrades
     /// @dev Used: issuerRegistry, usdc, l3Index, bridgeCompleted, crossChainOrderId,
     ///      crossChainOrders, pendingUpgradeImpl, pendingUpgradeProposedAt, pendingUpgradeIsEmergency,
     ///      bridgeProxy, crossChainSellOrders, visionDeposits, withdrawProcessed, visionReserve,
-    ///      pendingMints = 15 slots
-    uint256[35] private __gap;
+    ///      pendingMints, custodyAdmin = 16 slots
+    uint256[34] private __gap;
 
     // ============ INITIALIZER ============
 
@@ -131,9 +134,19 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         __BLSVerifier_init(issuerRegistry_);
         usdc = IERC20(usdc_);
         l3Index = l3Index_;
+        custodyAdmin = msg.sender;
         if (bridgeProxy_ != address(0)) {
             bridgeProxy = IBridgeProxy(bridgeProxy_);
         }
+    }
+
+    /// @notice Update the issuer registry used for BLS verification
+    /// @dev Admin-only, allows fixing registry pointer without full upgrade
+    function setIssuerRegistry(address newRegistry) external {
+        if (msg.sender != custodyAdmin) revert ErrorsLib.E043_ZeroIssuerRegistry();
+        if (newRegistry == address(0)) revert ErrorsLib.E043_ZeroIssuerRegistry();
+        issuerRegistry = IIssuerRegistry(newRegistry);
+        __BLSVerifier_init(newRegistry);
     }
 
     // ============ BRIDGE COMPLETION ============
