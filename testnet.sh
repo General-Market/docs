@@ -471,10 +471,10 @@ cmd_start() {
 
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
     for i in 1 2 3; do
-        vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 600 /tmp/issuer-key-$i.txt"
+        vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 644 /tmp/issuer-key-$i.txt"
     done
     # Settlement key shared by all issuers (same deployer key)
-    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 600 /tmp/settlement-key.txt"
+    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
     echo -e "  ${GREEN}Files synced${NC}"
 
     # Start sonic-proxy
@@ -755,7 +755,7 @@ _start_curator_docker() {
     ISSUER_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
     # Write curator key file on VPS (same pattern as issuer keys — NOT in CLI args or environment)
-    vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 600 /tmp/curator-key.txt"
+    vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 644 /tmp/curator-key.txt"
 
     # Use YAML list format (safe from injection)
     # Private key via mounted file (not CLI arg — would be visible in docker inspect/proc)
@@ -827,7 +827,7 @@ _start_ap_docker() {
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
 
     # Write AP key file on VPS 2 (NOT in environment: or CLI — visible in docker inspect)
-    vps_chain_ssh "printf '%s' '$AP_KEY' > /tmp/ap-key.txt && chmod 600 /tmp/ap-key.txt"
+    vps_chain_ssh "printf '%s' '$AP_KEY' > /tmp/ap-key.txt && chmod 644 /tmp/ap-key.txt"
 
     local OVERRIDE="$SCRIPT_DIR/.ap-override.yml"
     # AP reads key from file via AP_PRIVATE_KEY_PATH (Task 0 prerequisite).
