@@ -3933,12 +3933,17 @@ where
     info!(cycle, l3_nonce, mirror_nonce, sync_nonce, "Mirror registry sync: refreshing snapshot");
 
     // Step 4: Read active issuers — try L3 chain reader first, fall back to mirror registry
-    let issuers = chain_reader.get_issuer_registry().await
-        .map_err(|e| format!("Failed to fetch L3 issuer registry: {}", e))?;
+    let issuers = match chain_reader.get_issuer_registry().await {
+        Ok(list) => list,
+        Err(e) => {
+            warn!(cycle, error = %e, "L3 chain reader failed for issuer registry, falling back to mirror");
+            Vec::new()
+        }
+    };
 
     let active_issuers: Vec<_> = issuers.iter().filter(|i| i.is_active()).collect();
 
-    let (issuer_pubkeys, issuer_ids, active_bitmask, active_count, threshold);
+    let (issuer_pubkeys, issuer_ids, mut active_bitmask, mut active_count, mut threshold);
     if !active_issuers.is_empty() {
         // Use L3 registry data
         let mut bitmask = U256::zero();
@@ -4015,11 +4020,33 @@ where
         }
 
         if pubkeys.is_empty() {
-            return Err("Failed to read any issuer pubkeys from mirror".into());
+            // Third fallback: construct from deterministic BLS seed indices.
+            // When both L3 data-node and mirror are empty (fresh mirror deploy),
+            // derive pubkeys from the same seeds used by bls-tool and issuer bootstrap.
+            let num_issuers = protocol.num_issuers();
+            if num_issuers == 0 {
+                return Err("Failed to read any issuer pubkeys from mirror or local config".into());
+            }
+            info!(cycle, num_issuers, "Deriving issuer pubkeys from deterministic seeds (L3 and mirror both empty)");
+            for seed_idx in 0..num_issuers {
+                let seed = vec![seed_idx; 32];
+                let kp = common::bls::BLSKeyPair::from_seed(&seed)
+                    .map_err(|e| format!("Failed to derive keypair from seed {}: {}", seed_idx, e))?;
+                let pk = kp.public_key_bytes();
+                pubkeys.push(pk);
+                ids.push(seed_idx as u64);
+            }
+            let mut bitmask = U256::zero();
+            for &id in &ids {
+                bitmask = bitmask | (U256::one() << id as usize);
+            }
+            active_bitmask = bitmask;
+            active_count = ids.len() as u64;
+            threshold = issuer::registry_sync::compute_threshold(active_count);
         }
         issuer_pubkeys = pubkeys;
         issuer_ids = ids;
-        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry (L3 returned empty)");
+        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry or local config (L3 returned empty)");
     }
 
     // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
