@@ -816,6 +816,11 @@ impl IssuerConfig {
                 self.mock_usdt = Some(addr.to_string());
             }
         }
+        if self.mirror_registry_address.is_none() {
+            if let Some(addr) = contracts.get("SettlementIssuerRegistry").and_then(|v| v.as_str()) {
+                self.mirror_registry_address = Some(addr.to_string());
+            }
+        }
 
         Ok(())
     }
