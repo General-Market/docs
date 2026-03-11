@@ -92,9 +92,11 @@ SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
 # Cleanup trap: remove local override YAMLs + remote key files on exit (prevents secrets on disk)
 _cleanup() {
     rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.issuer-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
-    # Also clean remote key files if script exits early (SSH failures are non-fatal here)
-    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
-    vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
+    # Only clean remote key files if we were starting/stopping services (not on status/logs/deploy)
+    if [ "${_STARTED_SERVICES:-}" = "true" ]; then
+        vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
+        vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
+    fi
 }
 trap _cleanup EXIT
 
@@ -450,6 +452,7 @@ cmd_deploy() {
 
 # ── start: Start all services on VPSes ───────────────────────
 cmd_start() {
+    _STARTED_SERVICES=true
     echo -e "${CYAN}Starting all services on VPSes...${NC}"
 
     # Check L3
@@ -546,7 +549,7 @@ YEOF
         echo -e "  ${RED}data-node failed to start${NC}"; exit 1
     fi
 
-    # Clean up override on VPS (secrets already consumed)
+    # Clean up override on VPS
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/data-node/docker-compose.override.yml"
     sleep 3
 }
@@ -875,6 +878,7 @@ YEOF
 
 # ── stop: Stop all VPS services ──────────────────────────────
 cmd_stop() {
+    _STARTED_SERVICES=true
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
