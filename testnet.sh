@@ -148,7 +148,7 @@ _sync_config_files() {
 # Kill any old bare-metal processes to prevent port conflicts
 _kill_old_processes() {
     echo -e "  Cleaning up old bare processes..."
-    vps_be_ssh "pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f sonic-rpc-proxy 2>/dev/null; true"
+    vps_be_ssh "pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f '[s]onic-rpc-proxy' 2>/dev/null; true"
     vps_chain_ssh "pkill -9 -x ap 2>/dev/null; true"
     sleep 2
 }
