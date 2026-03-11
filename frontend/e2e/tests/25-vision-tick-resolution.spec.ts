@@ -71,7 +71,7 @@ test.describe('Vision Tick Resolution', () => {
       : p2PosBefore.lastClaimedTick;
 
     console.log(`Waiting for tick resolution (startTick=${startTick})...`);
-    const deadline = Date.now() + 300_000; // 5 min max (within 6 min test timeout)
+    const deadline = Date.now() + 240_000; // 4 min max (leaves 2 min buffer for test timeout)
     let tickResolved = false;
     let p1PosAfter = p1PosBefore;
     let p2PosAfter = p2PosBefore;
