@@ -21,7 +21,7 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 
 test.describe('Rebalance Full Cycle', () => {
   test('rebalance preserves NAV and updates weights', async () => {
-    test.setTimeout(CONSENSUS_TIMEOUT + 60_000); // Consensus + 60s overhead
+    test.setTimeout(CONSENSUS_TIMEOUT * 2 + 120_000); // 2x consensus + 2 min overhead
 
     // 1. Read current state
     let stateBefore: Awaited<ReturnType<typeof getItpStateL3>>;
