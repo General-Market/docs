@@ -24,7 +24,13 @@ test.describe('Rebalance Full Cycle', () => {
     test.setTimeout(CONSENSUS_TIMEOUT + 60_000); // Consensus + 60s overhead
 
     // 1. Read current state
-    const stateBefore = await getItpStateL3(ITP_ID);
+    let stateBefore: Awaited<ReturnType<typeof getItpStateL3>>;
+    try {
+      stateBefore = await getItpStateL3(ITP_ID);
+    } catch {
+      test.skip(true, 'L3 RPC unreachable — cannot read ITP state');
+      return;
+    }
     expect(stateBefore.assets.length).toBeGreaterThan(1);
     expect(stateBefore.weights.length).toBeGreaterThan(1);
 

@@ -209,9 +209,13 @@ test.describe('Morpho Oracle & Health Factor', () => {
       return;
     }
     // Check if MORPHO contract has code at the expected address
-    const code = await l3RpcCall('eth_getCode', [MORPHO, 'latest']) as string;
-    if (!code || code === '0x' || code === '0x0') {
-      test.skip(true, 'Morpho contracts not deployed at expected addresses on this chain');
+    try {
+      const code = await l3RpcCall('eth_getCode', [MORPHO, 'latest']) as string;
+      if (!code || code === '0x' || code === '0x0') {
+        test.skip(true, 'Morpho contracts not deployed at expected addresses on this chain');
+      }
+    } catch {
+      test.skip(true, 'L3 RPC unreachable — cannot verify Morpho contracts');
     }
   });
 

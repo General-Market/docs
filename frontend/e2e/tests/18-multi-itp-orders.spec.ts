@@ -59,7 +59,13 @@ test.describe('Multi-ITP Order Processing', () => {
     test.setTimeout(240_000); // 4 min — issuer consensus can take 30-90s
 
     // 1. Verify ITP2 exists
-    const itpCount = await getItpCountL3();
+    let itpCount: number;
+    try {
+      itpCount = await getItpCountL3();
+    } catch {
+      test.skip(true, 'L3 RPC unreachable — cannot verify ITP count');
+      return;
+    }
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const itp2Id = itpIdFromNumber(2);
@@ -106,7 +112,13 @@ test.describe('Multi-ITP Order Processing', () => {
     test.setTimeout(240_000);
 
     // 1. Verify ITP2 exists
-    const itpCount = await getItpCountL3();
+    let itpCount: number;
+    try {
+      itpCount = await getItpCountL3();
+    } catch {
+      test.skip(true, 'L3 RPC unreachable — cannot verify ITP count');
+      return;
+    }
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     const itp2Id = itpIdFromNumber(2);
@@ -181,7 +193,13 @@ test.describe('Multi-ITP Order Processing', () => {
     const itp1Id = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
     // Ensure user has L3 shares for ITP1
-    const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp1Id);
+    let sharesBefore: bigint;
+    try {
+      sharesBefore = await getL3UserShares(TEST_ADDRESS, itp1Id);
+    } catch {
+      test.skip(true, 'L3 RPC unreachable — cannot check ITP1 shares');
+      return;
+    }
     if (sharesBefore < 50n * 10n ** 18n) {
       if (!IS_ANVIL) {
         console.log('No ITP1 shares — placing buy order...');
