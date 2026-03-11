@@ -1305,12 +1305,15 @@ async fn aum_ranking(
     State(state): State<Arc<AppState>>,
     Query(params): Query<AumRankingQuery>,
 ) -> Result<Json<AumRankingResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let result = tokio::time::timeout(Duration::from_secs(30), async {
     let top_n = params.top_n.unwrap_or(10);
 
+    // Default to last 7 days when no date range is provided to avoid full-scan N² explosion
     let from: Option<DateTime<Utc>> = params
         .from
         .as_ref()
-        .and_then(|s| s.parse().ok());
+        .and_then(|s| s.parse().ok())
+        .or_else(|| Some(Utc::now() - chrono::Duration::days(7)));
     let to: Option<DateTime<Utc>> = params
         .to
         .as_ref()
@@ -1504,6 +1507,17 @@ async fn aum_ranking(
         snapshots: result_snapshots,
         all_symbols,
     }))
+    }).await;
+
+    match result {
+        Ok(inner) => inner,
+        Err(_) => Err((
+            StatusCode::GATEWAY_TIMEOUT,
+            Json(ErrorResponse {
+                error: "aum-ranking computation timed out".to_string(),
+            }),
+        )),
+    }
 }
 
 // ---- /portfolio ----
