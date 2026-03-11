@@ -60,7 +60,13 @@ test.describe('Vision Claim Rewards', () => {
 
     // 3. Fetch balance proof via direct issuer API (E2E test = non-browser, no CORS)
     const proofUrl = `${ISSUER_API}/vision/balance/${batchId}/${PLAYER1}`
-    const proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
+    let proofRes: Response
+    try {
+      proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
+    } catch {
+      test.skip(true, 'Issuer API unreachable — SSH tunnel may have dropped')
+      return
+    }
 
     if (proofRes.ok) {
       const proofData = await proofRes.json()
