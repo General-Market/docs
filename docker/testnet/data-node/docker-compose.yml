@@ -9,6 +9,8 @@ services:
     container_name: testnet-data-node
     network_mode: host
     restart: "no"
+    env_file:
+      - ../../../data-node/.env
     volumes:
       - ../../../data-node/.env:/app/data-node/.env:ro
       - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
