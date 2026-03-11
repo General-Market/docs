@@ -641,7 +641,7 @@ async function submitBitmapToIssuers(
 
   // Retry loop: issuers need time to index PlayerJoined event from L3
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 3_000))
+    if (attempt > 0) await new Promise(r => setTimeout(r, 1_000))
 
     const results = await Promise.allSettled(
       issuerUrls.map(async (url) => {

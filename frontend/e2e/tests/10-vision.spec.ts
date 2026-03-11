@@ -118,12 +118,12 @@ test.describe('Vision', () => {
     const p1Bets = randomBets(marketCount)
     const p2Bets = oppositeBets(p1Bets)
 
-    // 4. Player 1 joins
-    const p1Result = await fullJoinBatch(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount)
+    // 4. Both players join in parallel
+    const [p1Result, p2Result] = await Promise.all([
+      fullJoinBatch(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount),
+      fullJoinBatch(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount),
+    ])
     expect(p1Result.bitmapHash).toBeTruthy()
-
-    // 5. Player 2 joins (bot)
-    const p2Result = await fullJoinBatch(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount)
     expect(p2Result.bitmapHash).toBeTruthy()
 
     // 6. Verify positions exist on-chain
