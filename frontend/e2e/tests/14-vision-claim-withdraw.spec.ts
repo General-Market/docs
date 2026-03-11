@@ -19,6 +19,7 @@ import {
   getVisionUsdcAddress,
   depositToVisionBalance,
 } from '../helpers/vision-api'
+import { ensureWalletConnected } from '../helpers/selectors'
 
 test.describe('Vision Claim + Withdraw', () => {
   test('withdraw from batch and Vision balance via UI', async ({ walletPage: page }) => {
@@ -49,7 +50,6 @@ test.describe('Vision Claim + Withdraw', () => {
       return
     }
 
-    const { ensureWalletConnected } = await import('../helpers/selectors')
     await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {
       console.log('Wallet connect did not confirm — continuing with balance bar check')
     })
