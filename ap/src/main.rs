@@ -448,10 +448,11 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         let _data_node_reader = Arc::new(DataNodeChainReader::new(data_node_url.clone()));
 
         // Create chain writer for fill confirmation (AC #3) - still via RPC
-        let private_key_hex = config.private_key.as_ref()
-            .ok_or("Real chain mode requires AP_PRIVATE_KEY environment variable")?;
+        let private_key_hex = config.effective_private_key()
+            .map_err(|e| format!("Failed to read private key: {}", e))?
+            .ok_or("Real chain mode requires AP_PRIVATE_KEY or AP_PRIVATE_KEY_PATH environment variable")?;
         let wallet: LocalWallet = private_key_hex.parse()
-            .map_err(|e| format!("Failed to parse AP_PRIVATE_KEY: {}", e))?;
+            .map_err(|e| format!("Failed to parse private key: {}", e))?;
         let rpc_writer: Arc<dyn ChainWriter> = Arc::new(
             RpcChainWriter::new(
                 Provider::<Http>::try_from(&rpc_url)
@@ -566,10 +567,11 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         );
 
         // Create chain writer for fill confirmation (AC #3)
-        let private_key_hex = config.private_key.as_ref()
-            .ok_or("Real chain mode requires AP_PRIVATE_KEY environment variable")?;
+        let private_key_hex = config.effective_private_key()
+            .map_err(|e| format!("Failed to read private key: {}", e))?
+            .ok_or("Real chain mode requires AP_PRIVATE_KEY or AP_PRIVATE_KEY_PATH environment variable")?;
         let wallet: LocalWallet = private_key_hex.parse()
-            .map_err(|e| format!("Failed to parse AP_PRIVATE_KEY: {}", e))?;
+            .map_err(|e| format!("Failed to parse private key: {}", e))?;
         let rpc_writer: Arc<dyn ChainWriter> = Arc::new(
             RpcChainWriter::new(
                 Provider::<Http>::try_from(&rpc_url)
@@ -758,10 +760,9 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
     // Multi-asset: resolves ITP inventory on-chain and trades all underlying assets.
     let on_chain_settlement: Option<OnChainSettlement> = if exchange_mode.is_mock() {
         if let Some(vault_address) = config.effective_bitget_vault() {
-            let private_key = config
-                .private_key
-                .as_ref()
-                .ok_or("--bitget-vault requires AP_PRIVATE_KEY environment variable")?;
+            let private_key = config.effective_private_key()
+                .map_err(|e| format!("Failed to read private key: {}", e))?
+                .ok_or("--bitget-vault requires AP_PRIVATE_KEY or AP_PRIVATE_KEY_PATH environment variable")?;
 
             // Load deployment config for quote token address
             let deployment_path = config.effective_deployment_file()
@@ -782,7 +783,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
 
             let vault_client = BitgetVaultClient::new(
                 &settlement_rpc,
-                private_key,
+                &private_key,
                 vault_address,
                 settlement_chain_id,
             )

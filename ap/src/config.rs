@@ -83,6 +83,11 @@ pub struct APConfig {
     #[serde(default, skip_serializing)]
     pub private_key: Option<String>,
 
+    /// Path to file containing the private key (loaded from AP_PRIVATE_KEY_PATH env var).
+    /// Takes lower priority than AP_PRIVATE_KEY.
+    #[serde(default, skip_serializing)]
+    pub private_key_path: Option<PathBuf>,
+
     /// MockBitgetVault contract address for on-chain trade settlement (E2E testing)
     /// When set with --mock-bitget, AP also calls MockBitgetVault.executeTrade() on-chain
     pub bitget_vault: Option<String>,
@@ -140,6 +145,7 @@ impl fmt::Debug for APConfig {
                 "private_key",
                 &self.private_key.as_ref().map(|_| "[REDACTED]"),
             )
+            .field("private_key_path", &self.private_key_path)
             .field("bitget_vault", &self.bitget_vault)
             .field("chain_id", &self.chain_id)
             .field("mock_usdt", &self.mock_usdt)
@@ -207,6 +213,7 @@ impl APConfig {
                 })
             }),
             private_key: std::env::var("AP_PRIVATE_KEY").ok(),
+            private_key_path: std::env::var("AP_PRIVATE_KEY_PATH").ok().map(PathBuf::from),
             bitget_vault: std::env::var("AP_BITGET_VAULT").ok(),
             chain_id: std::env::var("AP_CHAIN_ID").ok().and_then(|v| {
                 v.parse().ok().or_else(|| {
@@ -271,6 +278,9 @@ impl APConfig {
         if other.private_key.is_some() {
             self.private_key = other.private_key.clone();
         }
+        if other.private_key_path.is_some() {
+            self.private_key_path = other.private_key_path.clone();
+        }
         if other.bitget_vault.is_some() {
             self.bitget_vault = other.bitget_vault.clone();
         }
@@ -302,6 +312,19 @@ impl APConfig {
             }
         }
         Ok(())
+    }
+
+    /// Get the effective private key: AP_PRIVATE_KEY > AP_PRIVATE_KEY_PATH file contents.
+    /// Returns None if neither is set.
+    pub fn effective_private_key(&self) -> Result<Option<String>, ConfigError> {
+        if let Some(ref key) = self.private_key {
+            return Ok(Some(key.clone()));
+        }
+        if let Some(ref path) = self.private_key_path {
+            let contents = std::fs::read_to_string(path).map_err(ConfigError::FileRead)?;
+            return Ok(Some(contents.trim().to_string()));
+        }
+        Ok(None)
     }
 
     /// Get the effective port (using default if not set)
@@ -535,6 +558,7 @@ impl ConfigBuilder {
             deployment_file: None,
             mock_chain: None,
             private_key: None,           // Never set via CLI for security
+            private_key_path: None,      // Never set via CLI for security
             bitget_vault: None,          // Set via with_bitget_vault
             chain_id: None,              // Set via with_chain_id
             mock_usdt: None,             // Set via with_mock_usdt

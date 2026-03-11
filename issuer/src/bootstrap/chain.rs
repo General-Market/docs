@@ -255,7 +255,8 @@ impl<'a> ChainBuilder<'a> {
         // Build SettlementChainWriter
         // Use settlement_private_key if set (e.g. when issuer keys are EIP-7702 on settlement chain),
         // otherwise fall back to the issuer's own key.
-        let settlement_key = self.config.settlement_private_key.clone()
+        let settlement_key = self.config.effective_settlement_private_key()
+            .map_err(|e| BootstrapError::Config(format!("Failed to read settlement private key: {}", e)))?
             .or_else(|| self.config.effective_private_key().ok().flatten());
         let settlement_writer = match settlement_key {
             Some(ref private_key) => {

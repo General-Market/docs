@@ -10,6 +10,7 @@ use crate::tier_config::{load_tier_config_from_file, RiskTierConfig};
 use clap::Parser;
 use ethers::types::Address;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::time::Duration;
 
 /// CLI arguments for the Curator service
@@ -46,9 +47,15 @@ pub struct CuratorArgs {
     #[arg(long)]
     pub settlement_rpc_url: Option<String>,
 
-    /// Curator wallet private key (hex, without 0x prefix)
+    /// Curator wallet private key (hex, without 0x prefix).
+    /// Either --private-key or --private-key-file must be provided.
     #[arg(long)]
-    pub private_key: String,
+    pub private_key: Option<String>,
+
+    /// Path to file containing the curator wallet private key.
+    /// Mutually exclusive with --private-key; file takes lower priority.
+    #[arg(long)]
+    pub private_key_file: Option<PathBuf>,
 
     /// Log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info")]
@@ -168,6 +175,22 @@ pub struct CuratorArgs {
     pub curator_irm_address: String,
 }
 
+impl CuratorArgs {
+    /// Resolve the effective private key: --private-key > --private-key-file.
+    /// Returns an error if neither is provided or the file cannot be read.
+    pub fn effective_private_key(&self) -> Result<String, String> {
+        if let Some(ref key) = self.private_key {
+            return Ok(key.clone());
+        }
+        if let Some(ref path) = self.private_key_file {
+            let contents = std::fs::read_to_string(path)
+                .map_err(|e| format!("Failed to read private key file '{}': {}", path.display(), e))?;
+            return Ok(contents.trim().to_string());
+        }
+        Err("Either --private-key or --private-key-file must be provided".to_string())
+    }
+}
+
 impl std::fmt::Debug for CuratorArgs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CuratorArgs")
@@ -176,7 +199,8 @@ impl std::fmt::Debug for CuratorArgs {
             .field("unified_mode", &self.unified_mode)
             .field("rpc_url", &self.rpc_url)
             .field("settlement_rpc_url", &self.settlement_rpc_url)
-            .field("private_key", &"[REDACTED]")
+            .field("private_key", &self.private_key.as_ref().map(|_| "[REDACTED]"))
+            .field("private_key_file", &self.private_key_file)
             .field("log_level", &self.log_level)
             .field("issuer_urls", &self.issuer_urls)
             .field("oracle_address", &self.oracle_address)
@@ -258,12 +282,14 @@ impl CuratorConfig {
             .parse()
             .map_err(|e| format!("Invalid ITP address: {}", e))?;
 
+        let private_key = args.effective_private_key()?;
+
         Ok(Self {
             issuer_urls,
             oracle_address,
             itp_address,
             rpc_url: args.rpc_url,
-            private_key: args.private_key,
+            private_key,
             update_interval: Duration::from_secs(args.update_interval_secs),
             log_level: args.log_level,
             data_node_url: if args.data_node_url.is_empty() {
@@ -332,6 +358,8 @@ impl AllocationConfig {
             HashMap::new()
         };
 
+        let private_key = args.effective_private_key()?;
+
         // Prefer --settlement-rpc-url for allocation mode (Morpho is on settlement chain)
         let rpc_url = args.settlement_rpc_url.unwrap_or(args.rpc_url);
 
@@ -341,7 +369,7 @@ impl AllocationConfig {
             market_ids,
             tier_configs,
             rpc_url,
-            private_key: args.private_key,
+            private_key,
             allocation_interval: Duration::from_secs(args.allocation_interval_secs),
             log_level: args.log_level,
         })

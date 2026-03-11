@@ -155,6 +155,9 @@ pub struct IssuerConfig {
     /// incompatible with the settlement chain (e.g. EIP-7702 delegates on Sonic).
     pub settlement_private_key: Option<String>,
 
+    /// Path to file containing the settlement chain private key.
+    pub settlement_private_key_path: Option<PathBuf>,
+
     /// 1inch Fusion+ API key (may differ from quote key).
     pub oneinch_fusion_api_key: Option<String>,
 
@@ -350,6 +353,7 @@ impl IssuerConfig {
                 .ok()
                 .and_then(|s| s.parse().ok()),
             settlement_private_key: std::env::var("ISSUER_SETTLEMENT_PRIVATE_KEY").ok(),
+            settlement_private_key_path: std::env::var("ISSUER_SETTLEMENT_PRIVATE_KEY_PATH").ok().map(PathBuf::from),
             oneinch_fusion_api_key: std::env::var("ISSUER_ONEINCH_FUSION_API_KEY").ok(),
             bitget_vault: std::env::var("ISSUER_BITGET_VAULT").ok(),
             issuer_custody_l3: std::env::var("ISSUER_CUSTODY_L3").ok(),
@@ -500,6 +504,9 @@ impl IssuerConfig {
         }
         if other.settlement_private_key.is_some() {
             self.settlement_private_key = other.settlement_private_key.clone();
+        }
+        if other.settlement_private_key_path.is_some() {
+            self.settlement_private_key_path = other.settlement_private_key_path.clone();
         }
         if other.oneinch_fusion_api_key.is_some() {
             self.oneinch_fusion_api_key = other.oneinch_fusion_api_key.clone();
@@ -983,6 +990,22 @@ impl IssuerConfig {
         }
         if let Some(ref path) = self.private_key_path {
             let contents = std::fs::read_to_string(path).map_err(|e| ConfigError::FileRead(e))?;
+            return Ok(Some(contents.trim().to_string()));
+        }
+        Ok(None)
+    }
+
+    /// Get the effective settlement private key (from env var or key file).
+    ///
+    /// Resolution order: settlement_private_key field > settlement_private_key_path file contents.
+    /// The `ISSUER_SETTLEMENT_PRIVATE_KEY` env var is already merged into `settlement_private_key` field.
+    /// Returns None if neither is set (caller falls back to the issuer's own key).
+    pub fn effective_settlement_private_key(&self) -> Result<Option<String>, ConfigError> {
+        if let Some(ref key) = self.settlement_private_key {
+            return Ok(Some(key.clone()));
+        }
+        if let Some(ref path) = self.settlement_private_key_path {
+            let contents = std::fs::read_to_string(path).map_err(ConfigError::FileRead)?;
             return Ok(Some(contents.trim().to_string()));
         }
         Ok(None)
