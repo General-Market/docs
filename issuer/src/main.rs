@@ -3954,18 +3954,17 @@ where
         issuer_ids = sorted.iter().map(|i| i.id).collect();
     } else {
         // Fallback: read current state from mirror registry itself.
-        // NOTE: The deployed mirror implementation exposes explicit getter functions,
-        // NOT auto-generated public variable getters. Use the correct selectors:
-        //   activeIssuerCount() — NOT activeCount()
-        //   getActiveBitmask()  — NOT activeBitmask()
+        // NOTE: Use correct selectors:
+        //   activeIssuerCount() — explicit getter in deployed implementation
+        //   activeBitmask() — auto-generated from `uint256 public activeBitmask`
         //   threshold is computed from activeCount (no getter deployed)
         let ac_sel = &ethers::utils::keccak256(b"activeIssuerCount()")[..4];
-        let ab_sel = &ethers::utils::keccak256(b"getActiveBitmask()")[..4];
+        let ab_sel = &ethers::utils::keccak256(b"activeBitmask()")[..4];
 
         let ac_bytes = settlement_writer.static_call(mirror_addr, ac_sel.to_vec()).await
             .map_err(|e| format!("Failed to read mirror activeIssuerCount: {}", e))?;
         let ab_bytes = settlement_writer.static_call(mirror_addr, ab_sel.to_vec()).await
-            .map_err(|e| format!("Failed to read mirror getActiveBitmask: {}", e))?;
+            .map_err(|e| format!("Failed to read mirror activeBitmask: {}", e))?;
 
         active_count = if ac_bytes.len() >= 32 { U256::from_big_endian(&ac_bytes[..32]).as_u64() } else { 0 };
         active_bitmask = if ab_bytes.len() >= 32 { U256::from_big_endian(&ab_bytes[..32]) } else { U256::zero() };

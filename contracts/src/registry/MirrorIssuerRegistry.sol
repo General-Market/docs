@@ -407,6 +407,18 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         emit EventsLib.AdminChanged(oldAdmin, newAdmin);
     }
 
+    /// @notice Reset mirror state to allow TOFU re-sync (admin only)
+    /// @dev Clears nonces so the next sync() uses TOFU verification path
+    function resetForReSync() external {
+        if (msg.sender != admin) {
+            revert Unauthorized();
+        }
+        registryNonce = 0;
+        lastSnapshotNonce = 0;
+        activeBitmask = 0;
+        activeCount = 0;
+    }
+
     /// @notice Authorize or deauthorize a caller for incrementMissedCounts
     function setAuthorizedMissedCountCaller(address caller, bool authorized) external {
         if (msg.sender != admin) {
