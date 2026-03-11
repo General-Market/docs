@@ -1144,13 +1144,13 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         }
                     }
 
-                    // Mirror registry sync — spawn every 500 cycles (~8 min) if not already running (Step 12)
-                    // Also triggers shortly after startup (first cycle divisible by 10) to avoid
-                    // waiting ~8 min. Using % 10 ensures all issuers agree on the trigger cycle
-                    // so only one leader is elected (avoids competing proposals on first cycle).
+                    // Mirror registry sync — only node_index 0 proposes (Step 12).
+                    // Other nodes participate as followers when they receive MirrorSyncProposal.
+                    // Triggers every 500 cycles (~8 min) + once shortly after startup.
                     // Always refreshes the snapshot to prevent BLSVerifier__SnapshotTooOld (86400 block limit).
+                    let is_sync_leader = node_index_for_task == 0;
                     let first_sync = mirror_sync_first.load(Ordering::Acquire) && current_cycle % 10 == 0;
-                    if (first_sync || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
+                    if is_sync_leader && (first_sync || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {

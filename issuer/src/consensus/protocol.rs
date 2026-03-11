@@ -6351,7 +6351,7 @@ where
 
         // Step 3: Wait for threshold signatures
         let sync_key = H256::from_low_u64_be(l3_nonce);
-        let timeout = self.config.timeouts.batch_sign_timeout.max(std::time::Duration::from_secs(2));
+        let timeout = self.config.timeouts.batch_sign_timeout.max(std::time::Duration::from_secs(10));
         let deadline = tokio::time::Instant::now() + timeout;
 
         let sync_result = loop {
