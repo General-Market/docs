@@ -7,6 +7,7 @@ import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useDeposit } from '@/hooks/vision/useDeposit'
+import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
@@ -107,6 +108,10 @@ export default function BatchEntryPanel({
     isSubmitting,
     error: submitError,
   } = useSubmitBitmap()
+
+  // -- Vision balance (for deposit prompt when empty) --
+  const { total: visionBalance, isLoading: isBalanceLoading } = useVisionBalance()
+  const hasZeroBalance = !isBalanceLoading && visionBalance === 0n
 
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
@@ -264,6 +269,18 @@ export default function BatchEntryPanel({
             )}
           </div>
         </div>
+
+        {/* Deposit prompt when balance is 0 */}
+        {hasZeroBalance && !isJoined && (
+          <button
+            type="button"
+            onClick={() => setShowDepositModal(true)}
+            className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2 text-left hover:bg-yellow-100 transition-colors"
+          >
+            <p className="text-[11px] font-bold text-yellow-700">No Vision balance</p>
+            <p className="text-[10px] text-yellow-600 mt-0.5">Deposit USDC to start playing</p>
+          </button>
+        )}
 
         {/* Stake input + quick buttons */}
         <div className="mb-3">

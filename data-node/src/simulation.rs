@@ -154,7 +154,7 @@ impl SimDataCache {
                 let eligible_count = category_coins.get(&row.id)
                     .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
                     .unwrap_or(0);
-                if eligible_count >= 5 {
+                if eligible_count >= 3 {
                     Some(CachedCategoryInfo {
                         id: row.id, name: row.name, coin_count: eligible_count,
                         market_cap: row.market_cap, source: "coingecko".to_string(),
@@ -300,7 +300,7 @@ impl SimDataCache {
             let eligible_count = category_coins.get(cat_id)
                 .map(|coins| coins.iter().filter(|c| eligible_set.contains(c)).count())
                 .unwrap_or(0);
-            if eligible_count >= 5 {
+            if eligible_count >= 3 {
                 let name = dl_cat_names.get(cat_id.as_str())
                     .map(|s| s.to_string())
                     .unwrap_or_else(|| {
