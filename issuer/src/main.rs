@@ -4230,16 +4230,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // --- Validate data-node URLs use HTTPS in production ---
+    // --test-key-seeds implies non-production (testnet), so relax HTTP check
+    let is_non_production = args.mock || args.test_key_seeds;
     if let Some(ref url) = args.data_node_url {
-        issuer::config::validate_data_node_url(url, args.mock)
+        issuer::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
     if let Some(ref url) = args.vision_data_node_url {
-        issuer::config::validate_data_node_url(url, args.mock)
+        issuer::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
     if let Some(ref url) = args.arbitration_data_node_url {
-        issuer::config::validate_data_node_url(url, args.mock)
+        issuer::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
 
