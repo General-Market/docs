@@ -966,13 +966,24 @@ async fn vision_leaderboard(
     }
 
     // Query Postgres for persisted total_deposited values
-    if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
+    // When filtered by batch_id, only fetch deposits for that batch
+    let deposit_query = if let Some(bid) = query.batch_id {
+        format!(
+            "SELECT vp.player, SUM(vp.total_deposited::numeric) as total_deposited
+             FROM vision_positions vp
+             JOIN vision_batches vb ON vp.batch_id = vb.id
+             WHERE vb.paused = false AND vp.batch_id = {}
+             GROUP BY vp.player",
+            bid
+        )
+    } else {
         "SELECT vp.player, SUM(vp.total_deposited::numeric) as total_deposited
          FROM vision_positions vp
          JOIN vision_batches vb ON vp.batch_id = vb.id
          WHERE vb.paused = false
-         GROUP BY vp.player"
-    )
+         GROUP BY vp.player".to_string()
+    };
+    if let Ok(rows) = sqlx::query_as::<_, DepositRow>(&deposit_query)
     .fetch_all(&state.pool)
     .await
     {
