@@ -6321,14 +6321,13 @@ where
         let leader_sig = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign MirrorSync hash: {}", e)))?;
 
-        // Initialize signature collection in bridge orchestrator
+        // Initialize signature collection in bridge orchestrator (must use start_collection, not add_follower)
         {
             let bridge_orch_guard = self.bridge_orchestrator.read().await;
             if let Some(bridge_orch) = bridge_orch_guard.as_ref() {
                 let orch = bridge_orch.write().await;
                 let sync_key = H256::from_low_u64_be(l3_nonce);
-                let my_index = self.runtime_config.issuer_registry_index();
-                let _ = orch.add_mirror_sync_signature(sync_key, my_index, leader_sig.clone()).await;
+                orch.start_mirror_sync_signature_collection(sync_key, leader_sig.clone()).await;
             }
         }
 
