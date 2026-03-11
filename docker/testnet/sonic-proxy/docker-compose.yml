@@ -1,0 +1,19 @@
+services:
+  sonic-proxy:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/sonic-proxy/Dockerfile
+    container_name: testnet-sonic-proxy
+    network_mode: host
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8547/', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "8m"
+        max-file: "3"

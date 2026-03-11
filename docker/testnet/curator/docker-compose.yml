@@ -1,0 +1,16 @@
+# testnet.sh generates docker-compose.override.yml with full command
+# (morpho addresses, vault, oracle from deployment JSONs).
+
+services:
+  curator:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/curator/Dockerfile
+    container_name: testnet-curator
+    network_mode: host
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "8m"
+        max-file: "3"

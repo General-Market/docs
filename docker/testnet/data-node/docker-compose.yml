@@ -1,0 +1,28 @@
+# testnet.sh generates docker-compose.override.yml with dynamic command
+# (--index-address, --database-url from deployment JSON).
+
+services:
+  data-node:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/data-node/Dockerfile
+    container_name: testnet-data-node
+    network_mode: host
+    restart: "no"
+    volumes:
+      - ../../../data-node/.env:/app/data-node/.env:ro
+      - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - ../../../deployments/morpho-e2e.json:/app/deployments/morpho-e2e.json:ro
+      - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
+      - ../../../data/symbol-map.json:/app/data/symbol-map.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "8m"
+        max-file: "3"

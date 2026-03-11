@@ -1,0 +1,25 @@
+# testnet.sh generates docker-compose.override.yml with:
+# - Full command (--index-contract, --bitget-vault from deployment JSON)
+# - AP_PRIVATE_KEY_PATH environment variable
+
+services:
+  ap:
+    build:
+      context: ../../..
+      dockerfile: docker/testnet/ap/Dockerfile
+    container_name: testnet-ap
+    network_mode: host
+    restart: "no"
+    volumes:
+      - ../../../deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "8m"
+        max-file: "3"
