@@ -390,7 +390,7 @@ cmd_deploy() {
         [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
         [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
         # Update Vision address in envs/testnet/.env
-        VISION_ADDR=$(read_deployment_addr "Vision")
+        VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
         if [ -n "$VISION_ADDR" ] && [ -f "envs/testnet/.env" ]; then
             sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/testnet/.env
         fi
@@ -522,7 +522,7 @@ _start_issuers() {
     echo -e "  L3 block: $L3_FROM_BLOCK (issuers will start from here)"
 
     # Read contract addresses from deployment file
-    VISION_ADDR=$(read_deployment_addr "Vision")
+    VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
 
