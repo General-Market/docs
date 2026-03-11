@@ -469,6 +469,9 @@ cmd_start() {
     _sync_docker_files
     _sync_config_files
 
+    # Ensure logs dir + existing files are writable by container UID (app=999 != max=1002)
+    vps_be_ssh "mkdir -p $VPS_BE_DIR/logs && chmod 777 $VPS_BE_DIR/logs && chmod a+rw $VPS_BE_DIR/logs/* 2>/dev/null; true"
+
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 644 /tmp/issuer-key-$i.txt"
