@@ -29,6 +29,9 @@ pub trait KeyRegistry: Send + Sync {
 
     /// Get the current registry nonce (monotonically increasing on each registry change)
     fn registry_nonce(&self) -> u64 { 0 }
+
+    /// Update the registry nonce (e.g., after mirror sync creates a new snapshot)
+    fn set_registry_nonce(&self, _nonce: u64) {}
 }
 
 /// In-memory key registry for issuer BLS public keys
@@ -83,10 +86,12 @@ impl InMemoryKeyRegistry {
         Ok(keys.remove(peer_id))
     }
 
-    /// Set the registry nonce (from on-chain IssuerRegistry)
+    /// Set the registry nonce (monotonically increasing — only accepts higher values)
     pub fn set_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.nonce.write() {
-            *guard = nonce;
+            if nonce > *guard {
+                *guard = nonce;
+            }
         }
     }
 
@@ -154,6 +159,12 @@ impl KeyRegistry for InMemoryKeyRegistry {
 
     fn registry_nonce(&self) -> u64 {
         self.nonce.read().map(|n| *n).unwrap_or(0)
+    }
+
+    fn set_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.nonce.write() {
+            *guard = nonce;
+        }
     }
 }
 

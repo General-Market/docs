@@ -469,6 +469,11 @@ where
         self.key_registry.registry_nonce()
     }
 
+    /// Update the registry nonce (after mirror sync creates a new snapshot)
+    pub fn set_registry_nonce(&self, nonce: u64) {
+        self.key_registry.set_registry_nonce(nonce);
+    }
+
     /// Get the configured number of issuers
     pub fn num_issuers(&self) -> u8 {
         self.runtime_config.num_issuers()

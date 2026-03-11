@@ -4098,6 +4098,13 @@ where
         "Mirror registry sync tx submitted"
     );
 
+    // Update the key registry nonce to match the mirror's lastSnapshotNonce.
+    // Bridge operations use this as reference_nonce for BLS verification on Settlement.
+    // Without this, bridge sends reference_nonce=L3_nonce but the mirror only has
+    // a snapshot at sync_nonce, causing BLSVerifier lookup failures.
+    protocol.set_registry_nonce(sync_nonce);
+    info!(cycle, sync_nonce, "Updated key registry nonce to mirror snapshot nonce");
+
     Ok(())
 }
 
