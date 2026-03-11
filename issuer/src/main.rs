@@ -895,8 +895,10 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
                     // Settlement tasks — poll every 1s for bridge detection
                     // Skip bridge processing during P2P startup grace period (15s)
+                    // Also skip until first mirror sync completes (prevents nonce collisions with sync tx)
                     let bridge_ready = std::time::Instant::now() >= bridge_ready_after;
-                    let settlement_poll_due = bridge_ready && last_settlement_poll.elapsed() >= std::time::Duration::from_secs(1);
+                    let mirror_sync_pending = mirror_registry_for_task.is_some() && mirror_sync_first.load(Ordering::Acquire);
+                    let settlement_poll_due = bridge_ready && !mirror_sync_pending && last_settlement_poll.elapsed() >= std::time::Duration::from_secs(1);
                     if settlement_poll_due {
                         last_settlement_poll = std::time::Instant::now();
                     }
@@ -1149,7 +1151,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // Triggers every 500 cycles (~8 min) + once shortly after startup.
                     // Always refreshes the snapshot to prevent BLSVerifier__SnapshotTooOld (86400 block limit).
                     let is_sync_leader = node_index_for_task == 0;
-                    let first_sync = mirror_sync_first.load(Ordering::Acquire) && current_cycle % 10 == 0;
+                    let first_sync = mirror_sync_first.load(Ordering::Acquire);
                     if is_sync_leader && (first_sync || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
