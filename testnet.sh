@@ -573,6 +573,7 @@ _start_issuers_docker() {
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
     VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
+    MIRROR_REGISTRY=$(read_deployment_addr "SettlementIssuerRegistry")
 
     # Build per-issuer command as YAML list (safe from injection)
     _issuer_command_yaml() {
@@ -654,6 +655,7 @@ services:
       ISSUER_RPC_URL: "$RPC_URL"
       ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
@@ -673,6 +675,7 @@ $(_issuer_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       ISSUER_RPC_URL: "$RPC_URL"
       ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
@@ -692,6 +695,7 @@ $(_issuer_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       ISSUER_RPC_URL: "$RPC_URL"
       ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:

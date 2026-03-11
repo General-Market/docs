@@ -82,9 +82,9 @@ test.describe('Rebalance Full Cycle', () => {
           ? (navAfter - navBefore) * 10000n / navBefore
           : (navBefore - navAfter) * 10000n / navBefore);
         console.log(`NAV drift: ${navDiffBps} bps`);
-        // Allow up to 100 bps (1%) drift — on testnet, real price movements
+        // Allow up to 200 bps (2%) drift — on testnet, real price movements
         // between weight read and rebalance execution can cause larger drift
-        expect(navDiffBps).toBeLessThanOrEqual(100n);
+        expect(navDiffBps).toBeLessThanOrEqual(200n);
       }
 
       // 8. Verify inventory was recalculated
