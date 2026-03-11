@@ -67,6 +67,7 @@ ISSUER_1_KEY="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 ISSUER_2_KEY="0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 ISSUER_3_KEY="0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
 ISSUER_COUNT=3
+ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
 
 # AP key — Anvil account 4
 AP_KEY="0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
@@ -85,36 +86,69 @@ RSYNC_SSH_BE="ssh -o ProxyJump=bastion -p 3189"
 vps_be_ssh() { ssh -o ConnectTimeout=10 "$VPS_BE_HOST" "$@" < /dev/null 2>/dev/null; }
 vps_chain_ssh() { ssh -o ConnectTimeout=10 "$VPS_CHAIN_HOST" "$@" < /dev/null 2>/dev/null; }
 
-# Start a daemon on a remote VPS without SSH hanging.
-# Base64-encodes the script locally, decodes + runs on remote with setsid.
-# This avoids heredoc (broken by SSH stdin=/dev/null) and quoting issues.
-# Usage: _remote_start <ssh_func> <script_content> <log_file>
-_remote_start() {
-    local ssh_func="$1"
-    local script="$2"
-    local logfile="$3"
-    local script_path="/tmp/start-daemon-$RANDOM.sh"
+# Settlement RPC for VPS services (through local proxy to avoid 429s)
+SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
 
-    # Base64-encode the script content (macOS base64 uses no flag for encode)
-    local b64
-    b64=$(printf '#!/bin/bash\n%s\n' "$script" | base64)
+# Cleanup trap: remove local override YAMLs + remote key files on exit (prevents secrets on disk)
+_cleanup() {
+    rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.issuer-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
+    # Also clean remote key files if script exits early (SSH failures are non-fatal here)
+    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
+    vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
+}
+trap _cleanup EXIT
 
-    $ssh_func "echo '$b64' | base64 -d > $script_path && \
-chmod +x $script_path && \
-( setsid bash $script_path > $logfile 2>&1 < /dev/null & ) ; \
-sleep 0.3 ; rm -f $script_path"
+# Run docker compose on a VPS. Errors are NOT suppressed.
+# All arguments are script-controlled (no user input), so simple concatenation is safe.
+# IMPORTANT: pass each docker compose arg separately, e.g. vps1_compose dir "up" "-d" "--build"
+vps1_compose() {
+    local service_dir="$1"; shift
+    ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$service_dir && DOCKER_BUILDKIT=1 docker compose $*" < /dev/null
+}
+vps2_compose() {
+    local service_dir="$1"; shift
+    ssh "$VPS_CHAIN_HOST" "cd $VPS_CHAIN_DIR/docker/testnet/$service_dir && DOCKER_BUILDKIT=1 docker compose $*" < /dev/null
 }
 
-check_service() {
-    local host=$1 name=$2 pattern=$3
-    if ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        local pid=$(ssh -o ConnectTimeout=5 "$host" "pgrep -f '$pattern' | head -1" < /dev/null 2>/dev/null)
-        echo -e "  ${GREEN}$name running (PID: $pid)${NC}"
+check_docker_service() {
+    local host="$1" dir="$2" service="$3" name="$4"
+    local status
+    status=$(ssh -o ConnectTimeout=5 "$host" \
+        "cd $dir/docker/testnet/$service && docker compose ps --format '{{.Status}}' $name 2>/dev/null" \
+        < /dev/null 2>/dev/null)
+    if echo "$status" | grep -q "Up"; then
+        echo -e "  ${GREEN}$name running ($status)${NC}"
         return 0
     else
         echo -e "  ${YELLOW}$name not running${NC}"
         return 1
     fi
+}
+
+_sync_docker_files() {
+    rsync -az -e "$RSYNC_SSH_BE" \
+        "$SCRIPT_DIR/docker/testnet/" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/"
+    rsync -az -e "$RSYNC_SSH_BE" \
+        "$SCRIPT_DIR/.dockerignore" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/.dockerignore"
+    rsync -az -e "$RSYNC_SSH_BE" \
+        "$SCRIPT_DIR/scripts/sonic-rpc-proxy.py" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/scripts/sonic-rpc-proxy.py"
+    rsync -az -e "ssh -o ProxyJump=bastion -p 3189" \
+        "$SCRIPT_DIR/docker/testnet/ap/" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/docker/testnet/ap/"
+    rsync -az -e "ssh -o ProxyJump=bastion -p 3189" \
+        "$SCRIPT_DIR/.dockerignore" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/.dockerignore"
+}
+
+_sync_config_files() {
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+}
+
+# Kill any old bare-metal processes to prevent port conflicts
+_kill_old_processes() {
+    echo -e "  Cleaning up old bare processes..."
+    vps_be_ssh "pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f sonic-rpc-proxy 2>/dev/null; true"
+    vps_chain_ssh "pkill -9 -x ap 2>/dev/null; true"
+    sleep 2
 }
 
 read_deployment_addr() {
@@ -182,6 +216,17 @@ cmd_setup_be() {
         echo -e "  ${CYAN}ssh $VPS_BE_HOST${NC}"
         echo -e "  ${CYAN}su - ans  # then: sudo -u postgres createuser -s max${NC}"
         echo -e "  ${CYAN}createdb $DB_NAME${NC}"
+        exit 1
+    fi
+
+    echo -e "${BLUE}[3b/5] Checking Docker...${NC}"
+    if vps_be_ssh "command -v docker >/dev/null 2>&1"; then
+        echo -e "  ${GREEN}Docker already installed${NC}"
+    else
+        echo -e "  ${YELLOW}Docker not installed. Install manually:${NC}"
+        echo -e "  ${CYAN}ssh $VPS_BE_HOST${NC}"
+        echo -e "  ${CYAN}curl -fsSL https://get.docker.com | sh${NC}"
+        echo -e "  ${CYAN}sudo usermod -aG docker max${NC}"
         exit 1
     fi
 
@@ -407,251 +452,291 @@ cmd_deploy() {
 cmd_start() {
     echo -e "${CYAN}Starting all services on VPSes...${NC}"
 
-    # Check L3 is up
-    echo -e "${BLUE}[1/4] Checking L3 chain...${NC}"
+    # Check L3
+    echo -e "${BLUE}[1/6] Checking L3 chain...${NC}"
     VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-    if [ "$VPS_CHAIN_ID" != "$CHAIN_ID" ]; then
-        echo -e "  ${RED}L3 not reachable${NC}"
-        exit 1
-    fi
+    [ "$VPS_CHAIN_ID" = "$CHAIN_ID" ] || { echo -e "  ${RED}L3 not reachable${NC}"; exit 1; }
     echo -e "  ${GREEN}L3 OK${NC}"
 
-    # Check deployment file exists on VPSes
-    echo -e "${BLUE}[2/4] Checking deployment files on VPSes...${NC}"
-    if ! vps_be_ssh "[ -f $VPS_BE_DIR/$DEPLOYMENT_FILE ]"; then
-        echo -e "  ${RED}No deployment file on VPS 1. Run: ./testnet.sh update${NC}"
-        exit 1
-    fi
-    echo -e "  ${GREEN}Deployment files present${NC}"
+    # Kill old bare processes (prevents port conflicts on migration)
+    _kill_old_processes
 
-    # Start Sonic RPC proxy on VPS 1 (rate-limited caching proxy)
-    echo -e "${BLUE}[3/4] Starting services on VPS 1...${NC}"
-    _start_sonic_proxy
-    _start_data_node
-    _start_issuers
+    # Sync files
+    echo -e "${BLUE}[2/6] Syncing files...${NC}"
+    _sync_docker_files
+    _sync_config_files
+
+    # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
+    for i in 1 2 3; do
+        vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 600 /tmp/issuer-key-$i.txt"
+    done
+    # Settlement key shared by all issuers (same deployer key)
+    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 600 /tmp/settlement-key.txt"
+    echo -e "  ${GREEN}Files synced${NC}"
+
+    # Start sonic-proxy
+    echo -e "${BLUE}[3/6] Starting sonic-proxy...${NC}"
+    if ! vps1_compose sonic-proxy up -d --build; then
+        echo -e "  ${RED}sonic-proxy failed to start${NC}"; exit 1
+    fi
+    sleep 2
+    echo -e "  ${GREEN}sonic-proxy started${NC}"
+
+    # Start data-node
+    echo -e "${BLUE}[4/6] Starting data-node...${NC}"
+    _start_data_node_docker
+    echo -e "  ${GREEN}data-node started${NC}"
+
+    # Start issuers (staggered)
+    echo -e "${BLUE}[5/6] Starting issuers...${NC}"
+    _start_issuers_docker
+    echo -e "  ${GREEN}issuers started${NC}"
+
+    # Start curator
+    _start_curator_docker
 
     # Start AP on VPS 2
-    echo -e "${BLUE}[4/4] Starting AP on VPS 2...${NC}"
-    _start_ap
-
-    # Start Curator on VPS 1 (needs local issuer access, reaches L3 via external IP)
-    _start_curator
+    echo -e "${BLUE}[6/6] Starting AP on VPS 2...${NC}"
+    _start_ap_docker
 
     echo ""
     echo -e "${GREEN}All services started. Check status: ./testnet.sh status${NC}"
 }
 
-_start_sonic_proxy() {
-    # Start rate-limiting proxy for Sonic testnet RPC on VPS 1
-    if vps_be_ssh "pgrep -f sonic-rpc-proxy > /dev/null 2>&1"; then
-        echo -e "  ${GREEN}Sonic RPC proxy already running${NC}"
-        return
-    fi
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/scripts/sonic-rpc-proxy.py" \
-        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/scripts/sonic-rpc-proxy.py"
-    _remote_start vps_be_ssh "cd $VPS_BE_DIR
-mkdir -p logs
-exec python3 scripts/sonic-rpc-proxy.py 8547 $SETTLEMENT_RPC_URL" "$VPS_BE_DIR/logs/sonic-proxy.log"
-    sleep 1
-    if vps_be_ssh "pgrep -f sonic-rpc-proxy > /dev/null 2>&1"; then
-        echo -e "  ${GREEN}Sonic RPC proxy started on :8547${NC}"
-    else
-        echo -e "  ${YELLOW}Sonic proxy failed — using direct RPC${NC}"
-    fi
-}
+_start_data_node_docker() {
+    # Clean up any stale override from previous failed run
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/data-node/docker-compose.override.yml"
 
-# Settlement RPC for VPS services (through local proxy to avoid 429s)
-SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
-
-_start_data_node() {
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}data-node already running${NC}"
-        return
-    fi
-
-    # Sync .env, config files, and credentials
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/assets.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/assets.json" 2>/dev/null || true
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/system.env" ] && rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/system.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/system.env" 2>/dev/null || true
-
-    # Read Index contract address from deployment file
-    local INDEX_ADDR
+    local INDEX_ADDR INDEX_FLAG DN_CMD
     INDEX_ADDR=$(read_deployment_addr "Index")
-    local INDEX_FLAG=""
-    if [ -n "$INDEX_ADDR" ]; then
-        INDEX_FLAG="--index-address $INDEX_ADDR"
+    INDEX_FLAG=""
+    [ -n "$INDEX_ADDR" ] && INDEX_FLAG="--index-address $INDEX_ADDR"
+
+    # Generate override with full command
+    local OVERRIDE="$SCRIPT_DIR/.data-node-override.yml"
+    cat > "$OVERRIDE" <<YEOF
+services:
+  data-node:
+    command:
+      - "serve"
+      - "--database-url"
+      - "postgres://max@localhost/index_prices"
+      - "--symbol-map"
+      - "/app/data/symbol-map.json"
+      - "--rpc-url"
+      - "$RPC_URL"
+      - "--settlement-rpc-url"
+      - "$SETTLEMENT_RPC_VPS"
+      - "--deployment-file"
+      - "/app/deployments/active-deployment.json"
+      - "--morpho-deployment-file"
+      - "/app/deployments/morpho-e2e.json"
+      - "--ecb-enabled"
+      - "--openmeteo-sync-interval"
+      - "300"
+$([ -n "$INDEX_FLAG" ] && echo '      - "--index-address"
+      - "'"$INDEX_ADDR"'"')
+YEOF
+
+    rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/data-node/docker-compose.override.yml"
+    rm -f "$OVERRIDE"
+
+    if ! vps1_compose data-node up -d --build; then
+        echo -e "  ${RED}data-node failed to start${NC}"; exit 1
     fi
 
-    _remote_start vps_be_ssh "cd $VPS_BE_DIR
-mkdir -p logs
-sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres:///$DB_NAME|' data-node/.env
-exec ./target/release/data-node serve \\
-    --database-url postgres:///$DB_NAME \\
-    --symbol-map data/symbol-map.json \\
-    --rpc-url $RPC_URL \\
-    --settlement-rpc-url $SETTLEMENT_RPC_VPS \\
-    --deployment-file $DEPLOYMENT_FILE \\
-    --morpho-deployment-file deployments/morpho-e2e.json \\
-    --ecb-enabled \\
-    --openmeteo-sync-interval 300 \\
-    $INDEX_FLAG" "$VPS_BE_DIR/logs/data-node.log"
-    sleep 2
-
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x data-node > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}data-node started${NC}"
-    else
-        echo -e "  ${RED}data-node failed to start — check: ssh $VPS_BE_HOST 'tail -50 $VPS_BE_DIR/logs/data-node.log'${NC}"
-    fi
+    # Clean up override on VPS (secrets already consumed)
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/data-node/docker-compose.override.yml"
+    sleep 3
 }
 
-_start_issuers() {
-    # Check if already running
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x issuer > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}issuers already running${NC}"
-        return
-    fi
+_start_issuers_docker() {
+    # Clean up any stale override from previous failed run
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
 
-    ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
-
-    # Clean up stale WAL files and set log level
+    # Stop existing + clean WAL (safe — no race condition)
+    vps1_compose issuer down || true
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
-    # Get current L3 block to skip stale events from old deployments
+    # Dynamic args
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-    echo -e "  L3 block: $L3_FROM_BLOCK (issuers will start from here)"
+    echo -e "  L3 block: $L3_FROM_BLOCK (issuers start from here)"
 
-    # Read contract addresses from deployment file
     VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
+    VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
 
+    # Build per-issuer command as YAML list (safe from injection)
+    _issuer_command_yaml() {
+        local NODE_ID=$1 PORT=$2 BLS_IDX=$3 PEERS=$4
+        cat <<CMD
+      - "--node-id"
+      - "$NODE_ID"
+      - "--port"
+      - "$PORT"
+      - "--rpc"
+      - "$RPC_URL"
+      - "--cycle-duration-ms"
+      - "1000"
+      - "--min-cycle-gap-ms"
+      - "50"
+      - "--consensus-timeout-ms"
+      - "800"
+      - "--no-tls"
+      - "--test-key-seeds"
+      - "--bls-key-seed-index"
+      - "$BLS_IDX"
+      - "--num-issuers"
+      - "3"
+      - "--signature-threshold"
+      - "2"
+      - "--registry-sync"
+      - "--data-node-url"
+      - "http://localhost:$DATA_NODE_PORT"
+      - "--deployment-file"
+      - "/app/deployments/active-deployment.json"
+      - "--symbol-map-file"
+      - "/app/data/symbol-map.json"
+      - "--wal-path"
+      - "/app/logs/consensus-$NODE_ID.wal"
+      - "--log-level"
+      - "info"
+      - "--from-block"
+      - "$L3_FROM_BLOCK"
+      - "--sign-timeout-ms"
+      - "5000"
+      - "--itp-id"
+      - "0x0000000000000000000000000000000000000000000000000000000000000001"
+CMD
+        [ -n "$BRIDGE_PROXY" ] && cat <<CMD
+      - "--bridge-proxy"
+      - "$BRIDGE_PROXY"
+CMD
+        if [ -n "$VISION_ADDR" ]; then
+            cat <<CMD
+      - "--vision-enabled"
+      - "--vision-address"
+      - "$VISION_ADDR"
+      - "--vision-database-url"
+      - "postgres://max@localhost/index_prices"
+      - "--vision-data-node-url"
+      - "http://localhost:$DATA_NODE_PORT"
+      - "--vision-rpc-ws-url"
+      - "$RPC_URL"
+      - "--vision-reveal-window-secs"
+      - "60"
+      - "--vision-tick-poll-interval-ms"
+      - "500"
+      - "--vision-settlement-bridge-custody"
+      - "$VISION_SETTLEMENT_CUSTODY"
+CMD
+        fi
+    }
+
+    # No env_file: (env_file values are baked into docker inspect, same as environment:).
+    # All secrets via mounted key files. Only non-secret config in environment:.
+    local OVERRIDE="$SCRIPT_DIR/.issuer-override.yml"
+    cat > "$OVERRIDE" <<YEOF
+services:
+  issuer-1:
+    environment:
+      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-1.txt
+      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ISSUER_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
+      ISSUER_RPC_URL: "$RPC_URL"
+      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
+      EXCHANGE_MODE: "mock"
+    command:
+$(_issuer_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
+    volumes:
+      - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
+      - /tmp/issuer-key-1.txt:/tmp/issuer-key-1.txt:ro
+      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - $VPS_BE_DIR/logs:/app/logs
+
+  issuer-2:
+    environment:
+      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-2.txt
+      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
+      ISSUER_RPC_URL: "$RPC_URL"
+      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
+      EXCHANGE_MODE: "mock"
+    command:
+$(_issuer_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
+    volumes:
+      - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
+      - /tmp/issuer-key-2.txt:/tmp/issuer-key-2.txt:ro
+      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - $VPS_BE_DIR/logs:/app/logs
+
+  issuer-3:
+    environment:
+      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-3.txt
+      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
+      ISSUER_RPC_URL: "$RPC_URL"
+      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
+      EXCHANGE_MODE: "mock"
+    command:
+$(_issuer_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
+    volumes:
+      - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
+      - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
+      - /tmp/issuer-key-3.txt:/tmp/issuer-key-3.txt:ro
+      - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
+      - $VPS_BE_DIR/logs:/app/logs
+YEOF
+
+    rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+    rm -f "$OVERRIDE"
+
+    # Build image once
+    vps1_compose issuer build
+
+    # Start issuers sequentially with 5s stagger (P2P needs peers listening)
     for i in 1 2 3; do
-        PORT=$((9000 + i))
-        BLS_IDX=$((i - 1))
-        KEY="${ISSUER_KEYS[$BLS_IDX]}"
-
-        # Build peer list
-        PEERS=""
-        for j in 1 2 3; do
-            if [ $j -ne $i ]; then
-                [ -n "$PEERS" ] && PEERS="$PEERS,"
-                PEERS="${PEERS}127.0.0.1:$((9000 + j))"
-            fi
-        done
-
-        # Vision args
-        VISION_ARGS=""
-        if [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ]; then
-            VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
-            VISION_ARGS="--vision-enabled \\
-    --vision-address $VISION_ADDR \\
-    --vision-database-url postgres:///$DB_NAME \\
-    --vision-data-node-url http://localhost:$DATA_NODE_PORT \\
-    --vision-rpc-ws-url $RPC_URL \\
-    --vision-reveal-window-secs 60 \\
-    --vision-tick-poll-interval-ms 500 \\
-    --vision-settlement-bridge-custody $VISION_SETTLEMENT_CUSTODY"
+        echo -e "  Issuer $i starting on port $((9000 + i))..."
+        if ! vps1_compose issuer up -d issuer-$i; then
+            echo -e "  ${RED}issuer-$i failed to start${NC}"
         fi
-
-        # Bridge proxy arg
-        BRIDGE_ARG=""
-        if [ -n "$BRIDGE_PROXY" ]; then
-            BRIDGE_ARG="--bridge-proxy $BRIDGE_PROXY"
-        fi
-
-        # Write key file first (separate SSH call, always works)
-        vps_be_ssh "echo '$KEY' > /tmp/issuer-key-$i.txt"
-
-        _remote_start vps_be_ssh "cd $VPS_BE_DIR
-mkdir -p logs
-export ISSUER_PRIVATE_KEY_PATH=/tmp/issuer-key-$i.txt
-export ISSUER_PEERS=$PEERS
-export ISSUER_RPC_URL=$RPC_URL
-export ISSUER_SETTLEMENT_RPC_URL=$SETTLEMENT_RPC_VPS
-export ISSUER_SETTLEMENT_CHAIN_ID=$SETTLEMENT_CHAIN_ID
-export ISSUER_SETTLEMENT_PRIVATE_KEY=$DEPLOYER_KEY
-export DATA_NODE_URL=http://localhost:$DATA_NODE_PORT
-export EXCHANGE_MODE=mock
-exec ./target/release/issuer \\
-    --node-id $i \\
-    --port $PORT \\
-    --rpc $RPC_URL \\
-    --cycle-duration-ms 1000 \\
-    --min-cycle-gap-ms 50 \\
-    --consensus-timeout-ms 800 \\
-    --no-tls \\
-    --test-key-seeds \\
-    --bls-key-seed-index $BLS_IDX \\
-    --num-issuers $ISSUER_COUNT \\
-    --signature-threshold 2 \\
-    --registry-sync \\
-    --ntp-server '' \\
-    --data-node-url http://localhost:$DATA_NODE_PORT \\
-    --deployment-file $DEPLOYMENT_FILE \\
-    --symbol-map-file data/symbol-map.json \\
-    --wal-path logs/consensus-$i.wal \\
-    --log-level info \\
-    --from-block $L3_FROM_BLOCK \\
-    --sign-timeout-ms 5000 \\
-    --itp-id 0x0000000000000000000000000000000000000000000000000000000000000001 \\
-    $BRIDGE_ARG \\
-    $VISION_ARGS" "$VPS_BE_DIR/logs/issuer-$i.log"
-
-        echo -e "  Issuer $i started on port $PORT"
-        # Stagger: P2P needs peers to be listening before connecting.
-        # 1s is too short — exponential backoff gives up before peers start.
-        [ $i -lt $ISSUER_COUNT ] && sleep 5
+        [ $i -lt 3 ] && sleep 5
     done
 
-    echo -e "  ${GREEN}All $ISSUER_COUNT issuers started${NC}"
-}
+    # Clean up override on VPS
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
 
-_start_ap() {
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x ap > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}AP already running${NC}"
-        return
-    fi
-
-    INDEX_ADDR=$(read_deployment_addr "Index")
-    MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
-
-    # AP uses local RPC (nginx → Docker sequencer on same VPS)
-    INDEX_ARG=""
-    [ -n "$INDEX_ADDR" ] && INDEX_ARG="--index-contract $INDEX_ADDR"
-    VAULT_ARG=""
-    [ -n "$MOCK_VAULT" ] && VAULT_ARG="--bitget-vault $MOCK_VAULT"
-
-    _remote_start vps_chain_ssh "cd $VPS_CHAIN_DIR
-mkdir -p logs
-export AP_PRIVATE_KEY=$AP_KEY
-exec ./target/release/ap \\
-    --port 9100 \\
-    --rpc http://localhost/ \\
-    --exchange-mode mock \\
-    --settlement-rpc $SETTLEMENT_RPC_URL \\
-    --settlement-chain-id $SETTLEMENT_CHAIN_ID \\
-    --deployment-file $DEPLOYMENT_FILE \\
-    --data-node-url http://$VPS_BE_IP:$DATA_NODE_PORT \\
-    --log-level info \\
-    $INDEX_ARG \\
-    $VAULT_ARG" "$VPS_CHAIN_DIR/logs/ap.log"
-    sleep 1
-
-    if ssh -o ConnectTimeout=5 "$VPS_CHAIN_HOST" "pgrep -x ap > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}AP started on port 9100${NC}"
-    else
-        echo -e "  ${RED}AP failed — check: ssh $VPS_CHAIN_HOST 'tail -50 $VPS_CHAIN_DIR/logs/ap.log'${NC}"
+    # Verify all 3 issuers are running (BLS threshold is 2/3 — all must be up)
+    sleep 3
+    local all_ok=true
+    for i in 1 2 3; do
+        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i"; then
+            echo -e "  ${RED}FATAL: issuer-$i not running after start${NC}"
+            all_ok=false
+        fi
+    done
+    if [ "$all_ok" = false ]; then
+        echo -e "  ${RED}Not all issuers started — consensus impossible. Stopping all.${NC}"
+        cmd_stop
+        exit 1
     fi
 }
 
-_start_curator() {
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}Curator already running${NC}"
-        return
-    fi
+_start_curator_docker() {
+    # Clean up any stale override from previous failed run
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/curator/docker-compose.override.yml"
 
-    # Read addresses from deployment files
     MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
     VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
     MARKET_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
@@ -660,56 +745,153 @@ _start_curator() {
     REGISTRY_ADDR=$(read_deployment_addr "IssuerRegistry")
 
     if [ -z "$MORPHO_ADDR" ] || [ -z "$VAULT_ADDR" ]; then
-        echo -e "  ${YELLOW}Curator skipped — no Morpho deployment found${NC}"
+        echo -e "  ${YELLOW}Curator skipped — no Morpho deployment${NC}"
         return
     fi
 
-    # Curator runs on VPS 1 (collocated with issuers) — reaches L3 via external IP
-    # HTTP API is on port+1000 (gRPC on 9001-9003, HTTP on 10001-10003)
     ISSUER_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
-    _remote_start vps_be_ssh "cd $VPS_BE_DIR
-mkdir -p logs
-exec ./target/release/curator \\
-    --unified-mode \\
-    --rpc-url $RPC_URL \\
-    --private-key ${DEPLOYER_KEY#0x} \\
-    --morpho-address $MORPHO_ADDR \\
-    --vault-address $VAULT_ADDR \\
-    --market-ids $MARKET_ID \\
-    --oracle-address $ORACLE_ADDR \\
-    --itp-address $ITP_ADDR \\
-    --issuer-urls $ISSUER_URLS \\
-    --l3-rpc-url $RPC_URL \\
-    --mirror-registry-address $REGISTRY_ADDR \\
-    --l3-registry-address $REGISTRY_ADDR \\
-    --oracle-addresses $ORACLE_ADDR \\
-    --itp-addresses $ITP_ADDR \\
-    --allocation-interval-secs 60 \\
-    --update-interval-secs 300 \\
-    --health-scan-interval-secs 300 \\
-    --data-node-url http://localhost:$DATA_NODE_PORT \\
-    --log-level info" "$VPS_BE_DIR/logs/curator.log"
-    sleep 1
+    # Write curator key file on VPS (same pattern as issuer keys — NOT in CLI args or environment)
+    vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 600 /tmp/curator-key.txt"
 
-    if ssh -o ConnectTimeout=5 "$VPS_BE_HOST" "pgrep -x curator > /dev/null 2>&1" < /dev/null 2>/dev/null; then
-        echo -e "  ${GREEN}Curator started (unified mode on VPS 1)${NC}"
+    # Use YAML list format (safe from injection)
+    # Private key via mounted file (not CLI arg — would be visible in docker inspect/proc)
+    local OVERRIDE="$SCRIPT_DIR/.curator-override.yml"
+    cat > "$OVERRIDE" <<YEOF
+services:
+  curator:
+    volumes:
+      - /tmp/curator-key.txt:/tmp/curator-key.txt:ro
+    command:
+      - "--unified-mode"
+      - "--rpc-url"
+      - "$RPC_URL"
+      - "--private-key-file"
+      - "/tmp/curator-key.txt"
+      - "--morpho-address"
+      - "$MORPHO_ADDR"
+      - "--vault-address"
+      - "$VAULT_ADDR"
+      - "--market-ids"
+      - "$MARKET_ID"
+      - "--oracle-address"
+      - "$ORACLE_ADDR"
+      - "--itp-address"
+      - "$ITP_ADDR"
+      - "--issuer-urls"
+      - "$ISSUER_URLS"
+      - "--l3-rpc-url"
+      - "$RPC_URL"
+      - "--mirror-registry-address"
+      - "$REGISTRY_ADDR"
+      - "--l3-registry-address"
+      - "$REGISTRY_ADDR"
+      - "--oracle-addresses"
+      - "$ORACLE_ADDR"
+      - "--itp-addresses"
+      - "$ITP_ADDR"
+      - "--allocation-interval-secs"
+      - "60"
+      - "--update-interval-secs"
+      - "300"
+      - "--health-scan-interval-secs"
+      - "300"
+      - "--data-node-url"
+      - "http://localhost:$DATA_NODE_PORT"
+      - "--log-level"
+      - "info"
+YEOF
+
+    rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/curator/docker-compose.override.yml"
+    rm -f "$OVERRIDE"
+
+    if vps1_compose curator up -d --build; then
+        echo -e "  ${GREEN}Curator started${NC}"
     else
-        echo -e "  ${RED}Curator failed — check: ssh $VPS_BE_HOST 'tail -50 $VPS_BE_DIR/logs/curator.log'${NC}"
+        echo -e "  ${RED}Curator failed — check: ./testnet.sh logs curator${NC}"
     fi
+
+    # Clean up override (no secrets in it now, but clean up anyway)
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/curator/docker-compose.override.yml"
+}
+
+_start_ap_docker() {
+    # Clean up any stale override from previous failed run
+    vps_chain_ssh "rm -f $VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
+
+    INDEX_ADDR=$(read_deployment_addr "Index")
+    MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
+
+    # Write AP key file on VPS 2 (NOT in environment: or CLI — visible in docker inspect)
+    vps_chain_ssh "printf '%s' '$AP_KEY' > /tmp/ap-key.txt && chmod 600 /tmp/ap-key.txt"
+
+    local OVERRIDE="$SCRIPT_DIR/.ap-override.yml"
+    # AP reads key from file via AP_PRIVATE_KEY_PATH (Task 0 prerequisite).
+    # Path is not secret — only the file content is. docker inspect shows the path, not the key.
+    cat > "$OVERRIDE" <<YEOF
+services:
+  ap:
+    environment:
+      AP_PRIVATE_KEY_PATH: /tmp/ap-key.txt
+    volumes:
+      - /tmp/ap-key.txt:/tmp/ap-key.txt:ro
+    command:
+      - "--port"
+      - "9100"
+      - "--rpc"
+      - "http://localhost/"
+      - "--exchange-mode"
+      - "mock"
+      - "--settlement-rpc"
+      - "$SETTLEMENT_RPC_URL"
+      - "--settlement-chain-id"
+      - "$SETTLEMENT_CHAIN_ID"
+      - "--deployment-file"
+      - "/app/deployments/active-deployment.json"
+      - "--data-node-url"
+      - "http://$VPS_BE_IP:$DATA_NODE_PORT"
+      - "--log-level"
+      - "info"
+$([ -n "$INDEX_ADDR" ] && echo '      - "--index-contract"
+      - "'"$INDEX_ADDR"'"')
+$([ -n "$MOCK_VAULT" ] && echo '      - "--bitget-vault"
+      - "'"$MOCK_VAULT"'"')
+YEOF
+
+    rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$OVERRIDE" \
+        "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
+    rm -f "$OVERRIDE"
+
+    if vps2_compose ap up -d --build; then
+        echo -e "  ${GREEN}AP started${NC}"
+    else
+        echo -e "  ${RED}AP failed — check: ./testnet.sh logs ap${NC}"
+    fi
+
+    # Clean up override (no secrets in it now)
+    vps_chain_ssh "rm -f $VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
 }
 
 # ── stop: Stop all VPS services ──────────────────────────────
 cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
-    echo -e "${BLUE}VPS 1 (issuers + data-node + curator)...${NC}"
-    vps_be_ssh "pkill -x issuer 2>/dev/null; pkill -x data-node 2>/dev/null; pkill -x curator 2>/dev/null; pkill -f sonic-rpc-proxy 2>/dev/null; sleep 1; pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; true"
-    echo -e "  ${GREEN}VPS 1 stopped${NC}"
+    echo -e "${BLUE}VPS 1...${NC}"
+    for svc in curator issuer data-node sonic-proxy; do
+        ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
+    done
+    # Clean up key files and stale overrides on VPS 1
+    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt"
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/*/docker-compose.override.yml"
+    echo -e "  ${GREEN}VPS 1 stopped + keys cleaned${NC}"
 
-    echo -e "${BLUE}VPS 2 (AP)...${NC}"
-    vps_chain_ssh "pkill -x ap 2>/dev/null; sleep 1; pkill -9 -x ap 2>/dev/null; true"
-    echo -e "  ${GREEN}VPS 2 stopped${NC}"
+    echo -e "${BLUE}VPS 2...${NC}"
+    ssh "$VPS_CHAIN_HOST" "cd $VPS_CHAIN_DIR/docker/testnet/ap && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
+    # Clean up key files on VPS 2
+    vps_chain_ssh "rm -f /tmp/ap-key.txt"
+    vps_chain_ssh "rm -f $VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
+    echo -e "  ${GREEN}VPS 2 stopped + keys cleaned${NC}"
 
     echo -e "${GREEN}All services stopped${NC}"
 }
@@ -718,18 +900,19 @@ cmd_stop() {
 cmd_status() {
     echo -e "${CYAN}Service status:${NC}"
     echo ""
-    echo -e "${BLUE}VPS 1 ($VPS_BE_IP) — Backend:${NC}"
-    check_service "$VPS_BE_HOST" "data-node" "data-node serve" || true
-    check_service "$VPS_BE_HOST" "issuer-1" "node-id 1" || true
-    check_service "$VPS_BE_HOST" "issuer-2" "node-id 2" || true
-    check_service "$VPS_BE_HOST" "issuer-3" "node-id 3" || true
-    check_service "$VPS_BE_HOST" "Curator" "target/release/curator" || true
+    echo -e "${BLUE}VPS 1 ($VPS_BE_IP):${NC}"
+    for svc in sonic-proxy data-node; do
+        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "$svc" "$svc" || true
+    done
+    for i in 1 2 3; do
+        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i" || true
+    done
+    check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "curator" "curator" || true
 
     echo ""
-    echo -e "${BLUE}VPS 2 ($VPS_CHAIN_IP) — Chain + AP:${NC}"
-    check_service "$VPS_CHAIN_HOST" "AP" "target/release/ap" || true
+    echo -e "${BLUE}VPS 2 ($VPS_CHAIN_IP):${NC}"
+    check_docker_service "$VPS_CHAIN_HOST" "$VPS_CHAIN_DIR" "ap" "ap" || true
 
-    # Check L3 chain
     echo ""
     echo -e "${BLUE}L3 Chain:${NC}"
     VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "unreachable")
@@ -740,9 +923,8 @@ cmd_status() {
         echo -e "  ${RED}L3 unreachable${NC}"
     fi
 
-    # Check Settlement chain (Sonic)
     echo ""
-    echo -e "${BLUE}Settlement Chain (Sonic):${NC}"
+    echo -e "${BLUE}Settlement (Sonic):${NC}"
     SONIC_ID=$(cast chain-id --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "unreachable")
     if [ "$SONIC_ID" = "$SETTLEMENT_CHAIN_ID" ]; then
         SBLOCK=$(cast block-number --rpc-url "$SETTLEMENT_RPC_URL" 2>/dev/null || echo "?")
@@ -751,7 +933,6 @@ cmd_status() {
         echo -e "  ${RED}Sonic unreachable${NC}"
     fi
 
-    # Check data-node health
     echo ""
     echo -e "${BLUE}Data-node health:${NC}"
     HEALTH=$(curl -sf "http://$VPS_BE_IP:$DATA_NODE_PORT/health" 2>/dev/null || echo "unreachable")
@@ -764,34 +945,20 @@ cmd_status() {
 
 # ── update: Pull + rebuild + restart ─────────────────────────
 cmd_update() {
-    echo -e "${CYAN}Updating both VPSes from GitHub...${NC}"
-
-    # Stop services first
+    echo -e "${CYAN}Updating both VPSes...${NC}"
     cmd_stop
 
-    echo -e "${BLUE}[1/4] Pulling latest on VPS 1...${NC}"
+    echo -e "${BLUE}[1/4] Pulling on VPS 1...${NC}"
     vps_be_ssh "cd $VPS_BE_DIR && git pull origin main 2>&1 | tail -5"
-    echo -e "  ${GREEN}VPS 1 updated${NC}"
-
-    echo -e "${BLUE}[2/4] Pulling latest on VPS 2...${NC}"
+    echo -e "${BLUE}[2/4] Pulling on VPS 2...${NC}"
     vps_chain_ssh "cd $VPS_CHAIN_DIR && git pull origin main 2>&1 | tail -5"
-    echo -e "  ${GREEN}VPS 2 updated${NC}"
 
-    echo -e "${BLUE}[3/4] Rebuilding on VPS 1 (data-node + issuer + curator)...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
-    echo -e "  ${GREEN}VPS 1 build complete${NC}"
+    echo -e "${BLUE}[3/4] Building on VPS 1...${NC}"
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5"
+    echo -e "${BLUE}[4/4] Building on VPS 2...${NC}"
+    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5"
 
-    echo -e "${BLUE}[4/4] Rebuilding on VPS 2 (AP)...${NC}"
-    vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
-    echo -e "  ${GREEN}VPS 2 build complete${NC}"
-
-    # Sync config files and credentials to VPS 1
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/assets.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/assets.json" 2>/dev/null || true
-    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
-    [ -f "$SCRIPT_DIR/system.env" ] && rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/system.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/system.env" 2>/dev/null || true
-
-    # Restart
+    _sync_config_files
     cmd_start
 }
 
@@ -799,38 +966,24 @@ cmd_update() {
 cmd_logs() {
     local service="${1:-all}"
     case $service in
+        sonic-proxy)
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/sonic-proxy && docker compose logs -f" ;;
         data-node)
-            echo -e "${CYAN}Tailing data-node logs (VPS 1)...${NC}"
-            ssh "$VPS_BE_HOST" "tail -f $VPS_BE_DIR/logs/data-node.log"
-            ;;
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" ;;
         issuer-1|issuer-2|issuer-3)
-            local num=${service#issuer-}
-            echo -e "${CYAN}Tailing issuer-$num logs (VPS 1)...${NC}"
-            ssh "$VPS_BE_HOST" "tail -f $VPS_BE_DIR/logs/issuer-$num.log"
-            ;;
-        ap)
-            echo -e "${CYAN}Tailing AP logs (VPS 2)...${NC}"
-            ssh "$VPS_CHAIN_HOST" "tail -f $VPS_CHAIN_DIR/logs/ap.log"
-            ;;
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f $service" ;;
         curator)
-            echo -e "${CYAN}Tailing Curator logs (VPS 1)...${NC}"
-            ssh "$VPS_BE_HOST" "tail -f $VPS_BE_DIR/logs/curator.log"
-            ;;
-        all|"")
-            echo -e "${CYAN}Tailing issuer-1 + AP logs...${NC}"
-            echo -e "${YELLOW}(Use ./testnet.sh logs <service> for specific logs)${NC}"
-            ssh "$VPS_BE_HOST" "tail -f $VPS_BE_DIR/logs/issuer-1.log" &
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/curator && docker compose logs -f" ;;
+        ap)
+            ssh "$VPS_CHAIN_HOST" "cd $VPS_CHAIN_DIR/docker/testnet/ap && docker compose logs -f" ;;
+        all)
+            echo -e "${CYAN}Tailing issuer-1 + data-node...${NC}"
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f issuer-1" &
             PID1=$!
-            ssh "$VPS_CHAIN_HOST" "tail -f $VPS_CHAIN_DIR/logs/ap.log" &
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" &
             PID2=$!
-            trap "kill $PID1 $PID2 2>/dev/null" INT
-            wait
-            ;;
-        *)
-            echo -e "${RED}Unknown service: $service${NC}"
-            echo "Available: data-node, issuer-1, issuer-2, issuer-3, ap, curator, all"
-            exit 1
-            ;;
+            trap "kill $PID1 $PID2 2>/dev/null" INT; wait ;;
+        *) echo "Available: sonic-proxy, data-node, issuer-1..3, curator, ap, all"; exit 1 ;;
     esac
 }
 
@@ -930,7 +1083,7 @@ case "${1:-help}" in
         echo "  status            Check what's running"
         echo "  update            git pull + rebuild + restart on both VPSes"
         echo "  refresh-batches   Redeploy Vision batches with fresh version"
-        echo "  logs [svc]        Tail logs (data-node, issuer-1..3, ap, curator, all)"
+        echo "  logs [svc]        Tail logs (sonic-proxy, data-node, issuer-1..3, curator, ap, all)"
         echo ""
         echo "Architecture:"
         echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, Curator, PostgreSQL"
