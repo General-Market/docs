@@ -543,13 +543,15 @@ _start_issuers() {
         # Vision args
         VISION_ARGS=""
         if [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ]; then
+            VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
             VISION_ARGS="--vision-enabled \\
     --vision-address $VISION_ADDR \\
     --vision-database-url postgres:///$DB_NAME \\
     --vision-data-node-url http://localhost:$DATA_NODE_PORT \\
     --vision-rpc-ws-url $RPC_URL \\
     --vision-reveal-window-secs 60 \\
-    --vision-tick-poll-interval-ms 500"
+    --vision-tick-poll-interval-ms 500 \\
+    --vision-settlement-bridge-custody $VISION_SETTLEMENT_CUSTODY"
         fi
 
         # Bridge proxy arg
