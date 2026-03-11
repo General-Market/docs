@@ -839,8 +839,15 @@ export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{
           return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
         }
       } catch {
-        // Position read failed = nobody joined
-        return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
+        // Position read failed — verify batch exists on-chain before returning
+        // (JSON may have stale batch IDs from a different contract deployment)
+        try {
+          const liveConfigHash = await getBatchConfigHash(entry.batchId)
+          return { batchId: entry.batchId, configHash: liveConfigHash }
+        } catch {
+          // Batch doesn't exist on-chain — skip it
+          continue
+        }
       }
     }
   } catch {
