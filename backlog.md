@@ -1,5 +1,17 @@
 # Design Decision Backlog
 
+## Session: 20260311-e2e (E2E Testnet Fixes)
+
+- [BUG] E2E test `08-settlement-bridge-buy.spec.ts` takes **11.1 minutes** — settlement bridge buy order not filled in 180s, retries with new order. Issuers not processing ITP buy orders promptly.
+- [BUG] E2E test `26-rebalance-full-cycle.spec.ts` takes **8.1 minutes** — rebalance TX confirmed but waiting for issuer consensus that never arrives. Issuers don't process `RebalanceRequested` events.
+- [BUG] E2E test `18-multi-itp-orders.spec.ts` takes **6.1 minutes** — ITP2 buy order not filled within timeout, sell works but buy hangs.
+- [BUG] E2E test `25-vision-tick-resolution.spec.ts` takes **5.6 minutes** — tick never resolves. Issuers accept bitmaps (partially) but don't resolve ticks. `lastClaimedTick` stays at 0.
+- [BUG] E2E test `20-vision-settlement-withdraw.spec.ts` takes **5.3 minutes** — Settlement deposit virtual balance never credited by issuers.
+- [BUG] Data-node `/aum-ranking` endpoint hangs (timeout) even locally on VPS — blocks all ITP card rendering. `/health` works fine. Need data-node restart or investigation.
+- [DECISION] Switched testnet issuer URLs from SSH tunnels (localhost:10001-10003) to nginx proxy (116.203.156.98/issuer1-3) — eliminates tunnel drops during long E2E runs
+- [DECISION] Fixed `findAvailableE2eBatch` — JSON vision-batches.json had stale batch IDs from older deployment. Now validates batch exists on-chain via `getBatchConfigHash` before returning.
+- [DECISION] Reduced tick resolution poll deadline from 300s to 240s — 300s was too close to 360s test timeout, join operations ate the 60s buffer.
+
 ## Session: 20260310-1540-e2e (E2E Reliability Fixes)
 
 - [FAILED] Rebalance E2E: issuers don't detect `RebalanceRequested` events on testnet. Root cause: issuers use `DataNodeChainReader` which doesn't forward RebalanceRequested events from L3 Index. TX confirmed (status 0x1, 1 event) but issuers never see it. Fix needed in data-node Rust code to forward RebalanceRequested events to issuer chain reader API.
