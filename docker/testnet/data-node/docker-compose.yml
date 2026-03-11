@@ -17,6 +17,7 @@ services:
       - ../../../deployments/morpho-e2e.json:/app/deployments/morpho-e2e.json:ro
       - ../../../deployments/vision-batches.json:/app/deployments/vision-batches.json:ro
       - ../../../data/symbol-map.json:/app/data/symbol-map.json:ro
+      - ../../../assets.json:/app/assets.json:ro
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8200/health"]
       interval: 30s
