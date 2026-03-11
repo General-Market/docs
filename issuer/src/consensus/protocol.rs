@@ -469,6 +469,11 @@ where
         self.key_registry.registry_nonce()
     }
 
+    /// Get the configured number of issuers
+    pub fn num_issuers(&self) -> u8 {
+        self.runtime_config.num_issuers()
+    }
+
     /// Check if this node is the leader for a given cycle (for mirror sync leader election)
     pub async fn is_leader_for_cycle(&self, cycle: u64) -> bool {
         self.leader_elector.write().await.is_leader_for_cycle(cycle)
