@@ -5777,6 +5777,12 @@ fn truncate_hex(hex: &str, prefix_len: usize, suffix_len: usize) -> String {
     format!("{}…{}", &hex[..prefix_len], &hex[hex.len() - suffix_len..])
 }
 
+/// Public wrapper: build the system snapshot and return pre-serialized JSON.
+pub async fn build_system_snapshot_json(state: &AppState) -> String {
+    let snap = build_system_snapshot(state).await;
+    serde_json::to_string(&snap).unwrap_or_default()
+}
+
 async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     let l3 = &state.l3_provider;
     let settlement = &state.settlement_provider;
@@ -5834,12 +5840,15 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         }
     }).collect();
 
-    // Query OrderSubmitted events (all)
-    let order_filter = index.order_submitted_filter().from_block(0u64);
+    // Query OrderSubmitted + FillConfirmed events from recent blocks only
+    // (scanning from block 0 is too slow on large chains and blocks the SSE loop)
+    let lookback: u64 = 50_000;
+    let from_block = l3_block_number.saturating_sub(lookback);
+
+    let order_filter = index.order_submitted_filter().from_block(from_block);
     let order_logs = order_filter.query_with_meta().await.unwrap_or_default();
 
-    // Query FillConfirmed events (all)
-    let fill_filter = index.fill_confirmed_filter().from_block(0u64);
+    let fill_filter = index.fill_confirmed_filter().from_block(from_block);
     let fill_logs = fill_filter.query_with_meta().await.unwrap_or_default();
 
     // Build fill map: orderId -> (block_number, cycle_number)
@@ -6068,7 +6077,7 @@ async fn sse_stream(
         let mut last_orders_gen: u64 = 0;
         let mut last_pos_gen: u64 = 0;
         let mut last_cb_gen: u64 = 0;
-        let mut last_system_send = std::time::Instant::now();
+        let mut last_system_gen: u64 = 0;
 
         loop {
             let cache = &state.chain_cache;
@@ -6094,11 +6103,15 @@ async fn sse_stream(
                 }
             }
 
-            if topics.contains(&"system".to_string()) && last_system_send.elapsed() >= Duration::from_secs(2) {
-                let snapshot = build_system_snapshot(&state).await;
-                let json = serde_json::to_string(&snapshot).unwrap_or_default();
-                if tx.send(Ok(Event::default().event("system-status").data(json))).await.is_err() { break; }
-                last_system_send = std::time::Instant::now();
+            if topics.contains(&"system".to_string()) {
+                let gen = cache.system_snapshot_gen.get();
+                if gen != last_system_gen {
+                    let json = cache.system_snapshot_json.read().await.clone();
+                    if !json.is_empty() {
+                        if tx.send(Ok(Event::default().event("system-status").data(json))).await.is_err() { break; }
+                    }
+                    last_system_gen = gen;
+                }
             }
 
             // User topics — only if we have a user cache

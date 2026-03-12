@@ -1016,3 +1016,24 @@ pub async fn poll_pending_rebalances_once(state: &AppState) -> Result<(), Box<dy
     state.chain_cache.pending_rebalances_gen.bump();
     Ok(())
 }
+
+/// Build the system snapshot in the background and cache it as pre-serialized JSON.
+/// Uses a timeout to prevent hanging the poller loop if RPC calls stall.
+pub async fn poll_system_snapshot_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(15),
+        crate::api::build_system_snapshot_json(state),
+    ).await;
+
+    match result {
+        Ok(json) => {
+            let mut cache = state.chain_cache.system_snapshot_json.write().await;
+            *cache = json;
+            state.chain_cache.system_snapshot_gen.bump();
+        }
+        Err(_) => {
+            warn!("system_snapshot: timed out after 15s, skipping this tick");
+        }
+    }
+    Ok(())
+}

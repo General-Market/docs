@@ -180,6 +180,10 @@ pub struct ChainCache {
     pub cross_chain_buy_orders_gen: Generation,
     pub cross_chain_sell_orders: RwLock<Vec<serde_json::Value>>,
     pub cross_chain_sell_orders_gen: Generation,
+
+    // Cached system snapshot (pre-serialized JSON for SSE)
+    pub system_snapshot_json: RwLock<String>,
+    pub system_snapshot_gen: Generation,
 }
 
 impl ChainCache {
@@ -216,6 +220,9 @@ impl ChainCache {
             cross_chain_buy_orders_gen: Generation::default(),
             cross_chain_sell_orders: RwLock::new(Vec::new()),
             cross_chain_sell_orders_gen: Generation::default(),
+
+            system_snapshot_json: RwLock::new(String::new()),
+            system_snapshot_gen: Generation::default(),
         }
     }
 
