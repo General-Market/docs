@@ -4,6 +4,7 @@
 //! Coordinates price consensus, batch consensus, and signature aggregation.
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use common::adapters::BitgetVaultReader;
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
@@ -11,10 +12,20 @@ use common::error::Error;
 use common::traits::{BLSSigner, ChainWriter, P2PTransport};
 use common::types::{Fill, P2PMessage, PeerId, Price};
 use common::BLSSignature;
+use ethers::abi::{self, Token};
+use ethers::providers::{Http, Middleware, Provider};
 use ethers::types::{Address, H256, U256};
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
+
+use crate::vision::deposit_watcher::{
+    build_credit_balance_hash, build_complete_deposit_hash,
+    build_refund_deposit_hash, build_complete_withdraw_hash,
+    build_credit_balance_calldata, build_complete_deposit_calldata,
+    build_refund_deposit_calldata, build_complete_withdraw_calldata,
+};
+use crate::vision::pending_ops::{PendingOpsQueue, VisionOp, OpResult};
 
 use super::ConsensusError;
 use super::handler_macros::{bridge_proposal_handler, bridge_sign_handler};
@@ -185,6 +196,42 @@ impl std::fmt::Debug for RuntimeConfig {
             .field("signature_threshold", &self.signature_threshold.load(std::sync::atomic::Ordering::Relaxed))
             .finish()
     }
+}
+
+/// Sign message forwarding for vision ops consensus.
+///
+/// The leader's spawned task communicates with the message dispatch via
+/// a `tokio::sync::mpsc` channel. Incoming sign messages from followers
+/// are forwarded as these variants.
+#[derive(Debug)]
+pub enum VisionSignMessage {
+    CreditBalance { from: PeerId, order_id: u64, signature: Vec<u8> },
+    CompleteDeposit { from: PeerId, order_id: u64, signature: Vec<u8> },
+    RefundDeposit { from: PeerId, order_id: u64, signature: Vec<u8> },
+    CompleteWithdraw { from: PeerId, withdraw_id: u64, signature: Vec<u8> },
+}
+
+/// Refund timeout: deposits older than this (in seconds) can be refunded.
+const VISION_REFUND_TIMEOUT: u64 = 7200;
+
+/// Configuration for vision deposit/withdraw consensus (follower validation).
+///
+/// Stored on `ConsensusProtocol` and set by the bootstrap code that also
+/// configures the deposit watcher.
+#[derive(Clone)]
+pub struct VisionConsensusConfig {
+    /// L3 RPC provider (for reading depositProcessed, withdrawRequests).
+    pub l3_provider: Arc<Provider<Http>>,
+    /// Settlement RPC provider (for reading visionDeposits).
+    pub settlement_provider: Arc<Provider<Http>>,
+    /// Vision.sol address on L3.
+    pub vision_address: Address,
+    /// SettlementBridgeCustody address on Settlement.
+    pub custody_address: Address,
+    /// L3 chain ID (for hash domain separation).
+    pub l3_chain_id: u64,
+    /// Settlement chain ID (for hash domain separation).
+    pub settlement_chain_id: u64,
 }
 
 /// Result of a consensus round
@@ -358,6 +405,12 @@ where
     /// leader's (asset_index, price) tuples back to real addresses for independent
     /// price verification. Index `i` maps to `known_assets[i]`.
     known_assets: RwLock<Vec<Address>>,
+    /// Sign message forwarding channel for vision ops consensus.
+    /// The leader stores a sender here; the message dispatch forwards sign messages through it.
+    pub vision_sign_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<VisionSignMessage>>>>,
+    /// Vision deposit/withdraw consensus config (providers, addresses, chain IDs).
+    /// Set via `set_vision_consensus_config()`. Required for follower validation.
+    vision_consensus_config: RwLock<Option<VisionConsensusConfig>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -447,6 +500,8 @@ where
             replay_mode: std::sync::atomic::AtomicBool::new(false),
             last_prices: RwLock::new(std::collections::HashMap::new()),
             known_assets: RwLock::new(Vec::new()),
+            vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
+            vision_consensus_config: RwLock::new(None),
         }
     }
 
@@ -543,6 +598,15 @@ where
     pub async fn set_bridge_orchestrator(&self, orchestrator: Arc<RwLock<BridgeOrchestrator>>) {
         let mut bridge_orch = self.bridge_orchestrator.write().await;
         *bridge_orch = Some(orchestrator);
+    }
+
+    /// Set vision consensus config for follower deposit/withdraw validation.
+    ///
+    /// When set, follower handlers can validate vision proposals by reading
+    /// on-chain state from L3 and Settlement.
+    pub async fn set_vision_consensus_config(&self, config: VisionConsensusConfig) {
+        let mut vision_cfg = self.vision_consensus_config.write().await;
+        *vision_cfg = Some(config);
     }
 
     /// Set ITP creation config for handling cross-chain ITP creation proposals (Story 6.24)
@@ -2900,30 +2964,86 @@ where
                     );
                 }
             }
-            // Vision deposit/withdraw consensus — log and ignore until handlers are wired
-            MessageHandleResult::ProcessVisionCreditBalanceProposal { order_id, .. } => {
-                debug!(order_id, "VisionCreditBalanceProposal received (handler not wired yet)");
+            // Vision deposit/withdraw consensus — follower proposal handlers
+            MessageHandleResult::ProcessVisionCreditBalanceProposal {
+                from, leader_id, order_id, user, amount, message_hash, leader_signature,
+            } => {
+                if let Err(e) = self.handle_vision_credit_balance_proposal(
+                    from, leader_id, order_id, user, amount, message_hash, leader_signature,
+                ).await {
+                    warn!(code = "INFRA-007", order_id, error = %e, "Failed to handle VisionCreditBalanceProposal");
+                }
             }
-            MessageHandleResult::ProcessVisionCreditBalanceSign { order_id, .. } => {
-                debug!(order_id, "VisionCreditBalanceSign received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionCreditBalanceSign {
+                from, signer_id: _, signer_index: _, order_id, signature,
+            } => {
+                if let Ok(guard) = self.vision_sign_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let _ = tx.try_send(VisionSignMessage::CreditBalance {
+                            from, order_id, signature: signature.0,
+                        });
+                    }
+                }
             }
-            MessageHandleResult::ProcessVisionCompleteDepositProposal { order_id, .. } => {
-                debug!(order_id, "VisionCompleteDepositProposal received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionCompleteDepositProposal {
+                from, leader_id, order_id, message_hash, leader_signature,
+            } => {
+                if let Err(e) = self.handle_vision_complete_deposit_proposal(
+                    from, leader_id, order_id, message_hash, leader_signature,
+                ).await {
+                    warn!(code = "INFRA-007", order_id, error = %e, "Failed to handle VisionCompleteDepositProposal");
+                }
             }
-            MessageHandleResult::ProcessVisionCompleteDepositSign { order_id, .. } => {
-                debug!(order_id, "VisionCompleteDepositSign received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionCompleteDepositSign {
+                from, signer_id: _, signer_index: _, order_id, signature,
+            } => {
+                if let Ok(guard) = self.vision_sign_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let _ = tx.try_send(VisionSignMessage::CompleteDeposit {
+                            from, order_id, signature: signature.0,
+                        });
+                    }
+                }
             }
-            MessageHandleResult::ProcessVisionRefundDepositProposal { order_id, .. } => {
-                debug!(order_id, "VisionRefundDepositProposal received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionRefundDepositProposal {
+                from, leader_id, order_id, message_hash, leader_signature,
+            } => {
+                if let Err(e) = self.handle_vision_refund_deposit_proposal(
+                    from, leader_id, order_id, message_hash, leader_signature,
+                ).await {
+                    warn!(code = "INFRA-007", order_id, error = %e, "Failed to handle VisionRefundDepositProposal");
+                }
             }
-            MessageHandleResult::ProcessVisionRefundDepositSign { order_id, .. } => {
-                debug!(order_id, "VisionRefundDepositSign received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionRefundDepositSign {
+                from, signer_id: _, signer_index: _, order_id, signature,
+            } => {
+                if let Ok(guard) = self.vision_sign_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let _ = tx.try_send(VisionSignMessage::RefundDeposit {
+                            from, order_id, signature: signature.0,
+                        });
+                    }
+                }
             }
-            MessageHandleResult::ProcessVisionCompleteWithdrawProposal { withdraw_id, .. } => {
-                debug!(withdraw_id, "VisionCompleteWithdrawProposal received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionCompleteWithdrawProposal {
+                from, leader_id, withdraw_id, user, amount, message_hash, leader_signature,
+            } => {
+                if let Err(e) = self.handle_vision_complete_withdraw_proposal(
+                    from, leader_id, withdraw_id, user, amount, message_hash, leader_signature,
+                ).await {
+                    warn!(code = "INFRA-007", withdraw_id, error = %e, "Failed to handle VisionCompleteWithdrawProposal");
+                }
             }
-            MessageHandleResult::ProcessVisionCompleteWithdrawSign { withdraw_id, .. } => {
-                debug!(withdraw_id, "VisionCompleteWithdrawSign received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionCompleteWithdrawSign {
+                from, signer_id: _, signer_index: _, withdraw_id, signature,
+            } => {
+                if let Ok(guard) = self.vision_sign_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let _ = tx.try_send(VisionSignMessage::CompleteWithdraw {
+                            from, withdraw_id, signature: signature.0,
+                        });
+                    }
+                }
             }
             MessageHandleResult::ProcessVisionBalanceProofsBatch { batch_id, tick_id, .. } => {
                 debug!(batch_id, tick_id, "VisionBalanceProofsBatch received (handler not wired yet)");
@@ -7405,6 +7525,887 @@ where
             check: orch.check_complete_buy_order_threshold(cycle_number).await,
             count: orch.get_complete_buy_order_signature_count(cycle_number).await.unwrap_or(0),
         })
+    }
+
+    // =========================================================================
+    // Vision Ops BLS Consensus — Leader Flow
+    // =========================================================================
+
+    /// Run vision ops consensus as leader.
+    ///
+    /// Drains pending operations from the queue, broadcasts proposals,
+    /// collects BLS signatures from followers via mpsc channel, aggregates
+    /// them, and submits the signed transaction on-chain.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn run_vision_ops(
+        &self,
+        ops_queue: &Arc<PendingOpsQueue>,
+        l3_provider: &Provider<Http>,
+        settlement_provider: &Provider<Http>,
+        l3_chain_writer: &Arc<dyn ChainWriter>,
+        settlement_chain_writer: &Arc<dyn ChainWriter>,
+        vision_address: Address,
+        custody_address: Address,
+        l3_chain_id: u64,
+        settlement_chain_id: u64,
+    ) -> Result<(), ConsensusError> {
+        let ops = ops_queue.drain_pending(5);
+        if ops.is_empty() {
+            return Ok(());
+        }
+
+        // Pre-flight: need at least 3 peers for BLS consensus
+        let peer_count = self.key_registry.peer_count();
+        if peer_count < 3 {
+            warn!(
+                peer_count,
+                "Insufficient peers for vision ops consensus (need >= 3), failing all ops"
+            );
+            for op in &ops {
+                let (tag, id) = op.key();
+                ops_queue.write_result(tag, id, OpResult::Failed {
+                    error: format!("Insufficient peers: {} < 3", peer_count),
+                });
+            }
+            return Ok(());
+        }
+
+        // Create sign message channel
+        let (sign_tx, mut sign_rx) = tokio::sync::mpsc::channel::<VisionSignMessage>(32);
+        *self.vision_sign_tx.lock().unwrap() = Some(sign_tx);
+
+        let threshold = compute_threshold(peer_count);
+        let sign_timeout = self.config.timeouts.batch_sign_timeout.as_millis() as u64;
+
+        // Track previous credit successes for same-batch credit+complete delay
+        let mut credited_order_ids: Vec<u64> = Vec::new();
+
+        for op in &ops {
+            let op_tag = op.key().0;
+            let op_id = op.id();
+
+            // If credit+complete for same order in same batch, delay between them
+            if matches!(op, VisionOp::CompleteDeposit { order_id, .. } if credited_order_ids.contains(order_id)) {
+                info!(order_id = op_id, "Delaying 3s between credit and complete for same order");
+                sleep(Duration::from_secs(3)).await;
+            }
+
+            // Dedup check for CreditBalance: skip if already processed on L3
+            if let VisionOp::CreditBalance { order_id, .. } = op {
+                if self.vision_check_deposit_processed(l3_provider, vision_address, *order_id).await {
+                    info!(order_id, "Deposit already processed on L3, skipping credit");
+                    ops_queue.write_result("credit", *order_id, OpResult::Permanent {
+                        reason: "Already processed on L3".into(),
+                    });
+                    continue;
+                }
+            }
+
+            // Recompute message hash and verify it matches the queued hash
+            let expected_hash = match op {
+                VisionOp::CreditBalance { user, amount, order_id, .. } => {
+                    build_credit_balance_hash(l3_chain_id, vision_address, *user, *amount, U256::from(*order_id))
+                }
+                VisionOp::CompleteDeposit { order_id, .. } => {
+                    build_complete_deposit_hash(settlement_chain_id, custody_address, U256::from(*order_id))
+                }
+                VisionOp::RefundDeposit { order_id, .. } => {
+                    build_refund_deposit_hash(settlement_chain_id, custody_address, U256::from(*order_id))
+                }
+                VisionOp::CompleteWithdraw { withdraw_id, user, amount, .. } => {
+                    build_complete_withdraw_hash(
+                        settlement_chain_id, custody_address,
+                        U256::from(*withdraw_id), *user, *amount,
+                    )
+                }
+            };
+
+            if expected_hash != *op.message_hash() {
+                warn!(
+                    op_tag, op_id,
+                    expected = ?expected_hash,
+                    queued = ?op.message_hash(),
+                    "Vision op hash mismatch"
+                );
+                ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                    error: "Hash mismatch between queued and recomputed".into(),
+                });
+                continue;
+            }
+
+            let message_hash = expected_hash;
+
+            // Sign with own BLS keypair
+            let hash_bytes: [u8; 32] = message_hash.into();
+            let own_sig = match self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes) {
+                Ok(sig) => sig,
+                Err(e) => {
+                    ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                        error: format!("BLS signing failed: {e}"),
+                    });
+                    continue;
+                }
+            };
+
+            // Create aggregator and add own signature
+            let mut aggregator = SignatureAggregator::with_threshold(threshold);
+            let own_issuer_index = self.runtime_config.issuer_registry_index();
+            if let Err(e) = aggregator.add_signature(
+                self.config.peer_id,
+                own_issuer_index,
+                BLSSignature(own_sig.0.clone()),
+            ) {
+                ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                    error: format!("Failed to add own signature: {e}"),
+                });
+                continue;
+            }
+
+            // Broadcast proposal
+            let proposal_msg = match op {
+                VisionOp::CreditBalance { order_id, user, amount, .. } => {
+                    P2PMessage::VisionCreditBalanceProposal {
+                        leader_id: self.config.peer_id,
+                        order_id: *order_id,
+                        user: *user,
+                        amount: *amount,
+                        message_hash,
+                        leader_signature: common::types::BLSSignature(own_sig.0.clone()),
+                    }
+                }
+                VisionOp::CompleteDeposit { order_id, .. } => {
+                    P2PMessage::VisionCompleteDepositProposal {
+                        leader_id: self.config.peer_id,
+                        order_id: *order_id,
+                        message_hash,
+                        leader_signature: common::types::BLSSignature(own_sig.0.clone()),
+                    }
+                }
+                VisionOp::RefundDeposit { order_id, .. } => {
+                    P2PMessage::VisionRefundDepositProposal {
+                        leader_id: self.config.peer_id,
+                        order_id: *order_id,
+                        message_hash,
+                        leader_signature: common::types::BLSSignature(own_sig.0.clone()),
+                    }
+                }
+                VisionOp::CompleteWithdraw { withdraw_id, user, amount, .. } => {
+                    P2PMessage::VisionCompleteWithdrawProposal {
+                        leader_id: self.config.peer_id,
+                        withdraw_id: *withdraw_id,
+                        user: *user,
+                        amount: *amount,
+                        message_hash,
+                        leader_signature: common::types::BLSSignature(own_sig.0.clone()),
+                    }
+                }
+            };
+
+            if let Err(e) = self.p2p.broadcast(proposal_msg).await {
+                warn!(op_tag, op_id, error = %e, "Failed to broadcast vision op proposal");
+                ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                    error: format!("Broadcast failed: {e}"),
+                });
+                continue;
+            }
+
+            // Collect signatures with timeout
+            let deadline = tokio::time::Instant::now() + Duration::from_millis(sign_timeout);
+            let mut threshold_reached = false;
+
+            loop {
+                let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+                if remaining.is_zero() {
+                    break;
+                }
+
+                match tokio::time::timeout(remaining, sign_rx.recv()).await {
+                    Ok(Some(sign_msg)) => {
+                        // Validate the sign message matches current op
+                        let (msg_from, msg_id, msg_sig) = match &sign_msg {
+                            VisionSignMessage::CreditBalance { from, order_id, signature } => {
+                                (from, *order_id, signature)
+                            }
+                            VisionSignMessage::CompleteDeposit { from, order_id, signature } => {
+                                (from, *order_id, signature)
+                            }
+                            VisionSignMessage::RefundDeposit { from, order_id, signature } => {
+                                (from, *order_id, signature)
+                            }
+                            VisionSignMessage::CompleteWithdraw { from, withdraw_id, signature } => {
+                                (from, *withdraw_id, signature)
+                            }
+                        };
+
+                        if msg_id != op_id {
+                            debug!(
+                                expected = op_id, received = msg_id,
+                                "Vision sign message for different op, ignoring"
+                            );
+                            continue;
+                        }
+
+                        let signer_index = extract_issuer_id(msg_from) as u8;
+
+                        match aggregator.add_signature(
+                            *msg_from,
+                            signer_index,
+                            BLSSignature(msg_sig.clone()),
+                        ) {
+                            Ok(AggregationStatus::ThresholdReached { .. }) => {
+                                threshold_reached = true;
+                                break;
+                            }
+                            Ok(_) => {} // continue collecting
+                            Err(e) => {
+                                debug!(error = %e, "Failed to add vision sign message");
+                            }
+                        }
+                    }
+                    Ok(None) => break, // channel closed
+                    Err(_) => break,   // timeout
+                }
+            }
+
+            if !threshold_reached {
+                let collected = aggregator.collected_count();
+                warn!(
+                    op_tag, op_id, collected, threshold,
+                    "Vision op signature timeout"
+                );
+                ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                    error: format!("Signature timeout: {collected}/{threshold}"),
+                });
+                continue;
+            }
+
+            // Build aggregated signature and bitmask
+            // Threshold was reached, so the last add_signature returned the result
+            // Re-read from aggregator state
+            let aggregated_sig_bytes: Vec<u8>;
+            let signers_bitmask: U256;
+            {
+                let sigs: Vec<BLSSignature> = aggregator.get_signatures().values().cloned().collect();
+                let agg = match self.bls_signer.aggregate_signatures(sigs) {
+                    Ok(a) => a,
+                    Err(e) => {
+                        ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                            error: format!("Signature aggregation failed: {e}"),
+                        });
+                        continue;
+                    }
+                };
+                aggregated_sig_bytes = agg.0;
+                signers_bitmask = aggregator.signers_bitmask();
+            }
+
+            // Read reference nonce and build calldata
+            let (target_address, calldata, chain_writer): (Address, Vec<u8>, &Arc<dyn ChainWriter>) = match op {
+                VisionOp::CreditBalance { user, amount, order_id, .. } => {
+                    let ref_nonce = U256::from(self.key_registry.registry_nonce());
+                    let cd = build_credit_balance_calldata(
+                        *user, *amount, U256::from(*order_id),
+                        &aggregated_sig_bytes, ref_nonce, signers_bitmask,
+                    );
+                    (vision_address, cd, l3_chain_writer)
+                }
+                VisionOp::CompleteDeposit { order_id, .. } => {
+                    let ref_nonce = U256::from(self.key_registry.settlement_registry_nonce());
+                    let cd = build_complete_deposit_calldata(
+                        U256::from(*order_id),
+                        &aggregated_sig_bytes, ref_nonce, signers_bitmask,
+                    );
+                    (custody_address, cd, settlement_chain_writer)
+                }
+                VisionOp::RefundDeposit { order_id, .. } => {
+                    let ref_nonce = U256::from(self.key_registry.settlement_registry_nonce());
+                    let cd = build_refund_deposit_calldata(
+                        U256::from(*order_id),
+                        &aggregated_sig_bytes, ref_nonce, signers_bitmask,
+                    );
+                    (custody_address, cd, settlement_chain_writer)
+                }
+                VisionOp::CompleteWithdraw { withdraw_id, user, amount, .. } => {
+                    let ref_nonce = U256::from(self.key_registry.settlement_registry_nonce());
+                    let cd = build_complete_withdraw_calldata(
+                        U256::from(*withdraw_id), *user, *amount,
+                        &aggregated_sig_bytes, ref_nonce, signers_bitmask,
+                    );
+                    (custody_address, cd, settlement_chain_writer)
+                }
+            };
+
+            // Submit transaction
+            match chain_writer.send_transaction(target_address, calldata, U256::zero()).await {
+                Ok(tx_hash) => {
+                    info!(op_tag, op_id, ?tx_hash, "Vision op submitted successfully");
+                    ops_queue.write_result(op_tag, op_id, OpResult::Success { tx_hash });
+
+                    // If CreditBalance succeeded, cancel any pending refund for same order
+                    if let VisionOp::CreditBalance { order_id, .. } = op {
+                        ops_queue.cancel_pending("refund", *order_id);
+                        credited_order_ids.push(*order_id);
+                    }
+                }
+                Err(e) => {
+                    let err_str = format!("{e}");
+                    // Classify revert errors
+                    if err_str.contains("AlreadyProcessed")
+                        || err_str.contains("DepositAlreadyProcessed")
+                    {
+                        info!(op_tag, op_id, "Vision op already processed (permanent)");
+                        ops_queue.write_result(op_tag, op_id, OpResult::Permanent {
+                            reason: "Already processed on-chain".into(),
+                        });
+                    } else if err_str.contains("E131_VisionDepositNotFound") {
+                        info!(op_tag, op_id, "Vision deposit not found (permanent)");
+                        ops_queue.write_result(op_tag, op_id, OpResult::Permanent {
+                            reason: "Deposit not found on-chain".into(),
+                        });
+                    } else if err_str.contains("E132_VisionWithdrawAlreadyProcessed") {
+                        info!(op_tag, op_id, "Vision withdraw already processed (permanent)");
+                        ops_queue.write_result(op_tag, op_id, OpResult::Permanent {
+                            reason: "Withdraw already processed on-chain".into(),
+                        });
+                    } else if err_str.contains("BelowThreshold") {
+                        warn!(op_tag, op_id, "Vision op below threshold (retryable)");
+                        ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                            error: "BLS threshold not met on-chain".into(),
+                        });
+                    } else {
+                        warn!(op_tag, op_id, error = %e, "Vision op tx failed");
+                        ops_queue.write_result(op_tag, op_id, OpResult::Failed {
+                            error: err_str,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Clear channel sender
+        *self.vision_sign_tx.lock().unwrap() = None;
+
+        Ok(())
+    }
+
+    /// Helper: check if depositProcessed(orderId) returns true on L3 Vision contract.
+    async fn vision_check_deposit_processed(
+        &self,
+        l3_provider: &Provider<Http>,
+        vision_address: Address,
+        order_id: u64,
+    ) -> bool {
+        let selector = &ethers::utils::keccak256(b"depositProcessed(uint256)")[..4];
+        let encoded_arg = abi::encode(&[Token::Uint(U256::from(order_id))]);
+        let mut calldata = Vec::with_capacity(4 + encoded_arg.len());
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&encoded_arg);
+
+        let tx = ethers::types::TransactionRequest::new()
+            .to(vision_address)
+            .data(calldata);
+
+        match l3_provider.call(&tx.into(), None).await {
+            Ok(result) => {
+                result.len() >= 32 && U256::from_big_endian(&result[0..32]) == U256::one()
+            }
+            Err(e) => {
+                warn!(order_id, error = %e, "Failed to query depositProcessed on L3");
+                false
+            }
+        }
+    }
+
+    /// Helper: read visionDeposits(orderId) from SettlementBridgeCustody.
+    /// Returns (user, amount, createdAt) or None on failure.
+    async fn vision_read_settlement_deposit(
+        &self,
+        settlement_provider: &Provider<Http>,
+        custody_address: Address,
+        order_id: u64,
+    ) -> Option<(Address, U256, u64)> {
+        let selector = &ethers::utils::keccak256(b"visionDeposits(uint256)")[..4];
+        let encoded_arg = abi::encode(&[Token::Uint(U256::from(order_id))]);
+        let mut calldata = Vec::with_capacity(4 + encoded_arg.len());
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&encoded_arg);
+
+        let tx = ethers::types::TransactionRequest::new()
+            .to(custody_address)
+            .data(calldata);
+
+        match settlement_provider.call(&tx.into(), None).await {
+            Ok(result) => {
+                // Expected: (address user, uint256 amount, uint256 createdAt)
+                // ABI-encoded as 3 x 32 bytes
+                if result.len() < 96 {
+                    return None;
+                }
+                let user = Address::from_slice(&result[12..32]);
+                let amount = U256::from_big_endian(&result[32..64]);
+                let created_at = U256::from_big_endian(&result[64..96]).as_u64();
+                Some((user, amount, created_at))
+            }
+            Err(e) => {
+                warn!(order_id, error = %e, "Failed to read visionDeposits from Settlement");
+                None
+            }
+        }
+    }
+
+    /// Helper: read withdrawRequests(withdrawId) from Vision.sol on L3.
+    /// Returns (user, amount) or None on failure.
+    async fn vision_read_withdraw_request(
+        &self,
+        l3_provider: &Provider<Http>,
+        vision_address: Address,
+        withdraw_id: u64,
+    ) -> Option<(Address, U256)> {
+        let selector = &ethers::utils::keccak256(b"withdrawRequests(uint256)")[..4];
+        let encoded_arg = abi::encode(&[Token::Uint(U256::from(withdraw_id))]);
+        let mut calldata = Vec::with_capacity(4 + encoded_arg.len());
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&encoded_arg);
+
+        let tx = ethers::types::TransactionRequest::new()
+            .to(vision_address)
+            .data(calldata);
+
+        match l3_provider.call(&tx.into(), None).await {
+            Ok(result) => {
+                // Expected: (address user, uint256 amount) — 2 x 32 bytes
+                if result.len() < 64 {
+                    return None;
+                }
+                let user = Address::from_slice(&result[12..32]);
+                let amount = U256::from_big_endian(&result[32..64]);
+                Some((user, amount))
+            }
+            Err(e) => {
+                warn!(withdraw_id, error = %e, "Failed to read withdrawRequests from L3");
+                None
+            }
+        }
+    }
+
+    // =========================================================================
+    // Vision Ops BLS Consensus — Follower Proposal Handlers
+    // =========================================================================
+    //
+    // CRITICAL: Fail-closed. If ANY RPC call fails during validation, the
+    // follower MUST NOT sign. Return without sending a sign message.
+
+    /// Follower handler: VisionCreditBalanceProposal
+    ///
+    /// Validates the deposit exists on Settlement and hasn't been credited on L3,
+    /// then signs and returns VisionCreditBalanceSign.
+    async fn handle_vision_credit_balance_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: common::types::BLSSignature,
+    ) -> Result<(), Error> {
+        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        let vision_cfg = match vision_cfg_guard.as_ref() {
+            Some(cfg) => cfg.clone(),
+            None => {
+                warn!(code = "INFRA-007", "VisionConsensusConfig not configured for credit balance");
+                return Ok(());
+            }
+        };
+        drop(vision_cfg_guard);
+
+        let l3_provider = &vision_cfg.l3_provider;
+        let settlement_provider = &vision_cfg.settlement_provider;
+        let vision_address = vision_cfg.vision_address;
+        let custody_address = vision_cfg.custody_address;
+        let l3_chain_id = vision_cfg.l3_chain_id;
+
+        // Step 1: Recompute hash
+        let computed_hash = build_credit_balance_hash(
+            l3_chain_id, vision_address, user, amount, U256::from(order_id),
+        );
+        if computed_hash != message_hash {
+            warn!(
+                order_id,
+                "Vision credit balance hash mismatch, rejecting"
+            );
+            return Ok(());
+        }
+
+        // Step 2: Verify leader BLS signature
+        self.verify_leader_bls(
+            &leader_id,
+            &message_hash,
+            &BLSSignature(leader_signature.0.clone()),
+            "vision_credit_balance",
+        )?;
+
+        // Step 3: MANDATORY — verify deposit exists on Settlement (fail-closed)
+        let deposit = match self.vision_read_settlement_deposit(
+            &settlement_provider, custody_address, order_id,
+        ).await {
+            Some(d) => d,
+            None => {
+                warn!(order_id, "Fail-closed: cannot read settlement deposit, refusing to sign");
+                return Ok(());
+            }
+        };
+        let (deposit_user, deposit_amount, _created_at) = deposit;
+        if deposit_user != user || deposit_amount != amount {
+            warn!(
+                order_id,
+                ?deposit_user, ?user,
+                deposit_amount = %deposit_amount, amount = %amount,
+                "Settlement deposit mismatch, refusing to sign"
+            );
+            return Ok(());
+        }
+
+        // Step 4: MANDATORY — verify not already credited on L3 (fail-closed)
+        match self.vision_check_deposit_processed_strict(&l3_provider, vision_address, order_id).await {
+            Some(true) => {
+                warn!(order_id, "Deposit already processed on L3, refusing to sign");
+                return Ok(());
+            }
+            Some(false) => {} // Good — not yet processed
+            None => {
+                warn!(order_id, "Fail-closed: cannot read depositProcessed on L3, refusing to sign");
+                return Ok(());
+            }
+        }
+
+        // Step 5: Sign and respond
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign vision credit balance: {e}")))?;
+
+        self.p2p.send_to(from, P2PMessage::VisionCreditBalanceSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            order_id,
+            signature: common::types::BLSSignature(signature.0),
+        }).await
+    }
+
+    /// Follower handler: VisionCompleteDepositProposal
+    ///
+    /// Validates the deposit was credited on L3 (with retry) and still exists
+    /// on Settlement, then signs.
+    async fn handle_vision_complete_deposit_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: common::types::BLSSignature,
+    ) -> Result<(), Error> {
+        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        let vision_cfg = match vision_cfg_guard.as_ref() {
+            Some(cfg) => cfg.clone(),
+            None => {
+                warn!(code = "INFRA-007", "VisionConsensusConfig not configured for complete deposit");
+                return Ok(());
+            }
+        };
+        drop(vision_cfg_guard);
+
+        let l3_provider = &vision_cfg.l3_provider;
+        let settlement_provider = &vision_cfg.settlement_provider;
+        let vision_address = vision_cfg.vision_address;
+        let custody_address = vision_cfg.custody_address;
+        let settlement_chain_id = vision_cfg.settlement_chain_id;
+
+        // Step 1: Recompute hash
+        let computed_hash = build_complete_deposit_hash(
+            settlement_chain_id, custody_address, U256::from(order_id),
+        );
+        if computed_hash != message_hash {
+            warn!(order_id, "Vision complete deposit hash mismatch, rejecting");
+            return Ok(());
+        }
+
+        // Step 2: Verify leader BLS
+        self.verify_leader_bls(
+            &leader_id, &message_hash,
+            &BLSSignature(leader_signature.0.clone()),
+            "vision_complete_deposit",
+        )?;
+
+        // Step 3: MANDATORY — verify depositProcessed on L3 (with retry)
+        let mut credited = false;
+        for attempt in 0..3 {
+            match self.vision_check_deposit_processed_strict(&l3_provider, vision_address, order_id).await {
+                Some(true) => {
+                    credited = true;
+                    break;
+                }
+                Some(false) => {
+                    if attempt < 2 {
+                        debug!(order_id, attempt, "Deposit not yet processed on L3, retrying in 2s");
+                        sleep(Duration::from_secs(2)).await;
+                    }
+                }
+                None => {
+                    warn!(order_id, "Fail-closed: cannot read depositProcessed on L3, refusing to sign");
+                    return Ok(());
+                }
+            }
+        }
+        if !credited {
+            warn!(order_id, "Deposit not processed on L3 after 3 retries, refusing to sign");
+            return Ok(());
+        }
+
+        // Step 4: MANDATORY — verify deposit record exists on Settlement
+        let deposit = match self.vision_read_settlement_deposit(
+            &settlement_provider, custody_address, order_id,
+        ).await {
+            Some(d) => d,
+            None => {
+                warn!(order_id, "Fail-closed: cannot read settlement deposit, refusing to sign");
+                return Ok(());
+            }
+        };
+        if deposit.0 == Address::zero() {
+            warn!(order_id, "Settlement deposit user is zero (not found), refusing to sign");
+            return Ok(());
+        }
+
+        // Step 5: Sign and respond
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign vision complete deposit: {e}")))?;
+
+        self.p2p.send_to(from, P2PMessage::VisionCompleteDepositSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            order_id,
+            signature: common::types::BLSSignature(signature.0),
+        }).await
+    }
+
+    /// Follower handler: VisionRefundDepositProposal
+    ///
+    /// Validates the deposit exists, has NOT been credited on L3 (would be
+    /// double-spend), and is old enough to refund.
+    async fn handle_vision_refund_deposit_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: common::types::BLSSignature,
+    ) -> Result<(), Error> {
+        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        let vision_cfg = match vision_cfg_guard.as_ref() {
+            Some(cfg) => cfg.clone(),
+            None => {
+                warn!(code = "INFRA-007", "VisionConsensusConfig not configured for refund deposit");
+                return Ok(());
+            }
+        };
+        drop(vision_cfg_guard);
+
+        let l3_provider = &vision_cfg.l3_provider;
+        let settlement_provider = &vision_cfg.settlement_provider;
+        let vision_address = vision_cfg.vision_address;
+        let custody_address = vision_cfg.custody_address;
+        let settlement_chain_id = vision_cfg.settlement_chain_id;
+
+        // Step 1: Recompute hash
+        let computed_hash = build_refund_deposit_hash(
+            settlement_chain_id, custody_address, U256::from(order_id),
+        );
+        if computed_hash != message_hash {
+            warn!(order_id, "Vision refund deposit hash mismatch, rejecting");
+            return Ok(());
+        }
+
+        // Step 2: Verify leader BLS
+        self.verify_leader_bls(
+            &leader_id, &message_hash,
+            &BLSSignature(leader_signature.0.clone()),
+            "vision_refund_deposit",
+        )?;
+
+        // Step 3: MANDATORY — verify deposit exists on Settlement with amount > 0
+        let deposit = match self.vision_read_settlement_deposit(
+            &settlement_provider, custody_address, order_id,
+        ).await {
+            Some(d) => d,
+            None => {
+                warn!(order_id, "Fail-closed: cannot read settlement deposit, refusing to sign");
+                return Ok(());
+            }
+        };
+        let (_deposit_user, deposit_amount, created_at) = deposit;
+        if deposit_amount.is_zero() {
+            warn!(order_id, "Settlement deposit amount is 0 (no deposit), refusing to sign");
+            return Ok(());
+        }
+
+        // Step 4: MANDATORY — verify NOT credited on L3 (refunding credited deposit = double-spend)
+        match self.vision_check_deposit_processed_strict(&l3_provider, vision_address, order_id).await {
+            Some(true) => {
+                warn!(order_id, "SECURITY: deposit already credited on L3, REFUSING to sign refund (would be double-spend)");
+                return Ok(());
+            }
+            Some(false) => {} // Good — not credited
+            None => {
+                warn!(order_id, "Fail-closed: cannot read depositProcessed on L3, refusing to sign refund");
+                return Ok(());
+            }
+        }
+
+        // Step 5: MANDATORY — check deposit age (must be older than REFUND_TIMEOUT)
+        let block_timestamp = match settlement_provider.get_block(
+            ethers::types::BlockNumber::Latest,
+        ).await {
+            Ok(Some(block)) => block.timestamp.as_u64(),
+            _ => {
+                warn!(order_id, "Fail-closed: cannot read settlement block timestamp, refusing to sign refund");
+                return Ok(());
+            }
+        };
+
+        if block_timestamp.saturating_sub(created_at) <= VISION_REFUND_TIMEOUT {
+            warn!(
+                order_id, block_timestamp, created_at,
+                timeout = VISION_REFUND_TIMEOUT,
+                "Deposit too young for refund, refusing to sign"
+            );
+            return Ok(());
+        }
+
+        // Step 6: Sign and respond
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign vision refund deposit: {e}")))?;
+
+        self.p2p.send_to(from, P2PMessage::VisionRefundDepositSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            order_id,
+            signature: common::types::BLSSignature(signature.0),
+        }).await
+    }
+
+    /// Follower handler: VisionCompleteWithdrawProposal
+    ///
+    /// Validates the withdrawal request exists on L3 with matching user/amount,
+    /// then signs.
+    async fn handle_vision_complete_withdraw_proposal(
+        &self,
+        from: PeerId,
+        leader_id: PeerId,
+        withdraw_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: common::types::BLSSignature,
+    ) -> Result<(), Error> {
+        let vision_cfg_guard = self.vision_consensus_config.read().await;
+        let vision_cfg = match vision_cfg_guard.as_ref() {
+            Some(cfg) => cfg.clone(),
+            None => {
+                warn!(code = "INFRA-007", "VisionConsensusConfig not configured for complete withdraw");
+                return Ok(());
+            }
+        };
+        drop(vision_cfg_guard);
+
+        let l3_provider = &vision_cfg.l3_provider;
+        let vision_address = vision_cfg.vision_address;
+        let settlement_chain_id = vision_cfg.settlement_chain_id;
+        let custody_address = vision_cfg.custody_address;
+
+        // Step 1: Recompute hash
+        let computed_hash = build_complete_withdraw_hash(
+            settlement_chain_id, custody_address,
+            U256::from(withdraw_id), user, amount,
+        );
+        if computed_hash != message_hash {
+            warn!(withdraw_id, "Vision complete withdraw hash mismatch, rejecting");
+            return Ok(());
+        }
+
+        // Step 2: Verify leader BLS
+        self.verify_leader_bls(
+            &leader_id, &message_hash,
+            &BLSSignature(leader_signature.0.clone()),
+            "vision_complete_withdraw",
+        )?;
+
+        // Step 3: MANDATORY — verify withdrawal request on L3 (fail-closed)
+        let request = match self.vision_read_withdraw_request(
+            &l3_provider, vision_address, withdraw_id,
+        ).await {
+            Some(r) => r,
+            None => {
+                warn!(withdraw_id, "Fail-closed: cannot read withdrawRequests on L3, refusing to sign");
+                return Ok(());
+            }
+        };
+        let (req_user, req_amount) = request;
+        if req_user != user || req_amount != amount {
+            warn!(
+                withdraw_id,
+                ?req_user, ?user,
+                req_amount = %req_amount, amount = %amount,
+                "Withdraw request mismatch, refusing to sign"
+            );
+            return Ok(());
+        }
+
+        // Step 4: Sign and respond
+        let hash_bytes: [u8; 32] = message_hash.into();
+        let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
+            .map_err(|e| Error::BlsVerification(format!("Failed to sign vision complete withdraw: {e}")))?;
+
+        self.p2p.send_to(from, P2PMessage::VisionCompleteWithdrawSign {
+            signer_id: self.config.peer_id,
+            signer_index: self.runtime_config.issuer_registry_index(),
+            withdraw_id,
+            signature: common::types::BLSSignature(signature.0),
+        }).await
+    }
+
+    /// Strict version of deposit processed check that returns Option<bool>
+    /// (None on RPC failure) for fail-closed behavior in follower handlers.
+    async fn vision_check_deposit_processed_strict(
+        &self,
+        l3_provider: &Provider<Http>,
+        vision_address: Address,
+        order_id: u64,
+    ) -> Option<bool> {
+        let selector = &ethers::utils::keccak256(b"depositProcessed(uint256)")[..4];
+        let encoded_arg = abi::encode(&[Token::Uint(U256::from(order_id))]);
+        let mut calldata = Vec::with_capacity(4 + encoded_arg.len());
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&encoded_arg);
+
+        let tx = ethers::types::TransactionRequest::new()
+            .to(vision_address)
+            .data(calldata);
+
+        match l3_provider.call(&tx.into(), None).await {
+            Ok(result) => {
+                if result.len() >= 32 {
+                    Some(U256::from_big_endian(&result[0..32]) == U256::one())
+                } else {
+                    Some(false)
+                }
+            }
+            Err(e) => {
+                warn!(order_id, error = %e, "RPC error reading depositProcessed");
+                None // Fail-closed: caller must NOT sign
+            }
+        }
     }
 }
 
