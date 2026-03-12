@@ -16,14 +16,22 @@ export function SourcesGrid() {
 
   const [showSectionBar, setShowSectionBar] = useState(true)
 
-  const { data: meta } = useMarketSnapshotMeta()
+  const { data: meta, isLoading: metaLoading } = useMarketSnapshotMeta()
   const bitmapEditor = useBitmapEditor()
 
-  // Filter sources by category
-  const filteredSources = useMemo(
-    () => getSourcesByCategory(activeCategory),
-    [activeCategory],
-  )
+  // Filter sources by category, then exclude non-working sources
+  const filteredSources = useMemo(() => {
+    const byCategory = getSourcesByCategory(activeCategory)
+    if (!meta?.sources) return byCategory
+    return byCategory.filter(source => {
+      const status = getSourceStatusFromMeta(source.id, meta.sources)
+      // Only show sources that are actively working
+      if (status === 'healthy' || status === 'stale') return true
+      // Also show if we have confirmed asset count > 0 (even if status is weird)
+      const assetCount = meta.assetCounts?.[source.id] ?? 0
+      return assetCount > 0
+    })
+  }, [activeCategory, meta?.sources, meta?.assetCounts])
 
   // Dynamic stats from live meta endpoint, with static fallbacks
   const liveSourceCount = meta?.totalSources ?? 0
@@ -32,9 +40,7 @@ export function SourcesGrid() {
 
   const sourceCount = liveSourceCount > 0 ? liveSourceCount : VISION_SOURCES.length
   const categoryCount = liveCategoryCount > 0 ? liveCategoryCount : SOURCE_CATEGORIES.length
-  const marketDisplay = liveAssetCount > 0
-    ? liveAssetCount.toLocaleString()
-    : '—'
+  const statsLoading = metaLoading && liveAssetCount === 0
 
   return (
     <div className="flex flex-col">
@@ -55,7 +61,13 @@ export function SourcesGrid() {
                   <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Sources</span>
                 </div>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-[20px] font-black">{marketDisplay}</span>
+                  {statsLoading ? (
+                    <span className="inline-block w-16 h-5 bg-white/10 rounded animate-pulse" />
+                  ) : (
+                    <span className="text-[20px] font-black">
+                      {liveAssetCount > 0 ? liveAssetCount.toLocaleString() : '—'}
+                    </span>
+                  )}
                   <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Assets</span>
                 </div>
                 <div className="flex items-baseline gap-1.5">

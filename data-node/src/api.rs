@@ -371,6 +371,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/market/prices/:source/:asset_id", get(market_asset_price))
         .route("/market/prices/:source/:asset_id/history", get(market_price_history))
         .route("/market/assets/:source", get(market_assets))
+        .route("/market/stats", get(market_stats_bulk))
         .route("/market/stats/:source", get(market_stats))
         .route("/market/batch-history", get(market_batch_history))
         // Vision snapshot endpoints
@@ -4652,6 +4653,32 @@ async fn market_assets(
         }))),
         Err(e) => Err(internal_error(e)),
     }
+}
+
+// ---- /market/stats (bulk) ----
+
+async fn market_stats_bulk(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let all = state.health_stats_cache.get_all().await;
+    let mut sources = serde_json::Map::new();
+    let mut total_assets: i64 = 0;
+    let mut total_active: i64 = 0;
+    for (source, entry) in &all {
+        total_assets += entry.total_assets;
+        total_active += entry.active_assets;
+        sources.insert(source.clone(), serde_json::json!({
+            "totalAssets": entry.total_assets,
+            "activeAssets": entry.active_assets,
+            "newestRecord": entry.newest_record,
+        }));
+    }
+    Json(serde_json::json!({
+        "totalAssets": total_assets,
+        "totalActiveAssets": total_active,
+        "sourceCount": all.len(),
+        "sources": sources,
+    }))
 }
 
 // ---- /market/stats/{source} ----
