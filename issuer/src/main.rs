@@ -737,7 +737,6 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let work_tx_for_task = work_tx;
 
     // Use the shared PendingOpsQueue passed into run_main_loop from main()
-    let vision_ops_queue = vision_ops_queue_shared.clone();
     let vision_ops_queue_for_task = vision_ops_queue_shared.clone();
 
     // Vision ops consensus task parameters (derived from vision config)
@@ -4489,6 +4488,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Save Vision config before config is consumed
     let vision_config = config.vision.clone();
 
+    // Shared PendingOpsQueue: deposit watcher (in main) enqueues ops,
+    // vision ops consensus task (in run_main_loop) drains and submits them.
+    let vision_ops_queue: Arc<issuer::vision::pending_ops::PendingOpsQueue> =
+        Arc::new(issuer::vision::pending_ops::PendingOpsQueue::new());
+
     // Parse oracle + mirror configs before config is consumed by bootstrap
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
     let itp_token_address: Option<ethers::types::Address> = config.itp_token_address.as_ref().and_then(|s| s.parse().ok());
@@ -4853,7 +4857,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync, vision_config).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync, vision_config, vision_ops_queue).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }

@@ -411,6 +411,10 @@ where
     /// Vision deposit/withdraw consensus config (providers, addresses, chain IDs).
     /// Set via `set_vision_consensus_config()`. Required for follower validation.
     vision_consensus_config: RwLock<Option<VisionConsensusConfig>>,
+    /// Forwarding channel for incoming VisionBalanceProofsBatch messages.
+    /// Set by the engine bootstrap; message dispatch forwards incoming batches here.
+    /// The engine's aggregation task reads from the other end.
+    pub vision_balance_proofs_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBalanceProofsBatch>>>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -502,6 +506,7 @@ where
             known_assets: RwLock::new(Vec::new()),
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
             vision_consensus_config: RwLock::new(None),
+            vision_balance_proofs_tx: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -3045,8 +3050,26 @@ where
                     }
                 }
             }
-            MessageHandleResult::ProcessVisionBalanceProofsBatch { batch_id, tick_id, .. } => {
-                debug!(batch_id, tick_id, "VisionBalanceProofsBatch received (handler not wired yet)");
+            MessageHandleResult::ProcessVisionBalanceProofsBatch {
+                from, batch_id, tick_id, proofs, signer_index,
+            } => {
+                debug!(batch_id, tick_id, signer_index, "Received VisionBalanceProofsBatch — forwarding to aggregator");
+                if let Ok(guard) = self.vision_balance_proofs_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let incoming = crate::vision::engine::IncomingBalanceProofsBatch {
+                            from_peer: from,
+                            batch_id,
+                            tick_id,
+                            proofs: proofs.into_iter().map(|(player, balance, sig)| (player, balance, sig.0)).collect(),
+                            signer_index,
+                        };
+                        if let Err(e) = tx.try_send(incoming) {
+                            warn!(batch_id, tick_id, error = %e, "Failed to forward VisionBalanceProofsBatch to aggregator");
+                        }
+                    } else {
+                        debug!(batch_id, tick_id, "VisionBalanceProofsBatch received but aggregator channel not set");
+                    }
+                }
             }
             // AA keeper arbitration — forward to arbitration subsystem
             MessageHandleResult::ForwardToArbitration(msg) => {
