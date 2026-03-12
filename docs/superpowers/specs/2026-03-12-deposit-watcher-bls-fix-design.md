@@ -421,11 +421,71 @@ After deploying the fix:
 - Price consensus — untouched
 - ITP/bridge consensus — untouched
 
-### Known Issue: Balance Proofs (claimRewards / withdraw from batch)
+### Component 8: Balance Proof Aggregation (claimRewards / withdraw from batch)
 
-**Balance proofs are ALSO single-signer** (`engine.rs:511`: `U256::one() << config.node_index`). Each issuer independently signs balance proofs and stores them in its own DB. The player fetches from one issuer's API and submits on-chain, where `_verifyBLS` requires 2/3 threshold → `BelowThreshold` revert.
+**Problem**: Balance proofs are single-signer (`engine.rs:511`: `U256::one() << config.node_index`). Each issuer independently signs WITHDRAW message hashes after tick resolution and stores them in its own `vision_balance_proofs` DB table. The player fetches from one issuer's API and submits on-chain, where `_verifyBLS` requires 2/3 threshold → `BelowThreshold` revert.
 
-**This is a SEPARATE fix** from the deposit watcher consensus, because the player (not the issuer) submits the transaction. The fix requires aggregating BLS signatures from multiple issuers before serving the proof to the player. Recommended approach: add a tick-end consensus phase that aggregates balance proof signatures across issuers. This will be covered in a separate spec.
+**Affected functions**: `Vision.claimRewards()` and `Vision.withdraw()` — both are player-submitted transactions that include a BLS-signed balance proof.
+
+**Key insight**: Tick consensus (`tick_consensus.rs`) already guarantees all issuers agree on the same player balances for each tick. After tick consensus succeeds, every issuer has identical `player_balances`. The per-player WITHDRAW message hashes are deterministic from these agreed-upon balances. **No additional consensus round is needed** — just a P2P signature exchange.
+
+#### Flow (post-tick-resolution)
+
+1. **After tick consensus succeeds** (threshold signatures collected for tick result):
+   - Each issuer computes all per-player WITHDRAW message hashes (same as today in `generate_and_store_balance_proofs`)
+   - Each issuer signs all hashes with its own BLS keypair (same as today)
+
+2. **P2P signature broadcast** (NEW):
+   - Each issuer broadcasts a `VisionBalanceProofsBatch` P2P message:
+     ```rust
+     VisionBalanceProofsBatch {
+         batch_id: u64,
+         tick_id: u64,
+         // Per-player: (player_address, balance, bls_signature)
+         proofs: Vec<(Address, U256, Vec<u8>)>,
+         signer_index: u8,
+     }
+     ```
+   - This is a fire-and-forget broadcast (not a proposal/sign pair). No leader needed.
+
+3. **Signature collection** (NEW):
+   - Each issuer receives `VisionBalanceProofsBatch` from peers
+   - Validate: `signer_index` derived from `extract_issuer_id(&from)` (same peer identity rule)
+   - For each player proof: verify the BLS signature against the expected message hash (recomputed from own agreed-upon balances). Reject individual proofs that don't verify.
+   - Store peer signatures in memory, keyed by `(batch_id, player)`
+
+4. **Aggregation + DB storage** (NEW):
+   - After collecting signatures from 2+ issuers (including self), aggregate per-player:
+     - Aggregate BLS signatures using `Bn254BLSSigner.aggregate_signatures()`
+     - Compute combined `signer_bitmap` (OR of individual bitmaps)
+   - Upsert to `vision_balance_proofs` with the aggregated `bls_sig` and `signer_bitmap`
+   - If only 1 signature available after timeout (5s), store single-signer proof anyway (the player will get a `BelowThreshold` revert, but it's better than no proof)
+
+5. **API serves aggregated proof** (unchanged):
+   - `api.rs` reads from `vision_balance_proofs` — already serves `bls_sig` and `signer_bitmap`
+   - Player receives multi-signer proof with bitmap ≥ 2/3 threshold
+   - Player submits `claimRewards()` or `withdraw()` on-chain — passes `_verifyBLS`
+
+#### Why not a consensus round?
+
+Balance proof aggregation doesn't need leader-driven consensus because:
+- **Balances are already agreed** — tick consensus guarantees identical inputs
+- **Message hashes are deterministic** — computed from agreed balances + chain constants
+- **No on-chain submission** — the player submits the tx, not the issuer
+- **Partial aggregation is safe** — if only 2/3 issuers exchange signatures, the proof still passes threshold. Missing one issuer's signature just means the bitmap has 2 bits instead of 3.
+
+#### Files Changed
+
+| File | Change |
+|------|--------|
+| `issuer/src/vision/engine.rs` | After tick consensus, broadcast `VisionBalanceProofsBatch` instead of storing single-signer proofs immediately |
+| `issuer/src/vision/engine.rs` | Add handler for receiving peer balance proof batches, aggregate signatures |
+| `issuer/src/consensus/messages.rs` | Add `VisionBalanceProofsBatch` message type |
+| `issuer/src/vision/engine.rs` | `generate_and_store_balance_proofs` → `sign_balance_proofs` (returns sigs without storing) + `aggregate_and_store_balance_proofs` (stores after aggregation) |
+
+#### Timing
+
+Balance proof aggregation happens at tick end, which is infrequent (every 60-3600 seconds depending on batch tick duration). The P2P overhead is minimal: one broadcast per issuer per tick, containing a Vec of (address, U256, signature) tuples. For a batch with 100 players, each broadcast is ~15KB.
 
 ## Testing
 
@@ -503,10 +563,11 @@ Add a `depositCompleted[orderId]` boolean mapping, set to true in `completeVisio
 | `issuer/src/vision/mod.rs` | Add `pub mod pending_ops;` |
 | `issuer/src/vision/deposit_watcher.rs` | Remove BLS signing fields, add queue-based submission, on-chain verification before state advance, configurable chain_id, keep gas drip |
 | `issuer/src/consensus/protocol.rs` | Add 4 consensus phase methods with per-op aggregators, signer_index derivation from peer identity (NOT macro), pre-flight MirrorRegistry nonce check, revert classification |
-| `issuer/src/consensus/messages.rs` | Add 8 new message types (4 proposal + 4 sign, sign messages include order_id for correlation) |
+| `issuer/src/consensus/messages.rs` | Add 8 new message types (4 proposal + 4 sign, sign messages include order_id for correlation) + `VisionBalanceProofsBatch` |
 | `issuer/src/consensus/handler_macros.rs` | Register new proposal handlers only (sign handlers are custom, not macro-generated) |
 | `contracts/src/custody/SettlementBridgeCustody.sol` | Add on-chain `REFUND_TIMEOUT` check in `refundVisionDeposit`, add `depositCompleted` mapping |
 | `contracts/src/vision/Vision.sol` | Add `withdrawRequests` mapping in `withdrawToSettlement` |
 | `issuer/src/consensus/keys.rs` | Add monotonicity guard to ALL FOUR nonce setters (both inherent + trait impls, both L3 + settlement) |
+| `issuer/src/vision/engine.rs` | Balance proof aggregation: broadcast sigs via P2P, collect peer sigs, aggregate before storing |
 | `issuer/src/main.rs` | Wire PendingOpsQueue, spawn vision ops task, fix settlement registry address |
 | `testnet.sh` | Add `--vision-settlement-rpc-url` to issuer config |
