@@ -83,7 +83,7 @@ export async function getItpDetail(itpId: string): Promise<{
       itpId,
       name: priceData.name || `ITP #${parseItpNumber(itpId)}`,
       symbol: priceData.symbol || `ITP${parseItpNumber(itpId)}`,
-      nav: priceData.nav_per_share || 0,
+      nav: parseFloat(priceData.nav_display) || priceData.nav_per_share || 0,
       aum: priceData.aum_usd || 0,
       assetCount: priceData.assets_total || holdings.length,
       holdings,

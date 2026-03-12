@@ -242,21 +242,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const snapshotRes = await fetch(
-      `${AA_DATA_NODE_URL}/snapshot?itp_id=${encodeURIComponent(itpId)}`,
-      { signal: AbortSignal.timeout(5000) }
-    )
-    if (!snapshotRes.ok) {
-      return NextResponse.json({ error: 'ITP not found' }, { status: 404 })
+    let rawHoldings: { symbol: string; weight: number; price: number; name: string }[] = []
+    try {
+      const snapshotRes = await fetch(
+        `${AA_DATA_NODE_URL}/snapshot?itp_id=${encodeURIComponent(itpId)}`,
+        { signal: AbortSignal.timeout(10000) }
+      )
+      if (snapshotRes.ok) {
+        const snapshot = await snapshotRes.json()
+        rawHoldings = (snapshot.assets || []).map((a: any) => ({
+          symbol: a.symbol || '',
+          weight: a.weight || 0,
+          price: a.price || 0,
+          name: a.name || a.symbol || '',
+        }))
+      }
+    } catch {
+      // Snapshot endpoint down — continue with empty holdings
     }
-    const snapshot = await snapshotRes.json()
-    const rawHoldings: { symbol: string; weight: number; price: number; name: string }[] =
-      (snapshot.assets || []).map((a: any) => ({
-        symbol: a.symbol || '',
-        weight: a.weight || 0,
-        price: a.price || 0,
-        name: a.name || a.symbol || '',
-      }))
 
     const [coinMap, foundersLookup] = await Promise.all([
       loadCoinMap(),
