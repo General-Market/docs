@@ -5860,35 +5860,38 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         );
     }
 
-    // Collect all block numbers for timestamp lookup
-    let mut block_nums: std::collections::HashSet<u64> = std::collections::HashSet::new();
-    for (_, meta) in &order_logs {
-        block_nums.insert(meta.block_number.as_u64());
-    }
-    for (_, meta) in &fill_logs {
-        block_nums.insert(meta.block_number.as_u64());
-    }
-
-    // Fetch block timestamps
-    let mut block_ts_map: HashMap<u64, u64> = HashMap::new();
-    let block_futs: Vec<_> = block_nums.iter().map(|bn| {
-        let provider = Arc::clone(l3);
-        let bn = *bn;
-        async move {
-            match provider.get_block(bn).await {
-                Ok(Some(b)) => Some((bn, b.timestamp.as_u64())),
-                _ => None,
-            }
-        }
-    }).collect();
-    let results = futures::future::join_all(block_futs).await;
-    for r in results.into_iter().flatten() {
-        block_ts_map.insert(r.0, r.1);
-    }
-
-    // Build recent orders (last 20, newest first)
+    // Build recent orders (last 20, newest first) — determine which blocks need timestamps
     let start = if order_logs.len() > 20 { order_logs.len() - 20 } else { 0 };
     let recent_order_logs: Vec<_> = order_logs[start..].iter().rev().collect();
+
+    // Only fetch timestamps for blocks in the recent window (+ their fills), not ALL events
+    let mut block_nums: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    for (evt, meta) in &recent_order_logs {
+        block_nums.insert(meta.block_number.as_u64());
+        if let Some((fill_bn, _)) = fill_map.get(&evt.order_id.as_u64()) {
+            block_nums.insert(*fill_bn);
+        }
+    }
+
+    // Fetch block timestamps in small batches to avoid overwhelming the RPC node
+    let mut block_ts_map: HashMap<u64, u64> = HashMap::new();
+    let block_list: Vec<u64> = block_nums.into_iter().collect();
+    for chunk in block_list.chunks(10) {
+        let futs: Vec<_> = chunk.iter().map(|bn| {
+            let provider = Arc::clone(l3);
+            let bn = *bn;
+            async move {
+                match provider.get_block(bn).await {
+                    Ok(Some(b)) => Some((bn, b.timestamp.as_u64())),
+                    _ => None,
+                }
+            }
+        }).collect();
+        let results = futures::future::join_all(futs).await;
+        for r in results.into_iter().flatten() {
+            block_ts_map.insert(r.0, r.1);
+        }
+    }
 
     let mut recent_orders: Vec<RecentOrderInfo> = Vec::new();
     for (evt, meta) in &recent_order_logs {
@@ -5914,10 +5917,10 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         });
     }
 
-    // Compute average fill time
+    // Compute average fill time from the recent orders that have timestamps
     let mut fill_sum = 0.0f64;
     let mut fill_count = 0u64;
-    for (evt, meta) in &order_logs {
+    for (evt, meta) in &recent_order_logs {
         if let Some((fill_bn, _)) = fill_map.get(&evt.order_id.as_u64()) {
             let submit_ts = block_ts_map.get(&meta.block_number.as_u64()).copied().unwrap_or(0);
             let fill_ts = block_ts_map.get(fill_bn).copied().unwrap_or(0);
