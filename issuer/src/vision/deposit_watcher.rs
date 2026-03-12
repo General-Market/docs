@@ -3,13 +3,13 @@
 //! Polls SettlementBridgeCustody on Settlement for `VisionDepositCreated` events.
 //! For each deposit:
 //!   1. Wait for Settlement finality (~15 confirmations)
-//!   2. BLS-sign + submit `Vision.creditBalance()` on L3
+//!   2. Enqueue `CreditBalance` op → consensus signs + submits `Vision.creditBalance()` on L3
 //!   3. GM gas drip to user (if below threshold)
-//!   4. Submit `SettlementBridgeCustody.completeVisionDeposit()` on Settlement
+//!   4. Enqueue `CompleteDeposit` op → consensus signs + submits on Settlement
 //!
 //! Also handles `WithdrawToSettlementRequested` from Vision.sol on L3:
 //!   1. Wait for L3 finality
-//!   2. BLS-sign + submit `SettlementBridgeCustody.completeVisionWithdraw()` on Settlement
+//!   2. Enqueue `CompleteWithdraw` op → consensus signs + submits on Settlement
 //!
 //! Persists state to `vision_deposit_orders` / `vision_withdraw_orders` for crash recovery.
 //! On restart: recovers from DB state, checks on-chain idempotency keys.
@@ -27,10 +27,10 @@ use ethers::types::{Address, Filter, H256, U256, U64};
 use sqlx::PgPool;
 use tracing::{debug, error, info, warn};
 
-use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::traits::ChainWriter;
 
 use super::config::VisionConfig;
+use super::pending_ops::{PendingOpsQueue, VisionOp, OpResult};
 use super::types::{
     DepositStatus, PendingVisionDeposit, PendingVisionWithdraw, WithdrawStatus,
 };
@@ -48,22 +48,17 @@ const L3_CONFIRMATION_BUFFER: u64 = 5;
 /// Vision deposit watcher: watches Settlement for deposits, L3 for withdrawals.
 ///
 /// This is an independent background task that runs alongside the tick engine
-/// and chain listener.
+/// and chain listener. It enqueues operations into a shared queue for the
+/// consensus task to aggregate BLS signatures and submit on-chain.
 pub struct VisionDepositWatcher {
     /// Settlement provider (for watching VisionDepositCreated events).
     settlement_provider: Arc<Provider<Http>>,
-    /// L3 provider (for submitting creditBalance and checking depositProcessed).
+    /// L3 provider (for checking depositProcessed and gas drip).
     l3_provider: Arc<Provider<Http>>,
     /// Vision.sol address on L3.
     vision_address: Address,
     /// SettlementBridgeCustody address on Settlement.
     settlement_custody_address: Address,
-    /// IssuerRegistry address on L3 (for reading lastSnapshotNonce for BLS referenceNonce).
-    l3_registry_address: Address,
-    /// IssuerRegistry address on Settlement (for reading lastSnapshotNonce for BLS referenceNonce).
-    /// On L3 testnet where both chains share the same registry, this equals l3_registry_address.
-    /// In production with separate chains, these would differ (e.g., MirrorIssuerRegistry on Settlement).
-    settlement_registry_address: Address,
     /// Postgres pool for persistence.
     pool: PgPool,
     /// Configuration.
@@ -76,17 +71,16 @@ pub struct VisionDepositWatcher {
     deposit_created_topic: H256,
     /// Event topic for WithdrawToSettlementRequested(address indexed user, uint256 indexed withdrawId, uint256 amount).
     withdraw_requested_topic: H256,
-    /// BLS keypair for signing cross-chain operations.
-    /// None = degraded mode (log-only, no tx submission).
-    bls_keypair: Option<BLSKeyPair>,
-    /// BLS signer instance.
-    bls_signer: Bn254BLSSigner,
-    /// Chain writer for L3 (creditBalance).
+    /// Chain writer for L3 (gas drip — plain native transfer, not BLS).
     l3_chain_writer: Option<Arc<dyn ChainWriter>>,
-    /// Chain writer for Settlement (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw).
-    settlement_chain_writer: Option<Arc<dyn ChainWriter>>,
-    /// Issuer node index (for signer bitmap).
-    node_index: u8,
+    /// Pending operations queue (shared with consensus task).
+    ops_queue: Arc<PendingOpsQueue>,
+    /// L3 chain ID (from config, not hardcoded).
+    l3_chain_id: u64,
+    /// Settlement chain ID (from config).
+    settlement_chain_id: u64,
+    /// Track consecutive CompleteDeposit failures for 24h alerting.
+    complete_deposit_first_fail: HashMap<u64, std::time::Instant>,
 }
 
 impl VisionDepositWatcher {
@@ -97,14 +91,12 @@ impl VisionDepositWatcher {
         l3_provider: Arc<Provider<Http>>,
         vision_address: Address,
         settlement_custody_address: Address,
-        l3_registry_address: Address,
-        settlement_registry_address: Address,
         pool: PgPool,
         config: VisionConfig,
-        bls_keypair: Option<BLSKeyPair>,
         l3_chain_writer: Option<Arc<dyn ChainWriter>>,
-        settlement_chain_writer: Option<Arc<dyn ChainWriter>>,
-        node_index: u8,
+        ops_queue: Arc<PendingOpsQueue>,
+        l3_chain_id: u64,
+        settlement_chain_id: u64,
     ) -> Self {
         let deposit_created_topic = H256::from(ethers::utils::keccak256(
             b"VisionDepositCreated(uint256,address,uint256)",
@@ -113,14 +105,8 @@ impl VisionDepositWatcher {
             b"WithdrawToSettlementRequested(address,uint256,uint256)",
         ));
 
-        if bls_keypair.is_none() {
-            warn!("VisionDepositWatcher created WITHOUT BLS keypair — running in degraded mode (no tx submission)");
-        }
         if l3_chain_writer.is_none() {
-            warn!("VisionDepositWatcher created WITHOUT L3 chain writer — cannot submit L3 transactions");
-        }
-        if settlement_chain_writer.is_none() {
-            warn!("VisionDepositWatcher created WITHOUT Settlement chain writer — cannot submit Settlement transactions");
+            warn!("VisionDepositWatcher created WITHOUT L3 chain writer — cannot send gas drips");
         }
 
         Self {
@@ -128,19 +114,17 @@ impl VisionDepositWatcher {
             l3_provider,
             vision_address,
             settlement_custody_address,
-            l3_registry_address,
-            settlement_registry_address,
             pool,
             config,
             pending_deposits: HashMap::new(),
             pending_withdrawals: HashMap::new(),
             deposit_created_topic,
             withdraw_requested_topic,
-            bls_keypair,
-            bls_signer: Bn254BLSSigner::new(),
             l3_chain_writer,
-            settlement_chain_writer,
-            node_index,
+            ops_queue,
+            l3_chain_id,
+            settlement_chain_id,
+            complete_deposit_first_fail: HashMap::new(),
         }
     }
 
@@ -155,9 +139,9 @@ impl VisionDepositWatcher {
         info!(
             settlement_custody = %self.settlement_custody_address,
             vision = %self.vision_address,
-            has_bls = self.bls_keypair.is_some(),
+            l3_chain_id = self.l3_chain_id,
+            settlement_chain_id = self.settlement_chain_id,
             has_l3_writer = self.l3_chain_writer.is_some(),
-            has_settlement_writer = self.settlement_chain_writer.is_some(),
             "VisionDepositWatcher starting"
         );
 
@@ -481,54 +465,71 @@ impl VisionDepositWatcher {
                         continue;
                     }
 
-                    // Step 2: Submit Vision.creditBalance() on L3 with BLS signature
-                    let credit_message_hash = build_credit_balance_hash(
-                        111_222_333, // L3 chain ID
-                        self.vision_address,
-                        deposit.user,
-                        deposit.amount,
-                        U256::from(deposit.order_id),
-                    );
-
-                    match self.sign_and_submit_credit_balance(
-                        &credit_message_hash,
-                        deposit.user,
-                        deposit.amount,
-                        U256::from(deposit.order_id),
-                    ).await {
-                        Ok(tx_hash) => {
-                            info!(
-                                order_id,
-                                tx_hash = ?tx_hash,
-                                user = %deposit.user,
-                                amount = %deposit.amount,
-                                "creditBalance submitted on L3"
-                            );
-
-                            // Wait for L3 confirmation buffer before advancing
-                            // In a production system, we'd poll for tx receipt.
-                            // For now, we optimistically advance and re-check on next loop.
-                            if let Some(d) = self.pending_deposits.get_mut(&order_id) {
-                                d.status = DepositStatus::CreditedOnL3;
+                    // Poll for result from a previous enqueue
+                    match self.ops_queue.poll_result("credit", order_id) {
+                        Some(OpResult::Success { tx_hash }) => {
+                            // CRITICAL: verify on-chain before advancing
+                            if self.is_deposit_processed_on_l3(order_id).await {
+                                self.ops_queue.clear_result("credit", order_id);
+                                info!(
+                                    order_id,
+                                    tx_hash = ?tx_hash,
+                                    user = %deposit.user,
+                                    amount = %deposit.amount,
+                                    "creditBalance confirmed on L3"
+                                );
+                                if let Some(d) = self.pending_deposits.get_mut(&order_id) {
+                                    d.status = DepositStatus::CreditedOnL3;
+                                }
+                                self.upsert_deposit_status(
+                                    order_id,
+                                    deposit.user,
+                                    deposit.amount,
+                                    DepositStatus::CreditedOnL3,
+                                )
+                                .await;
+                                self.drip_gas_if_needed(deposit.user).await;
+                            } else {
+                                debug!(order_id, "creditBalance tx mined but not yet visible via RPC, waiting");
                             }
-                            self.upsert_deposit_status(
-                                order_id,
+                        }
+                        Some(OpResult::Permanent { reason }) => {
+                            self.ops_queue.clear_result("credit", order_id);
+                            // Check on-chain — maybe it was already processed by another issuer
+                            if self.is_deposit_processed_on_l3(order_id).await {
+                                info!(order_id, reason, "creditBalance permanent error but already processed on L3, advancing");
+                                if let Some(d) = self.pending_deposits.get_mut(&order_id) {
+                                    d.status = DepositStatus::CreditedOnL3;
+                                }
+                                self.upsert_deposit_status(
+                                    order_id,
+                                    deposit.user,
+                                    deposit.amount,
+                                    DepositStatus::CreditedOnL3,
+                                )
+                                .await;
+                                self.drip_gas_if_needed(deposit.user).await;
+                            } else {
+                                warn!(order_id, reason, "creditBalance permanent error, will re-enqueue");
+                            }
+                        }
+                        Some(OpResult::Failed { error }) => {
+                            self.ops_queue.clear_result("credit", order_id);
+                            warn!(order_id, error, "creditBalance failed, will re-enqueue next loop");
+                        }
+                        Some(OpResult::Pending) => {
+                            // Consensus is working on it, skip
+                        }
+                        None => {
+                            // No result yet — (re-)enqueue
+                            let credit_message_hash = build_credit_balance_hash(
+                                self.l3_chain_id,
+                                self.vision_address,
                                 deposit.user,
                                 deposit.amount,
-                                DepositStatus::CreditedOnL3,
-                            )
-                            .await;
-
-                            // Issue 4: GM gas drip after successful credit
-                            self.drip_gas_if_needed(deposit.user).await;
-                        }
-                        Err(e) => {
-                            warn!(
-                                order_id,
-                                error = %e,
-                                "Failed to submit creditBalance on L3, will retry"
+                                U256::from(deposit.order_id),
                             );
-                            // Stay in Pending state, retry on next loop
+                            self.request_credit_balance(order_id, deposit.user, deposit.amount, credit_message_hash);
                         }
                     }
                 }
@@ -545,21 +546,15 @@ impl VisionDepositWatcher {
                         continue;
                     }
 
-                    let complete_message_hash = build_complete_deposit_hash(
-                        self.config.settlement_chain_id,
-                        self.settlement_custody_address,
-                        U256::from(deposit.order_id),
-                    );
-
-                    match self.sign_and_submit_complete_deposit(
-                        &complete_message_hash,
-                        U256::from(deposit.order_id),
-                    ).await {
-                        Ok(tx_hash) => {
+                    // Poll for result from a previous enqueue
+                    match self.ops_queue.poll_result("complete", order_id) {
+                        Some(OpResult::Success { tx_hash }) => {
+                            self.ops_queue.clear_result("complete", order_id);
+                            self.complete_deposit_first_fail.remove(&order_id);
                             info!(
                                 order_id,
                                 tx_hash = ?tx_hash,
-                                "completeVisionDeposit submitted on Settlement"
+                                "completeVisionDeposit confirmed on Settlement"
                             );
                             if let Some(d) = self.pending_deposits.get_mut(&order_id) {
                                 d.status = DepositStatus::CompletedOnSettlement;
@@ -572,12 +567,42 @@ impl VisionDepositWatcher {
                             )
                             .await;
                         }
-                        Err(e) => {
-                            warn!(
-                                order_id,
-                                error = %e,
-                                "Failed to submit completeVisionDeposit on Settlement, will retry"
+                        Some(OpResult::Permanent { reason }) => {
+                            self.ops_queue.clear_result("complete", order_id);
+                            warn!(order_id, reason, "completeVisionDeposit permanent error, will re-enqueue (MUST NOT give up)");
+                            // Track failure time for 24h alerting
+                            self.complete_deposit_first_fail
+                                .entry(order_id)
+                                .or_insert_with(std::time::Instant::now);
+                        }
+                        Some(OpResult::Failed { error }) => {
+                            self.ops_queue.clear_result("complete", order_id);
+                            warn!(order_id, error, "completeVisionDeposit failed, will re-enqueue (MUST NOT give up)");
+                            // Track failure time for 24h alerting
+                            let first_fail = self.complete_deposit_first_fail
+                                .entry(order_id)
+                                .or_insert_with(std::time::Instant::now);
+                            if first_fail.elapsed() > Duration::from_secs(24 * 3600) {
+                                error!("CRITICAL: CompleteDeposit stuck for >24h: order_id={}", order_id);
+                            }
+                        }
+                        Some(OpResult::Pending) => {
+                            // Consensus is working on it, skip
+                        }
+                        None => {
+                            // No result yet — (re-)enqueue
+                            // Check 24h alert for ongoing failures
+                            if let Some(first_fail) = self.complete_deposit_first_fail.get(&order_id) {
+                                if first_fail.elapsed() > Duration::from_secs(24 * 3600) {
+                                    error!("CRITICAL: CompleteDeposit stuck for >24h: order_id={}", order_id);
+                                }
+                            }
+                            let complete_message_hash = build_complete_deposit_hash(
+                                self.settlement_chain_id,
+                                self.settlement_custody_address,
+                                U256::from(deposit.order_id),
                             );
+                            self.request_complete_deposit(order_id, complete_message_hash);
                         }
                     }
                 }
@@ -605,28 +630,16 @@ impl VisionDepositWatcher {
 
             match withdrawal.status {
                 WithdrawStatus::Pending => {
-                    // Submit SettlementBridgeCustody.completeVisionWithdraw() on Settlement
-                    let withdraw_message_hash = build_complete_withdraw_hash(
-                        self.config.settlement_chain_id,
-                        self.settlement_custody_address,
-                        U256::from(withdrawal.withdraw_id),
-                        withdrawal.user,
-                        withdrawal.amount,
-                    );
-
-                    match self.sign_and_submit_complete_withdraw(
-                        &withdraw_message_hash,
-                        U256::from(withdrawal.withdraw_id),
-                        withdrawal.user,
-                        withdrawal.amount,
-                    ).await {
-                        Ok(tx_hash) => {
+                    // Poll for result from a previous enqueue
+                    match self.ops_queue.poll_result("withdraw", withdraw_id) {
+                        Some(OpResult::Success { tx_hash }) => {
+                            self.ops_queue.clear_result("withdraw", withdraw_id);
                             info!(
                                 withdraw_id,
                                 tx_hash = ?tx_hash,
                                 user = %withdrawal.user,
                                 amount = %withdrawal.amount,
-                                "completeVisionWithdraw submitted on Settlement"
+                                "completeVisionWithdraw confirmed on Settlement"
                             );
                             if let Some(w) = self.pending_withdrawals.get_mut(&withdraw_id) {
                                 w.status = WithdrawStatus::Completed;
@@ -639,11 +652,31 @@ impl VisionDepositWatcher {
                             )
                             .await;
                         }
-                        Err(e) => {
-                            warn!(
+                        Some(OpResult::Permanent { reason }) => {
+                            self.ops_queue.clear_result("withdraw", withdraw_id);
+                            warn!(withdraw_id, reason, "completeVisionWithdraw permanent error, will re-enqueue");
+                        }
+                        Some(OpResult::Failed { error }) => {
+                            self.ops_queue.clear_result("withdraw", withdraw_id);
+                            warn!(withdraw_id, error, "completeVisionWithdraw failed, will re-enqueue");
+                        }
+                        Some(OpResult::Pending) => {
+                            // Consensus is working on it, skip
+                        }
+                        None => {
+                            // No result yet — (re-)enqueue
+                            let withdraw_message_hash = build_complete_withdraw_hash(
+                                self.settlement_chain_id,
+                                self.settlement_custody_address,
+                                U256::from(withdrawal.withdraw_id),
+                                withdrawal.user,
+                                withdrawal.amount,
+                            );
+                            self.request_complete_withdraw(
                                 withdraw_id,
-                                error = %e,
-                                "Failed to submit completeVisionWithdraw on Settlement, will retry"
+                                withdrawal.user,
+                                withdrawal.amount,
+                                withdraw_message_hash,
                             );
                         }
                     }
@@ -657,206 +690,27 @@ impl VisionDepositWatcher {
     }
 
     // =========================================================================
-    // BLS signing + chain submission (Issue 2)
+    // Queue-based operation requests (consensus task handles BLS + submission)
     // =========================================================================
 
-    /// Read `lastSnapshotNonce()` from an IssuerRegistry contract.
-    ///
-    /// The reference nonce is required as a parameter in all BLS-verified calls.
-    /// For L3 operations (creditBalance), read from L3 IssuerRegistry via `l3_provider`.
-    /// For Settlement operations (completeVisionDeposit, refundVisionDeposit, completeVisionWithdraw),
-    /// read from Settlement IssuerRegistry via `settlement_provider`.
-    async fn get_reference_nonce(
-        &self,
-        provider: &Provider<Http>,
-        registry_address: Address,
-    ) -> Result<U256, String> {
-        let selector = &ethers::utils::keccak256(b"lastSnapshotNonce()")[..4];
-        let tx = ethers::types::TransactionRequest::new()
-            .to(registry_address)
-            .data(selector.to_vec());
-        let result = provider
-            .call(&tx.into(), None)
-            .await
-            .map_err(|e| format!("Failed to read lastSnapshotNonce: {e}"))?;
-        if result.len() >= 32 {
-            Ok(U256::from_big_endian(&result[..32]))
-        } else {
-            Err("Invalid response from lastSnapshotNonce".into())
-        }
+    /// Enqueue a CreditBalance operation for consensus signing.
+    fn request_credit_balance(&self, order_id: u64, user: Address, amount: U256, message_hash: H256) {
+        self.ops_queue.enqueue(VisionOp::CreditBalance { order_id, user, amount, message_hash });
     }
 
-    /// Sign and submit Vision.creditBalance() on L3.
-    ///
-    /// Builds the BLS signature, encodes calldata, and submits via the L3 chain writer.
-    async fn sign_and_submit_credit_balance(
-        &self,
-        message_hash: &H256,
-        user: Address,
-        amount: U256,
-        deposit_id: U256,
-    ) -> Result<H256, String> {
-        let (bls_keypair, l3_writer) = match (&self.bls_keypair, &self.l3_chain_writer) {
-            (Some(kp), Some(w)) => (kp, w),
-            _ => {
-                return Err("BLS keypair or L3 chain writer not available (degraded mode)".into());
-            }
-        };
-
-        // Sign the message hash with BLS
-        let signature = self.bls_signer
-            .sign_message_hash(bls_keypair, message_hash.as_bytes().try_into().unwrap())
-            .map_err(|e| format!("BLS signing failed: {e}"))?;
-
-        // Build signer bitmap (single issuer: bit at node_index)
-        let signer_bitmap = U256::one() << self.node_index;
-
-        // Read referenceNonce from L3 IssuerRegistry (creditBalance is an L3 operation)
-        let reference_nonce = self
-            .get_reference_nonce(&self.l3_provider, self.l3_registry_address)
-            .await?;
-
-        // Build creditBalance calldata:
-        // creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-        let calldata = build_credit_balance_calldata(
-            user,
-            amount,
-            deposit_id,
-            &signature.0,
-            reference_nonce,
-            signer_bitmap,
-        );
-
-        let tx_hash = l3_writer
-            .send_transaction(self.vision_address, calldata, U256::zero())
-            .await
-            .map_err(|e| format!("L3 send_transaction failed: {e}"))?;
-
-        Ok(tx_hash)
+    /// Enqueue a CompleteDeposit operation for consensus signing.
+    fn request_complete_deposit(&self, order_id: u64, message_hash: H256) {
+        self.ops_queue.enqueue(VisionOp::CompleteDeposit { order_id, message_hash });
     }
 
-    /// Sign and submit SettlementBridgeCustody.completeVisionDeposit() on Settlement.
-    async fn sign_and_submit_complete_deposit(
-        &self,
-        message_hash: &H256,
-        order_id: U256,
-    ) -> Result<H256, String> {
-        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
-            (Some(kp), Some(w)) => (kp, w),
-            _ => {
-                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
-            }
-        };
-
-        let signature = self.bls_signer
-            .sign_message_hash(bls_keypair, message_hash.as_bytes().try_into().unwrap())
-            .map_err(|e| format!("BLS signing failed: {e}"))?;
-
-        let signer_bitmap = U256::one() << self.node_index;
-
-        // Read referenceNonce from Settlement IssuerRegistry (completeVisionDeposit is an Settlement operation)
-        let reference_nonce = self
-            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
-            .await?;
-
-        // completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-        let calldata = build_complete_deposit_calldata(
-            order_id,
-            &signature.0,
-            reference_nonce,
-            signer_bitmap,
-        );
-
-        let tx_hash = settlement_writer
-            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
-            .await
-            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
-
-        Ok(tx_hash)
+    /// Enqueue a RefundDeposit operation for consensus signing.
+    fn request_refund_deposit(&self, order_id: u64, message_hash: H256) {
+        self.ops_queue.enqueue(VisionOp::RefundDeposit { order_id, message_hash });
     }
 
-    /// Sign and submit SettlementBridgeCustody.refundVisionDeposit() on Settlement.
-    async fn sign_and_submit_refund_deposit(
-        &self,
-        message_hash: &H256,
-        order_id: U256,
-    ) -> Result<H256, String> {
-        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
-            (Some(kp), Some(w)) => (kp, w),
-            _ => {
-                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
-            }
-        };
-
-        let signature = self.bls_signer
-            .sign_message_hash(bls_keypair, message_hash.as_bytes().try_into().unwrap())
-            .map_err(|e| format!("BLS signing failed: {e}"))?;
-
-        let signer_bitmap = U256::one() << self.node_index;
-
-        // Read referenceNonce from Settlement IssuerRegistry (refundVisionDeposit is an Settlement operation)
-        let reference_nonce = self
-            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
-            .await?;
-
-        // refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-        let calldata = build_refund_deposit_calldata(
-            order_id,
-            &signature.0,
-            reference_nonce,
-            signer_bitmap,
-        );
-
-        let tx_hash = settlement_writer
-            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
-            .await
-            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
-
-        Ok(tx_hash)
-    }
-
-    /// Sign and submit SettlementBridgeCustody.completeVisionWithdraw() on Settlement (Issue 3).
-    async fn sign_and_submit_complete_withdraw(
-        &self,
-        message_hash: &H256,
-        withdraw_id: U256,
-        user: Address,
-        amount: U256,
-    ) -> Result<H256, String> {
-        let (bls_keypair, settlement_writer) = match (&self.bls_keypair, &self.settlement_chain_writer) {
-            (Some(kp), Some(w)) => (kp, w),
-            _ => {
-                return Err("BLS keypair or Settlement chain writer not available (degraded mode)".into());
-            }
-        };
-
-        let signature = self.bls_signer
-            .sign_message_hash(bls_keypair, message_hash.as_bytes().try_into().unwrap())
-            .map_err(|e| format!("BLS signing failed: {e}"))?;
-
-        let signer_bitmap = U256::one() << self.node_index;
-
-        // Read referenceNonce from Settlement IssuerRegistry (completeVisionWithdraw is an Settlement operation)
-        let reference_nonce = self
-            .get_reference_nonce(&self.settlement_provider, self.settlement_registry_address)
-            .await?;
-
-        // completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-        let calldata = build_complete_withdraw_calldata(
-            withdraw_id,
-            user,
-            amount,
-            &signature.0,
-            reference_nonce,
-            signer_bitmap,
-        );
-
-        let tx_hash = settlement_writer
-            .send_transaction(self.settlement_custody_address, calldata, U256::zero())
-            .await
-            .map_err(|e| format!("Settlement send_transaction failed: {e}"))?;
-
-        Ok(tx_hash)
+    /// Enqueue a CompleteWithdraw operation for consensus signing.
+    fn request_complete_withdraw(&self, withdraw_id: u64, user: Address, amount: U256, message_hash: H256) {
+        self.ops_queue.enqueue(VisionOp::CompleteWithdraw { withdraw_id, user, amount, message_hash });
     }
 
     // =========================================================================
@@ -940,7 +794,7 @@ impl VisionDepositWatcher {
     /// Check for stuck `pending` deposits and auto-refund after timeout.
     ///
     /// CRITICAL: Only refund deposits in `Pending` state. Never refund `CreditedOnL3`.
-    /// Before signing refund, MUST check Vision.depositProcessed[depositId] on L3.
+    /// Before enqueuing refund, MUST check Vision.depositProcessed[depositId] on L3.
     async fn check_auto_refund(&mut self) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -948,7 +802,9 @@ impl VisionDepositWatcher {
             .as_secs();
 
         let timeout = self.config.deposit_auto_refund_timeout_secs;
-        let mut to_refund = Vec::new();
+
+        // Collect candidates first (immutable borrow)
+        let mut candidates: Vec<(u64, bool)> = Vec::new(); // (order_id, should_refund)
 
         for (order_id, deposit) in &self.pending_deposits {
             // Only refund Pending deposits, NEVER CreditedOnL3
@@ -958,7 +814,7 @@ impl VisionDepositWatcher {
 
             let age = now.saturating_sub(deposit.created_at);
             if age > timeout {
-                // CRITICAL SAFETY CHECK: Before signing refund, query L3 to confirm
+                // CRITICAL SAFETY CHECK: Before enqueuing refund, query L3 to confirm
                 // the credit has NOT been processed. This prevents the credit+refund
                 // double-money race condition (AUDIT FIX round 3).
                 if self.is_deposit_processed_on_l3(*order_id).await {
@@ -966,59 +822,56 @@ impl VisionDepositWatcher {
                         order_id,
                         "Auto-refund BLOCKED: deposit already processed on L3. Advancing to CreditedOnL3."
                     );
-                    // Advance to CreditedOnL3 instead of refunding
-                    to_refund.push((*order_id, false)); // false = don't refund, advance
+                    candidates.push((*order_id, false)); // false = advance, don't refund
                     continue;
                 }
 
-                warn!(
-                    order_id,
-                    age_secs = age,
-                    timeout_secs = timeout,
-                    "Auto-refunding stuck pending deposit"
-                );
-                to_refund.push((*order_id, true)); // true = refund
-            }
-        }
-
-        // First pass: attempt signing + submission (no mutable borrow of pending_deposits)
-        // result: (order_id, should_refund, success)
-        let mut refund_results: Vec<(u64, bool, bool)> = Vec::new();
-
-        for (order_id, should_refund) in &to_refund {
-            if *should_refund {
-                // Build refund message hash and submit
-                let refund_hash = build_refund_deposit_hash(
-                    self.config.settlement_chain_id,
-                    self.settlement_custody_address,
-                    U256::from(*order_id),
-                );
-
-                match self.sign_and_submit_refund_deposit(
-                    &refund_hash,
-                    U256::from(*order_id),
-                ).await {
-                    Ok(tx_hash) => {
-                        info!(order_id, tx_hash = ?tx_hash, "Deposit refunded via BLS-signed tx");
-                        refund_results.push((*order_id, true, true));
+                // Check if we already have a refund result pending
+                match self.ops_queue.poll_result("refund", *order_id) {
+                    Some(OpResult::Success { tx_hash }) => {
+                        self.ops_queue.clear_result("refund", *order_id);
+                        info!(order_id, tx_hash = ?tx_hash, "Deposit refunded via consensus tx");
+                        candidates.push((*order_id, true)); // true = refund succeeded
                     }
-                    Err(e) => {
-                        warn!(order_id, error = %e, "Failed to submit refund, will retry next loop");
-                        refund_results.push((*order_id, true, false));
+                    Some(OpResult::Permanent { reason }) => {
+                        self.ops_queue.clear_result("refund", *order_id);
+                        // Re-check on-chain — maybe processed in the meantime
+                        if self.is_deposit_processed_on_l3(*order_id).await {
+                            warn!(order_id, reason, "Refund permanent error but deposit now processed on L3, advancing");
+                            candidates.push((*order_id, false));
+                        } else {
+                            warn!(order_id, reason, "Refund permanent error, will re-enqueue");
+                        }
+                    }
+                    Some(OpResult::Failed { error }) => {
+                        self.ops_queue.clear_result("refund", *order_id);
+                        warn!(order_id, error, "Refund failed, will re-enqueue");
+                    }
+                    Some(OpResult::Pending) => {
+                        // Consensus is working on it
+                    }
+                    None => {
+                        // No result — enqueue refund
+                        warn!(
+                            order_id,
+                            age_secs = age,
+                            timeout_secs = timeout,
+                            "Auto-refunding stuck pending deposit"
+                        );
+                        let refund_hash = build_refund_deposit_hash(
+                            self.settlement_chain_id,
+                            self.settlement_custody_address,
+                            U256::from(*order_id),
+                        );
+                        self.request_refund_deposit(*order_id, refund_hash);
                     }
                 }
-            } else {
-                // Advance to CreditedOnL3 (was already processed on L3)
-                refund_results.push((*order_id, false, true));
             }
         }
 
-        // Second pass: update in-flight state + collect DB updates
+        // Second pass: update state + persist (mutable borrow)
         let mut db_updates: Vec<(u64, Address, U256, DepositStatus)> = Vec::new();
-        for (order_id, should_refund, success) in &refund_results {
-            if !success {
-                continue; // Skip failed refunds, stay Pending
-            }
+        for (order_id, should_refund) in &candidates {
             if let Some(deposit) = self.pending_deposits.get_mut(order_id) {
                 let new_status = if *should_refund {
                     DepositStatus::Refunded
@@ -1030,7 +883,6 @@ impl VisionDepositWatcher {
             }
         }
 
-        // Third pass: persist to DB (no mutable borrow of pending_deposits)
         for (order_id, user, amount, status) in db_updates {
             self.upsert_deposit_status(order_id, user, amount, status).await;
         }
@@ -1306,7 +1158,7 @@ impl VisionDepositWatcher {
 // =============================================================================
 
 /// Build calldata for Vision.creditBalance(address user, uint256 amount, uint256 depositId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-fn build_credit_balance_calldata(
+pub fn build_credit_balance_calldata(
     user: Address,
     amount: U256,
     deposit_id: U256,
@@ -1334,7 +1186,7 @@ fn build_credit_balance_calldata(
 }
 
 /// Build calldata for SettlementBridgeCustody.completeVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-fn build_complete_deposit_calldata(
+pub fn build_complete_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
     reference_nonce: U256,
@@ -1358,7 +1210,7 @@ fn build_complete_deposit_calldata(
 }
 
 /// Build calldata for SettlementBridgeCustody.refundVisionDeposit(uint256 orderId, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-fn build_refund_deposit_calldata(
+pub fn build_refund_deposit_calldata(
     order_id: U256,
     bls_signature: &[u8],
     reference_nonce: U256,
@@ -1382,7 +1234,7 @@ fn build_refund_deposit_calldata(
 }
 
 /// Build calldata for SettlementBridgeCustody.completeVisionWithdraw(uint256 withdrawId, address user, uint256 amount, bytes blsSignature, uint256 referenceNonce, uint256 signersBitmask)
-fn build_complete_withdraw_calldata(
+pub fn build_complete_withdraw_calldata(
     withdraw_id: U256,
     user: Address,
     amount: U256,
