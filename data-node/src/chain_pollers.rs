@@ -69,7 +69,13 @@ abigen!(
 
 abigen!(
     IssuerRegistryPoller,
-    r#"[{"type":"function","name":"getActiveIssuerEndpoints","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"endpoint","type":"string"},{"name":"blsPubkey","type":"bytes"}]}],"stateMutability":"view"},{"type":"function","name":"activeIssuerCount","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"registryNonce","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"},{"type":"function","name":"aggregatedPubkey","inputs":[],"outputs":[{"name":"","type":"bytes"}],"stateMutability":"view"},{"type":"function","name":"consensusPaused","inputs":[],"outputs":[{"name":"","type":"bool"}],"stateMutability":"view"}]"#
+    r#"[
+        function getActiveIssuerEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+        function activeIssuerCount() external view returns (uint256)
+        function registryNonce() external view returns (uint256)
+        function aggregatedPubkey() external view returns (bytes)
+        function consensusPaused() external view returns (bool)
+    ]"#
 );
 
 abigen!(
@@ -730,15 +736,24 @@ pub async fn poll_issuer_registry_once(state: &AppState) -> Result<(), Box<dyn s
     let registry_addr = crate::api::deployment_addr(&state.deployment, "IssuerRegistry")?;
     let registry = IssuerRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
 
-    // Returns Vec<(Address, String, Bytes)> — (addr, endpoint, blsPubkey)
-    let issuers = registry.get_active_issuer_endpoints().call().await?;
+    // Returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+    let (ids, ips, pubkeys) = registry.get_active_issuer_endpoints().call().await?;
 
-    let cached: Vec<CachedIssuer> = issuers
-        .into_iter()
-        .map(|(addr, endpoint, bls_pubkey)| CachedIssuer {
-            address: format!("{:?}", addr),
-            endpoint,
-            bls_pubkey: format!("0x{}", hex::encode(&bls_pubkey)),
+    let cached: Vec<CachedIssuer> = ids
+        .iter()
+        .enumerate()
+        .map(|(i, id)| {
+            // Decode bytes32 IP as UTF-8 string (null-terminated)
+            let ip_bytes = ips.get(i).map(|b| b.as_ref()).unwrap_or(&[]);
+            let ip_str = String::from_utf8_lossy(
+                &ip_bytes[..ip_bytes.iter().position(|&b| b == 0).unwrap_or(ip_bytes.len())]
+            ).to_string();
+            let pubkey = pubkeys.get(i).map(|b| format!("0x{}", hex::encode(b))).unwrap_or_default();
+            CachedIssuer {
+                address: format!("issuer-{}", id),
+                endpoint: ip_str,
+                bls_pubkey: pubkey,
+            }
         })
         .collect();
 

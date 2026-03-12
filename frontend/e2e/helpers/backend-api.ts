@@ -1371,7 +1371,7 @@ export async function repayDirect(
     + uint(amount)
     + uint(0n) // shares = 0 (use amount)
     + pad(user)
-    + '100'.padStart(64, '0') // bytes offset
+    + '120'.padStart(64, '0') // bytes offset (9 words × 32 = 0x120)
     + '0'.padStart(64, '0'); // bytes length = 0
 
   return l3SignedSend(morpho.contracts.MORPHO, data);

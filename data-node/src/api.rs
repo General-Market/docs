@@ -5867,6 +5867,9 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
+    // Fetch vault asset balances from settlement chain
+    let (vault_assets, vault_usd_total) = build_vault_snapshot(state, &state.settlement_provider).await;
+
     SystemSnapshot {
         is_healthy,
         active_issuers,
@@ -5878,8 +5881,8 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         avg_fill_time_seconds: 0.0,
         nodes,
         recent_orders,
-        vault_assets: vec![],
-        vault_usd_total: 0.0,
+        vault_assets,
+        vault_usd_total,
     }
 }
 

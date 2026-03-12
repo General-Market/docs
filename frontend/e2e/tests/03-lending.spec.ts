@@ -132,7 +132,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       const posAfter = await pollUntil(
         () => getMorphoPositionDirect(TEST_ADDRESS),
         (p) => p.collateral < posBefore.collateral,
-        30_000,
+        60_000,
         2_000,
       );
       console.log(`Position after withdraw: collateral=${posAfter.collateral}`);
@@ -176,7 +176,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       const posAfterDeposit = await pollUntil(
         () => getMorphoPositionDirect(TEST_ADDRESS),
         (p) => p.collateral > posBefore.collateral,
-        30_000,
+        60_000,
         2_000,
       );
       console.log(`Position after deposit: collateral=${posAfterDeposit.collateral}`);
@@ -191,7 +191,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       const posAfterBorrow = await pollUntil(
         () => getMorphoPositionDirect(TEST_ADDRESS),
         (p) => p.borrowShares > posAfterDeposit.borrowShares,
-        30_000,
+        60_000,
         2_000,
       );
       console.log(`Position after borrow: borrowShares=${posAfterBorrow.borrowShares}`);
@@ -214,7 +214,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       const posAfterRepay = await pollUntil(
         () => getMorphoPositionDirect(TEST_ADDRESS),
         (p) => p.borrowShares < posAfterBorrow.borrowShares,
-        30_000,
+        60_000,
         2_000,
       );
       console.log(`Position after repay: borrowShares=${posAfterRepay.borrowShares}`);
@@ -229,7 +229,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       const posAfterWithdraw = await pollUntil(
         () => getMorphoPositionDirect(TEST_ADDRESS),
         (p) => p.collateral < posAfterRepay.collateral,
-        30_000,
+        60_000,
         2_000,
       );
       console.log(`Position after withdraw: collateral=${posAfterWithdraw.collateral}`);

@@ -48,4 +48,11 @@ echo "  vision-batches.json → deployments/vision-batches.json + frontend/lib/c
 # 5. Write sentinel file
 echo "$ENV_NAME" > "$REPO_ROOT/.active-env"
 
+# 6. Kill running Next.js dev server (it caches .env.local at boot — stale env = 404s)
+NEXT_PID=$(lsof -ti :3000 2>/dev/null || true)
+if [[ -n "$NEXT_PID" ]]; then
+  kill $NEXT_PID 2>/dev/null || true
+  echo -e "  ${YELLOW}Killed Next.js dev server (pid $NEXT_PID) — restart with: cd frontend && npm run dev${NC}"
+fi
+
 echo -e "${GREEN}Switched to $ENV_NAME${NC}"

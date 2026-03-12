@@ -357,7 +357,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
 
       const marketIdPadded = MARKET_ID.replace('0x', '').padStart(64, '0');
       const result = await l3RpcCall('eth_call', [
-        { to: MORPHO, data: `0x25d5971f${marketIdPadded}` },
+        { to: MORPHO, data: `0x2c3c9157${marketIdPadded}` },
         'latest',
       ]) as string;
       const hex = result.replace('0x', '');
