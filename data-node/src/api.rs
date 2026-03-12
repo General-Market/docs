@@ -5784,166 +5784,59 @@ pub async fn build_system_snapshot_json(state: &AppState) -> String {
 }
 
 async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
-    let l3 = &state.l3_provider;
-    let settlement = &state.settlement_provider;
+    let cache = &state.chain_cache;
 
-    // Resolve contract addresses
-    let index_addr = match deployment_addr(&state.deployment, "Index") {
-        Ok(a) => a,
-        Err(_) => return empty_snapshot(),
-    };
-    let registry_addr = match deployment_addr(&state.deployment, "IssuerRegistry") {
-        Ok(a) => a,
-        Err(_) => return empty_snapshot(),
-    };
-
-    let index = IndexReader::new(index_addr, Arc::clone(l3));
-    let registry = IssuerRegistryReader::new(registry_addr, Arc::clone(l3));
-
-    // Bind contract call builders first to extend their lifetime
-    let c_issuers = registry.get_issuers();
-    let c_active = registry.active_issuer_count();
-    let c_next_order = index.next_order_id();
-    let c_last_cycle = index.last_processed_cycle_number();
-    let c_pending = index.pending_order_count();
-
-    let (issuers_res, active_count_res, next_order_res, last_cycle_res, pending_res, block_res) = tokio::join!(
-        c_issuers.call(),
-        c_active.call(),
-        c_next_order.call(),
-        c_last_cycle.call(),
-        c_pending.call(),
-        l3.get_block_number(),
-    );
-
-    let issuers_raw = issuers_res.unwrap_or_default();
-    let active_issuers = active_count_res.map(|v| v.as_u64()).unwrap_or(0);
-    let total_issuers = issuers_raw.len() as u64;
-    let next_order_id = next_order_res.map(|v| v.as_u64()).unwrap_or(0);
+    // Read all data from ChainCache (populated by background pollers — zero RPC calls)
+    let active_issuers = cache.active_issuer_count.load(std::sync::atomic::Ordering::Relaxed);
+    let last_cycle_number = cache.last_cycle.load(std::sync::atomic::Ordering::Relaxed);
+    let next_order_id = cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
     let total_orders = if next_order_id > 0 { next_order_id - 1 } else { 0 };
-    let last_cycle_number = last_cycle_res.map(|v| v.as_u64()).unwrap_or(0);
-    let pending_orders = pending_res.map(|v| v.as_u64()).unwrap_or(0);
-    let l3_block_number = block_res.map(|v| v.as_u64()).unwrap_or(0);
+    let pending_orders = cache.pending_orders.read().await.len() as u64;
 
-    // Parse issuer nodes
-    // Tuple fields: (addr: H160, ip: [u8;32], blsPubkey: Bytes, status: u8, registeredAt: U256)
-    let nodes: Vec<IssuerNodeInfo> = issuers_raw.iter().enumerate().map(|(idx, iss)| {
-        let ip_bytes: [u8; 32] = iss.1;
-        let pubkey_hex = format!("0x{}", hex::encode(&iss.2));
+    // Single RPC call: current block number
+    let l3_block_number = state.l3_provider.get_block_number().await
+        .map(|v| v.as_u64()).unwrap_or(0);
+
+    // Issuer nodes from cached registry
+    let registry = cache.issuer_registry.read().await;
+    let total_issuers = registry.len() as u64;
+    let nodes: Vec<IssuerNodeInfo> = registry.iter().enumerate().map(|(idx, iss)| {
         IssuerNodeInfo {
             id: (idx + 1) as u64,
-            addr: format!("{:?}", iss.0),
-            ip: decode_ip_bytes32(ip_bytes),
-            bls_pubkey_short: truncate_hex(&pubkey_hex, 10, 4),
-            status: iss.3,
-            registered_at: iss.4.as_u64(),
+            addr: iss.address.clone(),
+            ip: iss.endpoint.clone(),
+            bls_pubkey_short: truncate_hex(&iss.bls_pubkey, 10, 4),
+            status: 1, // all cached issuers are registered
+            registered_at: 0,
         }
     }).collect();
+    drop(registry);
 
-    // Query OrderSubmitted + FillConfirmed events from recent blocks only
-    // (scanning from block 0 is too slow on large chains and blocks the SSE loop)
-    let lookback: u64 = 50_000;
-    let from_block = l3_block_number.saturating_sub(lookback);
+    // Recent orders from cached pending/batched orders (no event scanning needed)
+    let pending = cache.pending_orders.read().await;
+    let batched = cache.batched_orders.read().await;
+    let mut all_orders: Vec<&crate::chain_cache::CachedLimitOrder> = Vec::new();
+    all_orders.extend(pending.iter());
+    all_orders.extend(batched.iter());
+    all_orders.sort_by(|a, b| b.order_id.cmp(&a.order_id));
+    all_orders.truncate(20);
 
-    let order_filter = index.order_submitted_filter().from_block(from_block);
-    let order_logs = order_filter.query_with_meta().await.unwrap_or_default();
-
-    let fill_filter = index.fill_confirmed_filter().from_block(from_block);
-    let fill_logs = fill_filter.query_with_meta().await.unwrap_or_default();
-
-    // Build fill map: orderId -> (block_number, cycle_number)
-    let mut fill_map: HashMap<u64, (u64, u64)> = HashMap::new();
-    for (fill, meta) in &fill_logs {
-        fill_map.insert(
-            fill.order_id.as_u64(),
-            (meta.block_number.as_u64(), fill.cycle_number.as_u64()),
-        );
-    }
-
-    // Build recent orders (last 20, newest first) — determine which blocks need timestamps
-    let start = if order_logs.len() > 20 { order_logs.len() - 20 } else { 0 };
-    let recent_order_logs: Vec<_> = order_logs[start..].iter().rev().collect();
-
-    // Only fetch timestamps for blocks in the recent window (+ their fills), not ALL events
-    let mut block_nums: std::collections::HashSet<u64> = std::collections::HashSet::new();
-    for (evt, meta) in &recent_order_logs {
-        block_nums.insert(meta.block_number.as_u64());
-        if let Some((fill_bn, _)) = fill_map.get(&evt.order_id.as_u64()) {
-            block_nums.insert(*fill_bn);
+    let recent_orders: Vec<RecentOrderInfo> = all_orders.iter().map(|o| {
+        RecentOrderInfo {
+            order_id: o.order_id,
+            user: o.user.clone(),
+            itp_id: o.itp_id.clone(),
+            side: o.side,
+            amount: o.amount.clone(),
+            block_number: 0,
+            block_timestamp: o.timestamp,
+            status: if o.status == 0 { "pending".into() } else { "filled".into() },
+            fill_time_seconds: None,
+            fill_cycle: None,
         }
-    }
-
-    // Fetch block timestamps in small batches to avoid overwhelming the RPC node
-    let mut block_ts_map: HashMap<u64, u64> = HashMap::new();
-    let block_list: Vec<u64> = block_nums.into_iter().collect();
-    for chunk in block_list.chunks(10) {
-        let futs: Vec<_> = chunk.iter().map(|bn| {
-            let provider = Arc::clone(l3);
-            let bn = *bn;
-            async move {
-                match provider.get_block(bn).await {
-                    Ok(Some(b)) => Some((bn, b.timestamp.as_u64())),
-                    _ => None,
-                }
-            }
-        }).collect();
-        let results = futures::future::join_all(futs).await;
-        for r in results.into_iter().flatten() {
-            block_ts_map.insert(r.0, r.1);
-        }
-    }
-
-    let mut recent_orders: Vec<RecentOrderInfo> = Vec::new();
-    for (evt, meta) in &recent_order_logs {
-        let oid = evt.order_id.as_u64();
-        let submit_ts = block_ts_map.get(&meta.block_number.as_u64()).copied().unwrap_or(0);
-        let fill = fill_map.get(&oid);
-        let fill_time = fill.and_then(|(fill_bn, _)| {
-            let fill_ts = block_ts_map.get(fill_bn).copied().unwrap_or(0);
-            if fill_ts > 0 && submit_ts > 0 { Some((fill_ts - submit_ts) as f64) } else { None }
-        });
-
-        recent_orders.push(RecentOrderInfo {
-            order_id: oid,
-            user: format!("{:?}", evt.user),
-            itp_id: format!("0x{}", hex::encode(evt.itp_id)),
-            side: evt.side,
-            amount: evt.amount.to_string(),
-            block_number: meta.block_number.as_u64(),
-            block_timestamp: submit_ts,
-            status: if fill.is_some() { "filled".into() } else { "pending".into() },
-            fill_time_seconds: fill_time,
-            fill_cycle: fill.map(|(_, c)| *c),
-        });
-    }
-
-    // Compute average fill time from the recent orders that have timestamps
-    let mut fill_sum = 0.0f64;
-    let mut fill_count = 0u64;
-    for (evt, meta) in &recent_order_logs {
-        if let Some((fill_bn, _)) = fill_map.get(&evt.order_id.as_u64()) {
-            let submit_ts = block_ts_map.get(&meta.block_number.as_u64()).copied().unwrap_or(0);
-            let fill_ts = block_ts_map.get(fill_bn).copied().unwrap_or(0);
-            if fill_ts > 0 && submit_ts > 0 {
-                fill_sum += (fill_ts - submit_ts) as f64;
-                fill_count += 1;
-            }
-        }
-    }
-    let avg_fill_time_seconds = if fill_count > 0 { fill_sum / fill_count as f64 } else { 0.0 };
-
-    // Vault USD total: sum of pending (unfilled) order amounts
-    // This reflects actual "orders in" — collateral awaiting settlement
-    let mut vault_usd_total = 0.0f64;
-    for (evt, _) in &order_logs {
-        if !fill_map.contains_key(&evt.order_id.as_u64()) {
-            let amount_f64: f64 = evt.amount.to_string().parse().unwrap_or(0.0);
-            vault_usd_total += amount_f64 / 1e18;
-        }
-    }
-
-    // Vault asset breakdown (top holdings chart)
-    let (vault_assets, _) = build_vault_snapshot(state, settlement).await;
+    }).collect();
+    drop(pending);
+    drop(batched);
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
@@ -5955,11 +5848,11 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         last_cycle_number,
         pending_orders,
         l3_block_number,
-        avg_fill_time_seconds,
+        avg_fill_time_seconds: 0.0,
         nodes,
         recent_orders,
-        vault_assets,
-        vault_usd_total,
+        vault_assets: vec![],
+        vault_usd_total: 0.0,
     }
 }
 
