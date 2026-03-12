@@ -24,6 +24,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npx tsx scripts/build-founders-lookup.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
