@@ -142,20 +142,21 @@ impl PendingOpsQueue {
 
     /// Enqueue an operation unless the same (type, id) is already queued,
     /// in-progress, or has a pending result. Prunes stale in-progress entries.
+    ///
+    /// Holds both locks simultaneously to prevent TOCTOU between results and pending.
     pub fn enqueue(&self, op: VisionOp) {
         let key = op.key();
 
-        // Check results first — skip if a pending result exists.
-        {
-            let results = self.results.lock().unwrap();
-            if let Some(entry) = results.get(&key) {
-                if entry.created_at.elapsed().as_secs() < RESULT_TTL_SECS {
-                    return;
-                }
+        // Hold both locks to prevent race between results check and pending insert.
+        let results = self.results.lock().unwrap();
+        let mut pending = self.pending.lock().unwrap();
+
+        // Skip if a pending result exists.
+        if let Some(entry) = results.get(&key) {
+            if entry.created_at.elapsed().as_secs() < RESULT_TTL_SECS {
+                return;
             }
         }
-
-        let mut pending = self.pending.lock().unwrap();
 
         // Prune stale InProgress entries.
         pending.retain(|e| {

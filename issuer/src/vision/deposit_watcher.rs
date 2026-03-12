@@ -272,7 +272,7 @@ impl VisionDepositWatcher {
             }
 
             // Check if already completed on-chain (restart recovery)
-            if self.is_deposit_processed_on_l3(order_id).await {
+            if self.is_deposit_processed_on_l3(order_id).await == Some(true) {
                 info!(order_id, user = %user, "Deposit already processed on L3, skipping");
                 self.upsert_deposit_status(order_id, user, amount, DepositStatus::CompletedOnSettlement)
                     .await;
@@ -450,7 +450,7 @@ impl VisionDepositWatcher {
                     }
 
                     // Check if already credited (idempotency)
-                    if self.is_deposit_processed_on_l3(deposit.order_id).await {
+                    if self.is_deposit_processed_on_l3(deposit.order_id).await == Some(true) {
                         info!(order_id, "Deposit already credited on L3, advancing to completion");
                         if let Some(d) = self.pending_deposits.get_mut(&order_id) {
                             d.status = DepositStatus::CreditedOnL3;
@@ -469,7 +469,7 @@ impl VisionDepositWatcher {
                     match self.ops_queue.poll_result("credit", order_id) {
                         Some(OpResult::Success { tx_hash }) => {
                             // CRITICAL: verify on-chain before advancing
-                            if self.is_deposit_processed_on_l3(order_id).await {
+                            if self.is_deposit_processed_on_l3(order_id).await == Some(true) {
                                 self.ops_queue.clear_result("credit", order_id);
                                 info!(
                                     order_id,
@@ -496,7 +496,7 @@ impl VisionDepositWatcher {
                         Some(OpResult::Permanent { reason }) => {
                             self.ops_queue.clear_result("credit", order_id);
                             // Check on-chain — maybe it was already processed by another issuer
-                            if self.is_deposit_processed_on_l3(order_id).await {
+                            if self.is_deposit_processed_on_l3(order_id).await == Some(true) {
                                 info!(order_id, reason, "creditBalance permanent error but already processed on L3, advancing");
                                 if let Some(d) = self.pending_deposits.get_mut(&order_id) {
                                     d.status = DepositStatus::CreditedOnL3;
@@ -537,7 +537,7 @@ impl VisionDepositWatcher {
                     // Step 6-7: Submit SettlementBridgeCustody.completeVisionDeposit() on Settlement
 
                     // Verify the credit actually landed on L3 (confirmation buffer)
-                    if !self.is_deposit_processed_on_l3(deposit.order_id).await {
+                    if self.is_deposit_processed_on_l3(deposit.order_id).await != Some(true) {
                         debug!(
                             order_id,
                             "Waiting for L3 creditBalance confirmation (L3_CONFIRMATION_BUFFER={})",
@@ -817,13 +817,26 @@ impl VisionDepositWatcher {
                 // CRITICAL SAFETY CHECK: Before enqueuing refund, query L3 to confirm
                 // the credit has NOT been processed. This prevents the credit+refund
                 // double-money race condition (AUDIT FIX round 3).
-                if self.is_deposit_processed_on_l3(*order_id).await {
-                    warn!(
-                        order_id,
-                        "Auto-refund BLOCKED: deposit already processed on L3. Advancing to CreditedOnL3."
-                    );
-                    candidates.push((*order_id, false)); // false = advance, don't refund
-                    continue;
+                // Fail-closed: if RPC fails (None), skip refund — never refund when uncertain.
+                match self.is_deposit_processed_on_l3(*order_id).await {
+                    Some(true) => {
+                        warn!(
+                            order_id,
+                            "Auto-refund BLOCKED: deposit already processed on L3. Advancing to CreditedOnL3."
+                        );
+                        candidates.push((*order_id, false)); // false = advance, don't refund
+                        continue;
+                    }
+                    None => {
+                        warn!(
+                            order_id,
+                            "Auto-refund SKIPPED: L3 RPC unavailable, cannot confirm credit status (fail-closed)"
+                        );
+                        continue;
+                    }
+                    Some(false) => {
+                        // Not processed — safe to proceed with refund
+                    }
                 }
 
                 // Check if we already have a refund result pending
@@ -836,7 +849,7 @@ impl VisionDepositWatcher {
                     Some(OpResult::Permanent { reason }) => {
                         self.ops_queue.clear_result("refund", *order_id);
                         // Re-check on-chain — maybe processed in the meantime
-                        if self.is_deposit_processed_on_l3(*order_id).await {
+                        if self.is_deposit_processed_on_l3(*order_id).await == Some(true) {
                             warn!(order_id, reason, "Refund permanent error but deposit now processed on L3, advancing");
                             candidates.push((*order_id, false));
                         } else {
@@ -893,8 +906,9 @@ impl VisionDepositWatcher {
     // =========================================================================
 
     /// Check if Vision.depositProcessed[depositId] is true on L3.
-    /// Returns true if the credit has already been applied.
-    async fn is_deposit_processed_on_l3(&self, deposit_id: u64) -> bool {
+    /// Returns `Some(true)` if credited, `Some(false)` if not, `None` on RPC failure.
+    /// Callers MUST treat `None` as "unknown — do NOT refund" (fail-closed).
+    async fn is_deposit_processed_on_l3(&self, deposit_id: u64) -> Option<bool> {
         // depositProcessed(uint256) selector
         let selector = &ethers::utils::keccak256(b"depositProcessed(uint256)")[..4];
         let encoded_arg = abi::encode(&[Token::Uint(U256::from(deposit_id))]);
@@ -911,14 +925,14 @@ impl VisionDepositWatcher {
             Ok(result) => {
                 // Returns bool (uint256: 0 or 1)
                 if result.len() >= 32 {
-                    U256::from_big_endian(&result[0..32]) == U256::one()
+                    Some(U256::from_big_endian(&result[0..32]) == U256::one())
                 } else {
-                    false
+                    Some(false)
                 }
             }
             Err(e) => {
-                warn!(deposit_id, error = %e, "Failed to query depositProcessed on L3");
-                false
+                warn!(deposit_id, error = %e, "Failed to query depositProcessed on L3 — treating as unknown (fail-closed)");
+                None
             }
         }
     }
@@ -951,7 +965,7 @@ impl VisionDepositWatcher {
             };
 
             // Check on-chain state for recovery
-            if self.is_deposit_processed_on_l3(*order_id as u64).await {
+            if self.is_deposit_processed_on_l3(*order_id as u64).await == Some(true) {
                 if status == DepositStatus::Pending {
                     // Credit landed but DB not updated — advance
                     info!(
