@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'ITP not found' }, { status: 404 })
     }
     const snapshot = await snapshotRes.json()
-    const rawHoldings: { symbol: string; weight: number; price: number; name?: string }[] =
+    const rawHoldings: { symbol: string; weight: number; price: number; name: string }[] =
       (snapshot.assets || []).map((a: any) => ({
         symbol: a.symbol || '',
         weight: a.weight || 0,

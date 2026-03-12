@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
-import { Link } from '@/i18n/routing'
+import { ItpPageClient } from '@/components/domain/itp-page/ItpPageClient'
+import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
 export const revalidate = 60
 
@@ -52,12 +53,28 @@ export async function generateStaticParams() {
   return itps.map((itp) => ({ itpId: itp.itpId }))
 }
 
+async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
+  try {
+    // Use internal absolute URL for server-side fetch
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const res = await fetch(
+      `${baseUrl}/api/itp-enrichment?itp_id=${encodeURIComponent(itpId)}`,
+      { next: { revalidate: 300 } }
+    )
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
 export default async function ItpPage({ params }: Props) {
   const { locale, itpId } = await params
-  const [itp, t, tBreadcrumbs] = await Promise.all([
+  const [itp, t, tBreadcrumbs, enrichment] = await Promise.all([
     getItpDetail(itpId),
     getTranslations({ locale, namespace: 'seo.pages.itp' }),
     getTranslations({ locale, namespace: 'seo.breadcrumbs' }),
+    fetchEnrichment(itpId),
   ])
 
   if (!itp) {
@@ -93,12 +110,12 @@ export default async function ItpPage({ params }: Props) {
               name: "General Market",
               url: "https://generalmarket.io",
             },
-          }),
+          }).replace(/</g, '\\u003c'),
         }}
       />
 
       <div className="px-6 lg:px-12 py-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <nav className="text-sm text-text-muted mb-6">
             <a href="/" className="hover:text-black transition-colors">{tBreadcrumbs('home')}</a>
             <span className="mx-2">/</span>
@@ -116,68 +133,19 @@ export default async function ItpPage({ params }: Props) {
             </p>
           </header>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('nav_share')}</div>
-              <div className="text-2xl font-bold font-mono">${itp.nav.toFixed(4)}</div>
-            </div>
-            <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('aum')}</div>
-              <div className="text-2xl font-bold font-mono">${itp.aum.toFixed(2)}</div>
-            </div>
-            <div className="bg-white border border-border-light rounded-lg p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1">{t('assets')}</div>
-              <div className="text-2xl font-bold font-mono">{itp.assetCount}</div>
-            </div>
-          </div>
+          <ItpPageClient
+            itpId={itpId}
+            name={itp.name}
+            symbol={itp.symbol}
+            nav={itp.nav}
+            aum={itp.aum}
+            assetCount={itp.assetCount}
+            enrichment={enrichment}
+          />
 
-          {itp.holdings.length > 0 && (
-            <section>
-              <h2 className="text-xl font-bold mb-4">{t('holdings')}</h2>
-              <div className="bg-white border border-border-light rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-surface">
-                    <tr>
-                      <th className="text-left px-4 py-2 font-semibold text-text-secondary">{t('asset_col')}</th>
-                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">{t('weight_col')}</th>
-                      <th className="text-right px-4 py-2 font-semibold text-text-secondary">{t('price_col')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itp.holdings.map((h) => (
-                      <tr key={h.symbol} className="border-t border-border-light">
-                        <td className="px-4 py-2 font-medium">{h.symbol}</td>
-                        <td className="px-4 py-2 text-right font-mono">{(h.weight * 100).toFixed(2)}%</td>
-                        <td className="px-4 py-2 text-right font-mono">${h.price.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          <p className="mt-6 text-[13px] text-text-secondary leading-relaxed">
-            NAV is calculated from live price feeds.{' '}
-            <Link href="/sources" className="text-black font-semibold hover:underline">View all data sources</Link>
-            {' '}or{' '}
-            <Link href="/learn/what-are-itps" className="text-black font-semibold hover:underline">learn how ITPs work</Link>.
+          <p className="mt-8 text-[13px] text-text-secondary leading-relaxed">
+            NAV is calculated from live price feeds. Data updates every 60 seconds.
           </p>
-
-          <div className="mt-8 flex gap-3">
-            <a
-              href="/#markets"
-              className="px-6 py-3 bg-black text-white text-sm font-bold rounded-md hover:bg-zinc-800 transition-colors"
-            >
-              {t('trade_this')}
-            </a>
-            <Link
-              href="/learn/what-are-itps"
-              className="px-6 py-3 border-2 border-black text-sm font-bold rounded-md hover:bg-black hover:text-white transition-colors"
-            >
-              {t('learn_about')}
-            </Link>
-          </div>
         </div>
       </div>
     </main>
