@@ -464,14 +464,24 @@ where
         self.pending_config_update.clone()
     }
 
-    /// Get the current registry nonce for BLS reference_nonce in calldata
+    /// Get the L3 registry nonce for BLS reference_nonce in L3 calldata
     pub fn registry_nonce(&self) -> u64 {
         self.key_registry.registry_nonce()
     }
 
-    /// Update the registry nonce (after mirror sync creates a new snapshot)
+    /// Update the L3 registry nonce
     pub fn set_registry_nonce(&self, nonce: u64) {
         self.key_registry.set_registry_nonce(nonce);
+    }
+
+    /// Get the Settlement mirror registry nonce for BLS reference_nonce in Settlement calldata
+    pub fn settlement_registry_nonce(&self) -> u64 {
+        self.key_registry.settlement_registry_nonce()
+    }
+
+    /// Update the Settlement mirror registry nonce
+    pub fn set_settlement_registry_nonce(&self, nonce: u64) {
+        self.key_registry.set_settlement_registry_nonce(nonce);
     }
 
     /// Get the configured number of issuers
@@ -3416,7 +3426,7 @@ where
         request: &crate::chain::events::ItpCreationRequest,
         itp_config: &ItpCreationConfig,
     ) -> Result<ItpCreationResult, ItpCreationError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(
             nonce = %request.nonce,
@@ -3834,7 +3844,7 @@ where
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<BridgeResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(
             order_id = %order.order_id,
@@ -4084,7 +4094,7 @@ where
         &self,
         order: &crate::chain::CrossChainOrder,
     ) -> Result<SubmitOrderResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(order_id = %order.order_id, "Leader: Creating submit order proposal");
 
@@ -4781,7 +4791,7 @@ where
         order_ids: Vec<U256>,
         total_amount: U256,
     ) -> Result<BridgeL3ToSettlementResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(
             cycle_number,
@@ -5022,7 +5032,7 @@ where
         order_ids: Vec<U256>,
         total_amount: U256,
     ) -> Result<ReleaseToVaultResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(
             cycle_number,
@@ -6473,7 +6483,7 @@ where
         bridged_itp_address: Address,
         amount: U256,
     ) -> Result<SellSubmitOrderResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(order_id = %order_id, "Leader: Creating submit sell order proposal");
 
@@ -6666,7 +6676,7 @@ where
         &self,
         order_id: U256,
     ) -> Result<BurnSellOrderResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(order_id = %order_id, "Leader: Creating burn sell order proposal");
 
@@ -6813,7 +6823,7 @@ where
         usdc_proceeds: U256,
         vault: Address,
     ) -> Result<CompleteSellOrderResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(order_id = %order_id, usdc_proceeds = %usdc_proceeds, ?vault, "Leader: Creating complete sell order proposal");
 
@@ -6984,7 +6994,7 @@ where
         tx_type: u8,
         collateral_registry: Address,
     ) -> Result<RecordCollateralMoveResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(cycle_number, "Leader: Creating RecordCollateralMove proposal");
 
@@ -7152,7 +7162,7 @@ where
         bridge_proxy: Address,
         order_id: U256,
     ) -> Result<MintBridgedSharesResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(cycle_number, itp_id = ?itp_id, user = ?user, order_id = %order_id, "Leader: Creating MintBridgedShares proposal");
 
@@ -7300,7 +7310,7 @@ where
         order_id: U256,
         vault: Address,
     ) -> Result<CompleteBuyOrderResult, BridgeError> {
-        let ref_nonce = self.key_registry.registry_nonce();
+        let ref_nonce = self.key_registry.settlement_registry_nonce();
 
         info!(cycle_number, order_id = %order_id, "Leader: Creating CompleteBuyOrder proposal");
 

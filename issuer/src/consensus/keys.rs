@@ -27,11 +27,17 @@ pub trait KeyRegistry: Send + Sync {
     /// Get the number of registered peers
     fn peer_count(&self) -> usize;
 
-    /// Get the current registry nonce (monotonically increasing on each registry change)
+    /// Get the current L3 registry nonce (for L3 BLS verification)
     fn registry_nonce(&self) -> u64 { 0 }
 
-    /// Update the registry nonce (e.g., after mirror sync creates a new snapshot)
+    /// Update the L3 registry nonce
     fn set_registry_nonce(&self, _nonce: u64) {}
+
+    /// Get the Settlement mirror registry nonce (for Settlement BLS verification)
+    fn settlement_registry_nonce(&self) -> u64 { 0 }
+
+    /// Update the Settlement mirror registry nonce
+    fn set_settlement_registry_nonce(&self, _nonce: u64) {}
 }
 
 /// In-memory key registry for issuer BLS public keys
@@ -41,8 +47,10 @@ pub trait KeyRegistry: Send + Sync {
 pub struct InMemoryKeyRegistry {
     /// Map of peer ID to BLS public key
     keys: RwLock<HashMap<PeerId, BLSPublicKey>>,
-    /// Monotonically increasing nonce from on-chain IssuerRegistry
+    /// L3 IssuerRegistry lastSnapshotNonce (for L3 BLS verification)
     nonce: RwLock<u64>,
+    /// Settlement MirrorIssuerRegistry lastSnapshotNonce (for Settlement BLS verification)
+    settlement_nonce: RwLock<u64>,
 }
 
 impl InMemoryKeyRegistry {
@@ -51,6 +59,7 @@ impl InMemoryKeyRegistry {
         Self {
             keys: RwLock::new(HashMap::new()),
             nonce: RwLock::new(0),
+            settlement_nonce: RwLock::new(0),
         }
     }
 
@@ -59,6 +68,7 @@ impl InMemoryKeyRegistry {
         Self {
             keys: RwLock::new(keys),
             nonce: RwLock::new(0),
+            settlement_nonce: RwLock::new(0),
         }
     }
 
@@ -86,12 +96,19 @@ impl InMemoryKeyRegistry {
         Ok(keys.remove(peer_id))
     }
 
-    /// Set the registry nonce (monotonically increasing — only accepts higher values)
+    /// Set the L3 registry nonce (monotonically increasing — only accepts higher values)
     pub fn set_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.nonce.write() {
             if nonce > *guard {
                 *guard = nonce;
             }
+        }
+    }
+
+    /// Set the Settlement mirror registry nonce
+    pub fn set_settlement_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.settlement_nonce.write() {
+            *guard = nonce;
         }
     }
 
@@ -163,6 +180,16 @@ impl KeyRegistry for InMemoryKeyRegistry {
 
     fn set_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.nonce.write() {
+            *guard = nonce;
+        }
+    }
+
+    fn settlement_registry_nonce(&self) -> u64 {
+        self.settlement_nonce.read().map(|n| *n).unwrap_or(0)
+    }
+
+    fn set_settlement_registry_nonce(&self, nonce: u64) {
+        if let Ok(mut guard) = self.settlement_nonce.write() {
             *guard = nonce;
         }
     }

@@ -687,9 +687,21 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     }
 
     // Initialize registry nonce from mirror's lastSnapshotNonce on startup.
-    // CRITICAL: Without this, bridge operations before the first mirror sync use
-    // referenceNonce=0 (default), which fails BLSVerifier nonce range checks.
-    // This ensures all bridge ops have a valid referenceNonce from boot.
+    // Initialize L3 registry nonce from on-chain IssuerRegistry.lastSnapshotNonce.
+    // L3 BLS operations (submitBatch, confirmBatch, setItpNav, etc.) use this as referenceNonce.
+    if let Some(ref protocol) = consensus_protocol_for_task {
+        match consensus_chain_reader.get_registry_nonce().await {
+            Ok(l3_nonce) if l3_nonce > 0 => {
+                protocol.set_registry_nonce(l3_nonce);
+                info!(l3_nonce, "Startup: initialized L3 registry nonce from IssuerRegistry.lastSnapshotNonce");
+            }
+            Ok(_) => info!("Startup: L3 lastSnapshotNonce is 0, L3 registry nonce stays at default"),
+            Err(e) => warn!(error = %e, "Startup: failed to read L3 registry nonce"),
+        }
+    }
+
+    // Initialize Settlement mirror registry nonce from mirror's lastSnapshotNonce.
+    // Settlement BLS operations (completeBuyOrder, mintBridgedShares, etc.) use this.
     if let (Some(ref protocol), Some(ref settlement_writer), Some(mirror_addr)) =
         (&consensus_protocol_for_task, &settlement_writer_for_task, mirror_registry_address)
     {
@@ -698,14 +710,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
             Ok(bytes) if bytes.len() >= 32 => {
                 let mirror_nonce = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
                 if mirror_nonce > 0 {
-                    protocol.set_registry_nonce(mirror_nonce);
-                    info!(mirror_nonce, "Startup: initialized registry nonce from mirror lastSnapshotNonce");
+                    protocol.set_settlement_registry_nonce(mirror_nonce);
+                    info!(mirror_nonce, "Startup: initialized Settlement registry nonce from mirror lastSnapshotNonce");
                 } else {
-                    info!("Startup: mirror lastSnapshotNonce is 0, registry nonce stays at default");
+                    info!("Startup: mirror lastSnapshotNonce is 0, Settlement registry nonce stays at default");
                 }
             }
             Ok(_) => warn!("Startup: unexpected response length from mirror lastSnapshotNonce"),
-            Err(e) => warn!(error = %e, "Startup: failed to read mirror lastSnapshotNonce, bridge ops may fail until first sync"),
+            Err(e) => warn!(error = %e, "Startup: failed to read mirror lastSnapshotNonce, Settlement ops may fail until first sync"),
         }
     }
 
@@ -1041,7 +1053,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                             ).await {
                                                 Ok(mint_result) => {
                                                     if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                        match aw.mint_bridged_shares(itp_id, user, shares, order_id, mint_result.aggregated_signature.0.clone(), p.registry_nonce(), mint_result.signer_bitmap).await {
+                                                        match aw.mint_bridged_shares(itp_id, user, shares, order_id, mint_result.aggregated_signature.0.clone(), p.settlement_registry_nonce(), mint_result.signer_bitmap).await {
                                                             Ok(tx_hash) => {
                                                                 info!(?tx_hash, %order_id, "Pending mint recovered — submitted");
                                                                 match aw.wait_for_receipt(tx_hash, 60).await {
@@ -1688,7 +1700,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
                                     match settlement_writer.complete_create_itp_and_wait(
                                         result.nonce, itp_id,
                                         result.aggregated_signature.clone(),
-                                        protocol.registry_nonce(), result.signer_bitmap,
+                                        protocol.settlement_registry_nonce(), result.signer_bitmap,
                                         RECEIPT_TIMEOUT_SECS,
                                     ).await {
                                         Ok(receipt) => {
@@ -2095,7 +2107,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         Ok(cbo_result) => {
                             info!(cycle = current_cycle, order_id = %order_id, signer_count = cbo_result.signature_count, "CompleteBuyOrder consensus completed");
                             if batch_am_leader && !cbo_result.aggregated_signature.0.is_empty() {
-                                match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.registry_nonce(), cbo_result.signer_bitmap).await {
+                                match settlement_writer.complete_buy_order(*order_id, vault, cbo_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), cbo_result.signer_bitmap).await {
                                     Ok(tx_hash) => {
                                         info!(?tx_hash, order_id = %order_id, "completeBuyOrder submitted, waiting for receipt");
                                         const RECEIPT_TIMEOUT_SECS: u64 = 60;
@@ -2201,7 +2213,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                         info!(cycle = current_cycle, user = ?mapping.original_user, shares = %shares, signer_count = mint_result.signature_count, "MintBridgedShares consensus completed");
                                         // Only LEADER marks SharesBridged after confirmed receipt
                                         if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                            match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                            match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
                                                 Ok(tx_hash) => {
                                                     info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted, waiting for receipt");
                                                     const RECEIPT_TIMEOUT_SECS: u64 = 60;
@@ -2320,7 +2332,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                                     ).await {
                                         Ok(mint_result) => {
                                             if batch_am_leader && !mint_result.aggregated_signature.0.is_empty() {
-                                                match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.registry_nonce(), mint_result.signer_bitmap).await {
+                                                match settlement_writer.mint_bridged_shares(order_itp, mapping.original_user, shares, settlement_id, mint_result.aggregated_signature.0.clone(), protocol.settlement_registry_nonce(), mint_result.signer_bitmap).await {
                                                     Ok(tx_hash) => {
                                                         info!(?tx_hash, user = ?mapping.original_user, "mintBridgedShares submitted (post-fills), waiting for receipt");
                                                         const RECEIPT_TIMEOUT_SECS: u64 = 60;
@@ -2486,7 +2498,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 match settlement_writer.burn_sell_order_shares(
                                     sell_order.order_id,
                                     burn_result.aggregated_signature.0.clone(),
-                                    protocol.registry_nonce(),
+                                    protocol.settlement_registry_nonce(),
                                     burn_result.signer_bitmap,
                                 ).await {
                                     Ok(tx_hash) => {
@@ -2546,7 +2558,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         match settlement_writer.burn_sell_order_shares(
                             order_id,
                             burn_result.aggregated_signature.0.clone(),
-                            protocol.registry_nonce(),
+                            protocol.settlement_registry_nonce(),
                             burn_result.signer_bitmap,
                         ).await {
                             Ok(tx_hash) => {
@@ -3015,7 +3027,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         usdc_proceeds,
                         vault,
                         result.aggregated_signature.0.clone(),
-                        protocol.registry_nonce(),
+                        protocol.settlement_registry_nonce(),
                         result.signer_bitmap,
                     ).await {
                         Ok(tx_hash) => {
@@ -4136,16 +4148,16 @@ where
                 match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
                     Ok(bytes) if bytes.len() >= 32 => {
                         let confirmed_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
-                        protocol.set_registry_nonce(confirmed_nonce);
+                        protocol.set_settlement_registry_nonce(confirmed_nonce);
                         info!(cycle, confirmed_nonce, sync_nonce, "Mirror sync confirmed — registry nonce set from on-chain lastSnapshotNonce");
                     }
                     Ok(_) => {
                         // Fallback: use sync_nonce if read fails (shouldn't happen)
-                        protocol.set_registry_nonce(sync_nonce);
+                        protocol.set_settlement_registry_nonce(sync_nonce);
                         warn!(cycle, sync_nonce, "Mirror sync confirmed but lastSnapshotNonce read returned unexpected data, using sync_nonce");
                     }
                     Err(e) => {
-                        protocol.set_registry_nonce(sync_nonce);
+                        protocol.set_settlement_registry_nonce(sync_nonce);
                         warn!(cycle, sync_nonce, error = %e, "Mirror sync confirmed but failed to read lastSnapshotNonce, using sync_nonce");
                     }
                 }
@@ -4161,7 +4173,7 @@ where
             match settlement_writer.static_call(mirror_addr, lsn_selector.to_vec()).await {
                 Ok(bytes) if bytes.len() >= 32 => {
                     let current_nonce = U256::from_big_endian(&bytes[..32]).as_u64();
-                    protocol.set_registry_nonce(current_nonce);
+                    protocol.set_settlement_registry_nonce(current_nonce);
                     info!(cycle, current_nonce, "Set registry nonce from mirror lastSnapshotNonce after receipt timeout");
                 }
                 _ => {
