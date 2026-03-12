@@ -828,9 +828,10 @@ async fn handle_incoming_balance_proofs(
         // Recompute expected message hash
         let message_hash = compute_withdraw_hash(chain_id, vision_address, batch_id, player, reported_balance);
 
-        // Look up our own recorded balance for this (batch_id, player) to cross-check
-        // If we don't have a record, we still accept (we may not have resolved yet)
-        // but we can query DB as a sanity check
+        // Look up our own recorded balance for this (batch_id, player) to cross-check.
+        // SECURITY: reject if we have no record OR if balances mismatch. Never accept
+        // unverified proofs — a malicious issuer could inject forged balances that
+        // corrupt aggregation and block legitimate withdrawals.
         let db_balance: Option<String> = sqlx::query_scalar(
             "SELECT balance FROM vision_balance_proofs WHERE batch_id = $1 AND player = $2"
         )
@@ -840,25 +841,31 @@ async fn handle_incoming_balance_proofs(
         .await
         .unwrap_or(None);
 
-        if let Some(ref db_bal_str) = db_balance {
-            let db_bal: U256 = db_bal_str.parse().unwrap_or(U256::zero());
-            if db_bal != reported_balance {
-                tracing::warn!(
+        match db_balance {
+            None => {
+                tracing::debug!(
                     batch_id, tick_id, player = %player,
-                    db_balance = %db_bal,
-                    reported_balance = %reported_balance,
                     signer_index,
-                    "Balance mismatch from peer — rejecting balance proof"
+                    "No local balance record for peer proof — rejecting (fail-closed)"
                 );
                 continue;
             }
+            Some(ref db_bal_str) => {
+                let db_bal: U256 = db_bal_str.parse().unwrap_or(U256::zero());
+                if db_bal != reported_balance {
+                    tracing::warn!(
+                        batch_id, tick_id, player = %player,
+                        db_balance = %db_bal,
+                        reported_balance = %reported_balance,
+                        signer_index,
+                        "Balance mismatch from peer — rejecting balance proof"
+                    );
+                    continue;
+                }
+            }
         }
 
-        // We can only BLS-verify if we have the signer's public key.
-        // For now, accept the signature optimistically and store it.
-        // Full verification would require looking up signer's pubkey from IssuerRegistry.
-        // The aggregated result is still safe: Vision.sol verifies the agg signature on-chain.
-        let _ = (&signer, message_hash); // suppress unused warnings
+        let _ = (&signer, message_hash); // suppress unused — on-chain BLS verifies aggregated sig
 
         collector.add_signature(
             batch_id,

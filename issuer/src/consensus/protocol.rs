@@ -8385,7 +8385,23 @@ where
             return Ok(());
         }
 
-        // Step 4: Sign and respond
+        // Step 4: MANDATORY — verify not already processed on Settlement (fail-closed)
+        let settlement_provider = &vision_cfg.settlement_provider;
+        match self.vision_check_withdraw_processed_strict(
+            settlement_provider, custody_address, withdraw_id,
+        ).await {
+            Some(true) => {
+                warn!(withdraw_id, "Withdraw already processed on Settlement, refusing to sign");
+                return Ok(());
+            }
+            None => {
+                warn!(withdraw_id, "Fail-closed: cannot read withdrawProcessed on Settlement, refusing to sign");
+                return Ok(());
+            }
+            Some(false) => { /* not yet processed — safe to sign */ }
+        }
+
+        // Step 5: Sign and respond
         let hash_bytes: [u8; 32] = message_hash.into();
         let signature = self.bls_signer.sign_message_hash(&self.bls_keypair, &hash_bytes)
             .map_err(|e| Error::BlsVerification(format!("Failed to sign vision complete withdraw: {e}")))?;
@@ -8426,6 +8442,39 @@ where
             }
             Err(e) => {
                 warn!(order_id, error = %e, "RPC error reading depositProcessed");
+                None // Fail-closed: caller must NOT sign
+            }
+        }
+    }
+
+    /// Check if SettlementBridgeCustody.withdrawProcessed[withdrawId] is true.
+    /// Returns None on RPC failure (fail-closed — caller must NOT sign).
+    async fn vision_check_withdraw_processed_strict(
+        &self,
+        settlement_provider: &Provider<Http>,
+        custody_address: Address,
+        withdraw_id: u64,
+    ) -> Option<bool> {
+        let selector = &ethers::utils::keccak256(b"withdrawProcessed(uint256)")[..4];
+        let encoded_arg = abi::encode(&[Token::Uint(U256::from(withdraw_id))]);
+        let mut calldata = Vec::with_capacity(4 + encoded_arg.len());
+        calldata.extend_from_slice(selector);
+        calldata.extend_from_slice(&encoded_arg);
+
+        let tx = ethers::types::TransactionRequest::new()
+            .to(custody_address)
+            .data(calldata);
+
+        match settlement_provider.call(&tx.into(), None).await {
+            Ok(result) => {
+                if result.len() >= 32 {
+                    Some(U256::from_big_endian(&result[0..32]) == U256::one())
+                } else {
+                    Some(false)
+                }
+            }
+            Err(e) => {
+                warn!(withdraw_id, error = %e, "RPC error reading withdrawProcessed on Settlement");
                 None // Fail-closed: caller must NOT sign
             }
         }

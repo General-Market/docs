@@ -668,6 +668,9 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         uint256 referenceNonce,
         uint256 signersBitmask
     ) external override {
+        // Defense-in-depth: reject refund if deposit was already completed (even though
+        // completeVisionDeposit deletes the struct, this guards against edge cases)
+        if (depositCompleted[orderId]) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
         TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
         if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
         if (block.timestamp - dep.createdAt <= REFUND_TIMEOUT) revert ErrorsLib.E153_RefundTooEarly(orderId);
