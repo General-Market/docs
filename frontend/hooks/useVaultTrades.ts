@@ -100,6 +100,19 @@ export function useVaultTrades(): UseVaultTradesReturn {
 
       const vaultAddr = INDEX_PROTOCOL.mockBitgetVault
 
+      // Check if contract exists before calling — avoids red error banner when not deployed
+      const code = await publicClient.getCode({ address: vaultAddr })
+      if (!code || code === '0x') {
+        // Contract not deployed — treat as empty, not an error
+        if (mountedRef.current) {
+          setRawTrades([])
+          setTotalCount(0)
+          setFeeBps(0)
+          setIsLoading(false)
+        }
+        return
+      }
+
       // Fetch tradeCount and feeBps in parallel
       const [countResult, feeBpsResult] = await Promise.all([
         publicClient.readContract({

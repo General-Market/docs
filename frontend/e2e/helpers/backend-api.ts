@@ -4,7 +4,7 @@
  * rather than relying on the UI's polling which may be stale.
  */
 
-import { encodeFunctionData, decodeFunctionResult, createWalletClient, http, defineChain } from 'viem';
+import { encodeFunctionData, decodeFunctionResult, createWalletClient, createPublicClient, http, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, SETTLEMENT_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 import {
@@ -411,7 +411,7 @@ const L3_RPC = ENV_L3_RPC;
 const L3_INDEX = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
-async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
+export async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   return withRetry(async () => {
     const res = await fetch(L3_RPC, {
       method: 'POST',
@@ -438,12 +438,16 @@ async function l3SignedSend(to: string, data: string, value?: bigint): Promise<s
     rpcUrls: { default: { http: [L3_RPC] } },
   });
   const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) });
-  return client.sendTransaction({
+  const hash = await client.sendTransaction({
     to: to as `0x${string}`,
     data: data as `0x${string}`,
     value,
     gas: 1_000_000n,
   });
+  // Wait for mining so sequential calls (e.g. approve → supplyCollateral) don't race
+  const pub = createPublicClient({ chain, transport: rpcHttp(L3_RPC) });
+  await pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+  return hash;
 }
 
 /** Simple async mutex to prevent parallel nonce conflicts on testnet. */
@@ -784,6 +788,102 @@ export async function placeSellOrderDirect(
 }
 
 /**
+ * Check if the deployer has enough native gas on Settlement to send transactions.
+ * On testnet (Sonic), the deployer needs S tokens for gas.
+ * Returns true if balance >= minBalance (default 0.01 S).
+ */
+export async function hasSettlementGas(minBalance = 10n ** 16n): Promise<boolean> {
+  if (IS_ANVIL) return true;
+  try {
+    const result = await rpcCall('eth_getBalance', [DEPLOYER, 'latest']) as string;
+    return safeBigInt(result) >= minBalance;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Place a buy order directly on L3 Index (no bridge needed).
+ * Ensures user has L3 USDC, approves Index, then calls submitOrder(side=0).
+ * Amount is in L3 USDC (18 decimals). Returns the L3 orderId.
+ */
+export async function placeL3BuyOrderDirect(
+  user: string,
+  itpId: string,
+  usdcAmount: bigint,
+  limitPrice: bigint,
+): Promise<number> {
+  // Ensure user has enough L3 USDC
+  const usdcBalance = await getL3UsdcBalance(user);
+  if (usdcBalance < usdcAmount) {
+    await mintL3Usdc(user, usdcAmount * 2n);
+    // Brief wait for the mint to confirm
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  // Approve USDC to Index
+  const approveData = encodeFunctionData({
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [L3_INDEX as `0x${string}`, usdcAmount],
+  });
+
+  if (!IS_ANVIL) {
+    await l3SignedSend(L3_WUSDC, approveData);
+  } else {
+    await l3RpcCall('anvil_impersonateAccount', [user]);
+    await l3RpcCall('eth_sendTransaction', [{
+      from: user, to: L3_WUSDC, data: approveData, gas: '0x100000',
+    }]);
+  }
+
+  // Read current L3 nextOrderId
+  const nextIdData = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'nextOrderId',
+    args: [],
+  });
+  const nextIdResult = await l3RpcCall('eth_call', [
+    { to: L3_INDEX, data: nextIdData },
+    'latest',
+  ]) as string;
+  const orderId = Number(safeBigInt(nextIdResult));
+
+  // Get L3 block timestamp for deadline
+  const latestBlock = await l3RpcCall('eth_getBlockByNumber', ['latest', false]) as { timestamp: string };
+  const chainTimestamp = Number(safeBigInt(latestBlock.timestamp));
+  const deadline = BigInt(chainTimestamp + 3600);
+
+  const buyData = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'submitOrder',
+    args: [
+      itpId as `0x${string}`,
+      0, // BUY
+      usdcAmount,
+      limitPrice,
+      1n, // slippageTier
+      deadline,
+    ],
+  });
+
+  if (!IS_ANVIL) {
+    await l3SignedSend(L3_INDEX, buyData);
+  } else {
+    await l3RpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
+    await l3RpcCall('anvil_impersonateAccount', [user]);
+    await l3RpcCall('eth_sendTransaction', [{
+      from: user,
+      to: L3_INDEX,
+      data: buyData,
+      gas: '0x200000',
+    }]);
+  }
+
+  return orderId;
+}
+
+/**
  * Place a sell order directly on L3 Index (no bridge, no BridgedITP needed).
  * Calls Index.submitOrder(itpId, SELL=1, amount, limitPrice, slippageTier, deadline).
  * User must have L3 ITP shares. Payout is L3 USDC (18 decimals).
@@ -1105,7 +1205,7 @@ export async function mintMorphoCollateral(
 // ── Morpho direct operations (bypass browser wallet) ────────
 
 /** Read full Morpho deployment config */
-function readMorphoDeployment() {
+export function readMorphoDeployment() {
   try {
     const { readFileSync } = require('fs');
     const { join } = require('path');
@@ -1170,6 +1270,111 @@ export async function getMorphoPositionDirect(user: string): Promise<{ collatera
     collateral: BigInt('0x' + hex.slice(128, 192)),
     borrowShares: BigInt('0x' + hex.slice(64, 128)),
   };
+}
+
+/**
+ * Deposit collateral to Morpho directly via signed L3 TX.
+ * Approves max UINT256 first, then calls supplyCollateral.
+ */
+export async function depositCollateralDirect(
+  user: string,
+  amount: bigint,
+): Promise<string> {
+  const morpho = readMorphoDeployment();
+  if (!morpho) throw new Error('morpho-deployment.json not found');
+
+  const mp = morpho.marketParams;
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+
+  // approve(address spender, uint256 amount)
+  const approveData = '0x095ea7b3'
+    + pad(morpho.contracts.MORPHO)
+    + 'f'.repeat(64); // max uint256
+  await l3SignedSend(mp.collateralToken, approveData);
+
+  // supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)
+  // selector = 0x238d6579
+  // bytes offset = 8 * 32 = 0x100 (5 MarketParams words + amount + onBehalf + offset pointer)
+  const data = '0x238d6579'
+    + pad(mp.loanToken)
+    + pad(mp.collateralToken)
+    + pad(mp.oracle)
+    + pad(mp.irm)
+    + uint(BigInt(mp.lltv))
+    + uint(amount)
+    + pad(user)
+    + '100'.padStart(64, '0') // bytes offset
+    + '0'.padStart(64, '0'); // bytes length = 0
+
+  return l3SignedSend(morpho.contracts.MORPHO, data);
+}
+
+/**
+ * Borrow USDC from Morpho directly via signed L3 TX.
+ * Calls Morpho.borrow(marketParams, amount, 0, user, user).
+ */
+export async function borrowDirect(
+  user: string,
+  amount: bigint,
+): Promise<string> {
+  const morpho = readMorphoDeployment();
+  if (!morpho) throw new Error('morpho-deployment.json not found');
+
+  const mp = morpho.marketParams;
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+
+  // borrow(MarketParams,uint256,uint256,address,address) selector = 0x50d8cd4b
+  const data = '0x50d8cd4b'
+    + pad(mp.loanToken)
+    + pad(mp.collateralToken)
+    + pad(mp.oracle)
+    + pad(mp.irm)
+    + uint(BigInt(mp.lltv))
+    + uint(amount)
+    + uint(0n) // shares = 0 (use amount)
+    + pad(user)
+    + pad(user); // receiver
+
+  return l3SignedSend(morpho.contracts.MORPHO, data);
+}
+
+/**
+ * Repay borrowed USDC to Morpho directly via signed L3 TX.
+ * Approves USDC first, then calls Morpho.repay(marketParams, amount, 0, user, bytes("")).
+ */
+export async function repayDirect(
+  user: string,
+  amount: bigint,
+): Promise<string> {
+  const morpho = readMorphoDeployment();
+  if (!morpho) throw new Error('morpho-deployment.json not found');
+
+  const mp = morpho.marketParams;
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+
+  // approve USDC to Morpho
+  const approveData = '0x095ea7b3'
+    + pad(morpho.contracts.MORPHO)
+    + 'f'.repeat(64);
+  await l3SignedSend(mp.loanToken, approveData);
+
+  // repay(MarketParams,uint256,uint256,address,bytes) selector = 0x20b76e81
+  const data = '0x20b76e81'
+    + pad(mp.loanToken)
+    + pad(mp.collateralToken)
+    + pad(mp.oracle)
+    + pad(mp.irm)
+    + uint(BigInt(mp.lltv))
+    + uint(amount)
+    + uint(0n) // shares = 0 (use amount)
+    + pad(user)
+    + '100'.padStart(64, '0') // bytes offset
+    + '0'.padStart(64, '0'); // bytes length = 0
+
+  return l3SignedSend(morpho.contracts.MORPHO, data);
 }
 
 /** Expose erc20BalanceOf and contract addresses for direct use in tests */

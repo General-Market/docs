@@ -4,7 +4,7 @@
  * Vision lives on L3 (port 8545) and uses L3_WUSDC (18 decimals).
  */
 
-import { keccak256, encodeFunctionData, toHex, createWalletClient, http, defineChain } from 'viem'
+import { keccak256, encodeFunctionData, toHex, createWalletClient, createPublicClient, http, defineChain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { mkdirSync, rmdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs'
 
@@ -316,13 +316,31 @@ async function l3SendTx(from: string, to: string, data: string): Promise<string>
         nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
         rpcUrls: { default: { http: [L3_RPC] } },
       })
+      const publicClient = createPublicClient({ chain, transport: rpcHttp(L3_RPC) })
       const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
-      const txHash = await client.sendTransaction({
-        to: to as `0x${string}`,
-        data: data as `0x${string}`,
-        gas: 2_000_000n,
-      })
-      return waitForReceipt(txHash, from, to, data)
+      // Retry with fresh nonce on "nonce too low" — the browser wallet's __e2eSignAndSend
+      // may have sent transactions outside this lock, racing the nonce.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const nonce = await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' })
+        try {
+          const txHash = await client.sendTransaction({
+            to: to as `0x${string}`,
+            data: data as `0x${string}`,
+            gas: 2_000_000n,
+            nonce,
+          })
+          return waitForReceipt(txHash, from, to, data)
+        } catch (err) {
+          const msg = (err as Error).message ?? ''
+          if (msg.includes('nonce too low') && attempt < 2) {
+            console.warn(`[l3SendTx] nonce ${nonce} too low, retrying (attempt ${attempt + 1})...`)
+            await new Promise(r => setTimeout(r, 1_000))
+            continue
+          }
+          throw err
+        }
+      }
+      throw new Error('l3SendTx: unreachable')
     }, from)
   }
 
@@ -1032,6 +1050,25 @@ function getSettlementCustodyAddress(): string {
 
 function getSettlementUsdcAddress(): string {
   return getDeployment().contracts.SETTLEMENT_USDC
+}
+
+/**
+ * Check if the deployer has enough native gas on Settlement to send transactions.
+ * On testnet (Sonic), the deployer needs S tokens. Returns true on Anvil.
+ * minBalance default = 0.005 S (enough for ~3-4 contract calls at 1M gas each).
+ */
+export async function hasSettlementGas(minBalance = 5n * 10n ** 15n): Promise<boolean> {
+  if (IS_ANVIL) return true
+  try {
+    const result = await settlementRpcCall('eth_getBalance', [DEPLOYER_ADDRESS, 'latest']) as string
+    const balance = BigInt(result || '0x0')
+    if (balance < minBalance) {
+      console.log(`[settlement-gas] deployer ${DEPLOYER_ADDRESS} has ${balance} wei (~${Number(balance) / 1e18} S) — need ${Number(minBalance) / 1e18} S`)
+    }
+    return balance >= minBalance
+  } catch {
+    return false
+  }
 }
 
 /**

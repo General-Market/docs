@@ -25,12 +25,7 @@ test.describe('Rebalance Full Cycle', () => {
 
     // 1. Read current state
     let stateBefore: Awaited<ReturnType<typeof getItpStateL3>>;
-    try {
-      stateBefore = await getItpStateL3(ITP_ID);
-    } catch {
-      test.skip(true, 'L3 RPC unreachable — cannot read ITP state');
-      return;
-    }
+    stateBefore = await getItpStateL3(ITP_ID);
     expect(stateBefore.assets.length).toBeGreaterThan(1);
     expect(stateBefore.weights.length).toBeGreaterThan(1);
 
@@ -48,12 +43,7 @@ test.describe('Rebalance Full Cycle', () => {
       // 3. Execute rebalance (shifts 0.5% weight between asset[0] and asset[1])
       // Use longer timeout on testnet — rebalance consensus can take 2-4 min
       console.log('Requesting rebalance...');
-      try {
-        await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT * 2);
-      } catch (e) {
-        test.skip(true, `Rebalance consensus timed out — issuers may be slow: ${e}`);
-        return;
-      }
+      await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT * 2);
       console.log('Rebalance completed');
 
       // Mine a few more blocks for finality

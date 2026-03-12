@@ -16,13 +16,10 @@ export interface ItpSummary {
  */
 export async function getItpSummaries(): Promise<ItpSummary[]> {
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5_000)
     const res = await fetch(`${AA_DATA_NODE_URL}/aum-ranking`, {
       next: { revalidate: 60 },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(3_000),
     })
-    clearTimeout(timeout)
     if (!res.ok) return []
     const data = await res.json()
 

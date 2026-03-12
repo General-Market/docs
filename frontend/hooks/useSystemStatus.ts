@@ -66,18 +66,25 @@ function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isL
     registeredAt: n.registered_at,
   }))
 
-  const recentOrders: RecentOrder[] = snap.recent_orders.map(o => ({
-    orderId: BigInt(o.order_id),
-    user: o.user,
-    itpId: o.itp_id,
-    side: o.side,
-    amount: BigInt(o.amount),
-    blockNumber: BigInt(o.block_number),
-    blockTimestamp: o.block_timestamp,
-    status: o.status,
-    fillTimeSeconds: o.fill_time_seconds ?? undefined,
-    fillCycle: o.fill_cycle != null ? BigInt(o.fill_cycle) : undefined,
-  }))
+  const recentOrders: RecentOrder[] = snap.recent_orders
+    .filter(o => {
+      // Filter out default/empty orders (zero-address fund, zero amount)
+      const isZeroFund = !o.itp_id || /^0x0+$/.test(o.itp_id)
+      const isZeroAmount = !o.amount || o.amount === '0'
+      return !(isZeroFund && isZeroAmount)
+    })
+    .map(o => ({
+      orderId: BigInt(o.order_id),
+      user: o.user,
+      itpId: o.itp_id,
+      side: o.side,
+      amount: BigInt(o.amount),
+      blockNumber: BigInt(o.block_number),
+      blockTimestamp: o.block_timestamp,
+      status: o.status,
+      fillTimeSeconds: o.fill_time_seconds ?? undefined,
+      fillCycle: o.fill_cycle != null ? BigInt(o.fill_cycle) : undefined,
+    }))
 
   const fillTimeBuckets: FillTimeBucket[] = recentOrders
     .filter(o => o.status === 'filled' && o.fillTimeSeconds != null)

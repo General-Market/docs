@@ -14,7 +14,8 @@ import {
   ensureWalletConnected,
   itpCard,
 } from '../helpers/selectors'
-import { getL3UserShares, getL3UsdcBalance } from '../helpers/backend-api'
+import { getL3UserShares, getL3UsdcBalance, mintL3Usdc } from '../helpers/backend-api'
+import { parseUnits } from 'viem'
 
 /** Parse "$1,234.56" or "$1.2K" to a number */
 function parseDollar(text: string): number {
@@ -132,8 +133,6 @@ test.describe('Portfolio Totals', () => {
     // Ensure user has USDC on-chain (mint if needed)
     const l3Usdc = await getL3UsdcBalance(TEST_ADDRESS)
     if (l3Usdc === 0n) {
-      const { mintL3Usdc } = await import('../helpers/backend-api')
-      const { parseUnits } = await import('viem')
       await mintL3Usdc(TEST_ADDRESS, parseUnits('1000', 18))
     }
 

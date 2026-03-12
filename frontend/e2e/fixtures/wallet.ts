@@ -150,10 +150,26 @@ function createWalletFixture(privateKey: `0x${string}`, address: string, startUr
     // Intercept backend API calls that may 404 on stale binary
     await installApiInterceptors(page);
 
-    // Navigate to trigger the init script
-    await page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 }).catch(() => {
-      return page.goto(startUrl, { waitUntil: 'load', timeout: 90_000 })
-    });
+    // Navigate to trigger the init script.
+    // Use 'domcontentloaded' instead of 'load' — Next.js dev server compiles JS on demand,
+    // so 'load' can take 90s+ on cold cache. We verify React hydration separately below.
+    // Retry up to 3 times with 30s each — the dev server can hang intermittently under load.
+    let navigated = false;
+    for (let attempt = 1; attempt <= 3 && !navigated; attempt++) {
+      try {
+        await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        navigated = true;
+      } catch {
+        if (attempt < 3) {
+          // Wait briefly then retry — server may recover between attempts
+          await page.waitForTimeout(2_000);
+        }
+      }
+    }
+    if (!navigated) {
+      // Final attempt with full timeout
+      await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    }
 
     // Wait for React hydration
     await page.waitForFunction(

@@ -11,6 +11,7 @@
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
 import { IS_ANVIL, FRONTEND_URL } from '../env';
+import { ensureWalletConnected } from '../helpers/selectors';
 
 test.describe('Decimal Regression Tests', () => {
   test('no 18+ digit numbers visible in document body (bigint leak check)', async ({ walletPage: page }) => {
@@ -89,7 +90,6 @@ test.describe('Decimal Regression Tests', () => {
     await page.waitForTimeout(3_000);
 
     // Connect wallet
-    const { ensureWalletConnected } = await import('../helpers/selectors');
     await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {});
 
     // Look for balance display — skip if not visible (wallet may not connect under load)

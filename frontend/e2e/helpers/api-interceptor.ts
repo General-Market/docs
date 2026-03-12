@@ -404,6 +404,37 @@ export async function installApiInterceptors(page: Page): Promise<void> {
     await handleMorphoPosition(route);
   });
 
+  // Proxy /rpc requests to L3 RPC from Node.js side.
+  // Vercel rewrites to raw IPs fail (DNS_HOSTNAME_RESOLVED_PRIVATE),
+  // so the deployed site's /rpc proxy is broken. Intercept here instead.
+  await page.route('**/rpc', async (route) => {
+    try {
+      const postData = route.request().postData();
+      if (!postData) {
+        await route.fulfill({ status: 400, body: 'Missing JSON-RPC body' });
+        return;
+      }
+      const res = await fetch(L3_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: postData,
+        signal: AbortSignal.timeout(RPC_TIMEOUT),
+      });
+      const body = await res.text();
+      await route.fulfill({
+        status: res.status,
+        contentType: 'application/json',
+        body,
+      });
+    } catch (err) {
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32000, message: String(err) } }),
+      });
+    }
+  });
+
   // Override SSE `user-positions` events with correct data from L3 Morpho.
   // The backend SSE may stream stale positions from an old Morpho deployment.
   // useMorphoPosition prefers SSE over REST, so stale SSE blocks the REST fix above.

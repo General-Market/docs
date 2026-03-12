@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { BACKEND_URL } from '../fixtures/wallet'
+import { IS_ANVIL } from '../env'
 
 /**
  * Backtester Smoke Tests
@@ -116,13 +117,17 @@ test.describe('Backtester Smoke Tests', () => {
   let cgCategories: SimCategory[] = []
   let dlCategories: SimCategory[] = []
   let simCacheReady = false
+  /** Dynamic fallback: first CG category with >=10 coins (testnet may not have layer-1/layer-2) */
+  let defaultCgCategory = 'layer-1'
+  /** Dynamic fallback: first CG category with defi-like characteristics */
+  let defaultDefiCategory = 'decentralized-finance-defi'
 
   test.beforeAll(async () => {
     // Data-node sim cache takes time to load — poll until both categories AND sim engine are ready.
     // On testnet, CoinGecko historical data may not be fetched yet (coin_count=0).
-    // Use a shorter timeout (60s) so we don't hit the Playwright test timeout;
-    // if the cache isn't ready, beforeEach will skip all tests gracefully.
-    const deadline = Date.now() + 60_000
+    // This is data-infrastructure dependent: if data-node hasn't fetched CG history, tests can't run.
+    const warmupMs = IS_ANVIL ? 60_000 : 120_000
+    const deadline = Date.now() + warmupMs
     while (Date.now() < deadline) {
       try {
         allCategories = await fetchCategories()
@@ -146,6 +151,19 @@ test.describe('Backtester Smoke Tests', () => {
     }
     cgCategories = allCategories.filter(c => c.source !== 'defillama')
     dlCategories = allCategories.filter(c => c.source === 'defillama')
+
+    // Pick dynamic default categories — testnet data-node may not have standard CG categories
+    const cgWithCoins = cgCategories.filter(c => c.coin_count >= 10 && c.id !== 'all')
+    if (cgWithCoins.length > 0) {
+      defaultCgCategory = cgWithCoins[0].id
+    }
+    const defiLike = cgCategories.find(c => c.id.includes('defi') || c.id.includes('finance'))
+    if (defiLike) {
+      defaultDefiCategory = defiLike.id
+    } else if (cgWithCoins.length > 1) {
+      defaultDefiCategory = cgWithCoins[1].id
+    }
+    console.log(`Default CG category: ${defaultCgCategory}, defi category: ${defaultDefiCategory}`)
   })
 
   test.beforeEach(async () => {
@@ -165,9 +183,9 @@ test.describe('Backtester Smoke Tests', () => {
 
   // --- CoinGecko Category Simulations ---
 
-  test('CG category: layer-1 (equal weight)', async () => {
+  test('CG category: primary (equal weight)', async () => {
     const result = await runSimStream({
-      category_id: 'layer-1',
+      category_id: defaultCgCategory,
       top_n: '10',
       weighting: 'equal',
       rebalance_days: '30',
@@ -180,9 +198,11 @@ test.describe('Backtester Smoke Tests', () => {
     expect(result.run_id).not.toBeNull()
   })
 
-  test('CG category: layer-2 (mcap weight)', async () => {
+  test('CG category: secondary (mcap weight)', async () => {
+    const cgWithCoins = cgCategories.filter(c => c.coin_count >= 10 && c.id !== 'all' && c.id !== defaultCgCategory)
+    const categoryId = cgWithCoins.length > 0 ? cgWithCoins[0].id : defaultCgCategory
     const result = await runSimStream({
-      category_id: 'layer-2',
+      category_id: categoryId,
       top_n: '10',
       weighting: 'mcap',
       rebalance_days: '30',
@@ -192,9 +212,9 @@ test.describe('Backtester Smoke Tests', () => {
     expect(result.stats).not.toBeNull()
   })
 
-  test('CG category: decentralized-finance-defi (momentum)', async () => {
+  test('CG category: defi-like (momentum)', async () => {
     const result = await runSimStream({
-      category_id: 'decentralized-finance-defi',
+      category_id: defaultDefiCategory,
       top_n: '10',
       weighting: 'mom_30',
       rebalance_days: '14',
@@ -206,30 +226,34 @@ test.describe('Backtester Smoke Tests', () => {
     expect(result.stats !== null || result.error !== null).toBe(true)
   })
 
-  test('CG category: meme-token (equal weight, top 20)', async () => {
+  test('CG category: large pool (equal weight, top 20)', async () => {
+    // Pick a category with many coins (meme-token or fallback to largest available)
+    const memeOrLargest = cgCategories.find(c => c.id === 'meme-token') ??
+      cgCategories.filter(c => c.coin_count >= 20 && c.id !== 'all').sort((a, b) => b.coin_count - a.coin_count)[0]
+    const categoryId = memeOrLargest?.id ?? defaultCgCategory
     const result = await runSimStream({
-      category_id: 'meme-token',
+      category_id: categoryId,
       top_n: '20',
       weighting: 'equal',
       rebalance_days: '30',
     })
-    // meme-token may have <20 Bitget-listed coins in local DB (data-dependent)
+    // May have <20 listed coins (data-dependent)
     if (result.error) {
-      console.log(`meme-token error (data-dependent): ${result.error}`)
+      console.log(`large pool error (data-dependent): ${result.error}`)
     }
     expect(result.stats !== null || result.error !== null).toBe(true)
   })
 
-  test('CG category: artificial-intelligence (minvar)', async () => {
+  test('CG category: minvar weighting', async () => {
     const result = await runSimStream({
-      category_id: 'artificial-intelligence',
+      category_id: defaultCgCategory,
       top_n: '10',
       weighting: 'minvar',
       rebalance_days: '30',
     })
     // Minvar needs covariance data — may fail in local dev
     if (result.error) {
-      console.log(`AI minvar error (data-dependent): ${result.error}`)
+      console.log(`minvar error (data-dependent): ${result.error}`)
     }
     expect(result.stats !== null || result.error !== null).toBe(true)
   })
@@ -324,7 +348,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const w of BASIC_WEIGHTINGS) {
     test(`weighting: ${w} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: w,
         rebalance_days: '30',
@@ -345,7 +369,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const w of ADVANCED_WEIGHTINGS) {
     test(`weighting: ${w} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: w,
         rebalance_days: '30',
@@ -364,7 +388,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const w of DEFI_WEIGHTINGS) {
     test(`defi weighting: ${w} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'decentralized-finance-defi',
+        category_id: defaultDefiCategory,
         top_n: '10',
         weighting: w,
         rebalance_days: '30',
@@ -385,7 +409,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const w of GITHUB_WEIGHTINGS) {
     test(`github weighting: ${w} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: w,
         rebalance_days: '30',
@@ -405,7 +429,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const mode of FNG_MODES) {
     test(`FNG regime: ${mode} produces valid results`, async () => {
       const params: Record<string, string> = {
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: 'equal',
         rebalance_days: '30',
@@ -431,7 +455,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const mode of DOM_MODES) {
     test(`dominance regime: ${mode} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: 'equal',
         rebalance_days: '30',
@@ -452,7 +476,7 @@ test.describe('Backtester Smoke Tests', () => {
   for (const mode of GITHUB_FILTER_MODES) {
     test(`github filter: ${mode} produces valid results`, async () => {
       const result = await runSimStream({
-        category_id: 'layer-1',
+        category_id: defaultCgCategory,
         top_n: '10',
         weighting: 'equal',
         rebalance_days: '30',
@@ -470,7 +494,7 @@ test.describe('Backtester Smoke Tests', () => {
 
   test('FNG + Dominance + GitHub combined produces valid results', async () => {
     const result = await runSimStream({
-      category_id: 'layer-1',
+      category_id: defaultCgCategory,
       top_n: '10',
       weighting: 'equal',
       rebalance_days: '30',
@@ -492,7 +516,7 @@ test.describe('Backtester Smoke Tests', () => {
 
   test('simulation NAV starts near $1', async () => {
     const result = await runSimStream({
-      category_id: 'layer-1',
+      category_id: defaultCgCategory,
       top_n: '10',
       weighting: 'equal',
       rebalance_days: '30',
@@ -505,7 +529,7 @@ test.describe('Backtester Smoke Tests', () => {
 
   test('max drawdown is negative or zero', async () => {
     const result = await runSimStream({
-      category_id: 'layer-1',
+      category_id: defaultCgCategory,
       top_n: '10',
       weighting: 'equal',
       rebalance_days: '30',

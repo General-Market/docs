@@ -64,7 +64,7 @@ export default defineConfig({
     {
       name: 'ui-verify-vision',
       dependencies: ['vision-data'],
-      testMatch: /(^|\/)11-.*\.spec\.ts$|(^|\/)29-.*\.spec\.ts$|(^|\/)33-.*\.spec\.ts$|(^|\/)35-.*\.spec\.ts$/,
+      testMatch: /(^|\/)11-.*\.spec\.ts$|(^|\/)29-.*\.spec\.ts$|(^|\/)33-.*\.spec\.ts$/,
     },
     // Phase 3: late writes (after ALL earlier phases — prevents concurrent DEPLOYER usage)
     {

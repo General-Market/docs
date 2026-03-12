@@ -9,6 +9,7 @@
 import { test as plainTest, expect as plainExpect } from '@playwright/test'
 import { visionTest as test, expect } from '../fixtures/wallet'
 import { FRONTEND_URL, IS_ANVIL, VISION_PLAYER_ADDRESS } from '../env'
+import { ensureWalletConnected } from '../helpers/selectors'
 
 const BASE = FRONTEND_URL
 
@@ -30,17 +31,20 @@ plainTest.describe('Faucet API', () => {
   })
 
   plainTest('POST /api/faucet caps at 10,000 USDC', async () => {
-    if (!IS_ANVIL) {
-      plainTest.skip(true, 'Faucet security needs review before testnet')
-      return
-    }
+    const testAddr = IS_ANVIL
+      ? '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+      : VISION_PLAYER_ADDRESS
     const res = await apiPost('/api/faucet', {
-      address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+      address: testAddr,
       amount: '999999',
     })
+    // Faucet should either succeed with capped amount or return an error
     if (res.ok) {
       const data = await res.json()
       plainExpect(data.amount).toBe('10000 USDC')
+    } else {
+      // On testnet, faucet may reject large amounts — just verify it responded
+      plainExpect(res.status).toBeLessThan(500)
     }
   })
 })
@@ -48,12 +52,7 @@ plainTest.describe('Faucet API', () => {
 test.describe('Faucet UI', () => {
   test('BalanceDepositModal shows Mint Test USDC button', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
-    if (!IS_ANVIL) {
-      test.skip(true, 'Faucet UI test Anvil only until security review')
-      return
-    }
 
-    const { ensureWalletConnected } = await import('../helpers/selectors')
     await ensureWalletConnected(page, VISION_PLAYER_ADDRESS)
 
     const depositBtn = page.getByRole('button', { name: 'DEPOSIT' })
