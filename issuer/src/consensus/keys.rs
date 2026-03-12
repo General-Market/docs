@@ -105,10 +105,12 @@ impl InMemoryKeyRegistry {
         }
     }
 
-    /// Set the Settlement mirror registry nonce
+    /// Set the Settlement mirror registry nonce (monotonically increasing — only accepts higher values)
     pub fn set_settlement_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.settlement_nonce.write() {
-            *guard = nonce;
+            if nonce > *guard {
+                *guard = nonce;
+            }
         }
     }
 
@@ -180,7 +182,9 @@ impl KeyRegistry for InMemoryKeyRegistry {
 
     fn set_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.nonce.write() {
-            *guard = nonce;
+            if nonce > *guard {
+                *guard = nonce;
+            }
         }
     }
 
@@ -190,7 +194,9 @@ impl KeyRegistry for InMemoryKeyRegistry {
 
     fn set_settlement_registry_nonce(&self, nonce: u64) {
         if let Ok(mut guard) = self.settlement_nonce.write() {
-            *guard = nonce;
+            if nonce > *guard {
+                *guard = nonce;
+            }
         }
     }
 }
