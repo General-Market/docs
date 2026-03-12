@@ -3,6 +3,7 @@
 import { useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { type Chain } from 'wagmi/chains'
 import { indexL3, settlementChain } from '@/lib/wagmi'
 
 /**
@@ -53,6 +54,31 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
     // Also trigger wagmi's switch to keep state in sync
     switchChain({ chainId: indexL3.id })
   }, [switchChain])
+
+  // On every connection, push the correct RPC URLs to the wallet.
+  // wallet_addEthereumChain updates the RPC if the chain already exists (EIP-3085),
+  // preventing stale localhost:8545 config from a previous env.
+  useEffect(() => {
+    if (!isConnected || typeof window === 'undefined' || !window.ethereum) return
+    const pushChain = async (chain: Chain) => {
+      try {
+        await window.ethereum!.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${chain.id.toString(16)}`,
+            chainName: chain.name,
+            nativeCurrency: chain.nativeCurrency,
+            rpcUrls: [chain.rpcUrls.default.http[0]],
+            ...(chain.blockExplorers?.default ? {
+              blockExplorerUrls: [chain.blockExplorers.default.url],
+            } : {}),
+          }],
+        })
+      } catch { /* chain may reject if already configured identically */ }
+    }
+    pushChain(indexL3)
+    pushChain(settlementChain)
+  }, [isConnected])
 
   // Auto-attempt switch on wrong chain detection
   useEffect(() => {
