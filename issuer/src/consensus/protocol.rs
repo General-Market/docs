@@ -2900,6 +2900,34 @@ where
                     );
                 }
             }
+            // Vision deposit/withdraw consensus — log and ignore until handlers are wired
+            MessageHandleResult::ProcessVisionCreditBalanceProposal { order_id, .. } => {
+                debug!(order_id, "VisionCreditBalanceProposal received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionCreditBalanceSign { order_id, .. } => {
+                debug!(order_id, "VisionCreditBalanceSign received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionCompleteDepositProposal { order_id, .. } => {
+                debug!(order_id, "VisionCompleteDepositProposal received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionCompleteDepositSign { order_id, .. } => {
+                debug!(order_id, "VisionCompleteDepositSign received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionRefundDepositProposal { order_id, .. } => {
+                debug!(order_id, "VisionRefundDepositProposal received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionRefundDepositSign { order_id, .. } => {
+                debug!(order_id, "VisionRefundDepositSign received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionCompleteWithdrawProposal { withdraw_id, .. } => {
+                debug!(withdraw_id, "VisionCompleteWithdrawProposal received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionCompleteWithdrawSign { withdraw_id, .. } => {
+                debug!(withdraw_id, "VisionCompleteWithdrawSign received (handler not wired yet)");
+            }
+            MessageHandleResult::ProcessVisionBalanceProofsBatch { batch_id, tick_id, .. } => {
+                debug!(batch_id, tick_id, "VisionBalanceProofsBatch received (handler not wired yet)");
+            }
             // AA keeper arbitration — forward to arbitration subsystem
             MessageHandleResult::ForwardToArbitration(msg) => {
                 let arb_tx = self.arbitration_tx.read().await;

@@ -833,6 +833,76 @@ pub enum P2PMessage {
         /// Follower's BLS signature
         signature: BLSSignature,
     },
+
+    // ==================== Vision Deposit/Withdraw Consensus ====================
+
+    // Vision consensus: creditBalance on L3
+    VisionCreditBalanceProposal {
+        leader_id: PeerId,
+        order_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: BLSSignature,
+    },
+    VisionCreditBalanceSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: BLSSignature,
+    },
+
+    // Vision consensus: completeVisionDeposit on Settlement
+    VisionCompleteDepositProposal {
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: BLSSignature,
+    },
+    VisionCompleteDepositSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: BLSSignature,
+    },
+
+    // Vision consensus: refundVisionDeposit on Settlement
+    VisionRefundDepositProposal {
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: BLSSignature,
+    },
+    VisionRefundDepositSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: BLSSignature,
+    },
+
+    // Vision consensus: completeVisionWithdraw on Settlement
+    VisionCompleteWithdrawProposal {
+        leader_id: PeerId,
+        withdraw_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: BLSSignature,
+    },
+    VisionCompleteWithdrawSign {
+        signer_id: PeerId,
+        signer_index: u8,
+        withdraw_id: u64,
+        signature: BLSSignature,
+    },
+
+    // Vision balance proof aggregation (fire-and-forget broadcast)
+    VisionBalanceProofsBatch {
+        batch_id: u64,
+        tick_id: u64,
+        proofs: Vec<(Address, U256, BLSSignature)>,
+        signer_index: u8,
+    },
 }
 
 /// A proposed batch config for a single source, carried in BatchConfigProposal.

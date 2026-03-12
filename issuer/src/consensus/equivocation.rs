@@ -1011,6 +1011,124 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(batch_id.to_le_bytes());
             h.update(tick_id.to_le_bytes());
         }
+        // ── Vision deposit/withdraw consensus ──────────────────────
+        P2PMessage::VisionCreditBalanceProposal {
+            leader_id,
+            order_id,
+            user,
+            amount,
+            message_hash,
+            leader_signature: _,
+        } => {
+            h.update(b"VisionCreditBalanceProposal");
+            h.update(leader_id);
+            h.update(order_id.to_le_bytes());
+            h.update(user.as_bytes());
+            let mut buf = [0u8; 32];
+            amount.to_little_endian(&mut buf);
+            h.update(buf);
+            h.update(message_hash.as_bytes());
+        }
+        P2PMessage::VisionCreditBalanceSign {
+            signer_id,
+            signer_index,
+            order_id,
+            signature: _,
+        } => {
+            h.update(b"VisionCreditBalanceSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(order_id.to_le_bytes());
+        }
+        P2PMessage::VisionCompleteDepositProposal {
+            leader_id,
+            order_id,
+            message_hash,
+            leader_signature: _,
+        } => {
+            h.update(b"VisionCompleteDepositProposal");
+            h.update(leader_id);
+            h.update(order_id.to_le_bytes());
+            h.update(message_hash.as_bytes());
+        }
+        P2PMessage::VisionCompleteDepositSign {
+            signer_id,
+            signer_index,
+            order_id,
+            signature: _,
+        } => {
+            h.update(b"VisionCompleteDepositSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(order_id.to_le_bytes());
+        }
+        P2PMessage::VisionRefundDepositProposal {
+            leader_id,
+            order_id,
+            message_hash,
+            leader_signature: _,
+        } => {
+            h.update(b"VisionRefundDepositProposal");
+            h.update(leader_id);
+            h.update(order_id.to_le_bytes());
+            h.update(message_hash.as_bytes());
+        }
+        P2PMessage::VisionRefundDepositSign {
+            signer_id,
+            signer_index,
+            order_id,
+            signature: _,
+        } => {
+            h.update(b"VisionRefundDepositSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(order_id.to_le_bytes());
+        }
+        P2PMessage::VisionCompleteWithdrawProposal {
+            leader_id,
+            withdraw_id,
+            user,
+            amount,
+            message_hash,
+            leader_signature: _,
+        } => {
+            h.update(b"VisionCompleteWithdrawProposal");
+            h.update(leader_id);
+            h.update(withdraw_id.to_le_bytes());
+            h.update(user.as_bytes());
+            let mut buf = [0u8; 32];
+            amount.to_little_endian(&mut buf);
+            h.update(buf);
+            h.update(message_hash.as_bytes());
+        }
+        P2PMessage::VisionCompleteWithdrawSign {
+            signer_id,
+            signer_index,
+            withdraw_id,
+            signature: _,
+        } => {
+            h.update(b"VisionCompleteWithdrawSign");
+            h.update(signer_id);
+            h.update([*signer_index]);
+            h.update(withdraw_id.to_le_bytes());
+        }
+        P2PMessage::VisionBalanceProofsBatch {
+            batch_id,
+            tick_id,
+            proofs,
+            signer_index,
+        } => {
+            h.update(b"VisionBalanceProofsBatch");
+            h.update(batch_id.to_le_bytes());
+            h.update(tick_id.to_le_bytes());
+            h.update([*signer_index]);
+            for (addr, bal, _sig) in proofs {
+                h.update(addr.as_bytes());
+                let mut buf = [0u8; 32];
+                bal.to_little_endian(&mut buf);
+                h.update(buf);
+            }
+        }
     }
 
     h.finalize().into()
@@ -1077,6 +1195,15 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
         P2PMessage::VisionTickProposal { .. } => "VisionTickProposal",
         P2PMessage::VisionTickSign { .. } => "VisionTickSign",
+        P2PMessage::VisionCreditBalanceProposal { .. } => "VisionCreditBalanceProposal",
+        P2PMessage::VisionCreditBalanceSign { .. } => "VisionCreditBalanceSign",
+        P2PMessage::VisionCompleteDepositProposal { .. } => "VisionCompleteDepositProposal",
+        P2PMessage::VisionCompleteDepositSign { .. } => "VisionCompleteDepositSign",
+        P2PMessage::VisionRefundDepositProposal { .. } => "VisionRefundDepositProposal",
+        P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
+        P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
+        P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
+        P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
     }
 }
 
@@ -1112,6 +1239,10 @@ pub fn is_vote_or_sign(msg: &P2PMessage) -> bool {
             | P2PMessage::BatchConfigSign { .. }
             | P2PMessage::MirrorSyncSign { .. }
             | P2PMessage::VisionTickSign { .. }
+            | P2PMessage::VisionCreditBalanceSign { .. }
+            | P2PMessage::VisionCompleteDepositSign { .. }
+            | P2PMessage::VisionRefundDepositSign { .. }
+            | P2PMessage::VisionCompleteWithdrawSign { .. }
     )
 }
 

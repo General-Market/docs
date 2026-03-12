@@ -996,6 +996,205 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
+            // Vision deposit/withdraw consensus messages
+            P2PMessage::VisionCreditBalanceProposal {
+                leader_id,
+                order_id,
+                user,
+                amount,
+                message_hash,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id,
+                    ?user,
+                    amount = %amount,
+                    "Received VisionCreditBalanceProposal"
+                );
+                MessageHandleResult::ProcessVisionCreditBalanceProposal {
+                    from,
+                    leader_id,
+                    order_id,
+                    user,
+                    amount,
+                    message_hash,
+                    leader_signature,
+                }
+            }
+            P2PMessage::VisionCreditBalanceSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id,
+                    "Received VisionCreditBalanceSign"
+                );
+                MessageHandleResult::ProcessVisionCreditBalanceSign {
+                    from: signer_id,
+                    signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            P2PMessage::VisionCompleteDepositProposal {
+                leader_id,
+                order_id,
+                message_hash,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id,
+                    "Received VisionCompleteDepositProposal"
+                );
+                MessageHandleResult::ProcessVisionCompleteDepositProposal {
+                    from,
+                    leader_id,
+                    order_id,
+                    message_hash,
+                    leader_signature,
+                }
+            }
+            P2PMessage::VisionCompleteDepositSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id,
+                    "Received VisionCompleteDepositSign"
+                );
+                MessageHandleResult::ProcessVisionCompleteDepositSign {
+                    from: signer_id,
+                    signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            P2PMessage::VisionRefundDepositProposal {
+                leader_id,
+                order_id,
+                message_hash,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    order_id,
+                    "Received VisionRefundDepositProposal"
+                );
+                MessageHandleResult::ProcessVisionRefundDepositProposal {
+                    from,
+                    leader_id,
+                    order_id,
+                    message_hash,
+                    leader_signature,
+                }
+            }
+            P2PMessage::VisionRefundDepositSign {
+                signer_id,
+                signer_index,
+                order_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    order_id,
+                    "Received VisionRefundDepositSign"
+                );
+                MessageHandleResult::ProcessVisionRefundDepositSign {
+                    from: signer_id,
+                    signer_id,
+                    signer_index,
+                    order_id,
+                    signature,
+                }
+            }
+            P2PMessage::VisionCompleteWithdrawProposal {
+                leader_id,
+                withdraw_id,
+                user,
+                amount,
+                message_hash,
+                leader_signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?leader_id,
+                    withdraw_id,
+                    ?user,
+                    amount = %amount,
+                    "Received VisionCompleteWithdrawProposal"
+                );
+                MessageHandleResult::ProcessVisionCompleteWithdrawProposal {
+                    from,
+                    leader_id,
+                    withdraw_id,
+                    user,
+                    amount,
+                    message_hash,
+                    leader_signature,
+                }
+            }
+            P2PMessage::VisionCompleteWithdrawSign {
+                signer_id,
+                signer_index,
+                withdraw_id,
+                signature,
+            } => {
+                debug!(
+                    ?from,
+                    ?signer_id,
+                    signer_index,
+                    withdraw_id,
+                    "Received VisionCompleteWithdrawSign"
+                );
+                MessageHandleResult::ProcessVisionCompleteWithdrawSign {
+                    from: signer_id,
+                    signer_id,
+                    signer_index,
+                    withdraw_id,
+                    signature,
+                }
+            }
+            P2PMessage::VisionBalanceProofsBatch {
+                batch_id,
+                tick_id,
+                proofs,
+                signer_index,
+            } => {
+                debug!(
+                    ?from,
+                    batch_id,
+                    tick_id,
+                    num_proofs = proofs.len(),
+                    signer_index,
+                    "Received VisionBalanceProofsBatch"
+                );
+                MessageHandleResult::ProcessVisionBalanceProofsBatch {
+                    from,
+                    batch_id,
+                    tick_id,
+                    proofs,
+                    signer_index,
+                }
+            }
             // AA keeper arbitration messages — forward to arbitration subsystem
             P2PMessage::ArbitrationPriceProposal { .. }
             | P2PMessage::ArbitrationPriceVote { .. }
@@ -1635,6 +1834,74 @@ pub enum MessageHandleResult {
         signer_index: u8,
         nonce: u64,
         signature: P2PBLSSignature,
+    },
+    // Vision deposit/withdraw consensus
+    ProcessVisionCreditBalanceProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessVisionCreditBalanceSign {
+        from: PeerId,
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: P2PBLSSignature,
+    },
+    ProcessVisionCompleteDepositProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessVisionCompleteDepositSign {
+        from: PeerId,
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: P2PBLSSignature,
+    },
+    ProcessVisionRefundDepositProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        order_id: u64,
+        message_hash: H256,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessVisionRefundDepositSign {
+        from: PeerId,
+        signer_id: PeerId,
+        signer_index: u8,
+        order_id: u64,
+        signature: P2PBLSSignature,
+    },
+    ProcessVisionCompleteWithdrawProposal {
+        from: PeerId,
+        leader_id: PeerId,
+        withdraw_id: u64,
+        user: Address,
+        amount: U256,
+        message_hash: H256,
+        leader_signature: P2PBLSSignature,
+    },
+    ProcessVisionCompleteWithdrawSign {
+        from: PeerId,
+        signer_id: PeerId,
+        signer_index: u8,
+        withdraw_id: u64,
+        signature: P2PBLSSignature,
+    },
+    ProcessVisionBalanceProofsBatch {
+        from: PeerId,
+        batch_id: u64,
+        tick_id: u64,
+        proofs: Vec<(Address, U256, P2PBLSSignature)>,
+        signer_index: u8,
     },
     /// Forward arbitration message to arbitration subsystem
     ForwardToArbitration(P2PMessage),

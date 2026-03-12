@@ -530,6 +530,17 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Vision tick consensus (T-32)
         P2PMessage::VisionTickProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::VisionTickSign { signer_id, .. } => Some(*signer_id),
+        // Vision deposit/withdraw consensus
+        P2PMessage::VisionCreditBalanceProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionCreditBalanceSign { signer_id, .. } => Some(*signer_id),
+        P2PMessage::VisionCompleteDepositProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionCompleteDepositSign { signer_id, .. } => Some(*signer_id),
+        P2PMessage::VisionRefundDepositProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionRefundDepositSign { signer_id, .. } => Some(*signer_id),
+        P2PMessage::VisionCompleteWithdrawProposal { leader_id, .. } => Some(*leader_id),
+        P2PMessage::VisionCompleteWithdrawSign { signer_id, .. } => Some(*signer_id),
+        // VisionBalanceProofsBatch has no explicit sender field
+        P2PMessage::VisionBalanceProofsBatch { .. } => None,
     }
 }
 
