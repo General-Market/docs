@@ -26,7 +26,15 @@ export function VisionBalanceBar() {
 
   const fmtBal = (v: bigint) => parseFloat(formatUnits(v, VISION_USDC_DECIMALS)).toFixed(2)
 
-  if (!isConnected || isLoading) return null
+  if (!isConnected) {
+    return (
+      <Link href="/points" className="text-[11px] font-bold font-mono text-text-muted hover:text-black transition-colors">
+        0 pts
+      </Link>
+    )
+  }
+
+  if (isLoading) return null
 
   const hasBalance = total > 0n
 
@@ -37,11 +45,9 @@ export function VisionBalanceBar() {
           Balance: {fmtBal(total)}
           <span className="text-text-muted font-medium ml-1">USDC</span>
         </span>
-        {hasBalance && !ptsLoading && activeBatches > 0 && (
-          <Link href="/points" className="text-[11px] font-bold font-mono text-color-up hover:opacity-80 transition-opacity">
-            {formatPts(estimatedTotalPoints)} pts
-          </Link>
-        )}
+        <Link href="/points" className="text-[11px] font-bold font-mono text-color-up hover:opacity-80 transition-opacity">
+          {hasBalance && !ptsLoading && activeBatches > 0 ? formatPts(estimatedTotalPoints) : '0'} pts
+        </Link>
         <button
           onClick={() => setShowDepositModal(true)}
           className="px-2.5 py-1 bg-color-up text-white text-[11px] font-bold rounded hover:opacity-90 transition-opacity"
