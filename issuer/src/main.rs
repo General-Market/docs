@@ -592,7 +592,7 @@ fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
         .with_state(state)
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<issuer::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<issuer::vision::pending_ops::PendingOpsQueue>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -736,6 +736,28 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let issuer_registry_for_sync_task = issuer_registry_address_for_sync;
     let work_tx_for_task = work_tx;
 
+    // Use the shared PendingOpsQueue passed into run_main_loop from main()
+    let vision_ops_queue = vision_ops_queue_shared.clone();
+    let vision_ops_queue_for_task = vision_ops_queue_shared.clone();
+
+    // Vision ops consensus task parameters (derived from vision config)
+    // These are Option so the consensus task can skip if Vision is not configured
+    let vision_ops_l3_provider_for_task: Option<Arc<ethers::providers::Provider<ethers::providers::Http>>> =
+        vision_config.as_ref().filter(|c| c.enabled && !c.rpc_ws_url.is_empty()).and_then(|c| {
+            ethers::providers::Provider::<ethers::providers::Http>::try_from(c.rpc_ws_url.as_str()).ok().map(Arc::new)
+        });
+    let vision_ops_settlement_provider_for_task: Option<Arc<ethers::providers::Provider<ethers::providers::Http>>> =
+        vision_config.as_ref().filter(|c| c.enabled && !c.settlement_rpc_url.is_empty()).and_then(|c| {
+            ethers::providers::Provider::<ethers::providers::Http>::try_from(c.settlement_rpc_url.as_str()).ok().map(Arc::new)
+        });
+    let vision_ops_vision_address_for_task: Option<ethers::types::Address> =
+        vision_config.as_ref().filter(|c| c.enabled).and_then(|c| c.vision_address.parse().ok());
+    let vision_ops_custody_address_for_task: Option<ethers::types::Address> =
+        vision_config.as_ref().filter(|c| c.enabled).and_then(|c| c.settlement_bridge_custody_address.parse().ok());
+    let vision_ops_l3_chain_id_for_task: u64 = 111_222_333u64;
+    let vision_ops_settlement_chain_id_for_task: u64 =
+        vision_config.as_ref().map(|c| c.settlement_chain_id).unwrap_or(421_614u64);
+
     // Build quote_tokens map: asset address → quote token address (USDC or USDT)
     // Issuer determines which quote token each asset trades against based on Bitget pair suffix
     let quote_tokens_for_task: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>> = {
@@ -841,6 +863,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let rebalance_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_first = Arc::new(AtomicBool::new(true)); // Trigger sync on first eligible cycle
+        let vision_ops_active = Arc::new(AtomicBool::new(false));
 
         // Consecutive price failure counter (circuit breaker)
         let mut consecutive_price_failures: u32 = 0;
@@ -1206,6 +1229,53 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                         }
                                     });
                                 }
+                            }
+                        }
+                    }
+
+                    // Vision ops consensus task — drain PendingOpsQueue and submit BLS-signed txns
+                    // Runs on settlement_poll_due interval (same as bridge tasks)
+                    if settlement_poll_due && !vision_ops_active.load(Ordering::Acquire) {
+                        if let (
+                            Some(ref l3_prov),
+                            Some(ref settlement_prov),
+                            Some(ref l3_writer),
+                            Some(ref settlement_writer),
+                            Some(vision_addr),
+                            Some(custody_addr),
+                        ) = (
+                            &vision_ops_l3_provider_for_task,
+                            &vision_ops_settlement_provider_for_task,
+                            &consensus_chain_writer_for_task,
+                            &settlement_writer_for_task,
+                            vision_ops_vision_address_for_task,
+                            vision_ops_custody_address_for_task,
+                        ) {
+                            // Only spawn if the queue has pending ops to drain
+                            if vision_ops_queue_for_task.has_queued() {
+                                vision_ops_active.store(true, Ordering::Release);
+                                let flag = vision_ops_active.clone();
+                                let p = protocol.clone();
+                                let q = vision_ops_queue_for_task.clone();
+                                let l3p = Arc::clone(l3_prov);
+                                let sp = Arc::clone(settlement_prov);
+                                let l3w: Arc<dyn common::traits::ChainWriter> =
+                                    Arc::clone(l3_writer) as Arc<dyn common::traits::ChainWriter>;
+                                let sw: Arc<dyn common::traits::ChainWriter> =
+                                    Arc::clone(settlement_writer) as Arc<dyn common::traits::ChainWriter>;
+                                let va = vision_addr;
+                                let ca = custody_addr;
+                                let l3_cid = vision_ops_l3_chain_id_for_task;
+                                let s_cid = vision_ops_settlement_chain_id_for_task;
+                                tokio::spawn(async move {
+                                    let _guard = FlagGuard(flag);
+                                    if let Err(e) = p.run_vision_ops(
+                                        &q, &l3p, &sp, &l3w, &sw,
+                                        va, ca, l3_cid, s_cid,
+                                    ).await {
+                                        warn!(error = %e, "Vision ops consensus task failed");
+                                    }
+                                });
                             }
                         }
                     }
@@ -4582,7 +4652,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Vision subsystem (optional) ---
     let mut vision_api_router: Option<axum::Router> = None;
-    if let Some(vision_cfg) = vision_config {
+    if let Some(ref vision_cfg) = vision_config {
         if vision_cfg.enabled {
             // Initialize Vision components
             let bitmap_store = Arc::new(issuer::vision::bitmap_store::BitmapStore::new());
@@ -4605,6 +4675,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     engine_config,
                     engine_shutdown,
                     engine_bls_keypair,
+                    None, // broadcast_tx: P2P broadcast channel (not yet wired)
+                    None, // incoming_proofs_rx: incoming balance proofs channel (not yet wired)
                 ).await;
             });
 
@@ -4664,40 +4736,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 .expect("valid L3 RPC URL for deposit watcher"),
                         );
 
-                        // BLS keypair for signing cross-chain operations
-                        let dw_bls_keypair = components.consensus.keys.bls_keypair.clone();
-                        // L3 chain writer for creditBalance + gas drip
+                        // L3 chain writer for gas drip (plain native transfer, not BLS).
                         let dw_l3_writer: Option<Arc<dyn common::traits::ChainWriter>> =
                             components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
-                        // Settlement chain writer: delegates send_transaction/static_call to SettlementChainWriter
-                        let dw_settlement_writer: Option<Arc<dyn common::traits::ChainWriter>> =
-                            components.chain.settlement_writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
-                        let dw_node_index = components.consensus.keys.node_index;
 
-                        // IssuerRegistry address: used for reading lastSnapshotNonce (BLS referenceNonce).
-                        // On L3 testnet the same registry is used for both chains.
-                        // In production with separate chains, settlement_registry would be a MirrorIssuerRegistry.
-                        let dw_registry_address: ethers::types::Address = issuer_registry_address_str
-                            .as_ref()
-                            .and_then(|addr| addr.parse::<ethers::types::Address>().ok())
-                            .unwrap_or_else(|| {
-                                warn!("IssuerRegistry address not configured for deposit watcher, using zero address");
-                                ethers::types::Address::zero()
-                            });
-
+                        // PendingOpsQueue: deposit watcher enqueues, consensus task drains
                         let deposit_watcher = issuer::vision::deposit_watcher::VisionDepositWatcher::new(
                             dw_settlement_provider,
                             dw_l3_provider,
                             vision_address,
                             settlement_custody_address,
-                            dw_registry_address, // l3_registry_address
-                            dw_registry_address, // settlement_registry_address (same on L3 testnet)
                             pool.clone(),
                             vision_cfg.clone(),
-                            dw_bls_keypair,
                             dw_l3_writer,
-                            dw_settlement_writer,
-                            dw_node_index,
+                            vision_ops_queue.clone(), // shared queue: deposit watcher enqueues, consensus task drains
+                            111_222_333u64, // L3 chain ID
+                            vision_cfg.settlement_chain_id,
                         );
 
                         let dw_shutdown = components.shutdown.clone();
@@ -4799,7 +4853,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync, vision_config).await {
         error!(code = "E008", error = %e, "Issuer node error");
         std::process::exit(1);
     }
