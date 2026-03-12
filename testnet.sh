@@ -143,6 +143,17 @@ _sync_docker_files() {
 _sync_config_files() {
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    # Sync deployment JSONs to both VPSes (truncate first to avoid stale data from longer previous files)
+    for f in active-deployment.json morpho-e2e.json vision-batches.json; do
+        if [ -f "$SCRIPT_DIR/deployments/$f" ]; then
+            vps_be_ssh "truncate -s 0 $VPS_BE_DIR/deployments/$f 2>/dev/null; true"
+            ssh "$VPS_BE_HOST" "cat > $VPS_BE_DIR/deployments/$f" < "$SCRIPT_DIR/deployments/$f" 2>/dev/null
+        fi
+    done
+    if [ -f "$SCRIPT_DIR/deployments/active-deployment.json" ]; then
+        vps_chain_ssh "truncate -s 0 $VPS_CHAIN_DIR/deployments/active-deployment.json 2>/dev/null; true"
+        ssh "$VPS_CHAIN_HOST" "cat > $VPS_CHAIN_DIR/deployments/active-deployment.json" < "$SCRIPT_DIR/deployments/active-deployment.json" 2>/dev/null
+    fi
 }
 
 # Kill any old bare-metal processes to prevent port conflicts
@@ -169,9 +180,14 @@ l3 = json.load(open('$l3_json'))
 sonic = json.load(open('$sonic_json'))
 sc = sonic['contracts']
 # Override settlement-specific contracts with Sonic addresses
-for key in ['SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SETTLEMENT_USDC_DECIMALS', 'MockBitgetVault', 'MOCK_USDT', 'BridgedItpFactory']:
+for key in ['SettlementBridgeCustody', 'SETTLEMENT_USDC', 'SETTLEMENT_USDC_DECIMALS', 'MockBitgetVault', 'MOCK_USDT']:
     if key in sc:
         l3['contracts'][key] = sc[key]
+# BridgedItpFactory: exists on BOTH chains. Keep L3 version for Morpho collateral.
+if 'BridgedItpFactory' in sc:
+    l3['contracts']['L3BridgedItpFactory'] = l3['contracts'].get('BridgedItpFactory', '')
+    l3['contracts']['BridgedItpFactory'] = sc['BridgedItpFactory']
+    l3['contracts']['SettlementBridgedItpFactory'] = sc['BridgedItpFactory']
 # Add Sonic-specific keys
 if 'IssuerRegistry' in sc:
     l3['contracts']['SettlementIssuerRegistry'] = sc['IssuerRegistry']
@@ -301,7 +317,9 @@ cmd_deploy() {
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
     # Deploy core system (must run from contracts/ for foundry.toml remappings)
+    # Clean forge cache first — stale cache causes 0-receipt broadcasts
     echo -e "${BLUE}[3/7] Deploying core contracts (Index, IssuerRegistry, USDC, BridgeProxy)...${NC}"
+    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
     forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
         --rpc-url "$RPC_URL" \
@@ -311,11 +329,19 @@ cmd_deploy() {
         --slow) \
         > logs/deploy-core.log 2>&1
 
-    if [ ! -f "$DEPLOYMENT_FILE" ]; then
-        echo -e "  ${RED}Core deployment failed — check logs/deploy-core.log${NC}"
+    # Verify deployment succeeded: check both JSON file exists AND has receipts
+    if [ ! -f "deployments/e2e-full-system.json" ]; then
+        echo -e "  ${RED}Core deployment failed — no deployment JSON${NC}"
+        echo -e "  ${YELLOW}Check: logs/deploy-core.log${NC}"
         exit 1
     fi
-    echo -e "  ${GREEN}Core contracts deployed${NC}"
+    local RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+    if [ "$RECEIPT_COUNT" = "0" ]; then
+        echo -e "  ${RED}Core deployment broadcast failed — 0 receipts (transactions not submitted)${NC}"
+        echo -e "  ${YELLOW}This usually means forge cache was corrupted. Cache was cleaned, try again.${NC}"
+        exit 1
+    fi
+    echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
 
     # 3b: Deploy settlement contracts to Sonic
     echo -e "${BLUE}[3b/7] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
@@ -328,6 +354,7 @@ cmd_deploy() {
     if [ "$SONIC_CHAIN_ID" != "$SETTLEMENT_CHAIN_ID" ]; then
         echo -e "  ${YELLOW}Sonic not reachable (got $SONIC_CHAIN_ID, expected $SETTLEMENT_CHAIN_ID) — skipping settlement deploy${NC}"
     else
+        rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$SETTLEMENT_CHAIN_ID/
         (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
             --rpc-url "$SETTLEMENT_RPC_URL" \
@@ -337,8 +364,8 @@ cmd_deploy() {
             --slow) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
 
-        if [ -f "$DEPLOYMENT_FILE" ]; then
-            cp "$DEPLOYMENT_FILE" deployments/e2e-full-system-sonic.json
+        if [ -f "deployments/e2e-full-system.json" ]; then
+            cp deployments/e2e-full-system.json deployments/e2e-full-system-sonic.json
             echo -e "  ${GREEN}Sonic contracts deployed${NC}"
         else
             echo -e "  ${YELLOW}Sonic deploy didn't write JSON — contracts may still be deployed (check log)${NC}"
@@ -376,9 +403,15 @@ cmd_deploy() {
     # Deploy Morpho (no timelock wait)
     echo -e "${BLUE}[5/7] Deploying Morpho (forked, no timelock)...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
-    ITP_VAULT=$(read_deployment_addr "BridgedItpFactory")
+    # Use L3BridgedItpFactory (L3-chain), NOT BridgedItpFactory (Settlement-chain after merge)
+    ITP_VAULT=$(read_deployment_addr "L3BridgedItpFactory")
+    if [ -z "$ITP_VAULT" ]; then
+        # Fallback: read from L3-only deployment JSON (before merge)
+        ITP_VAULT=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-l3.json'))['contracts']['BridgedItpFactory'])" 2>/dev/null)
+    fi
     ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
 
+    rm -rf contracts/broadcast/DeployMorphoE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployMorphoE2E.s.sol/$CHAIN_ID/
     (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
     SETTLEMENT_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ISSUER_REGISTRY="$ISSUER_REGISTRY" \
     forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
@@ -392,6 +425,7 @@ cmd_deploy() {
 
     # Deploy Vision
     echo -e "${BLUE}[6/7] Deploying Vision + batches...${NC}"
+    rm -rf contracts/broadcast/DeployVision.s.sol/$CHAIN_ID/ contracts/cache/DeployVision.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
     ISSUER_REGISTRY="$ISSUER_REGISTRY" USDC_ADDRESS="$L3_USDC" \
     forge script script/DeployVision.s.sol:DeployVision \
@@ -402,13 +436,16 @@ cmd_deploy() {
         --slow) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
+    # Vision batches: do NOT use --slow (causes nonce races on L3 Orbit)
+    rm -rf contracts/broadcast/DeployAllVisionBatches.s.sol/$CHAIN_ID/ contracts/cache/DeployAllVisionBatches.s.sol/$CHAIN_ID/
+    VISION_ADDR_DEPLOY=$(python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['vision'])" 2>/dev/null || echo "")
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+    VISION_ADDRESS="$VISION_ADDR_DEPLOY" \
     forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
-        --chain-id $CHAIN_ID \
-        --slow) \
+        --chain-id $CHAIN_ID) \
         >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
     echo -e "  ${GREEN}Vision deployed${NC}"
 
@@ -444,10 +481,23 @@ cmd_deploy() {
         echo -e "  ${GREEN}Synced deployment JSONs + Vision address → envs/testnet/${NC}"
     fi
 
+    # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
+    ./switch-env.sh testnet 2>/dev/null || true
+
+    # Deploy frontend to Vercel with new contract addresses
+    echo -e "${BLUE}[8/7] Deploying frontend to Vercel...${NC}"
+    if command -v vercel &>/dev/null; then
+        (cd frontend && vercel --prod --yes 2>&1 | tail -5) && \
+            echo -e "  ${GREEN}Frontend deployed to Vercel${NC}" || \
+            echo -e "  ${YELLOW}Vercel deploy failed — deploy manually: cd frontend && vercel --prod${NC}"
+    else
+        echo -e "  ${YELLOW}vercel CLI not found — deploy manually: cd frontend && vercel --prod${NC}"
+    fi
+
     echo ""
-    echo -e "${GREEN}All contracts deployed. Push deployment files to GitHub:${NC}"
-    echo -e "  ${CYAN}git add deployments/ envs/testnet/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
-    echo -e "  ${CYAN}Then run: ./testnet.sh update${NC}"
+    echo -e "${GREEN}All contracts deployed. Next steps:${NC}"
+    echo -e "  ${CYAN}1. Start services: ./testnet.sh start${NC}"
+    echo -e "  ${CYAN}2. (Optional) Push: git add deployments/ envs/testnet/ && git commit -m 'chore: testnet deployment' && git push mono main${NC}"
 }
 
 # ── start: Start all services on VPSes ───────────────────────
@@ -473,6 +523,8 @@ cmd_start() {
     vps_be_ssh "mkdir -p $VPS_BE_DIR/logs && chmod 777 $VPS_BE_DIR/logs && chmod a+rw $VPS_BE_DIR/logs/* 2>/dev/null; true"
 
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
+    # First remove any Docker-created directory stubs (Docker creates dirs for missing mount sources)
+    vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/issuer-key-1.txt /tmp/issuer-key-2.txt /tmp/issuer-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt' 2>/dev/null; true"
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 644 /tmp/issuer-key-$i.txt"
     done
@@ -638,6 +690,8 @@ CMD
       - "500"
       - "--vision-settlement-bridge-custody"
       - "$VISION_SETTLEMENT_CUSTODY"
+      - "--vision-settlement-rpc-url"
+      - "$SETTLEMENT_RPC_VPS"
 CMD
         fi
     }
@@ -834,6 +888,8 @@ _start_ap_docker() {
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
 
     # Write AP key file on VPS 2 (NOT in environment: or CLI — visible in docker inspect)
+    # First remove any Docker-created directory stub
+    vps_chain_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/ap-key.txt' 2>/dev/null; true"
     vps_chain_ssh "printf '%s' '$AP_KEY' > /tmp/ap-key.txt && chmod 644 /tmp/ap-key.txt"
 
     local OVERRIDE="$SCRIPT_DIR/.ap-override.yml"
