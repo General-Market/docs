@@ -79,6 +79,13 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     /// @notice Auto-incrementing withdraw request ID
     uint256 public withdrawNonce;
 
+    /// @notice Withdraw request details for consensus verification
+    struct WithdrawRequest {
+        address user;
+        uint256 amount;
+    }
+    mapping(uint256 => WithdrawRequest) public withdrawRequests;
+
     // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedFees
     // INVARIANT: totalRealBalance == sum(realBalance[all users])
     // INVARIANT: totalVirtualBalance == sum(virtualBalance[all users])
@@ -775,6 +782,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 wId = withdrawNonce++;
         virtualBalance[msg.sender] -= amount;
         totalVirtualBalance -= amount;
+
+        withdrawRequests[wId] = WithdrawRequest(msg.sender, amount);
 
         emit WithdrawToSettlementRequested(msg.sender, amount, wId);
     }

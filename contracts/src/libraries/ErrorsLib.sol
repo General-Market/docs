@@ -850,4 +850,8 @@ library ErrorsLib {
     /// @param amount The submitted amount
     /// @param minimum The required minimum
     error E152_BelowMinSellAmount(uint256 amount, uint256 minimum);
+
+    /// @notice E153: Vision deposit refund attempted before timeout
+    /// @param orderId The deposit order ID
+    error E153_RefundTooEarly(uint256 orderId);
 }

@@ -95,6 +95,12 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @notice Replay protection for Vision withdrawals
     mapping(uint256 => bool) public withdrawProcessed;
 
+    /// @notice Timeout before a vision deposit can be refunded (2 hours)
+    uint256 public constant REFUND_TIMEOUT = 7200;
+
+    /// @notice Tracks completed vision deposits (prevents refund after completion)
+    mapping(uint256 => bool) public depositCompleted;
+
     /// @notice USDC reserve tracker for Vision pool (6 decimals, tracks Settlement-side USDC)
     uint256 public visionReserve;
 
@@ -649,6 +655,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
+        depositCompleted[orderId] = true;
         delete visionDeposits[orderId];
 
         emit VisionDepositCompleted(orderId);
@@ -663,6 +670,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     ) external override {
         TypesLib.VisionDeposit storage dep = visionDeposits[orderId];
         if (dep.user == address(0)) revert ErrorsLib.E131_VisionDepositNotFound(orderId);
+        if (block.timestamp - dep.createdAt <= REFUND_TIMEOUT) revert ErrorsLib.E153_RefundTooEarly(orderId);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(this), "refundVisionDeposit", orderId
