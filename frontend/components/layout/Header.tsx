@@ -241,20 +241,12 @@ export function Header() {
                   {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={handleLogin}
-                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
-                  >
-                    {t('wallet.login')}
-                  </button>
-                  <button
-                    onClick={handleLogin}
-                    className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
-                  >
-                    Sign Up
-                  </button>
-                </>
+                <button
+                  onClick={handleLogin}
+                  className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+                >
+                  Sign Up
+                </button>
               )}
               {/* Hamburger */}
               <div className="relative">

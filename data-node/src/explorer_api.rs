@@ -207,6 +207,7 @@ async fn health_latest(
             WHERE poll_batch_ts > NOW() - make_interval(secs => $1)
             ORDER BY node_id, poll_batch_ts DESC
         ) latest_per_node
+        HAVING COUNT(*) > 0
         "#,
     )
     .bind(LATEST_WINDOW_SECS)
