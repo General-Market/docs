@@ -149,12 +149,12 @@ export default function PointsPageClient() {
                   {
                     step: '01',
                     title: 'Join batches',
-                    desc: 'Each of the 80+ prediction batches emits 100 points every tick (~10 min). Deposit USDC to participate.',
+                    desc: 'Each of the 100 prediction batches emits 100 points every tick (~10 min). That\'s 1.44M points distributed daily across all batches.',
                   },
                   {
                     step: '02',
                     title: 'Earn by share',
-                    desc: 'Points are split proportionally by your dollar share of each batch. More capital = more points. Empty batches = 100% to you.',
+                    desc: 'Points are split proportionally by your USDC share of each batch. More capital = more points. Empty batches = 100% to you.',
                   },
                   {
                     step: '03',
@@ -177,6 +177,49 @@ export default function PointsPageClient() {
                     </p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════ DAILY BREAKDOWN ═══════════════════ */}
+        <section className="border-b border-border-light">
+          <div className="px-6 lg:px-12">
+            <div className="max-w-site mx-auto py-8">
+              <h2 className="text-[20px] font-black tracking-[-0.01em] text-black mb-4">
+                Daily Points Distribution
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
+                <div className="p-4 border-r border-border-light">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Per Tick / Batch</div>
+                  <div className="text-[22px] font-black text-black font-mono">100</div>
+                </div>
+                <div className="p-4 border-r border-border-light">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Ticks / Day</div>
+                  <div className="text-[22px] font-black text-black font-mono">144</div>
+                </div>
+                <div className="p-4 border-r border-border-light">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Batches</div>
+                  <div className="text-[22px] font-black text-black font-mono">{totalBatches}</div>
+                </div>
+                <div className="p-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total / Day</div>
+                  <div className="text-[22px] font-black text-black font-mono">1.44M</div>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-border-light p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vision (Prediction Markets)</div>
+                  <p className="text-[13px] text-text-secondary leading-relaxed">
+                    100 batches across 25,000+ markets. Each batch emits 100 pts every 10 minutes. Earn by depositing USDC into any batch — your share of the pool determines your points.
+                  </p>
+                </div>
+                <div className="border border-border-light p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Index (ITPs)</div>
+                  <p className="text-[13px] text-text-secondary leading-relaxed">
+                    Index product points coming in Season 2. Hold ITP shares to earn points from the index protocol. Stay tuned for details on ITP-based point emissions.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -336,14 +379,13 @@ export default function PointsPageClient() {
                       <th className="text-left py-2.5 px-4">Player</th>
                       <th className="text-right py-2.5 px-4">Volume</th>
                       <th className="text-right py-2.5 px-4">Batches</th>
-                      <th className="text-right py-2.5 px-4">Win Rate</th>
-                      <th className="text-right py-2.5 px-4">PnL</th>
+                      <th className="text-right py-2.5 px-4">ROI</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lbLoading && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-12 text-center text-[13px] text-text-muted">
+                        <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-text-muted">
                           Loading leaderboard...
                         </td>
                       </tr>
@@ -351,7 +393,7 @@ export default function PointsPageClient() {
 
                     {!lbLoading && leaderboard.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-12 text-center text-[13px] text-text-muted">
+                        <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-text-muted">
                           No players yet — join a batch to compete
                         </td>
                       </tr>
@@ -359,7 +401,6 @@ export default function PointsPageClient() {
 
                     {leaderboard.map((entry, i) => {
                       const isYou = address && entry.walletAddress.toLowerCase() === address.toLowerCase()
-                      const pnlPositive = entry.pnl >= 0
                       const rank = entry.rank || i + 1
 
                       return (
@@ -396,11 +437,8 @@ export default function PointsPageClient() {
                           <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
                             {entry.portfolioBets}
                           </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
-                            {entry.winRate.toFixed(1)}%
-                          </td>
-                          <td className={`py-3 px-4 text-right font-mono tabular-nums font-bold ${pnlPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {pnlPositive ? '+' : ''}{formatUsd(entry.pnl)}
+                          <td className={`py-3 px-4 text-right font-mono tabular-nums font-bold ${entry.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
                           </td>
                         </tr>
                       )

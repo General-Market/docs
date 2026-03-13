@@ -53,17 +53,25 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
     [snapshots]
   )
 
-  const successRateData = useMemo(
-    () =>
-      snapshots.map((s) => ({
-        poll_batch_ts: s.poll_batch_ts,
-        rate:
-          s.consensus_rounds_total > 0
-            ? Math.round((s.consensus_success_total / s.consensus_rounds_total) * 10000) / 100
-            : 0,
-      })),
-    [snapshots]
-  )
+  // Per-interval success rate (delta success / delta rounds)
+  const successRateData = useMemo(() => {
+    const result: { poll_batch_ts: string; rate: number }[] = []
+    for (let i = 1; i < snapshots.length; i++) {
+      const prev = snapshots[i - 1]
+      const curr = snapshots[i]
+      const dRounds = curr.consensus_rounds_total - prev.consensus_rounds_total
+      const dSuccess = curr.consensus_success_total - prev.consensus_success_total
+      if (dRounds <= 0) {
+        result.push({ poll_batch_ts: curr.poll_batch_ts, rate: 100 })
+      } else {
+        result.push({
+          poll_batch_ts: curr.poll_batch_ts,
+          rate: Math.round((Math.max(0, dSuccess) / dRounds) * 100),
+        })
+      }
+    }
+    return result
+  }, [snapshots])
 
   const errorRateData = useMemo(
     () => computeDeltas(snapshots, 'consensus_failed_total'),
@@ -170,7 +178,7 @@ export function SystemHealthSection({ snapshots, latest, loading }: SectionProps
       {/* #84: Consensus Success Rate */}
       <ExplorerChartCard
         title="Consensus Success Rate"
-        subtitle="Cumulative success / total rounds (%)"
+        subtitle="Per-interval success rate (%)"
         loading={loading}
       >
         <ResponsiveContainer width="100%" height="100%">

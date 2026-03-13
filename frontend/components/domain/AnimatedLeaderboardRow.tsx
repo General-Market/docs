@@ -11,8 +11,6 @@ import {
   formatWalletAddress,
   formatPortfolioSize,
   formatROI,
-  formatWinRate,
-  formatPnL,
   formatVolume
 } from '@/lib/utils/formatters'
 import { formatRelativeTime } from '@/lib/utils/time'
@@ -74,7 +72,6 @@ export function AnimatedLeaderboardRow({
   prefersReducedMotion,
   isMobile
 }: AnimatedLeaderboardRowProps) {
-  const pnlColor = agent.pnl >= 0 ? 'text-color-up' : 'text-text-muted'
   const roiColor = agent.roi >= 0 ? 'text-color-up' : 'text-text-muted'
 
   // Track rank change animations for this agent
@@ -109,7 +106,7 @@ export function AnimatedLeaderboardRow({
       }}
       role="button"
       tabIndex={0}
-      aria-label={`View details for agent ${formatWalletAddress(agent.walletAddress)}, ranked ${agent.rank}, P&L ${formatPnL(agent.pnl)}`}
+      aria-label={`View details for agent ${formatWalletAddress(agent.walletAddress)}, ranked ${agent.rank}, ROI ${formatROI(agent.roi)}`}
       className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-zinc-900/50 transition-colors duration-300 ${highlightClass} ${rankChangeClass}`}
       style={{ willChange: shouldAnimate ? 'transform' : 'auto' }}
     >
@@ -133,23 +130,9 @@ export function AnimatedLeaderboardRow({
         {formatWalletAddress(agent.walletAddress)}
       </TableCell>
 
-      {/* P&L with count animation (AC3) */}
-      <TableCell className={`font-mono font-bold ${pnlColor}`}>
-        <AnimatedNumber
-          value={agent.pnl}
-          prefix="$"
-          decimals={2}
-          duration={1000}
-          disabled={!shouldAnimate}
-          formatFn={(val) => {
-            // Format with commas and maintain sign
-            const formatted = Math.abs(val).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })
-            return val < 0 ? `-${formatted}` : formatted
-          }}
-        />
+      {/* ROI with count animation */}
+      <TableCell className={`font-mono font-bold ${roiColor}`}>
+        {formatROI(agent.roi)}
       </TableCell>
 
       {/* Performance Sparkline - hidden on mobile/tablet */}
@@ -186,16 +169,6 @@ export function AnimatedLeaderboardRow({
             formatFn={(val) => formatPortfolioSize(Math.round(val))}
           />
         </Tooltip>
-      </TableCell>
-
-      {/* Win Rate - hidden on mobile */}
-      <TableCell className="font-mono text-text-primary hidden md:table-cell">
-        {formatWinRate(agent.winRate)}
-      </TableCell>
-
-      {/* ROI - hidden on mobile */}
-      <TableCell className={`font-mono hidden md:table-cell ${roiColor}`}>
-        {formatROI(agent.roi)}
       </TableCell>
 
       {/* Volume - hidden on mobile */}

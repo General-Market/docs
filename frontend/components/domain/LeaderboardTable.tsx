@@ -37,7 +37,6 @@ function LeaderboardSkeleton() {
           <TableCell>
             <div className="h-4 w-20 bg-muted animate-pulse rounded" />
           </TableCell>
-          {/* Performance sparkline skeleton (AC4) */}
           <TableCell className="hidden lg:table-cell">
             <div className="h-10 w-24 bg-muted animate-pulse rounded" />
           </TableCell>
@@ -49,12 +48,6 @@ function LeaderboardSkeleton() {
           </TableCell>
           <TableCell>
             <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-          </TableCell>
-          <TableCell className="hidden md:table-cell">
-            <div className="h-4 w-12 bg-muted animate-pulse rounded" />
-          </TableCell>
-          <TableCell className="hidden md:table-cell">
-            <div className="h-4 w-12 bg-muted animate-pulse rounded" />
           </TableCell>
           <TableCell className="hidden md:table-cell">
             <div className="h-4 w-20 bg-muted animate-pulse rounded" />
@@ -75,7 +68,7 @@ function EmptyState() {
   const t = useTranslations('common')
   return (
     <TableRow>
-      <TableCell colSpan={11} className="py-12 text-center">
+      <TableCell colSpan={9} className="py-12 text-center">
         <p className="text-text-muted">{t('empty.no_agents')}</p>
         <p className="text-text-muted text-sm mt-1">
           {t('empty.no_agents_hint')}
@@ -115,9 +108,9 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
   // Track last click time to debounce rapid clicks
   const [lastClickTime, setLastClickTime] = useState(0)
 
-  // Sort leaderboard by P&L descending (AC5) - ensures correct order even if backend returns unsorted
+  // Sort leaderboard by ROI descending - ensures correct order even if backend returns unsorted
   const sortedLeaderboard = useMemo(() => {
-    return [...leaderboard].sort((a, b) => b.pnl - a.pnl)
+    return [...leaderboard].sort((a, b) => b.roi - a.roi)
   }, [leaderboard])
 
   // Navigate to agent detail page with debounce
@@ -163,12 +156,12 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
 
       {/* Table with horizontal scroll on mobile */}
       <div className="overflow-x-auto">
-        <Table aria-label="Agent Leaderboard - rankings sorted by P&L">
+        <Table aria-label="Agent Leaderboard - rankings sorted by ROI">
           <TableHeader>
             <TableRow>
               <TableHead className="text-center w-16">{t('leaderboard.rank')}</TableHead>
               <TableHead>{t('leaderboard.agent')}</TableHead>
-              <TableHead>{t('leaderboard.pnl')}</TableHead>
+              <TableHead>{t('leaderboard.roi')}</TableHead>
               <TableHead className="hidden lg:table-cell w-28">
                 <Tooltip content={t('leaderboard.trend_tooltip')}>
                   {t('leaderboard.trend')}
@@ -185,8 +178,6 @@ export function LeaderboardTable({ highlightedAddress }: LeaderboardTableProps =
                   <span className="text-zinc-900">{t('leaderboard.max_portfolio')}</span>
                 </Tooltip>
               </TableHead>
-              <TableHead className="hidden md:table-cell">{t('leaderboard.win_rate')}</TableHead>
-              <TableHead className="hidden md:table-cell">{t('leaderboard.roi')}</TableHead>
               <TableHead className="hidden md:table-cell">{t('leaderboard.volume')}</TableHead>
               <TableHead className="hidden md:table-cell">{t('leaderboard.last_active')}</TableHead>
             </TableRow>
