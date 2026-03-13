@@ -56,11 +56,13 @@ export async function generateStaticParams() {
 
 async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
   try {
-    // Use internal absolute URL for server-side fetch
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    // On Vercel: use VERCEL_URL (internal); fallback to public site URL or localhost
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const res = await fetch(
       `${baseUrl}/api/itp-enrichment?itp_id=${encodeURIComponent(itpId)}`,
-      { next: { revalidate: 300 }, signal: AbortSignal.timeout(15_000) }
+      { next: { revalidate: 300 }, signal: AbortSignal.timeout(30_000) }
     )
     if (!res.ok) return null
     return await res.json()
