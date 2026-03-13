@@ -53,12 +53,14 @@ test.describe('Health Check', () => {
 
   test('ITP listing appears with at least one ITP', async ({ page }) => {
     await page.goto('/index');
-    // Wait for ITP cards to load (data-node may be unreachable on testnet)
+    // Wait for ITP cards to load — retry navigation if data-node is slow
     const itpCards = page.locator('[id^="itp-card-"]');
-    const itpVisible = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
+    let itpVisible = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
-      test.skip(true, 'ITP cards not loaded — data-node may be unreachable');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      itpVisible = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(itpVisible).toBe(true);
   });
 });

@@ -17,13 +17,15 @@ test.describe('Decimal Regression Tests', () => {
   test('no 18+ digit numbers visible in document body (bigint leak check)', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // Wait for ITP cards to load (they contain dollar amounts we want to scan)
+    // Wait for ITP cards to load — retry navigation if data-node is slow
     const itpCards = page.locator('[id^="itp-card-"]');
-    const hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
+    let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
-      test.skip(true, 'ITP cards did not load — data-node may be slow');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(hasCards).toBe(true);
     await page.waitForTimeout(2_000);
 
     // Scan the entire visible body text for raw bigint values

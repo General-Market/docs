@@ -24,12 +24,15 @@ test.describe('Buy ITP', () => {
     // 2. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 3. Wait for ITP listing to load (data-node may be unreachable on testnet)
-    const itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
+    // 3. Wait for ITP listing to load — retry navigation if needed
+    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
-      test.skip(true, 'ITP cards not loaded — data-node may be unreachable');
-      return;
+      // Data-node may be slow on testnet — retry once with fresh navigation
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(itpVisible).toBe(true);
 
     // 4. Click Buy on first ITP
     const buyBtn = buyButton(page);
