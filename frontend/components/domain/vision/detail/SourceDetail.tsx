@@ -52,20 +52,41 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
   // Pick the active batch matching this source via static config (batchId lookup)
+  // Falls back to a minimal static batch when API data isn't available yet
+  const batchKey = getBatchKey(sourceId)
+  const staticEntry = (batchConfig.batches as Record<string, { batchId: number; configHash: string; tickDuration?: number }>)[batchKey]
   const activeBatch = useMemo(() => {
-    if (!batches || batches.length === 0) return null
-    // Use vision-batches.json to find the batchId for this source
-    // Batch keys are data-node source names (e.g. "stocks"), not frontend IDs (e.g. "finnhub")
-    const batchKey = getBatchKey(sourceId)
-    const entry = (batchConfig.batches as Record<string, { batchId: number }>)[batchKey]
-    if (entry) {
-      return batches.find(b => b.id === entry.batchId) ?? null
+    // Try to find from live API data first
+    if (batches && batches.length > 0) {
+      if (staticEntry) {
+        const fromApi = batches.find(b => b.id === staticEntry.batchId)
+        if (fromApi) return fromApi
+      }
+      // Fallback: try matching by source_id string (for dynamically created batches)
+      const bySource = batches.find(b =>
+        b.sourceId === sourceId || b.sourceId === dataNodeId
+      )
+      if (bySource) return bySource
     }
-    // Fallback: try matching by source_id string (for dynamically created batches)
-    return batches.find(b =>
-      b.sourceId === sourceId || b.sourceId === dataNodeId
-    ) ?? null
-  }, [batches, sourceId, dataNodeId])
+    // When API data isn't available, construct minimal batch from static config
+    // This ensures TICK/PLAYERS/POOL show something instead of dashes
+    if (staticEntry) {
+      return {
+        id: staticEntry.batchId,
+        creator: '',
+        sourceId: batchKey,
+        marketIds: [] as string[],
+        resolutionTypes: [] as number[],
+        tickDuration: staticEntry.tickDuration ?? 600,
+        marketCount: 0,
+        playerCount: 0,
+        tvl: '0',
+        currentTick: 0,
+        paused: false,
+      } satisfies import('@/hooks/vision/useBatches').BatchInfo
+    }
+    return null
+  }, [batches, sourceId, dataNodeId, staticEntry, batchKey])
 
   // Per-batch tick timer using category-specific duration
   const [tickState, setTickState] = useState(() =>

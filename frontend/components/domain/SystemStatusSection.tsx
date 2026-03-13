@@ -111,11 +111,19 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
   }, [])
 
   // Build ITP name lookup: itpId → display name
+  // Supports both plain number IDs ("1", "2") and bytes32 hex ("0x000...0001")
   const itpNameMap = new Map<string, string>()
   if (deployedItps) {
     for (const itp of deployedItps) {
       const key = itp.itpId.toLowerCase()
-      itpNameMap.set(key, itp.symbol ? `$${itp.symbol}` : itp.name)
+      const name = itp.symbol ? `$${itp.symbol}` : itp.name
+      itpNameMap.set(key, name)
+      // Also add bytes32 hex form: pad the numeric ID to 64 hex chars
+      try {
+        const numericId = BigInt(itp.itpId)
+        const hex32 = '0x' + numericId.toString(16).padStart(64, '0')
+        itpNameMap.set(hex32, name)
+      } catch {}
     }
   }
 
@@ -147,18 +155,32 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
   }
 
   // Inventory: live vault values × frozen correction ratios = correct AUM with live ticks
+  // Falls back to ranking data directly when vault is unavailable (settlement chain timeouts)
   const inventoryAssets = useMemo(() => {
     const ratios = ratiosRef.current
-    if (!ratios || vault.assets.length === 0) return []
-    return vault.assets
-      .map(a => {
-        const ratio = ratios.get(a.symbol)
-        if (!ratio) return null
-        return { symbol: a.symbol, usdValue: a.usdValue * ratio }
-      })
-      .filter((a): a is { symbol: string; usdValue: number } => a !== null && a.usdValue > 0)
-      .sort((a, b) => b.usdValue - a.usdValue)
-  }, [vault.assets])
+    if (ratios && vault.assets.length > 0) {
+      const corrected = vault.assets
+        .map(a => {
+          const ratio = ratios.get(a.symbol)
+          if (!ratio) return null
+          return { symbol: a.symbol, usdValue: a.usdValue * ratio }
+        })
+        .filter((a): a is { symbol: string; usdValue: number } => a !== null && a.usdValue > 0)
+        .sort((a, b) => b.usdValue - a.usdValue)
+      if (corrected.length > 0) return corrected
+    }
+    // Fallback: use ranking data directly (no live price corrections, but shows something)
+    if (ranking.snapshots.length > 0) {
+      const latest = ranking.snapshots[ranking.snapshots.length - 1]
+      if (latest?.ranked) {
+        return latest.ranked
+          .filter(r => r.aum > 0)
+          .map(r => ({ symbol: r.symbol, usdValue: r.aum }))
+          .sort((a, b) => b.usdValue - a.usdValue)
+      }
+    }
+    return []
+  }, [vault.assets, ranking.snapshots])
   const inventoryTotalAum = inventoryAssets.reduce((s, a) => s + a.usdValue, 0)
 
   // Tick uptime every 60s
@@ -272,7 +294,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
               </div>
               <div>
                 {[
-                  { label: t('issuer_network.node_details.address'), value: truncateAddr(node.addr) },
+                  // Show address only if it's a real hex address, otherwise show node ID
+                  { label: t('issuer_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
                   { label: t('issuer_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
                   { label: t('issuer_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
                   { label: t('issuer_network.node_details.status'), value: t('issuer_network.status_active'), color: 'text-color-up' },
@@ -313,9 +336,20 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                 )
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sys.fillTimeBuckets} margin={{ top: 16, right: 16, bottom: 4, left: -8 }}>
+                  <BarChart data={sys.fillTimeBuckets} margin={{ top: 16, right: 16, bottom: 4, left: 0 }}>
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} unit="s" width={36} />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#888' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={48}
+                      tickFormatter={(v: number) => {
+                        if (v >= 86400) return `${(v / 86400).toFixed(0)}d`
+                        if (v >= 3600) return `${(v / 3600).toFixed(0)}h`
+                        if (v >= 60) return `${(v / 60).toFixed(0)}m`
+                        return `${v}s`
+                      }}
+                    />
                     <Tooltip
                       contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
                       formatter={(v: number) => [formatFillTime(v), t('fill_speed.tooltip_label')]}
