@@ -108,7 +108,8 @@ export function Header() {
   const handleLogin = async () => {
     capture('login_clicked', { source: 'header' })
     if (injectedConnector) {
-      await addAndSwitchChain()
+      // Try to pre-register the chain, but don't block connect if it fails
+      try { await addAndSwitchChain() } catch {}
       connect({ connector: injectedConnector, chainId: indexL3.id })
     }
   }
