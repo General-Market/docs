@@ -1,4 +1,4 @@
-import { AA_DATA_NODE_URL } from '@/lib/config'
+import { AA_DATA_NODE_URL, DATA_NODE_SERVER } from '@/lib/config'
 
 export interface ItpSummary {
   itpId: string
@@ -40,7 +40,7 @@ export async function getItpSummaries(): Promise<ItpSummary[]> {
 
 /**
  * Fetch detail for a single ITP (server-side).
- * Combines /itp-price and /snapshot data.
+ * Calls data-node directly for /itp-price and /snapshot.
  */
 export async function getItpDetail(itpId: string): Promise<{
   itpId: string
@@ -51,29 +51,37 @@ export async function getItpDetail(itpId: string): Promise<{
   assetCount: number
   holdings: { symbol: string; weight: number; price: number }[]
 } | null> {
+  const dnUrl = DATA_NODE_SERVER
   try {
-    const [priceRes, snapshotRes] = await Promise.all([
-      fetch(`${AA_DATA_NODE_URL}/itp-price?itp_id=${itpId}`, {
-        next: { revalidate: 60 },
-      }),
-      fetch(`${AA_DATA_NODE_URL}/snapshot?itp_id=${itpId}`, {
-        next: { revalidate: 60 },
-      }),
-    ])
+    const priceRes = await fetch(`${dnUrl}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    })
 
-    if (!priceRes.ok) return null
+    if (!priceRes.ok) {
+      console.error(`[getItpDetail] itp-price failed: status=${priceRes.status} url=${dnUrl}/itp-price`)
+      return null
+    }
     const priceData = await priceRes.json()
 
     let holdings: { symbol: string; weight: number; price: number }[] = []
-    if (snapshotRes.ok) {
-      const snapshot = await snapshotRes.json()
-      if (Array.isArray(snapshot.assets)) {
-        holdings = snapshot.assets.map((a: any) => ({
-          symbol: a.symbol || '',
-          weight: a.weight || 0,
-          price: a.price || 0,
-        }))
+    try {
+      const snapshotRes = await fetch(`${dnUrl}/snapshot?itp_id=${encodeURIComponent(itpId)}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (snapshotRes.ok) {
+        const snapshot = await snapshotRes.json()
+        if (Array.isArray(snapshot.assets)) {
+          holdings = snapshot.assets.map((a: any) => ({
+            symbol: a.symbol || '',
+            weight: a.weight || 0,
+            price: a.price || 0,
+          }))
+        }
       }
+    } catch {
+      // snapshot is optional
     }
 
     return {
@@ -85,7 +93,8 @@ export async function getItpDetail(itpId: string): Promise<{
       assetCount: priceData.assets_total || holdings.length,
       holdings,
     }
-  } catch {
+  } catch (e) {
+    console.error(`[getItpDetail] error: ${e} url=${dnUrl}/itp-price`)
     return null
   }
 }
