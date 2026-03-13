@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import type { SectionProps } from '../SectionRenderer'
 
-export function FundFacts({ itpId, symbol }: SectionProps) {
+export function FundFacts({ itpId, symbol, createdAt }: SectionProps) {
   const [copied, setCopied] = useState<string | null>(null)
 
   const copyToClipboard = (text: string, key: string) => {
@@ -17,6 +17,7 @@ export function FundFacts({ itpId, symbol }: SectionProps) {
 
   const facts = [
     { label: 'Symbol', value: symbol },
+    ...(createdAt ? [{ label: 'Inception Date', value: new Date(createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }] : []),
     { label: 'Chain', value: 'Index L3 (Orbit)' },
     {
       label: 'Settlement Address',

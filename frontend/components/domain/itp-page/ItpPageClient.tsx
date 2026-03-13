@@ -34,7 +34,7 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
       )}
       <SectionRenderer
         config={config}
-        sectionProps={{ itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment }}
+        sectionProps={{ itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment, createdAt: config.createdAt }}
       />
     </>
   )

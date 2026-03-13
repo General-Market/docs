@@ -23,6 +23,7 @@ export interface SectionProps {
   assetCount: number
   sinceInception: number
   enrichment: ItpEnrichment | null
+  createdAt?: string
 }
 
 // Registry: SectionId → component

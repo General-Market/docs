@@ -1,4 +1,3 @@
-import { Link } from '@/i18n/routing'
 import type { SectionProps } from '../SectionRenderer'
 
 export function TradeCta({ itpId }: SectionProps) {
@@ -10,12 +9,12 @@ export function TradeCta({ itpId }: SectionProps) {
       >
         Buy this Index
       </a>
-      <Link
-        href="/learn/what-are-itps"
+      <a
+        href={`/#markets`}
         className="px-6 py-3 border-2 border-black text-sm font-bold rounded-md hover:bg-black hover:text-white transition-colors text-center"
       >
-        Learn about ITPs
-      </Link>
+        Sell
+      </a>
     </section>
   )
 }

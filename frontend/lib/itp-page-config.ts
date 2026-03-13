@@ -15,6 +15,7 @@ export interface ItpPageConfig {
   sections: SectionId[]
   heroStyle?: 'dark' | 'brand' | 'white'
   label?: string
+  createdAt?: string // ISO date string
 }
 
 const CONFIGS = {
@@ -25,6 +26,7 @@ const CONFIGS = {
     ],
     heroStyle: 'dark',
     label: 'Crypto Index',
+    createdAt: '2026-02-18',
   },
 
   'defi-sector': {

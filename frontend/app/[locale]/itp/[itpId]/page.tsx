@@ -129,9 +129,14 @@ export default async function ItpPage({ params }: Props) {
           </nav>
 
           <header className="mb-8">
-            <h1 className="text-3xl font-black tracking-tight text-black mb-2">
-              {itp.name}
-            </h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-black tracking-tight text-black">
+                {itp.name}
+              </h1>
+              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-green-100 text-green-800">
+                Active
+              </span>
+            </div>
             <p className="text-lg text-text-secondary">
               {t('subtitle', { symbol: itp.symbol })}
             </p>
