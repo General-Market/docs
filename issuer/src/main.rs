@@ -3592,10 +3592,10 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let l3_cycle = max_order_id + 500_000_000;
 
     // 4. Leader election with deterministic failover rotation.
-    // Use current_cycle (shared consensus clock) so ALL nodes compute the same attempt
-    // at the same moment. Previous wall-clock approach caused desync when nodes started
-    // at different times.
-    let attempt = current_cycle / 5; // Rotate leader every ~5 cycles
+    // current_cycle drifts ~20-30 between nodes. Dividing by 500 ensures all nodes
+    // agree on the same attempt value despite drift, while still providing failover
+    // rotation every ~500 cycles (~8 minutes).
+    let attempt = current_cycle / 500;
     let am_leader = calculate_bridge_leader_with_failover(l3_cycle, num_issuers, node_index, attempt);
 
     info!(
@@ -3819,7 +3819,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let max_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
     let fills_cycle = max_batched_id + 500_000_001;
 
-    let attempt = current_cycle / 5;
+    let attempt = current_cycle / 500;
     let fills_am_leader = calculate_bridge_leader_with_failover(fills_cycle, num_issuers, node_index, attempt);
 
     info!(
