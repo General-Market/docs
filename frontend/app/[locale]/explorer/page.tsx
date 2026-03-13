@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import ExplorerPageClient from './ExplorerPageClient'
 
 export const metadata: Metadata = {
@@ -7,5 +9,11 @@ export const metadata: Metadata = {
 }
 
 export default function ExplorerPage() {
-  return <ExplorerPageClient />
+  return (
+    <>
+      <Header />
+      <ExplorerPageClient />
+      <Footer />
+    </>
+  )
 }

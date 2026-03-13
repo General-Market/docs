@@ -3591,12 +3591,11 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let max_order_id = l3_native_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
     let l3_cycle = max_order_id + 500_000_000;
 
-    // 4. Leader election with infinite failover rotation
-    let detected_at = {
-        let mut fso = first_seen_orders.lock().await;
-        *fso.entry(l3_cycle).or_insert_with(std::time::Instant::now)
-    };
-    let attempt = detected_at.elapsed().as_secs() / LEADER_TIMEOUT_SECS;
+    // 4. Leader election with deterministic failover rotation.
+    // Use current_cycle (shared consensus clock) so ALL nodes compute the same attempt
+    // at the same moment. Previous wall-clock approach caused desync when nodes started
+    // at different times.
+    let attempt = current_cycle / 5; // Rotate leader every ~5 cycles
     let am_leader = calculate_bridge_leader_with_failover(l3_cycle, num_issuers, node_index, attempt);
 
     info!(
@@ -3820,11 +3819,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let max_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
     let fills_cycle = max_batched_id + 500_000_001;
 
-    let detected_at = {
-        let mut fso = first_seen_orders.lock().await;
-        *fso.entry(fills_cycle).or_insert_with(std::time::Instant::now)
-    };
-    let attempt = detected_at.elapsed().as_secs() / LEADER_TIMEOUT_SECS;
+    let attempt = current_cycle / 5;
     let fills_am_leader = calculate_bridge_leader_with_failover(fills_cycle, num_issuers, node_index, attempt);
 
     info!(
@@ -4787,6 +4782,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             deposit_watcher.run(dw_shutdown).await;
                         });
                         info!(node_id, "VisionDepositWatcher spawned");
+
+                        // Set VisionConsensusConfig on the consensus protocol so followers
+                        // can validate credit/refund/withdraw proposals.
+                        if let Some(ref protocol) = components.consensus.protocol {
+                            let vcc_l3_provider = Arc::new(
+                                ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_cfg.rpc_ws_url)
+                                    .expect("valid L3 RPC for VisionConsensusConfig"),
+                            );
+                            let vcc_settlement_provider = Arc::new(
+                                ethers::providers::Provider::<ethers::providers::Http>::try_from(&settlement_rpc_url)
+                                    .expect("valid Settlement RPC for VisionConsensusConfig"),
+                            );
+                            protocol.set_vision_consensus_config(issuer::VisionConsensusConfig {
+                                l3_provider: vcc_l3_provider,
+                                settlement_provider: vcc_settlement_provider,
+                                vision_address,
+                                custody_address: settlement_custody_address,
+                                l3_chain_id: 111_222_333u64,
+                                settlement_chain_id: vision_cfg.settlement_chain_id,
+                            }).await;
+                            info!(node_id, "VisionConsensusConfig set on protocol");
+                        }
                     }
 
                     // Spawn BatchConfigOrchestrator (independent async task, NOT inside run_cycle)
