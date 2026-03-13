@@ -5866,7 +5866,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
          EXTRACT(EPOCH FROM order_timestamp)::bigint, \
          EXTRACT(EPOCH FROM fill_timestamp)::bigint, \
          CASE WHEN fill_timestamp IS NOT NULL THEN \
-           EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp)) \
+           EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp))::float8 \
          END \
          FROM trades ORDER BY order_id DESC LIMIT 20"
     ).fetch_all(&state.pool).await {
@@ -5913,8 +5913,8 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     // Calculate average fill time from DB (last 100 filled orders)
     let avg_fill_time_seconds = match sqlx::query_as::<_, (Option<f64>,)>(
-        "SELECT AVG(latency) FROM ( \
-           SELECT EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp)) AS latency \
+        "SELECT AVG(latency)::float8 FROM ( \
+           SELECT EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp))::float8 AS latency \
            FROM trades WHERE status = 2 AND fill_timestamp IS NOT NULL \
            ORDER BY order_id DESC LIMIT 100 \
          ) sub"
