@@ -194,11 +194,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     const res = await fetch('/api/faucet', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ address, amount: '1000' }),
+                      body: JSON.stringify({ address, amount: '1000', gas: true }),
                     })
                     const data = await res.json()
                     if (data.success) {
-                      setMintResult('1,000 USDC minted to your wallet!')
+                      const gasMsg = data.gas?.hash ? ' + 0.5 S gas' : ''
+                      setMintResult(`1,000 USDC minted${gasMsg}!`)
                       refetchL3Usdc()
                     } else {
                       setMintResult(`Error: ${data.error}`)

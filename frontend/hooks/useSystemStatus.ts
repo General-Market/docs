@@ -73,18 +73,25 @@ function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isL
       const isZeroAmount = !o.amount || o.amount === '0'
       return !(isZeroFund && isZeroAmount)
     })
-    .map(o => ({
-      orderId: BigInt(o.order_id),
-      user: o.user,
-      itpId: o.itp_id,
-      side: o.side,
-      amount: BigInt(o.amount),
-      blockNumber: BigInt(o.block_number),
-      blockTimestamp: o.block_timestamp,
-      status: o.status,
-      fillTimeSeconds: o.fill_time_seconds ?? undefined,
-      fillCycle: o.fill_cycle != null ? BigInt(o.fill_cycle) : undefined,
-    }))
+    .map(o => {
+      // Cap fill times: data-node may report bogus values when order_timestamp
+      // comes from state reconstruction instead of actual block timestamp.
+      // Anything over 1 hour is almost certainly wrong — discard it.
+      const rawFillTime = o.fill_time_seconds ?? undefined
+      const fillTimeSeconds = rawFillTime != null && rawFillTime <= 3600 ? rawFillTime : undefined
+      return {
+        orderId: BigInt(o.order_id),
+        user: o.user,
+        itpId: o.itp_id,
+        side: o.side,
+        amount: BigInt(o.amount),
+        blockNumber: BigInt(o.block_number),
+        blockTimestamp: o.block_timestamp,
+        status: o.status,
+        fillTimeSeconds,
+        fillCycle: o.fill_cycle != null ? BigInt(o.fill_cycle) : undefined,
+      }
+    })
 
   const fillTimeBuckets: FillTimeBucket[] = recentOrders
     .filter(o => o.status === 'filled' && o.fillTimeSeconds != null)

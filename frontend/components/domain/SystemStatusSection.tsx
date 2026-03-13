@@ -477,7 +477,10 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     #{order.orderId.toString()}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light font-bold text-black">
-                    {itpNameMap.get(order.itpId.toLowerCase()) || truncateItpId(order.itpId)}
+                    {itpNameMap.get(order.itpId.toLowerCase())
+                      // Fallback: try normalizing hex to numeric for lookup
+                      || (() => { try { return itpNameMap.get(BigInt(order.itpId).toString()) } catch { return null } })()
+                      || truncateItpId(order.itpId)}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
                     {order.side === 0 ? t('recent_activity.side_buy') : t('recent_activity.side_sell')}

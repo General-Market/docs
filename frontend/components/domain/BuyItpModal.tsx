@@ -211,17 +211,36 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   } = useChainWriteContract()
   const { isSuccess: isMintSuccess } = useWaitForTransactionReceipt({ hash: mintHashTx })
 
-  // Mint L3_WUSDC (18 decimals) for testing
-  const handleMintTestUsdc = useCallback(() => {
+  // Mint L3_WUSDC (18 decimals) + drip settlement gas for testing
+  const [faucetLoading, setFaucetLoading] = useState(false)
+  const handleMintTestUsdc = useCallback(async () => {
     if (!address) return
-    resetMint()
-    writeMint({
-      address: INDEX_PROTOCOL.l3Usdc,
-      abi: MINT_ABI,
-      functionName: 'mint',
-      args: [address, parseUnits('10000', COLLATERAL_DECIMALS)],
-    })
-  }, [address, writeMint, resetMint])
+    setFaucetLoading(true)
+    try {
+      // Use the faucet API which also drips settlement gas
+      const res = await fetch('/api/faucet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, amount: '10000', gas: true }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        // Trigger refetch of USDC balance
+        refetchL3Usdc()
+      }
+    } catch {
+      // Fallback to direct contract call
+      resetMint()
+      writeMint({
+        address: INDEX_PROTOCOL.l3Usdc,
+        abi: MINT_ABI,
+        functionName: 'mint',
+        args: [address, parseUnits('10000', COLLATERAL_DECIMALS)],
+      })
+    } finally {
+      setFaucetLoading(false)
+    }
+  }, [address, writeMint, resetMint, refetchL3Usdc])
 
   // Amount in 18 decimals (L3_WUSDC)
   const parsedAmount = amount ? parseUnits(amount, COLLATERAL_DECIMALS) : 0n
@@ -741,10 +760,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   <div className="flex items-center gap-3 pt-2 border-t border-border-light">
                     <button
                       onClick={handleMintTestUsdc}
-                      disabled={isMintPending}
+                      disabled={isMintPending || faucetLoading}
                       className="px-3 py-1.5 text-xs bg-muted text-text-secondary border border-border-medium rounded hover:border-zinc-500 disabled:opacity-50 transition-colors"
                     >
-                      {isMintPending ? t('minting') : t('mint_test_usdc')}
+                      {isMintPending || faucetLoading ? t('minting') : t('mint_test_usdc')}
                     </button>
                     {isMintSuccess && <span className="text-xs text-color-up">{t('minted')}</span>}
                     {mintError && <span className="text-xs text-color-down">{t('mint_failed')}</span>}

@@ -23,6 +23,9 @@ import { useTranslations } from 'next-intl'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
+import { L3_EXPLORER_URL, SETTLEMENT_EXPLORER_URL } from '@/lib/config'
+
+const PAGE_SIZE = 10
 
 type Tab = 'value' | 'positions' | 'trades' | 'orders'
 
@@ -124,6 +127,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     if (sseBalances && sseBalances.itp_shares && typeof sseBalances.itp_shares === 'object') {
       for (const [itpId, sharesWei] of Object.entries(sseBalances.itp_shares)) {
         const key = itpId.toLowerCase()
+        // Skip zero-address ITP entries (phantom entries from contract)
+        if (/^0x0+$/.test(key) || key === '0') continue
         const shares = parseFloat(sharesWei) / 1e18
         if (shares <= 0) continue
 
@@ -158,6 +163,28 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           })
         }
       }
+    }
+
+    // Deduplicate: merge positions that map to the same canonical ITP ID
+    // e.g., "0x000...0002" and "2" are the same ITP — keep the one with higher value
+    const canonMap = new Map<string, string>() // hex key → canonical numeric key
+    for (const [key] of posMap) {
+      try {
+        const num = BigInt(key).toString()
+        if (!canonMap.has(num)) canonMap.set(num, key)
+        else {
+          // Merge: keep the entry with higher current_value
+          const existingKey = canonMap.get(num)!
+          const existing = posMap.get(existingKey)!
+          const current = posMap.get(key)!
+          if (parseFloat(current.current_value) > parseFloat(existing.current_value)) {
+            posMap.delete(existingKey)
+            canonMap.set(num, key)
+          } else {
+            posMap.delete(key)
+          }
+        }
+      } catch { /* not a valid bigint, keep as-is */ }
     }
 
     const positions = Array.from(posMap.values())
@@ -241,11 +268,19 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   }, [refetch])
 
   // Build ITP name lookup: itpId → display name
+  // Supports both plain number IDs ("2") and bytes32 hex ("0x000...0002")
   const itpNameMap = new Map<string, string>()
   if (deployedItps) {
     for (const itp of deployedItps) {
       const key = itp.itpId.toLowerCase()
-      itpNameMap.set(key, itp.symbol ? `$${itp.symbol}` : itp.name)
+      const name = itp.symbol ? `$${itp.symbol}` : itp.name
+      itpNameMap.set(key, name)
+      // Also add bytes32 hex form: pad the numeric ID to 64 hex chars
+      try {
+        const numericId = BigInt(itp.itpId)
+        const hex32 = '0x' + numericId.toString(16).padStart(64, '0')
+        itpNameMap.set(hex32, name)
+      } catch {}
     }
   }
 
@@ -421,6 +456,38 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             </div>
           </div>
 
+          {/* Explorer links */}
+          {address && (L3_EXPLORER_URL || SETTLEMENT_EXPLORER_URL) && (
+            <div className="flex gap-4 mt-3 mb-2 text-[11px] text-text-muted">
+              {L3_EXPLORER_URL && (
+                <a
+                  href={`${L3_EXPLORER_URL}/address/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-text-primary transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  L3 Explorer
+                </a>
+              )}
+              {SETTLEMENT_EXPLORER_URL && (
+                <a
+                  href={`${SETTLEMENT_EXPLORER_URL}/address/${address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-text-primary transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Sonic Explorer
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Tab content */}
           {activeTab === 'positions' && (
             <>
@@ -514,6 +581,10 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
 // --- Positions Tab ---
 function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof usePortfolio>['summary']; itpNameMap: Map<string, string> }) {
   const t = useTranslations('portfolio')
+  const [page, setPage] = useState(1)
+  const totalPositions = summary?.positions.length || 0
+  const totalPages = Math.max(1, Math.ceil(totalPositions / PAGE_SIZE))
+  const clampedPage = Math.min(page, totalPages)
   if (!summary || summary.positions.length === 0) {
     return (
       <div className="bg-card rounded-xl border border-border-light p-10 text-center">
@@ -557,12 +628,14 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
             </tr>
           </thead>
           <tbody>
-            {summary.positions.map(pos => {
+            {summary.positions.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(pos => {
               const pnl = parseFloat(pos.pnl)
               return (
                 <tr key={pos.itp_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
                   <td className="px-4 py-3 text-text-primary text-sm font-semibold">
-                    {itpNameMap.get(pos.itp_id.toLowerCase()) || pos.itp_id.slice(0, 10) + '...'}
+                    {itpNameMap.get(pos.itp_id.toLowerCase())
+                      || (() => { try { return itpNameMap.get(BigInt(pos.itp_id).toString()) } catch { return null } })()
+                      || pos.itp_id.slice(0, 10) + '...'}
                   </td>
                   <td className="px-4 py-3 text-right text-text-primary font-mono text-sm tabular-nums">
                     {pos.shares_bought}
@@ -588,6 +661,12 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={clampedPage}
+        totalPages={totalPages}
+        onPrev={() => setPage(p => Math.max(1, p - 1))}
+        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+      />
     </div>
   )
 }
@@ -595,6 +674,9 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
 // --- Trades Tab ---
 function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfolio>['trades']; itpNameMap: Map<string, string> }) {
   const t = useTranslations('portfolio')
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(trades.length / PAGE_SIZE))
+  const clampedPage = Math.min(page, totalPages)
   if (trades.length === 0) {
     return (
       <div className="bg-card rounded-xl border border-border-light p-10 text-center">
@@ -629,13 +711,15 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
             </tr>
           </thead>
           <tbody>
-            {trades.map(trade => (
+            {trades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(trade => (
               <tr key={trade.order_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
                 <td className="px-4 py-3 text-text-secondary text-xs">
                   {getTimeAgo(new Date(trade.timestamp))}
                 </td>
                 <td className="px-4 py-3 text-text-primary text-sm font-semibold">
-                  {itpNameMap.get(trade.itp_id.toLowerCase()) || trade.itp_id.slice(0, 10) + '...'}
+                  {itpNameMap.get(trade.itp_id.toLowerCase())
+                    || (() => { try { return itpNameMap.get(BigInt(trade.itp_id).toString()) } catch { return null } })()
+                    || trade.itp_id.slice(0, 10) + '...'}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${trade.side === 'BUY' ? 'text-color-up' : 'text-color-down'}`}>
@@ -665,6 +749,12 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={clampedPage}
+        totalPages={totalPages}
+        onPrev={() => setPage(p => Math.max(1, p - 1))}
+        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+      />
     </div>
   )
 }
@@ -674,6 +764,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
   const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [page, setPage] = useState(1)
   const { writeContractAsync } = useChainWriteContract()
 
   const handleCancel = useCallback(async (orderId: number) => {
@@ -694,6 +785,8 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
 
   // Only show open orders: Pending (0), Batched (1), Relaying (-1)
   const openOrders = orders.filter(o => o.status < 2)
+  const totalPages = Math.max(1, Math.ceil(openOrders.length / PAGE_SIZE))
+  const clampedPage = Math.min(page, totalPages)
 
   if (error) {
     return (
@@ -745,7 +838,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
             </tr>
           </thead>
           <tbody>
-            {openOrders.map((order, i) => (
+            {openOrders.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((order, i) => (
               <tr key={`${order.orderId}-${order.timestamp}-${i}`} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
                 <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : '—'}</td>
                 <td className="px-4 py-3">
@@ -783,6 +876,37 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={clampedPage}
+        totalPages={totalPages}
+        onPrev={() => setPage(p => Math.max(1, p - 1))}
+        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+      />
+    </div>
+  )
+}
+
+function Pagination({ page, totalPages, onPrev, onNext }: { page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="flex items-center justify-between px-4 py-2 border-t border-border-light">
+      <button
+        onClick={onPrev}
+        disabled={page === 1}
+        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        Prev
+      </button>
+      <span className="text-xs font-mono tabular-nums text-text-muted">
+        Page {page} of {totalPages}
+      </span>
+      <button
+        onClick={onNext}
+        disabled={page === totalPages}
+        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+      >
+        Next
+      </button>
     </div>
   )
 }
