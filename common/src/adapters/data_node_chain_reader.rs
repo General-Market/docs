@@ -180,7 +180,7 @@ impl ChainReader for DataNodeChainReader {
                 let len = ep_bytes.len().min(32);
                 ip_bytes[..len].copy_from_slice(&ep_bytes[..len]);
                 Issuer {
-                    id: (i + 1) as u64,
+                    id: i as u64,  // on-chain IDs are 0-based
                     addr,
                     ip: H256::from(ip_bytes),
                     bls_pubkey: Bytes::from(pubkey_bytes),

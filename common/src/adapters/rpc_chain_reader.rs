@@ -217,7 +217,8 @@ impl ChainReader for RpcChainReader {
             .map_err(|e| Error::ChainRead(format!("activeIssuerCount call failed: {}", e)))?;
 
         let mut issuers = Vec::new();
-        for i in 1..=count.as_u64() {
+        // On-chain issuer IDs are 0-based (0, 1, …, count-1)
+        for i in 0..count.as_u64() {
             match self
                 .issuer_registry
                 .get_issuer(U256::from(i))
