@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { AA_DATA_NODE_URL } from '@/lib/config'
+import { normalizeUniversityName } from '@/lib/university-logos'
 import type {
   CoinMapEntry,
   EnrichedHolding,
@@ -80,8 +81,17 @@ function buildFounderAggregates(
 
   const uniMap: Record<string, number> = {}
   for (const f of matchedFounders) {
-    if (f.university && f.university !== 'Unknown') {
-      uniMap[f.university] = (uniMap[f.university] || 0) + 1
+    if (!f.university || f.university === 'Unknown') continue
+    // Split compound entries like "Peking University, University of Pennsylvania"
+    const parts = f.university.split(',').map(s => s.trim()).filter(Boolean)
+    for (const raw of parts) {
+      // Filter out bare "University" with no specific name
+      if (/^University$/i.test(raw)) continue
+      // Filter out entries starting with "unknown"
+      if (/^unknown/i.test(raw)) continue
+      // Normalize to canonical name for dedup (e.g. "Berkeley" → "UC Berkeley")
+      const normalized = normalizeUniversityName(raw)
+      uniMap[normalized] = (uniMap[normalized] || 0) + 1
     }
   }
 
