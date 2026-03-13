@@ -16,11 +16,12 @@
 //! Rate limit: 20 req/600s (conservative)
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{info, warn};
 
@@ -36,6 +37,10 @@ const ASSET_JSON: &str = include_str!("../../../config/nyc311.json");
 /// NYC 311 SODA endpoint
 const API_BASE: &str = "https://data.cityofnewyork.us/resource/erm2-nwe9.json";
 
+/// Assets not priced in this many hours are excluded from fetch_assets(),
+/// causing the sync engine to deactivate them (complaint types no longer tracked).
+const DEACTIVATION_HOURS: i64 = 48;
+
 /// Response row from the grouped complaint count query
 #[derive(Debug, Deserialize)]
 struct ComplaintCountRow {
@@ -49,6 +54,9 @@ struct ComplaintCountRow {
 /// Source ID is `"nyc311"`.
 pub struct Nyc311MarketSource {
     http: SourceHttpClient,
+    /// Tracks when each asset_id last received a successful price.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Mutex<HashMap<String, DateTime<Utc>>>,
 }
 
 impl Nyc311MarketSource {
@@ -61,7 +69,10 @@ impl Nyc311MarketSource {
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
         info!("NYC 311 Complaints source initialized (Socrata SODA API)");
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            last_priced: Mutex::new(HashMap::new()),
+        })
     }
 
     /// Build the SODA query URL for grouped complaint counts in the last 48h.
@@ -112,9 +123,33 @@ impl MarketDataSource for Nyc311MarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
+        let mut assets = load_assets_from_json(ASSET_JSON)?;
+
+        // Deactivation sweep: exclude assets not priced in 48h.
+        // On first run (empty cache), all config assets pass through.
+        let now = Utc::now();
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+        if !cache.is_empty() {
+            let before = assets.len();
+            assets.retain(|a| {
+                match cache.get(&a.asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // Not yet in cache — allow through (grace period for new assets)
+                    None => true,
+                }
+            });
+            let deactivated = before - assets.len();
+            if deactivated > 0 {
+                info!(
+                    "NYC 311: excluded {} stale assets (no price in {}h)",
+                    deactivated, DEACTIVATION_HOURS
+                );
+            }
+        }
+
         info!(
-            "NYC 311 fetch_assets: {} complaint types loaded from config",
+            "NYC 311 fetch_assets: {} complaint types active",
             assets.len()
         );
         Ok(assets)
@@ -182,6 +217,15 @@ impl MarketDataSource for Nyc311MarketSource {
                     market_cap: None,
                     fetched_at: now,
                 });
+            }
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let now = Utc::now();
+            let mut cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+            for price in &results {
+                cache.insert(price.asset_id.clone(), now);
             }
         }
 

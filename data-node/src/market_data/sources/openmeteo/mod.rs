@@ -9,6 +9,11 @@
 //! ## Data Strategy
 //! - **Current data**: Stored to database (for settlement)
 //! - **Hourly forecast (7 days)**: Kept in memory, refreshed each sync
+//!
+//! ## Stability
+//! - Cities that haven't produced data in 3+ days are auto-deactivated
+//! - Batch order is shuffled each fetch to distribute budget-cap impact fairly
+//! - New cities get a 24h grace period before deactivation can occur
 
 pub mod api_client;
 pub mod client;

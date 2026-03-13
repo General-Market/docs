@@ -9,9 +9,11 @@
 //! Feeds per artist: 2 (listeners, playcount)
 
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{info, warn};
 
@@ -36,6 +38,10 @@ const CHART_PAGES: u32 = 10;
 
 /// Artists per page from chart.getTopArtists
 const ARTISTS_PER_PAGE: u32 = 50;
+
+/// Assets not priced in this many hours are excluded from fetch_assets(),
+/// causing the sync engine to deactivate them (artists that dropped off charts).
+const DEACTIVATION_HOURS: i64 = 48;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -97,6 +103,9 @@ struct ArtistStats {
 pub struct LastfmMarketSource {
     http: SourceHttpClient,
     api_key: String,
+    /// Tracks when each asset_id last received a successful price.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Mutex<HashMap<String, DateTime<Utc>>>,
 }
 
 impl LastfmMarketSource {
@@ -114,7 +123,11 @@ impl LastfmMarketSource {
 
         info!("Last.fm source initialized (dynamic assets from chart.getTopArtists)");
 
-        Ok(Self { http, api_key })
+        Ok(Self {
+            http,
+            api_key,
+            last_priced: Mutex::new(HashMap::new()),
+        })
     }
 
     /// Build a Last.fm API URL
@@ -286,7 +299,30 @@ impl MarketDataSource for LastfmMarketSource {
             Err(e) => warn!("Failed to discover Last.fm artists: {:?}", e),
         }
 
-        info!("Discovered {} Last.fm assets ({} artists × 2 feeds)", assets.len(), assets.len() / 2);
+        // Deactivation sweep: exclude assets not priced in 48h.
+        // On first run (empty cache), all discovered assets pass through.
+        let now = Utc::now();
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+        if !cache.is_empty() {
+            let before = assets.len();
+            assets.retain(|a| {
+                match cache.get(&a.asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // New artist not yet in cache — allow through (grace period)
+                    None => true,
+                }
+            });
+            let deactivated = before - assets.len();
+            if deactivated > 0 {
+                info!(
+                    "Last.fm: excluded {} stale assets (no price in {}h)",
+                    deactivated, DEACTIVATION_HOURS
+                );
+            }
+        }
+
+        info!("Discovered {} Last.fm assets ({} artists)", assets.len(), assets.len() / 2);
         Ok(assets)
     }
 
@@ -326,6 +362,14 @@ impl MarketDataSource for LastfmMarketSource {
                 }
             }
             Err(e) => warn!("Failed to fetch Last.fm prices: {:?}", e),
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+            for price in &results {
+                cache.insert(price.asset_id.clone(), now);
+            }
         }
 
         info!("Fetched {} prices from Last.fm", results.len());

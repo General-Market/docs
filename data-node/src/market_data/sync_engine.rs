@@ -206,12 +206,21 @@ impl SyncEngine {
                         if let Err(e) = self.prune_old_prices().await {
                             warn!("[{}] Price pruning failed: {:?}", name, e);
                         }
+                        // Deactivate stale assets that haven't received a price in 7 days
+                        if let Err(e) = self.deactivate_stale_assets().await {
+                            warn!("[{}] Stale asset deactivation failed: {:?}", name, e);
+                        }
                     }
                 }
                 _ = metadata_interval.tick() => {
                     info!("[{}] Refreshing asset metadata...", name);
                     match self.sync_assets().await {
-                        Ok(n) => info!("[{}] Asset metadata refresh: {} assets", name, n),
+                        Ok(n) => {
+                            info!("[{}] Asset metadata refresh: {} assets", name, n);
+                            // Run stale-asset sweep after metadata refresh: sync_assets()
+                            // reactivates all config entries, this re-deactivates stale ones.
+                            let _ = self.deactivate_stale_assets().await;
+                        }
                         Err(e) => warn!("[{}] Asset metadata refresh failed: {:?}", name, e),
                     }
                 }
@@ -473,6 +482,83 @@ impl SyncEngine {
         );
 
         Ok((updated, 0, fetched, active_assets))
+    }
+
+    /// Deactivate assets that haven't received a price in 7+ days.
+    ///
+    /// Covers two cases:
+    /// 1. Never-priced assets: no entry in market_prices_latest at all
+    ///    (dead/delisted tokens still in config JSON).
+    /// 2. Stale assets: had prices before but the upstream API stopped returning them
+    ///    (last price is older than 7 days).
+    ///
+    /// Safety: only runs if the source has at least one priced asset in
+    /// market_prices_latest (prevents mass deactivation on fresh DB).
+    ///
+    /// Assets are reactivated by sync_assets() on the next hourly metadata refresh
+    /// if they start receiving prices again — sync_assets sets is_active=true for all
+    /// config entries, and this sweep re-deactivates the stale ones right after.
+    async fn deactivate_stale_assets(&self) -> Result<u64> {
+        let source_id = self.source.source_id();
+        let cutoff = Utc::now() - ChronoDuration::days(7);
+
+        // Safety check: only deactivate if this source has at least one priced asset.
+        // On a fresh DB no assets have prices yet — skip to avoid mass deactivation.
+        let has_prices: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM market_prices_latest WHERE source = $1",
+        )
+        .bind(source_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if has_prices.0 == 0 {
+            debug!(
+                "[{}] No prices in market_prices_latest yet, skipping stale asset sweep",
+                self.source.display_name()
+            );
+            return Ok(0);
+        }
+
+        // Deactivate active assets that either:
+        // - Have no entry in market_prices_latest (never priced = dead/delisted)
+        // - Have an entry in market_prices_latest with fetched_at older than 7 days
+        let result = sqlx::query(
+            r#"
+            UPDATE market_assets a
+            SET is_active = false, updated_at = NOW()
+            WHERE a.source = $1
+              AND a.is_active = true
+              AND (
+                -- Never priced: no row in latest at all
+                NOT EXISTS (
+                    SELECT 1 FROM market_prices_latest l
+                    WHERE l.source = a.source AND l.asset_id = a.asset_id
+                )
+                OR
+                -- Had prices but stale: last price older than 7 days
+                EXISTS (
+                    SELECT 1 FROM market_prices_latest l
+                    WHERE l.source = a.source AND l.asset_id = a.asset_id
+                      AND l.fetched_at < $2
+                )
+              )
+            "#,
+        )
+        .bind(source_id)
+        .bind(cutoff)
+        .execute(&self.pool)
+        .await?;
+
+        let deactivated = result.rows_affected();
+        if deactivated > 0 {
+            info!(
+                "[{}] Deactivated {} stale assets (no price in 7+ days)",
+                self.source.display_name(),
+                deactivated
+            );
+        }
+
+        Ok(deactivated)
     }
 
     /// Prune price records older than retention_days

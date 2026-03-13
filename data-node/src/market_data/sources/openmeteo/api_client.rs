@@ -19,6 +19,7 @@
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+use rand::seq::SliceRandom;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -296,7 +297,11 @@ impl OpenMeteoClient {
         Ok(self.map_air_quality_responses(cities, data))
     }
 
-    /// Fetch all weather data for cities (forecast + air quality)
+    /// Fetch all weather data for cities (forecast + air quality).
+    ///
+    /// Shuffles city order before batching so that when the daily budget cap
+    /// cuts a fetch short, different cities are affected each time instead of
+    /// always starving the same tail cities.
     pub async fn fetch_all_weather(&self, cities: &[WeatherCity]) -> Result<Vec<CityWeatherData>> {
         if cities.is_empty() {
             return Ok(vec![]);
@@ -312,19 +317,30 @@ impl OpenMeteoClient {
             return Ok(vec![]);
         }
 
+        // Shuffle city order so budget caps don't always skip the same cities.
+        // This ensures fair coverage over multiple fetch cycles.
+        let mut shuffled_cities: Vec<&WeatherCity> = cities.iter().collect();
+        {
+            let mut rng = rand::thread_rng();
+            shuffled_cities.shuffle(&mut rng);
+        }
+
         let mut all_data: HashMap<String, CityWeatherData> = HashMap::new();
-        let total_batches = (cities.len() + BATCH_SIZE - 1) / BATCH_SIZE;
+        let total_batches = (shuffled_cities.len() + BATCH_SIZE - 1) / BATCH_SIZE;
         let expected_calls = total_batches * 2; // forecast + air quality
 
         info!(
-            "Fetching weather for {} cities in {} batches (~{} API calls, daily usage: {:.1}%)",
-            cities.len(),
+            "Fetching weather for {} cities in {} batches (~{} API calls, daily usage: {:.1}%) [shuffled]",
+            shuffled_cities.len(),
             total_batches,
             expected_calls,
             usage_before
         );
 
-        for (batch_idx, chunk) in cities.chunks(BATCH_SIZE).enumerate() {
+        // Build owned batches from shuffled references
+        let shuffled_owned: Vec<WeatherCity> = shuffled_cities.into_iter().cloned().collect();
+
+        for (batch_idx, chunk) in shuffled_owned.chunks(BATCH_SIZE).enumerate() {
             // Check budget mid-sync to avoid blowing past limit
             if self.daily_usage_pct() > TARGET_USAGE_PCT * 100.0 {
                 warn!(

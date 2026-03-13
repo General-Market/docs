@@ -55,9 +55,22 @@ const MIN_VIEWER_COUNT: u64 = 100;
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
 
-/// How long to retain a streamer after they were last seen live.
-/// After 30 days without appearing in the top streams, they are pruned.
+/// How long to retain a streamer in the in-memory peak cache.
+/// After 30 days without appearing in the top streams, they are pruned from memory.
+/// This is intentionally longer than DEACTIVATION_DAYS so we can reactivate
+/// streamers who come back online after a break.
 const RETENTION_DAYS: i64 = 30;
+
+/// How many days offline before a streamer is deactivated (is_active = false).
+/// Streamers offline for more than 3 days are excluded from fetch_assets(),
+/// causing the sync engine to set is_active = false. When they come back
+/// online, they'll appear in fetch_assets() again and get reactivated.
+const DEACTIVATION_DAYS: i64 = 3;
+
+/// Grace period for newly discovered streamers. If a streamer was discovered
+/// but never seen live again within this many hours, it won't be returned
+/// by fetch_assets() — preventing "never got prices" assets.
+const GRACE_PERIOD_HOURS: i64 = 24;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -123,8 +136,15 @@ struct CachedStreamer {
     user_id: String,
     /// Highest viewer count ever observed for this streamer.
     max_viewers: u64,
+    /// First time this streamer was added to the cache (discovery time).
+    first_seen: DateTime<Utc>,
     /// Last time this streamer appeared in the top streams (live).
     last_seen: DateTime<Utc>,
+    /// How many times this streamer has been seen live in a fetch cycle.
+    /// Starts at 1 on discovery. Incremented on each subsequent sighting.
+    /// A streamer with live_count == 1 has only been seen once (at discovery)
+    /// and may have gone offline before the first price fetch.
+    live_count: u32,
 }
 
 // ============================================================================
@@ -371,6 +391,7 @@ impl TwitchMarketSource {
                         entry.max_viewers = stream.viewer_count;
                     }
                     entry.last_seen = now;
+                    entry.live_count += 1;
                     entry.user_name = stream.user_name.clone();
                 }
                 None => {
@@ -381,14 +402,16 @@ impl TwitchMarketSource {
                             user_name: stream.user_name.clone(),
                             user_id: stream.user_id.clone(),
                             max_viewers: stream.viewer_count,
+                            first_seen: now,
                             last_seen: now,
+                            live_count: 1,
                         },
                     );
                 }
             }
         }
 
-        // Prune entries not seen in > 30 days
+        // Prune entries not seen in > 30 days (memory cleanup)
         let cutoff = now - chrono::Duration::days(RETENTION_DAYS);
         let before = cache.len();
         cache.retain(|_, v| v.last_seen > cutoff);
@@ -402,6 +425,36 @@ impl TwitchMarketSource {
             cache.len(),
             cache.values().map(|v| v.max_viewers).max().unwrap_or(0)
         );
+    }
+
+    /// Check if a cached streamer should be considered "active" for asset registration.
+    ///
+    /// A streamer is active if:
+    /// 1. They were seen live within the last DEACTIVATION_DAYS, OR
+    /// 2. They are newly discovered (within GRACE_PERIOD_HOURS) and haven't had
+    ///    time to be confirmed yet.
+    ///
+    /// A streamer is NOT active if:
+    /// - They've been in cache for > GRACE_PERIOD_HOURS but were only seen once
+    ///   (never confirmed live in a subsequent fetch cycle) — these are the
+    ///   "never got prices" assets.
+    /// - Their last_seen is older than DEACTIVATION_DAYS.
+    fn is_streamer_active(cached: &CachedStreamer, now: DateTime<Utc>) -> bool {
+        let age = now - cached.first_seen;
+        let since_last_seen = now - cached.last_seen;
+
+        // If seen within the deactivation window, active
+        if since_last_seen < chrono::Duration::days(DEACTIVATION_DAYS) {
+            // But if they're past the grace period and were only seen once
+            // (at discovery), they likely went offline before first price fetch
+            if age > chrono::Duration::hours(GRACE_PERIOD_HOURS) && cached.live_count <= 1 {
+                return false;
+            }
+            return true;
+        }
+
+        // Last seen more than DEACTIVATION_DAYS ago — inactive
+        false
     }
 }
 
@@ -445,6 +498,7 @@ impl MarketDataSource for TwitchMarketSource {
         info!("Twitch config is empty, performing live asset discovery");
 
         let mut assets = Vec::new();
+        let now = Utc::now();
 
         // Discover top streams and update peak cache
         match self.fetch_top_streams(TOP_STREAMS_COUNT).await {
@@ -452,9 +506,19 @@ impl MarketDataSource for TwitchMarketSource {
                 // Update peak cache with live data
                 self.update_peak_cache(&streams).await;
 
-                // Return ALL cached streamers (live + offline) as assets
+                // Return only ACTIVE cached streamers as assets.
+                // This causes the sync engine to deactivate streamers that:
+                // - Haven't been seen live in > DEACTIVATION_DAYS
+                // - Were discovered but never confirmed live (grace period expired)
                 let cache = self.seen_streamers.lock().await;
+                let mut active_count = 0usize;
+                let mut inactive_count = 0usize;
                 for (login, cached) in cache.iter() {
+                    if !Self::is_streamer_active(cached, now) {
+                        inactive_count += 1;
+                        continue;
+                    }
+                    active_count += 1;
                     assets.push(AssetUpdate {
                         asset_id: format!("twitch_stream_{}", login),
                         symbol: login.clone(),
@@ -468,12 +532,11 @@ impl MarketDataSource for TwitchMarketSource {
                         }),
                     });
                 }
-                let streamer_count = cache.len();
                 drop(cache);
 
                 info!(
-                    "Registered {} streamers (all with peak >= {} viewers, retained up to {} days)",
-                    streamer_count, MIN_VIEWER_COUNT, RETENTION_DAYS
+                    "Registered {} active streamers ({} inactive/deactivated, peak >= {} viewers)",
+                    active_count, inactive_count, MIN_VIEWER_COUNT
                 );
 
                 // Aggregate game viewer counts from stream data
@@ -535,7 +598,7 @@ impl MarketDataSource for TwitchMarketSource {
         // =====================================================================
         // Fetch top streams once — used for both streamer and game lookups
         // =====================================================================
-        let streams = if !streamer_logins.is_empty() || !game_ids.is_empty() {
+        let mut streams = if !streamer_logins.is_empty() || !game_ids.is_empty() {
             match self.fetch_top_streams(TOP_STREAMS_COUNT).await {
                 Ok(s) => s,
                 Err(e) => {
@@ -546,6 +609,56 @@ impl MarketDataSource for TwitchMarketSource {
         } else {
             Vec::new()
         };
+
+        // =====================================================================
+        // TARGETED LOOKUP: Check registered streamers not found in top streams.
+        // The top-streams endpoint only returns the top N by viewers. Active
+        // streamers with fewer viewers would be missed, leading to "never got
+        // prices" assets. Query them directly via user_login filter.
+        // =====================================================================
+        if !streamer_logins.is_empty() && !streams.is_empty() {
+            let found_logins: std::collections::HashSet<String> =
+                streams.iter().map(|s| s.user_login.clone()).collect();
+
+            let missing_logins: Vec<&str> = streamer_logins
+                .iter()
+                .filter(|l| !found_logins.contains(l.as_str()))
+                .map(|l| l.as_str())
+                .collect();
+
+            if !missing_logins.is_empty() {
+                info!(
+                    "Querying {} registered streamers not in top {} streams",
+                    missing_logins.len(),
+                    TOP_STREAMS_COUNT
+                );
+
+                // Twitch Helix /streams?user_login=... supports up to 100 per request
+                for chunk in missing_logins.chunks(BATCH_SIZE) {
+                    let query_params: String = chunk
+                        .iter()
+                        .map(|l| format!("user_login={}", l))
+                        .collect::<Vec<_>>()
+                        .join("&");
+                    let url = format!("{}/streams?first={}&{}", HELIX_URL, chunk.len(), query_params);
+
+                    match self.helix_get::<TwitchStream>(&url).await {
+                        Ok(resp) => {
+                            if !resp.data.is_empty() {
+                                debug!(
+                                    "Found {} live streamers from targeted lookup batch",
+                                    resp.data.len()
+                                );
+                                streams.extend(resp.data);
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to fetch targeted streamer batch: {:?}", e);
+                        }
+                    }
+                }
+            }
+        }
 
         // =====================================================================
         // STREAMERS: Peak cache decides WHO we track. Price value is CURRENT
@@ -815,5 +928,77 @@ mod tests {
     #[test]
     fn test_retention_days() {
         assert_eq!(RETENTION_DAYS, 30);
+    }
+
+    #[test]
+    fn test_deactivation_days() {
+        assert_eq!(DEACTIVATION_DAYS, 3);
+        // Deactivation must be shorter than retention (deactivate before pruning)
+        assert!(DEACTIVATION_DAYS < RETENTION_DAYS);
+    }
+
+    #[test]
+    fn test_grace_period_hours() {
+        assert_eq!(GRACE_PERIOD_HOURS, 24);
+    }
+
+    #[test]
+    fn test_is_streamer_active_recently_seen() {
+        let now = Utc::now();
+        let cached = CachedStreamer {
+            user_name: "test".to_string(),
+            user_id: "123".to_string(),
+            max_viewers: 500,
+            first_seen: now - chrono::Duration::days(10),
+            last_seen: now - chrono::Duration::hours(1),
+            live_count: 5,
+        };
+        // Seen 1h ago, live_count > 1 — active
+        assert!(TwitchMarketSource::is_streamer_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_streamer_active_offline_3_days() {
+        let now = Utc::now();
+        let cached = CachedStreamer {
+            user_name: "test".to_string(),
+            user_id: "123".to_string(),
+            max_viewers: 500,
+            first_seen: now - chrono::Duration::days(10),
+            last_seen: now - chrono::Duration::days(4),
+            live_count: 50,
+        };
+        // Last seen 4 days ago — inactive
+        assert!(!TwitchMarketSource::is_streamer_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_streamer_active_never_confirmed() {
+        let now = Utc::now();
+        let cached = CachedStreamer {
+            user_name: "test".to_string(),
+            user_id: "123".to_string(),
+            max_viewers: 200,
+            first_seen: now - chrono::Duration::hours(30),
+            last_seen: now - chrono::Duration::hours(30),
+            live_count: 1,
+        };
+        // Discovered 30h ago, only seen once (at discovery), past grace period — inactive
+        assert!(!TwitchMarketSource::is_streamer_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_streamer_active_new_within_grace() {
+        let now = Utc::now();
+        let cached = CachedStreamer {
+            user_name: "test".to_string(),
+            user_id: "123".to_string(),
+            max_viewers: 200,
+            first_seen: now - chrono::Duration::hours(2),
+            last_seen: now - chrono::Duration::hours(2),
+            live_count: 1,
+        };
+        // Discovered 2h ago, only seen once but within grace period — active
+        assert!(TwitchMarketSource::is_streamer_active(&cached, now));
     }
 }

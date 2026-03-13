@@ -33,8 +33,11 @@ const API_BASE: &str = "https://chaturbate.com/api/public/affiliates/onlinerooms
 /// Results per page (max 500)
 const PAGE_SIZE: usize = 500;
 
-/// Max pages to fetch per discovery cycle (500 * 10 = 5000 models)
-const MAX_PAGES: usize = 10;
+/// Max pages to fetch per discovery cycle (500 * 20 = 10000 models).
+/// Increased from 10 to ensure all registered active models are covered.
+/// At 30 req/min rate limit, 20 pages takes ~40s which fits within the
+/// 10-minute sync interval.
+const MAX_PAGES: usize = 20;
 
 /// Minimum viewer count to include a model
 const MIN_VIEWER_COUNT: u64 = 50;
@@ -42,8 +45,22 @@ const MIN_VIEWER_COUNT: u64 = 50;
 /// Request timeout
 const REQUEST_TIMEOUT_SECS: u64 = 15;
 
-/// How long to retain a model after they were last seen live.
+/// How long to retain a model in the in-memory peak cache.
+/// After 30 days without appearing online, they are pruned from memory.
+/// Intentionally longer than DEACTIVATION_DAYS so we can reactivate
+/// models who come back online after a break.
 const RETENTION_DAYS: i64 = 30;
+
+/// How many days offline before a model is deactivated (is_active = false).
+/// Models offline for more than 3 days are excluded from fetch_assets(),
+/// causing the sync engine to set is_active = false. When they come back
+/// online, they'll appear in fetch_assets() again and get reactivated.
+const DEACTIVATION_DAYS: i64 = 3;
+
+/// Grace period for newly discovered models. If a model was discovered
+/// but never seen online again within this many hours, it won't be returned
+/// by fetch_assets() — preventing "never got prices" assets.
+const GRACE_PERIOD_HOURS: i64 = 24;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -87,8 +104,13 @@ struct CachedModel {
     username: String,
     /// Highest viewer count ever observed for this model.
     max_viewers: u64,
+    /// First time this model was added to the cache (discovery time).
+    first_seen: DateTime<Utc>,
     /// Last time this model appeared in the online rooms (live).
     last_seen: DateTime<Utc>,
+    /// How many times this model has been seen online in a fetch cycle.
+    /// Starts at 1 on discovery. Incremented on each subsequent sighting.
+    live_count: u32,
 }
 
 // ============================================================================
@@ -195,6 +217,7 @@ impl ChaturbateMarketSource {
                         entry.max_viewers = room.num_users;
                     }
                     entry.last_seen = now;
+                    entry.live_count += 1;
                 }
                 None => {
                     cache.insert(
@@ -202,14 +225,16 @@ impl ChaturbateMarketSource {
                         CachedModel {
                             username: room.username.clone(),
                             max_viewers: room.num_users,
+                            first_seen: now,
                             last_seen: now,
+                            live_count: 1,
                         },
                     );
                 }
             }
         }
 
-        // Prune entries not seen in > 30 days
+        // Prune entries not seen in > 30 days (memory cleanup)
         let cutoff = now - chrono::Duration::days(RETENTION_DAYS);
         let before = cache.len();
         cache.retain(|_, v| v.last_seen > cutoff);
@@ -223,6 +248,35 @@ impl ChaturbateMarketSource {
             cache.len(),
             cache.values().map(|v| v.max_viewers).max().unwrap_or(0)
         );
+    }
+
+    /// Check if a cached model should be considered "active" for asset registration.
+    ///
+    /// A model is active if:
+    /// 1. They were seen online within the last DEACTIVATION_DAYS, OR
+    /// 2. They are newly discovered (within GRACE_PERIOD_HOURS) and haven't had
+    ///    time to be confirmed yet.
+    ///
+    /// A model is NOT active if:
+    /// - They've been in cache for > GRACE_PERIOD_HOURS but were only seen once
+    ///   (never confirmed online in a subsequent fetch cycle).
+    /// - Their last_seen is older than DEACTIVATION_DAYS.
+    fn is_model_active(cached: &CachedModel, now: DateTime<Utc>) -> bool {
+        let age = now - cached.first_seen;
+        let since_last_seen = now - cached.last_seen;
+
+        // If seen within the deactivation window, active
+        if since_last_seen < chrono::Duration::days(DEACTIVATION_DAYS) {
+            // But if they're past the grace period and were only seen once
+            // (at discovery), they likely went offline before first price fetch
+            if age > chrono::Duration::hours(GRACE_PERIOD_HOURS) && cached.live_count <= 1 {
+                return false;
+            }
+            return true;
+        }
+
+        // Last seen more than DEACTIVATION_DAYS ago — inactive
+        false
     }
 }
 
@@ -265,10 +319,18 @@ impl MarketDataSource for ChaturbateMarketSource {
         let rooms = self.fetch_online_rooms().await?;
         self.update_peak_cache(&rooms).await;
 
+        let now = Utc::now();
         let cache = self.seen_models.lock().await;
         let mut assets = Vec::with_capacity(cache.len());
+        let mut active_count = 0usize;
+        let mut inactive_count = 0usize;
 
-        for (username, _cached) in cache.iter() {
+        for (username, cached) in cache.iter() {
+            if !Self::is_model_active(cached, now) {
+                inactive_count += 1;
+                continue;
+            }
+            active_count += 1;
             assets.push(AssetUpdate {
                 asset_id: format!("cb_model_{}", username),
                 symbol: format!("CB:{}", username),
@@ -282,13 +344,11 @@ impl MarketDataSource for ChaturbateMarketSource {
                 }),
             });
         }
-
-        let model_count = cache.len();
         drop(cache);
 
         info!(
-            "Registered {} models (all with peak >= {} viewers, retained up to {} days)",
-            model_count, MIN_VIEWER_COUNT, RETENTION_DAYS
+            "Registered {} active models ({} inactive/deactivated, peak >= {} viewers)",
+            active_count, inactive_count, MIN_VIEWER_COUNT
         );
 
         Ok(assets)
@@ -471,11 +531,79 @@ mod tests {
     }
 
     #[test]
+    fn test_deactivation_days() {
+        assert_eq!(DEACTIVATION_DAYS, 3);
+        // Deactivation must be shorter than retention (deactivate before pruning)
+        assert!(DEACTIVATION_DAYS < RETENTION_DAYS);
+    }
+
+    #[test]
+    fn test_grace_period_hours() {
+        assert_eq!(GRACE_PERIOD_HOURS, 24);
+    }
+
+    #[test]
     fn test_page_count_calculation() {
-        // 10 pages * 500 = 5000 models max
-        assert_eq!(MAX_PAGES * PAGE_SIZE, 5000);
+        // 20 pages * 500 = 10000 models max
+        assert_eq!(MAX_PAGES * PAGE_SIZE, 10000);
         // Total requests well within 30/min budget
         assert!(MAX_PAGES <= 30);
+    }
+
+    #[test]
+    fn test_is_model_active_recently_seen() {
+        let now = Utc::now();
+        let cached = CachedModel {
+            username: "test".to_string(),
+            max_viewers: 500,
+            first_seen: now - chrono::Duration::days(10),
+            last_seen: now - chrono::Duration::hours(1),
+            live_count: 5,
+        };
+        // Seen 1h ago, live_count > 1 — active
+        assert!(ChaturbateMarketSource::is_model_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_model_active_offline_3_days() {
+        let now = Utc::now();
+        let cached = CachedModel {
+            username: "test".to_string(),
+            max_viewers: 500,
+            first_seen: now - chrono::Duration::days(10),
+            last_seen: now - chrono::Duration::days(4),
+            live_count: 50,
+        };
+        // Last seen 4 days ago — inactive
+        assert!(!ChaturbateMarketSource::is_model_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_model_active_never_confirmed() {
+        let now = Utc::now();
+        let cached = CachedModel {
+            username: "test".to_string(),
+            max_viewers: 200,
+            first_seen: now - chrono::Duration::hours(30),
+            last_seen: now - chrono::Duration::hours(30),
+            live_count: 1,
+        };
+        // Discovered 30h ago, only seen once (at discovery), past grace period — inactive
+        assert!(!ChaturbateMarketSource::is_model_active(&cached, now));
+    }
+
+    #[test]
+    fn test_is_model_active_new_within_grace() {
+        let now = Utc::now();
+        let cached = CachedModel {
+            username: "test".to_string(),
+            max_viewers: 200,
+            first_seen: now - chrono::Duration::hours(2),
+            last_seen: now - chrono::Duration::hours(2),
+            live_count: 1,
+        };
+        // Discovered 2h ago, only seen once but within grace period — active
+        assert!(ChaturbateMarketSource::is_model_active(&cached, now));
     }
 
     #[test]

@@ -15,6 +15,7 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -71,6 +72,10 @@ struct NpmDownloadPoint {
 
 pub struct NpmMarketSource {
     http: SourceHttpClient,
+    /// Cache of asset_id -> original package name, populated during fetch_assets().
+    /// This is necessary because scoped package names (e.g. @babel/core) cannot be
+    /// reconstructed from asset_ids (npm_babel_core) — the @ and / are lost.
+    package_name_cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl NpmMarketSource {
@@ -83,7 +88,10 @@ impl NpmMarketSource {
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
         info!("npm source initialized");
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            package_name_cache: Arc::new(Mutex::new(HashMap::new())),
+        })
     }
 
     /// Discover popular packages via multi-term search.
@@ -212,9 +220,19 @@ impl MarketDataSource for NpmMarketSource {
 
         info!("npm config is empty, performing live discovery");
         let packages = self
-            .discover_packages(1_000)
+            .discover_packages(10_000)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to discover npm packages: {:?}", e))?;
+
+        // Populate the package_name_cache so fetch_prices can resolve scoped names
+        {
+            let mut cache = self.package_name_cache.lock().unwrap_or_else(|e| e.into_inner());
+            cache.clear();
+            for (name, _) in &packages {
+                cache.insert(make_asset_id(name), name.clone());
+            }
+            info!("npm package name cache populated with {} entries", cache.len());
+        }
 
         let assets: Vec<AssetUpdate> = packages
             .iter()
@@ -255,26 +273,47 @@ impl MarketDataSource for NpmMarketSource {
 
         let now = Utc::now();
 
-        // Load api_ref lookup
+        // Load api_ref lookup from static config (may be empty)
         let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
         let ref_lookup: HashMap<String, String> = entries
             .into_iter()
             .map(|e| (e.asset_id, e.api_ref))
             .collect();
 
-        // Resolve asset_ids to package names
+        // Load the in-memory package name cache (populated by fetch_assets)
+        let name_cache = self
+            .package_name_cache
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+
+        // Resolve asset_ids to package names using three strategies:
+        // 1. Static JSON config api_ref (if populated)
+        // 2. In-memory cache from fetch_assets() (handles scoped packages correctly)
+        // 3. Fallback: parse from asset_id (only works for unscoped packages)
         let mut package_map: HashMap<String, String> = HashMap::new(); // package_name -> asset_id
+        let mut unresolved = 0usize;
         for asset_id in asset_ids {
             let pkg = if let Some(api_ref) = ref_lookup.get(asset_id) {
+                // Strategy 1: static config
                 parse_package_from_ref(api_ref).map(|s| s.to_string())
+            } else if let Some(cached_name) = name_cache.get(asset_id) {
+                // Strategy 2: in-memory cache from fetch_assets (handles @scope/name)
+                Some(cached_name.clone())
             } else {
+                // Strategy 3: fallback parse from asset_id (only works for unscoped)
                 parse_package_from_asset_id(asset_id).map(|s| s.to_string())
             };
             if let Some(pkg) = pkg {
                 package_map.insert(pkg, asset_id.clone());
             } else {
+                unresolved += 1;
                 debug!("Cannot parse package name from: {}", asset_id);
             }
+        }
+
+        if unresolved > 0 {
+            warn!("npm: {} asset_ids could not be resolved to package names", unresolved);
         }
 
         let mut results = Vec::new();
@@ -283,6 +322,12 @@ impl MarketDataSource for NpmMarketSource {
         // Separate scoped vs unscoped
         let (scoped, unscoped): (Vec<_>, Vec<_>) =
             package_map.keys().partition(|k| is_scoped(k));
+
+        info!(
+            "npm: fetching prices for {} unscoped + {} scoped packages",
+            unscoped.len(),
+            scoped.len()
+        );
 
         // Bulk fetch unscoped packages in batches of 128
         for chunk in unscoped.chunks(BULK_BATCH_SIZE) {
@@ -324,9 +369,11 @@ impl MarketDataSource for NpmMarketSource {
         }
 
         info!(
-            "Fetched {}/{} prices from npm",
+            "Fetched {}/{} prices from npm ({} scoped, {} unscoped)",
             results.len(),
-            asset_ids.len()
+            asset_ids.len(),
+            scoped.len(),
+            unscoped.len(),
         );
         Ok(results)
     }
@@ -334,7 +381,7 @@ impl MarketDataSource for NpmMarketSource {
     async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {
         info!("Discovering npm packages...");
         let packages = self
-            .discover_packages(1_000)
+            .discover_packages(10_000)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to discover npm packages: {:?}", e))?;
 
@@ -398,5 +445,30 @@ mod tests {
         assert_eq!(parse_package_from_ref("pkg:react"), Some("react"));
         assert_eq!(parse_package_from_ref("pkg:@babel/core"), Some("@babel/core"));
         assert_eq!(parse_package_from_ref("invalid"), None);
+    }
+
+    #[test]
+    fn test_package_name_cache_roundtrip() {
+        // Verify that scoped packages survive the make_asset_id -> cache lookup roundtrip
+        let scoped = "@babel/core";
+        let asset_id = make_asset_id(scoped);
+        assert_eq!(asset_id, "npm_babel_core");
+
+        // Without cache, parse_package_from_asset_id gives wrong result
+        assert_eq!(parse_package_from_asset_id(&asset_id), Some("babel_core"));
+
+        // With cache, we get the correct name back
+        let mut cache = HashMap::new();
+        cache.insert(asset_id.clone(), scoped.to_string());
+        assert_eq!(cache.get(&asset_id), Some(&scoped.to_string()));
+    }
+
+    #[test]
+    fn test_unscoped_fallback_still_works() {
+        // Unscoped packages work fine with parse_package_from_asset_id
+        let unscoped = "react";
+        let asset_id = make_asset_id(unscoped);
+        assert_eq!(asset_id, "npm_react");
+        assert_eq!(parse_package_from_asset_id(&asset_id), Some("react"));
     }
 }

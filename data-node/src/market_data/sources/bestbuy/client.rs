@@ -12,10 +12,11 @@
 //! Rate limit: 5 req/sec (300 req/min)
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -40,6 +41,10 @@ const CATEGORIES: &[(&str, &str, &str)] = &[
 
 /// Products per category
 const PRODUCTS_PER_CATEGORY: usize = 10;
+
+/// Assets that haven't received a price in this many hours are excluded
+/// from fetch_assets(), causing the sync engine to deactivate them.
+const DEACTIVATION_HOURS: i64 = 48;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -68,6 +73,9 @@ struct BestBuyProduct {
 pub struct BestBuyMarketSource {
     http: SourceHttpClient,
     api_key: String,
+    /// Tracks when each asset_id last received a successful price update.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Mutex<HashMap<String, DateTime<Utc>>>,
 }
 
 impl BestBuyMarketSource {
@@ -84,7 +92,11 @@ impl BestBuyMarketSource {
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
         info!("Best Buy Products source initialized");
-        Ok(Self { http, api_key })
+        Ok(Self {
+            http,
+            api_key,
+            last_priced: Mutex::new(HashMap::new()),
+        })
     }
 
     /// Build URL for fetching best-selling products in a category
@@ -131,6 +143,8 @@ impl MarketDataSource for BestBuyMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
+        let now = Utc::now();
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
         let mut all_assets = Vec::new();
 
         for (cat_id, cat_label, cat_short) in CATEGORIES {
@@ -175,6 +189,27 @@ impl MarketDataSource for BestBuyMarketSource {
                 Err(e) => {
                     warn!("Best Buy category {} fetch failed: {:?}", cat_label, e);
                 }
+            }
+        }
+
+        // Deactivation sweep: exclude assets not priced in 48h.
+        // On first run (empty cache), all discovered assets pass through.
+        let cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+        if !cache.is_empty() {
+            let before = all_assets.len();
+            all_assets.retain(|a| {
+                match cache.get(&a.asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // New asset not yet in cache — allow it through (grace period)
+                    None => true,
+                }
+            });
+            let deactivated = before - all_assets.len();
+            if deactivated > 0 {
+                info!(
+                    "Best Buy: excluded {} stale assets (no price in {}h)",
+                    deactivated, DEACTIVATION_HOURS
+                );
             }
         }
 
@@ -229,6 +264,14 @@ impl MarketDataSource for BestBuyMarketSource {
                 Err(e) => {
                     warn!("Best Buy {} price fetch failed: {:?}", cat_label, e);
                 }
+            }
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+            for price in &results {
+                cache.insert(price.asset_id.clone(), now);
             }
         }
 

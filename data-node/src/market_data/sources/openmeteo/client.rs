@@ -8,16 +8,27 @@
 //! - meteoTop100: cities ranked 1-100
 //! - meteoTop1000: cities ranked 101-1000
 //! - meteoOther: cities ranked 1001+
+//!
+//! ## Stability features
+//!
+//! - **City-level success tracking**: Records when each city last produced data.
+//!   Cities that haven't returned data in 3+ days are excluded from `fetch_assets()`,
+//!   causing the sync engine to set `is_active = false`. They are re-included (and
+//!   thus reactivated) as soon as fresh data appears.
+//! - **Batch shuffling**: Randomises batch order each fetch so budget caps don't
+//!   always starve the same tail cities.
+//! - **Grace period**: New/unseen cities get 24h before being deactivated, giving
+//!   them time to be fetched at least once.
 
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use super::api_client::OpenMeteoClient;
 use super::models::{CityForecast, HourlyDataPoint, WeatherCity, WeatherMetric};
@@ -31,6 +42,16 @@ const DEFAULT_SYNC_INTERVAL_SECS: u64 = 300;
 /// 45 minutes — targets ~75% of OpenMeteo's 10,000 calls/day free tier
 /// with ~32k cities (323 batches × 2 endpoints = 646 calls/fetch × ~11 fetches/day ≈ 7,100)
 const MIN_FETCH_INTERVAL_SECS: u64 = 2700;
+
+/// Cities that haven't produced data in this many days are excluded from
+/// `fetch_assets()`, causing the sync engine to set `is_active = false`.
+/// When fresh data reappears the city is re-included and reactivated.
+const STALE_CITY_DAYS: i64 = 3;
+
+/// Newly discovered cities get this grace period (hours) before they can be
+/// deactivated. This prevents registering an asset, failing to fetch it in
+/// the same cycle, and immediately deactivating it.
+const GRACE_PERIOD_HOURS: i64 = 24;
 
 /// Embedded cities.json
 const CITIES_JSON: &str = include_str!("cities.json");
@@ -46,6 +67,12 @@ const CITIES_JSON: &str = include_str!("cities.json");
 /// ## Data Storage Strategy
 /// - **Current data**: Stored to database (for settlement)
 /// - **Hourly forecasts**: Kept in memory only (refreshed each sync)
+///
+/// ## Stability
+/// - Tracks per-city last-success time. Cities without data for 3+ days
+///   are excluded from `fetch_assets()` → sync engine deactivates them.
+/// - Batch order is shuffled each fetch so API budget caps don't always
+///   starve the same tail cities.
 pub struct OpenMeteoMarketSource {
     client: OpenMeteoClient,
     sync_interval_secs: u64,
@@ -57,6 +84,13 @@ pub struct OpenMeteoMarketSource {
     last_fetch_time: Arc<RwLock<Option<std::time::Instant>>>,
     /// In-memory cache of hourly forecasts (7 days) - refreshed each sync
     forecast_cache: Arc<RwLock<HashMap<String, CityForecast>>>,
+    /// Per-city last successful data fetch time (city_id -> timestamp).
+    /// Used by `fetch_assets()` to exclude stale cities.
+    city_last_success: Arc<RwLock<HashMap<String, DateTime<Utc>>>>,
+    /// When this source was initialized. Used for the grace period:
+    /// cities that have never been fetched yet are given GRACE_PERIOD_HOURS
+    /// before being considered stale.
+    initialized_at: DateTime<Utc>,
 }
 
 /// Parsed city info from embedded JSON
@@ -78,7 +112,7 @@ impl OpenMeteoMarketSource {
         let cities = parse_cities_json(CITIES_JSON)?;
 
         info!(
-            "OpenMeteoMarketSource initialized with {} cities (smart sync + forecast cache)",
+            "OpenMeteoMarketSource initialized with {} cities (smart sync + forecast cache + stale-city tracking)",
             cities.len()
         );
 
@@ -89,6 +123,8 @@ impl OpenMeteoMarketSource {
             last_data_timestamp: Arc::new(RwLock::new(None)),
             last_fetch_time: Arc::new(RwLock::new(None)),
             forecast_cache: Arc::new(RwLock::new(HashMap::new())),
+            city_last_success: Arc::new(RwLock::new(HashMap::new())),
+            initialized_at: Utc::now(),
         })
     }
 
@@ -188,6 +224,50 @@ impl OpenMeteoMarketSource {
         }
     }
 
+    /// Record successful data fetch for a set of cities.
+    /// Called after `fetch_prices` to track which cities are alive.
+    async fn record_city_successes(&self, city_ids: &HashSet<String>) {
+        if city_ids.is_empty() {
+            return;
+        }
+        let now = Utc::now();
+        let mut tracker = self.city_last_success.write().await;
+        for city_id in city_ids {
+            tracker.insert(city_id.clone(), now);
+        }
+        debug!(
+            "Recorded success for {} cities (tracker total: {})",
+            city_ids.len(),
+            tracker.len()
+        );
+    }
+
+    /// Check whether a city should be included in `fetch_assets()`.
+    ///
+    /// A city is included if:
+    /// 1. It has produced data within STALE_CITY_DAYS, OR
+    /// 2. It has never been seen yet AND we are within GRACE_PERIOD_HOURS of startup
+    ///    (gives new cities time to get their first fetch).
+    ///
+    /// `tracker` is passed in to avoid holding the lock per-city.
+    fn is_city_active(
+        &self,
+        city_id: &str,
+        now: DateTime<Utc>,
+        tracker: &HashMap<String, DateTime<Utc>>,
+    ) -> bool {
+        match tracker.get(city_id) {
+            Some(last_success) => {
+                let age = now.signed_duration_since(*last_success);
+                age.num_days() < STALE_CITY_DAYS
+            }
+            None => {
+                // Never fetched. Allow if within grace period of startup.
+                let since_init = now.signed_duration_since(self.initialized_at);
+                since_init.num_hours() < GRACE_PERIOD_HOURS
+            }
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -225,11 +305,22 @@ impl MarketDataSource for OpenMeteoMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        // Generate assets dynamically from cities × metrics (no static JSON needed)
+        // Filter cities: only include cities that have recent data or are in grace period.
+        // Cities excluded here will be deactivated by the sync engine's pruning logic.
+        let now = Utc::now();
+        let tracker = self.city_last_success.read().await;
         let metrics = WeatherMetric::all();
-        let mut assets = Vec::with_capacity(self.cities.len() * metrics.len());
 
-        for city in &self.cities {
+        let active_cities: Vec<&CityInfo> = self
+            .cities
+            .iter()
+            .filter(|c| self.is_city_active(&c.city_id, now, &tracker))
+            .collect();
+
+        let stale_count = self.cities.len() - active_cities.len();
+        let mut assets = Vec::with_capacity(active_cities.len() * metrics.len());
+
+        for city in &active_cities {
             for metric in metrics {
                 let asset_id = format!("{}:{}", city.city_id, metric.as_str());
                 let name = format!("{} {}", city.name, metric.display_name());
@@ -254,10 +345,17 @@ impl MarketDataSource for OpenMeteoMarketSource {
             }
         }
 
-        info!(
-            "Generated {} weather assets ({} cities × {} metrics)",
-            assets.len(), self.cities.len(), metrics.len()
-        );
+        if stale_count > 0 {
+            info!(
+                "Generated {} weather assets ({} active cities × {} metrics, {} stale cities excluded)",
+                assets.len(), active_cities.len(), metrics.len(), stale_count
+            );
+        } else {
+            info!(
+                "Generated {} weather assets ({} cities × {} metrics)",
+                assets.len(), active_cities.len(), metrics.len()
+            );
+        }
         Ok(assets)
     }
 
@@ -279,6 +377,9 @@ impl MarketDataSource for OpenMeteoMarketSource {
                 city_assets.entry(city_id).or_default().push(metric);
             }
         }
+
+        // Build requested asset set for fast lookup
+        let requested: HashSet<&str> = asset_ids.iter().map(|s| s.as_str()).collect();
 
         // Get city info for the requested cities
         let city_map: HashMap<&str, &CityInfo> = self
@@ -309,19 +410,29 @@ impl MarketDataSource for OpenMeteoMarketSource {
         }
 
         // Fetch weather data (current + hourly forecast in same request)
+        // Note: fetch_all_weather shuffles batch order internally to distribute
+        // budget-cap impact fairly across all cities.
         let weather_data = self.client.fetch_all_weather(&weather_cities).await?;
         let now = Utc::now();
         let mut results = Vec::new();
         let mut forecasts_to_cache = Vec::new();
+        let mut successful_cities: HashSet<String> = HashSet::new();
 
-        for data in weather_data {
+        for data in &weather_data {
+            if data.readings.is_empty() {
+                continue;
+            }
+
+            // Track that this city produced data
+            successful_cities.insert(data.city_id.clone());
+
             // Collect current readings for DB storage
             for (metric, value) in &data.readings {
                 let metric_str = metric.as_str();
                 let asset_id = format!("{}:{}", data.city_id, metric_str);
 
                 // Only include if this asset was requested
-                if asset_ids.contains(&asset_id) {
+                if requested.contains(asset_id.as_str()) {
                     results.push(PriceUpdate {
                         asset_id: asset_id.clone(),
                         symbol: asset_id,
@@ -336,22 +447,37 @@ impl MarketDataSource for OpenMeteoMarketSource {
             }
 
             // Collect hourly forecasts for memory cache
-            if let Some(forecast) = data.hourly_forecast {
-                forecasts_to_cache.push(forecast);
+            if let Some(ref forecast) = data.hourly_forecast {
+                forecasts_to_cache.push(forecast.clone());
             }
         }
+
+        // Record which cities produced data (for stale-city tracking)
+        let failed_cities = weather_cities.len() - successful_cities.len();
+        self.record_city_successes(&successful_cities).await;
 
         // Update in-memory forecast cache
         if !forecasts_to_cache.is_empty() {
             self.update_forecast_cache(forecasts_to_cache).await;
         }
 
-        info!(
-            "Fetched {}/{} weather readings, forecast cache: {} cities",
-            results.len(),
-            asset_ids.len(),
-            self.forecast_cache_size().await
-        );
+        if failed_cities > 0 {
+            warn!(
+                "Fetched {}/{} weather readings ({} cities produced data, {} returned empty), forecast cache: {} cities",
+                results.len(),
+                asset_ids.len(),
+                successful_cities.len(),
+                failed_cities,
+                self.forecast_cache_size().await
+            );
+        } else {
+            info!(
+                "Fetched {}/{} weather readings, forecast cache: {} cities",
+                results.len(),
+                asset_ids.len(),
+                self.forecast_cache_size().await
+            );
+        }
 
         // Mark fetch complete with current timestamp
         let current_ts = self.client.fetch_data_timestamp().await.ok();
@@ -371,6 +497,7 @@ fn parse_cities_json(json_str: &str) -> Result<Vec<CityInfo>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration as ChronoDuration;
 
     #[test]
     fn test_parse_cities_json() {
@@ -385,7 +512,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dynamic_asset_generation() {
+    fn test_dynamic_asset_generation_during_grace_period() {
+        // During grace period (first 24h), all cities should be included
         let source = OpenMeteoMarketSource::new(300).unwrap();
         let metrics = WeatherMetric::all();
         let expected = source.cities.len() * metrics.len();
@@ -420,5 +548,66 @@ mod tests {
             Some(("new-york-us".to_string(), "pm2_5".to_string()))
         );
         assert_eq!(OpenMeteoMarketSource::parse_asset_id("invalid"), None);
+    }
+
+    #[test]
+    fn test_city_active_with_recent_success() {
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let now = Utc::now();
+        let mut tracker = HashMap::new();
+
+        // City with recent success (1 hour ago) should be active
+        tracker.insert("paris-fr".to_string(), now - ChronoDuration::hours(1));
+        assert!(source.is_city_active("paris-fr", now, &tracker));
+    }
+
+    #[test]
+    fn test_city_inactive_after_stale_period() {
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let now = Utc::now();
+        let mut tracker = HashMap::new();
+
+        // City with old success (4 days ago, > STALE_CITY_DAYS=3) should be inactive
+        tracker.insert("ghost-city-xx".to_string(), now - ChronoDuration::days(4));
+        assert!(!source.is_city_active("ghost-city-xx", now, &tracker));
+    }
+
+    #[test]
+    fn test_city_active_at_boundary() {
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let now = Utc::now();
+        let mut tracker = HashMap::new();
+
+        // City with success exactly 2 days ago (< 3 days) should still be active
+        tracker.insert("border-city-xx".to_string(), now - ChronoDuration::days(2));
+        assert!(source.is_city_active("border-city-xx", now, &tracker));
+    }
+
+    #[test]
+    fn test_unseen_city_in_grace_period() {
+        // Source just started — unseen cities should be active during grace period
+        let source = OpenMeteoMarketSource::new(300).unwrap();
+        let now = Utc::now();
+        let tracker = HashMap::new(); // empty = no cities ever fetched
+
+        assert!(source.is_city_active("new-city-xx", now, &tracker));
+    }
+
+    #[test]
+    fn test_unseen_city_after_grace_period() {
+        let mut source = OpenMeteoMarketSource::new(300).unwrap();
+        // Pretend we started 2 days ago (well past the 24h grace period)
+        source.initialized_at = Utc::now() - ChronoDuration::days(2);
+        let now = Utc::now();
+        let tracker = HashMap::new();
+
+        // City never seen, past grace period — should be inactive
+        assert!(!source.is_city_active("never-seen-xx", now, &tracker));
+    }
+
+    #[test]
+    fn test_stale_constants() {
+        assert_eq!(STALE_CITY_DAYS, 3);
+        assert_eq!(GRACE_PERIOD_HOURS, 24);
     }
 }

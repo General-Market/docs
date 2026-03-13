@@ -3,10 +3,12 @@
 //! Tracks score (upvotes) and comment count for the top 500 stories.
 //! Assets are fully dynamic — discovered from the live /topstories endpoint.
 //!
-//! When a story falls off the top 500 list, it is no longer returned by
-//! `fetch_assets()`, which causes the sync engine to mark it inactive.
-//! The last known score/comments remain in `market_prices` until the
-//! retention-based pruning (7 days) deletes them.
+//! Lifecycle management:
+//! - Stories older than 7 days are excluded from `fetch_assets()` even if they
+//!   remain in the HN top 500. This triggers the sync engine to deactivate them.
+//! - Dead and deleted items are filtered out during both discovery and pricing.
+//! - `fetch_prices()` detects dead/deleted items and skips them, letting the
+//!   sync engine deactivate them on the next `fetch_assets()` cycle.
 //!
 //! API: https://hacker-news.firebaseio.com/v0/
 //! Auth: None
@@ -36,6 +38,11 @@ const HN_API_URL: &str = "https://hacker-news.firebaseio.com/v0";
 /// Delay between sequential item fetches (ms)
 const INTER_REQUEST_DELAY_MS: u64 = 50;
 
+/// Maximum age for tracked stories (seconds). Stories older than this
+/// are excluded from fetch_assets(), causing the sync engine to deactivate them.
+/// 7 days = 604800 seconds.
+const MAX_STORY_AGE_SECS: i64 = 7 * 24 * 60 * 60;
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -61,12 +68,25 @@ struct HnItem {
     dead: Option<bool>,
     #[serde(default)]
     deleted: Option<bool>,
+    /// Unix timestamp of when the item was created
+    #[serde(default)]
+    time: Option<i64>,
 }
 
 impl HnItem {
     /// Returns true if this item should be tracked
     fn is_trackable(&self) -> bool {
         !self.deleted.unwrap_or(false) && !self.dead.unwrap_or(false)
+    }
+
+    /// Returns true if this item is too old to track.
+    /// Stories older than MAX_STORY_AGE_SECS are considered stale.
+    fn is_too_old(&self, now_unix: i64) -> bool {
+        match self.time {
+            Some(created_at) => (now_unix - created_at) > MAX_STORY_AGE_SECS,
+            // No timestamp — assume it's old (shouldn't happen for real items)
+            None => true,
+        }
     }
 
     /// Truncated title for display (max 80 chars)
@@ -101,7 +121,7 @@ impl HackerNewsMarketSource {
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        info!("HackerNews source initialized (dynamic assets from /topstories)");
+        info!("HackerNews source initialized (dynamic assets from /topstories, {}d max age)", MAX_STORY_AGE_SECS / 86400);
 
         Ok(Self { http })
     }
@@ -167,14 +187,24 @@ impl MarketDataSource for HackerNewsMarketSource {
 
         info!("HN topstories returned {} story IDs", story_ids.len());
 
+        let now_unix = Utc::now().timestamp();
         let mut assets = Vec::with_capacity(story_ids.len() * 2);
         let mut skipped = 0u32;
+        let mut aged_out = 0u32;
 
         for &story_id in &story_ids {
             tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
 
             match self.fetch_item(story_id).await {
                 Ok(Some(item)) if item.is_trackable() => {
+                    // Skip stories older than MAX_STORY_AGE_SECS — they stop getting
+                    // meaningful vote/comment activity and just waste price slots.
+                    // The sync engine will deactivate them on the next cycle.
+                    if item.is_too_old(now_unix) {
+                        aged_out += 1;
+                        continue;
+                    }
+
                     let title = item.display_title();
 
                     // Score asset
@@ -191,6 +221,7 @@ impl MarketDataSource for HackerNewsMarketSource {
                                 "metric": "score",
                                 "by": item.by,
                                 "url": item.url,
+                                "created_at": item.time,
                             },
                         }),
                     });
@@ -209,6 +240,7 @@ impl MarketDataSource for HackerNewsMarketSource {
                                 "metric": "comments",
                                 "by": item.by,
                                 "url": item.url,
+                                "created_at": item.time,
                             },
                         }),
                     });
@@ -228,10 +260,12 @@ impl MarketDataSource for HackerNewsMarketSource {
         }
 
         info!(
-            "HN fetch_assets: {} stories -> {} assets ({} skipped)",
+            "HN fetch_assets: {} stories -> {} assets ({} skipped, {} aged out >{}d)",
             story_ids.len(),
             assets.len(),
-            skipped
+            skipped,
+            aged_out,
+            MAX_STORY_AGE_SECS / 86400
         );
 
         Ok(assets)
@@ -243,6 +277,7 @@ impl MarketDataSource for HackerNewsMarketSource {
         }
 
         let now = Utc::now();
+        let now_unix = now.timestamp();
         let mut results = Vec::new();
 
         // Dedupe asset_ids to unique story IDs
@@ -265,11 +300,30 @@ impl MarketDataSource for HackerNewsMarketSource {
             unique_story_ids.len()
         );
 
+        let mut dead_or_deleted = 0u32;
+        let mut aged_out = 0u32;
+
         for &story_id in &unique_story_ids {
             tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
 
             match self.fetch_item(story_id).await {
                 Ok(Some(item)) => {
+                    // Skip dead/deleted items — they'll be deactivated by the next
+                    // fetch_assets() cycle since they won't appear in the results.
+                    if !item.is_trackable() {
+                        dead_or_deleted += 1;
+                        debug!("HN item {} is dead/deleted, skipping price", story_id);
+                        continue;
+                    }
+
+                    // Skip aged-out items — don't waste price records on stale stories.
+                    // They'll be deactivated on the next fetch_assets() cycle.
+                    if item.is_too_old(now_unix) {
+                        aged_out += 1;
+                        debug!("HN item {} is older than {}d, skipping price", story_id, MAX_STORY_AGE_SECS / 86400);
+                        continue;
+                    }
+
                     let score_id = format!("hn_{}_score", story_id);
                     let comments_id = format!("hn_{}_comments", story_id);
                     let title = item.display_title();
@@ -301,12 +355,20 @@ impl MarketDataSource for HackerNewsMarketSource {
                     }
                 }
                 Ok(None) => {
+                    dead_or_deleted += 1;
                     debug!("HN item {} returned null (deleted?)", story_id);
                 }
                 Err(e) => {
                     warn!("Error fetching HN item {} for prices: {:?}", story_id, e);
                 }
             }
+        }
+
+        if dead_or_deleted > 0 || aged_out > 0 {
+            info!(
+                "HN fetch_prices: {} dead/deleted, {} aged out (skipped)",
+                dead_or_deleted, aged_out
+            );
         }
 
         info!(
@@ -384,6 +446,7 @@ mod tests {
             item_type: Some("story".to_string()),
             dead: None,
             deleted: None,
+            time: Some(1700000000),
         };
         assert!(item.is_trackable());
     }
@@ -400,6 +463,7 @@ mod tests {
             item_type: None,
             dead: Some(true),
             deleted: None,
+            time: None,
         };
         assert!(!item.is_trackable());
     }
@@ -416,8 +480,63 @@ mod tests {
             item_type: None,
             dead: None,
             deleted: Some(true),
+            time: None,
         };
         assert!(!item.is_trackable());
+    }
+
+    #[test]
+    fn test_hn_item_too_old() {
+        let now = Utc::now().timestamp();
+        let item = HnItem {
+            id: 1,
+            score: 100,
+            descendants: 50,
+            title: Some("Old story".to_string()),
+            url: None,
+            by: None,
+            item_type: None,
+            dead: None,
+            deleted: None,
+            time: Some(now - MAX_STORY_AGE_SECS - 1), // 1 second past the limit
+        };
+        assert!(item.is_too_old(now));
+    }
+
+    #[test]
+    fn test_hn_item_not_too_old() {
+        let now = Utc::now().timestamp();
+        let item = HnItem {
+            id: 1,
+            score: 100,
+            descendants: 50,
+            title: Some("Fresh story".to_string()),
+            url: None,
+            by: None,
+            item_type: None,
+            dead: None,
+            deleted: None,
+            time: Some(now - 3600), // 1 hour old
+        };
+        assert!(!item.is_too_old(now));
+    }
+
+    #[test]
+    fn test_hn_item_no_timestamp_is_old() {
+        let now = Utc::now().timestamp();
+        let item = HnItem {
+            id: 1,
+            score: 0,
+            descendants: 0,
+            title: None,
+            url: None,
+            by: None,
+            item_type: None,
+            dead: None,
+            deleted: None,
+            time: None, // No timestamp
+        };
+        assert!(item.is_too_old(now));
     }
 
     #[test]
@@ -432,6 +551,7 @@ mod tests {
             item_type: None,
             dead: None,
             deleted: None,
+            time: None,
         };
         assert_eq!(item.display_title(), "Short title");
     }
@@ -449,6 +569,7 @@ mod tests {
             item_type: None,
             dead: None,
             deleted: None,
+            time: None,
         };
         let display = item.display_title();
         assert_eq!(display.len(), 80); // 77 chars + "..."
@@ -467,6 +588,7 @@ mod tests {
             item_type: None,
             dead: None,
             deleted: None,
+            time: None,
         };
         assert_eq!(item.display_title(), "HN Item #42");
     }
@@ -501,5 +623,10 @@ mod tests {
         }
 
         assert_eq!(unique, vec![100, 200]);
+    }
+
+    #[test]
+    fn test_max_story_age_is_7_days() {
+        assert_eq!(MAX_STORY_AGE_SECS, 604800);
     }
 }

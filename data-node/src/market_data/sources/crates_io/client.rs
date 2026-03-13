@@ -12,6 +12,7 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -56,6 +57,10 @@ struct CrateEntry {
 
 pub struct CratesIoMarketSource {
     http: SourceHttpClient,
+    /// Cache of asset_id -> crate name, populated during fetch_assets().
+    /// Used by fetch_prices() to reliably resolve crate names without relying
+    /// on the (potentially empty) static JSON config or lossy asset_id parsing.
+    crate_name_cache: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl CratesIoMarketSource {
@@ -72,7 +77,10 @@ impl CratesIoMarketSource {
             .build()?;
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
         info!("crates.io source initialized");
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            crate_name_cache: Arc::new(Mutex::new(HashMap::new())),
+        })
     }
 
     /// Fetch a page of crates sorted by downloads
@@ -168,6 +176,16 @@ impl MarketDataSource for CratesIoMarketSource {
             .await
             .map_err(|e| anyhow::anyhow!("Failed to fetch crates: {:?}", e))?;
 
+        // Populate the crate_name_cache so fetch_prices can reliably resolve names
+        {
+            let mut cache = self.crate_name_cache.lock().unwrap_or_else(|e| e.into_inner());
+            cache.clear();
+            for c in &crates {
+                cache.insert(make_asset_id(&c.name), c.name.clone());
+            }
+            info!("crates.io name cache populated with {} entries", cache.len());
+        }
+
         let assets: Vec<AssetUpdate> = crates
             .iter()
             .map(|c| AssetUpdate {
@@ -205,19 +223,29 @@ impl MarketDataSource for CratesIoMarketSource {
         let crate_lookup: HashMap<&str, &CrateEntry> =
             crates.iter().map(|c| (c.name.as_str(), c)).collect();
 
-        // Also load api_ref from config
+        // Load api_ref from static config (may be empty)
         let entries = load_all_asset_entries(ASSET_JSON).unwrap_or_default();
         let ref_lookup: HashMap<String, String> = entries
             .into_iter()
             .map(|e| (e.asset_id, e.api_ref))
             .collect();
 
+        // Load in-memory name cache (populated by fetch_assets)
+        let name_cache = self
+            .crate_name_cache
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
+
         let mut results = Vec::new();
         for asset_id in asset_ids {
+            // Resolve crate name: static config -> in-memory cache -> fallback parse
             let name = if let Some(api_ref) = ref_lookup.get(asset_id) {
-                parse_name_from_ref(api_ref)
+                parse_name_from_ref(api_ref).map(|s| s.to_string())
+            } else if let Some(cached_name) = name_cache.get(asset_id) {
+                Some(cached_name.clone())
             } else {
-                parse_name_from_asset_id(asset_id)
+                parse_name_from_asset_id(asset_id).map(|s| s.to_string())
             };
 
             let name = match name {
@@ -228,7 +256,7 @@ impl MarketDataSource for CratesIoMarketSource {
                 }
             };
 
-            if let Some(entry) = crate_lookup.get(name) {
+            if let Some(entry) = crate_lookup.get(name.as_str()) {
                 let value = entry.recent_downloads.unwrap_or(entry.downloads);
                 results.push(PriceUpdate {
                     asset_id: asset_id.clone(),

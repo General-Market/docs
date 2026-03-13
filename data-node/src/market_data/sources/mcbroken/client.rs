@@ -14,9 +14,10 @@
 //! Format: JSON
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -35,6 +36,10 @@ const ASSET_JSON: &str = include_str!("../../../config/mcbroken.json");
 
 /// McBroken stats API endpoint
 const API_URL: &str = "https://mcbroken.com/stats.json";
+
+/// Assets not priced in this many hours are excluded from fetch_assets(),
+/// causing the sync engine to deactivate them (e.g. closed restaurants).
+const DEACTIVATION_HOURS: i64 = 48;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -62,6 +67,9 @@ struct CityEntry {
 /// Source ID is `"mcbroken"`.
 pub struct McBrokenMarketSource {
     http: SourceHttpClient,
+    /// Tracks when each asset_id last received a successful price.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Mutex<HashMap<String, DateTime<Utc>>>,
 }
 
 impl McBrokenMarketSource {
@@ -78,7 +86,10 @@ impl McBrokenMarketSource {
             .build()?;
         let http = SourceHttpClient::with_client(client, rate_limit, RetryConfig::default());
         info!("McBroken Ice Cream source initialized");
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            last_priced: Mutex::new(HashMap::new()),
+        })
     }
 }
 
@@ -110,9 +121,33 @@ impl MarketDataSource for McBrokenMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let assets = load_assets_from_json(ASSET_JSON)?;
+        let mut assets = load_assets_from_json(ASSET_JSON)?;
+
+        // Deactivation sweep: exclude assets not priced in 48h.
+        // On first run (empty cache), all config assets pass through.
+        let now = Utc::now();
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+        if !cache.is_empty() {
+            let before = assets.len();
+            assets.retain(|a| {
+                match cache.get(&a.asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // Not yet in cache — allow through (grace period for new assets)
+                    None => true,
+                }
+            });
+            let deactivated = before - assets.len();
+            if deactivated > 0 {
+                info!(
+                    "McBroken: excluded {} stale assets (no price in {}h)",
+                    deactivated, DEACTIVATION_HOURS
+                );
+            }
+        }
+
         info!(
-            "McBroken fetch_assets: {} cities loaded from config",
+            "McBroken fetch_assets: {} cities active",
             assets.len()
         );
         Ok(assets)
@@ -196,6 +231,14 @@ impl MarketDataSource for McBrokenMarketSource {
                 market_cap: None,
                 fetched_at: now,
             });
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+            for price in &results {
+                cache.insert(price.asset_id.clone(), now);
+            }
         }
 
         info!(
