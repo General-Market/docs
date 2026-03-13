@@ -217,12 +217,11 @@ export function calculateLiquidationPrice(
 
   // Morpho: debt_raw = collateral_raw * price / 1e36 * LLTV / 1e18
   // Solving: price = debt * 1e36 * 1e18 / (collateral * LLTV)
-  // We compute in steps to avoid overflow, then convert to display USD.
-  // priceRaw = debt * 1e48 * 1e18 / (collateral * LLTV)
-  const debtScaled = debtAmount * MORPHO_CONSTANTS.E48
+  // priceRaw in Morpho oracle scale (1e36 for equal-decimal pairs ITP(18)/USDC(18))
+  const debtScaled = debtAmount * MORPHO_CONSTANTS.E36
   const priceRaw = (debtScaled * MORPHO_CONSTANTS.WAD) / (collateralAmount * lltv)
 
-  // priceRaw is in Morpho oracle scale; for ITP(18)/USDC(18) on L3: divide by 1e36 for display
+  // Convert from Morpho oracle scale to display USD: divide by 1e36
   return Number(priceRaw) / Number(MORPHO_CONSTANTS.E36)
 }
 

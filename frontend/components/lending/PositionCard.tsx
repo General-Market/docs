@@ -157,7 +157,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           <div className="flex justify-between items-center">
             <span className="text-text-secondary text-sm">{t('position_card.available_to_borrow')}</span>
             <span className="text-color-up font-mono tabular-nums">
-              {formatUnits(position.maxBorrow, 18)} USDC
+              {parseFloat(formatUnits(position.maxBorrow, 18)).toFixed(2)} USDC
             </span>
           </div>
         )}
