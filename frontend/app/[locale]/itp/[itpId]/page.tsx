@@ -1,5 +1,4 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
@@ -79,8 +78,16 @@ export default async function ItpPage({ params }: Props) {
     fetchEnrichment(itpId),
   ])
 
-  if (!itp) {
-    notFound()
+  // Fallback when data-node is unreachable — render shell, client SSE fills real data
+  const itpNum = parseInt((itpId?.startsWith('0x') ? itpId.slice(2) : itpId || '0'), 16) || 0
+  const data = itp ?? {
+    itpId,
+    name: `ITP #${itpNum}`,
+    symbol: `ITP${itpNum}`,
+    nav: 0,
+    aum: 0,
+    assetCount: 0,
+    holdings: [],
   }
 
   return (
@@ -90,7 +97,7 @@ export default async function ItpPage({ params }: Props) {
       <BreadcrumbJsonLd items={[
         { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
         { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/#markets' },
-        { name: itp.name, url: `https://generalmarket.io/itp/${itpId}` },
+        { name: data.name, url: `https://generalmarket.io/itp/${itpId}` },
       ]} />
 
       <script
@@ -100,13 +107,13 @@ export default async function ItpPage({ params }: Props) {
             "@context": "https://schema.org",
             "@type": "FinancialProduct",
             "category": "Index Fund",
-            name: itp.name,
-            tickerSymbol: itp.symbol,
+            name: data.name,
+            tickerSymbol: data.symbol,
             description: t('description', {
-              name: itp.name,
-              symbol: itp.symbol,
-              count: itp.assetCount,
-              nav: itp.nav.toFixed(4),
+              name: data.name,
+              symbol: data.symbol,
+              count: data.assetCount,
+              nav: data.nav.toFixed(4),
             }),
             url: `https://generalmarket.io/itp/${itpId}`,
             provider: {
@@ -125,30 +132,30 @@ export default async function ItpPage({ params }: Props) {
             <span className="mx-2">/</span>
             <a href="/#markets" className="hover:text-black transition-colors">{tBreadcrumbs('markets')}</a>
             <span className="mx-2">/</span>
-            <span className="text-text-primary">{itp.name}</span>
+            <span className="text-text-primary">{data.name}</span>
           </nav>
 
           <header className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-black tracking-tight text-black">
-                {itp.name}
+                {data.name}
               </h1>
               <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-green-100 text-green-800">
                 Active
               </span>
             </div>
             <p className="text-lg text-text-secondary">
-              {t('subtitle', { symbol: itp.symbol })}
+              {t('subtitle', { symbol: data.symbol })}
             </p>
           </header>
 
           <ItpPageClient
             itpId={itpId}
-            name={itp.name}
-            symbol={itp.symbol}
-            nav={itp.nav}
-            aum={itp.aum}
-            assetCount={itp.assetCount}
+            name={data.name}
+            symbol={data.symbol}
+            nav={data.nav}
+            aum={data.aum}
+            assetCount={data.assetCount}
             enrichment={enrichment}
           />
 
