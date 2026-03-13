@@ -609,6 +609,9 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Get cycle state receiver
     let cycle_state_rx = components.consensus.cycle_manager.subscribe();
 
+    // Create P2P metrics early so the router can increment counters
+    let p2p_metrics = Arc::new(issuer::p2p::P2PMetrics::default());
+
     // Spawn P2P message router when ConsensusProtocol exists
     let router_handle: Option<tokio::task::JoinHandle<()>> = if let (Some(protocol), Some(p2p)) =
         (&components.consensus.protocol, &components.p2p.transport)
@@ -616,6 +619,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         let router_protocol = Arc::clone(protocol);
         let router_p2p = Arc::clone(p2p);
         let router_heartbeat_monitor = components.p2p.heartbeat_monitor.clone();
+        let router_p2p_metrics = p2p_metrics.clone();
         Some(tokio::spawn(async move {
             use common::traits::P2PTransport;
             match router_p2p.receive().await {
@@ -623,6 +627,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     use futures::StreamExt;
                     tokio::pin!(stream);
                     while let Some(Ok((from, message))) = stream.next().await {
+                        router_p2p_metrics.messages_received.fetch_add(1, Ordering::Relaxed);
                         if let P2PMessage::Heartbeat { sender_id, timestamp } = &message {
                             if let Some(ref monitor) = router_heartbeat_monitor {
                                 monitor.on_heartbeat_received(*sender_id, *timestamp).await;
@@ -849,6 +854,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let consensus_handle = tokio::spawn(async move {
         let mut state_rx = cycle_state_rx;
         let mut last_cycle: u64 = 0;
+        let mut cycle_start_instant = std::time::Instant::now();
         let first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
         let itp_first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>> = Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new()));
 
@@ -893,6 +899,12 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
             let trigger = state.get_trigger();
 
             if current_cycle > last_cycle {
+                // Update cycle duration for the previous cycle
+                if last_cycle > 0 {
+                    let cycle_ms = cycle_start_instant.elapsed().as_millis() as u64;
+                    consensus_metrics.record_cycle_duration(cycle_ms);
+                }
+                cycle_start_instant = std::time::Instant::now();
                 last_cycle = current_cycle;
                 info!(cycle = current_cycle, trigger = ?trigger, "Entering consensus cycle");
 
@@ -1169,10 +1181,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_issuers;
+                            let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 run_l3_native_order_processing(
-                                    p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt,
+                                    p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt, met,
                                 ).await;
                             });
                         }
@@ -1466,7 +1479,6 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     };
 
     // Build unified HTTP API server (health + ready + nav-sign + registry-sync + optional Vision)
-    let p2p_metrics = Arc::new(issuer::p2p::P2PMetrics::default());
     let issuer_state = Arc::new(IssuerApiState {
         node_id,
         p2p_transport: components.p2p.transport.clone(),
@@ -3522,6 +3534,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     _itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
+    metrics: Arc<IssuerMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -3543,6 +3556,9 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             vec![]
         }
     };
+
+    // Update pending order count metric
+    metrics.update_pending_order_count(pending_orders.len() as u64);
 
     // 2. Filter out bridge-tracked orders (already managed by cross-chain pipeline)
     // Uses get_all_tracked_l3_order_ids() which checks order_mappings (keyed by settlement_id
@@ -3675,6 +3691,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                             order_count = order_ids.len(),
                             "L3-native fills confirmed"
                         );
+                        metrics.record_orders_processed(order_ids.len() as u64);
 
                         // Clean up orchestrator tracking
                         let orch = orchestrator.write().await;
@@ -3722,6 +3739,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                     Ok(fills_result) => {
                         if fills_result.signature_count > 0 {
                             info!(cycle = current_cycle, signer_count = fills_result.signature_count, "L3-native fills confirmed (after batch skip)");
+                            metrics.record_orders_processed(order_ids.len() as u64);
                             let orch = orchestrator.write().await;
                             for oid in &order_ids {
                                 orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
@@ -3867,6 +3885,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                     order_count = batched_order_ids.len(),
                     "BATCHED L3-native fills confirmed"
                 );
+                metrics.record_orders_processed(batched_order_ids.len() as u64);
                 let orch = orchestrator.write().await;
                 for oid in &batched_order_ids {
                     orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;

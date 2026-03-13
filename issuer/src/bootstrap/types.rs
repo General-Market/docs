@@ -200,6 +200,18 @@ impl IssuerMetrics {
         self.last_consensus_time_ms.store(duration_ms, Ordering::Relaxed);
         self.consensus_in_progress.store(false, Ordering::Relaxed);
     }
+
+    pub fn record_cycle_duration(&self, duration_ms: u64) {
+        self.last_cycle_duration_ms.store(duration_ms, Ordering::Relaxed);
+    }
+
+    pub fn record_orders_processed(&self, count: u64) {
+        self.orders_processed_last_60s.fetch_add(count, Ordering::Relaxed);
+    }
+
+    pub fn update_pending_order_count(&self, count: u64) {
+        self.pending_order_count.store(count, Ordering::Relaxed);
+    }
 }
 
 impl Default for IssuerMetrics {
