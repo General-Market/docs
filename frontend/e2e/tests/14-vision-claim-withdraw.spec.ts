@@ -44,10 +44,9 @@ test.describe('Vision Claim + Withdraw', () => {
     // 2. Navigate to Vision page and connect wallet
     try {
       await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 })
-    } catch (e) {
-      // ERR_ABORTED or timeout — Next.js dev server may be overloaded
-      test.skip(true, `page.goto failed: ${(e as Error).message?.slice(0, 80)}`)
-      return
+    } catch {
+      // Retry once — Next.js server may be overloaded
+      await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 })
     }
 
     await ensureWalletConnected(page, TEST_ADDRESS).catch(() => {

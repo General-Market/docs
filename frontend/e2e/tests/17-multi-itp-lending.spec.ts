@@ -16,26 +16,23 @@ import { getItpCountL3 } from '../helpers/backend-api';
 
 test.describe('Multi-ITP Lending Visibility', () => {
   test('lending markets table shows multiple ITPs after ITP creation', async ({ walletPage: page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     // Verify ITP2+ exists on L3 (created by test 05)
-    let itpCount: number;
-    try {
-      itpCount = await getItpCountL3();
-    } catch {
-      test.skip(true, 'L3 RPC unreachable — cannot verify ITP count');
-      return;
-    }
+    const itpCount = await getItpCountL3();
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Wait for ITP listing (data-node may be unreachable on testnet)
-    const itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
+    // Wait for ITP listing — retry navigation if data-node is slow
+    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
-      test.skip(true, 'ITP cards not loaded — data-node may be unreachable');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      await ensureWalletConnected(page, TEST_ADDRESS);
+      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(itpVisible).toBe(true);
 
     // Find ANY ITP card with a Borrow button (only ITPs with Morpho markets show it)
     const allCards = itpCard(page);
@@ -49,10 +46,7 @@ test.describe('Multi-ITP Lending Visibility', () => {
         break;
       }
     }
-    if (!borrowClicked) {
-      test.skip(true, 'No ITP card has a Borrow button — Morpho market may not be configured on testnet');
-      return;
-    }
+    expect(borrowClicked, 'At least one ITP should have a Borrow button').toBe(true);
 
     // Wait for markets table to render
     const marketsTable = page.locator('table');
@@ -71,22 +65,19 @@ test.describe('Multi-ITP Lending Visibility', () => {
   test('ITP2 row shows "Coming Soon" when no Morpho market deployed', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    let itpCount: number;
-    try {
-      itpCount = await getItpCountL3();
-    } catch {
-      test.skip(true, 'L3 RPC unreachable — cannot verify ITP count');
-      return;
-    }
+    const itpCount = await getItpCountL3();
     expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    const itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
+    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
-      test.skip(true, 'ITP cards not loaded — data-node may be unreachable');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      await ensureWalletConnected(page, TEST_ADDRESS);
+      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(itpVisible).toBe(true);
 
     // Find ANY ITP card with a Borrow button
     const allCards = itpCard(page);
@@ -100,10 +91,7 @@ test.describe('Multi-ITP Lending Visibility', () => {
         break;
       }
     }
-    if (!borrowClicked) {
-      test.skip(true, 'No ITP card has a Borrow button — Morpho market may not be configured on testnet');
-      return;
-    }
+    expect(borrowClicked, 'At least one ITP should have a Borrow button').toBe(true);
 
     // Wait for table and on-chain discovery
     const marketsTable = page.locator('table');

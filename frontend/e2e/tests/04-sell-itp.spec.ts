@@ -14,19 +14,19 @@ test.describe('Sell ITP', () => {
     // 1. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 2. Wait for ITP listing (data-node may be unreachable on testnet)
-    const itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
+    // 2. Wait for ITP listing — retry if data-node is slow
+    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!itpVisible) {
-      test.skip(true, 'ITP cards not loaded — data-node may be unreachable');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      await ensureWalletConnected(page, TEST_ADDRESS);
+      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(itpVisible).toBe(true);
 
     // 3. Verify user has shares from prior buy test (no minting — real system state)
     const existingShares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
-    if (existingShares === 0n) {
-      test.skip(true, 'No ITP shares available — buy test may not have filled yet');
-      return;
-    }
+    expect(existingShares, 'User should have ITP shares from prior buy test').toBeGreaterThan(0n);
     console.log(`Sell test: user has ${existingShares} shares from prior buy`);
 
     // 4. Click Sell on first ITP

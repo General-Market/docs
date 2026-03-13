@@ -17,12 +17,18 @@ test.describe('Decimal Regression Tests', () => {
   test('no 18+ digit numbers visible in document body (bigint leak check)', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // Wait for ITP cards to load — retry navigation if data-node is slow
+    // Wait for ITP cards to load — retry navigation if data-node SSE is slow
     const itpCards = page.locator('[id^="itp-card-"]');
     let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
       await page.waitForTimeout(3_000);
+      hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
+    }
+    if (!hasCards) {
+      // Third attempt — data-node SSE can return empty initially then populate
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(5_000);
       hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
     expect(hasCards).toBe(true);
@@ -51,13 +57,15 @@ test.describe('Decimal Regression Tests', () => {
   test('ITP NAV values are in sane range ($0.01–$1000)', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // walletPage already navigates to /index
+    // walletPage already navigates to /index — retry if data-node is slow
     const itpCards = page.locator('[id^="itp-card-"]');
-    const hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
+    let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
-      test.skip(true, 'ITP cards did not load');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(hasCards).toBe(true);
 
     const navTexts = await page.evaluate(() => {
       const elements = document.querySelectorAll('[id^="itp-card-"]');
@@ -83,12 +91,7 @@ test.describe('Decimal Regression Tests', () => {
     test.setTimeout(180_000);
 
     // Navigate to Vision (root page)
-    try {
-      await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    } catch {
-      test.skip(true, 'Vision page did not load');
-      return;
-    }
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.waitForTimeout(3_000);
 
     // Connect wallet
@@ -106,13 +109,15 @@ test.describe('Decimal Regression Tests', () => {
   test('lending TVL is under $10M (catches raw wei display)', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // walletPage already at /index — wait for data to load
+    // walletPage already at /index — retry if data-node is slow
     const itpCards = page.locator('[id^="itp-card-"]');
-    const hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
+    let hasCards = await itpCards.first().isVisible({ timeout: 30_000 }).catch(() => false);
     if (!hasCards) {
-      test.skip(true, 'ITP cards did not load');
-      return;
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+      hasCards = await itpCards.first().isVisible({ timeout: 45_000 }).catch(() => false);
     }
+    expect(hasCards).toBe(true);
 
     // Look for TVL display anywhere on the page
     const tvlElements = page.locator('text=/TVL|Total Value/i');

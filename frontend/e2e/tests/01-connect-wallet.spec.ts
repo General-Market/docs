@@ -61,8 +61,8 @@ test.describe('Connect Wallet', () => {
     try {
       await page.goto(page.url(), { waitUntil: 'domcontentloaded', timeout: 60_000 });
     } catch {
-      test.skip(true, 'Page reload timed out under load');
-      return;
+      // Retry once
+      await page.goto(page.url(), { waitUntil: 'domcontentloaded', timeout: 60_000 });
     }
 
     // Wagmi may auto-reconnect from stored state, or we may need to re-connect.

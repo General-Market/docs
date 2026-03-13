@@ -46,11 +46,14 @@ test.describe('Vision Enter Batch (UI)', () => {
     // Pumpfun has ~1200 markets — first snapshot fetch can take 60-90s on cold start
     // Note: locator.isVisible() returns immediately; use waitFor() to actually poll
     const upButton = page.getByRole('button', { name: 'UP' }).first()
-    const hasMarkets = await upButton.waitFor({ state: 'visible', timeout: 90_000 }).then(() => true).catch(() => false)
+    let hasMarkets = await upButton.waitFor({ state: 'visible', timeout: 90_000 }).then(() => true).catch(() => false)
     if (!hasMarkets) {
-      test.skip(true, 'Markets not loaded — UP buttons not visible within timeout')
-      return
+      // Retry — data-node snapshot fetch may be slow on first load
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      hasMarkets = await upButton.waitFor({ state: 'visible', timeout: 60_000 }).then(() => true).catch(() => false)
     }
+    expect(hasMarkets).toBe(true)
 
     // 4. Set predictions on ALL markets — component requires every market to have a bet
     const upButtons = page.getByRole('button', { name: 'UP' })

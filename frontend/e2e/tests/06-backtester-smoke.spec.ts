@@ -167,7 +167,7 @@ test.describe('Backtester Smoke Tests', () => {
   })
 
   test.beforeEach(async () => {
-    test.skip(!simCacheReady, 'Sim cache not loaded on data-node (CoinGecko historical data not yet fetched)')
+    expect(simCacheReady, 'Sim cache must be loaded on data-node (CoinGecko historical data not yet fetched)').toBe(true)
   })
 
   test('categories endpoint returns data', async () => {

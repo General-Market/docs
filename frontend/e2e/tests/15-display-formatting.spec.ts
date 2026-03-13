@@ -158,7 +158,13 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    await expect(cards.first()).toBeVisible({ timeout: 45_000 })
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
+    if (!hasCards) {
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
+    }
+    expect(hasCards).toBe(true)
 
     // Wait for NAV to load on the first card (useItpNav polls /api/itp-price every 1.5s)
     const firstCard = cards.first()
@@ -187,7 +193,13 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    await expect(cards.first()).toBeVisible({ timeout: 45_000 })
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
+    if (!hasCards) {
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
+    }
+    expect(hasCards).toBe(true)
 
     await cards.first().hover()
 
@@ -286,9 +298,14 @@ test.describe('Display Formatting — Lending', () => {
     await page.waitForTimeout(3_000)
 
     // Click Borrow on first ITP card to open lending modal
-    // Wait for ITP cards to render with Borrow button (morpho market fallback via deployment.json)
     const borrowBtn = page.locator('[id^="itp-card-"]').first().getByRole('button', { name: 'Borrow', exact: true })
-    await expect(borrowBtn).toBeVisible({ timeout: 30_000 })
+    let hasBorrow = await borrowBtn.isVisible({ timeout: 15_000 }).catch(() => false)
+    if (!hasBorrow) {
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      hasBorrow = await borrowBtn.isVisible({ timeout: 30_000 }).catch(() => false)
+    }
+    expect(hasBorrow).toBe(true)
     await borrowBtn.click()
 
     // Wait for markets table to render (header row visible)
@@ -315,9 +332,15 @@ test.describe('Display Formatting — Lending', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await page.waitForTimeout(5_000)
 
-    // Wait for ITP cards to render with Borrow button (morpho market fallback via deployment.json)
+    // Wait for ITP cards to render with Borrow button
     const borrowBtn = page.locator('[id^="itp-card-"]').first().getByRole('button', { name: 'Borrow', exact: true })
-    await expect(borrowBtn).toBeVisible({ timeout: 30_000 })
+    let hasBorrow = await borrowBtn.isVisible({ timeout: 15_000 }).catch(() => false)
+    if (!hasBorrow) {
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      hasBorrow = await borrowBtn.isVisible({ timeout: 30_000 }).catch(() => false)
+    }
+    expect(hasBorrow).toBe(true)
     await borrowBtn.click()
     await page.waitForTimeout(2_000)
 

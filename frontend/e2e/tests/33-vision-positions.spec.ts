@@ -33,15 +33,7 @@ test.describe('Vision Positions & Validation', () => {
     // Deposit 10 USDC to Vision balance.
     // ensureUsdcBalance inside will find pre-funded balance → no DEPLOYER mint needed.
     const depositAmount = parseUnits('10', 18)
-    try {
-      await depositToVisionBalance(VISION_PLAYER_ADDRESS, depositAmount)
-    } catch (e: any) {
-      if (e?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || e?.message?.includes('fetch failed')) {
-        test.skip(true, 'L3 RPC unreachable — cannot deposit to Vision balance')
-        return
-      }
-      throw e
-    }
+    await depositToVisionBalance(VISION_PLAYER_ADDRESS, depositAmount)
 
     // Verify balance on-chain
     const balance = await getVisionPlayerBalance(VISION_PLAYER_ADDRESS)

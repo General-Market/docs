@@ -29,7 +29,7 @@ import { VISION_API as ISSUER_API, FRONTEND_URL as ENV_FRONTEND_URL } from '../e
 
 test.describe('Vision Claim Rewards', () => {
   test('balance proof is fetchable via proxy after tick resolution', async () => {
-    test.setTimeout(180_000)
+    test.setTimeout(300_000)
 
     // 1. Find available batch and join with two opposing players
     const { batchId, configHash } = await findAvailableE2eBatch()
@@ -64,8 +64,8 @@ test.describe('Vision Claim Rewards', () => {
     try {
       proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
     } catch {
-      test.skip(true, 'Issuer API unreachable — SSH tunnel may have dropped')
-      return
+      // Retry once — transient network issues
+      proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(15_000) })
     }
 
     if (proofRes.ok) {
