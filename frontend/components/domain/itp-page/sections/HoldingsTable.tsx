@@ -64,8 +64,8 @@ export function HoldingsTable({ enrichment }: SectionProps) {
   if (holdings.length === 0) {
     return (
       <section className="py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Holdings</h2>
-        <p className="text-sm text-gray-400">Holdings data loading...</p>
+        <h2 className="text-2xl font-bold text-text-primary mb-2">Holdings</h2>
+        <p className="text-sm text-text-muted">Holdings data loading...</p>
       </section>
     )
   }
@@ -87,7 +87,7 @@ export function HoldingsTable({ enrichment }: SectionProps) {
 
   const SortHeader = ({ k, children, align }: { k: SortKey; children: React.ReactNode; align?: string }) => (
     <th
-      className={`px-4 py-2.5 text-xs font-semibold uppercase text-gray-500 cursor-pointer hover:text-gray-900 transition-colors select-none ${align || 'text-left'}`}
+      className={`px-4 py-2.5 text-xs font-semibold uppercase text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'}`}
       onClick={() => toggleSort(k)}
     >
       <span className="inline-flex items-center gap-1">
@@ -101,21 +101,21 @@ export function HoldingsTable({ enrichment }: SectionProps) {
     <section className="py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Holdings</h2>
-          <p className="text-xs text-gray-400 mt-0.5">as of {asOfToday()}</p>
+          <h2 className="text-2xl font-bold text-text-primary">Holdings</h2>
+          <p className="text-xs text-text-muted mt-0.5">as of {asOfToday()}</p>
         </div>
         <input
           type="text"
           placeholder="Filter list by keyword..."
           value={search}
           onChange={e => handleSearch(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className="border border-border-light rounded px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-text-muted"
         />
       </div>
 
       <div className="overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-surface border-b border-border-light">
             <tr>
               <SortHeader k="rank">#</SortHeader>
               <SortHeader k="symbol">Asset</SortHeader>
@@ -127,8 +127,8 @@ export function HoldingsTable({ enrichment }: SectionProps) {
           </thead>
           <tbody>
             {paged.map((h) => (
-              <tr key={h.symbol} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{h.rank}</td>
+              <tr key={h.symbol} className="border-b border-border-light hover:bg-surface transition-colors">
+                <td className="px-4 py-2.5 text-text-muted font-mono text-xs">{h.rank}</td>
                 <td className="px-4 py-2.5">
                   <div className="flex items-center gap-2.5">
                     {h.image ? (
@@ -141,22 +141,22 @@ export function HoldingsTable({ enrichment }: SectionProps) {
                         unoptimized
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-text-muted">
                         {h.symbol[0]}
                       </div>
                     )}
                     <div>
-                      <span className="font-semibold text-gray-900">{h.symbol}</span>
+                      <span className="font-semibold text-text-primary">{h.symbol}</span>
                       {h.name && h.name !== h.symbol && (
-                        <span className="text-gray-400 text-xs ml-1.5">{h.name}</span>
+                        <span className="text-text-muted text-xs ml-1.5">{h.name}</span>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-gray-900">
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   {(h.weight * 100).toFixed(2)}%
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-gray-900">
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   ${h.price >= 1 ? h.price.toFixed(2) : h.price.toFixed(4)}
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono tabular-nums">
@@ -166,7 +166,7 @@ export function HoldingsTable({ enrichment }: SectionProps) {
                     </span>
                   ) : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-gray-500 hidden lg:table-cell">
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
                   {formatMcap(h.market_cap)}
                 </td>
               </tr>
@@ -175,15 +175,15 @@ export function HoldingsTable({ enrichment }: SectionProps) {
         </table>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-            <span className="text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border-light">
+            <span className="text-xs text-text-secondary">
               {startIdx} to {endIdx} of {sorted.length}
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={clampedPage === 1}
-                className="px-3 py-1 text-xs font-semibold text-gray-500 hover:text-gray-900 disabled:opacity-30 transition-colors"
+                className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
               >
                 Previous
               </button>
@@ -198,8 +198,8 @@ export function HoldingsTable({ enrichment }: SectionProps) {
                     onClick={() => setPage(pageNum)}
                     className={`w-7 h-7 text-xs font-semibold rounded transition-colors ${
                       clampedPage === pageNum
-                        ? 'bg-gray-900 text-white'
-                        : 'text-gray-500 hover:bg-gray-100'
+                        ? 'bg-text-primary text-text-inverse'
+                        : 'text-text-secondary hover:bg-muted'
                     }`}
                   >
                     {pageNum}
@@ -209,7 +209,7 @@ export function HoldingsTable({ enrichment }: SectionProps) {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={clampedPage === totalPages}
-                className="px-3 py-1 text-xs font-semibold text-gray-500 hover:text-gray-900 disabled:opacity-30 transition-colors"
+                className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
               >
                 Next
               </button>

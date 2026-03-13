@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useItpNav } from '@/hooks/useItpNav'
 import { getItpPageConfig } from '@/lib/itp-page-config'
 import { HeroSection } from './HeroSection'
@@ -28,6 +28,10 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
 
   const config = getItpPageConfig(itpId)
 
+  const sectionProps = useMemo(() => ({
+    itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment, createdAt: config.createdAt,
+  }), [itpId, name, symbol, nav, aum, assetCount, sinceInception, enrichment, config.createdAt])
+
   return (
     <>
       <HeroSection
@@ -35,7 +39,6 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
         symbol={symbol}
         name={name}
         onBuy={() => setBuyModalOpen(true)}
-        onSell={() => setBuyModalOpen(true)}
       />
 
       <KeyStatsBar
@@ -52,17 +55,7 @@ export function ItpPageClient({ itpId, name, symbol, nav: serverNav, aum, assetC
 
       <TabNavigation
         config={config}
-        sectionProps={{
-          itpId,
-          name,
-          symbol,
-          nav,
-          aum,
-          assetCount,
-          sinceInception,
-          enrichment,
-          createdAt: config.createdAt,
-        }}
+        sectionProps={sectionProps}
       />
 
       {buyModalOpen && (

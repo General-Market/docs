@@ -29,6 +29,8 @@ const REGISTRY: Record<SectionId, React.ComponentType<SectionProps>> = {
   'investment-objective': InvestmentObjective,
 }
 
+const TAB_IDS: TabId[] = ['overview', 'performance', 'key-facts', 'holdings']
+
 const TAB_LABELS: Record<TabId, string> = {
   overview: 'Overview',
   performance: 'Performance',
@@ -44,19 +46,36 @@ interface Props {
 export function TabNavigation({ config, sectionProps }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
 
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight' && index < TAB_IDS.length - 1) {
+      setActiveTab(TAB_IDS[index + 1])
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      setActiveTab(TAB_IDS[index - 1])
+    } else if (e.key === 'Home') {
+      setActiveTab(TAB_IDS[0])
+    } else if (e.key === 'End') {
+      setActiveTab(TAB_IDS[TAB_IDS.length - 1])
+    }
+  }
+
   return (
     <>
       {/* Tab bar — NOT sticky, scrolls with page */}
-      <div className="border-b border-gray-200 mb-8">
-        <div className="flex gap-0 overflow-x-auto">
-          {(Object.keys(TAB_LABELS) as TabId[]).map(id => (
+      <div className="border-b border-border-light mb-8">
+        <div role="tablist" className="flex gap-0 overflow-x-auto">
+          {TAB_IDS.map((id, index) => (
             <button
               key={id}
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={`tabpanel-${id}`}
+              tabIndex={activeTab === id ? 0 : -1}
               onClick={() => setActiveTab(id)}
-              className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors ${
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary ${
                 activeTab === id
-                  ? 'border-b-2 border-gray-900 text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-b-2 border-text-primary text-text-primary'
+                  : 'text-text-muted hover:text-text-secondary'
               }`}
             >
               {TAB_LABELS[id]}
@@ -66,13 +85,18 @@ export function TabNavigation({ config, sectionProps }: Props) {
       </div>
 
       {/* Tab panel — min height prevents layout jump */}
-      <div className="min-h-[400px]">
+      <div
+        id={`tabpanel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        className="min-h-[400px]"
+      >
         {config.tabs[activeTab].map((sectionId, i) => {
           const Section = REGISTRY[sectionId]
           if (!Section) return null
           return (
             <div key={sectionId}>
-              {i > 0 && <hr className="border-gray-200 my-8" />}
+              {i > 0 && <hr className="border-border-light my-8" />}
               <Section {...sectionProps} />
             </div>
           )

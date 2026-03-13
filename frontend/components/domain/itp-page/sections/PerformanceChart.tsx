@@ -40,8 +40,8 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
     <section className="py-8">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Performance</h2>
-          <p className="text-xs text-gray-400 mt-1">as of {asOfToday()}</p>
+          <h2 className="text-2xl font-bold text-text-primary">Performance</h2>
+          <p className="text-xs text-text-muted mt-1">as of {asOfToday()}</p>
         </div>
         <div className="flex gap-1">
           {TIMEFRAMES.map(t => (
@@ -50,8 +50,8 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
               onClick={() => setTf(t.value)}
               className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
                 tf === t.value
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-500 hover:text-gray-900'
+                  ? 'bg-text-primary text-text-inverse'
+                  : 'bg-muted text-text-secondary hover:text-text-primary'
               }`}
             >
               {t.label}
@@ -66,8 +66,8 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
             <div className="animate-pulse bg-gray-200 h-full w-full rounded" />
           </div>
         ) : chartData.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded">
-            <p className="text-sm text-gray-400">Performance data not yet available</p>
+          <div className="h-[300px] flex items-center justify-center bg-surface rounded">
+            <p className="text-sm text-text-muted">Performance data not yet available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
@@ -117,12 +117,12 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
 
       {/* Since Inception Return */}
       {sinceInception != null && inceptionDate && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <span className="text-xs text-gray-500">Since Inception Return: </span>
+        <div className="mt-4 pt-4 border-t border-border-light">
+          <span className="text-xs text-text-secondary">Since Inception Return: </span>
           <span className={`text-lg font-bold ${sinceInception >= 0 ? 'text-color-up' : 'text-color-down'}`}>
             {sinceInception >= 0 ? '+' : ''}{sinceInception.toFixed(2)}%
           </span>
-          <span className="text-xs text-gray-400 ml-2">(from {inceptionDate})</span>
+          <span className="text-xs text-text-muted ml-2">(from {inceptionDate})</span>
         </div>
       )}
     </section>

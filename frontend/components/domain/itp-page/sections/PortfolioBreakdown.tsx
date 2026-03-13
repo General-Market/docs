@@ -31,7 +31,7 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <h2 className="text-2xl font-bold text-text-primary mb-6">
         Portfolio Composition
       </h2>
       <div className="py-4">

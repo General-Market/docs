@@ -63,17 +63,17 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
   type Fact = { label: string; value: string; full?: string; copyable?: boolean; asOf?: boolean }
 
   const FactRow = ({ f }: { f: Fact }) => (
-    <div className="flex justify-between py-3 border-b border-gray-100">
+    <div className="flex justify-between py-3 border-b border-border-light">
       <div>
-        <span className="text-sm text-gray-600">{f.label}</span>
-        {f.asOf && <div className="text-[10px] text-gray-400">as of {asOfToday()}</div>}
+        <span className="text-sm text-text-secondary">{f.label}</span>
+        {f.asOf && <div className="text-[10px] text-text-muted">as of {asOfToday()}</div>}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-gray-900 text-right">{f.value}</span>
+        <span className="text-sm font-semibold text-text-primary text-right">{f.value}</span>
         {f.copyable && (
           <button
             onClick={() => copyToClipboard(f.full!, f.label)}
-            className="text-xs text-gray-400 hover:text-gray-900 transition-colors"
+            className="text-xs text-text-muted hover:text-text-primary transition-colors"
           >
             {copied === f.label ? 'Copied!' : 'Copy'}
           </button>
@@ -84,7 +84,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
 
   return (
     <section className="py-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Fund Details</h2>
+      <h2 className="text-2xl font-bold text-text-primary mb-6">Fund Details</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
         <div>
@@ -98,26 +98,26 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       {/* Portfolio Characteristics */}
       {concentration && (
         <>
-          <h3 className="text-xl font-bold text-gray-900 mt-10 mb-4">Portfolio Characteristics</h3>
+          <h3 className="text-xl font-bold text-text-primary mt-10 mb-4">Portfolio Characteristics</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
             <div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Top 5 Concentration</span>
-                <span className="text-sm font-semibold text-gray-900">{concentration.top5.toFixed(1)}%</span>
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-sm text-text-secondary">Top 5 Concentration</span>
+                <span className="text-sm font-semibold text-text-primary">{concentration.top5.toFixed(1)}%</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Top 10 Concentration</span>
-                <span className="text-sm font-semibold text-gray-900">{concentration.top10.toFixed(1)}%</span>
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-sm text-text-secondary">Top 10 Concentration</span>
+                <span className="text-sm font-semibold text-text-primary">{concentration.top10.toFixed(1)}%</span>
               </div>
             </div>
             <div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-600">HHI Index</span>
-                <span className="text-sm font-semibold text-gray-900">{Math.round(concentration.hhi)} ({concentration.hhiLabel})</span>
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-sm text-text-secondary">HHI Index</span>
+                <span className="text-sm font-semibold text-text-primary">{Math.round(concentration.hhi)} ({concentration.hhiLabel})</span>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Average Market Cap</span>
-                <span className="text-sm font-semibold text-gray-900">{formatMcap(concentration.avgMcap)}</span>
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-sm text-text-secondary">Average Market Cap</span>
+                <span className="text-sm font-semibold text-text-primary">{formatMcap(concentration.avgMcap)}</span>
               </div>
             </div>
           </div>
@@ -125,14 +125,14 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       )}
 
       {/* Fees */}
-      <h3 className="text-xl font-bold text-gray-900 mt-10 mb-4">Fees</h3>
+      <h3 className="text-xl font-bold text-text-primary mt-10 mb-4">Fees</h3>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
-        <div className="flex justify-between py-3 border-b border-gray-100">
-          <span className="text-sm text-gray-600">Management Fee</span>
-          <span className="text-sm font-semibold text-gray-900">0.00%</span>
+        <div className="flex justify-between py-3 border-b border-border-light">
+          <span className="text-sm text-text-secondary">Management Fee</span>
+          <span className="text-sm font-semibold text-text-primary">0.00%</span>
         </div>
       </div>
-      <p className="text-[10px] text-gray-400 mt-2">Network gas costs apply to all transactions.</p>
+      <p className="text-[10px] text-text-muted mt-2">Network gas costs apply to all transactions.</p>
     </section>
   )
 }
