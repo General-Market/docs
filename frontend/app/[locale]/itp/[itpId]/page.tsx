@@ -13,6 +13,10 @@ interface Props {
   params: Promise<{ locale: string; itpId: string }>
 }
 
+function parseItpNum(itpId: string): number {
+  return parseInt((itpId?.startsWith('0x') ? itpId.slice(2) : itpId || '0'), 16) || 0
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, itpId } = await params
   const [itp, t] = await Promise.all([
@@ -20,21 +24,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     getTranslations({ locale, namespace: 'seo.pages.itp' }),
   ])
 
-  if (!itp) {
-    return { title: t('not_found') }
-  }
+  const num = parseItpNum(itpId)
+  const name = itp?.name || `ITP #${num}`
+  const symbol = itp?.symbol || `ITP${num}`
+  const assetCount = itp?.assetCount || 0
+  const nav = itp?.nav || 0
 
   const description = t('description', {
-    name: itp.name,
-    symbol: itp.symbol,
-    count: itp.assetCount,
-    nav: itp.nav.toFixed(4),
+    name,
+    symbol,
+    count: assetCount,
+    nav: nav.toFixed(4),
   })
 
-  const ogTitle = t('og_title', { name: itp.name })
+  const ogTitle = t('og_title', { name })
 
   return {
-    title: t('title', { name: itp.name, symbol: itp.symbol }),
+    title: t('title', { name, symbol }),
     description,
     openGraph: {
       title: ogTitle,
@@ -80,8 +86,8 @@ export default async function ItpPage({ params }: Props) {
     fetchEnrichment(itpId),
   ])
 
-  // Fallback when data-node is unreachable — render shell, client SSE fills real data
-  const itpNum = parseInt((itpId?.startsWith('0x') ? itpId.slice(2) : itpId || '0'), 16) || 0
+  // Fallback when data-node is unreachable — render shell, client hooks fill real data
+  const itpNum = parseItpNum(itpId)
   const data = itp ?? {
     itpId,
     name: `ITP #${itpNum}`,
