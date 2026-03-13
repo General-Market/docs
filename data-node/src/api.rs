@@ -3144,6 +3144,19 @@ struct VaultBalancesResponse {
 async fn vault_balances(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<VaultBalancesResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Wrap entire handler in a timeout to prevent hanging when settlement chain is slow
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        vault_balances_inner(&state),
+    ).await {
+        Ok(result) => result,
+        Err(_) => Err(internal_error("vault-balances timed out after 10s".to_string())),
+    }
+}
+
+async fn vault_balances_inner(
+    state: &AppState,
+) -> Result<Json<VaultBalancesResponse>, (StatusCode, Json<ErrorResponse>)> {
     let settlement = &state.settlement_provider;
 
     let vault_addr = deployment_addr(&state.deployment, "MockBitgetVault").map_err(|e| rpc_error(e))?;
@@ -5827,6 +5840,13 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     // Issuer nodes from cached registry
     let registry = cache.issuer_registry.read().await;
     let total_issuers = registry.len() as u64;
+    // Use earliest order timestamp from DB as a proxy for registration time
+    let registered_at_unix = match sqlx::query_as::<_, (Option<i64>,)>(
+        "SELECT EXTRACT(EPOCH FROM MIN(order_timestamp))::bigint FROM trades"
+    ).fetch_optional(&state.pool).await {
+        Ok(Some((Some(ts),))) if ts > 0 => ts as u64,
+        _ => 0,
+    };
     let nodes: Vec<IssuerNodeInfo> = registry.iter().enumerate().map(|(idx, iss)| {
         IssuerNodeInfo {
             id: (idx + 1) as u64,
@@ -5834,41 +5854,89 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
             ip: iss.endpoint.clone(),
             bls_pubkey_short: truncate_hex(&iss.bls_pubkey, 10, 4),
             status: 1, // all cached issuers are registered
-            registered_at: 0,
+            registered_at: registered_at_unix,
         }
     }).collect();
     drop(registry);
 
-    // Recent orders from cached pending/batched orders (no event scanning needed)
-    let pending = cache.pending_orders.read().await;
-    let batched = cache.batched_orders.read().await;
-    let mut all_orders: Vec<&crate::chain_cache::CachedLimitOrder> = Vec::new();
-    all_orders.extend(pending.iter());
-    all_orders.extend(batched.iter());
-    all_orders.sort_by(|a, b| b.order_id.cmp(&a.order_id));
-    all_orders.truncate(20);
-
-    let recent_orders: Vec<RecentOrderInfo> = all_orders.iter().map(|o| {
-        RecentOrderInfo {
-            order_id: o.order_id,
-            user: o.user.clone(),
-            itp_id: o.itp_id.clone(),
-            side: o.side,
-            amount: o.amount.clone(),
-            block_number: 0,
-            block_timestamp: o.timestamp,
-            status: if o.status == 0 { "pending".into() } else { "filled".into() },
-            fill_time_seconds: None,
-            fill_cycle: None,
+    // Recent orders: query DB for the last 20 orders (including filled ones)
+    // so the System section shows real activity with fill times.
+    let recent_orders: Vec<RecentOrderInfo> = match sqlx::query_as::<_, (i64, String, String, i16, String, i16, i64, Option<i64>, Option<f64>)>(
+        "SELECT order_id, user_address, itp_id, side, amount, status, \
+         EXTRACT(EPOCH FROM order_timestamp)::bigint, \
+         EXTRACT(EPOCH FROM fill_timestamp)::bigint, \
+         CASE WHEN fill_timestamp IS NOT NULL THEN \
+           EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp)) \
+         END \
+         FROM trades ORDER BY order_id DESC LIMIT 20"
+    ).fetch_all(&state.pool).await {
+        Ok(rows) => rows.into_iter().map(|(oid, user, itp_id, side, amount, status, order_ts, _fill_ts, fill_latency)| {
+            RecentOrderInfo {
+                order_id: oid as u64,
+                user,
+                itp_id,
+                side: side as u8,
+                amount,
+                block_number: 0,
+                block_timestamp: order_ts as u64,
+                status: if status == 2 { "filled".into() } else { "pending".into() },
+                fill_time_seconds: fill_latency,
+                fill_cycle: None,
+            }
+        }).collect(),
+        Err(e) => {
+            tracing::warn!("system_snapshot: DB query for recent orders failed: {}", e);
+            // Fallback to cached pending/batched orders
+            let pending = cache.pending_orders.read().await;
+            let batched = cache.batched_orders.read().await;
+            let mut all_orders: Vec<&crate::chain_cache::CachedLimitOrder> = Vec::new();
+            all_orders.extend(pending.iter());
+            all_orders.extend(batched.iter());
+            all_orders.sort_by(|a, b| b.order_id.cmp(&a.order_id));
+            all_orders.truncate(20);
+            all_orders.iter().map(|o| {
+                RecentOrderInfo {
+                    order_id: o.order_id,
+                    user: o.user.clone(),
+                    itp_id: o.itp_id.clone(),
+                    side: o.side,
+                    amount: o.amount.clone(),
+                    block_number: 0,
+                    block_timestamp: o.timestamp,
+                    status: if o.status == 0 { "pending".into() } else { "filled".into() },
+                    fill_time_seconds: None,
+                    fill_cycle: None,
+                }
+            }).collect()
         }
-    }).collect();
-    drop(pending);
-    drop(batched);
+    };
+
+    // Calculate average fill time from DB (last 100 filled orders)
+    let avg_fill_time_seconds = match sqlx::query_as::<_, (Option<f64>,)>(
+        "SELECT AVG(latency) FROM ( \
+           SELECT EXTRACT(EPOCH FROM (fill_timestamp - order_timestamp)) AS latency \
+           FROM trades WHERE status = 2 AND fill_timestamp IS NOT NULL \
+           ORDER BY order_id DESC LIMIT 100 \
+         ) sub"
+    ).fetch_optional(&state.pool).await {
+        Ok(Some((Some(avg),))) if avg > 0.0 => avg,
+        _ => 0.0,
+    };
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
-    // Fetch vault asset balances from settlement chain
-    let (vault_assets, vault_usd_total) = build_vault_snapshot(state, &state.settlement_provider).await;
+    // Fetch vault asset balances from settlement chain (with 5s timeout)
+    let vault_result = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        build_vault_snapshot(state, &state.settlement_provider),
+    ).await;
+    let (vault_assets, vault_usd_total) = match vault_result {
+        Ok((assets, total)) => (assets, total),
+        Err(_) => {
+            tracing::warn!("system_snapshot: vault snapshot timed out after 5s");
+            (vec![], 0.0)
+        }
+    };
 
     SystemSnapshot {
         is_healthy,
@@ -5878,7 +5946,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         last_cycle_number,
         pending_orders,
         l3_block_number,
-        avg_fill_time_seconds: 0.0,
+        avg_fill_time_seconds,
         nodes,
         recent_orders,
         vault_assets,

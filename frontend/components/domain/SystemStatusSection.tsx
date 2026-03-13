@@ -276,7 +276,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                 <div className="flex justify-between items-center py-[3px]">
                   <span className="text-[11px] text-text-muted font-medium">{t('issuer_network.node_details.ap_vault')}</span>
                   <LiveValue
-                    value={vault.totalUsdValue}
+                    value={vault.totalUsdValue || sys.vaultUsdValue}
                     format={formatUsdCompact}
                     className="text-[11px] font-semibold font-mono text-color-up"
                   />
