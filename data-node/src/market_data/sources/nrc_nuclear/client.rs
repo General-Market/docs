@@ -16,8 +16,9 @@ use anyhow::Result;
 use chrono::Utc;
 use rust_decimal::Decimal;
 use std::collections::HashMap;
-use std::time::Duration;
-use tracing::{debug, info, warn};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+use tracing::{debug, info};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
@@ -30,12 +31,22 @@ const DATA_URL: &str = "https://www.nrc.gov/reading-rm/doc-collections/event-sta
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
+/// Cached NRC data to avoid re-downloading the 365-day file on every call.
+/// The file is ~1MB and only updates daily, so caching for 30 minutes is safe.
+struct CachedNrcData {
+    body: String,
+    fetched_at: Instant,
+}
+
 /// NRC Nuclear Reactors market data source.
 ///
 /// Tracks power output percentage for US commercial nuclear reactors.
 /// Source ID is `"nrc_nuclear"`.
 pub struct NrcNuclearMarketSource {
     http: SourceHttpClient,
+    /// Cache the 365-day file to avoid redundant downloads.
+    /// Both fetch_assets and fetch_prices need the same file.
+    cache: Mutex<Option<CachedNrcData>>,
 }
 
 impl NrcNuclearMarketSource {
@@ -49,24 +60,57 @@ impl NrcNuclearMarketSource {
 
         // Use a custom client with User-Agent header — government sites
         // may block requests without one. Also use a longer timeout since
-        // the NRC server has had transient DNS/connectivity issues.
+        // the NRC server can be slow (365-day file is ~1MB).
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(45))
+            .timeout(Duration::from_secs(60))
+            .connect_timeout(Duration::from_secs(15))
             .user_agent("IndexDataNode/1.0 (contact: data@index.markets)")
             .build()
             .expect("Failed to create NRC HTTP client");
 
         let retry = RetryConfig {
-            max_retries: 4,          // extra retry for transient DNS issues
-            base_delay_ms: 500,      // longer base delay for gov site
-            max_delay_ms: 10_000,
+            max_retries: 5,          // extra retries for transient DNS/connectivity issues
+            base_delay_ms: 2000,     // longer base delay for gov site
+            max_delay_ms: 30_000,
         };
 
         let http = SourceHttpClient::with_client(client, rate_limit, retry);
 
         info!("NRC Nuclear Reactors source initialized");
 
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            cache: Mutex::new(None),
+        })
+    }
+
+    /// Get the NRC data, using cache if fresh enough (30 minutes).
+    async fn get_nrc_data(&self) -> Result<String> {
+        // Check cache first
+        {
+            let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(ref cached) = *cache {
+                if cached.fetched_at.elapsed() < Duration::from_secs(1800) {
+                    debug!("Using cached NRC data (age: {:?})", cached.fetched_at.elapsed());
+                    return Ok(cached.body.clone());
+                }
+            }
+        }
+
+        // Cache miss or stale — download fresh
+        let body = self.http.get_raw(DATA_URL).await
+            .map_err(|e| anyhow::anyhow!("NRC data download failed: {}", e))?;
+
+        // Update cache
+        {
+            let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+            *cache = Some(CachedNrcData {
+                body: body.clone(),
+                fetched_at: Instant::now(),
+            });
+        }
+
+        Ok(body)
     }
 }
 
@@ -98,7 +142,7 @@ impl MarketDataSource for NrcNuclearMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
-        let body = self.http.get_raw(DATA_URL).await?;
+        let body = self.get_nrc_data().await?;
         let rows = parse_nrc_data(&body);
 
         // Collect unique unit names
@@ -144,7 +188,7 @@ impl MarketDataSource for NrcNuclearMarketSource {
 
         let now = Utc::now();
 
-        let body = self.http.get_raw(DATA_URL).await?;
+        let body = self.get_nrc_data().await?;
         let rows = parse_nrc_data(&body);
 
         // Build lookup: asset_id -> most recent power reading

@@ -1,1 +1,452 @@
-[]
+[
+  {
+    "asset_id": "ioda_us",
+    "symbol": "IODA/US",
+    "name": "United States Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "US",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_cn",
+    "symbol": "IODA/CN",
+    "name": "China Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CN",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_in",
+    "symbol": "IODA/IN",
+    "name": "India Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "IN",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_br",
+    "symbol": "IODA/BR",
+    "name": "Brazil Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "BR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ru",
+    "symbol": "IODA/RU",
+    "name": "Russia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "RU",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_jp",
+    "symbol": "IODA/JP",
+    "name": "Japan Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "JP",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_de",
+    "symbol": "IODA/DE",
+    "name": "Germany Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "DE",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_gb",
+    "symbol": "IODA/GB",
+    "name": "United Kingdom Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "GB",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_fr",
+    "symbol": "IODA/FR",
+    "name": "France Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "FR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_kr",
+    "symbol": "IODA/KR",
+    "name": "South Korea Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "KR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_it",
+    "symbol": "IODA/IT",
+    "name": "Italy Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "IT",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ca",
+    "symbol": "IODA/CA",
+    "name": "Canada Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CA",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_au",
+    "symbol": "IODA/AU",
+    "name": "Australia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "AU",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_mx",
+    "symbol": "IODA/MX",
+    "name": "Mexico Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "MX",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_es",
+    "symbol": "IODA/ES",
+    "name": "Spain Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "ES",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_id",
+    "symbol": "IODA/ID",
+    "name": "Indonesia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "ID",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_nl",
+    "symbol": "IODA/NL",
+    "name": "Netherlands Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "NL",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_tr",
+    "symbol": "IODA/TR",
+    "name": "Turkey Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "TR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_sa",
+    "symbol": "IODA/SA",
+    "name": "Saudi Arabia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "SA",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ch",
+    "symbol": "IODA/CH",
+    "name": "Switzerland Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CH",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_pl",
+    "symbol": "IODA/PL",
+    "name": "Poland Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "PL",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_se",
+    "symbol": "IODA/SE",
+    "name": "Sweden Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "SE",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_be",
+    "symbol": "IODA/BE",
+    "name": "Belgium Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "BE",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_th",
+    "symbol": "IODA/TH",
+    "name": "Thailand Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "TH",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ar",
+    "symbol": "IODA/AR",
+    "name": "Argentina Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "AR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ng",
+    "symbol": "IODA/NG",
+    "name": "Nigeria Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "NG",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_at",
+    "symbol": "IODA/AT",
+    "name": "Austria Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "AT",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_no",
+    "symbol": "IODA/NO",
+    "name": "Norway Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "NO",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ae",
+    "symbol": "IODA/AE",
+    "name": "UAE Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "AE",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_il",
+    "symbol": "IODA/IL",
+    "name": "Israel Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "IL",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ie",
+    "symbol": "IODA/IE",
+    "name": "Ireland Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "IE",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_sg",
+    "symbol": "IODA/SG",
+    "name": "Singapore Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "SG",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_dk",
+    "symbol": "IODA/DK",
+    "name": "Denmark Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "DK",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_my",
+    "symbol": "IODA/MY",
+    "name": "Malaysia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "MY",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ph",
+    "symbol": "IODA/PH",
+    "name": "Philippines Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "PH",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_co",
+    "symbol": "IODA/CO",
+    "name": "Colombia Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CO",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_pk",
+    "symbol": "IODA/PK",
+    "name": "Pakistan Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "PK",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_cl",
+    "symbol": "IODA/CL",
+    "name": "Chile Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CL",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_fi",
+    "symbol": "IODA/FI",
+    "name": "Finland Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "FI",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_eg",
+    "symbol": "IODA/EG",
+    "name": "Egypt Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "EG",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_pt",
+    "symbol": "IODA/PT",
+    "name": "Portugal Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "PT",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_cz",
+    "symbol": "IODA/CZ",
+    "name": "Czech Republic Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "CZ",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_vn",
+    "symbol": "IODA/VN",
+    "name": "Vietnam Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "VN",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ro",
+    "symbol": "IODA/RO",
+    "name": "Romania Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "RO",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_nz",
+    "symbol": "IODA/NZ",
+    "name": "New Zealand Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "NZ",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_za",
+    "symbol": "IODA/ZA",
+    "name": "South Africa Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "ZA",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ua",
+    "symbol": "IODA/UA",
+    "name": "Ukraine Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "UA",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_bd",
+    "symbol": "IODA/BD",
+    "name": "Bangladesh Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "BD",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ir",
+    "symbol": "IODA/IR",
+    "name": "Iran Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "IR",
+    "active": true
+  },
+  {
+    "asset_id": "ioda_ke",
+    "symbol": "IODA/KE",
+    "name": "Kenya Internet Outages",
+    "category": "environment",
+    "subcategory": "internet_outage",
+    "api_ref": "KE",
+    "active": true
+  }
+]

@@ -15,6 +15,7 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -39,10 +40,15 @@ const API_BASE: &str = "https://oauth.reddit.com";
 const BATCH_SIZE: usize = 100;
 
 /// Request timeout
-const REQUEST_TIMEOUT_SECS: u64 = 15;
+const REQUEST_TIMEOUT_SECS: u64 = 30;
 
-/// User-Agent (Reddit requires a descriptive one)
-const USER_AGENT: &str = "IndexDataNode/1.0 (by /u/IndexDataBot)";
+/// User-Agent (Reddit requires a descriptive one for public API access)
+const USER_AGENT: &str = "linux:com.indexmarkets.datanode:v1.0.0 (by /u/IndexDataBot)";
+
+/// How many subreddits to fetch per sync cycle in public mode.
+/// With 8 req/min rate limit, 20 subs takes ~2.5 minutes — keeps sync well under timeout.
+/// Next cycle picks up where this one left off (round-robin).
+const PUBLIC_BATCH_PER_CYCLE: usize = 20;
 
 /// Curated subreddits covering crypto, finance, tech, gaming, politics, sports, entertainment
 const SUBREDDITS: &[&str] = &[
@@ -162,6 +168,9 @@ pub struct RedditMarketSource {
     token_cache: OAuthTokenCache,
     /// Whether we have OAuth credentials.
     authenticated: bool,
+    /// Round-robin offset for public mode: tracks which subreddits to fetch next.
+    /// Each sync cycle fetches PUBLIC_BATCH_PER_CYCLE subreddits starting from this offset.
+    public_offset: AtomicUsize,
 }
 
 impl RedditMarketSource {
@@ -203,13 +212,19 @@ impl RedditMarketSource {
             .build()
             .context("Failed to build HTTP client for SourceHttpClient")?;
 
-        let http = SourceHttpClient::with_client(http_client, rate_config, RetryConfig::default());
+        let retry = RetryConfig {
+            max_retries: 4,
+            base_delay_ms: 1000,   // reddit can be slow to un-rate-limit
+            max_delay_ms: 15_000,
+        };
+        let http = SourceHttpClient::with_client(http_client, rate_config, retry);
 
+        let subs = Self::subreddit_list();
         info!(
             "Reddit source initialized (auth={}), tracking {} subreddits ({} assets)",
             if authenticated { "OAuth2" } else { "public (no auth, 10 req/min)" },
-            SUBREDDITS.len(),
-            SUBREDDITS.len() * 2
+            subs.len(),
+            subs.len() * 2
         );
 
         Ok(Self {
@@ -219,6 +234,7 @@ impl RedditMarketSource {
             client_secret,
             token_cache: OAuthTokenCache::new("Reddit"),
             authenticated,
+            public_offset: AtomicUsize::new(0),
         })
     }
 
@@ -301,14 +317,22 @@ impl RedditMarketSource {
     }
 
     /// Fetch a single subreddit's info via the public JSON API (no auth needed).
-    /// Uses SourceHttpClient for rate limiting and retry.
+    /// Uses old.reddit.com which is less strict about rate limiting from VPS IPs.
+    /// Falls back to www.reddit.com if old.reddit.com fails.
     async fn fetch_subreddit_public(&self, sub: &str) -> Result<SubredditData> {
-        let url = format!("https://www.reddit.com/r/{}/about.json", sub);
+        // old.reddit.com is more lenient with VPS IPs and rate limits
+        let url = format!("https://old.reddit.com/r/{}/about.json", sub);
 
-        let resp: SubredditAboutResponse = self.http.get_json(&url).await
-            .map_err(|e| anyhow::anyhow!("Reddit public API failed for r/{}: {}", sub, e))?;
-
-        Ok(resp.data)
+        match self.http.get_json::<SubredditAboutResponse>(&url).await {
+            Ok(resp) => Ok(resp.data),
+            Err(e) => {
+                debug!("old.reddit.com failed for r/{}: {}, trying www.reddit.com", sub, e);
+                let fallback_url = format!("https://www.reddit.com/r/{}/about.json", sub);
+                let resp: SubredditAboutResponse = self.http.get_json(&fallback_url).await
+                    .map_err(|e2| anyhow::anyhow!("Reddit public API failed for r/{}: old={}, www={}", sub, e, e2))?;
+                Ok(resp.data)
+            }
+        }
     }
 
     /// Deduplicated subreddit list
@@ -340,7 +364,10 @@ impl MarketDataSource for RedditMarketSource {
         if self.authenticated {
             Duration::from_secs(600) // 10 minutes with OAuth
         } else {
-            Duration::from_secs(3600) // 1 hour with public API (slower due to rate limits)
+            // Public mode fetches PUBLIC_BATCH_PER_CYCLE subs per cycle via round-robin.
+            // With ~160 subs and 20/cycle, full coverage takes ~8 cycles.
+            // 5 min interval = all subs refreshed within ~40 min.
+            Duration::from_secs(300)
         }
     }
 
@@ -432,11 +459,11 @@ impl MarketDataSource for RedditMarketSource {
             return Ok(Vec::new());
         }
 
-        let subs_vec: Vec<String> = subs_needed.into_iter().collect();
         let mut sub_data: std::collections::HashMap<String, (u64, u64)> = std::collections::HashMap::new();
 
         if self.authenticated {
             // Authenticated mode: batch fetch via OAuth /api/info
+            let subs_vec: Vec<String> = subs_needed.into_iter().collect();
             for chunk in subs_vec.chunks(BATCH_SIZE) {
                 let chunk_refs: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
                 match self.fetch_subreddit_batch(&chunk_refs).await {
@@ -454,22 +481,58 @@ impl MarketDataSource for RedditMarketSource {
                 }
             }
         } else {
-            // Public mode: fetch one subreddit at a time via /r/{sub}/about.json
-            // Rate limit is ~10 req/min so we add inter-request delays
-            for sub in &subs_vec {
+            // Public mode: round-robin fetch PUBLIC_BATCH_PER_CYCLE subreddits per sync.
+            // This avoids hammering the public API with 161 sequential requests that
+            // would take 16+ minutes and get rate-limited/blocked.
+            let all_subs: Vec<String> = {
+                let mut v: Vec<String> = subs_needed.into_iter().collect();
+                v.sort(); // deterministic ordering for round-robin
+                v
+            };
+            let total = all_subs.len();
+            let offset = self.public_offset.load(Ordering::Relaxed) % total;
+            let batch_size = PUBLIC_BATCH_PER_CYCLE.min(total);
+
+            // Select the next batch_size subreddits starting from offset (wrapping)
+            let mut subs_this_cycle: Vec<&str> = Vec::with_capacity(batch_size);
+            for i in 0..batch_size {
+                let idx = (offset + i) % total;
+                subs_this_cycle.push(&all_subs[idx]);
+            }
+
+            // Advance the offset for next cycle
+            self.public_offset.store(offset + batch_size, Ordering::Relaxed);
+
+            info!(
+                "Reddit public mode: fetching subs {}-{} of {} (offset={})",
+                offset,
+                offset + batch_size - 1,
+                total,
+                offset
+            );
+
+            let mut success_count = 0usize;
+            let mut fail_count = 0usize;
+
+            for sub in &subs_this_cycle {
                 match self.fetch_subreddit_public(sub).await {
                     Ok(data) => {
                         let name = data.display_name.to_lowercase();
                         let subscribers = data.subscribers.unwrap_or(0);
                         let active = data.accounts_active.unwrap_or(0);
                         sub_data.insert(name, (subscribers, active));
+                        success_count += 1;
                     }
                     Err(e) => {
                         debug!("Failed to fetch r/{} (public): {:?}", sub, e);
+                        fail_count += 1;
+                        // If we're getting blocked, stop early to avoid wasting rate limit budget
+                        if fail_count >= 5 && success_count == 0 {
+                            warn!("Reddit: 5 consecutive failures with 0 successes, stopping early (likely IP-blocked)");
+                            break;
+                        }
                     }
                 }
-                // 6-second delay to stay well under 10 req/min public limit
-                tokio::time::sleep(Duration::from_secs(6)).await;
             }
         }
 

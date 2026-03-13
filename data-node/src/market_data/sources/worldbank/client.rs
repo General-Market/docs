@@ -3,10 +3,9 @@
 //! Fetches global economic indicators from https://api.worldbank.org/v2/
 //! Free public API with no authentication required.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::Deserialize;
 use std::str::FromStr;
 use std::time::Duration;
 use tracing::{debug, info};
@@ -24,33 +23,6 @@ const WB_API_URL: &str = "https://api.worldbank.org/v2";
 /// Asset configuration loaded from JSON at compile time
 const ASSET_JSON: &str = include_str!("../../../config/worldbank.json");
 
-/// World Bank API response structure
-/// Note: Response is parsed manually from JSON, these types are kept for reference
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct WbDataResponse(Vec<serde_json::Value>, Vec<WbDataPoint>);
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct WbDataPoint {
-    indicator: WbIndicatorRef,
-    country: WbCountryRef,
-    value: Option<f64>,
-    date: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct WbIndicatorRef {
-    id: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(dead_code)]
-struct WbCountryRef {
-    id: String,
-}
-
 /// World Bank market data source
 pub struct WorldBankMarketSource {
     http: SourceHttpClient,
@@ -65,7 +37,22 @@ impl WorldBankMarketSource {
                 duration: Duration::from_secs(60),
             }],
         };
-        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
+
+        // Use a custom client with User-Agent and longer timeout for World Bank API
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(45))
+            .connect_timeout(Duration::from_secs(10))
+            .user_agent("IndexDataNode/1.0")
+            .build()
+            .expect("Failed to create World Bank HTTP client");
+
+        let retry = RetryConfig {
+            max_retries: 4,
+            base_delay_ms: 500,
+            max_delay_ms: 10_000,
+        };
+
+        let http = SourceHttpClient::with_client(client, rate_limit, retry);
 
         let asset_count = load_assets_from_json(ASSET_JSON)
             .map(|a| a.len())
@@ -89,53 +76,6 @@ impl WorldBankMarketSource {
         format!("wb_{}_{}", country.to_lowercase(), ind_short)
     }
 
-    /// Fetch indicator data for a country
-    async fn fetch_indicator(
-        &self,
-        country: &str,
-        indicator: &str,
-    ) -> Result<Option<(String, f64)>> {
-        let url = format!(
-            "{}/country/{}/indicator/{}?format=json&per_page=1&mrv=1",
-            WB_API_URL, country, indicator
-        );
-
-        // World Bank returns [metadata, data[]] array — fetch as raw text and parse
-        let text = match self.http.get_raw(&url).await {
-            Ok(t) => t,
-            Err(e) => {
-                debug!(
-                    "World Bank API error for {} {}: {}",
-                    country, indicator, e
-                );
-                return Ok(None);
-            }
-        };
-        let data: Vec<serde_json::Value> = serde_json::from_str(&text).with_context(|| {
-            format!(
-                "Failed to parse World Bank response for {} {}",
-                country, indicator
-            )
-        })?;
-
-        if data.len() < 2 {
-            return Ok(None);
-        }
-
-        // Parse data points
-        if let Some(points) = data.get(1).and_then(|v| v.as_array()) {
-            for point in points {
-                if let (Some(date), Some(value)) = (
-                    point.get("date").and_then(|d| d.as_str()),
-                    point.get("value").and_then(|v| v.as_f64()),
-                ) {
-                    return Ok(Some((date.to_string(), value)));
-                }
-            }
-        }
-
-        Ok(None)
-    }
 }
 
 #[async_trait::async_trait]
@@ -170,45 +110,97 @@ impl MarketDataSource for WorldBankMarketSource {
         load_assets_from_json(ASSET_JSON)
     }
 
-    async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+    async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+        if asset_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
         let now = Utc::now();
         let mut results = Vec::new();
 
-        let entries = load_all_asset_entries(ASSET_JSON)?;
+        // Build a lookup from asset_id -> entry for only the requested assets
+        let all_entries = load_all_asset_entries(ASSET_JSON)?;
+        let requested: std::collections::HashSet<&String> = asset_ids.iter().collect();
 
-        for entry in &entries {
+        // Group entries by indicator so we can batch countries for the same indicator.
+        // World Bank API supports multi-country queries: /country/USA;CHN;JPN/indicator/X
+        let mut indicator_groups: std::collections::HashMap<String, Vec<_>> = std::collections::HashMap::new();
+        for entry in &all_entries {
+            if !requested.contains(&entry.asset_id) {
+                continue;
+            }
             let Some((country, indicator)) = Self::parse_api_ref(&entry.api_ref) else {
                 continue;
             };
+            indicator_groups
+                .entry(indicator.to_string())
+                .or_default()
+                .push((country.to_string(), entry.clone()));
+        }
 
-            match self.fetch_indicator(country, indicator).await {
-                Ok(Some((_date, value))) => {
-                    if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
-                        results.push(PriceUpdate {
-                            asset_id: entry.asset_id.clone(),
-                            symbol: entry.symbol.clone(),
-                            value: decimal_value,
-                            prev_close: None,
-                            change_pct: None,
-                            volume_24h: None,
-                            market_cap: None,
-                            fetched_at: now,
-                        });
+        // Fetch each indicator once with all countries batched
+        for (indicator, country_entries) in &indicator_groups {
+            let countries: Vec<&str> = country_entries.iter().map(|(c, _)| c.as_str()).collect();
+            let countries_joined = countries.join(";");
+
+            let url = format!(
+                "{}/country/{}/indicator/{}?format=json&per_page=50&mrv=1",
+                WB_API_URL, countries_joined, indicator
+            );
+
+            match self.http.get_raw(&url).await {
+                Ok(text) => {
+                    let data: Vec<serde_json::Value> = match serde_json::from_str(&text) {
+                        Ok(d) => d,
+                        Err(e) => {
+                            debug!("Failed to parse World Bank response for {}: {}", indicator, e);
+                            continue;
+                        }
+                    };
+
+                    if data.len() < 2 {
+                        continue;
+                    }
+
+                    // Parse data points and build a country->value map
+                    let mut country_values: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+                    if let Some(points) = data.get(1).and_then(|v| v.as_array()) {
+                        for point in points {
+                            if let (Some(country_obj), Some(value)) = (
+                                point.get("country").and_then(|c| c.get("id")).and_then(|id| id.as_str()),
+                                point.get("value").and_then(|v| v.as_f64()),
+                            ) {
+                                // Only insert first occurrence (most recent value)
+                                country_values.entry(country_obj.to_string()).or_insert(value);
+                            }
+                        }
+                    }
+
+                    // Match back to entries
+                    for (country, entry) in country_entries {
+                        if let Some(&value) = country_values.get(country) {
+                            if let Ok(decimal_value) = Decimal::from_str(&value.to_string()) {
+                                results.push(PriceUpdate {
+                                    asset_id: entry.asset_id.clone(),
+                                    symbol: entry.symbol.clone(),
+                                    value: decimal_value,
+                                    prev_close: None,
+                                    change_pct: None,
+                                    volume_24h: None,
+                                    market_cap: None,
+                                    fetched_at: now,
+                                });
+                            }
+                        }
                     }
                 }
-                Ok(None) => {
-                    // Many country/indicator combos may not have recent data
-                }
                 Err(e) => {
-                    debug!(
-                        "Error fetching World Bank {} {}: {:?}",
-                        country, indicator, e
-                    );
+                    debug!("Error fetching World Bank indicator {}: {}", indicator, e);
                 }
             }
         }
 
-        info!("Fetched {} World Bank indicators", results.len());
+        info!("Fetched {}/{} World Bank indicators", results.len(), asset_ids.len());
         Ok(results)
     }
 }

@@ -157,6 +157,10 @@ impl MarketDataSource for ChrisMarketSource {
         }
     }
 
+    fn always_record_price(&self) -> bool {
+        true // Futures settle daily — always write a fresh timestamped record on each sync
+    }
+
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         load_assets_from_json(ASSET_JSON)
     }

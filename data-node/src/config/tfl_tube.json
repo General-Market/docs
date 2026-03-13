@@ -1,1 +1,13 @@
-[]
+[
+  {"asset_id":"tfl_tube_bakerloo","symbol":"TFL/BAK","name":"Bakerloo Line","category":"transport","subcategory":"tube","api_ref":"bakerloo","active":true},
+  {"asset_id":"tfl_tube_central","symbol":"TFL/CEN","name":"Central Line","category":"transport","subcategory":"tube","api_ref":"central","active":true},
+  {"asset_id":"tfl_tube_circle","symbol":"TFL/CIR","name":"Circle Line","category":"transport","subcategory":"tube","api_ref":"circle","active":true},
+  {"asset_id":"tfl_tube_district","symbol":"TFL/DIS","name":"District Line","category":"transport","subcategory":"tube","api_ref":"district","active":true},
+  {"asset_id":"tfl_tube_hammersmith_city","symbol":"TFL/HAM","name":"Hammersmith & City Line","category":"transport","subcategory":"tube","api_ref":"hammersmith-city","active":true},
+  {"asset_id":"tfl_tube_jubilee","symbol":"TFL/JUB","name":"Jubilee Line","category":"transport","subcategory":"tube","api_ref":"jubilee","active":true},
+  {"asset_id":"tfl_tube_metropolitan","symbol":"TFL/MET","name":"Metropolitan Line","category":"transport","subcategory":"tube","api_ref":"metropolitan","active":true},
+  {"asset_id":"tfl_tube_northern","symbol":"TFL/NOR","name":"Northern Line","category":"transport","subcategory":"tube","api_ref":"northern","active":true},
+  {"asset_id":"tfl_tube_piccadilly","symbol":"TFL/PIC","name":"Piccadilly Line","category":"transport","subcategory":"tube","api_ref":"piccadilly","active":true},
+  {"asset_id":"tfl_tube_victoria","symbol":"TFL/VIC","name":"Victoria Line","category":"transport","subcategory":"tube","api_ref":"victoria","active":true},
+  {"asset_id":"tfl_tube_waterloo_city","symbol":"TFL/WAT","name":"Waterloo & City Line","category":"transport","subcategory":"tube","api_ref":"waterloo-city","active":true}
+]

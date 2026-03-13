@@ -116,6 +116,10 @@ impl MarketDataSource for OpecMarketSource {
         }
     }
 
+    fn always_record_price(&self) -> bool {
+        true // OPEC basket price updates daily — always write a fresh timestamped record
+    }
+
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         load_assets_from_json(ASSET_JSON)
     }

@@ -1,14 +1,16 @@
-//! FINRA Daily Short Volume (Reg SHO) API client implementing MarketDataSource
+//! FINRA Consolidated Short Interest API client implementing MarketDataSource
 //!
-//! Fetches daily short volume data from https://api.finra.org/
+//! Fetches bi-monthly short interest data from https://api.finra.org/
 //! using OAuth 2.0 client_credentials flow.
 //!
 //! OAuth: POST https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token
-//! Data:  POST https://api.finra.org/data/group/otcMarket/name/regShoDaily
+//! Data:  POST https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest
 //!
-//! The value stored is the total short volume (sum across all market codes)
-//! for the most recent available trading day. Change% is the short ratio
-//! (short volume / total volume × 100).
+//! The value stored is the current short interest (total short position in shares).
+//! Change% is computed by the sync engine from previous values.
+//!
+//! Short interest is reported twice a month (mid-month and end-of-month settlement dates).
+//! FINRA publishes roughly 10 business days after each settlement date.
 //!
 //! Tracks 25 high-interest securities.
 
@@ -36,8 +38,13 @@ const ASSET_JSON: &str = include_str!("../../../config/finra.json");
 const OAUTH_URL: &str =
     "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials";
 
-/// FINRA Reg SHO daily short volume endpoint (otcMarket group)
-const DATA_URL: &str = "https://api.finra.org/data/group/otcMarket/name/regShoDaily";
+/// FINRA Consolidated Short Interest endpoint
+/// This dataset contains bi-monthly short interest for OTC and exchange-listed equities.
+/// Fields: symbolCode, currentShortPositionQuantity, previousShortPositionQuantity,
+///         changePreviousNumber, changePercent, averageDailyVolumeQuantity,
+///         daysToCoverQuantity, settlementDate, revisionFlag
+const SHORT_INTEREST_URL: &str =
+    "https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest";
 
 /// OAuth token response (FINRA returns expires_in as a string)
 #[derive(Debug, Deserialize)]
@@ -68,22 +75,35 @@ where
     }
 }
 
-/// Daily short volume row from FINRA regShoDaily API
+/// Short interest row from FINRA consolidatedShortInterest API
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct RegShoRow {
+struct ShortInterestRow {
+    /// Ticker symbol
     #[serde(default)]
-    securities_information_processor_symbol_identifier: Option<String>,
+    symbol_code: Option<String>,
+    /// Current reporting period short position (shares)
     #[serde(default)]
-    short_par_quantity: Option<f64>,
+    current_short_position_quantity: Option<f64>,
+    /// Previous reporting period short position (shares)
     #[serde(default)]
-    short_exempt_par_quantity: Option<f64>,
+    previous_short_position_quantity: Option<f64>,
+    /// Change from previous period (shares)
     #[serde(default)]
-    total_par_quantity: Option<f64>,
+    #[allow(dead_code)]
+    change_previous_number: Option<f64>,
+    /// Change from previous period (percent)
     #[serde(default)]
-    trade_report_date: Option<String>,
+    change_percent: Option<f64>,
+    /// Average daily volume used for days-to-cover computation
     #[serde(default)]
-    market_code: Option<String>,
+    average_daily_volume_quantity: Option<f64>,
+    /// Days to cover = currentShortPosition / averageDailyVolume
+    #[serde(default)]
+    days_to_cover_quantity: Option<f64>,
+    /// Settlement date for this reporting period (YYYY-MM-DD)
+    #[serde(default)]
+    settlement_date: Option<String>,
 }
 
 /// FINRA market data source
@@ -103,7 +123,7 @@ impl FinraMarketSource {
             std::env::var("FINRA_CLIENT_SECRET").context("FINRA_CLIENT_SECRET not set")?;
 
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(60))
             .build()
             .context("Failed to build reqwest client")?;
 
@@ -111,7 +131,7 @@ impl FinraMarketSource {
             .map(|a| a.len())
             .unwrap_or(0);
         info!(
-            "FINRA client initialized with {} securities (OAuth credentials configured)",
+            "FINRA Short Interest client initialized with {} securities (OAuth credentials configured)",
             asset_count
         );
 
@@ -158,57 +178,93 @@ impl FinraMarketSource {
             .await
     }
 
-    /// Fetch daily short volume rows for a symbol.
-    /// Returns multiple rows (one per market code) for the latest available date.
-    async fn fetch_short_volume(&self, symbol: &str) -> Result<Vec<RegShoRow>> {
+    /// Fetch consolidated short interest for all tracked symbols in a single API call.
+    /// The API supports IN filters, so we batch all 25 symbols into one request.
+    /// Returns rows for the most recent settlement date.
+    async fn fetch_short_interest(&self, symbols: &[&str]) -> Result<Vec<ShortInterestRow>> {
         let token = self.get_token().await?;
 
-        // Query without date filter — API returns the latest available date.
-        // We get multiple rows per market code (Q=NASDAQ, N=NYSE, B=ADF, etc.)
+        // Build the request body with all symbols in a single IN filter.
+        // Sort results by settlementDate descending to get the latest data first.
         let body = serde_json::json!({
             "fields": [
-                "securitiesInformationProcessorSymbolIdentifier",
-                "shortParQuantity",
-                "shortExemptParQuantity",
-                "totalParQuantity",
-                "tradeReportDate",
-                "marketCode"
+                "symbolCode",
+                "currentShortPositionQuantity",
+                "previousShortPositionQuantity",
+                "changePreviousNumber",
+                "changePercent",
+                "averageDailyVolumeQuantity",
+                "daysToCoverQuantity",
+                "settlementDate"
             ],
             "compareFilters": [{
-                "fieldName": "securitiesInformationProcessorSymbolIdentifier",
-                "fieldValue": symbol,
-                "compareType": "EQUAL"
+                "fieldName": "symbolCode",
+                "fieldValue": symbols.join(","),
+                "compareType": "IN"
             }],
-            "limit": 10
+            "sortFields": ["-settlementDate"],
+            "limit": 100
         });
 
         let resp = self
             .client
-            .post(DATA_URL)
+            .post(SHORT_INTEREST_URL)
             .header("Authorization", format!("Bearer {}", token))
             .header("Accept", "application/json")
             .json(&body)
             .send()
             .await
-            .with_context(|| format!("Failed to fetch FINRA short volume for {}", symbol))?;
+            .context("Failed to fetch FINRA short interest data")?;
 
         let status = resp.status();
 
+        // On 401, invalidate the token cache and retry once
+        if status.as_u16() == 401 {
+            warn!("FINRA API returned 401 — invalidating token and retrying");
+            self.token_cache.invalidate().await;
+
+            let token = self.get_token().await?;
+            let resp = self
+                .client
+                .post(SHORT_INTEREST_URL)
+                .header("Authorization", format!("Bearer {}", token))
+                .header("Accept", "application/json")
+                .json(&body)
+                .send()
+                .await
+                .context("Failed to fetch FINRA short interest data (retry)")?;
+
+            let status = resp.status();
+            if status.as_u16() == 204 {
+                return Ok(Vec::new());
+            }
+            if !status.is_success() {
+                let body_text = resp.text().await.unwrap_or_default();
+                warn!("FINRA API error on retry: {} {}", status, body_text);
+                return Ok(Vec::new());
+            }
+
+            return resp
+                .json()
+                .await
+                .context("Failed to parse FINRA short interest response (retry)");
+        }
+
         if status.as_u16() == 204 {
-            // No content — no data for this symbol
+            // No content
             return Ok(Vec::new());
         }
 
         if !status.is_success() {
-            let body = resp.text().await.unwrap_or_default();
-            warn!("FINRA API error for {}: {} {}", symbol, status, body);
+            let body_text = resp.text().await.unwrap_or_default();
+            warn!("FINRA API error: {} {}", status, body_text);
             return Ok(Vec::new());
         }
 
-        let rows: Vec<RegShoRow> = resp
+        let rows: Vec<ShortInterestRow> = resp
             .json()
             .await
-            .with_context(|| format!("Failed to parse FINRA response for {}", symbol))?;
+            .context("Failed to parse FINRA short interest response")?;
 
         Ok(rows)
     }
@@ -221,7 +277,7 @@ impl MarketDataSource for FinraMarketSource {
     }
 
     fn display_name(&self) -> &'static str {
-        "FINRA Short Volume"
+        "FINRA Short Interest"
     }
 
     fn default_resolution(&self) -> &'static str {
@@ -229,8 +285,8 @@ impl MarketDataSource for FinraMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        // Daily data, sync every 6 hours to catch publication
-        Duration::from_secs(6 * 3600)
+        // Short interest is bi-monthly. Sync every 12 hours to catch publication.
+        Duration::from_secs(12 * 3600)
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
@@ -240,6 +296,13 @@ impl MarketDataSource for FinraMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn always_record_price(&self) -> bool {
+        // Short interest data only changes bi-monthly. Without this flag,
+        // the sync engine's change detection would skip writes when the value
+        // matches the in-memory cache, leaving assets with no price history.
+        true
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
@@ -252,78 +315,112 @@ impl MarketDataSource for FinraMarketSource {
 
         let entries = load_all_asset_entries(ASSET_JSON)?;
 
-        for entry in &entries {
-            tokio::time::sleep(Duration::from_millis(100)).await;
+        // Build a map from symbol -> entry for quick lookup
+        let symbol_to_entry: HashMap<&str, _> = entries
+            .iter()
+            .map(|e| (e.api_ref.as_str(), e))
+            .collect();
 
-            match self.fetch_short_volume(&entry.api_ref).await {
-                Ok(rows) if !rows.is_empty() => {
-                    // Sum short volume and total volume across all market codes.
-                    // Group by date and take the most recent date available.
-                    let mut by_date: HashMap<String, (f64, f64)> = HashMap::new();
-                    for row in &rows {
-                        let date = row
-                            .trade_report_date
-                            .clone()
-                            .unwrap_or_default();
-                        let entry_agg = by_date.entry(date).or_insert((0.0, 0.0));
-                        entry_agg.0 += row.short_par_quantity.unwrap_or(0.0)
-                            + row.short_exempt_par_quantity.unwrap_or(0.0);
-                        entry_agg.1 += row.total_par_quantity.unwrap_or(0.0);
-                    }
+        // Collect all symbols for a single batched API call
+        let symbols: Vec<&str> = entries.iter().map(|e| e.api_ref.as_str()).collect();
 
-                    // Take the latest date
-                    if let Some((date, (short_vol, total_vol))) =
-                        by_date.into_iter().max_by_key(|(d, _)| d.clone())
-                    {
-                        if let Ok(value) = Decimal::from_str(&format!("{:.0}", short_vol)) {
-                            let short_ratio = if total_vol > 0.0 {
-                                Some(
-                                    Decimal::from_str(&format!(
-                                        "{:.2}",
-                                        (short_vol / total_vol) * 100.0
-                                    ))
-                                    .ok(),
-                                )
-                                .flatten()
-                            } else {
-                                None
-                            };
+        let rows = match self.fetch_short_interest(&symbols).await {
+            Ok(rows) => rows,
+            Err(e) => {
+                warn!("Failed to fetch FINRA short interest: {:?}", e);
+                return Ok(results);
+            }
+        };
 
-                            let total_vol_dec =
-                                Decimal::from_str(&format!("{:.0}", total_vol)).ok();
+        if rows.is_empty() {
+            warn!("FINRA short interest API returned 0 rows");
+            return Ok(results);
+        }
 
-                            debug!(
-                                "FINRA {}: short_vol={:.0}, total_vol={:.0}, ratio={:.1}%, date={}",
-                                entry.api_ref,
-                                short_vol,
-                                total_vol,
-                                short_vol / total_vol.max(1.0) * 100.0,
-                                date
-                            );
+        // Group rows by symbol, taking only the most recent settlement date per symbol
+        let mut latest_by_symbol: HashMap<String, ShortInterestRow> = HashMap::new();
+        for row in rows {
+            let symbol = match &row.symbol_code {
+                Some(s) => s.clone(),
+                None => continue,
+            };
+            let date = row.settlement_date.clone().unwrap_or_default();
 
-                            results.push(PriceUpdate {
-                                asset_id: entry.asset_id.clone(),
-                                symbol: entry.symbol.clone(),
-                                value,
-                                prev_close: None,
-                                change_pct: short_ratio,
-                                volume_24h: total_vol_dec,
-                                market_cap: None,
-                                fetched_at: now,
-                            });
-                        }
-                    }
+            let should_replace = match latest_by_symbol.get(&symbol) {
+                Some(existing) => {
+                    date > existing.settlement_date.clone().unwrap_or_default()
                 }
-                Ok(_) => {
-                    debug!("No FINRA data for {}", entry.api_ref);
-                }
-                Err(e) => {
-                    warn!("Error fetching FINRA data for {}: {:?}", entry.api_ref, e);
-                }
+                None => true,
+            };
+
+            if should_replace {
+                latest_by_symbol.insert(symbol, row);
             }
         }
 
-        info!("Fetched {} FINRA short volume records", results.len());
+        // Build PriceUpdate for each matched symbol
+        for (symbol, row) in &latest_by_symbol {
+            let entry = match symbol_to_entry.get(symbol.as_str()) {
+                Some(e) => e,
+                None => continue, // API returned a symbol we didn't ask for
+            };
+
+            let short_position = row.current_short_position_quantity.unwrap_or(0.0);
+            if short_position <= 0.0 {
+                debug!("FINRA {}: zero or negative short position, skipping", symbol);
+                continue;
+            }
+
+            let value = match Decimal::from_str(&format!("{:.0}", short_position)) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            // Use the FINRA-provided change percent if available
+            let change_pct = row.change_percent.and_then(|pct| {
+                Decimal::from_str(&format!("{:.2}", pct)).ok()
+            });
+
+            // Previous short position as prev_close equivalent
+            let prev_close = row.previous_short_position_quantity.and_then(|prev| {
+                Decimal::from_str(&format!("{:.0}", prev)).ok()
+            });
+
+            // Average daily volume as volume metric
+            let volume = row.average_daily_volume_quantity.and_then(|vol| {
+                Decimal::from_str(&format!("{:.0}", vol)).ok()
+            });
+
+            let date = row.settlement_date.clone().unwrap_or_default();
+            let days_to_cover = row.days_to_cover_quantity.unwrap_or(0.0);
+
+            debug!(
+                "FINRA {}: short_interest={:.0}, prev={:.0}, change={:.1}%, days_to_cover={:.1}, date={}",
+                symbol,
+                short_position,
+                row.previous_short_position_quantity.unwrap_or(0.0),
+                row.change_percent.unwrap_or(0.0),
+                days_to_cover,
+                date
+            );
+
+            results.push(PriceUpdate {
+                asset_id: entry.asset_id.clone(),
+                symbol: entry.symbol.clone(),
+                value,
+                prev_close,
+                change_pct,
+                volume_24h: volume,
+                market_cap: None,
+                fetched_at: now,
+            });
+        }
+
+        info!(
+            "Fetched {} FINRA short interest records (from {} API rows)",
+            results.len(),
+            latest_by_symbol.len()
+        );
         Ok(results)
     }
 }
@@ -376,32 +473,58 @@ mod tests {
     }
 
     #[test]
-    fn test_reg_sho_row_deserialize() {
+    fn test_short_interest_row_deserialize() {
         let json = r#"{
-            "securitiesInformationProcessorSymbolIdentifier": "GME",
-            "shortParQuantity": 725901,
-            "shortExemptParQuantity": 0,
-            "totalParQuantity": 1442211,
-            "tradeReportDate": "2026-01-06",
-            "marketCode": "Q"
+            "symbolCode": "GME",
+            "currentShortPositionQuantity": 24512345,
+            "previousShortPositionQuantity": 22100000,
+            "changePreviousNumber": 2412345,
+            "changePercent": 10.91,
+            "averageDailyVolumeQuantity": 5200000,
+            "daysToCoverQuantity": 4.71,
+            "settlementDate": "2026-02-28"
         }"#;
-        let row: RegShoRow = serde_json::from_str(json).unwrap();
-        assert_eq!(
-            row.securities_information_processor_symbol_identifier
-                .as_deref(),
-            Some("GME")
-        );
-        assert_eq!(row.short_par_quantity, Some(725901.0));
-        assert_eq!(row.total_par_quantity, Some(1442211.0));
-        assert_eq!(row.trade_report_date.as_deref(), Some("2026-01-06"));
-        assert_eq!(row.market_code.as_deref(), Some("Q"));
+        let row: ShortInterestRow = serde_json::from_str(json).unwrap();
+        assert_eq!(row.symbol_code.as_deref(), Some("GME"));
+        assert_eq!(row.current_short_position_quantity, Some(24512345.0));
+        assert_eq!(row.previous_short_position_quantity, Some(22100000.0));
+        assert_eq!(row.change_previous_number, Some(2412345.0));
+        assert_eq!(row.change_percent, Some(10.91));
+        assert_eq!(row.average_daily_volume_quantity, Some(5200000.0));
+        assert_eq!(row.days_to_cover_quantity, Some(4.71));
+        assert_eq!(row.settlement_date.as_deref(), Some("2026-02-28"));
     }
 
     #[test]
-    fn test_short_ratio_computation() {
-        let short_vol: f64 = 725901.0;
-        let total_vol: f64 = 1442211.0;
-        let ratio = (short_vol / total_vol) * 100.0;
-        assert!((ratio - 50.33).abs() < 0.1, "Short ratio should be ~50.3%");
+    fn test_days_to_cover_computation() {
+        let short_position: f64 = 24512345.0;
+        let avg_daily_vol: f64 = 5200000.0;
+        let days = short_position / avg_daily_vol;
+        assert!((days - 4.71).abs() < 0.1, "Days to cover should be ~4.71");
+    }
+
+    #[test]
+    fn test_latest_date_selection() {
+        // Simulate grouping by symbol and taking latest date
+        let rows = vec![
+            ("GME", "2026-02-14", 20000000.0),
+            ("GME", "2026-02-28", 24500000.0),
+            ("TSLA", "2026-02-28", 15000000.0),
+        ];
+
+        let mut latest: HashMap<&str, (&str, f64)> = HashMap::new();
+        for (sym, date, val) in &rows {
+            let should_replace = match latest.get(sym) {
+                Some((existing_date, _)) => date > existing_date,
+                None => true,
+            };
+            if should_replace {
+                latest.insert(sym, (date, *val));
+            }
+        }
+
+        assert_eq!(latest["GME"].0, "2026-02-28");
+        assert_eq!(latest["GME"].1, 24500000.0);
+        assert_eq!(latest["TSLA"].0, "2026-02-28");
     }
 }

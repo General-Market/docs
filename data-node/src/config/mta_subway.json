@@ -1,1 +1,26 @@
-[]
+[
+  {"asset_id":"mta_subway_1","symbol":"MTA/1","name":"1 Train (Broadway–7th Ave Local)","category":"transport","subcategory":"subway","api_ref":"1","active":true},
+  {"asset_id":"mta_subway_2","symbol":"MTA/2","name":"2 Train (7th Ave Express)","category":"transport","subcategory":"subway","api_ref":"2","active":true},
+  {"asset_id":"mta_subway_3","symbol":"MTA/3","name":"3 Train (7th Ave Express)","category":"transport","subcategory":"subway","api_ref":"3","active":true},
+  {"asset_id":"mta_subway_4","symbol":"MTA/4","name":"4 Train (Lexington Ave Express)","category":"transport","subcategory":"subway","api_ref":"4","active":true},
+  {"asset_id":"mta_subway_5","symbol":"MTA/5","name":"5 Train (Lexington Ave Express)","category":"transport","subcategory":"subway","api_ref":"5","active":true},
+  {"asset_id":"mta_subway_6","symbol":"MTA/6","name":"6 Train (Lexington Ave Local)","category":"transport","subcategory":"subway","api_ref":"6","active":true},
+  {"asset_id":"mta_subway_7","symbol":"MTA/7","name":"7 Train (Flushing Local/Express)","category":"transport","subcategory":"subway","api_ref":"7","active":true},
+  {"asset_id":"mta_subway_a","symbol":"MTA/A","name":"A Train (8th Ave Express)","category":"transport","subcategory":"subway","api_ref":"A","active":true},
+  {"asset_id":"mta_subway_b","symbol":"MTA/B","name":"B Train (6th Ave Express)","category":"transport","subcategory":"subway","api_ref":"B","active":true},
+  {"asset_id":"mta_subway_c","symbol":"MTA/C","name":"C Train (8th Ave Local)","category":"transport","subcategory":"subway","api_ref":"C","active":true},
+  {"asset_id":"mta_subway_d","symbol":"MTA/D","name":"D Train (6th Ave Express)","category":"transport","subcategory":"subway","api_ref":"D","active":true},
+  {"asset_id":"mta_subway_e","symbol":"MTA/E","name":"E Train (8th Ave Local)","category":"transport","subcategory":"subway","api_ref":"E","active":true},
+  {"asset_id":"mta_subway_f","symbol":"MTA/F","name":"F Train (6th Ave Local)","category":"transport","subcategory":"subway","api_ref":"F","active":true},
+  {"asset_id":"mta_subway_g","symbol":"MTA/G","name":"G Train (Brooklyn–Queens Crosstown)","category":"transport","subcategory":"subway","api_ref":"G","active":true},
+  {"asset_id":"mta_subway_j","symbol":"MTA/J","name":"J Train (Nassau St Express)","category":"transport","subcategory":"subway","api_ref":"J","active":true},
+  {"asset_id":"mta_subway_l","symbol":"MTA/L","name":"L Train (14th St–Canarsie Local)","category":"transport","subcategory":"subway","api_ref":"L","active":true},
+  {"asset_id":"mta_subway_m","symbol":"MTA/M","name":"M Train (6th Ave Local)","category":"transport","subcategory":"subway","api_ref":"M","active":true},
+  {"asset_id":"mta_subway_n","symbol":"MTA/N","name":"N Train (Broadway Express)","category":"transport","subcategory":"subway","api_ref":"N","active":true},
+  {"asset_id":"mta_subway_q","symbol":"MTA/Q","name":"Q Train (Broadway Express)","category":"transport","subcategory":"subway","api_ref":"Q","active":true},
+  {"asset_id":"mta_subway_r","symbol":"MTA/R","name":"R Train (Broadway Local)","category":"transport","subcategory":"subway","api_ref":"R","active":true},
+  {"asset_id":"mta_subway_s","symbol":"MTA/S","name":"S Train (42nd St Shuttle)","category":"transport","subcategory":"subway","api_ref":"GS","active":true},
+  {"asset_id":"mta_subway_sir","symbol":"MTA/SIR","name":"Staten Island Railway","category":"transport","subcategory":"subway","api_ref":"SI","active":true},
+  {"asset_id":"mta_subway_w","symbol":"MTA/W","name":"W Train (Broadway Local)","category":"transport","subcategory":"subway","api_ref":"W","active":true},
+  {"asset_id":"mta_subway_z","symbol":"MTA/Z","name":"Z Train (Nassau St Express)","category":"transport","subcategory":"subway","api_ref":"Z","active":true}
+]

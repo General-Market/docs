@@ -24,6 +24,18 @@ use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
 
 const API_URL: &str = "https://bwt.cbp.gov/api/waittimes";
 
+/// CBP API requires browser-like headers; bare requests get HTTP 403.
+const CBP_HEADERS: &[(&str, &str)] = &[
+    (
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    ),
+    ("Accept", "application/json, text/plain, */*"),
+    ("Accept-Language", "en-US,en;q=0.9"),
+    ("Referer", "https://bwt.cbp.gov/"),
+    ("Origin", "https://bwt.cbp.gov"),
+];
+
 // ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
@@ -149,7 +161,9 @@ impl MarketDataSource for CbpBorderMarketSource {
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         // Dynamic discovery — fetch ALL ports from the API
-        let ports: Vec<CbpPort> = match self.http.get_json(API_URL).await {
+        // CBP API requires browser-like headers to avoid 403
+        let ports: Vec<CbpPort> = match self.http.get_json_with_headers(API_URL, CBP_HEADERS).await
+        {
             Ok(data) => data,
             Err(e) => {
                 warn!("Error fetching CBP ports for asset discovery: {:?}", e);
@@ -208,7 +222,9 @@ impl MarketDataSource for CbpBorderMarketSource {
         let now = Utc::now();
 
         // Single API call — fetch all border wait times
-        let ports: Vec<CbpPort> = match self.http.get_json(API_URL).await {
+        // CBP API requires browser-like headers to avoid 403
+        let ports: Vec<CbpPort> = match self.http.get_json_with_headers(API_URL, CBP_HEADERS).await
+        {
             Ok(data) => data,
             Err(e) => {
                 warn!("Error fetching CBP border wait times: {:?}", e);

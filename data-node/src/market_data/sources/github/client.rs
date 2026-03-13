@@ -13,6 +13,7 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -58,12 +59,19 @@ pub struct GithubMarketSource {
     http: SourceHttpClient,
     /// None = unauthenticated (lower rate limits, public repos only)
     token: Option<String>,
+    /// Set to true when a 401 is received, causing all subsequent requests
+    /// to drop the Authorization header and use unauthenticated mode.
+    auth_revoked: AtomicBool,
 }
 
 impl GithubMarketSource {
     pub fn from_env() -> Result<Self> {
         let token = std::env::var("GITHUB_TOKEN").ok().filter(|t| !t.is_empty());
 
+        // Always configure the HTTP client with unauth rate limits.
+        // If the token turns out to be valid, we still respect the lower limit
+        // which is safe (just slower). This avoids needing to reconfigure the
+        // rate limiter at runtime when a token is revoked mid-cycle.
         let rate = if token.is_some() { AUTH_RATE_LIMIT } else { UNAUTH_RATE_LIMIT };
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
@@ -77,10 +85,19 @@ impl GithubMarketSource {
         } else {
             warn!("GitHub source initialized WITHOUT token — using unauthenticated rate limits ({} req/10min). Set GITHUB_TOKEN for higher limits.", rate);
         }
-        Ok(Self { http, token })
+        Ok(Self {
+            http,
+            token,
+            auth_revoked: AtomicBool::new(false),
+        })
     }
 
-    /// Build common headers — includes Authorization only if token is set
+    /// Whether we're effectively unauthenticated (no token or token revoked)
+    fn is_unauthenticated(&self) -> bool {
+        self.token.is_none() || self.auth_revoked.load(Ordering::Relaxed)
+    }
+
+    /// Build common headers — includes Authorization only if token is set AND not revoked
     fn api_headers(&self) -> Vec<(&'static str, String)> {
         let mut headers = vec![
             ("Accept", "application/vnd.github+json".to_string()),
@@ -88,13 +105,32 @@ impl GithubMarketSource {
             ("X-GitHub-Api-Version", "2022-11-28".to_string()),
         ];
         if let Some(ref token) = self.token {
-            headers.push(("Authorization", format!("Bearer {}", token)));
+            if !self.auth_revoked.load(Ordering::Relaxed) {
+                headers.push(("Authorization", format!("Bearer {}", token)));
+            }
         }
         headers
     }
 
+    /// Build unauthenticated headers (no Authorization, even if token exists)
+    fn unauth_headers(&self) -> Vec<(&'static str, String)> {
+        vec![
+            ("Accept", "application/vnd.github+json".to_string()),
+            ("User-Agent", "market-data-lib".to_string()),
+            ("X-GitHub-Api-Version", "2022-11-28".to_string()),
+        ]
+    }
+
+    /// Mark the token as revoked and switch to unauthenticated mode
+    fn revoke_token(&self) {
+        if self.token.is_some() && !self.auth_revoked.load(Ordering::Relaxed) {
+            warn!("GitHub token is invalid/expired (401) — falling back to unauthenticated mode (60 req/hr). Update GITHUB_TOKEN for higher rate limits.");
+            self.auth_revoked.store(true, Ordering::Relaxed);
+        }
+    }
+
     fn inter_request_delay(&self) -> u64 {
-        if self.token.is_some() { INTER_REQUEST_DELAY_MS } else { INTER_REQUEST_DELAY_UNAUTH_MS }
+        if self.is_unauthenticated() { INTER_REQUEST_DELAY_UNAUTH_MS } else { INTER_REQUEST_DELAY_MS }
     }
 
     /// Search for top repos by stars
@@ -105,9 +141,6 @@ impl GithubMarketSource {
         // Search API max 1000 results (10 pages of 100)
         let pages_needed = pages_needed.min(10);
 
-        let headers = self.api_headers();
-        let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
-
         for page in 1..=pages_needed {
             let url = format!(
                 "{}/search/repositories?q=stars:>5000&sort=stars&order=desc&per_page={}&page={}",
@@ -115,8 +148,11 @@ impl GithubMarketSource {
             );
 
             // Search API: 30/min authenticated, 10/min unauthenticated
-            let search_delay = if self.token.is_some() { 2100 } else { 6500 };
+            let search_delay = if self.is_unauthenticated() { 6500 } else { 2100 };
             tokio::time::sleep(Duration::from_millis(search_delay)).await;
+
+            let headers = self.api_headers();
+            let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
 
             match self.http.get_json_with_headers::<SearchResponse>(
                 &url,
@@ -127,6 +163,31 @@ impl GithubMarketSource {
                     all_repos.extend(resp.items);
                     if count < SEARCH_PER_PAGE {
                         break;
+                    }
+                }
+                Err(SourceError::AuthFailed(_)) => {
+                    // Token is expired/invalid — revoke it and retry this page unauthenticated
+                    self.revoke_token();
+                    tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_UNAUTH_MS)).await;
+
+                    let headers = self.unauth_headers();
+                    let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
+
+                    match self.http.get_json_with_headers::<SearchResponse>(
+                        &url,
+                        &header_refs,
+                    ).await {
+                        Ok(resp) => {
+                            let count = resp.items.len();
+                            all_repos.extend(resp.items);
+                            if count < SEARCH_PER_PAGE {
+                                break;
+                            }
+                        }
+                        Err(e) => {
+                            warn!("GitHub search page {} failed (unauthenticated retry): {:?}", page, e);
+                            break;
+                        }
                     }
                 }
                 Err(e) => {
@@ -141,15 +202,25 @@ impl GithubMarketSource {
         Ok(all_repos)
     }
 
-    /// Fetch a single repo's details
+    /// Fetch a single repo's details, with automatic fallback to unauthenticated on 401
     async fn fetch_repo(&self, full_name: &str) -> Result<RepoInfo, SourceError> {
         let url = format!("{}/repos/{}", API_URL, full_name);
         let headers = self.api_headers();
         let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
-        self.http.get_json_with_headers(
-            &url,
-            &header_refs,
-        ).await
+
+        match self.http.get_json_with_headers::<RepoInfo>(&url, &header_refs).await {
+            Ok(repo) => Ok(repo),
+            Err(SourceError::AuthFailed(_)) if !self.is_unauthenticated() => {
+                // Token just failed — revoke and retry without auth
+                self.revoke_token();
+                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_UNAUTH_MS)).await;
+
+                let headers = self.unauth_headers();
+                let header_refs: Vec<(&str, &str)> = headers.iter().map(|(k, v)| (*k, v.as_str())).collect();
+                self.http.get_json_with_headers(&url, &header_refs).await
+            }
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -188,7 +259,7 @@ impl MarketDataSource for GithubMarketSource {
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
-        let rate = if self.token.is_some() { AUTH_RATE_LIMIT } else { UNAUTH_RATE_LIMIT };
+        let rate = if self.is_unauthenticated() { UNAUTH_RATE_LIMIT } else { AUTH_RATE_LIMIT };
         RateLimitConfig {
             windows: vec![RateWindow {
                 max_requests: rate,

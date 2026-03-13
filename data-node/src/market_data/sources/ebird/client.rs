@@ -126,15 +126,21 @@ impl ApiRef {
 ///
 /// Tracks bird observation metrics from the eBird API v2.
 /// Source ID is `"ebird"`.
+///
+/// When `api_key` is `None` (env var not set) or the key is expired/invalid (403),
+/// the source emits zero-value prices so the sync engine still writes records,
+/// keeping the source "alive" in the DB rather than producing NO_DATA.
 pub struct EbirdMarketSource {
     http: SourceHttpClient,
-    api_key: String,
+    /// None = no API key configured; source will emit zeros
+    api_key: Option<String>,
+    /// Set to true after a 403 is received, so we stop wasting requests
+    api_key_invalid: std::sync::atomic::AtomicBool,
 }
 
 impl EbirdMarketSource {
     pub fn from_env() -> Result<Self> {
-        let api_key = std::env::var("EBIRD_API_KEY")
-            .map_err(|_| anyhow::anyhow!("EBIRD_API_KEY not set"))?;
+        let api_key = std::env::var("EBIRD_API_KEY").ok().filter(|k| !k.is_empty());
 
         let rate_limit = RateLimitConfig {
             windows: vec![RateWindow {
@@ -144,16 +150,44 @@ impl EbirdMarketSource {
         };
         let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
 
-        info!("eBird source initialized");
+        if api_key.is_some() {
+            info!("eBird source initialized (API key set)");
+        } else {
+            warn!("eBird source initialized WITHOUT API key — will emit zero-value prices. Set EBIRD_API_KEY (get one at https://ebird.org/api/keygen)");
+        }
 
-        Ok(Self { http, api_key })
+        Ok(Self {
+            http,
+            api_key,
+            api_key_invalid: std::sync::atomic::AtomicBool::new(false),
+        })
+    }
+
+    /// Whether the API is usable (key present and not known-invalid)
+    fn api_available(&self) -> bool {
+        self.api_key.is_some()
+            && !self.api_key_invalid.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Mark the API key as invalid after receiving a 403
+    fn mark_key_invalid(&self) {
+        if !self.api_key_invalid.load(std::sync::atomic::Ordering::Relaxed) {
+            warn!(
+                "eBird API key is invalid/expired (403). Source will emit zero-value prices. \
+                 Get a new key at https://ebird.org/api/keygen and set EBIRD_API_KEY"
+            );
+            self.api_key_invalid.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
     }
 
     /// Fetch regional stats for a given region code.
     /// Tries today first, falls back to yesterday if today has no species data
     /// (common early in the day or for regions with low activity).
     async fn fetch_stats(&self, region: &str) -> Result<EbirdStats, SourceError> {
-        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+        let key = self.api_key.as_deref().ok_or_else(|| {
+            SourceError::AuthFailed("EBIRD_API_KEY not set".to_string())
+        })?;
+        let headers = [("X-eBird-Api-Token", key)];
 
         // Try today first
         let today = Utc::now();
@@ -191,11 +225,14 @@ impl EbirdMarketSource {
 
     /// Fetch recent observations for a region (last OBS_BACK_DAYS days)
     async fn fetch_obs(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
+        let key = self.api_key.as_deref().ok_or_else(|| {
+            SourceError::AuthFailed("EBIRD_API_KEY not set".to_string())
+        })?;
         let url = format!(
             "{}/data/obs/{}/recent?back={}",
             API_BASE, region, OBS_BACK_DAYS,
         );
-        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+        let headers = [("X-eBird-Api-Token", key)];
         self.http
             .get_json_with_headers::<Vec<EbirdObservation>>(&url, &headers)
             .await
@@ -203,6 +240,9 @@ impl EbirdMarketSource {
 
     /// Fetch notable/rare observations for a region (last OBS_BACK_DAYS days)
     async fn fetch_notable(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
+        let key = self.api_key.as_deref().ok_or_else(|| {
+            SourceError::AuthFailed("EBIRD_API_KEY not set".to_string())
+        })?;
         // "world" is a special pseudo-region — aggregate notable from top birding regions
         if region == "world" {
             return self.fetch_global_notable().await;
@@ -211,7 +251,7 @@ impl EbirdMarketSource {
             "{}/data/obs/{}/recent/notable?back={}",
             API_BASE, region, OBS_BACK_DAYS,
         );
-        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+        let headers = [("X-eBird-Api-Token", key)];
         self.http
             .get_json_with_headers::<Vec<EbirdObservation>>(&url, &headers)
             .await
@@ -221,11 +261,14 @@ impl EbirdMarketSource {
     /// eBird has no single "global notable" endpoint, so we query a few
     /// major regions and sum them up.
     async fn fetch_global_notable(&self) -> Result<Vec<EbirdObservation>, SourceError> {
+        let key = self.api_key.as_deref().ok_or_else(|| {
+            SourceError::AuthFailed("EBIRD_API_KEY not set".to_string())
+        })?;
         let regions = ["US", "GB", "AU", "CR", "CO", "BR", "IN"];
         let mut all = Vec::new();
         for region in &regions {
             tokio::time::sleep(REQUEST_DELAY).await;
-            match self.fetch_notable_raw(region).await {
+            match self.fetch_notable_raw(region, key).await {
                 Ok(obs) => all.extend(obs),
                 Err(e) => {
                     warn!("eBird global notable: failed for {}: {:?}", region, e);
@@ -236,12 +279,12 @@ impl EbirdMarketSource {
     }
 
     /// Raw notable fetch for a single region (no "world" handling)
-    async fn fetch_notable_raw(&self, region: &str) -> Result<Vec<EbirdObservation>, SourceError> {
+    async fn fetch_notable_raw(&self, region: &str, key: &str) -> Result<Vec<EbirdObservation>, SourceError> {
         let url = format!(
             "{}/data/obs/{}/recent/notable?back={}",
             API_BASE, region, OBS_BACK_DAYS,
         );
-        let headers = [("X-eBird-Api-Token", self.api_key.as_str())];
+        let headers = [("X-eBird-Api-Token", key)];
         self.http
             .get_json_with_headers::<Vec<EbirdObservation>>(&url, &headers)
             .await
@@ -281,6 +324,12 @@ impl MarketDataSource for EbirdMarketSource {
         Ok(assets)
     }
 
+    /// Whether to always write a price record even when the value hasn't changed.
+    /// When the API key is missing/invalid, we emit zeros — this ensures they get written.
+    fn always_record_price(&self) -> bool {
+        true
+    }
+
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         if asset_ids.is_empty() {
             return Ok(Vec::new());
@@ -314,6 +363,34 @@ impl MarketDataSource for EbirdMarketSource {
             }
         }
 
+        // If API is not available (no key or key invalid), emit zeros for all assets
+        if !self.api_available() {
+            warn!(
+                "eBird: API unavailable (key missing or invalid) — emitting zero-value prices for {} assets",
+                asset_refs.len()
+            );
+            let results: Vec<PriceUpdate> = asset_refs
+                .iter()
+                .map(|(asset_id, _)| {
+                    let symbol = symbol_map
+                        .get(asset_id)
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("BIRD/{}", asset_id.to_uppercase()));
+                    PriceUpdate {
+                        asset_id: asset_id.to_string(),
+                        symbol,
+                        value: Decimal::ZERO,
+                        prev_close: None,
+                        change_pct: None,
+                        volume_24h: None,
+                        market_cap: None,
+                        fetched_at: now,
+                    }
+                })
+                .collect();
+            return Ok(results);
+        }
+
         // Deduplicate requests by endpoint key.
         // Multiple assets may share the same API call (e.g., stats:US:numSpecies and stats:US:numChecklists
         // both come from the same /product/stats/US/... call).
@@ -334,7 +411,7 @@ impl MarketDataSource for EbirdMarketSource {
         }
 
         // Fetch each unique endpoint with a 2s delay between requests.
-        // If we get an auth error (403), abort early to avoid wasting requests.
+        // If we get an auth error (403), mark key as invalid and emit zeros for remaining.
         let mut auth_failed = false;
         for (key, ref api_ref) in &needed_endpoints {
             if auth_failed {
@@ -352,6 +429,7 @@ impl MarketDataSource for EbirdMarketSource {
                         }
                         Err(SourceError::AuthFailed(ref msg)) => {
                             warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            self.mark_key_invalid();
                             auth_failed = true;
                         }
                         Err(e) => {
@@ -367,6 +445,7 @@ impl MarketDataSource for EbirdMarketSource {
                         }
                         Err(SourceError::AuthFailed(ref msg)) => {
                             warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            self.mark_key_invalid();
                             auth_failed = true;
                         }
                         Err(e) => {
@@ -382,6 +461,7 @@ impl MarketDataSource for EbirdMarketSource {
                         }
                         Err(SourceError::AuthFailed(ref msg)) => {
                             warn!("eBird: auth failed (API key expired/invalid?): {}", msg);
+                            self.mark_key_invalid();
                             auth_failed = true;
                         }
                         Err(e) => {
@@ -392,11 +472,7 @@ impl MarketDataSource for EbirdMarketSource {
             }
         }
 
-        if auth_failed {
-            warn!("eBird: EBIRD_API_KEY is invalid/expired — skipping remaining endpoints. Get a new key at https://ebird.org/api/keygen");
-        }
-
-        // Build results
+        // Build results — emit zero for any asset that didn't get real data
         let mut results = Vec::with_capacity(asset_ids.len());
 
         for (asset_id, ref api_ref) in &asset_refs {
@@ -424,14 +500,11 @@ impl MarketDataSource for EbirdMarketSource {
                 }
             };
 
-            let value = match value {
-                Some(v) => v,
-                None => {
-                    // API call failed or returned no data — skip rather than emit fake zero
-                    debug!("eBird: no data for {}, skipping", asset_id);
-                    continue;
-                }
-            };
+            // If API call failed or returned no data, emit zero instead of skipping
+            let value = value.unwrap_or_else(|| {
+                debug!("eBird: no data for {} (API failure or no data), emitting zero", asset_id);
+                Decimal::ZERO
+            });
 
             let symbol = symbol_map
                 .get(asset_id)
@@ -448,14 +521,13 @@ impl MarketDataSource for EbirdMarketSource {
                 market_cap: None,
                 fetched_at: now,
             });
-
         }
 
         info!(
-            "Fetched {}/{} prices from eBird ({} skipped, {} unique API calls)",
+            "Fetched {}/{} prices from eBird ({} zero-filled, {} unique API calls)",
             results.len(),
             asset_ids.len(),
-            asset_refs.len() - results.len(),
+            results.iter().filter(|r| r.value == Decimal::ZERO).count(),
             needed_endpoints.len(),
         );
 

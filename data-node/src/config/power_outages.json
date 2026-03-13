@@ -1,1 +1,461 @@
-[]
+[
+  {
+    "asset_id": "power_outages_al",
+    "symbol": "PWR/AL",
+    "name": "Alabama Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "AL",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ak",
+    "symbol": "PWR/AK",
+    "name": "Alaska Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "AK",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_az",
+    "symbol": "PWR/AZ",
+    "name": "Arizona Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "AZ",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ar",
+    "symbol": "PWR/AR",
+    "name": "Arkansas Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "AR",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ca",
+    "symbol": "PWR/CA",
+    "name": "California Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "CA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_co",
+    "symbol": "PWR/CO",
+    "name": "Colorado Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "CO",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ct",
+    "symbol": "PWR/CT",
+    "name": "Connecticut Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "CT",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_de",
+    "symbol": "PWR/DE",
+    "name": "Delaware Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "DE",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_dc",
+    "symbol": "PWR/DC",
+    "name": "District of Columbia Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "DC",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_fl",
+    "symbol": "PWR/FL",
+    "name": "Florida Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "FL",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ga",
+    "symbol": "PWR/GA",
+    "name": "Georgia Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "GA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_hi",
+    "symbol": "PWR/HI",
+    "name": "Hawaii Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "HI",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_id",
+    "symbol": "PWR/ID",
+    "name": "Idaho Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "ID",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_il",
+    "symbol": "PWR/IL",
+    "name": "Illinois Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "IL",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_in",
+    "symbol": "PWR/IN",
+    "name": "Indiana Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "IN",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ia",
+    "symbol": "PWR/IA",
+    "name": "Iowa Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "IA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ks",
+    "symbol": "PWR/KS",
+    "name": "Kansas Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "KS",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ky",
+    "symbol": "PWR/KY",
+    "name": "Kentucky Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "KY",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_la",
+    "symbol": "PWR/LA",
+    "name": "Louisiana Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "LA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_me",
+    "symbol": "PWR/ME",
+    "name": "Maine Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "ME",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_md",
+    "symbol": "PWR/MD",
+    "name": "Maryland Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MD",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ma",
+    "symbol": "PWR/MA",
+    "name": "Massachusetts Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_mi",
+    "symbol": "PWR/MI",
+    "name": "Michigan Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MI",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_mn",
+    "symbol": "PWR/MN",
+    "name": "Minnesota Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MN",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ms",
+    "symbol": "PWR/MS",
+    "name": "Mississippi Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MS",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_mo",
+    "symbol": "PWR/MO",
+    "name": "Missouri Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MO",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_mt",
+    "symbol": "PWR/MT",
+    "name": "Montana Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "MT",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ne",
+    "symbol": "PWR/NE",
+    "name": "Nebraska Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NE",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nv",
+    "symbol": "PWR/NV",
+    "name": "Nevada Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NV",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nh",
+    "symbol": "PWR/NH",
+    "name": "New Hampshire Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NH",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nj",
+    "symbol": "PWR/NJ",
+    "name": "New Jersey Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NJ",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nm",
+    "symbol": "PWR/NM",
+    "name": "New Mexico Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NM",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ny",
+    "symbol": "PWR/NY",
+    "name": "New York Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NY",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nc",
+    "symbol": "PWR/NC",
+    "name": "North Carolina Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "NC",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_nd",
+    "symbol": "PWR/ND",
+    "name": "North Dakota Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "ND",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_oh",
+    "symbol": "PWR/OH",
+    "name": "Ohio Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "OH",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ok",
+    "symbol": "PWR/OK",
+    "name": "Oklahoma Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "OK",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_or",
+    "symbol": "PWR/OR",
+    "name": "Oregon Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "OR",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_pa",
+    "symbol": "PWR/PA",
+    "name": "Pennsylvania Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "PA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ri",
+    "symbol": "PWR/RI",
+    "name": "Rhode Island Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "RI",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_sc",
+    "symbol": "PWR/SC",
+    "name": "South Carolina Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "SC",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_sd",
+    "symbol": "PWR/SD",
+    "name": "South Dakota Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "SD",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_tn",
+    "symbol": "PWR/TN",
+    "name": "Tennessee Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "TN",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_tx",
+    "symbol": "PWR/TX",
+    "name": "Texas Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "TX",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_ut",
+    "symbol": "PWR/UT",
+    "name": "Utah Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "UT",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_vt",
+    "symbol": "PWR/VT",
+    "name": "Vermont Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "VT",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_va",
+    "symbol": "PWR/VA",
+    "name": "Virginia Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "VA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_wa",
+    "symbol": "PWR/WA",
+    "name": "Washington Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "WA",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_wv",
+    "symbol": "PWR/WV",
+    "name": "West Virginia Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "WV",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_wi",
+    "symbol": "PWR/WI",
+    "name": "Wisconsin Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "WI",
+    "active": true
+  },
+  {
+    "asset_id": "power_outages_wy",
+    "symbol": "PWR/WY",
+    "name": "Wyoming Power Outages",
+    "category": "environment",
+    "subcategory": "power_outage",
+    "api_ref": "WY",
+    "active": true
+  }
+]

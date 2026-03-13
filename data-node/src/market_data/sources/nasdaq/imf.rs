@@ -131,6 +131,10 @@ impl MarketDataSource for ImfMarketSource {
         }
     }
 
+    fn always_record_price(&self) -> bool {
+        true // IMF WEO data is semi-annual — always write a fresh timestamped record
+    }
+
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         load_assets_from_json(ASSET_JSON)
     }

@@ -170,6 +170,10 @@ impl MarketDataSource for CftcMarketSource {
         }
     }
 
+    fn always_record_price(&self) -> bool {
+        true // CFTC data is weekly — always write a fresh timestamped record on each sync
+    }
+
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         load_assets_from_json(ASSET_JSON)
     }

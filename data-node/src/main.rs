@@ -546,7 +546,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 async move {
                     match market_data::sources::nasdaq::CftcMarketSource::from_env() {
                         Ok(source) => {
-                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
                             engine.run().await;
                         }
                         Err(e) => {
@@ -570,7 +570,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 async move {
                     match market_data::sources::nasdaq::ChrisMarketSource::from_env() {
                         Ok(source) => {
-                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
                             engine.run().await;
                         }
                         Err(e) => {
@@ -594,7 +594,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 async move {
                     match market_data::sources::nasdaq::OpecMarketSource::from_env() {
                         Ok(source) => {
-                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
                             engine.run().await;
                         }
                         Err(e) => {
@@ -618,7 +618,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 async move {
                     match market_data::sources::nasdaq::ImfMarketSource::from_env() {
                         Ok(source) => {
-                            let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                            let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
                             engine.run().await;
                         }
                         Err(e) => {
@@ -783,7 +783,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                     }
                 }
             });
-            info!("FINRA short volume provider started");
+            info!("FINRA short interest provider started");
         } else {
             info!("FINRA skipped (FINRA_CLIENT_SECRET not configured)");
         }
