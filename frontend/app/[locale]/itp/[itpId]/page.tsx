@@ -5,6 +5,7 @@ import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { ItpPageClient } from '@/components/domain/itp-page/ItpPageClient'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { computeEnrichment } from '@/lib/api/itp-enrichment'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
 export const revalidate = 60
@@ -62,16 +63,7 @@ export async function generateStaticParams() {
 
 async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
   try {
-    // On Vercel: use VERCEL_URL (internal); fallback to public site URL or localhost
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const res = await fetch(
-      `${baseUrl}/api/itp-enrichment?itp_id=${encodeURIComponent(itpId)}`,
-      { next: { revalidate: 300 }, signal: AbortSignal.timeout(30_000) }
-    )
-    if (!res.ok) return null
-    return await res.json()
+    return await computeEnrichment(itpId)
   } catch {
     return null
   }
