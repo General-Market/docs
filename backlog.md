@@ -1,7 +1,31 @@
 # Design Decision Backlog
 
+## Session: 20260313-syssec (System section data fix)
+
+- [DECISION] System section empty because build_system_snapshot only used cached pending/batched orders (never filled). Fixed to query DB trades table for last 20 orders including filled + fill_time_seconds.
+- [DECISION] registered_at was hardcoded to 0 in IssuerNodeInfo. Fixed to use MIN(order_timestamp) from trades table as a proxy for node registration time.
+- [DECISION] avg_fill_time_seconds was hardcoded to 0.0. Now computed from AVG of fill_timestamp - order_timestamp for last 100 filled orders.
+- [DECISION] Added 5s timeout to vault snapshot in system_snapshot_json builder. Settlement chain calls were hanging indefinitely (100 tokens * individual RPC calls to Sonic testnet). Now gracefully returns empty vault data on timeout.
+- [DECISION] Added 10s timeout wrapper around /vault-balances REST endpoint for same reason.
+- [DECISION] SQL EXTRACT(EPOCH FROM interval) returns NUMERIC in PostgreSQL, which sqlx can't decode as f64. Fixed by casting to ::float8.
+- [FAILED] First deploy had type mismatch error: column 8 (fill_latency) was NUMERIC but Rust expected Option<f64>. Fixed with explicit ::float8 cast.
+
+## Session: 20260313-fixall (Don't stop until fixing everything)
+
+- [DECISION] Leader election for L3-native orders: changed `current_cycle / 5` to `current_cycle / 500`. Nodes drift ~20-30 cycles apart in their local counters. With /5, drift caused leader disagreement (all nodes computed different leaders). /500 ensures all nodes agree despite drift, with failover every ~8 minutes.
+- [FAILED] First attempt: used `current_cycle / 5` with `calculate_bridge_leader_with_failover`. Deployed to VPS, all 3 issuers showed `am_leader=false` simultaneously. Root cause: 26-cycle drift → different attempt values → different leader computations.
+- [DECISION] VisionConsensusConfig: added `set_vision_consensus_config()` call in main.rs after VisionDepositWatcher spawn. Was defined but never called — caused all follower validation of Vision credit/refund/withdraw proposals to fail with "VisionConsensusConfig not configured".
+- [DECISION] Explorer placeholder charts: replaced all "coming soon" placeholders with real data — Vision uses /api/vision/batches, ChainGas uses health API delta calculations, ITP uses /api/itp-price live data.
+- [DECISION] Data-node was down (restart: "no" in docker-compose). Restarted manually — fixes "run simulation" which uses SSE via /dn proxy to data-node.
+- [DECISION] E2E tests updated to verify actual data (dollar values, batch counts, chart SVGs) instead of just checking title text. This was the user's core complaint about E2E tests being wrong.
+- [DECISION] Order #46: state reconstructor shows `pending_orders=0` — order appears already processed or in non-pending state. L3 cycle is 500000046 (matching order 46).
+
 ## Session: 20260311-e2e (E2E Testnet Fixes)
 
+- [DECISION] MirrorIssuerRegistry sync: always refresh snapshot with `max(l3, mirror)+1` nonce every 500 cycles to prevent BLSVerifier__SnapshotTooOld. Previous logic only synced on nonce mismatch, but snapshot block goes stale even with matching nonces.
+- [DECISION] Added `ISSUER_MIRROR_REGISTRY_ADDRESS` env var to testnet.sh issuer Docker override. Without it, issuers never ran mirror sync.
+- [FAILED] Ran `testnet.sh start` from background task — it produced truncated output and didn't actually restart issuers. Manual Docker commands work reliably. testnet.sh may have issues with non-interactive execution.
+- [FAILED] Docker Dockerfile for issuer copies pre-built `target/release/issuer` binary. `docker compose build` doesn't rebuild Rust — must run `cargo build --release` first.
 - [BUG] E2E test `08-settlement-bridge-buy.spec.ts` takes **11.1 minutes** — settlement bridge buy order not filled in 180s, retries with new order. Issuers not processing ITP buy orders promptly.
 - [BUG] E2E test `26-rebalance-full-cycle.spec.ts` takes **8.1 minutes** — rebalance TX confirmed but waiting for issuer consensus that never arrives. Issuers don't process `RebalanceRequested` events.
 - [BUG] E2E test `18-multi-itp-orders.spec.ts` takes **6.1 minutes** — ITP2 buy order not filled within timeout, sell works but buy hangs.
@@ -11,6 +35,10 @@
 - [DECISION] Switched testnet issuer URLs from SSH tunnels (localhost:10001-10003) to nginx proxy (116.203.156.98/issuer1-3) — eliminates tunnel drops during long E2E runs
 - [DECISION] Fixed `findAvailableE2eBatch` — JSON vision-batches.json had stale batch IDs from older deployment. Now validates batch exists on-chain via `getBatchConfigHash` before returning.
 - [DECISION] Reduced tick resolution poll deadline from 300s to 240s — 300s was too close to 360s test timeout, join operations ate the 60s buffer.
+- [DECISION] BUG-001 root cause: data-node was started with `--settlement-rpc-url http://localhost:8546` (local Anvil port) instead of `http://127.0.0.1:8547` (Sonic proxy). Not a proxy bug — wrong port. Restarting data-node with correct args fixed confirmed_block=0 immediately.
+- [DECISION] BUG-006 root cause: /aum-ranking is NOT an RPC hang — it's an N² DB query loop (snapshots × ITPs × assets = 50K+ queries with `query_nearest_price` per asset per snapshot). Fix: 30s timeout wrapper + default to 7-day window instead of all time.
+- [DECISION] BUG-004 fix: added `--vision-settlement-bridge-custody $(read_deployment_addr "SettlementBridgeCustody")` to VISION_ARGS in testnet.sh
+- [DECISION] INFRA-007 root cause: follower never receives leader's PriceProposal broadcast. Broadcast is best-effort — silently skips peers with status != Connected. Added warn-level logging for skipped peers.
 
 ## Session: 20260310-1540-e2e (E2E Reliability Fixes)
 
