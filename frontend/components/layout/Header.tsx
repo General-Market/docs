@@ -16,6 +16,7 @@ export function Header() {
   const pathname = usePathname()
   const isVision = pathname === '/' || pathname.startsWith('/source/') || pathname === '/points'
   const isLearn = pathname.startsWith('/learn')
+  const isIndex = pathname === '/index' || pathname.startsWith('/index/')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const INVESTMENT_NAV = [
@@ -304,8 +305,8 @@ export function Header() {
         </div>
       </header>
 
-      {/* Sub Header — Section Navigation (only for Investment pages) */}
-      {!isVision && !isLearn && (
+      {/* Sub Header — Section Navigation (only for /index page) */}
+      {isIndex && (
       <nav className="bg-white border-b border-border-light">
         <div className="px-6 lg:px-12">
           <div className="max-w-site mx-auto hidden md:flex items-center gap-1 h-11">

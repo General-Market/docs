@@ -7,14 +7,13 @@ export const AA_DATA_NODE_URL = process.env.AA_DATA_NODE_URL || 'http://localhos
 export const L3_RPC_SERVER = process.env.L3_RPC_URL || process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const DATA_NODE_SERVER = process.env.DATA_NODE_URL || process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
 export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || 'http://localhost:10001'
-export const CSP_CONNECT_EXTRA = process.env.CSP_CONNECT_EXTRA || ''
+export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
 
 // ── Client-side URLs (NEXT_PUBLIC_ prefix for browser exposure) ──
-// Browser: use /dn proxy by default (avoids mixed content on HTTPS).
-// Override with NEXT_PUBLIC_DATA_NODE_BROWSER_URL for local dev where
-// the Next.js proxy doesn't stream SSE properly.
+// Browser: use /api/dn streaming proxy (Next.js rewrites buffer SSE, breaking streaming).
+// Override with NEXT_PUBLIC_DATA_NODE_BROWSER_URL if needed.
 export const DATA_NODE_URL = typeof window !== 'undefined'
-  ? (process.env.NEXT_PUBLIC_DATA_NODE_BROWSER_URL || '/dn')
+  ? (process.env.NEXT_PUBLIC_DATA_NODE_BROWSER_URL || '/api/dn')
   : (process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200')
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'
