@@ -96,7 +96,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   const isOnL3 = chainId === indexL3.id
 
   // Read wallet USDC balance on L3 (always read, regardless of connected chain)
-  const { data: l3UsdcRaw } = useReadContract({
+  const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
@@ -199,6 +199,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     const data = await res.json()
                     if (data.success) {
                       setMintResult('1,000 USDC minted to your wallet!')
+                      refetchL3Usdc()
                     } else {
                       setMintResult(`Error: ${data.error}`)
                     }
