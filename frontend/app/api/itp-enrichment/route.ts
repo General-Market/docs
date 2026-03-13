@@ -21,7 +21,7 @@ let foundersLookupCache: Record<string, { age?: number; gender: string; national
 // DeFiLlama caches with TTL (5 min)
 let defiProtocolsCache: { data: any[]; ts: number } | null = null
 let defiRaisesCache: { data: any[]; ts: number } | null = null
-let cgPriceCache: { data: Record<string, { usd_market_cap?: number; usd_24h_change?: number }>; ts: number } | null = null
+let cgPriceCache: { data: Record<string, { usd?: number; usd_market_cap?: number; usd_24h_change?: number }>; ts: number } | null = null
 const DEFI_CACHE_TTL = 5 * 60 * 1000
 
 async function loadCoinMap(): Promise<Record<string, CoinMapEntry>> {
@@ -106,7 +106,7 @@ function buildFounderAggregates(
 
 async function fetchCoinGeckoMarketData(
   cgIds: string[]
-): Promise<Record<string, { usd_market_cap?: number; usd_24h_change?: number }>> {
+): Promise<Record<string, { usd?: number; usd_market_cap?: number; usd_24h_change?: number }>> {
   if (cgIds.length === 0) return {}
   if (cgPriceCache && Date.now() - cgPriceCache.ts < DEFI_CACHE_TTL) {
     return cgPriceCache.data
@@ -117,7 +117,7 @@ async function fetchCoinGeckoMarketData(
     for (let i = 0; i < cgIds.length; i += 200) {
       batches.push(cgIds.slice(i, i + 200))
     }
-    const merged: Record<string, { usd_market_cap?: number; usd_24h_change?: number }> = {}
+    const merged: Record<string, { usd?: number; usd_market_cap?: number; usd_24h_change?: number }> = {}
     for (const batch of batches) {
       const ids = batch.join(',')
       const res = await fetch(
@@ -128,6 +128,7 @@ async function fetchCoinGeckoMarketData(
       const data = await res.json()
       for (const [id, vals] of Object.entries(data) as [string, any][]) {
         merged[id] = {
+          usd: vals.usd,
           usd_market_cap: vals.usd_market_cap,
           usd_24h_change: vals.usd_24h_change,
         }
@@ -283,7 +284,7 @@ export async function GET(request: NextRequest) {
     try {
       const snapshotRes = await fetch(
         `${AA_DATA_NODE_URL}/snapshot?itp_id=${encodeURIComponent(itpId)}`,
-        { signal: AbortSignal.timeout(10000) }
+        { signal: AbortSignal.timeout(5000) }
       )
       if (snapshotRes.ok) {
         const snapshot = await snapshotRes.json()
@@ -295,7 +296,24 @@ export async function GET(request: NextRequest) {
         }))
       }
     } catch {
-      // Snapshot endpoint down — continue with empty holdings
+      // Snapshot endpoint down — fallback below
+    }
+
+    // Fallback: load holdings from deployed-assets.json (equal weight ITP #1)
+    if (rawHoldings.length === 0) {
+      try {
+        const assetsRaw = await fs.readFile(path.join(process.cwd(), 'public/deployed-assets.json'), 'utf-8')
+        const assets: { symbol: string; address: string }[] = JSON.parse(assetsRaw)
+        const equalWeight = 1 / assets.length
+        rawHoldings = assets.map(a => ({
+          symbol: a.symbol,
+          weight: equalWeight,
+          price: 0,
+          name: a.symbol,
+        }))
+      } catch {
+        // No fallback available
+      }
     }
 
     const [coinMap, foundersLookup] = await Promise.all([
@@ -324,10 +342,11 @@ export async function GET(request: NextRequest) {
       fetchCoinGeckoMarketData([...new Set(cgIds)]),
     ])
 
-    // Enrich holdings with market_cap and 24h change from CoinGecko
+    // Enrich holdings with price, market_cap and 24h change from CoinGecko
     for (const h of enrichedHoldings) {
       if (h.coingecko_id && cgMarketData[h.coingecko_id]) {
         const md = cgMarketData[h.coingecko_id]
+        if (h.price === 0 && md.usd) h.price = md.usd
         h.market_cap = md.usd_market_cap
         h.change_24h = md.usd_24h_change
       }
