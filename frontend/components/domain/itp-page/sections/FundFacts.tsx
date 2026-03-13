@@ -125,14 +125,29 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
       )}
 
       {/* Fees */}
-      <h3 className="text-xl font-bold text-text-primary mt-10 mb-4">Fees</h3>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-16">
+      <h3 className="text-xl font-bold text-text-primary mt-10 mb-2">Fees</h3>
+      <p className="text-xs text-text-muted mb-4">as of current prospectus</p>
+      <div className="max-w-lg">
         <div className="flex justify-between py-3 border-b border-border-light">
           <span className="text-sm text-text-secondary">Management Fee</span>
           <span className="text-sm font-semibold text-text-primary">0.00%</span>
         </div>
+        <div className="flex justify-between py-3 border-b border-border-light">
+          <span className="text-sm text-text-secondary">+Acquired Fund Fees and Expenses</span>
+          <span className="text-sm font-semibold text-text-primary">0.00%</span>
+        </div>
+        <div className="flex justify-between py-3 border-b border-border-light">
+          <span className="text-sm text-text-secondary">+Other Expenses</span>
+          <span className="text-sm font-semibold text-text-primary">0.00%</span>
+        </div>
+        <div className="flex justify-between py-3 border-t-2 border-text-primary">
+          <span className="text-sm font-bold text-text-primary">=Expense Ratio</span>
+          <span className="text-sm font-bold text-text-primary">0.00%</span>
+        </div>
       </div>
-      <p className="text-[10px] text-text-muted mt-2">Network gas costs apply to all transactions.</p>
+      <p className="text-[10px] text-text-muted mt-3">
+        The fee amounts shown above are as of the current prospectus. Network gas costs apply to all on-chain transactions and are not included in the expense ratio.
+      </p>
     </section>
   )
 }

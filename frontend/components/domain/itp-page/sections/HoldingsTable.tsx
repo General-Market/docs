@@ -19,10 +19,18 @@ function formatMcap(v?: number): string {
   return `$${v.toFixed(0)}`
 }
 
-type SortKey = 'rank' | 'symbol' | 'weight' | 'price' | 'change_24h' | 'market_cap'
+function formatUsd(v: number): string {
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(2)}K`
+  if (v >= 1) return `$${v.toFixed(2)}`
+  if (v > 0) return `$${v.toFixed(4)}`
+  return '$0.00'
+}
+
+type SortKey = 'rank' | 'name' | 'weight' | 'price' | 'change_24h' | 'market_cap' | 'market_value' | 'notional' | 'quantity'
 type SortDir = 'asc' | 'desc'
 
-export function HoldingsTable({ enrichment }: SectionProps) {
+export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
   const holdings = enrichment?.holdings ?? []
   const [sortKey, setSortKey] = useState<SortKey>('weight')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -39,21 +47,28 @@ export function HoldingsTable({ enrichment }: SectionProps) {
   }, [holdings, search])
 
   const sorted = useMemo(() => {
-    const arr = filtered.map((h, i) => ({ ...h, rank: i + 1 }))
+    const arr = filtered.map((h, i) => {
+      const marketValue = aum > 0 ? h.weight * aum : 0
+      const quantity = h.price > 0 ? (h.weight * (aum > 0 ? aum : 1)) / h.price : 0
+      return { ...h, rank: i + 1, marketValue, notional: marketValue, quantity }
+    })
     arr.sort((a, b) => {
       let cmp = 0
       switch (sortKey) {
         case 'rank': cmp = a.rank - b.rank; break
-        case 'symbol': cmp = a.symbol.localeCompare(b.symbol); break
+        case 'name': cmp = (a.name || a.symbol).localeCompare(b.name || b.symbol); break
         case 'weight': cmp = a.weight - b.weight; break
         case 'price': cmp = a.price - b.price; break
         case 'change_24h': cmp = (a.change_24h ?? 0) - (b.change_24h ?? 0); break
         case 'market_cap': cmp = (a.market_cap ?? 0) - (b.market_cap ?? 0); break
+        case 'market_value': cmp = a.marketValue - b.marketValue; break
+        case 'notional': cmp = a.notional - b.notional; break
+        case 'quantity': cmp = a.quantity - b.quantity; break
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
     return arr
-  }, [filtered, sortKey, sortDir])
+  }, [filtered, sortKey, sortDir, aum])
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const clampedPage = Math.min(page, totalPages)
@@ -75,7 +90,7 @@ export function HoldingsTable({ enrichment }: SectionProps) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     } else {
       setSortKey(key)
-      setSortDir(key === 'symbol' ? 'asc' : 'desc')
+      setSortDir(key === 'name' ? 'asc' : 'desc')
     }
     setPage(1)
   }
@@ -85,14 +100,14 @@ export function HoldingsTable({ enrichment }: SectionProps) {
     setPage(1)
   }
 
-  const SortHeader = ({ k, children, align }: { k: SortKey; children: React.ReactNode; align?: string }) => (
+  const SortHeader = ({ k, children, align, className: cx }: { k: SortKey; children: React.ReactNode; align?: string; className?: string }) => (
     <th
-      className={`px-4 py-2.5 text-xs font-semibold uppercase text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'}`}
+      className={`px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'} ${cx || ''}`}
       onClick={() => toggleSort(k)}
     >
       <span className="inline-flex items-center gap-1">
         {children}
-        {sortKey === k && <span className="text-[10px]">{sortDir === 'asc' ? '▲' : '▼'}</span>}
+        {sortKey === k && <span className="text-[9px]">{sortDir === 'asc' ? '▲' : '▼'}</span>}
       </span>
     </th>
   )
@@ -106,30 +121,34 @@ export function HoldingsTable({ enrichment }: SectionProps) {
         </div>
         <input
           type="text"
-          placeholder="Filter list by keyword..."
+          placeholder="Filter by name or ticker..."
           value={search}
           onChange={e => handleSearch(e.target.value)}
           className="border border-border-light rounded px-3 py-1.5 text-sm w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-text-muted"
         />
       </div>
 
-      <div className="overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-surface border-b border-border-light">
             <tr>
               <SortHeader k="rank">#</SortHeader>
-              <SortHeader k="symbol">Asset</SortHeader>
+              <SortHeader k="name">Name</SortHeader>
+              <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Sector</th>
               <SortHeader k="weight" align="text-right">Weight</SortHeader>
               <SortHeader k="price" align="text-right">Price</SortHeader>
               <SortHeader k="change_24h" align="text-right">24h</SortHeader>
-              <SortHeader k="market_cap" align="text-right hidden lg:table-cell">Market Cap</SortHeader>
+              <SortHeader k="market_value" align="text-right" className="hidden lg:table-cell">Market Value</SortHeader>
+              <SortHeader k="notional" align="text-right" className="hidden lg:table-cell">Notional Value</SortHeader>
+              <SortHeader k="quantity" align="text-right" className="hidden xl:table-cell">Shares</SortHeader>
+              <SortHeader k="market_cap" align="text-right" className="hidden lg:table-cell">Market Cap</SortHeader>
             </tr>
           </thead>
           <tbody>
             {paged.map((h) => (
               <tr key={h.symbol} className="border-b border-border-light hover:bg-surface transition-colors">
-                <td className="px-4 py-2.5 text-text-muted font-mono text-xs">{h.rank}</td>
-                <td className="px-4 py-2.5">
+                <td className="px-3 py-2.5 text-text-muted font-mono text-xs">{h.rank}</td>
+                <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2.5">
                     {h.image ? (
                       <Image
@@ -146,77 +165,87 @@ export function HoldingsTable({ enrichment }: SectionProps) {
                       </div>
                     )}
                     <div>
-                      <span className="font-semibold text-text-primary">{h.symbol}</span>
+                      <span className="font-semibold text-text-primary">{h.name && h.name !== h.symbol ? h.name : h.symbol}</span>
                       {h.name && h.name !== h.symbol && (
-                        <span className="text-text-muted text-xs ml-1.5">{h.name}</span>
+                        <span className="text-text-muted text-xs ml-1.5">{h.symbol}</span>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-primary">
+                <td className="px-3 py-2.5 text-text-secondary text-xs">Cryptocurrency</td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   {(h.weight * 100).toFixed(2)}%
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-primary">
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   ${h.price >= 1 ? h.price.toFixed(2) : h.price.toFixed(4)}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums">
                   {h.change_24h != null ? (
                     <span className={h.change_24h >= 0 ? 'text-color-up' : 'text-color-down'}>
                       {h.change_24h >= 0 ? '+' : ''}{h.change_24h.toFixed(2)}%
                     </span>
                   ) : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary hidden lg:table-cell">
+                  {h.marketValue > 0 ? formatUsd(h.marketValue) : '—'}
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
+                  {h.notional > 0 ? formatUsd(h.notional) : '—'}
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden xl:table-cell">
+                  {h.quantity > 0 ? h.quantity.toFixed(6) : '—'}
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-secondary hidden lg:table-cell">
                   {formatMcap(h.market_cap)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border-light">
-            <span className="text-xs text-text-secondary">
-              {startIdx} to {endIdx} of {sorted.length}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={clampedPage === 1}
-                className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
-              >
-                Previous
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = clampedPage <= 3 ? i + 1
-                  : clampedPage >= totalPages - 2 ? totalPages - 4 + i
-                  : clampedPage - 2 + i
-                if (pageNum < 1 || pageNum > totalPages) return null
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`w-7 h-7 text-xs font-semibold rounded transition-colors ${
-                      clampedPage === pageNum
-                        ? 'bg-text-primary text-text-inverse'
-                        : 'text-text-secondary hover:bg-muted'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              })}
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={clampedPage === totalPages}
-                className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-3 py-3 border-t border-border-light">
+          <span className="text-xs text-text-secondary">
+            {startIdx} to {endIdx} of {sorted.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={clampedPage === 1}
+              className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
+            >
+              Previous
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = clampedPage <= 3 ? i + 1
+                : clampedPage >= totalPages - 2 ? totalPages - 4 + i
+                : clampedPage - 2 + i
+              if (pageNum < 1 || pageNum > totalPages) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-7 h-7 text-xs font-semibold rounded transition-colors ${
+                    clampedPage === pageNum
+                      ? 'bg-text-primary text-text-inverse'
+                      : 'text-text-secondary hover:bg-muted'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={clampedPage === totalPages}
+              className="px-3 py-1 text-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-30 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -139,21 +139,6 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* Placeholder for per-order data graphs */}
-        <ExplorerChartCard
-          title="Per-Order Metrics"
-          subtitle="Graphs #18-30 from propositions"
-          loading={false}
-        >
-          <div className="h-full flex items-center justify-center text-center px-4">
-            <p className="text-[12px] text-text-muted leading-relaxed">
-              Order-level metrics (fill rates, slippage, execution time per
-              order type) require per-order data not available from the
-              aggregated /health endpoint. These charts will be added when the
-              issuer exposes order-level telemetry.
-            </p>
-          </div>
-        </ExplorerChartCard>
       </div>
     </section>
   )

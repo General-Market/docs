@@ -68,22 +68,6 @@ export function PriceFeedSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* Placeholder for price feed metrics */}
-        <ExplorerChartCard
-          title="Price Feed Metrics"
-          subtitle="Graphs #31-39 from propositions"
-          loading={false}
-        >
-          <div className="h-full flex items-center justify-center text-center px-4">
-            <p className="text-[12px] text-text-muted leading-relaxed">
-              Price feed metrics (source staleness, price deviation across
-              nodes, feed update frequency, oracle comparison) require
-              dedicated telemetry not yet available from the /health endpoint.
-              These charts will be added when the issuer exposes price feed
-              data via /health.
-            </p>
-          </div>
-        </ExplorerChartCard>
       </div>
     </section>
   )

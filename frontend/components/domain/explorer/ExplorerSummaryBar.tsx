@@ -41,9 +41,9 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
       color: latest.quorum_met ? 'text-color-up' : 'text-color-down',
     },
     {
-      label: 'Consensus Success',
+      label: 'Consensus Rounds',
       value: latest.consensus_rounds_total > 0
-        ? `${((latest.consensus_success_total / latest.consensus_rounds_total) * 100).toFixed(1)}%`
+        ? latest.consensus_rounds_total.toLocaleString()
         : '\u2014',
       color: 'text-black',
     },

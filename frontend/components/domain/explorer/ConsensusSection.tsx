@@ -68,22 +68,30 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
     [snapshots]
   )
 
-  const successRateData = useMemo(
-    () =>
-      snapshots.map((s) => ({
-        poll_batch_ts: s.poll_batch_ts,
-        rate:
-          s.consensus_rounds_total > 0
-            ? Math.round(
-                (s.consensus_success_total / s.consensus_rounds_total) * 100
-              )
-            : 100,
-      })),
-    [snapshots]
-  )
+  // Per-interval success rate (delta success / delta rounds) — avoids misleading cumulative ratio
+  const successRateData = useMemo(() => {
+    const result: { poll_batch_ts: string; rate: number }[] = []
+    for (let i = 1; i < snapshots.length; i++) {
+      const prev = snapshots[i - 1]
+      const curr = snapshots[i]
+      const dRounds = curr.consensus_rounds_total - prev.consensus_rounds_total
+      const dSuccess = curr.consensus_success_total - prev.consensus_success_total
+      // Skip counter resets (negative deltas) and no-activity intervals
+      if (dRounds <= 0) {
+        result.push({ poll_batch_ts: curr.poll_batch_ts, rate: 100 })
+      } else {
+        result.push({
+          poll_batch_ts: curr.poll_batch_ts,
+          rate: Math.round((Math.max(0, dSuccess) / dRounds) * 100),
+        })
+      }
+    }
+    return result
+  }, [snapshots])
 
-  const sigDeltas = useMemo(
-    () => computeDeltas(snapshots, 'signatures_collected'),
+  // Signatures: show absolute value per snapshot instead of delta (counter may not be cumulative)
+  const sigData = useMemo(
+    () => snapshots.map((s) => ({ poll_batch_ts: s.poll_batch_ts, value: s.signatures_collected })),
     [snapshots]
   )
 
@@ -208,7 +216,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         {/* 4. Consensus Success Rate */}
         <ExplorerChartCard
           title="Consensus Success Rate"
-          subtitle="Cumulative success / total rounds (%)"
+          subtitle="Per-interval success rate (%)"
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -275,26 +283,26 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
         {/* 6. Signatures Collected */}
         <ExplorerChartCard
           title="Signatures Collected"
-          subtitle="Delta between consecutive snapshots"
+          subtitle={latest ? `Current: ${latest.signatures_collected}` : undefined}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sigDeltas}>
+            <AreaChart data={sigData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis {...deltaXAxisProps} />
+              <XAxis {...xAxisProps} />
               <YAxis tick={{ fontSize: 10 }} stroke="#ccc" width={40} />
               <Tooltip
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 formatter={(v: number) => [v, 'Signatures']}
               />
-              <Line
+              <Area
                 type="monotone"
-                dataKey="delta"
+                dataKey="value"
                 stroke="#000"
-                dot={false}
-                strokeWidth={1.5}
+                fill="#000"
+                fillOpacity={0.06}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
 

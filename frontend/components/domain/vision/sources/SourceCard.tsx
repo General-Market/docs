@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { VisionSource } from '@/lib/vision/sources'
@@ -27,22 +27,28 @@ function getCellState(state: Record<string, CellState>, marketId: string): CellS
 }
 
 /** Format a numeric value for compact display */
-function formatValue(v: string): string {
+function formatValue(v: string, isPrice?: boolean, unit?: string): string {
   const n = parseFloat(v)
   if (isNaN(n)) return v
-  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
-  if (n >= 1) return `$${n.toFixed(2)}`
-  if (n > 0) return `$${n.toFixed(4)}`
-  return '$0'
+  const prefix = isPrice ? '$' : ''
+  const suffix = !isPrice && unit ? ` ${unit}` : ''
+  if (n >= 1_000_000_000) return `${prefix}${(n / 1_000_000_000).toFixed(1)}B${suffix}`
+  if (n >= 1_000_000) return `${prefix}${(n / 1_000_000).toFixed(1)}M${suffix}`
+  if (n >= 1_000) return `${prefix}${(n / 1_000).toFixed(1)}K${suffix}`
+  if (isPrice) {
+    if (n >= 1) return `$${n.toFixed(2)}`
+    if (n > 0) return `$${n.toFixed(4)}`
+    return '$0'
+  }
+  if (n >= 1) return `${n.toFixed(1)}${suffix}`
+  if (n > 0) return `${n.toFixed(2)}${suffix}`
+  return `0${suffix}`
 }
 
 export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
-  // Lazy-fetch: only fetch per-source data when card has been hovered
-  const [hovered, setHovered] = useState(false)
+  // Fetch per-source data immediately on mount
   const dataNodeId = getDataNodeSourceId(source.id)
-  const { data: sourceSnapshot, isLoading } = useSourceSnapshot(hovered ? dataNodeId : undefined)
+  const { data: sourceSnapshot, isLoading } = useSourceSnapshot(dataNodeId)
 
   // Derive sorted markets from lazy-loaded snapshot
   const sortedMarkets = useMemo(() => {
@@ -98,11 +104,13 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
     ? { background: source.brandBg }
     : { backgroundColor: source.brandBg }
 
+  // Hide card if source has no working data (covers meta-down scenario)
+  if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
+
   return (
     <div
       data-testid="source-card"
       className="bg-white border-r border-b border-border-light overflow-hidden"
-      onMouseEnter={() => setHovered(true)}
     >
       {/* Brand image area */}
       <Link href={`/source/${source.id}`} className="block">
@@ -155,7 +163,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
                           {m.name || m.symbol}
                         </span>
                         <span className="text-[10px] font-mono font-bold text-[var(--foreground)] shrink-0 tabular-nums">
-                          {formatValue(m.value)}
+                          {formatValue(m.value, source.isPrice, source.valueUnit)}
                         </span>
                       </div>
                     )
@@ -224,15 +232,15 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="grid grid-cols-3 -mx-5 px-5">
-          <Link href={`/source/${source.id}`} className="py-2.5 pr-3 bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
+        {/* Action buttons — full bleed */}
+        <div className="grid grid-cols-3 border-t border-border-light -mx-5 mt-3">
+          <Link href={`/source/${source.id}`} className="py-2.5 text-center bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
             <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">Markets</span>
           </Link>
-          <Link href={`/source/${source.id}`} className="py-2.5 px-3 border-l border-border-light hover:bg-[var(--surface)] transition-colors">
+          <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
             <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Batch</span>
           </Link>
-          <Link href={`/source/${source.id}`} className="py-2.5 pl-3 border-l border-border-light hover:bg-[var(--surface)] transition-colors">
+          <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
             <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Details</span>
           </Link>
         </div>

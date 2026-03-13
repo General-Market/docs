@@ -105,14 +105,6 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* Placeholder for per-cycle granularity */}
-        <ExplorerChartCard title="Per-Cycle Breakdown" loading={loading}>
-          <div className="h-full flex items-center justify-center">
-            <p className="text-[12px] text-text-muted text-center px-4">
-              Per-cycle timing breakdowns, state-machine transitions, and cycle-level error rates require granularity not available in 5-minute snapshots.
-            </p>
-          </div>
-        </ExplorerChartCard>
       </div>
     </section>
   )

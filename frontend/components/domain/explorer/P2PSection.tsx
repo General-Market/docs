@@ -122,14 +122,6 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* Placeholder for additional P2P graphs */}
-        <ExplorerChartCard title="Network Topology & Per-Peer Rates" loading={loading}>
-          <div className="h-full flex items-center justify-center">
-            <p className="text-[12px] text-text-muted text-center px-4">
-              Topology maps, per-peer message rates, and connection-level metrics require data not available from /health snapshots.
-            </p>
-          </div>
-        </ExplorerChartCard>
       </div>
     </section>
   )

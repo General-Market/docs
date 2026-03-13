@@ -8,10 +8,10 @@ import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 
 const STATS = [
-  { label: 'ITPs', value: '42' },
-  { label: 'AUM', value: '$2.1M' },
-  { label: 'Bets', value: '1,847' },
-  { label: 'Agents', value: '31' },
+  { label: 'ITPs', value: '1' },
+  { label: 'Vision Batches', value: '100' },
+  { label: 'Markets', value: '25,000+' },
+  { label: 'Players', value: '195' },
 ]
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
