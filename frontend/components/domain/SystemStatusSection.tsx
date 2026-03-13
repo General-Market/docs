@@ -72,6 +72,12 @@ function formatTime(unix: number): string {
   return new Date(unix * 1000).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
+function formatFillTime(seconds: number): string {
+  if (seconds < 60) return `${seconds.toFixed(1)}s`
+  if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`
+  return `${(seconds / 3600).toFixed(1)}h`
+}
+
 function formatUptime(registeredAtUnix: number): string {
   if (!registeredAtUnix) return '—'
   const diffMs = Date.now() - registeredAtUnix * 1000
@@ -203,7 +209,11 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     { label: t('stats.active_issuers'), value: `${sys.activeIssuers} / ${sys.totalIssuers}` },
     {
       label: t('stats.avg_fill_speed'),
-      value: sys.avgFillTimeSeconds > 0 ? `${sys.avgFillTimeSeconds.toFixed(1)}s` : '—',
+      value: sys.avgFillTimeSeconds > 0
+        ? sys.avgFillTimeSeconds < 60 ? `${sys.avgFillTimeSeconds.toFixed(1)}s`
+          : sys.avgFillTimeSeconds < 3600 ? `${(sys.avgFillTimeSeconds / 60).toFixed(1)}m`
+          : `${(sys.avgFillTimeSeconds / 3600).toFixed(1)}h`
+        : '—',
     },
     { label: t('stats.orders_total'), value: sys.totalOrders.toLocaleString() },
     {
@@ -308,7 +318,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     <YAxis tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} unit="s" width={36} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 4 }}
-                      formatter={(v: number) => [`${v.toFixed(1)}s`, t('fill_speed.tooltip_label')]}
+                      formatter={(v: number) => [formatFillTime(v), t('fill_speed.tooltip_label')]}
                     />
                     <Bar dataKey="seconds" radius={[3, 3, 0, 0]} maxBarSize={32}>
                       {sys.fillTimeBuckets.map((_, i) => (
@@ -442,7 +452,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     {amountFormatted}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
-                    {order.fillTimeSeconds != null ? `${order.fillTimeSeconds.toFixed(1)}s` : '—'}
+                    {order.fillTimeSeconds != null ? formatFillTime(order.fillTimeSeconds) : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
                     {order.status === 'filled' ? `${sys.activeIssuers}/${sys.totalIssuers}` : '—'}
