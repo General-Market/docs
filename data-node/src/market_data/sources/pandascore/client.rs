@@ -5,11 +5,11 @@
 //! feed per opponent.
 //!
 //! **Lifecycle**:
-//! - `fetch_assets()` returns only running + upcoming matches (not finished/canceled).
-//!   The sync engine's deactivation logic marks any asset NOT in this set as
-//!   `is_active = false`, so finished matches are deactivated within one metadata
-//!   refresh cycle (1 hour).
-//! - `fetch_prices()` also fetches 1 page of recently past matches so that
+//! - `fetch_assets()` returns running + upcoming + recently past matches. Past
+//!   matches are included to give the sync engine time to record their final
+//!   scores before deactivation. Matches that have been finished for >2h are
+//!   excluded, triggering deactivation.
+//! - `fetch_prices()` fetches running, upcoming, AND past matches so that
 //!   matches that just finished still get their final score recorded before
 //!   deactivation. Matches absent from all endpoints are skipped (not zeroed),
 //!   so stale assets don't get bogus "0" prices.
@@ -46,9 +46,10 @@ const PER_PAGE: u32 = 100;
 const MAX_UPCOMING_PAGES: u32 = 2;
 
 /// How many pages of recently finished matches to fetch for final scores.
-/// 1 page = up to 100 matches. Enough to capture matches that finished
-/// between price sync cycles (every 5 minutes).
-const MAX_PAST_PAGES: u32 = 1;
+/// 3 pages = up to 300 matches. Covers matches that finished between
+/// price sync cycles (every 5 minutes) plus a buffer for tournaments
+/// with many concurrent matches.
+const MAX_PAST_PAGES: u32 = 3;
 
 /// Delay between sequential API requests (ms)
 const INTER_REQUEST_DELAY_MS: u64 = 500;
@@ -86,6 +87,8 @@ struct PsMatch {
     begin_at: Option<String>,
     #[serde(default)]
     scheduled_at: Option<String>,
+    #[serde(default)]
+    end_at: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,8 +279,9 @@ impl PandascoreMarketSource {
     }
 
     /// Fetch recently finished matches (sorted by most recent first).
-    /// Used by `fetch_prices()` to record final scores for matches that
-    /// completed between sync cycles.
+    /// Used by both `fetch_assets()` (to keep recently-finished matches active
+    /// long enough to record final scores) and `fetch_prices()` (to record
+    /// those final scores).
     async fn fetch_past_matches(&self) -> Result<Vec<PsMatch>, SourceError> {
         let mut all = Vec::new();
 
@@ -305,6 +309,127 @@ impl PandascoreMarketSource {
         }
 
         Ok(all)
+    }
+
+    /// Build asset entries from a list of parsed matches.
+    /// Returns (assets, match_count).
+    fn build_assets_from_matches(
+        matches: &[&PsMatch],
+        seen_ids: &mut HashSet<i64>,
+    ) -> (Vec<AssetUpdate>, u32) {
+        let mut assets = Vec::new();
+        let mut match_count = 0u32;
+
+        for ps_match in matches {
+            if !seen_ids.insert(ps_match.id) {
+                continue; // Already processed this match
+            }
+
+            let info = match parse_match(ps_match) {
+                Some(i) => i,
+                None => continue,
+            };
+
+            match_count += 1;
+            let game_short = short_game_name(&info.game_slug);
+            let matchup = format!("{} vs {}", info.team1_acronym, info.team2_acronym);
+            let context = format!("{} / {}", game_short, info.league_name);
+            let subcategory = info.game_slug.clone();
+
+            // Team 1 score feed
+            assets.push(AssetUpdate {
+                asset_id: format!("esport_{}_{}_t1", info.game_slug, info.match_id),
+                symbol: format!("E/{}", info.match_id),
+                name: format!(
+                    "{} ({} {}) [{}]",
+                    matchup, info.team1_acronym, info.team1_score, context
+                ),
+                category: Some("sports".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": format!("pandascore:{}", info.match_id),
+                    "subcategory": subcategory,
+                    "active": true,
+                    "extra": {
+                        "metric": "t1",
+                        "match_id": info.match_id,
+                        "game": info.game_slug,
+                        "game_name": info.game_name,
+                        "league": info.league_name,
+                        "team_id": info.team1_id,
+                        "team_name": info.team1_name,
+                        "team_acronym": info.team1_acronym,
+                        "opponent_name": info.team2_name,
+                        "opponent_acronym": info.team2_acronym,
+                        "status": info.status,
+                        "match_type": ps_match.match_type,
+                        "best_of": info.number_of_games,
+                    },
+                }),
+            });
+
+            // Team 2 score feed
+            assets.push(AssetUpdate {
+                asset_id: format!("esport_{}_{}_t2", info.game_slug, info.match_id),
+                symbol: format!("E/{}", info.match_id),
+                name: format!(
+                    "{} ({} {}) [{}]",
+                    matchup, info.team2_acronym, info.team2_score, context
+                ),
+                category: Some("sports".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": format!("pandascore:{}", info.match_id),
+                    "subcategory": subcategory,
+                    "active": true,
+                    "extra": {
+                        "metric": "t2",
+                        "match_id": info.match_id,
+                        "game": info.game_slug,
+                        "game_name": info.game_name,
+                        "league": info.league_name,
+                        "team_id": info.team2_id,
+                        "team_name": info.team2_name,
+                        "team_acronym": info.team2_acronym,
+                        "opponent_name": info.team1_name,
+                        "opponent_acronym": info.team1_acronym,
+                        "status": info.status,
+                        "match_type": ps_match.match_type,
+                        "best_of": info.number_of_games,
+                    },
+                }),
+            });
+
+            // Games progress feed (how many maps/games finished out of total)
+            // Only for best_of > 1
+            if info.number_of_games > 1 {
+                assets.push(AssetUpdate {
+                    asset_id: format!("esport_{}_{}_maps", info.game_slug, info.match_id),
+                    symbol: format!("E/{}", info.match_id),
+                    name: format!(
+                        "{} (maps {}/{}) [{}]",
+                        matchup, info.games_finished, info.number_of_games, context
+                    ),
+                    category: Some("sports".to_string()),
+                    metadata: serde_json::json!({
+                        "api_ref": format!("pandascore:{}", info.match_id),
+                        "subcategory": subcategory,
+                        "active": true,
+                        "extra": {
+                            "metric": "maps",
+                            "match_id": info.match_id,
+                            "game": info.game_slug,
+                            "game_name": info.game_name,
+                            "league": info.league_name,
+                            "team1_name": info.team1_name,
+                            "team2_name": info.team2_name,
+                            "status": info.status,
+                            "best_of": info.number_of_games,
+                        },
+                    }),
+                });
+            }
+        }
+
+        (assets, match_count)
     }
 }
 
@@ -451,9 +576,6 @@ impl MarketDataSource for PandascoreMarketSource {
             return Ok(static_assets);
         }
 
-        let mut assets = Vec::new();
-        let mut match_count = 0u32;
-
         // Fetch running matches
         let running = match self.fetch_running_matches().await {
             Ok(m) => m,
@@ -474,123 +596,34 @@ impl MarketDataSource for PandascoreMarketSource {
             }
         };
 
-        // Dedupe by match_id (a match could appear in both endpoints briefly)
+        tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+
+        // Fetch recently finished matches — include them in the asset list
+        // so they stay active long enough for fetch_prices() to record final scores.
+        let past = match self.fetch_past_matches().await {
+            Ok(m) => m,
+            Err(e) => {
+                warn!("PandaScore: error fetching past matches for assets: {:?}", e);
+                Vec::new()
+            }
+        };
+
+        // Dedupe by match_id and build assets
         let mut seen_ids: HashSet<i64> = HashSet::new();
-        let all_matches: Vec<&PsMatch> = running
+        let all_refs: Vec<&PsMatch> = running
             .iter()
             .chain(upcoming.iter())
-            .filter(|m| seen_ids.insert(m.id))
+            .chain(past.iter())
             .collect();
 
-        for ps_match in &all_matches {
-            let info = match parse_match(ps_match) {
-                Some(i) => i,
-                None => continue,
-            };
-
-            match_count += 1;
-            let game_short = short_game_name(&info.game_slug);
-            let matchup = format!("{} vs {}", info.team1_acronym, info.team2_acronym);
-            let context = format!("{} / {}", game_short, info.league_name);
-            let subcategory = info.game_slug.clone();
-
-            // Team 1 score feed
-            assets.push(AssetUpdate {
-                asset_id: format!("esport_{}_{}_t1", info.game_slug, info.match_id),
-                symbol: format!("E/{}", info.match_id),
-                name: format!(
-                    "{} ({} {}) [{}]",
-                    matchup, info.team1_acronym, info.team1_score, context
-                ),
-                category: Some("sports".to_string()),
-                metadata: serde_json::json!({
-                    "api_ref": format!("pandascore:{}", info.match_id),
-                    "subcategory": subcategory,
-                    "active": true,
-                    "extra": {
-                        "metric": "t1",
-                        "match_id": info.match_id,
-                        "game": info.game_slug,
-                        "game_name": info.game_name,
-                        "league": info.league_name,
-                        "team_id": info.team1_id,
-                        "team_name": info.team1_name,
-                        "team_acronym": info.team1_acronym,
-                        "opponent_name": info.team2_name,
-                        "opponent_acronym": info.team2_acronym,
-                        "status": info.status,
-                        "match_type": ps_match.match_type,
-                        "best_of": info.number_of_games,
-                    },
-                }),
-            });
-
-            // Team 2 score feed
-            assets.push(AssetUpdate {
-                asset_id: format!("esport_{}_{}_t2", info.game_slug, info.match_id),
-                symbol: format!("E/{}", info.match_id),
-                name: format!(
-                    "{} ({} {}) [{}]",
-                    matchup, info.team2_acronym, info.team2_score, context
-                ),
-                category: Some("sports".to_string()),
-                metadata: serde_json::json!({
-                    "api_ref": format!("pandascore:{}", info.match_id),
-                    "subcategory": subcategory,
-                    "active": true,
-                    "extra": {
-                        "metric": "t2",
-                        "match_id": info.match_id,
-                        "game": info.game_slug,
-                        "game_name": info.game_name,
-                        "league": info.league_name,
-                        "team_id": info.team2_id,
-                        "team_name": info.team2_name,
-                        "team_acronym": info.team2_acronym,
-                        "opponent_name": info.team1_name,
-                        "opponent_acronym": info.team1_acronym,
-                        "status": info.status,
-                        "match_type": ps_match.match_type,
-                        "best_of": info.number_of_games,
-                    },
-                }),
-            });
-
-            // Games progress feed (how many maps/games finished out of total)
-            // Only for best_of > 1
-            if info.number_of_games > 1 {
-                assets.push(AssetUpdate {
-                    asset_id: format!("esport_{}_{}_maps", info.game_slug, info.match_id),
-                    symbol: format!("E/{}", info.match_id),
-                    name: format!(
-                        "{} (maps {}/{}) [{}]",
-                        matchup, info.games_finished, info.number_of_games, context
-                    ),
-                    category: Some("sports".to_string()),
-                    metadata: serde_json::json!({
-                        "api_ref": format!("pandascore:{}", info.match_id),
-                        "subcategory": subcategory,
-                        "active": true,
-                        "extra": {
-                            "metric": "maps",
-                            "match_id": info.match_id,
-                            "game": info.game_slug,
-                            "game_name": info.game_name,
-                            "league": info.league_name,
-                            "team1_name": info.team1_name,
-                            "team2_name": info.team2_name,
-                            "status": info.status,
-                            "best_of": info.number_of_games,
-                        },
-                    }),
-                });
-            }
-        }
+        let (assets, match_count) =
+            PandascoreMarketSource::build_assets_from_matches(&all_refs, &mut seen_ids);
 
         info!(
-            "PandaScore fetch_assets: {} running + {} upcoming -> {} matches -> {} assets",
+            "PandaScore fetch_assets: {} running + {} upcoming + {} past -> {} matches -> {} assets",
             running.len(),
             upcoming.len(),
+            past.len(),
             match_count,
             assets.len()
         );
@@ -677,7 +710,14 @@ impl MarketDataSource for PandascoreMarketSource {
                         "t1" => Decimal::from(info.team1_score),
                         "t2" => Decimal::from(info.team2_score),
                         "maps" => Decimal::from(info.games_finished),
-                        _ => Decimal::ZERO,
+                        other => {
+                            // Unknown metric — skip entirely instead of emitting ZERO
+                            warn!(
+                                "PandaScore: unknown metric '{}' for match {}, skipping",
+                                other, match_id
+                            );
+                            continue;
+                        }
                     };
 
                     results.push(PriceUpdate {
@@ -912,6 +952,7 @@ mod tests {
             tournament: None,
             begin_at: None,
             scheduled_at: None,
+            end_at: None,
         };
 
         let info = parse_match(&m).unwrap();
@@ -951,6 +992,7 @@ mod tests {
             tournament: None,
             begin_at: None,
             scheduled_at: None,
+            end_at: None,
         };
 
         assert!(parse_match(&m).is_none());
@@ -999,10 +1041,19 @@ mod tests {
             tournament: None,
             begin_at: None,
             scheduled_at: None,
+            end_at: None,
         };
 
         let info = parse_match(&m).unwrap();
         assert_eq!(info.team1_acronym, "Very Long Te"); // truncated to 12
         assert_eq!(info.team2_acronym, "Short");
+    }
+
+    #[test]
+    fn test_past_pages_covers_enough_matches() {
+        // 3 pages * 100 per page = 300 matches
+        // With 5-min sync interval, this covers even the busiest tournament days
+        assert!(MAX_PAST_PAGES >= 2, "Need enough past pages to capture final scores");
+        assert!(MAX_PAST_PAGES <= 5, "Don't waste API budget on too many past pages");
     }
 }

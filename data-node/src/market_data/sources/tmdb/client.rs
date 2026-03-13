@@ -4,22 +4,24 @@
 //! Assets are fully dynamic — discovered from /movie/popular, /tv/popular, and
 //! /trending/person/day endpoints.
 //!
-//! **Lifecycle**: Only the top pages of each list are tracked (200 movies, 200 TV,
-//! ~300 people). The sync engine deactivates assets that fall off these lists hourly.
-//! `fetch_prices()` uses the same shared snapshot as `fetch_assets()` to guarantee
-//! every registered asset gets a price — no orphans.
+//! **Lifecycle**: Only the top pages of each list are tracked (~100 movies, ~100 TV,
+//! ~200 people). `fetch_prices()` uses the same shared snapshot as `fetch_assets()`
+//! plus individual detail lookups for any assets in `asset_ids` that rotated off
+//! the popular lists. Assets not priced in 48h are excluded from `fetch_assets()`,
+//! triggering the sync engine to deactivate them.
 //!
 //! API: https://api.themoviedb.org/3/
 //! Auth: TMDB_API_KEY env var (passed as query param)
 //! Rate limit: ~50 req/s → 30,000 calls per 10-min window
 
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
@@ -38,20 +40,21 @@ const TMDB_API_URL: &str = "https://api.themoviedb.org/3";
 /// Delay between individual detail fetches (ms) — ~25 req/s
 const INTER_REQUEST_DELAY_MS: u64 = 40;
 
-/// How many pages of popular movies to fetch (20 items/page, 10 pages = 200)
-/// Reduced from 50 to prevent registering thousands of rotating assets.
-const MOVIE_DISCOVERY_PAGES: u32 = 10;
+/// How many pages of popular movies to fetch (20 items/page, 5 pages = 100)
+const MOVIE_DISCOVERY_PAGES: u32 = 5;
 
-/// How many pages of popular TV shows to fetch (20 items/page, 10 pages = 200)
-/// Reduced from 50 to prevent registering thousands of rotating assets.
-const TV_DISCOVERY_PAGES: u32 = 10;
+/// How many pages of popular TV shows to fetch (20 items/page, 5 pages = 100)
+const TV_DISCOVERY_PAGES: u32 = 5;
 
-/// How many pages of trending people to fetch (20 items/page, 10 pages = 200)
-const PERSON_TRENDING_PAGES: u32 = 10;
+/// How many pages of trending people to fetch (20 items/page, 5 pages = 100)
+const PERSON_TRENDING_PAGES: u32 = 5;
 
-/// How many pages of popular people to fetch (20 items/page, 10 pages = 200)
-/// Reduced from 50 to prevent registering thousands of rotating assets.
-const PERSON_POPULAR_PAGES: u32 = 10;
+/// How many pages of popular people to fetch (20 items/page, 5 pages = 100)
+const PERSON_POPULAR_PAGES: u32 = 5;
+
+/// Assets not priced in this many hours are excluded from fetch_assets(),
+/// causing the sync engine to deactivate them (movies that rotated off lists).
+const DEACTIVATION_HOURS: i64 = 48;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -98,6 +101,37 @@ struct TmdbPersonListItem {
     known_for_department: Option<String>,
 }
 
+/// Movie detail response (for individual lookups)
+#[derive(Debug, Deserialize)]
+struct TmdbMovieDetail {
+    id: u64,
+    title: String,
+    #[serde(default)]
+    popularity: f64,
+    #[serde(default)]
+    vote_count: u64,
+}
+
+/// TV show detail response (for individual lookups)
+#[derive(Debug, Deserialize)]
+struct TmdbTvDetail {
+    id: u64,
+    name: String,
+    #[serde(default)]
+    popularity: f64,
+    #[serde(default)]
+    vote_count: u64,
+}
+
+/// Person detail response (for individual lookups)
+#[derive(Debug, Deserialize)]
+struct TmdbPersonDetail {
+    id: u64,
+    name: String,
+    #[serde(default)]
+    popularity: f64,
+}
+
 
 // ============================================================================
 // SOURCE IMPLEMENTATION
@@ -127,6 +161,9 @@ pub struct TmdbMarketSource {
     /// `fetch_prices()` reads from this instead of re-querying the API,
     /// eliminating the race where popular lists rotate between the two calls.
     snapshot: Mutex<TmdbSnapshot>,
+    /// Tracks when each asset_id last received a successful price.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Mutex<HashMap<String, DateTime<Utc>>>,
 }
 
 impl TmdbMarketSource {
@@ -148,6 +185,7 @@ impl TmdbMarketSource {
             http,
             api_key,
             snapshot: Mutex::new(TmdbSnapshot::default()),
+            last_priced: Mutex::new(HashMap::new()),
         })
     }
 
@@ -306,6 +344,36 @@ impl TmdbMarketSource {
         );
         Ok(all)
     }
+
+    /// Fetch a single movie's detail by ID. Returns (id, title, popularity, vote_count)
+    /// or None if the movie doesn't exist / API error.
+    async fn fetch_movie_detail(&self, tmdb_id: u64) -> Option<(u64, String, f64, u64)> {
+        let url = self.api_url(&format!("movie/{}", tmdb_id));
+        match self.http.get_json::<TmdbMovieDetail>(&url).await {
+            Ok(detail) => Some((detail.id, detail.title, detail.popularity, detail.vote_count)),
+            Err(_) => None,
+        }
+    }
+
+    /// Fetch a single TV show's detail by ID. Returns (id, name, popularity, vote_count)
+    /// or None if the show doesn't exist / API error.
+    async fn fetch_tv_detail(&self, tmdb_id: u64) -> Option<(u64, String, f64, u64)> {
+        let url = self.api_url(&format!("tv/{}", tmdb_id));
+        match self.http.get_json::<TmdbTvDetail>(&url).await {
+            Ok(detail) => Some((detail.id, detail.name, detail.popularity, detail.vote_count)),
+            Err(_) => None,
+        }
+    }
+
+    /// Fetch a single person's detail by ID. Returns (id, name, popularity)
+    /// or None if the person doesn't exist / API error.
+    async fn fetch_person_detail(&self, tmdb_id: u64) -> Option<(u64, String, f64)> {
+        let url = self.api_url(&format!("person/{}", tmdb_id));
+        match self.http.get_json::<TmdbPersonDetail>(&url).await {
+            Ok(detail) => Some((detail.id, detail.name, detail.popularity)),
+            Err(_) => None,
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -390,16 +458,35 @@ impl MarketDataSource for TmdbMarketSource {
             });
         }
 
+        // Deactivation sweep: exclude assets not priced in 48h.
+        // On first run (empty cache), all snapshot assets pass through.
+        let now = Utc::now();
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+        if !cache.is_empty() {
+            let before = assets.len();
+            assets.retain(|a| {
+                match cache.get(&a.asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // Not yet in cache — allow through (grace period for new assets)
+                    None => true,
+                }
+            });
+            let deactivated = before - assets.len();
+            if deactivated > 0 {
+                info!(
+                    "TMDb: excluded {} stale assets (no price in {}h)",
+                    deactivated, DEACTIVATION_HOURS
+                );
+            }
+        }
+
         info!("Discovered {} TMDb assets via live API", assets.len());
         Ok(assets)
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
-
-        // Build set of active asset IDs for filtering
-        let active_set: std::collections::HashSet<&str> =
-            asset_ids.iter().map(|s| s.as_str()).collect();
 
         // Read the cached snapshot (populated by fetch_assets).
         // If snapshot is empty (first price sync before any asset sync), refresh it.
@@ -413,74 +500,154 @@ impl MarketDataSource for TmdbMarketSource {
             }
         };
 
+        // Build lookup maps from snapshot for O(1) access
+        let movie_map: HashMap<u64, (&str, f64, u64)> = snap.movies.iter()
+            .map(|(id, title, pop, vc)| (*id, (title.as_str(), *pop, *vc)))
+            .collect();
+        let tv_map: HashMap<u64, (&str, f64, u64)> = snap.tv_shows.iter()
+            .map(|(id, name, pop, vc)| (*id, (name.as_str(), *pop, *vc)))
+            .collect();
+        let person_map: HashMap<u64, (&str, f64)> = snap.people.iter()
+            .map(|(id, name, pop, _)| (*id, (name.as_str(), *pop)))
+            .collect();
+
         let mut results = Vec::new();
+        let mut detail_lookups = 0u32;
 
-        // Movies — only price assets that are in the active set
-        for (id, title, popularity, vote_count) in &snap.movies {
-            let asset_id = format!("tmdb_movie_{}", id);
-            if !active_set.contains(asset_id.as_str()) {
-                continue;
+        for asset_id in asset_ids {
+            // Parse the asset_id to determine type and TMDb ID
+            if let Some(tmdb_id_str) = asset_id.strip_prefix("tmdb_movie_") {
+                if let Ok(tmdb_id) = tmdb_id_str.parse::<u64>() {
+                    // Try snapshot first
+                    if let Some((title, popularity, vote_count)) = movie_map.get(&tmdb_id) {
+                        results.push(PriceUpdate {
+                            asset_id: asset_id.clone(),
+                            symbol: title.to_string(),
+                            value: Decimal::from_f64_retain(*popularity)
+                                .unwrap_or(Decimal::ZERO),
+                            prev_close: None,
+                            change_pct: None,
+                            volume_24h: Some(Decimal::from(*vote_count)),
+                            market_cap: None,
+                            fetched_at: now,
+                        });
+                    } else {
+                        // Not in snapshot — fetch individual detail
+                        detail_lookups += 1;
+                        if let Some((_, title, popularity, vote_count)) = self.fetch_movie_detail(tmdb_id).await {
+                            results.push(PriceUpdate {
+                                asset_id: asset_id.clone(),
+                                symbol: title,
+                                value: Decimal::from_f64_retain(popularity)
+                                    .unwrap_or(Decimal::ZERO),
+                                prev_close: None,
+                                change_pct: None,
+                                volume_24h: Some(Decimal::from(vote_count)),
+                                market_cap: None,
+                                fetched_at: now,
+                            });
+                        } else {
+                            debug!("TMDb: movie {} not found via detail lookup", tmdb_id);
+                        }
+                        tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+                    }
+                }
+            } else if let Some(tmdb_id_str) = asset_id.strip_prefix("tmdb_tv_") {
+                if let Ok(tmdb_id) = tmdb_id_str.parse::<u64>() {
+                    if let Some((name, popularity, vote_count)) = tv_map.get(&tmdb_id) {
+                        results.push(PriceUpdate {
+                            asset_id: asset_id.clone(),
+                            symbol: name.to_string(),
+                            value: Decimal::from_f64_retain(*popularity)
+                                .unwrap_or(Decimal::ZERO),
+                            prev_close: None,
+                            change_pct: None,
+                            volume_24h: Some(Decimal::from(*vote_count)),
+                            market_cap: None,
+                            fetched_at: now,
+                        });
+                    } else {
+                        detail_lookups += 1;
+                        if let Some((_, name, popularity, vote_count)) = self.fetch_tv_detail(tmdb_id).await {
+                            results.push(PriceUpdate {
+                                asset_id: asset_id.clone(),
+                                symbol: name,
+                                value: Decimal::from_f64_retain(popularity)
+                                    .unwrap_or(Decimal::ZERO),
+                                prev_close: None,
+                                change_pct: None,
+                                volume_24h: Some(Decimal::from(vote_count)),
+                                market_cap: None,
+                                fetched_at: now,
+                            });
+                        } else {
+                            debug!("TMDb: TV show {} not found via detail lookup", tmdb_id);
+                        }
+                        tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+                    }
+                }
+            } else if let Some(tmdb_id_str) = asset_id.strip_prefix("tmdb_person_") {
+                if let Ok(tmdb_id) = tmdb_id_str.parse::<u64>() {
+                    if let Some((name, popularity)) = person_map.get(&tmdb_id) {
+                        results.push(PriceUpdate {
+                            asset_id: asset_id.clone(),
+                            symbol: name.to_string(),
+                            value: Decimal::from_f64_retain(*popularity)
+                                .unwrap_or(Decimal::ZERO),
+                            prev_close: None,
+                            change_pct: None,
+                            volume_24h: None,
+                            market_cap: None,
+                            fetched_at: now,
+                        });
+                    } else {
+                        detail_lookups += 1;
+                        if let Some((_, name, popularity)) = self.fetch_person_detail(tmdb_id).await {
+                            results.push(PriceUpdate {
+                                asset_id: asset_id.clone(),
+                                symbol: name,
+                                value: Decimal::from_f64_retain(popularity)
+                                    .unwrap_or(Decimal::ZERO),
+                                prev_close: None,
+                                change_pct: None,
+                                volume_24h: None,
+                                market_cap: None,
+                                fetched_at: now,
+                            });
+                        } else {
+                            debug!("TMDb: person {} not found via detail lookup", tmdb_id);
+                        }
+                        tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+                    }
+                }
             }
-            results.push(PriceUpdate {
-                asset_id,
-                symbol: title.clone(),
-                value: Decimal::from_f64_retain(*popularity)
-                    .unwrap_or(Decimal::ZERO),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: Some(Decimal::from(*vote_count)),
-                market_cap: None,
-                fetched_at: now,
-            });
         }
 
-        // TV shows
-        for (id, name, popularity, vote_count) in &snap.tv_shows {
-            let asset_id = format!("tmdb_tv_{}", id);
-            if !active_set.contains(asset_id.as_str()) {
-                continue;
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut cache = self.last_priced.lock().unwrap_or_else(|e| e.into_inner());
+            for price in &results {
+                cache.insert(price.asset_id.clone(), now);
             }
-            results.push(PriceUpdate {
-                asset_id,
-                symbol: name.clone(),
-                value: Decimal::from_f64_retain(*popularity)
-                    .unwrap_or(Decimal::ZERO),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: Some(Decimal::from(*vote_count)),
-                market_cap: None,
-                fetched_at: now,
-            });
-        }
-
-        // People
-        for (id, name, popularity, _dept) in &snap.people {
-            let asset_id = format!("tmdb_person_{}", id);
-            if !active_set.contains(asset_id.as_str()) {
-                continue;
-            }
-            results.push(PriceUpdate {
-                asset_id,
-                symbol: name.clone(),
-                value: Decimal::from_f64_retain(*popularity)
-                    .unwrap_or(Decimal::ZERO),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: None,
-                market_cap: None,
-                fetched_at: now,
-            });
         }
 
         if results.len() < asset_ids.len() {
             warn!(
-                "TMDb: priced {}/{} active assets (rest rotated off popular lists, will be deactivated)",
+                "TMDb: priced {}/{} active assets ({} via detail lookups, {} unfetchable → will deactivate in {}h)",
                 results.len(),
-                asset_ids.len()
+                asset_ids.len(),
+                detail_lookups,
+                asset_ids.len() - results.len(),
+                DEACTIVATION_HOURS
             );
         }
 
-        info!("Fetched {} prices from TMDb (movies + TV + people)", results.len());
+        info!(
+            "Fetched {} prices from TMDb ({} from snapshot, {} from detail lookups)",
+            results.len(),
+            results.len() - detail_lookups as usize,
+            detail_lookups
+        );
         Ok(results)
     }
 
@@ -698,5 +865,21 @@ mod tests {
             url,
             "https://api.themoviedb.org/3/trending/person/day?page=1&api_key=test_key"
         );
+    }
+
+    #[test]
+    fn test_deactivation_hours() {
+        assert!(DEACTIVATION_HOURS > 0);
+        assert!(DEACTIVATION_HOURS <= 72, "Deactivation should be aggressive for rotating lists");
+    }
+
+    #[test]
+    fn test_discovery_pages_reasonable() {
+        // 5 pages * 20 items = 100 per category
+        // Total: ~100 movies + ~100 TV + ~200 people = ~400 assets
+        assert!(MOVIE_DISCOVERY_PAGES <= 10, "Keep discovery small to avoid orphans");
+        assert!(TV_DISCOVERY_PAGES <= 10, "Keep discovery small to avoid orphans");
+        assert!(PERSON_TRENDING_PAGES <= 10);
+        assert!(PERSON_POPULAR_PAGES <= 10);
     }
 }
