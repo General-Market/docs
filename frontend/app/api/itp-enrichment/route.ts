@@ -21,6 +21,7 @@ let foundersLookupCache: Record<string, { age?: number; gender: string; national
 // DeFiLlama caches with TTL (5 min)
 let defiProtocolsCache: { data: any[]; ts: number } | null = null
 let defiRaisesCache: { data: any[]; ts: number } | null = null
+let cgPriceCache: { data: Record<string, { usd_market_cap?: number; usd_24h_change?: number }>; ts: number } | null = null
 const DEFI_CACHE_TTL = 5 * 60 * 1000
 
 async function loadCoinMap(): Promise<Record<string, CoinMapEntry>> {
@@ -100,6 +101,42 @@ function buildFounderAggregates(
     gender_split: sortDesc(genderMap),
     top_nationalities: sortDesc(natMap).slice(0, 12),
     top_universities: sortDesc(uniMap).slice(0, 10),
+  }
+}
+
+async function fetchCoinGeckoMarketData(
+  cgIds: string[]
+): Promise<Record<string, { usd_market_cap?: number; usd_24h_change?: number }>> {
+  if (cgIds.length === 0) return {}
+  if (cgPriceCache && Date.now() - cgPriceCache.ts < DEFI_CACHE_TTL) {
+    return cgPriceCache.data
+  }
+  try {
+    // CoinGecko free API: max ~250 ids per request, batch if needed
+    const batches: string[][] = []
+    for (let i = 0; i < cgIds.length; i += 200) {
+      batches.push(cgIds.slice(i, i + 200))
+    }
+    const merged: Record<string, { usd_market_cap?: number; usd_24h_change?: number }> = {}
+    for (const batch of batches) {
+      const ids = batch.join(',')
+      const res = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_market_cap=true&include_24hr_change=true`,
+        { signal: AbortSignal.timeout(10000) }
+      )
+      if (!res.ok) continue
+      const data = await res.json()
+      for (const [id, vals] of Object.entries(data) as [string, any][]) {
+        merged[id] = {
+          usd_market_cap: vals.usd_market_cap,
+          usd_24h_change: vals.usd_24h_change,
+        }
+      }
+    }
+    cgPriceCache = { data: merged, ts: Date.now() }
+    return merged
+  } catch {
+    return cgPriceCache?.data || {}
   }
 }
 
@@ -275,11 +312,26 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const [founderAgg, defiAgg, fundingAgg] = await Promise.all([
+    // Collect CoinGecko IDs for market data fetch
+    const cgIds = enrichedHoldings
+      .map(h => h.coingecko_id)
+      .filter((id): id is string => !!id)
+
+    const [founderAgg, defiAgg, fundingAgg, cgMarketData] = await Promise.all([
       Promise.resolve(buildFounderAggregates(enrichedHoldings, foundersLookup || {})),
       fetchDefiData(enrichedHoldings),
       fetchFundingData(enrichedHoldings),
+      fetchCoinGeckoMarketData([...new Set(cgIds)]),
     ])
+
+    // Enrich holdings with market_cap and 24h change from CoinGecko
+    for (const h of enrichedHoldings) {
+      if (h.coingecko_id && cgMarketData[h.coingecko_id]) {
+        const md = cgMarketData[h.coingecko_id]
+        h.market_cap = md.usd_market_cap
+        h.change_24h = md.usd_24h_change
+      }
+    }
 
     const result: ItpEnrichment = {
       itpId,

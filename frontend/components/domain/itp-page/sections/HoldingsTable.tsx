@@ -7,7 +7,16 @@ import type { EnrichedHolding } from '@/lib/itp-enrichment-types'
 
 const PAGE_SIZE = 20
 
-type SortKey = 'rank' | 'symbol' | 'weight' | 'price'
+function formatMcap(v?: number): string {
+  if (v == null) return '—'
+  if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(1)}M`
+  if (v >= 1e3) return `$${(v / 1e3).toFixed(0)}K`
+  return `$${v.toFixed(0)}`
+}
+
+type SortKey = 'rank' | 'symbol' | 'weight' | 'price' | 'change_24h' | 'market_cap'
 type SortDir = 'asc' | 'desc'
 
 export function HoldingsTable({ enrichment }: SectionProps) {
@@ -25,6 +34,8 @@ export function HoldingsTable({ enrichment }: SectionProps) {
         case 'symbol': cmp = a.symbol.localeCompare(b.symbol); break
         case 'weight': cmp = a.weight - b.weight; break
         case 'price': cmp = a.price - b.price; break
+        case 'change_24h': cmp = (a.change_24h ?? 0) - (b.change_24h ?? 0); break
+        case 'market_cap': cmp = (a.market_cap ?? 0) - (b.market_cap ?? 0); break
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
@@ -72,6 +83,8 @@ export function HoldingsTable({ enrichment }: SectionProps) {
               <SortHeader k="symbol">Asset</SortHeader>
               <SortHeader k="weight" align="text-right">Weight</SortHeader>
               <SortHeader k="price" align="text-right">Price</SortHeader>
+              <SortHeader k="change_24h" align="text-right">24h</SortHeader>
+              <SortHeader k="market_cap" align="text-right">Market Cap</SortHeader>
             </tr>
           </thead>
           <tbody>
@@ -107,6 +120,16 @@ export function HoldingsTable({ enrichment }: SectionProps) {
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                   ${h.price >= 1 ? h.price.toFixed(2) : h.price.toFixed(4)}
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                  {h.change_24h != null ? (
+                    <span className={h.change_24h >= 0 ? 'text-color-up' : 'text-color-down'}>
+                      {h.change_24h >= 0 ? '+' : ''}{h.change_24h.toFixed(2)}%
+                    </span>
+                  ) : '—'}
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-text-secondary">
+                  {formatMcap(h.market_cap)}
                 </td>
               </tr>
             ))}

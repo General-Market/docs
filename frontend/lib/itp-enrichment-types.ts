@@ -36,6 +36,7 @@ export interface EnrichedHolding {
   image?: string
   coingecko_id?: string
   market_cap?: number
+  change_24h?: number
   tvl?: number
   tvl_change_1d?: number
   tvl_change_7d?: number

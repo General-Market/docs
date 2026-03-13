@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import type { SectionProps } from '../SectionRenderer'
 
 export function FundFacts({ itpId, symbol }: SectionProps) {
@@ -18,11 +19,18 @@ export function FundFacts({ itpId, symbol }: SectionProps) {
     { label: 'Symbol', value: symbol },
     { label: 'Chain', value: 'Index L3 (Orbit)' },
     {
+      label: 'Settlement Address',
+      value: truncate(INDEX_PROTOCOL.settlementCustody),
+      full: INDEX_PROTOCOL.settlementCustody,
+      copyable: true,
+    },
+    {
       label: 'ITP ID',
       value: truncate(itpId),
       full: itpId,
       copyable: true,
     },
+    { label: 'Rebalance Method', value: 'Equal Weight' },
   ]
 
   return (
