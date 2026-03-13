@@ -360,9 +360,9 @@ impl TickScheduler {
 
         // 2. Load player positions (only active: balance > 0)
         // Cast numeric columns to text to avoid BigDecimal dependency
-        let pos_rows: Vec<(i64, String, String, String, i64, String, i64)> =
+        let pos_rows: Vec<(i64, String, String, String, i64, String, i64, String)> =
             sqlx::query_as(
-                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, join_timestamp \
+                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, join_timestamp, total_deposited::text \
                  FROM vision_positions WHERE balance > 0",
             )
             .fetch_all(pool)
@@ -370,15 +370,16 @@ impl TickScheduler {
 
         {
             let mut players = self.players.write().await;
-            for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp) in &pos_rows {
+            for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp, total_deposited) in &pos_rows {
                 let bal = U256::from_dec_str(balance).unwrap_or_default();
+                let dep = U256::from_dec_str(total_deposited).unwrap_or(bal);
                 let position = PlayerPosition {
                     player: player.parse().unwrap_or_default(),
                     bitmap_hash: bitmap_hash.parse().unwrap_or_default(),
                     stake_per_tick: U256::from_dec_str(stake_per_tick).unwrap_or_default(),
                     start_tick: *start_tick as u64,
                     balance: bal,
-                    initial_deposit: bal,
+                    initial_deposit: dep,
                     join_timestamp: *join_timestamp as u64,
                     num_committed_ticks: 1, // Updated from bitmap at resolution time
                 };
