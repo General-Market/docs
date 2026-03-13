@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use async_trait::async_trait;
 use tokio::net::TcpListener;
@@ -17,6 +17,7 @@ use common::traits::{MessageStream, P2PTransport};
 use common::types::{P2PMessage, PeerId, PeerInfo};
 
 use super::connection::{temp_peer_id_from_addr, ConnectionStatus, PeerConnection};
+use super::metrics::P2PMetrics;
 use super::peer_scoring::PeerScorer;
 use super::tls::TlsConfig;
 
@@ -65,6 +66,8 @@ pub struct TcpP2PTransport {
     peer_scorer: Arc<PeerScorer>,
     /// Handle for the scorer tick background task
     scorer_tick_handle: Arc<RwLock<Option<tokio::task::JoinHandle<()>>>>,
+    /// Optional P2P metrics for send counting (set once after construction)
+    p2p_metrics: OnceLock<Arc<P2PMetrics>>,
 }
 
 /// Default rate limit: 100 messages per second per peer
@@ -106,7 +109,13 @@ impl TcpP2PTransport {
             rate_burst,
             peer_scorer: Arc::new(PeerScorer::new()),
             scorer_tick_handle: Arc::new(RwLock::new(None)),
+            p2p_metrics: OnceLock::new(),
         }
+    }
+
+    /// Attach P2P metrics so broadcast/send_to increment `messages_sent`.
+    pub fn set_metrics(&self, metrics: Arc<P2PMetrics>) {
+        let _ = self.p2p_metrics.set(metrics);
     }
 
     /// Get this node's peer ID
@@ -456,6 +465,9 @@ impl P2PTransport for TcpP2PTransport {
             }
         }
 
+        if let Some(m) = self.p2p_metrics.get() {
+            m.messages_sent.fetch_add(send_count as u64, std::sync::atomic::Ordering::Relaxed);
+        }
         info!(send_count, error_count, "Broadcast complete");
 
         // Broadcast is best-effort, don't fail if some sends fail
@@ -476,7 +488,13 @@ impl P2PTransport for TcpP2PTransport {
             )));
         }
 
-        conn.send(message).await
+        let result = conn.send(message).await;
+        if result.is_ok() {
+            if let Some(m) = self.p2p_metrics.get() {
+                m.messages_sent.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+        result
     }
 
     async fn receive(&self) -> Result<MessageStream, Error> {

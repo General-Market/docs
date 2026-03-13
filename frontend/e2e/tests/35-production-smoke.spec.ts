@@ -565,6 +565,37 @@ test.describe('Explorer (/explorer)', () => {
     await expect(page.locator('text=Error Rate').first()).toBeVisible({ timeout: 5_000 })
   })
 
+  test('Price Feeds tab shows feed charts', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'Price Feeds' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Price Feeds').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Consensus Duration Trend').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Price Feed Metrics').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('ITP & NAV tab shows ITP metrics', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'ITP & NAV' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=ITP Metrics').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Pending Order Volume').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=ITP On-Chain Metrics').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('Chain & Gas tab shows gas charts', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'Chain & Gas' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Gas Usage').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Gas Price History').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Transaction Throughput').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Cycle Performance').first()).toBeVisible({ timeout: 5_000 })
+  })
+
   test('Vision tab shows activity chart and placeholders', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(3_000)

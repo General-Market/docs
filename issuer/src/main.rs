@@ -612,6 +612,11 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Create P2P metrics early so the router can increment counters
     let p2p_metrics = Arc::new(issuer::p2p::P2PMetrics::default());
 
+    // Attach metrics to transport for outbound message counting
+    if let Some(ref transport) = components.p2p.transport {
+        transport.set_metrics(p2p_metrics.clone());
+    }
+
     // Spawn P2P message router when ConsensusProtocol exists
     let router_handle: Option<tokio::task::JoinHandle<()>> = if let (Some(protocol), Some(p2p)) =
         (&components.consensus.protocol, &components.p2p.transport)
