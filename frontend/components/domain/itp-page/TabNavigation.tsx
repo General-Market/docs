@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import type { TabId, SectionId, ItpPageConfig } from '@/lib/itp-page-config'
+import { useState, useEffect, useRef } from 'react'
+import type { SectionId, ItpPageConfig } from '@/lib/itp-page-config'
 import type { SectionProps } from './SectionRenderer'
 import { KeyStatsBar } from './sections/KeyStatsBar'
 import { PerformanceChart } from './sections/PerformanceChart'
@@ -29,13 +29,26 @@ const REGISTRY: Record<SectionId, React.ComponentType<SectionProps>> = {
   'investment-objective': InvestmentObjective,
 }
 
-const TAB_IDS: TabId[] = ['overview', 'performance', 'key-facts', 'holdings']
+// Anchor nav labels
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'performance', label: 'Performance' },
+  { id: 'holdings', label: 'Holdings' },
+  { id: 'key-facts', label: 'Key Facts' },
+] as const
 
-const TAB_LABELS: Record<TabId, string> = {
-  overview: 'Overview',
-  performance: 'Performance',
-  'key-facts': 'Key Facts',
-  holdings: 'Holdings',
+// All sections in scroll order for each ITP type
+function getAllSections(config: ItpPageConfig): { sectionId: SectionId; anchorId: string }[] {
+  const result: { sectionId: SectionId; anchorId: string }[] = []
+  // Overview sections
+  for (const id of config.tabs.overview) result.push({ sectionId: id, anchorId: 'overview' })
+  // Performance
+  for (const id of config.tabs.performance) result.push({ sectionId: id, anchorId: 'performance' })
+  // Holdings
+  for (const id of config.tabs.holdings) result.push({ sectionId: id, anchorId: 'holdings' })
+  // Key Facts
+  for (const id of config.tabs['key-facts']) result.push({ sectionId: id, anchorId: 'key-facts' })
+  return result
 }
 
 interface Props {
@@ -44,64 +57,75 @@ interface Props {
 }
 
 export function TabNavigation({ config, sectionProps }: Props) {
-  const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const [activeAnchor, setActiveAnchor] = useState('overview')
+  const navRef = useRef<HTMLDivElement>(null)
 
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowRight' && index < TAB_IDS.length - 1) {
-      setActiveTab(TAB_IDS[index + 1])
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      setActiveTab(TAB_IDS[index - 1])
-    } else if (e.key === 'Home') {
-      setActiveTab(TAB_IDS[0])
-    } else if (e.key === 'End') {
-      setActiveTab(TAB_IDS[TAB_IDS.length - 1])
+  const allSections = getAllSections(config)
+
+  // Observe which anchor section is in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveAnchor(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px' }
+    )
+
+    for (const item of NAV_ITEMS) {
+      const el = document.getElementById(item.id)
+      if (el) observer.observe(el)
     }
+
+    return () => observer.disconnect()
+  }, [])
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
     <>
-      {/* Tab bar — NOT sticky, scrolls with page */}
-      <div className="border-b border-border-light mb-8">
-        <div role="tablist" className="flex gap-0 overflow-x-auto">
-          {TAB_IDS.map((id, index) => (
+      {/* Sticky anchor nav */}
+      <div ref={navRef} className="sticky top-16 z-10 bg-white border-b border-border-light mb-8">
+        <div role="navigation" aria-label="Page sections" className="flex gap-0 overflow-x-auto">
+          {NAV_ITEMS.map(item => (
             <button
-              key={id}
-              role="tab"
-              aria-selected={activeTab === id}
-              aria-controls={`tabpanel-${id}`}
-              tabIndex={activeTab === id ? 0 : -1}
-              onClick={() => setActiveTab(id)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
+              key={item.id}
+              onClick={() => scrollTo(item.id)}
               className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary ${
-                activeTab === id
+                activeAnchor === item.id
                   ? 'border-b-2 border-text-primary text-text-primary'
                   : 'text-text-muted hover:text-text-secondary'
               }`}
             >
-              {TAB_LABELS[id]}
+              {item.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Tab panel — min height prevents layout jump */}
-      <div
-        id={`tabpanel-${activeTab}`}
-        role="tabpanel"
-        aria-labelledby={`tab-${activeTab}`}
-        className="min-h-[400px]"
-      >
-        {config.tabs[activeTab].map((sectionId, i) => {
+      {/* All sections rendered in scroll order */}
+      {(() => {
+        let lastAnchor = ''
+        return allSections.map(({ sectionId, anchorId }, i) => {
           const Section = REGISTRY[sectionId]
           if (!Section) return null
+          // Place anchor id on first section of each group
+          const showAnchor = anchorId !== lastAnchor
+          lastAnchor = anchorId
           return (
             <div key={sectionId}>
               {i > 0 && <hr className="border-border-light my-8" />}
+              {showAnchor && <div id={anchorId} className="scroll-mt-32" />}
               <Section {...sectionProps} />
             </div>
           )
-        })}
-      </div>
+        })
+      })()}
     </>
   )
 }
