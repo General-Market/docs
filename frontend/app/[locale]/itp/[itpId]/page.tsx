@@ -4,6 +4,8 @@ import { getTranslations } from 'next-intl/server'
 import { getItpDetail, getItpSummaries } from '@/lib/api/server-data'
 import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { ItpPageClient } from '@/components/domain/itp-page/ItpPageClient'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
 export const revalidate = 60
@@ -59,7 +61,7 @@ async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const res = await fetch(
       `${baseUrl}/api/itp-enrichment?itp_id=${encodeURIComponent(itpId)}`,
-      { next: { revalidate: 300 } }
+      { next: { revalidate: 300 }, signal: AbortSignal.timeout(15_000) }
     )
     if (!res.ok) return null
     return await res.json()
@@ -82,7 +84,9 @@ export default async function ItpPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-page">
+    <main className="min-h-screen bg-page flex flex-col">
+      <Header />
+
       <BreadcrumbJsonLd items={[
         { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
         { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/#markets' },
@@ -114,7 +118,7 @@ export default async function ItpPage({ params }: Props) {
         }}
       />
 
-      <div className="px-6 lg:px-12 py-12">
+      <div className="flex-1 px-6 lg:px-12 py-12">
         <div className="max-w-5xl mx-auto">
           <nav className="text-sm text-text-muted mb-6">
             <a href="/" className="hover:text-black transition-colors">{tBreadcrumbs('home')}</a>
@@ -148,6 +152,8 @@ export default async function ItpPage({ params }: Props) {
           </p>
         </div>
       </div>
+
+      <Footer />
     </main>
   )
 }
