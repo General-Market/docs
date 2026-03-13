@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Path to deployments directory (relative to project root)
+    // Try deployments directory first (local dev: ../deployments/)
     const deploymentsDir = join(process.cwd(), '..', 'deployments')
     const filePath = join(deploymentsDir, file)
 
@@ -30,8 +30,18 @@ export async function GET(request: NextRequest) {
     const data = JSON.parse(content)
 
     return NextResponse.json(data)
-  } catch (error) {
-    // File doesn't exist or can't be read
+  } catch {
+    // Fallback: public/deployment.json (Vercel production)
+    if (file === 'active-deployment.json') {
+      try {
+        const publicPath = join(process.cwd(), 'public', 'deployment.json')
+        const content = await readFile(publicPath, 'utf-8')
+        const data = JSON.parse(content)
+        return NextResponse.json(data)
+      } catch {
+        // Both paths failed
+      }
+    }
     return NextResponse.json(
       { error: 'Deployment file not found' },
       { status: 404 }
