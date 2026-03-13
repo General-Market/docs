@@ -26,10 +26,10 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
       <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
-          <a href="/" className="text-text-inverse-muted text-sm hover:text-text-inverse">{t('back')}</a>
-          <h1 className="text-3xl font-bold text-text-inverse mt-4">{t('title')}</h1>
-          <p className="text-text-inverse-muted mt-2">{t('last_updated')}</p>
-          <p className="text-text-inverse-muted text-xs mt-1">{t('entity')}</p>
+          <a href="/" className="text-text-muted text-sm hover:text-text-primary">{t('back')}</a>
+          <h1 className="text-3xl font-bold text-text-primary mt-4">{t('title')}</h1>
+          <p className="text-text-muted mt-2">{t('last_updated')}</p>
+          <p className="text-text-muted text-xs mt-1">{t('entity')}</p>
         </div>
 
         <div className="bg-card rounded-xl shadow-card border border-border-light p-8">
@@ -90,12 +90,12 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         </div>
 
         {/* Links */}
-        <section className="pt-8 mt-12 border-t border-border-dark">
+        <section className="pt-8 mt-12 border-t border-border-light">
           <div className="flex items-center gap-6 text-sm">
-            <a href="/terms" className="text-text-inverse-muted hover:text-text-inverse">Terms</a>
-            <a href="/legal-vision" className="text-text-inverse-muted hover:text-text-inverse">Vision Legal</a>
-            <a href="/legal-index" className="text-text-inverse-muted hover:text-text-inverse">Index Legal</a>
-            <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-inverse-muted hover:text-text-inverse">@otc_max</a>
+            <a href="/terms" className="text-text-muted hover:text-text-primary">Terms</a>
+            <a href="/legal-vision" className="text-text-muted hover:text-text-primary">Vision Legal</a>
+            <a href="/legal-index" className="text-text-muted hover:text-text-primary">Index Legal</a>
+            <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-text-primary">@otc_max</a>
           </div>
         </section>
       </div>

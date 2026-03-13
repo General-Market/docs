@@ -247,7 +247,7 @@ export function Header() {
                   onClick={handleLogin}
                   className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
                 >
-                  Sign Up
+                  {t('wallet.sign_up')}
                 </button>
               )}
               {/* Hamburger */}

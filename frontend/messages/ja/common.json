@@ -24,10 +24,12 @@
   "footer": {
     "product": "プロダクト",
     "resources": "リソース",
-    "indexes": "インデックス",
-    "simulation": "シミュレーション",
-    "lending": "レンディング",
-    "create_itp": "ITP作成",
+    "indexes": "インデックス商品",
+    "data_sources": "データソース",
+    "explorer": "エクスプローラー",
+    "points": "ポイント — シーズン1",
+    "about": "概要",
+    "learn": "学習",
     "docs": "ドキュメント",
     "discord": "Discord",
     "privacy_policy": "プライバシーポリシー",
@@ -81,7 +83,8 @@
     "install_metamask": "MetaMaskをインストール",
     "connect_to_buy": "ITTシェアを購入するにはウォレットを接続してください",
     "connect_to_sell": "ITTシェアを売却するにはウォレットを接続してください",
-    "connect_to_create": "バッチを作成するにはウォレットを接続してください"
+    "connect_to_create": "バッチを作成するにはウォレットを接続してください",
+    "sign_up": "サインアップ"
   },
   "status": {
     "pending": "保留中",

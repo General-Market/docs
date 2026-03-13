@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: ogTitle,
       description,
-      url: `https://generalmarket.io/itp/${itpId}`,
+      url: `https://www.generalmarket.io/itp/${itpId}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -95,9 +95,9 @@ export default async function ItpPage({ params }: Props) {
       <Header />
 
       <BreadcrumbJsonLd items={[
-        { name: tBreadcrumbs('home'), url: 'https://generalmarket.io' },
-        { name: tBreadcrumbs('markets'), url: 'https://generalmarket.io/#markets' },
-        { name: data.name, url: `https://generalmarket.io/itp/${itpId}` },
+        { name: tBreadcrumbs('home'), url: 'https://www.generalmarket.io' },
+        { name: tBreadcrumbs('markets'), url: 'https://www.generalmarket.io/index' },
+        { name: data.name, url: `https://www.generalmarket.io/itp/${itpId}` },
       ]} />
 
       <script
@@ -115,11 +115,11 @@ export default async function ItpPage({ params }: Props) {
               count: data.assetCount,
               nav: data.nav.toFixed(4),
             }),
-            url: `https://generalmarket.io/itp/${itpId}`,
+            url: `https://www.generalmarket.io/itp/${itpId}`,
             provider: {
               "@type": "Organization",
               name: "General Market",
-              url: "https://generalmarket.io",
+              url: "https://www.generalmarket.io",
             },
           }).replace(/</g, '\\u003c'),
         }}

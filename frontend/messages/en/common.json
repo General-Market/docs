@@ -24,10 +24,12 @@
   "footer": {
     "product": "Product",
     "resources": "Resources",
-    "indexes": "Indexes",
-    "simulation": "Simulation",
-    "lending": "Lending",
-    "create_itp": "Create ITP",
+    "indexes": "Index Products",
+    "data_sources": "Data Sources",
+    "explorer": "Explorer",
+    "points": "Points — Season 1",
+    "about": "About",
+    "learn": "Learn",
     "docs": "Docs",
     "discord": "Discord",
     "privacy_policy": "Privacy Policy",
@@ -81,7 +83,8 @@
     "install_metamask": "Install MetaMask",
     "connect_to_buy": "Connect your wallet to buy ITP shares",
     "connect_to_sell": "Connect your wallet to sell ITP shares",
-    "connect_to_create": "Connect your wallet to create a batch"
+    "connect_to_create": "Connect your wallet to create a batch",
+    "sign_up": "Sign Up"
   },
   "status": {
     "pending": "Pending",

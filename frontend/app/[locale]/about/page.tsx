@@ -39,7 +39,7 @@ export default async function AboutPage() {
     mainEntity: {
       '@type': 'Organization',
       name: 'General Market',
-      url: 'https://generalmarket.io',
+      url: 'https://www.generalmarket.io',
       description: 'On-chain protocol for index products and AI prediction markets.',
       sameAs: [
         'https://x.com/otc_max',

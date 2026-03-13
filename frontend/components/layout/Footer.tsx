@@ -10,7 +10,7 @@ export function Footer() {
     <footer className="bg-zinc-950 text-white/60 pt-12 pb-6 px-6 lg:px-12 text-[12px]">
       <div className="max-w-site mx-auto">
         {/* 3-column grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 pb-10 border-b border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 pb-10 border-b border-white/10">
           {/* Col 1: Brand */}
           <div>
             <span className="text-white font-bold text-[15px] tracking-tight">{t('brand.name')}</span>
@@ -47,11 +47,11 @@ export function Footer() {
           <div>
             <span className="text-white/80 font-semibold text-[11px] uppercase tracking-[0.1em] block mb-3">{t('footer.product')}</span>
             <ul className="space-y-2">
-              <li><a href="/#indexes" className="hover:text-white transition-colors">{t('footer.indexes')}</a></li>
-              <li><a href="/#simulation" className="hover:text-white transition-colors">{t('footer.simulation')}</a></li>
-              <li><a href="/#lending" className="hover:text-white transition-colors">{t('footer.lending')}</a></li>
-              <li><a href="/#create-itp" className="hover:text-white transition-colors">{t('footer.create_itp')}</a></li>
-              <li><Link href="/sources" className="hover:text-white transition-colors">Data Sources</Link></li>
+              <li><Link href="/index" className="hover:text-white transition-colors">{t('footer.indexes')}</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors">Vision</Link></li>
+              <li><Link href="/sources" className="hover:text-white transition-colors">{t('footer.data_sources')}</Link></li>
+              <li><Link href="/explorer" className="hover:text-white transition-colors">{t('footer.explorer')}</Link></li>
+              <li><Link href="/points" className="hover:text-white transition-colors">{t('footer.points')}</Link></li>
             </ul>
           </div>
 
@@ -61,13 +61,10 @@ export function Footer() {
             <ul className="space-y-2">
               <li><a href="/docs" className="hover:text-white transition-colors">{t('footer.docs')}</a></li>
               <li><a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.discord')}</a></li>
-              <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
-              <li><Link href="/points" className="hover:text-white transition-colors">Points — Season 1</Link></li>
+              <li><Link href="/about" className="hover:text-white transition-colors">{t('footer.about')}</Link></li>
+              <li><Link href="/learn" className="hover:text-white transition-colors">{t('footer.learn')}</Link></li>
               <li><Link href="/privacy" className="hover:text-white transition-colors">{t('footer.privacy_policy')}</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">{t('footer.terms_of_service')}</Link></li>
-              <li><Link href="/legal-vision" className="hover:text-white transition-colors">Vision Legal</Link></li>
-              <li><Link href="/legal-index" className="hover:text-white transition-colors">Index Legal</Link></li>
-              <li><Link href="/learn" className="hover:text-white transition-colors">Learn</Link></li>
             </ul>
           </div>
         </div>
