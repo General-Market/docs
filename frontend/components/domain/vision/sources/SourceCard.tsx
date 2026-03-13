@@ -21,6 +21,19 @@ interface SourceCardProps {
   metaStatus?: string
 }
 
+/** Format a timestamp as relative age (e.g. "2m ago", "1h ago") */
+function formatAge(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  if (diff < 0) return 'now'
+  const secs = Math.floor(diff / 1000)
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 /** Default is 'up' — undefined state means up */
 function getCellState(state: Record<string, CellState>, marketId: string): CellState {
   return state[marketId] ?? 'up'
@@ -201,8 +214,8 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
         </div>
       </Link>
 
-      {/* Card content — matches ITP card body */}
-      <div className="px-5 py-4">
+      {/* Card content */}
+      <div className="px-5 pt-4 pb-0">
         <div className="flex justify-between items-start mb-1">
           <div className="min-w-0 flex-1 mr-2">
             <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{source.name}</h3>
@@ -223,27 +236,27 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
             <span className="text-[15px] font-bold text-black font-mono tabular-nums">{displayMarketCount || '—'}</span>
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Category</div>
-            <span className="text-[13px] font-bold text-black">{getCategoryLabel(source.category)}</span>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
+            <span className="text-[13px] font-bold text-black">{source.valueLabel}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Bets Set</div>
-            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalSet}/{displayMarketCount || '—'}</span>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Updated</div>
+            <span className="text-[13px] font-bold text-black">{sourceSnapshot?.generatedAt ? formatAge(sourceSnapshot.generatedAt) : '—'}</span>
           </div>
         </div>
+      </div>
 
-        {/* Action buttons — full bleed */}
-        <div className="grid grid-cols-3 border-t border-border-light -mx-5 mt-3">
-          <Link href={`/source/${source.id}`} className="py-2.5 text-center bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
-            <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">Markets</span>
-          </Link>
-          <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
-            <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Batch</span>
-          </Link>
-          <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
-            <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Details</span>
-          </Link>
-        </div>
+      {/* Action buttons — full bleed outside padding */}
+      <div className="grid grid-cols-3 border-t border-border-light">
+        <Link href={`/source/${source.id}`} className="py-2.5 text-center bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
+          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">Markets</span>
+        </Link>
+        <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
+          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Batch</span>
+        </Link>
+        <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
+          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Details</span>
+        </Link>
       </div>
     </div>
   )
