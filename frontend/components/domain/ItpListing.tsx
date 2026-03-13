@@ -19,12 +19,13 @@ import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
-import { hasLendingMarket } from '@/lib/contracts/morpho-markets-registry'
+import { hasLendingMarket, getKnownItpVault } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { indexL3, settlementChainId } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/routing'
 
 // ERC20 ABI for balance queries — used by ItpCard detail expansion (low priority migration)
 const ERC20_ABI = [
@@ -81,14 +82,6 @@ interface ItpListingProps {
   onLendingClick?: () => void
   onItpsLoaded?: (itps: DeployedItpRef[]) => void
 }
-
-// Test video IDs — shown on ITP cards that don't have a metadata videoUrl set
-const TEST_VIDEO_IDS = [
-  'bBC-nXj3Ng4',  // Bitcoin whiteboard overview (3Blue1Brown)
-  'p7HKvqRI_Bo',  // How The Economic Machine Works (Ray Dalio)
-  'PHe0bXAIuk0',  // How The Stock Market Works
-  '41JCpzvnn_0',  // What is an ETF?
-]
 
 // Use shared YouTube components
 const extractYouTubeId = extractYouTubeIdShared
@@ -170,8 +163,8 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   // ── SSE-driven ITP list (replaces getItpCount + getITP loop + bridge loop + getLogs) ──
   const navList = useSSENav()
   const loading = navList.length === 0
-  const [buyModal, setBuyModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
-  const [sellModal, setSellModal] = useState<{ itpId: string; videoUrl: string } | null>(null)
+  const [buyModal, setBuyModal] = useState<{ itpId: string; videoUrl?: string } | null>(null)
+  const [sellModal, setSellModal] = useState<{ itpId: string; videoUrl?: string } | null>(null)
   const [lendModalItp, setLendModalItp] = useState<ItpInfo | null>(null)
   const [chartModalItp, setChartModalItp] = useState<{ itpId: string; name: string; createdAt?: number } | null>(null)
   const [rebalanceModalItp, setRebalanceModalItp] = useState<{ itpId: string; name: string } | null>(null)
@@ -273,13 +266,11 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                     index={idx}
                     onBuy={() => {
                       if (!itp.itpId) return
-                      const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
-                      setBuyModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
+                      setBuyModal({ itpId: itp.itpId })
                     }}
                     onSell={() => {
                       if (!itp.itpId) return
-                      const vid = TEST_VIDEO_IDS[idx % TEST_VIDEO_IDS.length]
-                      setSellModal({ itpId: itp.itpId, videoUrl: `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1` })
+                      setSellModal({ itpId: itp.itpId })
                     }}
                     onLend={(settlementAddr) => setLendModalItp({ ...itp, settlementAddress: settlementAddr })}
                     onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
@@ -409,8 +400,9 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
     address as `0x${string}` | undefined
   )
 
-  // settlementAddress is now provided via SSE NAV payload (resolved in data-node poll_nav)
-  const effectiveSettlementAddress = itp.settlementAddress ?? undefined
+  // settlementAddress from SSE, with fallback to deployment.json vault mapping
+  // (data-node returns null when BridgeProxy isn't deployed on settlement chain)
+  const effectiveSettlementAddress = itp.settlementAddress ?? getKnownItpVault(itp.itpId)
 
   const isActive = itp.source === 'index' || itp.completed
 
@@ -524,12 +516,32 @@ function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: It
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Video — click-to-play YouTube thumbnail */}
+      {/* Video or card header banner */}
       {(() => {
         const rawUrl = metadata?.videoUrl
-        const videoId = rawUrl ? extractYouTubeId(rawUrl) : TEST_VIDEO_IDS[index % TEST_VIDEO_IDS.length]
-        if (!videoId) return null
-        return <YouTubeLite videoId={videoId} title={itp.name || 'ITP'} />
+        const videoId = rawUrl ? extractYouTubeId(rawUrl) : null
+        if (videoId) {
+          return <YouTubeLite videoId={videoId} title={itp.name || 'ITP'} />
+        }
+        return (
+          <Link href={`/itp/${itp.itpId}`} className="block group">
+            <div className="aspect-video bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex flex-col items-center justify-center px-6 text-center cursor-pointer relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              <h3 className="text-[22px] font-extrabold text-white tracking-[-0.02em] leading-tight relative z-10">
+                {itp.name || `ITP #${itp.nonce ?? itp.id}`}
+              </h3>
+              <p className="text-[13px] font-mono text-white/50 mt-1.5 relative z-10">
+                ${itp.symbol || 'N/A'}
+              </p>
+              <span className="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40 group-hover:text-white/70 transition-colors relative z-10 flex items-center gap-1.5">
+                View Details
+                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </Link>
+        )
       })()}
 
       {/* Card content — mockup: .fund-body padding: 16px 20px */}

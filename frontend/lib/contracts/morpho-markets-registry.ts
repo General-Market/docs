@@ -117,3 +117,29 @@ export function hasLendingMarket(collateralTokenAddress: string | undefined): bo
 export function getAllMorphoMarkets(): MorphoMarketEntry[] {
   return Object.values(MARKETS)
 }
+
+/**
+ * Static ITP ID → vault address mapping from deployment.json.
+ * Used as fallback when data-node can't resolve settlement address
+ * (e.g. BridgeProxy not deployed on settlement chain).
+ */
+const contracts = (deployment as { contracts?: Record<string, string> }).contracts ?? {}
+const ITP_VAULT_MAP: Record<string, string> = {}
+for (const [key, value] of Object.entries(contracts)) {
+  // Match itpId → ITP_Vault, itpId2 → ITP2_Vault, etc.
+  const m = key.match(/^itpId(\d*)$/)
+  if (m) {
+    const num = m[1] || ''
+    const vaultKey = num ? `ITP${num}_Vault` : 'ITP_Vault'
+    if (contracts[vaultKey]) ITP_VAULT_MAP[value.toLowerCase()] = contracts[vaultKey]
+  }
+}
+
+/**
+ * Look up the known vault address for an ITP by its ID.
+ * Falls back to deployment.json when SSE settlement_address is null.
+ */
+export function getKnownItpVault(itpId: string | undefined): string | undefined {
+  if (!itpId) return undefined
+  return ITP_VAULT_MAP[itpId.toLowerCase()]
+}
