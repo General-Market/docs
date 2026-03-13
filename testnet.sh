@@ -51,6 +51,7 @@ VPS_BE_IP="116.203.156.98"
 VPS_BE_USER="max"
 VPS_BE_DIR="/home/max/index"
 DATA_NODE_PORT=8200
+EXPLORER_TOKEN="20b8dfdd244827f7a88d31dbe96b448938f1731437a9340e3a616ba63f2dc267"
 
 # VPS 2 — Chain + AP
 VPS_CHAIN_HOST="index-maker/prod/postgres"
@@ -449,6 +450,18 @@ cmd_deploy() {
         >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
     echo -e "  ${GREEN}Vision deployed${NC}"
 
+    # Add Vision address to active-deployment.json (Vision is deployed separately)
+    VISION_ADDR_MERGE=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    if [ -n "$VISION_ADDR_MERGE" ]; then
+        python3 -c "
+import json
+d = json.load(open('$DEPLOYMENT_FILE'))
+d['contracts']['Vision'] = '$VISION_ADDR_MERGE'
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+"
+        echo -e "  ${GREEN}Added Vision to active-deployment.json${NC}"
+    fi
+
     # Fund test accounts with L3 USDC
     echo -e "${BLUE}[7/7] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
@@ -594,6 +607,12 @@ services:
       - "300"
 $([ -n "$INDEX_FLAG" ] && echo '      - "--index-address"
       - "'"$INDEX_ADDR"'"')
+      - "--explorer-token"
+      - "$EXPLORER_TOKEN"
+      - "--issuer-health-urls"
+      - "http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
+      - "--issuer-health-poll-interval"
+      - "60"
 YEOF
 
     rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
