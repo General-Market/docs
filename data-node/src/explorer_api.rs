@@ -133,17 +133,17 @@ async fn health_history(
                  WHEN 3 THEN 'unhealthy'
                  WHEN 2 THEN 'degraded'
                  ELSE 'healthy' END                              AS worst_status,
-            COALESCE(SUM(consensus_rounds_total), 0)             AS consensus_rounds_total,
-            COALESCE(SUM(consensus_success_total), 0)            AS consensus_success_total,
-            COALESCE(SUM(consensus_failed_total), 0)             AS consensus_failed_total,
-            COALESCE(SUM(signatures_collected), 0)               AS signatures_collected,
+            COALESCE(SUM(consensus_rounds_total), 0)::BIGINT     AS consensus_rounds_total,
+            COALESCE(SUM(consensus_success_total), 0)::BIGINT    AS consensus_success_total,
+            COALESCE(SUM(consensus_failed_total), 0)::BIGINT     AS consensus_failed_total,
+            COALESCE(SUM(signatures_collected), 0)::BIGINT       AS signatures_collected,
             COALESCE(AVG(last_consensus_time_ms), 0)::BIGINT     AS avg_consensus_time_ms,
             COALESCE(AVG(last_cycle_duration_ms), 0)::BIGINT     AS avg_cycle_duration_ms,
-            COALESCE(SUM(orders_processed_last_60s), 0)          AS orders_processed_last_60s,
-            COALESCE(SUM(pending_order_count), 0)                AS pending_order_count,
+            COALESCE(SUM(orders_processed_last_60s), 0)::BIGINT  AS orders_processed_last_60s,
+            COALESCE(SUM(pending_order_count), 0)::BIGINT        AS pending_order_count,
             COALESCE(SUM(connected_peers), 0)::BIGINT            AS total_peers,
-            COALESCE(SUM(p2p_messages_received), 0)              AS p2p_messages_received,
-            COALESCE(SUM(p2p_messages_sent), 0)                  AS p2p_messages_sent,
+            COALESCE(SUM(p2p_messages_received), 0)::BIGINT      AS p2p_messages_received,
+            COALESCE(SUM(p2p_messages_sent), 0)::BIGINT          AS p2p_messages_sent,
             COALESCE(SUM(peers_healthy), 0)::BIGINT              AS total_peers_healthy,
             COALESCE(SUM(peers_unhealthy), 0)::BIGINT            AS total_peers_unhealthy
         FROM issuer_health_snapshots
@@ -188,17 +188,17 @@ async fn health_latest(
                  WHEN 3 THEN 'unhealthy'
                  WHEN 2 THEN 'degraded'
                  ELSE 'healthy' END                              AS worst_status,
-            COALESCE(SUM(consensus_rounds_total), 0)             AS consensus_rounds_total,
-            COALESCE(SUM(consensus_success_total), 0)            AS consensus_success_total,
-            COALESCE(SUM(consensus_failed_total), 0)             AS consensus_failed_total,
-            COALESCE(SUM(signatures_collected), 0)               AS signatures_collected,
+            COALESCE(SUM(consensus_rounds_total), 0)::BIGINT     AS consensus_rounds_total,
+            COALESCE(SUM(consensus_success_total), 0)::BIGINT    AS consensus_success_total,
+            COALESCE(SUM(consensus_failed_total), 0)::BIGINT     AS consensus_failed_total,
+            COALESCE(SUM(signatures_collected), 0)::BIGINT       AS signatures_collected,
             COALESCE(AVG(last_consensus_time_ms), 0)::BIGINT     AS avg_consensus_time_ms,
             COALESCE(AVG(last_cycle_duration_ms), 0)::BIGINT     AS avg_cycle_duration_ms,
-            COALESCE(SUM(orders_processed_last_60s), 0)          AS orders_processed_last_60s,
-            COALESCE(SUM(pending_order_count), 0)                AS pending_order_count,
+            COALESCE(SUM(orders_processed_last_60s), 0)::BIGINT  AS orders_processed_last_60s,
+            COALESCE(SUM(pending_order_count), 0)::BIGINT        AS pending_order_count,
             COALESCE(SUM(connected_peers), 0)::BIGINT            AS total_peers,
-            COALESCE(SUM(p2p_messages_received), 0)              AS p2p_messages_received,
-            COALESCE(SUM(p2p_messages_sent), 0)                  AS p2p_messages_sent,
+            COALESCE(SUM(p2p_messages_received), 0)::BIGINT      AS p2p_messages_received,
+            COALESCE(SUM(p2p_messages_sent), 0)::BIGINT          AS p2p_messages_sent,
             COALESCE(SUM(peers_healthy), 0)::BIGINT              AS total_peers_healthy,
             COALESCE(SUM(peers_unhealthy), 0)::BIGINT            AS total_peers_unhealthy
         FROM (
