@@ -2,8 +2,17 @@
 //!
 //! Dynamically discovers running and upcoming esports matches across all games
 //! (CS2, LoL, Dota 2, Valorant, etc.). Each match produces 2 assets: one score
-//! feed per opponent. Matches fall off naturally when they leave the running
-//! endpoint.
+//! feed per opponent.
+//!
+//! **Lifecycle**:
+//! - `fetch_assets()` returns only running + upcoming matches (not finished/canceled).
+//!   The sync engine's deactivation logic marks any asset NOT in this set as
+//!   `is_active = false`, so finished matches are deactivated within one metadata
+//!   refresh cycle (1 hour).
+//! - `fetch_prices()` also fetches 1 page of recently past matches so that
+//!   matches that just finished still get their final score recorded before
+//!   deactivation. Matches absent from all endpoints are skipped (not zeroed),
+//!   so stale assets don't get bogus "0" prices.
 //!
 //! API: https://api.pandascore.co
 //! Auth: Bearer token (free tier: 1000 req/hr)
@@ -35,6 +44,11 @@ const PER_PAGE: u32 = 100;
 
 /// How many pages of upcoming matches to fetch (limits API calls)
 const MAX_UPCOMING_PAGES: u32 = 2;
+
+/// How many pages of recently finished matches to fetch for final scores.
+/// 1 page = up to 100 matches. Enough to capture matches that finished
+/// between price sync cycles (every 5 minutes).
+const MAX_PAST_PAGES: u32 = 1;
 
 /// Delay between sequential API requests (ms)
 const INTER_REQUEST_DELAY_MS: u64 = 500;
@@ -255,6 +269,38 @@ impl PandascoreMarketSource {
 
             if count < PER_PAGE as usize {
                 break;
+            }
+        }
+
+        Ok(all)
+    }
+
+    /// Fetch recently finished matches (sorted by most recent first).
+    /// Used by `fetch_prices()` to record final scores for matches that
+    /// completed between sync cycles.
+    async fn fetch_past_matches(&self) -> Result<Vec<PsMatch>, SourceError> {
+        let mut all = Vec::new();
+
+        for page in 1..=MAX_PAST_PAGES {
+            if page > 1 {
+                tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+            }
+            let url = format!(
+                "{}/matches/past?token={}&per_page={}&page={}&sort=-end_at",
+                API_BASE, self.token, PER_PAGE, page
+            );
+            match self.http.get_json::<Vec<PsMatch>>(&url).await {
+                Ok(matches) => {
+                    let count = matches.len();
+                    all.extend(matches);
+                    if count < PER_PAGE as usize {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    warn!("PandaScore: error fetching past matches: {:?}", e);
+                    break;
+                }
             }
         }
 
@@ -578,7 +624,7 @@ impl MarketDataSource for PandascoreMarketSource {
             match_requests.len()
         );
 
-        // Fetch all running matches (they contain the scores)
+        // Fetch all running matches (they contain live scores)
         let running = match self.fetch_running_matches().await {
             Ok(m) => m,
             Err(e) => {
@@ -598,48 +644,74 @@ impl MarketDataSource for PandascoreMarketSource {
             }
         };
 
-        // Build match_id -> MatchInfo map
+        tokio::time::sleep(Duration::from_millis(INTER_REQUEST_DELAY_MS)).await;
+
+        // Fetch recently finished matches so we record final scores
+        // before deactivation. Without this, completed matches get their
+        // last price stuck at whatever score was captured mid-game.
+        let past = match self.fetch_past_matches().await {
+            Ok(m) => m,
+            Err(e) => {
+                warn!("PandaScore: error fetching past matches for final scores: {:?}", e);
+                Vec::new()
+            }
+        };
+
+        // Build match_id -> MatchInfo map (running takes priority over past)
         let mut match_map: HashMap<i64, MatchInfo> = HashMap::new();
-        for ps_match in running.iter().chain(upcoming.iter()) {
+        for ps_match in running.iter().chain(upcoming.iter()).chain(past.iter()) {
             if let Some(info) = parse_match(ps_match) {
                 match_map.entry(info.match_id).or_insert(info);
             }
         }
 
-        // Resolve each requested asset
+        // Resolve each requested asset — only emit prices for matches
+        // that exist in the API. Matches absent from all endpoints are
+        // skipped (no bogus zero), and the sync engine's deactivation
+        // will clean them up at the next metadata refresh.
+        let mut skipped_matches = 0usize;
         for (match_id, parsed_assets) in &match_requests {
-            for parsed in parsed_assets {
-                let value = if let Some(info) = match_map.get(match_id) {
-                    match parsed.metric.as_str() {
+            if let Some(info) = match_map.get(match_id) {
+                for parsed in parsed_assets {
+                    let value = match parsed.metric.as_str() {
                         "t1" => Decimal::from(info.team1_score),
                         "t2" => Decimal::from(info.team2_score),
                         "maps" => Decimal::from(info.games_finished),
                         _ => Decimal::ZERO,
-                    }
-                } else {
-                    // Match no longer on running/upcoming — return last known (0 is fine,
-                    // sync engine won't insert if value unchanged)
-                    Decimal::ZERO
-                };
+                    };
 
-                results.push(PriceUpdate {
-                    asset_id: parsed.original_id.clone(),
-                    symbol: format!("E/{}", match_id),
-                    value,
-                    prev_close: None,
-                    change_pct: None,
-                    volume_24h: None,
-                    market_cap: None,
-                    fetched_at: now,
-                });
+                    results.push(PriceUpdate {
+                        asset_id: parsed.original_id.clone(),
+                        symbol: format!("E/{}", match_id),
+                        value,
+                        prev_close: None,
+                        change_pct: None,
+                        volume_24h: None,
+                        market_cap: None,
+                        fetched_at: now,
+                    });
+                }
+            } else {
+                // Match absent from running/upcoming/past — don't emit
+                // bogus prices. The sync engine will deactivate these
+                // assets on the next fetch_assets() call.
+                skipped_matches += 1;
             }
         }
 
+        if skipped_matches > 0 {
+            info!(
+                "PandaScore: skipped {} matches not found in API (finished/canceled, will be deactivated)",
+                skipped_matches
+            );
+        }
+
         info!(
-            "PandaScore: fetched {}/{} prices ({} matches in API)",
+            "PandaScore: fetched {}/{} prices ({} matches in API, {} past for final scores)",
             results.len(),
             asset_ids.len(),
-            match_map.len()
+            match_map.len(),
+            past.len()
         );
 
         Ok(results)

@@ -1,5 +1,40 @@
 # Design Decision Backlog
 
+## Session: 20260313-t4k9 (TMDb + Esports collector stability)
+
+- [DECISION] TMDb root cause: 28,691 assets never got prices because `fetch_assets()` and `fetch_prices()` independently queried TMDb popular lists, which rotate between calls. 50 pages deep (1000 items/category) accumulated 37k unique assets over time, but each `fetch_prices()` only covers the current ~3400. Assets registered in one cycle rotated off the list by the next.
+- [DECISION] TMDb fix 1: Reduced page depth from 50 to 10 per category (200 movies + 200 TV + ~300 people = ~700 total). Only tracks the truly popular items that stay on the list.
+- [DECISION] TMDb fix 2: Added `TmdbSnapshot` cache shared between `fetch_assets()` and `fetch_prices()`. `fetch_assets()` refreshes the snapshot from the live API, `fetch_prices()` reads from the cached snapshot. Eliminates the race where popular lists rotate between the two calls.
+- [DECISION] TMDb fix 3: `fetch_prices()` now filters by `asset_ids` parameter (was ignoring it entirely with `_asset_ids`). Only produces prices for assets the sync engine is actually tracking.
+- [DECISION] Esports root cause: 22% missing 1d because finished matches returned `Decimal::ZERO` from `fetch_prices()` instead of being skipped. The zero price was identical to the initial "not started" value, so the change-detection logic often didn't write it, leaving stale data.
+- [DECISION] Esports fix 1: Added `fetch_past_matches()` (1 page of recently finished matches sorted by `-end_at`). `fetch_prices()` now includes past matches so final scores are recorded before deactivation.
+- [DECISION] Esports fix 2: Matches absent from running/upcoming/past endpoints are now skipped in `fetch_prices()` instead of returning a bogus zero. The sync engine's hourly `fetch_assets()` deactivation handles cleanup.
+
+## Session: 20260313-wstb (Weather/OpenMeteo collector stability)
+
+- [DECISION] Root cause of 11,460 "never priced" weather assets: `fetch_assets()` registers all 32k cities × 5 metrics = 161k assets, but `fetch_all_weather()` hits the daily API budget cap (80% of 10k) partway through the 322 batches. Cities at the end of the batch list consistently get zero prices because batches are processed in the same order every time.
+- [DECISION] Root cause of 40,812 assets with <1d history: same budget-cap issue but intermittent — some cities get priced in some cycles but not others depending on where the cap hits. No mechanism existed to deactivate these inconsistently-covered cities.
+- [DECISION] Added per-city success tracking (`city_last_success: HashMap<String, DateTime<Utc>>`) in OpenMeteoMarketSource. After each `fetch_prices`, records which cities produced data. Cities without data for 3+ days are excluded from `fetch_assets()`, causing the sync engine to set `is_active = false`. When fresh data reappears, the city is re-included and reactivated automatically.
+- [DECISION] Added batch shuffling in `fetch_all_weather()` — randomises city order before batching so budget caps affect different cities each cycle instead of always starving the same tail. Over multiple cycles, all cities get fair coverage.
+- [DECISION] Added 24-hour grace period for startup — new/unseen cities are included in `fetch_assets()` for the first 24h after source initialization, giving them time to be fetched at least once before deactivation logic kicks in. Prevents register-then-immediately-deactivate races.
+- [DECISION] Replaced `asset_ids.contains()` (O(N) on 161k items) with `HashSet` lookup in `fetch_prices` for requested asset filtering.
+
+## Session: 20260313-lstr (Twitch/Chaturbate livestream collector stability)
+
+- [DECISION] Root cause of "never got prices" assets (3,568 twitch / 2,543 chaturbate): streamers discovered live during asset discovery go offline before the next price fetch. Since `fetch_prices` only emits live streamers (viewers > 0), these assets get registered as `is_active = true` but never receive a price row. They persist indefinitely because `fetch_assets` returned all cached streamers regardless of activity.
+- [DECISION] Added `is_streamer_active()` / `is_model_active()` lifecycle check with two-tier approach: (1) 3-day deactivation window — streamers offline for 3+ days are excluded from `fetch_assets()`, causing the sync engine to set `is_active = false`. When they come back, they're automatically reactivated. (2) 24-hour grace period — newly discovered streamers with `live_count == 1` (only seen at discovery, never confirmed in a subsequent fetch) are deactivated after 24h. This eliminates the "never got prices" problem.
+- [DECISION] Kept 30-day retention for the in-memory peak cache (separate from 3-day deactivation). This allows reactivation of streamers who take a break and return — the cache remembers them so they can be re-emitted in `fetch_assets()` when seen live again.
+- [DECISION] Added `first_seen`, `live_count` fields to CachedStreamer/CachedModel to distinguish "discovered but never confirmed" from "confirmed active then went offline".
+- [DECISION] Twitch: added targeted lookup for registered streamers not found in top 6000 streams. Uses Helix `/streams?user_login=...` (100 per batch) to check if lower-viewer registered streamers are actually live, ensuring `fetch_prices` covers all active assets.
+- [DECISION] Chaturbate: increased MAX_PAGES from 10 to 20 (5000 -> 10000 rooms) to reduce the gap between registered and fetchable models. 20 pages at 30 req/min rate limit takes ~40s, well within the 10-minute sync interval.
+
+## Session: 20260313-sports (Sports collector fix — 86% of assets stuck at 1 price row)
+
+- [DECISION] Root cause: three compounding issues. (1) SyncEngine change detection (`prev_value == new_value → skip`) prevented repeat writes for unchanged scores — a score of 0-0 staying at 0-0 during a game was silently dropped. (2) `fetch_prices` returned nothing for pre-game assets (score=None → `continue`), so assets discovered in "pre" state never got a price row until the game started. (3) 10-minute sync interval was too slow for live sports.
+- [DECISION] Fix: set `skips_when_unchanged() = true` to bypass change detection. Sports scores at the same value are meaningful data points (game is still in progress at this score). This causes every sync cycle to write a fresh price row regardless of value change.
+- [DECISION] Fix: emit `Decimal::ZERO` for pre-game assets instead of skipping them. This ensures continuous price records from the moment a game is discovered.
+- [DECISION] Reduced sync interval from 600s to 120s. Live sports scores change rapidly; 10 minutes is far too slow.
+
 ## Session: 20260313-syssec (System section data fix)
 
 - [DECISION] System section empty because build_system_snapshot only used cached pending/batched orders (never filled). Fixed to query DB trades table for last 20 orders including filled + fill_time_seconds.

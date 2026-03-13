@@ -4,6 +4,11 @@
 //! Assets are fully dynamic — discovered from /movie/popular, /tv/popular, and
 //! /trending/person/day endpoints.
 //!
+//! **Lifecycle**: Only the top pages of each list are tracked (200 movies, 200 TV,
+//! ~300 people). The sync engine deactivates assets that fall off these lists hourly.
+//! `fetch_prices()` uses the same shared snapshot as `fetch_assets()` to guarantee
+//! every registered asset gets a price — no orphans.
+//!
 //! API: https://api.themoviedb.org/3/
 //! Auth: TMDB_API_KEY env var (passed as query param)
 //! Rate limit: ~50 req/s → 30,000 calls per 10-min window
@@ -12,6 +17,7 @@ use anyhow::{Context, Result};
 use chrono::Utc;
 use rust_decimal::Decimal;
 use serde::Deserialize;
+use std::sync::Mutex;
 use std::time::Duration;
 use tracing::{info, warn};
 
@@ -32,17 +38,20 @@ const TMDB_API_URL: &str = "https://api.themoviedb.org/3";
 /// Delay between individual detail fetches (ms) — ~25 req/s
 const INTER_REQUEST_DELAY_MS: u64 = 40;
 
-/// How many pages of popular movies to fetch (20 items/page, 50 pages = 1k)
-const MOVIE_DISCOVERY_PAGES: u32 = 50;
+/// How many pages of popular movies to fetch (20 items/page, 10 pages = 200)
+/// Reduced from 50 to prevent registering thousands of rotating assets.
+const MOVIE_DISCOVERY_PAGES: u32 = 10;
 
-/// How many pages of popular TV shows to fetch (20 items/page, 50 pages = 1k)
-const TV_DISCOVERY_PAGES: u32 = 50;
+/// How many pages of popular TV shows to fetch (20 items/page, 10 pages = 200)
+/// Reduced from 50 to prevent registering thousands of rotating assets.
+const TV_DISCOVERY_PAGES: u32 = 10;
 
-/// How many pages of trending people to fetch (20 items/page, 20 pages = 400)
-const PERSON_TRENDING_PAGES: u32 = 20;
+/// How many pages of trending people to fetch (20 items/page, 10 pages = 200)
+const PERSON_TRENDING_PAGES: u32 = 10;
 
-/// How many pages of popular people to fetch (20 items/page, 50 pages = 1k)
-const PERSON_POPULAR_PAGES: u32 = 50;
+/// How many pages of popular people to fetch (20 items/page, 10 pages = 200)
+/// Reduced from 50 to prevent registering thousands of rotating assets.
+const PERSON_POPULAR_PAGES: u32 = 10;
 
 // ============================================================================
 // API RESPONSE TYPES
@@ -94,6 +103,19 @@ struct TmdbPersonListItem {
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
+/// Cached snapshot of TMDb popular lists. Both `fetch_assets()` and
+/// `fetch_prices()` operate on the same snapshot so every registered asset
+/// is guaranteed to get a price within the same sync cycle.
+#[derive(Clone, Default)]
+struct TmdbSnapshot {
+    /// (tmdb_id, title/name, popularity, vote_count)
+    movies: Vec<(u64, String, f64, u64)>,
+    /// (tmdb_id, name, popularity, vote_count)
+    tv_shows: Vec<(u64, String, f64, u64)>,
+    /// (tmdb_id, name, popularity, department)
+    people: Vec<(u64, String, f64, String)>,
+}
+
 /// TMDb market data source.
 ///
 /// Tracks popularity scores for movies, TV shows, and trending celebrities.
@@ -101,6 +123,10 @@ struct TmdbPersonListItem {
 pub struct TmdbMarketSource {
     http: SourceHttpClient,
     api_key: String,
+    /// Cached snapshot from the last `fetch_assets()` call.
+    /// `fetch_prices()` reads from this instead of re-querying the API,
+    /// eliminating the race where popular lists rotate between the two calls.
+    snapshot: Mutex<TmdbSnapshot>,
 }
 
 impl TmdbMarketSource {
@@ -118,7 +144,44 @@ impl TmdbMarketSource {
 
         info!("TMDb source initialized (dynamic assets from /popular + /trending/person)");
 
-        Ok(Self { http, api_key })
+        Ok(Self {
+            http,
+            api_key,
+            snapshot: Mutex::new(TmdbSnapshot::default()),
+        })
+    }
+
+    /// Refresh the cached snapshot from live API data. Called by `fetch_assets()`.
+    /// Returns the snapshot for immediate use.
+    async fn refresh_snapshot(&self) -> TmdbSnapshot {
+        let mut snap = TmdbSnapshot::default();
+
+        match self.fetch_popular_movies(MOVIE_DISCOVERY_PAGES).await {
+            Ok(movies) => snap.movies = movies,
+            Err(e) => warn!("Failed to fetch TMDb movies: {:?}", e),
+        }
+
+        match self.fetch_popular_tv(TV_DISCOVERY_PAGES).await {
+            Ok(shows) => snap.tv_shows = shows,
+            Err(e) => warn!("Failed to fetch TMDb TV shows: {:?}", e),
+        }
+
+        match self.fetch_people().await {
+            Ok(people) => snap.people = people,
+            Err(e) => warn!("Failed to fetch TMDb people: {:?}", e),
+        }
+
+        info!(
+            "TMDb snapshot: {} movies + {} TV + {} people = {} total",
+            snap.movies.len(),
+            snap.tv_shows.len(),
+            snap.people.len(),
+            snap.movies.len() + snap.tv_shows.len() + snap.people.len()
+        );
+
+        // Store for fetch_prices() to use
+        *self.snapshot.lock().unwrap_or_else(|e| e.into_inner()) = snap.clone();
+        snap
     }
 
     /// Build a TMDb API URL with the API key
@@ -278,139 +341,143 @@ impl MarketDataSource for TmdbMarketSource {
             return Ok(static_assets);
         }
 
-        // Dynamic discovery
-        info!("TMDb config is empty, performing live asset discovery");
+        // Refresh snapshot from live API — also caches for fetch_prices()
+        let snap = self.refresh_snapshot().await;
         let mut assets = Vec::new();
 
-        // Discover popular movies
-        match self.fetch_popular_movies(MOVIE_DISCOVERY_PAGES).await {
-            Ok(movies) => {
-                for (id, title, _, _) in &movies {
-                    assets.push(AssetUpdate {
-                        asset_id: format!("tmdb_movie_{}", id),
-                        symbol: format!("TMDB#M{}", id),
-                        name: title.clone(),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": format!("movie:{}", id),
-                            "subcategory": "movies",
-                            "active": true,
-                            "extra": {},
-                        }),
-                    });
-                }
-            }
-            Err(e) => warn!("Failed to discover TMDb movies: {:?}", e),
+        for (id, title, _, _) in &snap.movies {
+            assets.push(AssetUpdate {
+                asset_id: format!("tmdb_movie_{}", id),
+                symbol: format!("TMDB#M{}", id),
+                name: title.clone(),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": format!("movie:{}", id),
+                    "subcategory": "movies",
+                    "active": true,
+                    "extra": {},
+                }),
+            });
         }
 
-        // Discover popular TV shows
-        match self.fetch_popular_tv(TV_DISCOVERY_PAGES).await {
-            Ok(shows) => {
-                for (id, name, _, _) in &shows {
-                    assets.push(AssetUpdate {
-                        asset_id: format!("tmdb_tv_{}", id),
-                        symbol: format!("TMDB#T{}", id),
-                        name: name.clone(),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": format!("tv:{}", id),
-                            "subcategory": "tv_shows",
-                            "active": true,
-                            "extra": {},
-                        }),
-                    });
-                }
-            }
-            Err(e) => warn!("Failed to discover TMDb TV shows: {:?}", e),
+        for (id, name, _, _) in &snap.tv_shows {
+            assets.push(AssetUpdate {
+                asset_id: format!("tmdb_tv_{}", id),
+                symbol: format!("TMDB#T{}", id),
+                name: name.clone(),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": format!("tv:{}", id),
+                    "subcategory": "tv_shows",
+                    "active": true,
+                    "extra": {},
+                }),
+            });
         }
 
-        // Discover trending + popular people (celebrities)
-        match self.fetch_people().await {
-            Ok(people) => {
-                for (id, name, _, dept) in &people {
-                    assets.push(AssetUpdate {
-                        asset_id: format!("tmdb_person_{}", id),
-                        symbol: format!("TMDB#P{}", id),
-                        name: name.clone(),
-                        category: Some("sentiment".to_string()),
-                        metadata: serde_json::json!({
-                            "api_ref": format!("person:{}", id),
-                            "subcategory": "celebrities",
-                            "active": true,
-                            "extra": { "department": dept },
-                        }),
-                    });
-                }
-            }
-            Err(e) => warn!("Failed to discover TMDb people: {:?}", e),
+        for (id, name, _, dept) in &snap.people {
+            assets.push(AssetUpdate {
+                asset_id: format!("tmdb_person_{}", id),
+                symbol: format!("TMDB#P{}", id),
+                name: name.clone(),
+                category: Some("sentiment".to_string()),
+                metadata: serde_json::json!({
+                    "api_ref": format!("person:{}", id),
+                    "subcategory": "celebrities",
+                    "active": true,
+                    "extra": { "department": dept },
+                }),
+            });
         }
 
         info!("Discovered {} TMDb assets via live API", assets.len());
         Ok(assets)
     }
 
-    async fn fetch_prices(&self, _asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+    async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
+
+        // Build set of active asset IDs for filtering
+        let active_set: std::collections::HashSet<&str> =
+            asset_ids.iter().map(|s| s.as_str()).collect();
+
+        // Read the cached snapshot (populated by fetch_assets).
+        // If snapshot is empty (first price sync before any asset sync), refresh it.
+        let snap = {
+            let cached = self.snapshot.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            if cached.movies.is_empty() && cached.tv_shows.is_empty() && cached.people.is_empty() {
+                info!("TMDb snapshot empty, refreshing for price fetch");
+                self.refresh_snapshot().await
+            } else {
+                cached
+            }
+        };
+
         let mut results = Vec::new();
 
-        // Fetch movies from popular pages
-        match self.fetch_popular_movies(MOVIE_DISCOVERY_PAGES).await {
-            Ok(movies) => {
-                for (id, title, popularity, vote_count) in movies {
-                    results.push(PriceUpdate {
-                        asset_id: format!("tmdb_movie_{}", id),
-                        symbol: title,
-                        value: Decimal::from_f64_retain(popularity)
-                            .unwrap_or(Decimal::ZERO),
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: Some(Decimal::from(vote_count)),
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
+        // Movies — only price assets that are in the active set
+        for (id, title, popularity, vote_count) in &snap.movies {
+            let asset_id = format!("tmdb_movie_{}", id);
+            if !active_set.contains(asset_id.as_str()) {
+                continue;
             }
-            Err(e) => warn!("Failed to fetch TMDb movie prices: {:?}", e),
+            results.push(PriceUpdate {
+                asset_id,
+                symbol: title.clone(),
+                value: Decimal::from_f64_retain(*popularity)
+                    .unwrap_or(Decimal::ZERO),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: Some(Decimal::from(*vote_count)),
+                market_cap: None,
+                fetched_at: now,
+            });
         }
 
-        // Fetch TV shows from popular pages
-        match self.fetch_popular_tv(TV_DISCOVERY_PAGES).await {
-            Ok(shows) => {
-                for (id, name, popularity, vote_count) in shows {
-                    results.push(PriceUpdate {
-                        asset_id: format!("tmdb_tv_{}", id),
-                        symbol: name,
-                        value: Decimal::from_f64_retain(popularity)
-                            .unwrap_or(Decimal::ZERO),
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: Some(Decimal::from(vote_count)),
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
+        // TV shows
+        for (id, name, popularity, vote_count) in &snap.tv_shows {
+            let asset_id = format!("tmdb_tv_{}", id);
+            if !active_set.contains(asset_id.as_str()) {
+                continue;
             }
-            Err(e) => warn!("Failed to fetch TMDb TV prices: {:?}", e),
+            results.push(PriceUpdate {
+                asset_id,
+                symbol: name.clone(),
+                value: Decimal::from_f64_retain(*popularity)
+                    .unwrap_or(Decimal::ZERO),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: Some(Decimal::from(*vote_count)),
+                market_cap: None,
+                fetched_at: now,
+            });
         }
 
-        // Fetch trending + popular people
-        match self.fetch_people().await {
-            Ok(people) => {
-                for (id, name, popularity, _dept) in people {
-                    results.push(PriceUpdate {
-                        asset_id: format!("tmdb_person_{}", id),
-                        symbol: name,
-                        value: Decimal::from_f64_retain(popularity)
-                            .unwrap_or(Decimal::ZERO),
-                        prev_close: None,
-                        change_pct: None,
-                        volume_24h: None,
-                        market_cap: None,
-                        fetched_at: now,
-                    });
-                }
+        // People
+        for (id, name, popularity, _dept) in &snap.people {
+            let asset_id = format!("tmdb_person_{}", id);
+            if !active_set.contains(asset_id.as_str()) {
+                continue;
             }
-            Err(e) => warn!("Failed to fetch TMDb people prices: {:?}", e),
+            results.push(PriceUpdate {
+                asset_id,
+                symbol: name.clone(),
+                value: Decimal::from_f64_retain(*popularity)
+                    .unwrap_or(Decimal::ZERO),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
+        }
+
+        if results.len() < asset_ids.len() {
+            warn!(
+                "TMDb: priced {}/{} active assets (rest rotated off popular lists, will be deactivated)",
+                results.len(),
+                asset_ids.len()
+            );
         }
 
         info!("Fetched {} prices from TMDb (movies + TV + people)", results.len());
