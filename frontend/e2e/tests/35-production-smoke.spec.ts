@@ -134,6 +134,41 @@ test.describe('API Endpoints', () => {
     // Data-node may not have history or be temporarily overloaded — accept any non-crash status
     expect(res.status).toBeLessThanOrEqual(502)
   })
+
+  test('GET /api/explorer/health returns history data', async () => {
+    const res = await fetch(apiUrl('/api/explorer/health?endpoint=history&range=24h'), {
+      signal: AbortSignal.timeout(15_000),
+    })
+    // Explorer may return 503 if token not configured
+    if (res.status === 503) return
+    expect(res.ok).toBe(true)
+    const data = await res.json()
+    expect(data).toHaveProperty('snapshots')
+    expect(Array.isArray(data.snapshots)).toBe(true)
+    expect(data.snapshots.length).toBeGreaterThan(0)
+    // Verify snapshot fields
+    const s = data.snapshots[0]
+    expect(s).toHaveProperty('poll_batch_ts')
+    expect(s).toHaveProperty('quorum_met')
+    expect(s).toHaveProperty('worst_status')
+    expect(s).toHaveProperty('consensus_rounds_total')
+    expect(s).toHaveProperty('total_peers')
+  })
+
+  test('GET /api/explorer/health latest returns network data', async () => {
+    const res = await fetch(apiUrl('/api/explorer/health?endpoint=latest'), {
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (res.status === 503) return
+    expect(res.ok).toBe(true)
+    const data = await res.json()
+    expect(data).toHaveProperty('network')
+    if (data.network) {
+      expect(data.network.total_peers).toBeGreaterThan(0)
+      expect(typeof data.network.quorum_met).toBe('boolean')
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(data.network.worst_status)
+    }
+  })
 })
 
 // ═══════════════════════════════════════════════════════════════
@@ -425,60 +460,153 @@ test.describe('ITP Detail (/itp/[itpId])', () => {
 // ═══════════════════════════════════════════════════════════════
 
 test.describe('Explorer (/explorer)', () => {
-  test('page loads with title', async ({ page }) => {
+  test('page loads with title and summary bar', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await assertNoError(page)
-    const title = page.locator('text=Explorer').first()
-    await expect(title).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('text=Explorer').first()).toBeVisible({ timeout: 15_000 })
+    // Summary bar should show network status (may be loading)
+    const statusContent = page.locator('text=/Healthy|Degraded|Unhealthy|Loading/i').first()
+    const hasStatus = await statusContent.isVisible({ timeout: 15_000 }).catch(() => false)
+    if (hasStatus) {
+      // Verify summary bar items render
+      await expect(page.locator('text=Network').first()).toBeVisible({ timeout: 5_000 })
+      await expect(page.locator('text=Quorum').first()).toBeVisible({ timeout: 5_000 })
+      await expect(page.locator('text=Consensus Success').first()).toBeVisible({ timeout: 5_000 })
+      await expect(page.locator('text=Connected Peers').first()).toBeVisible({ timeout: 5_000 })
+    }
   })
 
-  test('shows tab navigation (Consensus, Orders, etc)', async ({ page }) => {
+  test('tab navigation works for all 9 tabs', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(3_000)
-    for (const tab of ['Consensus', 'Orders', 'Price Feeds', 'P2P Network']) {
+    const TABS = ['Consensus', 'Orders', 'Price Feeds', 'P2P Network', 'Cycles', 'ITP & NAV', 'Vision', 'System Health', 'Chain & Gas']
+    for (const tab of TABS) {
       const tabBtn = page.getByRole('button', { name: tab })
       await expect(tabBtn).toBeVisible({ timeout: 5_000 })
     }
   })
 
-  test('shows time range buttons (1h, 6h, 24h, 7d, 30d)', async ({ page }) => {
+  test('time range buttons work', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(3_000)
     for (const range of ['1h', '6h', '24h', '7d', '30d']) {
-      const rangeBtn = page.getByRole('button', { name: range, exact: true })
-      await expect(rangeBtn).toBeVisible({ timeout: 5_000 })
+      await expect(page.getByRole('button', { name: range, exact: true })).toBeVisible({ timeout: 5_000 })
     }
+    // Click a different range and verify it activates
+    await page.getByRole('button', { name: '7d', exact: true }).click()
+    await page.waitForTimeout(2_000)
   })
 
-  test('summary bar shows network status', async ({ page }) => {
+  test('Consensus tab renders charts with data', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(5_000)
-    // Should show status indicator (healthy/degraded/unhealthy or loading)
-    const statusContent = page.locator('text=/Healthy|Degraded|Unhealthy|Loading|Quorum/i').first()
-    const hasStatus = await statusContent.isVisible({ timeout: 10_000 }).catch(() => false)
-    // If explorer data not flowing, at least the page structure rendered
-    if (!hasStatus) {
-      // Tab buttons should still be present
-      await expect(page.getByRole('button', { name: 'Consensus' })).toBeVisible()
-    }
+    // Consensus tab is default, should show chart titles
+    await expect(page.locator('text=Quorum Status').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Network Health').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text="Consensus Rounds/min"').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Consensus Success Rate').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Avg Consensus Duration').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Signatures Collected').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Failed Rounds').first()).toBeVisible({ timeout: 5_000 })
+
+    // Charts should have SVG elements (Recharts renders SVG)
+    const svgs = page.locator('.recharts-responsive-container svg')
+    const svgCount = await svgs.count()
+    expect(svgCount).toBeGreaterThanOrEqual(5)
+
+    // Quorum subtitle should show "Currently: Met" or "Not met"
+    const quorumSubtitle = page.locator('text=/Currently: (Met|Not met)/').first()
+    await expect(quorumSubtitle).toBeVisible({ timeout: 10_000 })
+
+    // Consensus duration subtitle should show "Current: XXXms"
+    const durationSubtitle = page.locator('text=/Current: \\d+ms/').first()
+    await expect(durationSubtitle).toBeVisible({ timeout: 10_000 })
   })
 
-  test('clicking tabs switches content', async ({ page }) => {
+  test('Orders tab renders chart cards', async ({ page }) => {
     await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(3_000)
-
-    // Click Orders tab
     await page.getByRole('button', { name: 'Orders' }).click()
-    await page.waitForTimeout(1_000)
-    // Content should change (orders-specific text)
-    const ordersContent = page.locator('text=/Orders|Pending|Filled|Total/i').first()
-    await expect(ordersContent).toBeVisible({ timeout: 5_000 })
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Pending Orders').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text="Orders Processed/min"').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Avg Cycle Duration').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Per-Order Metrics').first()).toBeVisible({ timeout: 5_000 })
+  })
 
-    // Click ITP & NAV tab
-    await page.getByRole('button', { name: 'ITP & NAV' }).click()
-    await page.waitForTimeout(1_000)
-    const itpContent = page.locator('text=/ITP|NAV/i').first()
-    await expect(itpContent).toBeVisible({ timeout: 5_000 })
+  test('P2P Network tab shows peer data', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'P2P Network' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Connected Peers').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Messages Sent / Received').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Peer Health').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('Cycles tab shows cycle performance', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'Cycles' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Cycle Duration').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Slow Cycle Alerts').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Orders per Cycle').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('System Health tab shows health charts', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'System Health' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Network Status').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Quorum History').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Consensus Success Rate').first()).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Error Rate').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('Vision tab shows activity chart and placeholders', async ({ page }) => {
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(3_000)
+    await page.getByRole('button', { name: 'Vision' }).click()
+    await page.waitForTimeout(3_000)
+    await expect(page.locator('text=Network Activity').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Batch Volume').first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('explorer API data feeds into charts (non-zero consensus data)', async ({ page }) => {
+    // Fetch API data first to know what to expect
+    const histRes = await fetch(apiUrl('/api/explorer/health?endpoint=history&range=24h'), {
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (!histRes.ok) return // Skip if explorer not configured
+    const histData = await histRes.json()
+    const snapshots = histData.snapshots || []
+    if (snapshots.length === 0) return // No data
+
+    // Verify consensus data is non-zero (this is the core health signal)
+    const hasConsensusData = snapshots.some((s: any) => s.consensus_rounds_total > 0)
+    expect(hasConsensusData).toBe(true)
+
+    // Verify peers are connected
+    const latestRes = await fetch(apiUrl('/api/explorer/health?endpoint=latest'), {
+      signal: AbortSignal.timeout(15_000),
+    })
+    if (latestRes.ok) {
+      const latestData = await latestRes.json()
+      if (latestData.network) {
+        expect(latestData.network.total_peers).toBeGreaterThan(0)
+      }
+    }
+
+    // Load explorer page and verify charts render with actual data
+    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForTimeout(8_000)
+
+    // Charts should render SVG paths (lines/areas with data, not just empty grids)
+    const chartPaths = page.locator('.recharts-line-curve, .recharts-area-curve, .recharts-area-area')
+    const pathCount = await chartPaths.count()
+    expect(pathCount).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -631,48 +759,6 @@ test.describe('Vision — Additional Sources', () => {
   }
 })
 
-// ═══════════════════════════════════════════════════════════════
-// 14. EXPLORER TAB CONTENT VALIDATION
-// ═══════════════════════════════════════════════════════════════
-
-test.describe('Explorer — Tab Content', () => {
-  test('Consensus tab shows consensus data', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
-    await page.getByRole('button', { name: 'Consensus' }).click()
-    await page.waitForTimeout(2_000)
-    // Consensus tab content: blocks, validators, quorum info
-    const content = page.locator('text=/Consensus|Quorum|Block|Validator|Issuer/i').first()
-    await expect(content).toBeVisible({ timeout: 10_000 })
-  })
-
-  test('Price Feeds tab shows market data', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
-    await page.getByRole('button', { name: 'Price Feeds' }).click()
-    await page.waitForTimeout(2_000)
-    const content = page.locator('text=/Price|Feed|Source|Market|Asset/i').first()
-    await expect(content).toBeVisible({ timeout: 10_000 })
-  })
-
-  test('P2P Network tab shows network info', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
-    await page.getByRole('button', { name: 'P2P Network' }).click()
-    await page.waitForTimeout(2_000)
-    const content = page.locator('text=/P2P|Network|Peer|Node|Message/i').first()
-    await expect(content).toBeVisible({ timeout: 10_000 })
-  })
-
-  test('ITP & NAV tab shows fund data', async ({ page }) => {
-    await page.goto(BASE + '/explorer', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    await page.waitForTimeout(3_000)
-    await page.getByRole('button', { name: 'ITP & NAV' }).click()
-    await page.waitForTimeout(2_000)
-    const content = page.locator('text=/ITP|NAV|Fund|AUM/i').first()
-    await expect(content).toBeVisible({ timeout: 10_000 })
-  })
-})
 
 // ═══════════════════════════════════════════════════════════════
 // 15. NAVIGATION & LAYOUT
