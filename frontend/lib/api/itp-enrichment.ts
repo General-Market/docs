@@ -84,11 +84,15 @@ function buildFounderAggregates(
     if (!f.university || f.university === 'Unknown') continue
     // Split compound entries like "Peking University, University of Pennsylvania"
     const parts = f.university.split(',').map(s => s.trim()).filter(Boolean)
-    for (const raw of parts) {
+    for (let raw of parts) {
+      // Strip parenthetical noise like "(2008)", "(founded 2008)", "(dropout)"
+      raw = raw.replace(/\s*\([^)]*\)\s*/g, '').trim()
       // Filter out bare "University" with no specific name
       if (/^University$/i.test(raw)) continue
       // Filter out entries starting with "unknown"
       if (/^unknown/i.test(raw)) continue
+      // Filter out bare years or empty strings
+      if (!raw || /^\d{4}$/.test(raw)) continue
       // Normalize to canonical name for dedup (e.g. "Berkeley" → "UC Berkeley")
       const normalized = normalizeUniversityName(raw)
       uniMap[normalized] = (uniMap[normalized] || 0) + 1
