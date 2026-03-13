@@ -315,6 +315,13 @@ impl MarketDataSource for SecEdgarMarketSource {
         Duration::from_secs(24 * 3600)
     }
 
+    fn always_record_price(&self) -> bool {
+        // 13F data is quarterly — values don't change between filings, but we
+        // need a fresh timestamped record on every sync to build price history
+        // and prove the collector is alive.
+        true
+    }
+
     fn rate_limit_config(&self) -> RateLimitConfig {
         RateLimitConfig {
             windows: vec![RateWindow {
@@ -396,11 +403,11 @@ impl MarketDataSource for SecEdgarMarketSource {
 impl ScheduledMarketDataSource for SecEdgarMarketSource {
     fn next_fetch_time(&self, now: DateTime<Utc>) -> DateTime<Utc> {
         if Self::is_filing_window(now) {
-            // During filing window, check daily
-            now + chrono::Duration::days(1)
+            // During filing window, check every 6 hours
+            now + chrono::Duration::hours(6)
         } else {
-            // Outside filing window, check weekly
-            now + chrono::Duration::days(7)
+            // Outside filing window, check daily to build price history
+            now + chrono::Duration::days(1)
         }
     }
 

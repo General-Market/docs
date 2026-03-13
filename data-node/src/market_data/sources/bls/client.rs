@@ -365,6 +365,10 @@ impl MarketDataSource for BlsMarketSource {
         load_assets_from_json(ASSET_JSON)
     }
 
+    fn always_record_price(&self) -> bool {
+        true // BLS values change monthly; always write a fresh timestamped record on each sync
+    }
+
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         let now = Utc::now();
 
@@ -428,13 +432,18 @@ impl ScheduledMarketDataSource for BlsMarketSource {
             return now;
         }
 
-        // Otherwise, calculate next release time
-        self.next_release_time(now)
+        // Outside release windows, still sync every 12 hours to keep
+        // all 9 series fresh with current-value + fresh-timestamp records.
+        // Use whichever comes first: next release or 12 hours from now.
+        let next_release = self.next_release_time(now);
+        let max_gap = now + chrono::Duration::hours(12);
+        std::cmp::min(next_release, max_gap)
     }
 
-    fn should_skip_today(&self, now: DateTime<Utc>) -> bool {
-        // Skip weekends and US holidays (BLS doesn't release on these days)
-        is_us_market_closed(now)
+    fn should_skip_today(&self, _now: DateTime<Utc>) -> bool {
+        // BLS doesn't release on weekends, but we still want to record
+        // fresh timestamps for existing values, so never skip.
+        false
     }
 
     fn burst_mode(&self, now: DateTime<Utc>) -> Option<Duration> {

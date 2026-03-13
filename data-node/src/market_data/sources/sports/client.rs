@@ -184,7 +184,7 @@ impl MarketDataSource for SportsMarketSource {
     }
 
     fn sync_interval(&self) -> Duration {
-        Duration::from_secs(600) // 10 minutes
+        Duration::from_secs(120) // 2 minutes — live scores change rapidly
     }
 
     fn rate_limit_config(&self) -> RateLimitConfig {
@@ -314,6 +314,14 @@ impl MarketDataSource for SportsMarketSource {
         Ok(assets)
     }
 
+    /// Sports scores should always be written on every sync cycle.
+    /// A score of 3-2 staying at 3-2 is meaningful data (game still in progress).
+    /// Without this, the change detection in SyncEngine skips unchanged values,
+    /// causing 86% of sports assets to have only 1 price row.
+    fn skips_when_unchanged(&self) -> bool {
+        true
+    }
+
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
         if asset_ids.is_empty() {
             return Ok(Vec::new());
@@ -377,19 +385,17 @@ impl MarketDataSource for SportsMarketSource {
                             }
                         };
 
+                        // Use 0 for pre-game assets (score not yet available).
+                        // This ensures every asset gets a price row on every sync cycle,
+                        // not just when the score first appears.
                         let value = match parsed.metric.as_str() {
-                            "home" => match game.home_score {
-                                Some(s) => s,
-                                None => continue, // Pre-game, no score yet
-                            },
-                            "away" => match game.away_score {
-                                Some(s) => s,
-                                None => continue,
-                            },
-                            "total" => match (game.home_score, game.away_score) {
-                                (Some(h), Some(a)) => h + a,
-                                _ => continue, // Need both scores
-                            },
+                            "home" => game.home_score.unwrap_or(Decimal::ZERO),
+                            "away" => game.away_score.unwrap_or(Decimal::ZERO),
+                            "total" => {
+                                let h = game.home_score.unwrap_or(Decimal::ZERO);
+                                let a = game.away_score.unwrap_or(Decimal::ZERO);
+                                h + a
+                            }
                             _ => continue,
                         };
 

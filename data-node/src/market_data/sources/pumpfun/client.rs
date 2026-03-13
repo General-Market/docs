@@ -196,8 +196,13 @@ impl PumpfunMarketSource {
         mints.into_iter().collect()
     }
 
-    /// Fetch market data from Dexscreener for given mints
-    async fn fetch_dexscreener_data(&self, mints: &[String]) -> Vec<TokenData> {
+    /// Fetch market data from Dexscreener for given mints.
+    ///
+    /// When `limit` is `Some(n)`, sort by market cap descending and return
+    /// only the top `n` results (used during discovery to cap tracked tokens).
+    /// When `limit` is `None`, return ALL tokens that have a price (used
+    /// during price sync so existing active tokens always get updates).
+    async fn fetch_dexscreener_data(&self, mints: &[String], limit: Option<usize>) -> Vec<TokenData> {
         let mut results = Vec::new();
         let mut seen = HashSet::new();
 
@@ -252,13 +257,15 @@ impl PumpfunMarketSource {
             tokio::time::sleep(Duration::from_millis(DEXSCREENER_DELAY_MS)).await;
         }
 
-        // Sort by market cap descending and take top N
+        // Sort by market cap descending; optionally truncate
         results.sort_by(|a, b| {
             b.market_cap
                 .partial_cmp(&a.market_cap)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        results.truncate(MAX_TRACKED_TOKENS);
+        if let Some(n) = limit {
+            results.truncate(n);
+        }
 
         results
     }
@@ -271,7 +278,7 @@ impl PumpfunMarketSource {
             return Ok(Vec::new());
         }
 
-        let tokens = self.fetch_dexscreener_data(&mints).await;
+        let tokens = self.fetch_dexscreener_data(&mints, Some(MAX_TRACKED_TOKENS)).await;
 
         info!(
             "PumpFun: {} tokens with market data (top mcap: ${:.2})",
@@ -375,7 +382,8 @@ impl MarketDataSource for PumpfunMarketSource {
         }
 
         let mints: Vec<String> = mint_to_asset.keys().cloned().collect();
-        let tokens = self.fetch_dexscreener_data(&mints).await;
+        // No limit — update prices for ALL existing active tokens, not just top N
+        let tokens = self.fetch_dexscreener_data(&mints, None).await;
 
         let mut results = Vec::new();
         for token in &tokens {

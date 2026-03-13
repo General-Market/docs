@@ -508,7 +508,7 @@ impl ScheduledSyncEngine {
 
             // Change detection: always insert if no cache entry, or if value changed
             let should_insert = match prev_value {
-                Some(pv) => pv != price.value || self.source.skips_when_unchanged(),
+                Some(pv) => pv != price.value || self.source.skips_when_unchanged() || self.source.always_record_price(),
                 None => true,
             };
 

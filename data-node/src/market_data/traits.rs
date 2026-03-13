@@ -184,6 +184,14 @@ pub trait MarketDataSource: Send + Sync {
     fn skips_when_unchanged(&self) -> bool {
         false
     }
+
+    /// Whether to always write a price record even when the value hasn't changed.
+    /// Useful for low-frequency sources (BLS, etc.) where the value only changes
+    /// monthly but we want a fresh timestamped record on every sync to prove
+    /// the collector is alive and the value is current.
+    fn always_record_price(&self) -> bool {
+        false
+    }
 }
 
 /// Asset metadata update returned by `fetch_assets()`

@@ -330,14 +330,17 @@ pub fn build_dynamic_assets(states: &[MilAircraftState]) -> Vec<AssetUpdate> {
 }
 
 /// Build dynamic price updates for individual aircraft GPS data.
+///
+/// Generates prices for ALL currently-broadcasting aircraft, not just those
+/// whose asset_ids are in the requested set. Aircraft that aren't registered
+/// yet will get their prices recorded anyway (the write channel inserts into
+/// market_prices regardless), and they'll be formally registered as assets
+/// on the next hourly sync_assets() call.
 fn build_dynamic_prices(
     states: &[MilAircraftState],
-    asset_ids: &[String],
     now: chrono::DateTime<Utc>,
 ) -> Vec<PriceUpdate> {
     let mut results = Vec::new();
-    let requested: std::collections::HashSet<&str> =
-        asset_ids.iter().map(|s| s.as_str()).collect();
 
     for state in states {
         let (Some(lat), Some(lon)) = (state.latitude, state.longitude) else {
@@ -354,49 +357,40 @@ fn build_dynamic_prices(
         let alt = state.baro_altitude.unwrap_or(0.0);
 
         // Latitude
-        let lat_id = format!("mil_{}_lat", icao);
-        if requested.contains(lat_id.as_str()) {
-            results.push(PriceUpdate {
-                asset_id: lat_id,
-                symbol: format!("MIL/{}_LAT", label),
-                value: decimal_from_f64(lat),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: None,
-                market_cap: None,
-                fetched_at: now,
-            });
-        }
+        results.push(PriceUpdate {
+            asset_id: format!("mil_{}_lat", icao),
+            symbol: format!("MIL/{}_LAT", label),
+            value: decimal_from_f64(lat),
+            prev_close: None,
+            change_pct: None,
+            volume_24h: None,
+            market_cap: None,
+            fetched_at: now,
+        });
 
         // Longitude
-        let lon_id = format!("mil_{}_lon", icao);
-        if requested.contains(lon_id.as_str()) {
-            results.push(PriceUpdate {
-                asset_id: lon_id,
-                symbol: format!("MIL/{}_LON", label),
-                value: decimal_from_f64(lon),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: None,
-                market_cap: None,
-                fetched_at: now,
-            });
-        }
+        results.push(PriceUpdate {
+            asset_id: format!("mil_{}_lon", icao),
+            symbol: format!("MIL/{}_LON", label),
+            value: decimal_from_f64(lon),
+            prev_close: None,
+            change_pct: None,
+            volume_24h: None,
+            market_cap: None,
+            fetched_at: now,
+        });
 
         // Altitude
-        let alt_id = format!("mil_{}_alt", icao);
-        if requested.contains(alt_id.as_str()) {
-            results.push(PriceUpdate {
-                asset_id: alt_id,
-                symbol: format!("MIL/{}_ALT", label),
-                value: decimal_from_f64(alt),
-                prev_close: None,
-                change_pct: None,
-                volume_24h: None,
-                market_cap: None,
-                fetched_at: now,
-            });
-        }
+        results.push(PriceUpdate {
+            asset_id: format!("mil_{}_alt", icao),
+            symbol: format!("MIL/{}_ALT", label),
+            value: decimal_from_f64(alt),
+            prev_close: None,
+            change_pct: None,
+            volume_24h: None,
+            market_cap: None,
+            fetched_at: now,
+        });
     }
 
     results
@@ -497,10 +491,24 @@ impl MarketDataSource for MilAircraftMarketSource {
             assets.len()
         );
 
-        // Dynamic assets from last fetched state
-        let cached = self.last_states.lock().unwrap().clone();
-        if !cached.is_empty() {
-            let dynamic = build_dynamic_assets(&cached);
+        // Fetch live aircraft states instead of relying on potentially stale cache.
+        // This ensures every hourly asset sync picks up currently-broadcasting aircraft
+        // rather than only those seen during the last fetch_prices() call.
+        let states = match self.fetch_military_states().await {
+            Ok(s) => {
+                // Also update the cache so fetch_prices has fresh data
+                let mut cached = self.last_states.lock().unwrap();
+                *cached = s.clone();
+                s
+            }
+            Err(e) => {
+                warn!("MilAircraft fetch_assets: API call failed, falling back to cache: {:?}", e);
+                self.last_states.lock().unwrap().clone()
+            }
+        };
+
+        if !states.is_empty() {
+            let dynamic = build_dynamic_assets(&states);
             info!(
                 "MilAircraft fetch_assets: {} dynamic aircraft assets",
                 dynamic.len()
@@ -572,8 +580,9 @@ impl MarketDataSource for MilAircraftMarketSource {
             }
         }
 
-        // Process dynamic per-aircraft asset requests
-        let dynamic_prices = build_dynamic_prices(&states, asset_ids, now);
+        // Process dynamic per-aircraft prices — ALL currently-broadcasting aircraft,
+        // not just those already registered as assets
+        let dynamic_prices = build_dynamic_prices(&states, now);
         results.extend(dynamic_prices);
 
         info!(
