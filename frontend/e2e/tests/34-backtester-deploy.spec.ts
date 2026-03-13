@@ -23,13 +23,9 @@ test.describe('Backtester Deploy Handoff', () => {
       }
     })
 
+    // BacktestSection health-checks data-node (up to 15 attempts × 2s = 30s) before rendering
     const runBtn = page.getByRole('button', { name: /Run|Simulate/i }).first()
-    const hasSim = await runBtn.isVisible({ timeout: 15_000 }).catch(() => false)
-
-    if (!hasSim) {
-      test.skip(true, 'Backtester section not visible — may need sim cache')
-      return
-    }
+    await expect(runBtn).toBeVisible({ timeout: 60_000 })
 
     await runBtn.click()
 
