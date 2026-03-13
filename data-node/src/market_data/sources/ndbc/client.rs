@@ -45,6 +45,11 @@ const GRACE_PERIOD_HOURS: i64 = 48;
 /// Longer than DEACTIVATION_DAYS so we can reactivate buoys that come back.
 const RETENTION_DAYS: i64 = 30;
 
+/// Assets that haven't received a successful price in this many hours are excluded
+/// from fetch_assets(), causing the sync engine to deactivate them.
+/// 72 hours = 3 days, appropriate for environmental sensors.
+const DEACTIVATION_HOURS: i64 = 72;
+
 // ============================================================================
 // COLUMN INDICES (0-based) in the NDBC latest_obs.txt file
 // ============================================================================
@@ -95,6 +100,9 @@ pub struct NdbcMarketSource {
     /// Buoy cache: asset_id -> CachedBuoy. Tracks first/last seen times
     /// for lifecycle management. Pruned after RETENTION_DAYS of inactivity.
     buoy_cache: Arc<Mutex<HashMap<String, CachedBuoy>>>,
+    /// Tracks when each asset_id last received a successful price update.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Arc<Mutex<HashMap<String, DateTime<Utc>>>>,
 }
 
 impl NdbcMarketSource {
@@ -112,6 +120,7 @@ impl NdbcMarketSource {
         Ok(Self {
             http,
             buoy_cache: Arc::new(Mutex::new(HashMap::new())),
+            last_priced: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
@@ -224,16 +233,41 @@ impl MarketDataSource for NdbcMarketSource {
         // The sync engine will set is_active = false for any previously registered
         // asset that is no longer returned here.
         let cache = self.buoy_cache.lock().await;
+        let total_cached = cache.len();
         let mut active_buoys: Vec<_> = cache
             .iter()
             .filter(|(_, buoy)| Self::is_buoy_active(buoy, now))
+            .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
+        drop(cache);
 
         // Sort by asset_id for deterministic ordering
-        active_buoys.sort_by(|a, b| a.0.cmp(b.0));
+        active_buoys.sort_by(|a, b| a.0.cmp(&b.0));
         active_buoys.truncate(MAX_STATIONS);
 
-        let total_cached = cache.len();
+        // Deactivation sweep: exclude assets not priced in DEACTIVATION_HOURS.
+        // On first run (empty last_priced cache), all discovered assets pass through.
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let lp_cache = self.last_priced.lock().await;
+        if !lp_cache.is_empty() {
+            let before = active_buoys.len();
+            active_buoys.retain(|(asset_id, _)| {
+                match lp_cache.get(asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // New asset not yet in cache — allow it through (grace period)
+                    None => true,
+                }
+            });
+            let stale = before - active_buoys.len();
+            if stale > 0 {
+                info!(
+                    "NDBC: excluded {} stale assets (no price in {}h)",
+                    stale, DEACTIVATION_HOURS
+                );
+            }
+        }
+        drop(lp_cache);
+
         let deactivated = total_cached - active_buoys.len();
 
         let assets: Vec<AssetUpdate> = active_buoys
@@ -243,7 +277,7 @@ impl MarketDataSource for NdbcMarketSource {
                 let name = format!("Buoy {}: Wave Ht", buoy.station_id);
 
                 AssetUpdate {
-                    asset_id: (*asset_id).clone(),
+                    asset_id: asset_id.clone(),
                     symbol,
                     name,
                     category: Some("environment".to_string()),
@@ -324,6 +358,14 @@ impl MarketDataSource for NdbcMarketSource {
                 if let Some(buoy) = cache.get_mut(id) {
                     buoy.got_price = true;
                 }
+            }
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut lp_cache = self.last_priced.lock().await;
+            for price in &results {
+                lp_cache.insert(price.asset_id.clone(), now);
             }
         }
 

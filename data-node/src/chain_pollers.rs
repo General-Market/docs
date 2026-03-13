@@ -825,53 +825,64 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     let latest_block = state.settlement_provider.get_block_number().await?.as_u64();
     let confirmed = latest_block.saturating_sub(10);
 
-    // Read BridgeProxy on settlement chain
-    let bridge_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
-    let bridge = BridgeProxySettlementReader::new(bridge_addr, Arc::clone(&state.settlement_provider));
+    // Read BridgeProxy on settlement chain (non-fatal: contracts may not be deployed yet)
+    match crate::api::deployment_addr(&state.deployment, "BridgeProxy") {
+        Ok(bridge_addr) => {
+            let bridge = BridgeProxySettlementReader::new(bridge_addr, Arc::clone(&state.settlement_provider));
+            match bridge.next_creation_nonce().call().await {
+                Ok(nonce_raw) => {
+                    let next_nonce = nonce_raw.as_u64();
+                    state.chain_cache.settlement_next_nonce.store(next_nonce, Ordering::Relaxed);
 
-    let next_nonce = bridge.next_creation_nonce().call().await?.as_u64();
-    state.chain_cache.settlement_next_nonce.store(next_nonce, Ordering::Relaxed);
+                    let mut pending = Vec::new();
+                    for nonce in 0..next_nonce {
+                        let is_pending = match bridge.is_pending(U256::from(nonce)).call().await {
+                            Ok(p) => p,
+                            Err(_) => continue,
+                        };
+                        if !is_pending {
+                            continue;
+                        }
+                        match bridge.get_pending_creation(U256::from(nonce)).call().await {
+                            Ok((admin, name, symbol, weights, assets, prices, _created_at, completed)) => {
+                                if completed || admin.is_zero() {
+                                    continue;
+                                }
+                                let req = ItpCreationRequest {
+                                    admin,
+                                    nonce: U256::from(nonce),
+                                    name,
+                                    symbol,
+                                    weights,
+                                    assets,
+                                    prices,
+                                    block_number: 0,
+                                    tx_hash: H256::zero(),
+                                };
+                                match serde_json::to_value(&req) {
+                                    Ok(val) => pending.push(val),
+                                    Err(e) => warn!(nonce, %e, "Failed to serialize pending creation"),
+                                }
+                            }
+                            Err(e) => {
+                                warn!(nonce, %e, "Failed to read pending creation");
+                            }
+                        }
+                    }
 
-    // Scan all nonces for pending creations
-    let mut pending = Vec::new();
-    for nonce in 0..next_nonce {
-        let is_pending = match bridge.is_pending(U256::from(nonce)).call().await {
-            Ok(p) => p,
-            Err(_) => continue,
-        };
-        if !is_pending {
-            continue;
+                    let mut cache = state.chain_cache.pending_creations.write().await;
+                    *cache = pending;
+                    state.chain_cache.pending_creations_gen.bump();
+                }
+                Err(e) => {
+                    warn!(%e, "BridgeProxy.nextCreationNonce() failed (contract may not be deployed)");
+                }
+            }
         }
-        match bridge.get_pending_creation(U256::from(nonce)).call().await {
-            Ok((admin, name, symbol, weights, assets, prices, _created_at, completed)) => {
-                if completed || admin.is_zero() {
-                    continue;
-                }
-                let req = ItpCreationRequest {
-                    admin,
-                    nonce: U256::from(nonce),
-                    name,
-                    symbol,
-                    weights,
-                    assets,
-                    prices,
-                    block_number: 0, // Not available from view call
-                    tx_hash: H256::zero(),
-                };
-                match serde_json::to_value(&req) {
-                    Ok(val) => pending.push(val),
-                    Err(e) => warn!(nonce, %e, "Failed to serialize pending creation"),
-                }
-            }
-            Err(e) => {
-                warn!(nonce, %e, "Failed to read pending creation");
-            }
+        Err(e) => {
+            warn!(%e, "BridgeProxy address not found in deployment");
         }
     }
-
-    let mut cache = state.chain_cache.pending_creations.write().await;
-    *cache = pending;
-    state.chain_cache.pending_creations_gen.bump();
 
     // ── Cross-chain order event scanning ─────────────────────────────
     let custody_addr = crate::api::deployment_addr(&state.deployment, "SettlementBridgeCustody")

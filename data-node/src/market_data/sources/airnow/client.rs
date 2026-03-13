@@ -59,6 +59,11 @@ const GRACE_PERIOD_HOURS: i64 = 48;
 /// Longer than DEACTIVATION_DAYS so we can reactivate sensors that come back.
 const RETENTION_DAYS: i64 = 30;
 
+/// Assets that haven't received a successful price in this many hours are excluded
+/// from fetch_assets(), causing the sync engine to deactivate them.
+/// 72 hours = 3 days, appropriate for environmental sensors.
+const DEACTIVATION_HOURS: i64 = 72;
+
 // ============================================================================
 // SENSOR CACHE
 // ============================================================================
@@ -236,6 +241,9 @@ pub struct AirnowMarketSource {
     /// Sensor cache: asset_id -> CachedSensor. Tracks first/last seen times
     /// for lifecycle management. Pruned after RETENTION_DAYS of inactivity.
     sensor_cache: Arc<Mutex<HashMap<String, CachedSensor>>>,
+    /// Tracks when each asset_id last received a successful price update.
+    /// Assets not priced within DEACTIVATION_HOURS are excluded from fetch_assets().
+    last_priced: Arc<Mutex<HashMap<String, DateTime<Utc>>>>,
 }
 
 impl AirnowMarketSource {
@@ -265,6 +273,7 @@ impl AirnowMarketSource {
         Ok(Self {
             http,
             sensor_cache: Arc::new(Mutex::new(HashMap::new())),
+            last_priced: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
@@ -391,18 +400,43 @@ impl MarketDataSource for AirnowMarketSource {
         // The sync engine will set is_active = false for any previously registered
         // asset that is no longer returned here.
         let cache = self.sensor_cache.lock().await;
+        let total_cached = cache.len();
         let mut active_sensors: Vec<_> = cache
             .iter()
             .filter(|(_, sensor)| Self::is_sensor_active(sensor, now))
+            .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
+        drop(cache);
 
         // Sort by key for deterministic output
-        active_sensors.sort_by(|a, b| a.0.cmp(b.0));
+        active_sensors.sort_by(|a, b| a.0.cmp(&b.0));
 
         // Cap at MAX_AREAS
         active_sensors.truncate(MAX_AREAS);
 
-        let total_cached = cache.len();
+        // Deactivation sweep: exclude assets not priced in DEACTIVATION_HOURS.
+        // On first run (empty last_priced cache), all discovered assets pass through.
+        let cutoff = now - chrono::Duration::hours(DEACTIVATION_HOURS);
+        let lp_cache = self.last_priced.lock().await;
+        if !lp_cache.is_empty() {
+            let before = active_sensors.len();
+            active_sensors.retain(|(asset_id, _)| {
+                match lp_cache.get(asset_id) {
+                    Some(ts) => *ts > cutoff,
+                    // New asset not yet in cache — allow it through (grace period)
+                    None => true,
+                }
+            });
+            let stale = before - active_sensors.len();
+            if stale > 0 {
+                info!(
+                    "AirNow: excluded {} stale assets (no price in {}h)",
+                    stale, DEACTIVATION_HOURS
+                );
+            }
+        }
+        drop(lp_cache);
+
         let deactivated = total_cached - active_sensors.len();
 
         let assets: Vec<AssetUpdate> = active_sensors
@@ -416,7 +450,7 @@ impl MarketDataSource for AirnowMarketSource {
                 let name = format!("{}, {} AQI", sensor.reporting_area, sensor.state_code);
 
                 AssetUpdate {
-                    asset_id: (*key).clone(),
+                    asset_id: key.clone(),
                     symbol,
                     name,
                     category: Some("environment".to_string()),
@@ -488,6 +522,14 @@ impl MarketDataSource for AirnowMarketSource {
                 if let Some(sensor) = cache.get_mut(id) {
                     sensor.got_price = true;
                 }
+            }
+        }
+
+        // Record successful prices in last_priced cache for deactivation tracking
+        {
+            let mut lp_cache = self.last_priced.lock().await;
+            for price in &results {
+                lp_cache.insert(price.asset_id.clone(), now);
             }
         }
 
