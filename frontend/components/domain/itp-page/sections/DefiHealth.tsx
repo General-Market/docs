@@ -29,17 +29,17 @@ export function DefiHealth({ enrichment }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <h2 className="text-2xl font-bold text-text-primary mb-6">
         DeFi Protocol Health
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
         {cards.map(c => (
           <div key={c.label}>
-            <div className="text-xs text-gray-500 mb-0.5">
+            <div className="text-xs text-text-secondary mb-0.5">
               {c.label}
             </div>
-            <div className={`text-xl font-bold font-mono tabular-nums ${c.color || 'text-gray-900'}`}>
+            <div className={`text-xl font-bold font-mono tabular-nums ${c.color || 'text-text-primary'}`}>
               {c.value}
             </div>
           </div>
@@ -49,7 +49,7 @@ export function DefiHealth({ enrichment }: SectionProps) {
       {defi.top_by_tvl.length > 0 && (
         <div className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-surface border-b border-border-light">
               <tr>
                 <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Protocol</th>
                 <th className="text-right px-4 py-2.5 font-semibold text-text-secondary">TVL</th>
@@ -59,7 +59,7 @@ export function DefiHealth({ enrichment }: SectionProps) {
             </thead>
             <tbody>
               {defi.top_by_tvl.map(p => (
-                <tr key={p.symbol} className="border-t border-gray-200">
+                <tr key={p.symbol} className="border-t border-border-light">
                   <td className="px-4 py-2.5">
                     <span className="font-semibold">{p.symbol}</span>
                     {p.name !== p.symbol && <span className="text-text-muted text-xs ml-1.5">{p.name}</span>}

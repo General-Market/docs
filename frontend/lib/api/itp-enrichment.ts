@@ -80,7 +80,7 @@ function buildFounderAggregates(
 
   const uniMap: Record<string, number> = {}
   for (const f of matchedFounders) {
-    if (f.university) {
+    if (f.university && f.university !== 'Unknown') {
       uniMap[f.university] = (uniMap[f.university] || 0) + 1
     }
   }

@@ -15,17 +15,17 @@ export function FundingOverview({ enrichment }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <h2 className="text-2xl font-bold text-text-primary mb-6">
         Funding Intelligence
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-6">
         {cards.map(c => (
           <div key={c.label}>
-            <div className="text-xs text-gray-500 mb-0.5">
+            <div className="text-xs text-text-secondary mb-0.5">
               {c.label}
             </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-gray-900">
+            <div className="text-xl font-bold font-mono tabular-nums text-text-primary">
               {c.value}
             </div>
           </div>
@@ -34,7 +34,7 @@ export function FundingOverview({ enrichment }: SectionProps) {
 
       {funding.top_investors.length > 0 && (
         <div className="py-4 mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+          <h3 className="text-sm font-semibold text-text-secondary mb-3">
             Top Investors by Frequency
           </h3>
           <ResponsiveContainer width="100%" height={funding.top_investors.length * 32 + 16}>
@@ -66,7 +66,7 @@ export function FundingOverview({ enrichment }: SectionProps) {
       {funding.recent_raises.length > 0 && (
         <div className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-surface border-b border-border-light">
               <tr>
                 <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Project</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-text-secondary">Round</th>
@@ -77,7 +77,7 @@ export function FundingOverview({ enrichment }: SectionProps) {
             </thead>
             <tbody>
               {funding.recent_raises.map((r, i) => (
-                <tr key={i} className="border-t border-gray-200">
+                <tr key={i} className="border-t border-border-light">
                   <td className="px-4 py-2.5 font-semibold">{r.project}</td>
                   <td className="px-4 py-2.5 text-text-secondary">{r.round}</td>
                   <td className="px-4 py-2.5 text-right font-mono tabular-nums">${r.amount_m.toFixed(1)}M</td>

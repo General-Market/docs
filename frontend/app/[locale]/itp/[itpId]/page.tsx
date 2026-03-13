@@ -127,12 +127,12 @@ export default async function ItpPage({ params }: Props) {
 
       <div className="flex-1 px-6 lg:px-12 py-8">
         <div className="max-w-6xl mx-auto">
-          <nav className="text-sm text-gray-400 mb-4">
-            <a href="/" className="hover:text-gray-900 transition-colors">{tBreadcrumbs('home')}</a>
+          <nav className="text-sm text-text-muted mb-4">
+            <a href="/" className="hover:text-text-primary transition-colors">{tBreadcrumbs('home')}</a>
             <span className="mx-2">/</span>
-            <a href="/index" className="hover:text-gray-900 transition-colors">{tBreadcrumbs('markets')}</a>
+            <a href="/index" className="hover:text-text-primary transition-colors">{tBreadcrumbs('markets')}</a>
             <span className="mx-2">/</span>
-            <span className="text-gray-900">{data.name}</span>
+            <span className="text-text-primary">{data.name}</span>
           </nav>
 
           <ItpPageClient
@@ -145,7 +145,7 @@ export default async function ItpPage({ params }: Props) {
             enrichment={enrichment}
           />
 
-          <p className="mt-12 text-[11px] text-gray-400 leading-relaxed">
+          <p className="mt-12 text-[11px] text-text-muted leading-relaxed">
             NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.
           </p>
         </div>
