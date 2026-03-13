@@ -26,20 +26,20 @@ export function ConcentrationMetrics({ enrichment }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-4">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Concentration Metrics
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border-light border border-border-light rounded-lg overflow-hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
         {cards.map(c => (
-          <div key={c.label} className="bg-white p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
+          <div key={c.label}>
+            <div className="text-xs text-gray-500 mb-0.5">
               {c.label}
             </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-text-primary">
+            <div className="text-xl font-bold font-mono tabular-nums text-gray-900">
               {c.value}
             </div>
             {c.sub && (
-              <div className="text-xs text-text-secondary mt-0.5">{c.sub}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{c.sub}</div>
             )}
           </div>
         ))}

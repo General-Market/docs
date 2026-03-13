@@ -5,9 +5,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import type { SectionProps } from '../SectionRenderer'
 
 const COLORS = [
-  '#111827', '#374151', '#6B7280', '#9CA3AF', '#D1D5DB',
-  '#1F2937', '#4B5563', '#F59E0B', '#10B981', '#3B82F6',
-  '#E5E7EB',
+  '#1a1a2e', '#e94560', '#0f3460', '#f97316', '#06b6d4',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6',
+  '#94a3b8',
 ]
 
 export function PortfolioBreakdown({ enrichment }: SectionProps) {
@@ -31,10 +31,10 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-4">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Portfolio Composition
       </h2>
-      <div className="bg-white border border-border-light rounded-lg p-6">
+      <div className="py-4">
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="w-64 h-64 flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">

@@ -12,8 +12,8 @@ function HorizontalBarChart({ data, dataKey, label }: {
 }) {
   if (data.length === 0) return null
   return (
-    <div className="bg-white border border-border-light rounded-lg p-4">
-      <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-3">
+    <div className="py-4">
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">
         {label}
       </h3>
       <ResponsiveContainer width="100%" height={data.length * 32 + 16}>
@@ -50,7 +50,7 @@ export function FounderDemographics({ enrichment }: SectionProps) {
   return (
     <section>
       <div className="mb-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
+        <h2 className="text-2xl font-bold text-gray-900">
           Founder Intelligence
         </h2>
         <p className="text-xs text-text-secondary mt-1">

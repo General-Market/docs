@@ -5,13 +5,17 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { useItpNavSeries, type NavTimeframe } from '@/hooks/useItpNavSeries'
 import type { SectionProps } from '../SectionRenderer'
 
+function asOfToday() {
+  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
   { label: '1D', value: '5m' },
   { label: '7D', value: '1h' },
   { label: '90D', value: '1d' },
 ]
 
-export function PerformanceChart({ itpId }: SectionProps) {
+export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const [tf, setTf] = useState<NavTimeframe>('1h')
   const { data, isLoading } = useItpNavSeries(itpId, tf)
 
@@ -19,6 +23,11 @@ export function PerformanceChart({ itpId }: SectionProps) {
     time: d.time,
     nav: d.close,
   }))
+
+  const sinceInception = nav > 0 ? (nav - 1) * 100 : null
+  const inceptionDate = createdAt
+    ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null
 
   const formatTime = (ts: number) => {
     const d = new Date(ts * 1000)
@@ -28,11 +37,12 @@ export function PerformanceChart({ itpId }: SectionProps) {
   }
 
   return (
-    <section>
+    <section className="py-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
-          Performance
-        </h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Performance</h2>
+          <p className="text-xs text-gray-400 mt-1">as of {asOfToday()}</p>
+        </div>
         <div className="flex gap-1">
           {TIMEFRAMES.map(t => (
             <button
@@ -40,8 +50,8 @@ export function PerformanceChart({ itpId }: SectionProps) {
               onClick={() => setTf(t.value)}
               className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
                 tf === t.value
-                  ? 'bg-black text-white'
-                  : 'bg-surface text-text-muted hover:text-text-primary'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:text-gray-900'
               }`}
             >
               {t.label}
@@ -50,14 +60,14 @@ export function PerformanceChart({ itpId }: SectionProps) {
         </div>
       </div>
 
-      <div className="bg-white border border-border-light rounded-lg p-4">
+      <div className="py-4">
         {isLoading ? (
-          <div className="h-[300px] flex items-center justify-center text-text-muted text-sm">
-            Loading chart...
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="animate-pulse bg-gray-200 h-full w-full rounded" />
           </div>
         ) : chartData.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center text-text-muted text-sm">
-            No data available for this timeframe
+          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded">
+            <p className="text-sm text-gray-400">Performance data not yet available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
@@ -71,14 +81,14 @@ export function PerformanceChart({ itpId }: SectionProps) {
               <XAxis
                 dataKey="time"
                 tickFormatter={formatTime}
-                tick={{ fontSize: 10, fill: '#999' }}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={['auto', 'auto']}
                 tickFormatter={(v: number) => `$${v.toFixed(2)}`}
-                tick={{ fontSize: 10, fill: '#999' }}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
@@ -88,7 +98,7 @@ export function PerformanceChart({ itpId }: SectionProps) {
                 labelFormatter={(ts: number) => new Date(ts * 1000).toLocaleString()}
                 contentStyle={{
                   fontSize: 12,
-                  border: '1px solid #e5e5e5',
+                  border: '1px solid #e5e7eb',
                   borderRadius: 6,
                   boxShadow: 'none',
                 }}
@@ -104,6 +114,17 @@ export function PerformanceChart({ itpId }: SectionProps) {
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Since Inception Return */}
+      {sinceInception != null && inceptionDate && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <span className="text-xs text-gray-500">Since Inception Return: </span>
+          <span className={`text-lg font-bold ${sinceInception >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+            {sinceInception >= 0 ? '+' : ''}{sinceInception.toFixed(2)}%
+          </span>
+          <span className="text-xs text-gray-400 ml-2">(from {inceptionDate})</span>
+        </div>
+      )}
     </section>
   )
 }

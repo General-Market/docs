@@ -125,29 +125,15 @@ export default async function ItpPage({ params }: Props) {
         }}
       />
 
-      <div className="flex-1 px-6 lg:px-12 py-12">
-        <div className="max-w-5xl mx-auto">
-          <nav className="text-sm text-text-muted mb-6">
-            <a href="/" className="hover:text-black transition-colors">{tBreadcrumbs('home')}</a>
+      <div className="flex-1 px-6 lg:px-12 py-8">
+        <div className="max-w-6xl mx-auto">
+          <nav className="text-sm text-gray-400 mb-4">
+            <a href="/" className="hover:text-gray-900 transition-colors">{tBreadcrumbs('home')}</a>
             <span className="mx-2">/</span>
-            <a href="/#markets" className="hover:text-black transition-colors">{tBreadcrumbs('markets')}</a>
+            <a href="/index" className="hover:text-gray-900 transition-colors">{tBreadcrumbs('markets')}</a>
             <span className="mx-2">/</span>
-            <span className="text-text-primary">{data.name}</span>
+            <span className="text-gray-900">{data.name}</span>
           </nav>
-
-          <header className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-black tracking-tight text-black">
-                {data.name}
-              </h1>
-              <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-green-100 text-green-800">
-                Active
-              </span>
-            </div>
-            <p className="text-lg text-text-secondary">
-              {t('subtitle', { symbol: data.symbol })}
-            </p>
-          </header>
 
           <ItpPageClient
             itpId={itpId}
@@ -159,8 +145,8 @@ export default async function ItpPage({ params }: Props) {
             enrichment={enrichment}
           />
 
-          <p className="mt-8 text-[13px] text-text-secondary leading-relaxed">
-            NAV is calculated from live price feeds. Data updates every 60 seconds.
+          <p className="mt-12 text-[11px] text-gray-400 leading-relaxed">
+            NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.
           </p>
         </div>
       </div>

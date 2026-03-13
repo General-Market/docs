@@ -10,46 +10,66 @@ export type SectionId =
   | 'funding'
   | 'fund-facts'
   | 'trade-cta'
+  | 'investment-objective'
+
+export type TabId = 'overview' | 'performance' | 'key-facts' | 'holdings'
 
 export interface ItpPageConfig {
-  sections: SectionId[]
+  tabs: Record<TabId, SectionId[]>
   heroStyle?: 'dark' | 'brand' | 'white'
   label?: string
-  createdAt?: string // ISO date string
+  createdAt?: string
+  investmentObjective?: {
+    whyPoints: string[]
+    objective: string
+  }
 }
 
-const CONFIGS = {
+const CONFIGS: Record<string, ItpPageConfig> = {
   'crypto-top-n': {
-    sections: [
-      'key-stats', 'performance', 'holdings', 'breakdown', 'concentration',
-      'founders', 'defi-health', 'funding', 'fund-facts', 'trade-cta',
-    ],
+    tabs: {
+      overview: ['investment-objective', 'breakdown', 'concentration', 'founders', 'defi-health', 'funding'],
+      performance: ['performance'],
+      'key-facts': ['fund-facts'],
+      holdings: ['holdings'],
+    },
     heroStyle: 'dark',
     label: 'Crypto Index',
     createdAt: '2026-02-18',
+    investmentObjective: {
+      whyPoints: [
+        'Broad crypto exposure: Track the top 100 cryptocurrencies by market capitalization in a single product',
+        'Equal weight: Every asset gets 1% allocation, reducing concentration risk vs market-cap weighted indexes',
+        'On-chain settlement: Fully transparent, verifiable holdings with BLS-verified consensus',
+      ],
+      objective: 'The Top 100 Crypto Index seeks to track the performance of a diversified basket of the 100 largest digital assets by market capitalization, equally weighted and rebalanced periodically.',
+    },
   },
 
   'defi-sector': {
-    sections: [
-      'key-stats', 'performance', 'holdings', 'breakdown',
-      'defi-health', 'fund-facts', 'trade-cta',
-    ],
+    tabs: {
+      overview: ['breakdown', 'defi-health'],
+      performance: ['performance'],
+      'key-facts': ['fund-facts'],
+      holdings: ['holdings'],
+    },
     heroStyle: 'brand',
     label: 'DeFi Index',
   },
 
   'default': {
-    sections: [
-      'key-stats', 'performance', 'holdings', 'breakdown',
-      'concentration', 'fund-facts', 'trade-cta',
-    ],
+    tabs: {
+      overview: ['breakdown', 'concentration'],
+      performance: ['performance'],
+      'key-facts': ['fund-facts'],
+      holdings: ['holdings'],
+    },
     heroStyle: 'white',
   },
-} as const satisfies Record<string, ItpPageConfig>
+}
 
 export type ItpPageType = keyof typeof CONFIGS
 
-// ITP ID → page type mapping. Hardcoded for now; later: read from on-chain metadata.
 const ITP_TYPE_MAP: Record<string, ItpPageType> = {
   '0x0000000000000000000000000000000000000000000000000000000000000001': 'crypto-top-n',
 }
