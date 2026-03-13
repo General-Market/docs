@@ -12,11 +12,13 @@
 //! Rate limit: 10 req/min (conservative; it's a static file)
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
@@ -28,6 +30,20 @@ const DATA_URL: &str = "https://www.ndbc.noaa.gov/data/latest_obs/latest_obs.txt
 
 /// Maximum number of stations to track
 const MAX_STATIONS: usize = 500;
+
+/// How many days offline before a buoy is deactivated (excluded from fetch_assets).
+/// When the sync engine sees an asset not returned by fetch_assets, it sets is_active = false.
+/// If the buoy comes back online, it will reappear in fetch_assets and get reactivated.
+const DEACTIVATION_DAYS: i64 = 3;
+
+/// Grace period for newly discovered buoys (hours). If a buoy was discovered
+/// but never returned data within this window, it won't be returned by fetch_assets()
+/// — preventing "registered but never priced" assets.
+const GRACE_PERIOD_HOURS: i64 = 48;
+
+/// How long to retain a buoy in the in-memory cache before pruning (days).
+/// Longer than DEACTIVATION_DAYS so we can reactivate buoys that come back.
+const RETENTION_DAYS: i64 = 30;
 
 // ============================================================================
 // COLUMN INDICES (0-based) in the NDBC latest_obs.txt file
@@ -49,12 +65,36 @@ const MIN_COLUMNS: usize = 18;
 // SOURCE IMPLEMENTATION
 // ============================================================================
 
+// ============================================================================
+// BUOY CACHE
+// ============================================================================
+
+/// Tracks when a buoy was first and last seen reporting data.
+#[derive(Clone, Debug)]
+struct CachedBuoy {
+    /// Station identifier
+    station_id: String,
+    /// First time this buoy was observed
+    first_seen: DateTime<Utc>,
+    /// Last time this buoy had live wave data
+    last_seen: DateTime<Utc>,
+    /// Whether we've ever received a price for this buoy
+    got_price: bool,
+    /// Whether the station has wave height data (vs only wind/temp)
+    has_wvht: bool,
+}
+
 /// NDBC Ocean Buoys market data source.
 ///
 /// Tracks significant wave height for NDBC buoy stations.
+/// Includes buoy lifecycle management: buoys offline for 3+ days are
+/// deactivated, and buoys that come back online are reactivated.
 /// Source ID is `"ndbc"`.
 pub struct NdbcMarketSource {
     http: SourceHttpClient,
+    /// Buoy cache: asset_id -> CachedBuoy. Tracks first/last seen times
+    /// for lifecycle management. Pruned after RETENTION_DAYS of inactivity.
+    buoy_cache: Arc<Mutex<HashMap<String, CachedBuoy>>>,
 }
 
 impl NdbcMarketSource {
@@ -69,7 +109,79 @@ impl NdbcMarketSource {
 
         info!("NDBC Ocean Buoys source initialized");
 
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            buoy_cache: Arc::new(Mutex::new(HashMap::new())),
+        })
+    }
+
+    /// Update the buoy cache with currently reporting stations.
+    /// - New buoys are added with first_seen = now
+    /// - Existing buoys get last_seen updated
+    /// - Buoys not seen in > RETENTION_DAYS are pruned from memory
+    async fn update_buoy_cache(&self, stations: &[NdbcStation]) {
+        let now = Utc::now();
+        let mut cache = self.buoy_cache.lock().await;
+
+        for station in stations {
+            let asset_id = format_asset_id(&station.station_id);
+            let has_wvht = station.wvht.is_some();
+
+            match cache.get_mut(&asset_id) {
+                Some(entry) => {
+                    if has_wvht {
+                        entry.last_seen = now;
+                        entry.has_wvht = true;
+                    }
+                }
+                None => {
+                    if has_wvht {
+                        cache.insert(asset_id, CachedBuoy {
+                            station_id: station.station_id.clone(),
+                            first_seen: now,
+                            last_seen: now,
+                            got_price: false,
+                            has_wvht: true,
+                        });
+                    }
+                }
+            }
+        }
+
+        // Prune buoys not seen in > RETENTION_DAYS (memory cleanup)
+        let cutoff = now - chrono::Duration::days(RETENTION_DAYS);
+        let before = cache.len();
+        cache.retain(|_, v| v.last_seen > cutoff);
+        let pruned = before - cache.len();
+        if pruned > 0 {
+            info!("NDBC: pruned {} buoys not seen in > {} days", pruned, RETENTION_DAYS);
+        }
+    }
+
+    /// Check if a cached buoy should be considered "active" for asset registration.
+    ///
+    /// A buoy is active if:
+    /// 1. It had wave data within the last DEACTIVATION_DAYS, OR
+    /// 2. It is newly discovered (within GRACE_PERIOD_HOURS) — give it time to get a price.
+    ///
+    /// A buoy is NOT active if:
+    /// - It hasn't reported wave data in > DEACTIVATION_DAYS (offline/maintenance)
+    /// - It was discovered > GRACE_PERIOD_HOURS ago but never got a price (dead on arrival)
+    fn is_buoy_active(buoy: &CachedBuoy, now: DateTime<Utc>) -> bool {
+        let offline_duration = now - buoy.last_seen;
+        let age = now - buoy.first_seen;
+
+        // Buoy recently reported data — active
+        if offline_duration < chrono::Duration::days(DEACTIVATION_DAYS) {
+            // But check for "never got price" case on old-enough buoys
+            if !buoy.got_price && age > chrono::Duration::hours(GRACE_PERIOD_HOURS) {
+                return false;
+            }
+            return true;
+        }
+
+        // Buoy has been offline too long — deactivate
+        false
     }
 }
 
@@ -101,41 +213,46 @@ impl MarketDataSource for NdbcMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
+        let now = Utc::now();
         let body = self.http.get_raw(DATA_URL).await?;
         let stations = parse_ndbc_data(&body);
 
-        // Only include stations with valid WVHT data, cap at MAX_STATIONS
-        let mut with_waves: Vec<&NdbcStation> = stations
+        // Update buoy cache with live data
+        self.update_buoy_cache(&stations).await;
+
+        // Build asset list from cache, filtering out deactivated buoys.
+        // The sync engine will set is_active = false for any previously registered
+        // asset that is no longer returned here.
+        let cache = self.buoy_cache.lock().await;
+        let mut active_buoys: Vec<_> = cache
             .iter()
-            .filter(|s| s.wvht.is_some())
+            .filter(|(_, buoy)| Self::is_buoy_active(buoy, now))
             .collect();
 
-        // Sort by station ID for deterministic ordering
-        with_waves.sort_by(|a, b| a.station_id.cmp(&b.station_id));
-        with_waves.truncate(MAX_STATIONS);
+        // Sort by asset_id for deterministic ordering
+        active_buoys.sort_by(|a, b| a.0.cmp(b.0));
+        active_buoys.truncate(MAX_STATIONS);
 
-        let assets: Vec<AssetUpdate> = with_waves
+        let total_cached = cache.len();
+        let deactivated = total_cached - active_buoys.len();
+
+        let assets: Vec<AssetUpdate> = active_buoys
             .iter()
-            .map(|station| {
-                let asset_id = format_asset_id(&station.station_id);
-                let symbol = format!("NDBC/{}", station.station_id.to_uppercase());
-                let name = format!("Buoy {}: Wave Ht", station.station_id);
+            .map(|(asset_id, buoy)| {
+                let symbol = format!("NDBC/{}", buoy.station_id.to_uppercase());
+                let name = format!("Buoy {}: Wave Ht", buoy.station_id);
 
                 AssetUpdate {
-                    asset_id,
+                    asset_id: (*asset_id).clone(),
                     symbol,
                     name,
                     category: Some("environment".to_string()),
                     metadata: serde_json::json!({
-                        "api_ref": station.station_id,
+                        "api_ref": buoy.station_id,
                         "subcategory": "ocean",
                         "active": true,
                         "extra": {
-                            "has_wvht": station.wvht.is_some(),
-                            "has_wspd": station.wspd.is_some(),
-                            "has_wtmp": station.wtmp.is_some(),
-                            "has_atmp": station.atmp.is_some(),
-                            "has_pres": station.pres.is_some(),
+                            "has_wvht": buoy.has_wvht,
                         },
                     }),
                 }
@@ -143,10 +260,11 @@ impl MarketDataSource for NdbcMarketSource {
             .collect();
 
         info!(
-            "NDBC fetch_assets: {} buoy stations discovered ({} with wave data, capped at {})",
+            "NDBC fetch_assets: {} active buoys ({} cached, {} deactivated, {} total in data)",
+            assets.len(),
+            total_cached,
+            deactivated,
             stations.len(),
-            with_waves.len(),
-            MAX_STATIONS
         );
         Ok(assets)
     }
@@ -161,21 +279,19 @@ impl MarketDataSource for NdbcMarketSource {
         let body = self.http.get_raw(DATA_URL).await?;
         let stations = parse_ndbc_data(&body);
 
+        // Update buoy cache with live data
+        self.update_buoy_cache(&stations).await;
+
         // Build lookup: asset_id -> station data
         let station_map: HashMap<String, &NdbcStation> = stations
             .iter()
             .map(|s| (format_asset_id(&s.station_id), s))
             .collect();
 
-        let requested: std::collections::HashSet<&String> = asset_ids.iter().collect();
-
         let mut results = Vec::with_capacity(asset_ids.len());
+        let mut priced_ids = Vec::new();
 
         for asset_id in asset_ids {
-            if !requested.contains(asset_id) {
-                continue;
-            }
-
             if let Some(station) = station_map.get(asset_id) {
                 // Use WVHT as primary value; skip station if no wave data
                 if let Some(wvht) = station.wvht {
@@ -194,9 +310,20 @@ impl MarketDataSource for NdbcMarketSource {
                         market_cap: None,
                         fetched_at: now,
                     });
+                    priced_ids.push(asset_id.clone());
                 }
             } else {
                 debug!("NDBC station not found in latest data: {}", asset_id);
+            }
+        }
+
+        // Mark buoys that got prices
+        if !priced_ids.is_empty() {
+            let mut cache = self.buoy_cache.lock().await;
+            for id in &priced_ids {
+                if let Some(buoy) = cache.get_mut(id) {
+                    buoy.got_price = true;
+                }
             }
         }
 
@@ -651,5 +778,64 @@ short line with few cols
         );
         assert_eq!(stations[0].station_id, "41001");
         assert_eq!(stations[1].station_id, "41002");
+    }
+
+    // ========================================================================
+    // BUOY LIFECYCLE TESTS
+    // ========================================================================
+
+    fn make_buoy(station_id: &str, first_seen: DateTime<Utc>, last_seen: DateTime<Utc>, got_price: bool) -> CachedBuoy {
+        CachedBuoy {
+            station_id: station_id.to_string(),
+            first_seen,
+            last_seen,
+            got_price,
+            has_wvht: true,
+        }
+    }
+
+    #[test]
+    fn test_buoy_active_recently_seen() {
+        let now = Utc::now();
+        let buoy = make_buoy("41001", now - chrono::Duration::days(10), now - chrono::Duration::hours(1), true);
+        assert!(NdbcMarketSource::is_buoy_active(&buoy, now));
+    }
+
+    #[test]
+    fn test_buoy_deactivated_after_3_days_offline() {
+        let now = Utc::now();
+        let buoy = make_buoy("41001", now - chrono::Duration::days(10), now - chrono::Duration::days(4), true);
+        assert!(!NdbcMarketSource::is_buoy_active(&buoy, now));
+    }
+
+    #[test]
+    fn test_buoy_reactivated_when_back_online() {
+        let now = Utc::now();
+        // Was offline for a while, but last_seen is now (came back)
+        let buoy = make_buoy("41001", now - chrono::Duration::days(20), now, true);
+        assert!(NdbcMarketSource::is_buoy_active(&buoy, now));
+    }
+
+    #[test]
+    fn test_new_buoy_grace_period() {
+        let now = Utc::now();
+        // New buoy (1h old), never got a price yet — still within grace period
+        let buoy = make_buoy("99999", now - chrono::Duration::hours(1), now, false);
+        assert!(NdbcMarketSource::is_buoy_active(&buoy, now));
+    }
+
+    #[test]
+    fn test_buoy_never_priced_after_grace_period() {
+        let now = Utc::now();
+        // Buoy is 3 days old, still reporting, but never got a price
+        let buoy = make_buoy("99999", now - chrono::Duration::days(3), now, false);
+        assert!(!NdbcMarketSource::is_buoy_active(&buoy, now));
+    }
+
+    #[test]
+    fn test_ndbc_deactivation_constants() {
+        assert_eq!(DEACTIVATION_DAYS, 3);
+        assert_eq!(GRACE_PERIOD_HOURS, 48);
+        assert!(RETENTION_DAYS > DEACTIVATION_DAYS);
     }
 }

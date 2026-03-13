@@ -22,10 +22,12 @@
 //! - 301-500: Hazardous
 
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
@@ -42,6 +44,39 @@ const DATA_URL: &str = "https://files.airnowtech.org/airnow/today/reportingarea.
 
 /// Maximum number of reporting areas to track
 const MAX_AREAS: usize = 300;
+
+/// How many days offline before a sensor is deactivated (excluded from fetch_assets).
+/// When the sync engine sees an asset not returned by fetch_assets, it sets is_active = false.
+/// If the sensor comes back online, it will reappear in fetch_assets and get reactivated.
+const DEACTIVATION_DAYS: i64 = 3;
+
+/// Grace period for newly discovered sensors (hours). If a sensor was discovered
+/// but never returned data within this window, it won't be returned by fetch_assets()
+/// — preventing "registered but never priced" assets.
+const GRACE_PERIOD_HOURS: i64 = 48;
+
+/// How long to retain a sensor in the in-memory cache before pruning (days).
+/// Longer than DEACTIVATION_DAYS so we can reactivate sensors that come back.
+const RETENTION_DAYS: i64 = 30;
+
+// ============================================================================
+// SENSOR CACHE
+// ============================================================================
+
+/// Tracks when a sensor was first and last seen reporting data.
+#[derive(Clone, Debug)]
+struct CachedSensor {
+    /// Human-readable area name
+    reporting_area: String,
+    /// State code
+    state_code: String,
+    /// First time this sensor was observed
+    first_seen: DateTime<Utc>,
+    /// Last time this sensor had live data
+    last_seen: DateTime<Utc>,
+    /// Whether we've ever received a price for this sensor
+    got_price: bool,
+}
 
 // ============================================================================
 // PARSED OBSERVATION TYPE
@@ -193,9 +228,14 @@ fn group_observations(
 /// AirNow Air Quality market data source.
 ///
 /// Tracks real-time AQI for US reporting areas (cities/metros).
+/// Includes sensor lifecycle management: sensors offline for 3+ days are
+/// deactivated, and sensors that come back online are reactivated.
 /// Source ID is `"airnow"`.
 pub struct AirnowMarketSource {
     http: SourceHttpClient,
+    /// Sensor cache: asset_id -> CachedSensor. Tracks first/last seen times
+    /// for lifecycle management. Pruned after RETENTION_DAYS of inactivity.
+    sensor_cache: Arc<Mutex<HashMap<String, CachedSensor>>>,
 }
 
 impl AirnowMarketSource {
@@ -222,7 +262,10 @@ impl AirnowMarketSource {
 
         info!("AirNow Air Quality source initialized (bulk file mode)");
 
-        Ok(Self { http })
+        Ok(Self {
+            http,
+            sensor_cache: Arc::new(Mutex::new(HashMap::new())),
+        })
     }
 
     /// Fetch all current observations from the bulk reportingarea.dat file.
@@ -240,6 +283,72 @@ impl AirnowMarketSource {
         }
 
         Ok(observations)
+    }
+
+    /// Update the sensor cache with currently reporting areas.
+    /// - New sensors are added with first_seen = now
+    /// - Existing sensors get last_seen updated
+    /// - Sensors not seen in > RETENTION_DAYS are pruned from memory
+    async fn update_sensor_cache(
+        &self,
+        area_map: &HashMap<String, (i32, String, String)>,
+    ) {
+        let now = Utc::now();
+        let mut cache = self.sensor_cache.lock().await;
+
+        for (key, (_aqi, reporting_area, state_code)) in area_map {
+            match cache.get_mut(key) {
+                Some(entry) => {
+                    entry.last_seen = now;
+                    entry.reporting_area = reporting_area.clone();
+                    entry.state_code = state_code.clone();
+                }
+                None => {
+                    cache.insert(key.clone(), CachedSensor {
+                        reporting_area: reporting_area.clone(),
+                        state_code: state_code.clone(),
+                        first_seen: now,
+                        last_seen: now,
+                        got_price: false,
+                    });
+                }
+            }
+        }
+
+        // Prune sensors not seen in > RETENTION_DAYS (memory cleanup)
+        let cutoff = now - chrono::Duration::days(RETENTION_DAYS);
+        let before = cache.len();
+        cache.retain(|_, v| v.last_seen > cutoff);
+        let pruned = before - cache.len();
+        if pruned > 0 {
+            info!("AirNow: pruned {} sensors not seen in > {} days", pruned, RETENTION_DAYS);
+        }
+    }
+
+    /// Check if a cached sensor should be considered "active" for asset registration.
+    ///
+    /// A sensor is active if:
+    /// 1. It was seen within the last DEACTIVATION_DAYS, OR
+    /// 2. It is newly discovered (within GRACE_PERIOD_HOURS) — give it time to get a price.
+    ///
+    /// A sensor is NOT active if:
+    /// - It hasn't reported data in > DEACTIVATION_DAYS (offline/maintenance/decommissioned)
+    /// - It was discovered > GRACE_PERIOD_HOURS ago but never got a price (dead on arrival)
+    fn is_sensor_active(sensor: &CachedSensor, now: DateTime<Utc>) -> bool {
+        let offline_duration = now - sensor.last_seen;
+        let age = now - sensor.first_seen;
+
+        // Sensor recently reported data — active
+        if offline_duration < chrono::Duration::days(DEACTIVATION_DAYS) {
+            // But check for "never got price" case on old-enough sensors
+            if !sensor.got_price && age > chrono::Duration::hours(GRACE_PERIOD_HOURS) {
+                return false;
+            }
+            return true;
+        }
+
+        // Sensor has been offline too long — deactivate
+        false
     }
 }
 
@@ -271,28 +380,43 @@ impl MarketDataSource for AirnowMarketSource {
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
+        let now = Utc::now();
         let observations = self.fetch_all_observations().await?;
         let area_map = group_observations(&observations);
 
-        // Sort by area key for deterministic output
-        let mut areas: Vec<_> = area_map.into_iter().collect();
-        areas.sort_by(|a, b| a.0.cmp(&b.0));
+        // Update sensor cache with live data
+        self.update_sensor_cache(&area_map).await;
+
+        // Build asset list from cache, filtering out deactivated sensors.
+        // The sync engine will set is_active = false for any previously registered
+        // asset that is no longer returned here.
+        let cache = self.sensor_cache.lock().await;
+        let mut active_sensors: Vec<_> = cache
+            .iter()
+            .filter(|(_, sensor)| Self::is_sensor_active(sensor, now))
+            .collect();
+
+        // Sort by key for deterministic output
+        active_sensors.sort_by(|a, b| a.0.cmp(b.0));
 
         // Cap at MAX_AREAS
-        areas.truncate(MAX_AREAS);
+        active_sensors.truncate(MAX_AREAS);
 
-        let assets: Vec<AssetUpdate> = areas
+        let total_cached = cache.len();
+        let deactivated = total_cached - active_sensors.len();
+
+        let assets: Vec<AssetUpdate> = active_sensors
             .iter()
-            .map(|(key, (_aqi, reporting_area, state_code))| {
+            .map(|(key, sensor)| {
                 let symbol = format!(
                     "AQI/{}/{}",
-                    state_code.to_uppercase(),
-                    reporting_area.to_uppercase().replace(' ', "_")
+                    sensor.state_code.to_uppercase(),
+                    sensor.reporting_area.to_uppercase().replace(' ', "_")
                 );
-                let name = format!("{}, {} AQI", reporting_area, state_code);
+                let name = format!("{}, {} AQI", sensor.reporting_area, sensor.state_code);
 
                 AssetUpdate {
-                    asset_id: key.clone(),
+                    asset_id: (*key).clone(),
                     symbol,
                     name,
                     category: Some("environment".to_string()),
@@ -301,8 +425,8 @@ impl MarketDataSource for AirnowMarketSource {
                         "subcategory": "air_quality",
                         "active": true,
                         "extra": {
-                            "state_code": state_code,
-                            "reporting_area": reporting_area,
+                            "state_code": sensor.state_code,
+                            "reporting_area": sensor.reporting_area,
                         },
                     }),
                 }
@@ -310,8 +434,10 @@ impl MarketDataSource for AirnowMarketSource {
             .collect();
 
         info!(
-            "AirNow fetch_assets: {} reporting areas loaded",
-            assets.len()
+            "AirNow fetch_assets: {} active reporting areas ({} cached, {} deactivated)",
+            assets.len(),
+            total_cached,
+            deactivated,
         );
         Ok(assets)
     }
@@ -325,7 +451,11 @@ impl MarketDataSource for AirnowMarketSource {
         let observations = self.fetch_all_observations().await?;
         let area_map = group_observations(&observations);
 
+        // Update sensor cache — sensors that have data are marked as alive
+        self.update_sensor_cache(&area_map).await;
+
         let mut results = Vec::with_capacity(asset_ids.len());
+        let mut priced_ids = Vec::new();
 
         for asset_id in asset_ids {
             if let Some((max_aqi, reporting_area, state_code)) = area_map.get(asset_id) {
@@ -345,8 +475,19 @@ impl MarketDataSource for AirnowMarketSource {
                     market_cap: None,
                     fetched_at: now,
                 });
+                priced_ids.push(asset_id.clone());
             } else {
                 debug!("AirNow: no observation found for asset {}", asset_id);
+            }
+        }
+
+        // Mark sensors that got prices
+        if !priced_ids.is_empty() {
+            let mut cache = self.sensor_cache.lock().await;
+            for id in &priced_ids {
+                if let Some(sensor) = cache.get_mut(id) {
+                    sensor.got_price = true;
+                }
             }
         }
 
@@ -711,5 +852,64 @@ bad line without pipes
         // Los Angeles: max(80 PM2.5, 60 PM10, 70 OZONE) = 80
         let (max_aqi, _, _) = area_map.get("airnow_ca_los_angeles").unwrap();
         assert_eq!(*max_aqi, 80);
+    }
+
+    // ========================================================================
+    // SENSOR LIFECYCLE TESTS
+    // ========================================================================
+
+    fn make_sensor(reporting_area: &str, state_code: &str, first_seen: DateTime<Utc>, last_seen: DateTime<Utc>, got_price: bool) -> CachedSensor {
+        CachedSensor {
+            reporting_area: reporting_area.to_string(),
+            state_code: state_code.to_string(),
+            first_seen,
+            last_seen,
+            got_price,
+        }
+    }
+
+    #[test]
+    fn test_sensor_active_recently_seen() {
+        let now = Utc::now();
+        let sensor = make_sensor("Washington", "DC", now - chrono::Duration::days(10), now - chrono::Duration::hours(1), true);
+        assert!(AirnowMarketSource::is_sensor_active(&sensor, now));
+    }
+
+    #[test]
+    fn test_sensor_deactivated_after_3_days_offline() {
+        let now = Utc::now();
+        let sensor = make_sensor("Washington", "DC", now - chrono::Duration::days(10), now - chrono::Duration::days(4), true);
+        assert!(!AirnowMarketSource::is_sensor_active(&sensor, now));
+    }
+
+    #[test]
+    fn test_sensor_reactivated_when_back_online() {
+        let now = Utc::now();
+        // Was offline for 5 days, but last_seen is now (came back)
+        let sensor = make_sensor("Washington", "DC", now - chrono::Duration::days(20), now, true);
+        assert!(AirnowMarketSource::is_sensor_active(&sensor, now));
+    }
+
+    #[test]
+    fn test_new_sensor_grace_period() {
+        let now = Utc::now();
+        // New sensor (1h old), never got a price yet — still within grace period
+        let sensor = make_sensor("NewCity", "XX", now - chrono::Duration::hours(1), now, false);
+        assert!(AirnowMarketSource::is_sensor_active(&sensor, now));
+    }
+
+    #[test]
+    fn test_sensor_never_priced_after_grace_period() {
+        let now = Utc::now();
+        // Sensor is 3 days old, still reporting, but never got a price
+        let sensor = make_sensor("DeadSensor", "XX", now - chrono::Duration::days(3), now, false);
+        assert!(!AirnowMarketSource::is_sensor_active(&sensor, now));
+    }
+
+    #[test]
+    fn test_deactivation_constants() {
+        assert_eq!(DEACTIVATION_DAYS, 3);
+        assert_eq!(GRACE_PERIOD_HOURS, 48);
+        assert!(RETENTION_DAYS > DEACTIVATION_DAYS);
     }
 }
