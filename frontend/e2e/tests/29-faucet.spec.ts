@@ -41,7 +41,9 @@ plainTest.describe('Faucet API', () => {
     // Faucet should either succeed with capped amount or return an error
     if (res.ok) {
       const data = await res.json()
-      plainExpect(data.amount).toBe('10000 USDC')
+      // API returns { usdc: { amount: "10000 USDC" } } or legacy { amount: "10000 USDC" }
+      const usdcAmount = data.usdc?.amount ?? data.amount
+      plainExpect(usdcAmount).toBe('10000 USDC')
     } else {
       // On testnet, faucet may reject large amounts — just verify it responded
       plainExpect(res.status).toBeLessThan(500)
