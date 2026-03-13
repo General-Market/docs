@@ -32,12 +32,36 @@ test.describe('Portfolio & Orders', () => {
     await page.goto('/index')
     await ensureWalletConnected(page, TEST_ADDRESS)
 
+    // Scroll to Portfolio section and wait for tabs
+    await page.evaluate(() => {
+      const headings = document.querySelectorAll('h2')
+      for (const h of headings) {
+        if (h.textContent?.includes('Portfolio')) {
+          h.scrollIntoView()
+          break
+        }
+      }
+    })
+
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
-    const hasTab = await positionsTab.isVisible({ timeout: 15_000 }).catch(() => false)
+    let hasTab = await positionsTab.isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTab) {
-      test.skip(true, 'Portfolio section not visible')
-      return
+      // Retry with fresh navigation — data-node may be slow on testnet
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      await ensureWalletConnected(page, TEST_ADDRESS)
+      await page.evaluate(() => {
+        const headings = document.querySelectorAll('h2')
+        for (const h of headings) {
+          if (h.textContent?.includes('Portfolio')) {
+            h.scrollIntoView()
+            break
+          }
+        }
+      })
+      hasTab = await positionsTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
+    expect(hasTab).toBe(true)
     await positionsTab.click()
 
     // Should contain dollar amounts or share counts, not raw 18-digit numbers
@@ -53,12 +77,36 @@ test.describe('Portfolio & Orders', () => {
     await page.goto('/index')
     await ensureWalletConnected(page, TEST_ADDRESS)
 
+    // Scroll to Portfolio section and wait for tabs
+    await page.evaluate(() => {
+      const headings = document.querySelectorAll('h2')
+      for (const h of headings) {
+        if (h.textContent?.includes('Portfolio')) {
+          h.scrollIntoView()
+          break
+        }
+      }
+    })
+
     const tradesTab = page.getByRole('button', { name: /Trades/i }).first()
-    const hasTab = await tradesTab.isVisible({ timeout: 15_000 }).catch(() => false)
+    let hasTab = await tradesTab.isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTab) {
-      test.skip(true, 'Trades tab not visible')
-      return
+      // Retry with fresh navigation — data-node may be slow on testnet
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(3_000)
+      await ensureWalletConnected(page, TEST_ADDRESS)
+      await page.evaluate(() => {
+        const headings = document.querySelectorAll('h2')
+        for (const h of headings) {
+          if (h.textContent?.includes('Portfolio')) {
+            h.scrollIntoView()
+            break
+          }
+        }
+      })
+      hasTab = await tradesTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
+    expect(hasTab).toBe(true)
     await tradesTab.click()
 
     // Tab rendered — content may be empty if no trades. Assert tab didn't crash.
