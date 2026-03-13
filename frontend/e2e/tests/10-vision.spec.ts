@@ -91,6 +91,8 @@ test.describe('Vision', () => {
   // ── Two-player join + settlement verification ────────────
 
   test('two players join batch and deposits settle correctly', async () => {
+    // Many sequential on-chain txs on testnet: fund, approve, deposit, join × 2 players
+    test.setTimeout(300_000)
     // 1. Find a pre-created E2E test batch (deployed by DeployAllVisionBatches)
     const { batchId, configHash } = await findAvailableE2eBatch()
     const marketCount = 5 // E2E test batches use 5 markets by convention

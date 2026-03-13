@@ -129,7 +129,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 
   // User borrow data
   const collateralValue = position?.collateralAmount
-    ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * (market ? Number(market.navPrice) / 1e36 : 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * (market ? parseFloat(formatUnits(market.navPrice, 36)) : 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
   const outstandingDebt = position?.debtAmount
     ? `$${parseFloat(formatUnits(position.debtAmount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
