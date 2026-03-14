@@ -6,6 +6,7 @@ members = [
     "ap",
     "curator",
     "data-node",
+    "itp-bot",
 ]
 
 [workspace.package]

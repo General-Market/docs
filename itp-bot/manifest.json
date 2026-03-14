@@ -1,0 +1,2095 @@
+[
+  {
+    "id": 1,
+    "ticker": "BRDG",
+    "name": "Cross-Chain & Interoperability Index",
+    "thesis": "A multi-chain world needs bridges and messaging protocols. Cross-chain infrastructure captures tolls on inter-chain asset transfer.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "cross-chain-communication",
+      "top_n": 10,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 2,
+    "ticker": "PRIV",
+    "name": "Privacy Protocol Index",
+    "thesis": "Financial privacy is a feature, not a bug. Privacy-preserving protocols serve legitimate institutional demand.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "privacy-infrastructure",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 60
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 3,
+    "ticker": "RWAI",
+    "name": "Real World Asset Protocol Index",
+    "thesis": "RWA tokenization is the bridge between TradFi and DeFi. Protocols enabling on-chain treasuries sit at the convergence of two $100T+ markets.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "rwa-protocol",
+      "top_n": 10,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 4,
+    "ticker": "RWATVL",
+    "name": "RWA TVL Weighted",
+    "thesis": "RWA protocols weighted by actual tokenized asset value locked. Real backing, real weight.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "dl-rwa",
+      "top_n": 10,
+      "weighting": "tvl",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 5,
+    "ticker": "LSTKTVL",
+    "name": "Liquid Staking TVL Weighted",
+    "thesis": "Liquid staking protocols weighted by staked TVL. The bigger the deposit base, the bigger the weight.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "dl-liquid-staking",
+      "top_n": 10,
+      "weighting": "tvl",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 6,
+    "ticker": "CLVL60",
+    "name": "Crypto Low-Vol 60d",
+    "thesis": "60-day low-volatility lookback smooths regime changes. More stable factor exposure.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "all",
+      "top_n": 20,
+      "weighting": "low_vol_60",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 7,
+    "ticker": "CDMOM60",
+    "name": "Crypto Dual Momentum 60d",
+    "thesis": "60-day dual momentum for longer trend confirmation. Fewer false signals, more conviction.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "all",
+      "top_n": 15,
+      "weighting": "dual_mom_60",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 8,
+    "ticker": "FANS",
+    "name": "Fan Token Index",
+    "thesis": "Fan tokens capture the loyalty economy of sports and entertainment. Recurring engagement drives volume.",
+    "section": "The TradFi Migrant",
+    "config": {
+      "category_id": "fan-token",
+      "top_n": 10,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 9,
+    "ticker": "MEME5",
+    "name": "Concentrated Meme Top 5",
+    "thesis": "Only the biggest memes survive. Top 5 by market cap captures the Lindy effect in meme culture.",
+    "section": "The Crypto Native Degen",
+    "config": {
+      "category_id": "ai-meme-coins",
+      "top_n": 5,
+      "weighting": "mcap",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 10,
+    "ticker": "CDPMOM",
+    "name": "CDP Momentum",
+    "thesis": "CDP stablecoin protocols gaining adoption. Momentum captures the winners of stablecoin wars.",
+    "section": "The Crypto Native Degen",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 5,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 11,
+    "ticker": "RWADEF",
+    "name": "RWA Macro Defensive",
+    "thesis": "RWA protocols with minimum variance weighting. Macro exposure with minimal crypto volatility.",
+    "section": "The Macro Strategist",
+    "config": {
+      "category_id": "dl-rwa",
+      "top_n": 10,
+      "weighting": "min_var_30",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 12,
+    "ticker": "MSEC",
+    "name": "Modular Security",
+    "thesis": "Shared security marketplaces let new chains bootstrap economic security without building a validator set.",
+    "section": "The Tech Visionary",
+    "config": {
+      "category_id": "liquid-restaking-governance-token",
+      "top_n": 10,
+      "weighting": "tvl",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 13,
+    "ticker": "VCFUND",
+    "name": "VC-Funded Innovation",
+    "thesis": "Most VC-funded protocols have the longest runway and strongest builder teams. Smart money leads.",
+    "section": "The Tech Visionary",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 20,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 14,
+    "ticker": "VCVAL",
+    "name": "VC Valuation Leaders",
+    "thesis": "Highest VC valuation protocols reflect institutional conviction in long-term technology bets.",
+    "section": "The Tech Visionary",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 20,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": {
+      "vc_mode": "valuation"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 15,
+    "ticker": "TOPYLD",
+    "name": "Top Yield Protocols",
+    "thesis": "Protocols with highest native yield. Yield is the gravity of DeFi -- capital flows to the best returns.",
+    "section": "The Tech Visionary",
+    "config": {
+      "category_id": "dl-yield",
+      "top_n": 15,
+      "weighting": "yield_w",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 16,
+    "ticker": "YLDTVL",
+    "name": "Yield Protocol TVL",
+    "thesis": "Yield protocols weighted by TVL deposited. Capital allocation = market verdict on best yield.",
+    "section": "The Yield Hunter",
+    "config": {
+      "category_id": "dl-yield",
+      "top_n": 15,
+      "weighting": "tvl",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 17,
+    "ticker": "LENDREV",
+    "name": "Lending Revenue Weighted",
+    "thesis": "Lending protocols weighted by interest revenue. Spread income is the commercial banking of DeFi.",
+    "section": "The Yield Hunter",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 10,
+      "weighting": "revenue_w",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 18,
+    "ticker": "BRDGREV",
+    "name": "Bridge Revenue Index",
+    "thesis": "Cross-chain bridges weighted by transfer fee revenue. Every cross-chain swap pays a toll.",
+    "section": "The Yield Hunter",
+    "config": {
+      "category_id": "dl-bridge",
+      "top_n": 10,
+      "weighting": "revenue_w",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 19,
+    "ticker": "YLDSQRT",
+    "name": "Yield Sqrt TVL",
+    "thesis": "Yield protocols with sqrt TVL weighting. Balances established protocols with emerging yield sources.",
+    "section": "The Yield Hunter",
+    "config": {
+      "category_id": "dl-yield",
+      "top_n": 15,
+      "weighting": "tvl_sqrt",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 20,
+    "ticker": "GAME5",
+    "name": "Concentrated Gaming Top 5",
+    "thesis": "Top 5 gaming tokens by market cap. Maximum conviction in gaming infrastructure winners.",
+    "section": "The Culture & Lifestyle Investor",
+    "config": {
+      "category_id": "dl-gaming",
+      "top_n": 5,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 21,
+    "ticker": "M2E",
+    "name": "Move-to-Earn Index",
+    "thesis": "Fitness meets crypto. M2E protocols reward physical activity with tokens. Mass adoption through health.",
+    "section": "The Culture & Lifestyle Investor",
+    "config": {
+      "category_id": "play-to-earn",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 22,
+    "ticker": "LOVOL",
+    "name": "Low Volatility 30d",
+    "thesis": "Low-volatility factor selects and overweights the least volatile assets. Better risk-adjusted returns.",
+    "section": "The Risk Manager",
+    "config": {
+      "category_id": "all",
+      "top_n": 20,
+      "weighting": "low_vol_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 23,
+    "ticker": "ORAMV",
+    "name": "Oracle Min Variance",
+    "thesis": "Minimum variance oracle portfolio. Stable infrastructure exposure with minimal drawdowns.",
+    "section": "The Risk Manager",
+    "config": {
+      "category_id": "analytics",
+      "top_n": 10,
+      "weighting": "min_var_30",
+      "rebalance_days": 60
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 24,
+    "ticker": "DCOUP",
+    "name": "BTC Decoupler Index",
+    "thesis": "Tokens whose correlation to Bitcoin dropped below 0.3. Decoupling means independent demand catalysts.",
+    "section": "The Contrarian / Alt Data Investor",
+    "config": {
+      "category_id": "all",
+      "top_n": 15,
+      "weighting": "invvol_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 25,
+    "ticker": "NFTPH",
+    "name": "NFT Infrastructure Phoenix",
+    "thesis": "NFT infra tokens crashed 95% but NFTs as technology are growing. Maximum asymmetry.",
+    "section": "The Contrarian / Alt Data Investor",
+    "config": {
+      "category_id": "nft-marketplace",
+      "top_n": 10,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 26,
+    "ticker": "METAB",
+    "name": "Metaverse Bottom Fish",
+    "thesis": "Metaverse tokens at maximum narrative despair. Any corporate announcement creates 10x spikes.",
+    "section": "The Contrarian / Alt Data Investor",
+    "config": {
+      "category_id": "metaverse",
+      "top_n": 10,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 27,
+    "ticker": "PREDCON",
+    "name": "Prediction Market Contrarian",
+    "thesis": "Prediction market infrastructure during narrative valleys. Information markets are permanently valuable.",
+    "section": "The Contrarian / Alt Data Investor",
+    "config": {
+      "category_id": "dl-derivatives",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 60
+    },
+    "overlays": {
+      "fng_mode": "contrarian"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 28,
+    "ticker": "DMOM60",
+    "name": "Dual Momentum 60d",
+    "thesis": "60-day dual momentum for longer trend validation. Higher conviction, fewer whipsaws.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 20,
+      "weighting": "dual_mom_60",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 29,
+    "ticker": "AIDMOM",
+    "name": "AI Dual Momentum",
+    "thesis": "Dual momentum on AI. Maximum conviction in AI tokens trending up on both axes.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "defai",
+      "top_n": 10,
+      "weighting": "dual_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 30,
+    "ticker": "GAMM60",
+    "name": "Gaming Momentum 60d",
+    "thesis": "60-day gaming momentum captures sustained game launch adoption curves.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-gaming",
+      "top_n": 15,
+      "weighting": "momentum_60",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 31,
+    "ticker": "GAMDM",
+    "name": "Gaming Dual Momentum",
+    "thesis": "Dual momentum on gaming. Only games trending up on both absolute and relative basis.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-gaming",
+      "top_n": 10,
+      "weighting": "dual_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 32,
+    "ticker": "DFIMFNG",
+    "name": "DeFi Momentum + FNG",
+    "thesis": "DeFi momentum with FNG trigger. Rides DeFi trends but exits during extreme fear.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "smart-contract-platform",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 33,
+    "ticker": "TVLMPP",
+    "name": "TVL Momentum Perps",
+    "thesis": "Perp DEX protocols with TVL momentum. OI growth signals derivatives migration on-chain.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-derivatives",
+      "top_n": 10,
+      "weighting": "tvl_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 34,
+    "ticker": "MOM5FNG",
+    "name": "Concentrated Momentum + FNG",
+    "thesis": "Top 5 momentum tokens with FNG trigger. Maximum conviction trend-following with panic exit.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 5,
+      "weighting": "momentum_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 35,
+    "ticker": "TVLMOM",
+    "name": "TVL Leaders + Momentum",
+    "thesis": "Top TVL protocols filtered by price momentum. Fundamental base + technical trend.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 20,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 36,
+    "ticker": "ROTATE",
+    "name": "All Sectors Rotation",
+    "thesis": "Cross-sector momentum rotation. Captures which crypto sector is leading this cycle.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 50,
+      "weighting": "momentum_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 37,
+    "ticker": "BRMFNG",
+    "name": "Bridge Mom + FNG",
+    "thesis": "Bridge protocol momentum with FNG trigger. Cross-chain activity trends + panic exit.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-bridge",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "trigger"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 38,
+    "ticker": "ZKMVC",
+    "name": "ZK Mom + VC",
+    "thesis": "ZK momentum with VC overlay. Technology trend + institutional validation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "zero-knowledge-zk",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 39,
+    "ticker": "MODMVC",
+    "name": "Modular Mom + VC",
+    "thesis": "Modular stack momentum with VC overlay. Modular thesis adoption + smart money signals.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "data-availability",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 40,
+    "ticker": "CDM5",
+    "name": "Concentrated Dual Momentum",
+    "thesis": "Top 5 by dual momentum. Maximum concentration in the strongest combined signals.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 5,
+      "weighting": "dual_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 41,
+    "ticker": "DTVMVC",
+    "name": "DeFi TVL Momentum + VC",
+    "thesis": "DeFi TVL momentum with VC overlay. TVL growth trend + institutional validation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 10,
+      "weighting": "tvl_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 42,
+    "ticker": "LNMVC",
+    "name": "Lending Momentum + VC",
+    "thesis": "Lending momentum with VC overlay. Lending growth + smart money backing.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 43,
+    "ticker": "YTMVC",
+    "name": "Yield TVL Mom + VC",
+    "thesis": "Yield TVL momentum with VC overlay. Best yields attracting both capital and VC attention.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-yield",
+      "top_n": 10,
+      "weighting": "tvl_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 44,
+    "ticker": "PPVCFNG",
+    "name": "Perp Mom + VC + FNG",
+    "thesis": "Perp DEX momentum + VC backing + FNG trigger. Derivatives migration triple signal.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-derivatives",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "vc_mode": "funding",
+      "fng_mode": "trigger"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 45,
+    "ticker": "GMVCFNG",
+    "name": "Gaming Mom + VC + FNG",
+    "thesis": "Gaming momentum + VC backing + FNG trigger. Gaming infrastructure trends with smart money.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-gaming",
+      "top_n": 10,
+      "weighting": "momentum_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "vc_mode": "funding",
+      "fng_mode": "trigger"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 46,
+    "ticker": "L1MFFD",
+    "name": "L1 Multi-Factor + FNG + Dom",
+    "thesis": "L1 multi-factor with FNG trigger and dominance switching. Maximum systematic L1 allocation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "layer-1",
+      "top_n": 10,
+      "weighting": "multi_factor_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 47,
+    "ticker": "GOV15EQ",
+    "name": "Governance 15 Equal Quarterly",
+    "thesis": "Top 15 governance equal weight quarterly. DAO ecosystem with patient allocation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "liquid-staking-governance-tokens",
+      "top_n": 15,
+      "weighting": "equal",
+      "rebalance_days": 90
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 48,
+    "ticker": "LND10FEB",
+    "name": "Lending 10 Fee Eff Biweekly",
+    "thesis": "Top 10 lending by fee efficiency biweekly. Most capital-efficient lenders.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 10,
+      "weighting": "fee_eff",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 49,
+    "ticker": "CDP5TQ",
+    "name": "CDP 5 TVL Quarterly",
+    "thesis": "Top 5 CDP by TVL quarterly. Stablecoin issuance infrastructure with patient rebalance.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 5,
+      "weighting": "tvl",
+      "rebalance_days": 90
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 50,
+    "ticker": "VCF10MF",
+    "name": "VC Funded 10 Multi-Factor",
+    "thesis": "Top 10 VC-funded by multi-factor. Smart money + systematic factor selection.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 10,
+      "weighting": "multi_factor_30",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 51,
+    "ticker": "VLDM",
+    "name": "Volume Leaders Dual Momentum",
+    "thesis": "Volume leaders with dual momentum. High-activity protocols + trend confirmation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-fa-top-tvl",
+      "top_n": 15,
+      "weighting": "dual_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 52,
+    "ticker": "DPULTRA",
+    "name": "DePIN 10 Revenue + All Overlays",
+    "thesis": "DePIN revenue-weighted with all overlays. Maximum systematic DePIN allocation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "depin",
+      "top_n": 10,
+      "weighting": "revenue_w",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc",
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 53,
+    "ticker": "LNRVVC",
+    "name": "Lending 10 Revenue + FNG + VC",
+    "thesis": "Lending revenue + FNG + VC. Revenue-generating lenders with smart money and protection.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-lending",
+      "top_n": 10,
+      "weighting": "revenue_w",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 54,
+    "ticker": "DX10VFD",
+    "name": "DEX 10 Volume + FNG + Dom",
+    "thesis": "DEX volume with FNG and dominance. Volume leaders + regime-aware protection.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-dexs",
+      "top_n": 10,
+      "weighting": "volume_w",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 55,
+    "ticker": "PP10ULTRA",
+    "name": "Perp 10 Revenue + All Overlays",
+    "thesis": "Perp DEX revenue with all overlays. Maximum systematic derivatives allocation.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-derivatives",
+      "top_n": 10,
+      "weighting": "revenue_w",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc",
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 56,
+    "ticker": "YLD10ULTRA",
+    "name": "Yield 10 TVL Mom + All Overlays",
+    "thesis": "Yield TVL momentum with all overlays. Maximum systematic yield-chasing strategy.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "dl-yield",
+      "top_n": 10,
+      "weighting": "tvl_mom_30",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc",
+      "vc_mode": "funding"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 57,
+    "ticker": "B100SM",
+    "name": "Broad 100 Sqrt Mcap Monthly",
+    "thesis": "Broadest mid-cap tilted index. 100 tokens with sqrt mcap monthly. Maximum diversified mid-cap exposure.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 100,
+      "weighting": "sqrt_mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 58,
+    "ticker": "B100CQ",
+    "name": "Broad 100 Capped Quarterly",
+    "thesis": "Broadest capped index. 100 tokens with 10% cap quarterly. Maximum diversification, no single-token dominance.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 100,
+      "weighting": "mcap_cap10",
+      "rebalance_days": 90
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 59,
+    "ticker": "MEGAMOM",
+    "name": "All 50 Dual Mom + FNG Trigger + BTC Dom",
+    "thesis": "The mega-momentum system: 50 tokens, dual momentum, FNG trigger, BTC dominance. Broadest systematic trend-following.",
+    "section": "The Thematic Momentum Trader",
+    "config": {
+      "category_id": "all",
+      "top_n": 50,
+      "weighting": "dual_mom_60",
+      "rebalance_days": 7
+    },
+    "overlays": {
+      "fng_mode": "trigger",
+      "dominance_mode": "btc"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 60,
+    "ticker": "YF30M",
+    "name": "Young Founders Under 30 Momentum",
+    "thesis": "Young founders + momentum weighting. Ride the winners among the impatient market's discards.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-under-30",
+      "top_n": 9,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 61,
+    "ticker": "PB34",
+    "name": "Peak Builders 30-34",
+    "thesis": "The consensus sweet spot. 30-34 is fastest to ATH (102 days, 2.8x). Everybody knows this \u2014 which is both its strength and its trap.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-30-34",
+      "top_n": 13,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 62,
+    "ticker": "PB34M",
+    "name": "Peak Builders 30-34 Mcap",
+    "thesis": "Market-cap weighted 30-34 bracket. The market's favorite age \u2014 weighted by what the market already values most.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-30-34",
+      "top_n": 13,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 63,
+    "ticker": "EF39",
+    "name": "Experienced Founders 35-39",
+    "thesis": "The balance point: enough cycles to have scars, enough hunger to still ship. 35-39 founders have seen one crash and built through it.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-35-39",
+      "top_n": 20,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 64,
+    "ticker": "VF44",
+    "name": "Veteran Founders 40-44",
+    "thesis": "Second-act founders. The 40-44 bracket includes people who left TradFi, sold a startup, or had a career before crypto found them.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-40-44",
+      "top_n": 8,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 65,
+    "ticker": "ES45",
+    "name": "Elder Statesmen 45+",
+    "thesis": "The 55+ bracket reaches ATH in 17 days \u2014 survivorship bias dressed as data. But 45+ founders build infrastructure that lasts, even if the returns have been priced before you arrive.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-45-plus",
+      "top_n": 19,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 66,
+    "ticker": "ES45M",
+    "name": "Elder Statesmen 45+ Mcap",
+    "thesis": "Market-cap weighted elders. BTC, SOL, ALGO, ICP \u2014 the protocols built by people who remember life before the internet.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-45-plus",
+      "top_n": 19,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 67,
+    "ticker": "USAM",
+    "name": "American Founders Mcap",
+    "thesis": "Market-cap weighted American-founded protocols. The blue chips of Silicon Valley crypto.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-american",
+      "top_n": 22,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 68,
+    "ticker": "ASIF",
+    "name": "Asian Founders Index",
+    "thesis": "Chinese founders return 3.0x at TGE-to-ATH. Asian founding teams bring different market access, different user bases, different regulatory arbitrage.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-asia",
+      "top_n": 11,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 69,
+    "ticker": "EURF",
+    "name": "European Founders Index",
+    "thesis": "\"Has EU\" teams produce 3.7x with 188 median days. European founders are patient by necessity \u2014 regulation teaches you to build slowly, which in crypto means building well.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-europe",
+      "top_n": 17,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 70,
+    "ticker": "GBRF",
+    "name": "British Founders",
+    "thesis": "AR, ICP, KAVA, KSM \u2014 the British founded protocols that are either deeply ambitious or deeply stubborn. Often both.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-british",
+      "top_n": 4,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 71,
+    "ticker": "STAN",
+    "name": "Stanford Alumni Index",
+    "thesis": "Stanford produces founders like a factory produces widgets \u2014 reliably, efficiently, and in quantities that suppress the price of any individual one.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-stanford",
+      "top_n": 6,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 72,
+    "ticker": "MITX",
+    "name": "MIT Alumni Index",
+    "thesis": "MIT founders tilt toward cryptography and formal methods. ALGO was built by a Turing Award winner. The institution selects for rigor.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-mit",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 73,
+    "ticker": "HVRD",
+    "name": "Harvard Alumni Index",
+    "thesis": "Harvard founders in crypto \u2014 fewer than you'd expect, and mostly in DeFi. COMP, RENDER, XLM.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-harvard",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 74,
+    "ticker": "IVYX",
+    "name": "Ivy League Founders",
+    "thesis": "11 tokens from Ivy League founders. Mixed Higher Ed teams return 2.1x \u2014 the Ivy premium in crypto is real but modest.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ivy-league",
+      "top_n": 11,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 75,
+    "ticker": "IVYM",
+    "name": "Ivy League Mcap",
+    "thesis": "Mcap-weighted Ivy founders. The prestige premium expressed through token market value.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ivy-league",
+      "top_n": 11,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 76,
+    "ticker": "CSFI",
+    "name": "Top CS Schools Index",
+    "thesis": "Stanford, MIT, CMU, Berkeley, Caltech, Georgia Tech, Waterloo. The institutions that teach you to build systems that don't break. 16 tokens.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-top-cs",
+      "top_n": 16,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 77,
+    "ticker": "CSMM",
+    "name": "Top CS Momentum",
+    "thesis": "Momentum weighting across CS school alumni projects. Ride the technically sound winners.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-top-cs",
+      "top_n": 16,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 78,
+    "ticker": "WATO",
+    "name": "Waterloo-Toronto Corridor",
+    "thesis": "Vitalik's alma mater axis. ETH, BERA, TAO, CELO, CFX \u2014 the Canadian corridor that punches above its weight.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-waterloo",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 79,
+    "ticker": "CRNL",
+    "name": "Cornell Blockchain",
+    "thesis": "Cornell's IC3 lab shaped the theoretical foundations of DeFi. AEVO, TRX, W, XLM \u2014 the academic-industrial pipeline.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-cornell",
+      "top_n": 4,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 80,
+    "ticker": "DROP",
+    "name": "No-Degree Founders",
+    "thesis": "\"No Education\" teams return 3.5x \u2014 the highest education bracket. Dropouts and autodidacts build with nothing to fall back on. That desperation is the alpha.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-no-degree",
+      "top_n": 35,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 81,
+    "ticker": "DRMO",
+    "name": "No-Degree Momentum",
+    "thesis": "Momentum among no-degree founders. The autodidacts who are winning right now.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-no-degree",
+      "top_n": 35,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 82,
+    "ticker": "NVIY",
+    "name": "No-Degree vs Ivy",
+    "thesis": "The anti-prestige trade. Equal weight no-degree founders \u2014 the data says they outperform Ivy League teams by 1.4x to ATH. Credentials are a liability when the market rewards heresy.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-no-degree",
+      "top_n": 20,
+      "weighting": "equal",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 83,
+    "ticker": "DENG",
+    "name": "German Engineering",
+    "thesis": "Three tokens, three protocols built with Germanic precision. CELO, GRT, TIA \u2014 small basket, concentrated thesis.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-german",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 84,
+    "ticker": "CNFI",
+    "name": "Chinese Founders Index",
+    "thesis": "Chinese founders return 3.0x with fastest time to ATH (70 days). The efficiency of a market that doesn't wait.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-chinese",
+      "top_n": 5,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 85,
+    "ticker": "BERK",
+    "name": "Berkeley Alumni",
+    "thesis": "Berkeley's crypto researchers \u2014 ALGO, ANKR, XLM. The public university that rivals any Ivy for on-chain impact.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-berkeley",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 86,
+    "ticker": "OZFI",
+    "name": "Australian Founders",
+    "thesis": "BSV, DOGE, ILV \u2014 the Australian contribution to crypto is eclectic, controversial, and entertaining. Like the country itself.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-australian",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 87,
+    "ticker": "CANF",
+    "name": "Canadian Founders",
+    "thesis": "BAT, BERA, TAO \u2014 Canadian founders who built in the cold and shipped globally.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-canadian",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 88,
+    "ticker": "AGSP",
+    "name": "Age Spread 10-19 Years",
+    "thesis": "Teams with 10-19 year age spreads produce 5.9x ATH multiplier \u2014 the highest of any demographic signal. Intergenerational founding teams combine wisdom with ambition.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-35-39",
+      "top_n": 20,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": {
+      "fng_mode": "quality_rotation"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 89,
+    "ticker": "NDFQ",
+    "name": "No-Degree + FNG Quality",
+    "thesis": "No-degree founders with FNG quality rotation. When fear strikes, the autodidacts \u2014 who built without safety nets \u2014 tend to keep building.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-no-degree",
+      "top_n": 35,
+      "weighting": "equal",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "quality_rotation"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 90,
+    "ticker": "SERI",
+    "name": "Serial Entrepreneurs Index",
+    "thesis": "Founders who built and sold before. 33 tokens from repeat founders \u2014 they know when to ship, when to pivot, when to exit. Experience compounds.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-serial",
+      "top_n": 33,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 91,
+    "ticker": "SEMO",
+    "name": "Serial Entrepreneurs Momentum",
+    "thesis": "Momentum among serial founders. Ride the winners from people who've won before.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-serial",
+      "top_n": 33,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 92,
+    "ticker": "STLM",
+    "name": "Stealth Mcap",
+    "thesis": "Stealth founders weighted by market cap. The protocols that grew without a founder doing a podcast tour.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-stealth",
+      "top_n": 36,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 93,
+    "ticker": "STMO",
+    "name": "Stealth Momentum",
+    "thesis": "Momentum among stealth founders. When a protocol from an invisible founder starts moving, the information asymmetry is maximum.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-stealth",
+      "top_n": 36,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 94,
+    "ticker": "HIVI",
+    "name": "High Visibility Founders",
+    "thesis": "Founders with 5+ podcast appearances. Vitalik, CZ, Hoskinson \u2014 the names that move markets by opening their mouths. 9 tokens.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-high-visibility",
+      "top_n": 9,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 95,
+    "ticker": "GOOG",
+    "name": "Ex-Google Founders",
+    "thesis": "Four tokens from ex-Googlers: CELO, LTC, TAO, TIA. The company that trains you to think in systems.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ex-google",
+      "top_n": 4,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 96,
+    "ticker": "META",
+    "name": "Ex-Meta Founders",
+    "thesis": "APT, BCH, SEI, SUI \u2014 the Diem diaspora. They tried to build crypto inside Facebook. Now they build it outside.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ex-facebook",
+      "top_n": 4,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 97,
+    "ticker": "PHDI",
+    "name": "PhD Founders Index",
+    "thesis": "All PhD teams return 1.7x \u2014 the lowest education bracket. But PhDs build infrastructure that lasts decades. The market misprices durability.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-phd",
+      "top_n": 8,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 98,
+    "ticker": "MBAM",
+    "name": "MBA Mcap",
+    "thesis": "MBA founders weighted by market value. ADA, APT, SUI \u2014 the protocols built by people who can read a balance sheet.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-mba",
+      "top_n": 11,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 99,
+    "ticker": "MILF",
+    "name": "Ex-Military Founders",
+    "thesis": "14 tokens from founders with military or intelligence backgrounds. Discipline, operational security, and a certain comfort with controlled chaos.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ex-military",
+      "top_n": 14,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 100,
+    "ticker": "MNAT",
+    "name": "Multinational Teams",
+    "thesis": "Founding teams with 2+ nationalities. 20 tokens. \"Has EU\" or \"Has CN\" teams outperform homogeneous ones at 3.7x. Diversity of perspective, not virtue signaling.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-multinational",
+      "top_n": 20,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 101,
+    "ticker": "USIN",
+    "name": "US + International Teams",
+    "thesis": "American founders paired with international co-founders. 12 tokens. The combination of US market access with global technical talent.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-us-intl",
+      "top_n": 12,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 102,
+    "ticker": "IMMG",
+    "name": "Immigrant Founders",
+    "thesis": "Founders building outside their home country. 14 tokens from people who crossed borders before they crossed industries. Immigration selects for risk tolerance.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-immigrant",
+      "top_n": 14,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 103,
+    "ticker": "IMMM",
+    "name": "Immigrant Mcap",
+    "thesis": "Immigrant founders by market cap. ETH (Vitalik: Russian-Canadian), ADA (Hoskinson: American in various), DOGE \u2014 the biggest protocols built by people in transit.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-immigrant",
+      "top_n": 14,
+      "weighting": "mcap",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 104,
+    "ticker": "TRFI",
+    "name": "Ex-TradFi Founders",
+    "thesis": "Goldman, JPMorgan, Deutsche Bank alumni who defected. Three tokens \u2014 small basket, strong thesis. They know what they're replacing.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ex-tradfi",
+      "top_n": 3,
+      "weighting": "equal",
+      "rebalance_days": 30
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 105,
+    "ticker": "SRFQ",
+    "name": "Serial + FNG Quality",
+    "thesis": "Serial entrepreneurs with FNG quality rotation. Repeat founders know when to build and when to conserve. Let the fear/greed cycle amplify their instincts.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-serial",
+      "top_n": 33,
+      "weighting": "equal",
+      "rebalance_days": 14
+    },
+    "overlays": {
+      "fng_mode": "quality_rotation"
+    },
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 106,
+    "ticker": "FDMO",
+    "name": "FAANG Defectors Momentum",
+    "thesis": "Ex-FAANG with momentum. These founders left the most comfortable jobs in tech. When their protocols gain momentum, it means the market is validating their bet.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-ex-faang",
+      "top_n": 11,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  },
+  {
+    "id": 107,
+    "ticker": "MNMO",
+    "name": "Multinational + Momentum",
+    "thesis": "Multinational teams riding momentum. Global teams ship globally \u2014 when they move, the move is cross-market.",
+    "section": "The Founder Thesis",
+    "config": {
+      "category_id": "founders-multinational",
+      "top_n": 20,
+      "weighting": "momentum_30",
+      "rebalance_days": 14
+    },
+    "overlays": null,
+    "on_chain": {
+      "itp_id": null,
+      "vault_address": null,
+      "deployed_at": null
+    }
+  }
+]
