@@ -31,7 +31,7 @@ Tick N+1 starts
 
 - **Multiplier** — all stakes weighted equally, no early-entry advantage
 - **Lock window** — `lockOffset = 0`, players can submit/change bets anytime
-- **Player-side `updateBitmap()` on-chain call** — issuers handle this on behalf of players
+- **Manual batch registration** — issuers auto-detect new batches from chain events
 - **vision-batches.json** — frontend uses live API data only
 - **Static batch IDs** — frontend matches batches by sourceId from proxy, not hardcoded IDs
 - **Hardcoded `VISION_SOURCES`** — source metadata (name, logo, description, category) loaded from data-node API
@@ -45,6 +45,266 @@ Tick N+1 starts
 - Bitmap UP/DOWN per market
 - `stakePerTick` — fixed amount at risk each active tick
 - Per-batch tick duration (varies by source category, set per config update)
+- **Commit-reveal bitmap model** — player commits hash on-chain before revealing to issuers (bet privacy preserved)
+
+---
+
+## Dataflow — Current System
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  DATA COLLECTION                                                     │
+│                                                                      │
+│  CoinGecko, Finnhub, NOAA, etc. ──→ DATA-NODE (Postgres)           │
+│                                      ├─ GET /vision/snapshot        │
+│                                      ├─ GET /batches/recommended    │
+│                                      └─ GET /batches/config/{hash}  │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  BATCH SETUP (manual, one-time)                                      │
+│                                                                      │
+│  DeployAllVisionBatches.s.sol                                        │
+│  ├─ Deploys 43 batches on Vision.sol                                 │
+│  ├─ Generates vision-batches.json (batchId, configHash, lockOffset) │
+│  └─ Frontend ships with this file baked in                           │
+│                                                                      │
+│  ⚠ Adding a source = redeploy batches + update JSON + frontend deploy│
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SOURCE REGISTRY (hardcoded in frontend)                             │
+│                                                                      │
+│  sources.ts → VISION_SOURCES (75 entries: name, logo, category)     │
+│  market-categories.ts → PREFIX_MAP (60+ prefixes)                   │
+│  VisionMarketsGrid.tsx → CATEGORY_GROUPS (14 display groups)        │
+│                                                                      │
+│  ⚠ Adding a source = frontend code change + deploy                   │
+└─────────────────────────────────────────────────────────────────────┘
+
+PLAYER BETTING FLOW (tick N):
+
+  Player                        Frontend              Issuer              Vision.sol
+    │                              │                     │                     │
+    │  1. View markets             │                     │                     │
+    │─────────────────────────────→│                     │                     │
+    │                              │  GET /api/snapshot  │                     │
+    │                              │────────────────────→│ (data-node)        │
+    │                              │←───── prices ───────│                     │
+    │←──── prices ─────────────────│                     │                     │
+    │                              │                     │                     │
+    │  2. Choose UP/DOWN, encode bitmap                  │                     │
+    │  3. Commit hash on-chain     │                     │                     │
+    │─────── updateBitmap(hash) ───┼─────────────────────┼────────────────────→│
+    │                              │                     │  stores bitmapHash  │
+    │                              │                     │←── ChainListener ───│
+    │                              │                     │                     │
+    │  4. Reveal bitmap to issuers │                     │                     │
+    │─────── POST /vision/bitmap ─→│                     │                     │
+    │                              │── fan-out ─────────→│                     │
+    │                              │                     │  verify hash match  │
+    │                              │                     │  store bitmap       │
+    │                              │                     │                     │
+    │  ⚠ LOCK WINDOW (lockOffset before tick end)        │                     │
+    │  ❌ Can't change bitmap after lock                  │                     │
+    │                              │                     │                     │
+
+TICK RESOLUTION:
+
+  Issuer Engine
+    │
+    ├─ Tick N ends
+    ├─ Fetch start/end prices from data-node
+    ├─ For each player:
+    │    ├─ Compute MULTIPLIER (time-based + commitment)    ← weighted
+    │    ├─ Decode bitmap → UP/DOWN per market
+    │    └─ Compare to price movement → win/lose
+    ├─ Parimutuel matching (weighted by multiplier)
+    ├─ BLS sign tick result (3 issuers co-sign)
+    └─ Player claims via claimRewards() + BLS proof
+
+CONFIG UPDATES (every 120s):
+
+  Config Orchestrator
+    ├─ GET /batches/recommended (data-node)
+    ├─ If config hash changed → BLS consensus → updateBatchConfig() on-chain
+    └─ ⚠ Blocked during lock window
+```
+
+## Dataflow — New System (Continuous Betting)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  DATA COLLECTION (unchanged)                                         │
+│                                                                      │
+│  CoinGecko, Finnhub, NOAA, etc. ──→ DATA-NODE (Postgres)           │
+│                                      ├─ GET /vision/snapshot        │
+│                                      ├─ GET /batches/recommended    │
+│                                      └─ NEW: GET /sources/registry  │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  BATCH SETUP (automatic)                                             │
+│                                                                      │
+│  1. Add source to data-node config                                   │
+│  2. GET /batches/recommended returns new source                      │
+│  3. Config orchestrator sees no on-chain batch for this source       │
+│  4. Orchestrator proposes createBatchAndJoin() via BLS consensus     │
+│  5. Issuers detect BatchCreated event → auto-register batch          │
+│  6. Batch appears in issuer API → frontend shows it                  │
+│                                                                      │
+│  ✅ Adding a source = data-node config only, zero deploys             │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  SOURCE REGISTRY (dynamic from data-node)                            │
+│                                                                      │
+│  data-node config → GET /sources/registry → frontend hook            │
+│  ├─ Names, logos, categories, prefixes — all from API                │
+│  ├─ useSourceRegistry() hook (SWR, 5min cache)                      │
+│  └─ Grid, detail, explorer all read from this                        │
+│                                                                      │
+│  ✅ Zero hardcoded sources in frontend                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+PLAYER BETTING FLOW (tick N — betting for tick N+1):
+
+  Player                        Frontend              Issuer              Vision.sol
+    │                              │                     │                     │
+    │  1. View markets             │                     │                     │
+    │─────────────────────────────→│                     │                     │
+    │                              │  GET /api/snapshot  │                     │
+    │                              │  GET /api/sources   │ (registry)         │
+    │                              │←── prices+meta ─────│                     │
+    │←──── prices ─────────────────│                     │                     │
+    │                              │                     │                     │
+    │  2. Choose UP/DOWN for NEXT tick (N+1)             │                     │
+    │  3. Commit hash on-chain     │                     │                     │
+    │─────── updateBitmap(hash) ───┼─────────────────────┼────────────────────→│
+    │                              │                     │  stores bitmapHash  │
+    │                              │                     │←── ChainListener ───│
+    │                              │                     │  → PENDING slot     │
+    │                              │                     │                     │
+    │  4. Reveal bitmap to issuers │                     │                     │
+    │─────── POST /vision/bitmap ─→│                     │                     │
+    │                              │── fan-out ─────────→│                     │
+    │                              │                     │  verify hash match  │
+    │                              │                     │  store in PENDING   │
+    │                              │                     │                     │
+    │  ✅ NO LOCK — can change anytime during tick        │                     │
+    │  ✅ No submit = sit out next tick (balance safe)    │                     │
+    │                              │                     │                     │
+
+TWO-SLOT BITMAP MODEL (per player per batch):
+
+  During tick N:
+  ┌───────────────────┐          ┌───────────────────┐
+  │   PENDING SLOT    │          │   ACTIVE SLOT     │
+  │                   │          │                   │
+  │ Submitted during  │          │ Submitted during  │
+  │ tick N            │          │ tick N-1          │
+  │ (for tick N+1)    │          │ (resolving now)   │
+  └─────────┬─────────┘          └─────────┬─────────┘
+            │     At tick boundary:         │
+            │                               │
+            ▼                               ▼
+  ┌───────────────────┐          ┌───────────────────┐
+  │ → becomes ACTIVE  │          │ → RESOLVED (PnL)  │
+  └───────────────────┘          └───────────────────┘
+
+  No pending = player sits out → balance unchanged
+
+TICK RESOLUTION:
+
+  Issuer Engine
+    │
+    ├─ Tick N ends
+    ├─ Fetch start/end prices from data-node
+    ├─ For each player with ACTIVE bitmap:
+    │    ├─ ❌ No multiplier — flat stakePerTick
+    │    ├─ Decode bitmap → UP/DOWN per market
+    │    └─ Compare to price movement → win/lose
+    ├─ Players without active bitmap → SIT OUT
+    ├─ Parimutuel matching (flat weighting)
+    ├─ BLS sign tick result (3 issuers co-sign)
+    │
+    │  TICK BOUNDARY (deterministic order):
+    │  1. Resolution + BLS signing + publish
+    │  2. Config promotion (if pending)
+    │  3. Bitmap flip: active = pending, pending = cleared
+    │
+    └─ Player claims via claimRewards() + BLS proof
+
+CONFIG UPDATES (every tick):
+
+  Config Orchestrator
+    ├─ GET /batches/recommended (data-node, bulk)
+    ├─ New source with no batch? → createBatchAndJoin() via BLS
+    ├─ Config hash changed? → updateBatchConfig() via BLS
+    ├─ New tickDuration → defines next tick's settlement time
+    └─ ✅ No lock guard — updates anytime
+```
+
+## Security & Privacy Model
+
+### Bet Privacy (Commit-Reveal)
+
+The commit-reveal scheme ensures **issuers cannot see your bets before they're committed on-chain**:
+
+```
+1. Player encodes bitmap (UP/DOWN per market)
+2. Player computes bitmapHash = keccak256(bitmap)
+3. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
+   → hash is now immutably committed on-chain
+   → nobody can see the actual bets yet (only the hash)
+4. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
+   → issuers verify: keccak256(revealed) == on-chain hash
+   → if mismatch: reject (player can't change bets after commit)
+```
+
+**What this prevents:**
+- Issuers seeing bets before commit → front-running impossible
+- Players changing bets after seeing price movements → hash locks the commitment
+- Issuers submitting fake bitmaps → hash must match on-chain commitment
+
+**This model is unchanged in the new system.** The only difference is WHEN bets apply: current system bets on tick N (same tick), new system bets on tick N+1 (next tick). The commit-reveal mechanism is identical.
+
+### Fund Safety
+
+| Layer | Protection | Attack prevented |
+|-------|-----------|-----------------|
+| **Deposits** | On-chain (Vision.sol), player's wallet tx | Issuers can't deposit/withdraw for you |
+| **Bitmap commit** | On-chain hash (player's wallet tx) | Issuers can't change your bets |
+| **Bitmap reveal** | keccak256 verification | Player can't change bets after commit |
+| **Tick resolution** | BLS consensus (3 issuers must agree) | Single issuer can't manipulate outcomes |
+| **Payouts (claimRewards)** | BLS-signed proof verified on-chain | Fake payouts rejected by contract |
+| **Withdrawals** | On-chain, player's wallet tx | Only player can withdraw their funds |
+| **Sit-out** | No active bitmap → balance unchanged | Not betting = no risk |
+
+### What Issuers Control vs What Players Control
+
+```
+PLAYER controls (on-chain, trustless):
+├─ Deposit USDC into Vision balance
+├─ Join a batch (stakePerTick, initial bitmap hash)
+├─ Update bitmap hash (commit new bets)
+├─ Claim rewards (with BLS proof from issuers)
+└─ Withdraw funds
+
+ISSUERS control (off-chain, BLS consensus required):
+├─ Tick resolution (price fetching, outcome computation)
+├─ Balance proof generation (BLS-signed)
+├─ Batch creation (new sources from data-node)
+├─ Config updates (markets, tickDuration)
+└─ Config orchestration (when to update, what markets)
+
+ISSUERS CANNOT:
+├─ Move player funds (deposits/withdrawals are player-only)
+├─ Change player bets (bitmap hash committed on-chain by player)
+├─ Forge payouts (BLS sig verified on-chain against registered keys)
+├─ Act alone (BLS requires threshold of issuers to agree)
+└─ See bets before commit (hash committed before reveal)
+```
 
 ---
 
@@ -120,27 +380,7 @@ Change to:
 2. Flip bitmaps: `active = pending`, `pending = cleared`
 3. Publish results via BLS consensus (existing flow)
 
-### 4. Issuer — Bitmap Relay (issuers call `updateBitmap()` on-chain)
-
-**Current flow:** Player calls `updateBitmap(batchId, bitmapHash)` on Vision.sol themselves, then submits the actual bitmap bytes to issuers via `POST /vision/bitmap`. Two transactions: one on-chain (player pays gas), one off-chain.
-
-**New flow:** Player only submits bitmap bytes to issuers via `POST /vision/bitmap`. The **issuer** calls `updateBitmap()` on-chain on behalf of the player. One step for the player, zero on-chain transactions from their wallet for bitmap updates.
-
-**How it works:**
-1. Player sends `POST /vision/bitmap` with `{ batchId, bitmap, signature }` to all issuers (fan-out via frontend proxy, same as today)
-2. Issuer receives bitmap, computes `bitmapHash = keccak256(bitmap)`
-3. Issuer stores bitmap in pending slot (in-memory + Postgres)
-4. **Leader issuer** batches all pending bitmap hashes and calls `updateBitmap(batchId, player, bitmapHash)` on-chain via BLS-signed transaction
-5. Contract stores `bitmapHash` in player's position (existing logic)
-6. Other issuers see the on-chain event and confirm their local state matches
-
-**Requires contract change:** `updateBitmap()` currently requires `msg.sender == player`. Change to allow issuer-signed calls: add a `updateBitmapFor(batchId, player, bitmapHash, blsSig, nonce, bitmask)` function that verifies BLS signature from registered issuers, similar to `claimRewards()`.
-
-**Batching:** Issuers can batch multiple bitmap updates into a single transaction per tick. Collect all bitmap submissions during the tick, then submit them together before resolution. This reduces gas costs significantly (one tx per tick per batch instead of one tx per player per submission).
-
-**Player signature:** The `POST /vision/bitmap` request must include a player signature (EIP-712 typed data: `{ batchId, bitmapHash, nonce }`) so issuers can prove the player authorized this bitmap. This prevents issuers from submitting arbitrary bitmaps.
-
-### 5. Issuer — Batch Auto-Detection from Chain Events
+### 4. Issuer — Batch Auto-Detection from Chain Events
 
 **Current flow:** Issuers know about batches from their startup config or manual registration. The config orchestrator checks for config updates but doesn't discover new batches.
 
@@ -156,15 +396,13 @@ Change to:
 
 **Who creates batches?** The config orchestrator. When the data-node's `GET /batches/recommended` returns a source that has no on-chain batch yet, the orchestrator proposes `createBatchAndJoin()` via BLS consensus. This means: add a source to the data-node → orchestrator creates the batch → issuers detect it → frontend shows it. Fully automatic pipeline.
 
-### 6. Contract — Vision.sol
+### 5. Contract — Vision.sol (minimal)
 
-**Changes required:**
+**No code changes required.** All behavioral changes are issuer-side. Bitmap commit-reveal stays the same (player calls `updateBitmap()` on-chain, reveals to issuers).
 
-1. **`updateBitmapFor()`** — New function allowing issuers to update a player's bitmap hash on their behalf, with BLS signature verification. Same pattern as `claimRewards()`.
-
-2. **`lockOffset = 0`**: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
-3. **`_requireNotLocked` check**: becomes a no-op when `lockOffset = 0`
-4. Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
+- `lockOffset = 0`: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
+- `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
+- Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
 **One-time migration**: For each of the 43 batches:
 1. Read `batches[batchId].nonce` on-chain to get current config nonce
@@ -173,7 +411,7 @@ Change to:
 
 This is 43 sequential calls in a single migration script. Note: setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
 
-### 7. Frontend — Remove Static Dependencies
+### 6. Frontend — Remove Static Dependencies
 
 **Delete `frontend/lib/contracts/vision-batches.json`.**
 
@@ -189,7 +427,7 @@ All batch data comes from live API:
 **Update `SourceDetail.tsx`:**
 - Same: remove static fallback, use live data only
 
-### 8. Frontend — Remove Multiplier UI
+### 7. Frontend — Remove Multiplier UI
 
 **Files to clean up:**
 - `frontend/lib/vision/tick.ts` — remove `getMultiplier()`, `lockOffset` from `getBatchTickState()`, update `getSourceKeyForBatch()` / `getBatchDisplayName()` / `getBatchLogo()` / `getAllBatches()` to not depend on static config
@@ -199,12 +437,12 @@ All batch data comes from live API:
 - `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references
 - `frontend/hooks/vision/useBitmapEditor.ts` — no changes needed (bitmap UP/DOWN stays)
 
-### 9. Frontend — Continuous Betting UX
+### 8. Frontend — Continuous Betting UX
 
 **BatchEntryPanel changes:**
 - Always open for submissions (no "locked" disabled state)
 - Header: "Set predictions for next tick" (not "Enter Batch")
-- Submit flow: player signs bitmap (EIP-712) → `POST /vision/bitmap` → issuers handle on-chain `updateBitmapFor()`. **No wallet transaction needed** for bitmap updates — only a signature.
+- Submit flow unchanged: player commits `bitmapHash` on-chain (`updateBitmap()`) → reveals bitmap bytes to issuers (`POST /vision/bitmap`). Commit-reveal preserved.
 - After submit: "Your bets are set for tick N+1" confirmation
 - Show active status: "You have active bets on tick N" when participating
 - Show sit-out status: "No bets set — sitting out this tick" when player didn't submit
@@ -216,7 +454,7 @@ All batch data comes from live API:
 - Timer is just a countdown, no lock phase
 - Consider adding: "ACTIVE BETTORS" count (players with active bitmaps for current tick)
 
-### 10. Frontend — Remove vision-batches.json Consumers
+### 9. Frontend — Remove vision-batches.json Consumers
 
 **Files referencing vision-batches.json:**
 - `frontend/components/domain/vision/detail/SourceDetail.tsx` — static batch lookup
@@ -228,7 +466,7 @@ All batch data comes from live API:
 
 The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the issuer API response: issuers already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
 
-### 11. Data-node — Config Recommendations
+### 10. Data-node — Config Recommendations
 
 **Endpoint already exists**: `GET /batches/recommended` (bulk, returns all sources at once)
 
@@ -252,7 +490,7 @@ Data-node generates this from its source-specific data collection. Markets can c
 
 The issuer config orchestrator calls this bulk endpoint and proposes updates per-source when the config hash changes.
 
-### 12. Tick Scheduling — Each Config Defines Next Settlement
+### 11. Tick Scheduling — Each Config Defines Next Settlement
 
 Each `updateBatchConfig()` call sets the tick duration for subsequent ticks. The config includes `tickDuration` which defines how long the next tick runs. Settlement time is deterministic:
 
@@ -272,7 +510,7 @@ This means the data-node controls tick pacing per source. If a source wants fast
 
 **Frontend timer** already reads `tickDuration` from the batch API response and computes countdown. No change needed — it naturally shows the correct countdown for the current tick.
 
-### 13. Frontend — Dynamic Source Registry (Remove Hardcoded VISION_SOURCES)
+### 12. Frontend — Dynamic Source Registry (Remove Hardcoded VISION_SOURCES)
 
 **Current problem:** `frontend/lib/vision/sources.ts` hardcodes 75+ sources with metadata (name, logo, description, category, prefixes). Adding a new data source requires a frontend deploy. Same for `CATEGORY_GROUPS` in `VisionMarketsGrid.tsx`, `PREFIX_MAP` in `market-categories.ts`, and `SOURCE_CATEGORIES` in `source-categories.ts`.
 
@@ -353,11 +591,9 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 - **Integration test**: Concurrent bitmap submission during tick flip — verify correct slot assignment
 - **Config orchestrator**: Mock data-node `GET /batches/recommended` returns new config → verify on-chain update
 - **Migration script**: Run against local Anvil — verify all 43 batches get `lockOffset = 0`
-- **Contract**: `updateBitmapFor()` with valid BLS sig → bitmap hash stored. Without BLS sig → revert.
-- **Issuer bitmap relay**: Player signs bitmap → issuer batches → calls `updateBitmapFor()` → on-chain hash matches
 - **Batch auto-detection**: Deploy new batch on-chain → issuers pick up `BatchCreated` event → batch appears in API
 - **Auto-creation pipeline**: Add source to data-node → orchestrator creates batch → issuers detect → frontend shows
-- **E2E**: Player submits bet (signature only, no on-chain tx), waits for tick, verifies payout
+- **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
 - **Frontend**: Verify no references to vision-batches.json, multiplier UI gone, continuous betting UX works
 - **Frontend**: Verify `tick.ts` functions work without static config (use live API data only)
 - **Frontend**: Source grid loads entirely from data-node — no hardcoded sources, new sources appear automatically
@@ -385,14 +621,14 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 | `SOURCE_CATEGORIES` / `getCategoryCounts()` | `frontend/lib/vision/source-categories.ts` — from API |
 | `PREFIX_MAP` / `BARE_CRYPTO` / `CATEGORY_ORDER` | `frontend/lib/vision/market-categories.ts` — from API |
 | `CATEGORY_GROUPS` / `SOURCE_DISPLAY_OVERRIDES` | `VisionMarketsGrid.tsx` — from API |
-| Player-side `updateBitmap()` call | Issuers call `updateBitmapFor()` on behalf of players |
+| Manual batch registration | Issuers auto-detect from `BatchCreated` chain events |
 | Early-entry incentive | Entire concept removed |
 
 ## What Stays
 
 | Component | Unchanged |
 |-----------|-----------|
-| Vision.sol contract | Add `updateBitmapFor()` (issuer-relayed bitmap), rest unchanged |
+| Vision.sol contract | No code changes |
 | Parimutuel settlement | Same matching logic |
 | BLS consensus | Same signing/verification |
 | Deposit/withdraw | Same flow |
