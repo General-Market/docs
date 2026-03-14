@@ -3370,6 +3370,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
 
         if missing_price || prices.is_empty() {
             warn!(itp_id = ?itp_h256, "Stalling rebalance — missing prices, will retry next cycle");
+            orchestrator.read().await.mark_rebalance_completed(&itp_h256).await;
             continue;
         }
 
@@ -3403,6 +3404,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
         }
         if missing_add_price {
             warn!(itp_id = ?itp_h256, "Stalling rebalance — missing added asset prices, will retry next cycle");
+            orchestrator.read().await.mark_rebalance_completed(&itp_h256).await;
             continue;
         }
 
