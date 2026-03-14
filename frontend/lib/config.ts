@@ -10,10 +10,11 @@ export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || 'http://localh
 export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
 
 // ── Client-side URLs (NEXT_PUBLIC_ prefix for browser exposure) ──
-// Browser: use /api/dn streaming proxy (Next.js rewrites buffer SSE, breaking streaming).
-// Override with NEXT_PUBLIC_DATA_NODE_BROWSER_URL if needed.
+// Browser: always use /api/dn streaming proxy — direct IP URLs are blocked by mixed-content
+// policy when the site is served over HTTPS (generalmarket.io). The proxy handles both
+// regular JSON and SSE streams without buffering.
 export const DATA_NODE_URL = typeof window !== 'undefined'
-  ? (process.env.NEXT_PUBLIC_DATA_NODE_BROWSER_URL || '/api/dn')
+  ? '/api/dn'
   : (process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200')
 export const L3_RPC_URL = process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8546'

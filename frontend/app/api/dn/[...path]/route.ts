@@ -13,6 +13,8 @@ import { DATA_NODE_SERVER } from '@/lib/config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+// Simulations can take 2–5 minutes on first run (no cache) — extend to 300s max
+export const maxDuration = 300
 
 export async function GET(
   request: NextRequest,
