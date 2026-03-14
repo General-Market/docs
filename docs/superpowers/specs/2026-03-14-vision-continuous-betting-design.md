@@ -125,33 +125,38 @@ TICK RESOLUTION:
 
 CONFIG RESOLUTION (how frontend/bots know what markets are in a batch):
 
-  Issuer                          Data-node                    Vision.sol
-    │                                │                             │
-    │  1. Decide new config          │                             │
-    │     (markets, order, thresholds)                             │
-    │  2. BLS consensus              │                             │
-    │  3. Push config data ─────────→│  stores config by hash      │
-    │  4. Push configHash on-chain ──┼────────────────────────────→│
-    │                                │                             │
+  Data-node                         Issuer                       Vision.sol
+    │                                  │                              │
+    │  1. Generate recommended config  │                              │
+    │     (markets, order, thresholds) │                              │
+    │     Store unsigned config        │                              │
+    │                                  │                              │
+    │  2. GET /batches/recommended ←───│                              │
+    │  ──→ recommended configs         │                              │
+    │                                  │  3. BLS consensus            │
+    │                                  │  4. Push configHash ────────→│
+    │  5. POST /batches/signed ←───────│  (signed config + BLS sig)  │
+    │     Store signed config in DB    │                              │
 
-  Frontend/Bot                    Data-node                    Vision.sol
-    │                                │                             │
-    │  1. Read configHash from chain ┼────────────────────────────→│
-    │     (or from issuer API)       │                             │
-    │  2. Fetch config data ────────→│                             │
-    │     GET /batches/config/{hash} │                             │
-    │  ←─ market list + order ───────│                             │
-    │  3. Now knows: bit 0 = market A, bit 1 = market B, ...      │
-    │  4. Player picks UP/DOWN per market                          │
-    │  5. Encodes bitmap, commits hash on-chain                    │
+  Frontend/Bot                      Data-node
+    │                                  │
+    │  GET /batches/signed ───────────→│  (poll every 15s)
+    │  ←─ signed configs with markets ─│
+    │  OR                              │
+    │  GET /batches/config/{hash} ────→│  (lookup by hash)
+    │  ←─ market list + order ─────────│
+    │                                  │
+    │  Now knows: bit 0 = market A, bit 1 = market B, ...
+    │  Player picks UP/DOWN per market
+    │  Encodes bitmap, commits hash on-chain
 
 CONFIG UPDATES (every 120s):
 
   Config Orchestrator
-    ├─ GET /batches/recommended (data-node)
+    ├─ GET /batches/recommended (data-node generates config, issuer reads)
     ├─ If config hash changed → BLS consensus
-    │    ├─ Push new config data to data-node
-    │    └─ Push configHash on-chain via updateBatchConfig()
+    │    ├─ Push configHash on-chain via updateBatchConfig()
+    │    └─ POST /batches/signed to data-node (signed config for storage)
     └─ ⚠ Blocked during lock window
 ```
 
@@ -191,27 +196,29 @@ CONFIG UPDATES (every 120s):
 │  ✅ Zero hardcoded sources in frontend                                │
 └─────────────────────────────────────────────────────────────────────┘
 
-CONFIG RESOLUTION (same as current, issuer pushes config to data-node):
+CONFIG RESOLUTION (data-node generates, issuer signs, data-node stores):
 
-  Issuer                          Data-node                    Vision.sol
-    │                                │                             │
-    │  1. Decide new config (BLS)    │                             │
-    │  2. Push config data ─────────→│  stores config by hash      │
-    │  3. Push configHash on-chain ──┼────────────────────────────→│
-    │                                │                             │
-    │  New source? → createBatchAndJoin() via BLS                  │
-    │  Config changed? → updateBatchConfig() via BLS               │
-    │  ✅ No lock guard — updates anytime                           │
+  Data-node                         Issuer                       Vision.sol
+    │                                  │                              │
+    │  1. Generate recommended config  │                              │
+    │  2. GET /batches/recommended ←───│                              │
+    │  ──→ recommended configs         │                              │
+    │                                  │  3. BLS consensus            │
+    │                                  │  4. Push configHash ────────→│
+    │  5. POST /batches/signed ←───────│  (signed config + BLS sig)  │
+    │     Store signed config in DB    │                              │
+    │                                  │                              │
+    │  New source? → createBatchAndJoin() via BLS consensus          │
+    │  Config changed? → updateBatchConfig() via BLS consensus       │
+    │  ✅ No lock guard — updates anytime                             │
 
-  Frontend/Bot                    Data-node                    Vision.sol
-    │                                │                             │
-    │  1. Read configHash            │                             │
-    │     (from issuer API or chain) │                             │
-    │  2. GET /batches/config/{hash}→│                             │
-    │  ←─ market list + order ───────│                             │
-    │  3. bit 0 = market A, bit 1 = market B, ...                  │
-    │  4. Player picks UP/DOWN                                     │
-    │  5. Commits bitmapHash on-chain                              │
+  Frontend/Bot                      Data-node
+    │                                  │
+    │  GET /batches/signed ───────────→│  (signed configs + markets)
+    │  OR GET /batches/config/{hash} ─→│  (lookup by hash)
+    │  ←─ market list + order ─────────│
+    │  bit 0 = market A, bit 1 = market B, ...
+    │  Player picks UP/DOWN, commits bitmapHash on-chain
 
 PLAYER BETTING FLOW (tick N — betting for tick N+1):
 
@@ -287,17 +294,17 @@ TICK RESOLUTION:
 CONFIG UPDATES (every tick, fully automatic):
 
   Config Orchestrator
-    ├─ GET /batches/recommended (data-node, bulk)
+    ├─ GET /batches/recommended (data-node generates configs, issuer reads)
     ├─ New source with no batch?
     │    ├─ BLS consensus on createBatchAndJoin()
-    │    ├─ Push config data to data-node
-    │    └─ Push on-chain → issuers detect BatchCreated event
+    │    ├─ Push on-chain → issuers detect BatchCreated event
+    │    └─ POST /batches/signed to data-node (signed config for storage)
     ├─ Config hash changed for existing batch?
     │    ├─ BLS consensus on updateBatchConfig()
-    │    ├─ Push new config data to data-node (by hash)
-    │    └─ Push configHash on-chain
+    │    ├─ Push configHash on-chain
+    │    └─ POST /batches/signed to data-node (signed config for storage)
     ├─ New tickDuration → defines next tick's settlement time
-    └─ ✅ No lock guard — updates anytime
+    └─ ✅ No lock guard — updates anytime (remove is_in_lock_period checks)
 ```
 
 ## Security & Privacy Model
@@ -307,16 +314,17 @@ CONFIG UPDATES (every tick, fully automatic):
 The commit-reveal scheme ensures **issuers cannot see your bets before they're committed on-chain**:
 
 ```
-1. Issuer pushes batch config (market list, order) to data-node
-2. Issuer pushes configHash on-chain via updateBatchConfig()
-3. Frontend/bot reads configHash → fetches config from data-node
+1. Data-node generates batch config (market list, order, thresholds)
+2. Issuer fetches recommendation, BLS consensus, pushes configHash on-chain
+3. Issuer posts signed config to data-node for storage (POST /batches/signed)
+4. Frontend/bot fetches signed config from data-node (GET /batches/signed or /batches/config/{hash})
    → now knows: bit 0 = market A, bit 1 = market B, ...
-4. Player picks UP/DOWN per market, encodes bitmap
-5. Player computes bitmapHash = keccak256(bitmap)
-6. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
+5. Player picks UP/DOWN per market, encodes bitmap
+6. Player computes bitmapHash = keccak256(bitmap)
+7. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
    → hash is now immutably committed on-chain
    → nobody can see the actual bets yet (only the hash)
-7. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
+8. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
    → issuers verify: keccak256(revealed) == on-chain hash
    → if mismatch: reject (player can't change bets after commit)
 ```
@@ -424,6 +432,10 @@ Flip at tick boundary during resolution.
 
 **Failure mode**: If config update fails (BLS quorum not reached, RPC down), current config persists. No harm — markets just stay the same for another tick.
 
+**Remove lock period checks.** Currently `publish_to_data_node()` (line 320) and `replicate_to_own_data_node()` (line 357) skip during lock period. With `lockOffset = 0` these checks are dead code — remove `is_in_lock_period()` and all callers.
+
+**Add batch auto-creation.** When `GET /batches/recommended` returns a source with no on-chain batch, propose `createBatchAndJoin()` via BLS consensus. Currently the orchestrator only updates existing batches.
+
 ### 3. Issuer — Tick Engine (`issuer/src/vision/engine.rs`)
 
 **Remove multiplier from PnL calculation.** The `TickResolver` currently:
@@ -495,7 +507,8 @@ All batch data comes from live API:
 - `frontend/components/domain/vision/detail/SourceDetail.tsx` — remove Multiplier column from batch bar
 - `frontend/components/domain/vision/detail/BatchEntryPanel.tsx` — remove multiplier display, lock state warnings
 - `frontend/components/domain/vision/sources/NextBatches.tsx` — remove `lockOffset` prop, `getMultiplier()` call
-- `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references
+- `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references. This hook already fetches `GET /batches/signed` from data-node (market list + BLS sig) — it's the main source of config data for the frontend.
+- `frontend/components/domain/vision/detail/MarketsTable.tsx` — currently reads configHash from vision-batches.json to call `GET /batches/config/{hash}`. Switch to use live batch data (from `useBatches()` or `useSignedBatches()`).
 - `frontend/hooks/vision/useBitmapEditor.ts` — no changes needed (bitmap UP/DOWN stays)
 
 ### 8. Frontend — Continuous Betting UX
@@ -527,29 +540,20 @@ All batch data comes from live API:
 
 The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the issuer API response: issuers already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
 
-### 10. Data-node — Config Recommendations
+### 10. Data-node — Changes
 
-**Endpoint already exists**: `GET /batches/recommended` (bulk, returns all sources at once)
+**Existing endpoints (no changes needed):**
+- `GET /batches/recommended` — returns unsigned recommended configs per source. Data-node generates these every 60s from collected market data.
+- `GET /batches/config/{hash}` — resolves configHash to full config (market list, order). Lookup chain: memory → DB → deploy-hash reverse.
+- `GET /batches/signed` — returns BLS-signed configs (latest per source). Frontend polls this every 15s.
+- `POST /batches/signed` — stores signed config from issuer (after BLS consensus). Already validates hash tampering (DN-1) and nonce monotonicity (DN-4).
+- `POST /batches/replicate` — follower issuers replicate signed configs.
 
-Returns a `RecommendedBatchesResponse` with a `batches` array, each entry containing:
-```json
-{
-  "sourceId": "stocks",
-  "configHash": "0x...",
-  "markets": [
-    { "assetId": "bitcoin", "resolutionType": "up_x", "thresholdBps": 200 }
-  ],
-  "tickDuration": 600,
-  "lockOffset": 0
-}
-```
+**Remove lock period freeze.** `batch_engine.rs` (line 454-462) skips config generation during lock periods. With `lockOffset = 0`, remove this check.
 
-Data-node generates this from its source-specific data collection. Markets can change based on:
-- Data availability (source API up/down)
-- New assets added to a source
-- Seasonal relevance (e.g., sports seasons, market hours)
+**New endpoint: `GET /sources/registry`** — returns source display metadata (name, logo, description, category, prefixes) for all active sources. See section 12.
 
-The issuer config orchestrator calls this bulk endpoint and proposes updates per-source when the config hash changes.
+**Set `lockOffset = 0` in generated configs.** `batch_engine.rs` currently sets `lockOffset` based on source config. Force to 0 for all sources.
 
 ### 11. Tick Scheduling — Each Config Defines Next Settlement
 
