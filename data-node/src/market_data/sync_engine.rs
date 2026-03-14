@@ -286,11 +286,14 @@ impl SyncEngine {
                 "INSERT INTO market_assets (asset_id, source, symbol, name, category, is_active, metadata, updated_at) ",
             );
             qb.push_values(chunk, |mut b, asset| {
+                let name_trunc: String = asset.name.chars().take(200).collect();
+                let symbol_trunc: String = asset.symbol.chars().take(100).collect();
+                let cat_trunc: String = asset.category.as_deref().map(|c| c.chars().take(100).collect()).unwrap_or_default();
                 b.push_bind(&asset.asset_id)
                     .push_bind(source_id)
-                    .push_bind(&asset.symbol)
-                    .push_bind(&asset.name)
-                    .push_bind(&asset.category)
+                    .push_bind(symbol_trunc)
+                    .push_bind(name_trunc)
+                    .push_bind(cat_trunc)
                     .push_bind(true)
                     .push_bind(&asset.metadata)
                     .push_bind(now);
@@ -420,7 +423,7 @@ impl SyncEngine {
             rows_to_write.push(PriceRow {
                 asset_id: price.asset_id.clone(),
                 source: source_id.to_string(),
-                symbol: price.symbol.clone(),
+                symbol: price.symbol.chars().take(100).collect(),
                 value: price.value,
                 prev_close,
                 change_pct,
