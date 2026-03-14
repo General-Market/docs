@@ -169,7 +169,7 @@ export function Header() {
                 height={24}
                 className="w-6 h-6"
               />
-              <span className="text-[22px] font-black tracking-[-0.03em] text-black">
+              <span className="hidden sm:inline text-[22px] font-black tracking-[-0.03em] text-black">
                 {t('brand.logo_text')}
               </span>
             </div>
@@ -196,9 +196,9 @@ export function Header() {
               >
                 {t('nav.vision')}
               </Link>
-              <div className="ml-4 flex items-center gap-3">
+              <div className="ml-4 hidden lg:flex items-center gap-3">
                 <Link href="/explorer" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.explorer')}</Link>
-                <Link href="/points" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('footer.points')}</Link>
+                <Link href="/points" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.points')}</Link>
                 <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.about')}</Link>
               </div>
             </nav>
@@ -255,7 +255,7 @@ export function Header() {
                 </button>
               )}
               {/* Hamburger */}
-              <div className="relative sm:hidden">
+              <div className="relative lg:hidden">
                 <button
                   className="p-2 text-text-muted hover:text-text-primary"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
