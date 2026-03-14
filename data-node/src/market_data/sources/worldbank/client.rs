@@ -167,7 +167,7 @@ impl MarketDataSource for WorldBankMarketSource {
                     if let Some(points) = data.get(1).and_then(|v| v.as_array()) {
                         for point in points {
                             if let (Some(country_obj), Some(value)) = (
-                                point.get("country").and_then(|c| c.get("id")).and_then(|id| id.as_str()),
+                                point.get("countryiso3code").and_then(|id| id.as_str()),
                                 point.get("value").and_then(|v| v.as_f64()),
                             ) {
                                 // Only insert first occurrence (most recent value)

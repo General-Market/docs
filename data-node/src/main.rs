@@ -1852,22 +1852,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("PubMed biomedical research started");
     }
 
-    // Stack Exchange — gated on STACKEXCHANGE_KEY env var
-    if std::env::var("STACKEXCHANGE_KEY").is_ok() {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("stackexchange", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::stackexchange::StackExchangeMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("Stack Exchange init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("Stack Exchange developer Q&A started");
-    }
+    // Stack Exchange — disabled: api.stackexchange.com returns Cloudflare 403 from EU VPS
+    // if std::env::var("STACKEXCHANGE_KEY").is_ok() {
+    //     ...
+    // }
 
     // Queue-Times — theme park wait times (no key)
     {
@@ -2183,12 +2171,29 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
             async move {
                 match market_data::sources::worldbank::WorldBankMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
                     Err(e) => { tracing::error!("World Bank init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
                 }
             }
         });
         info!("World Bank started");
+    }
+
+    // Lichess Chess — no key needed (public API)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("lichess", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::lichess::LichessMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("Lichess Chess init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
+                }
+            }
+        });
+        info!("Lichess Chess started");
     }
 
     // Record not_started for any source that was gated off (missing keys, disabled flags)
@@ -2305,6 +2310,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         tracker.record_not_started("cbp_border", "bwt.cbp.dhs.gov returns 403 from EU VPS");
         tracker.record_not_started("ioda", "CAIDA IODA API returns 0 prices (broken response)");
         tracker.record_not_started("reddit", "Public mode returns 0 subreddits — needs OAuth credentials");
+        tracker.record_not_started("stackexchange", "api.stackexchange.com returns Cloudflare 403 from EU VPS");
 
     }
 
