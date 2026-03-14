@@ -126,7 +126,7 @@ test.describe('Backtester Smoke Tests', () => {
     // Data-node sim cache takes time to load — poll until both categories AND sim engine are ready.
     // On testnet, CoinGecko historical data may not be fetched yet (coin_count=0).
     // This is data-infrastructure dependent: if data-node hasn't fetched CG history, tests can't run.
-    const warmupMs = IS_ANVIL ? 60_000 : 120_000
+    const warmupMs = IS_ANVIL ? 60_000 : 180_000
     const deadline = Date.now() + warmupMs
     while (Date.now() < deadline) {
       try {
