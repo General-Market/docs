@@ -962,8 +962,16 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                         let nav = local_nav_fallback;
                         tokio::spawn(async move {
                             let _guard = FlagGuard(flag);
-                            let success = run_price_update(p, pf, cr, l3w, oracle_addr, itp_addr, cid, addrs, cycle, metrics, rpc_ts, nav).await;
-                            let _ = ptx.send(success).await;
+                            match tokio::time::timeout(
+                                std::time::Duration::from_secs(30),
+                                async {
+                                    let success = run_price_update(p, pf, cr, l3w, oracle_addr, itp_addr, cid, addrs, cycle, metrics, rpc_ts, nav).await;
+                                    let _ = ptx.send(success).await;
+                                },
+                            ).await {
+                                Ok(()) => {},
+                                Err(_) => warn!(cycle, "Price update timed out after 30s, releasing flag"),
+                            }
                         });
                     }
 
@@ -995,7 +1003,13 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs).await;
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(60),
+                                    run_itp_creation_phase(p, ar, aw, cw, ic, cycle, ni, nu, fs),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "ITP creation timed out after 60s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1024,9 +1038,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let sbo = startup_buy_orders.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_cross_chain_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo,
-                                ).await;
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(60),
+                                    run_cross_chain_processing(
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo,
+                                    ),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "Cross-chain buy processing timed out after 60s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1054,9 +1074,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_cross_chain_buy_post_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None,
-                                ).await;
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(60),
+                                    run_cross_chain_buy_post_processing(
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None,
+                                    ),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "Cross-chain buy post-processing timed out after 60s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1161,9 +1187,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let sso = startup_sell_orders.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_cross_chain_sell_processing(
-                                    p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso,
-                                ).await;
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(60),
+                                    run_cross_chain_sell_processing(
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso,
+                                    ),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "Cross-chain sell processing timed out after 60s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1189,9 +1221,17 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_l3_native_order_processing(
-                                    p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt, met,
-                                ).await;
+                                // Timeout prevents l3_active flag from staying true forever
+                                // if an RPC call hangs (root cause of order buildup)
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(30),
+                                    run_l3_native_order_processing(
+                                        p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt, met,
+                                    ),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "L3 order processing timed out after 30s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1214,9 +1254,15 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let nu = consensus_config.num_issuers;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
-                                run_rebalance_processing(
-                                    p, orch, cr, cycle, ni, nu, pf, sm, qt,
-                                ).await;
+                                match tokio::time::timeout(
+                                    std::time::Duration::from_secs(60),
+                                    run_rebalance_processing(
+                                        p, orch, cr, cycle, ni, nu, pf, sm, qt,
+                                    ),
+                                ).await {
+                                    Ok(()) => {},
+                                    Err(_) => warn!(cycle, "Rebalance processing timed out after 60s, releasing flag"),
+                                }
                             });
                         }
                     }
@@ -1241,8 +1287,13 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                     let cycle = current_cycle;
                                     tokio::spawn(async move {
                                         let _guard = FlagGuard(flag);
-                                        if let Err(e) = mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle).await {
-                                            warn!(cycle, error = %e, "Mirror registry sync failed");
+                                        match tokio::time::timeout(
+                                            std::time::Duration::from_secs(90),
+                                            mirror_sync_task(&cr, &aw, &p, mirror_addr, settlement_cid, cycle),
+                                        ).await {
+                                            Ok(Err(e)) => warn!(cycle, error = %e, "Mirror registry sync failed"),
+                                            Ok(Ok(())) => {},
+                                            Err(_) => warn!(cycle, "Mirror registry sync timed out after 90s, releasing flag"),
                                         }
                                     });
                                 }
@@ -1286,11 +1337,16 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                 let s_cid = vision_ops_settlement_chain_id_for_task;
                                 tokio::spawn(async move {
                                     let _guard = FlagGuard(flag);
-                                    if let Err(e) = p.run_vision_ops(
-                                        &q, &l3p, &sp, &l3w, &sw,
-                                        va, ca, l3_cid, s_cid,
+                                    match tokio::time::timeout(
+                                        std::time::Duration::from_secs(60),
+                                        p.run_vision_ops(
+                                            &q, &l3p, &sp, &l3w, &sw,
+                                            va, ca, l3_cid, s_cid,
+                                        ),
                                     ).await {
-                                        warn!(error = %e, "Vision ops consensus task failed");
+                                        Ok(Err(e)) => warn!(error = %e, "Vision ops consensus task failed"),
+                                        Ok(Ok(())) => {},
+                                        Err(_) => warn!("Vision ops timed out after 60s, releasing flag"),
                                     }
                                 });
                             }

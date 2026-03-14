@@ -637,6 +637,13 @@ where
         let mut completed_itps = Vec::new();
 
         for (itp_id, (new_weights, remove_indices, add_assets, proposed_at_block, return_count)) in &known {
+            warn!(
+                itp_id = ?H256::from(*itp_id),
+                return_count,
+                proposed_at_block,
+                latest_block,
+                "Checking rebalance"
+            );
             // Skip stale rebalances older than ~2 hours (~7200 blocks at 1s/block)
             if latest_block > *proposed_at_block && latest_block - *proposed_at_block > 7200 {
                 info!(
