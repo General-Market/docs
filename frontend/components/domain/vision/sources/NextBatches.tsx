@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import { getAllBatches, getBatchTickState, getMultiplier, formatTickDuration, type StaticBatch } from '@/lib/vision/tick'
 import { useBatches } from '@/hooks/vision/useBatches'
+import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
+import { getSourceStatusFromMeta, getVisionSourceId } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import Image from 'next/image'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 
 interface BatchWithTick extends StaticBatch {
   remaining: number
@@ -113,6 +115,7 @@ function BatchCard({ batch }: { batch: BatchWithTick }) {
 export function NextBatches() {
   const staticBatches = useMemo(() => getAllBatches(), [])
   const { data: apiBatches } = useBatches()
+  const { data: meta } = useMarketSnapshotMeta()
 
   // Initialize with 0 to avoid hydration mismatch (Date.now() differs server vs client,
   // causing React to discard server DOM and re-render — detaching all event handlers temporarily)
@@ -144,6 +147,18 @@ export function NextBatches() {
     )
 
     return staticBatches
+      .filter(batch => {
+        // Only show batches for sources confirmed as working via meta health
+        // When meta is unavailable, hide all batches (better than showing empty ones)
+        if (!meta?.sources) return false
+        const frontendId = getVisionSourceId(batch.sourceKey)
+        const status = getSourceStatusFromMeta(frontendId, meta.sources)
+        if (status !== 'healthy' && status !== 'stale') {
+          const assetCount = meta.assetCounts?.[frontendId] ?? 0
+          if (assetCount === 0) return false
+        }
+        return true
+      })
       .map(batch => {
         const apiTickDuration = apiTickDurationMap.get(batch.batchId)
         const tick = getBatchTickState(
@@ -155,10 +170,18 @@ export function NextBatches() {
         return { ...batch, ...tick }
       })
       .sort((a, b) => a.remaining - b.remaining)
-  }, [staticBatches, apiBatches, now])
+  }, [staticBatches, apiBatches, meta, now])
 
   // Count how many are locked right now
   const lockedCount = sortedBatches.filter(b => b.isLocked).length
+
+  // Hide section when no batches to show
+  if (sortedBatches.length === 0) return null
+  // Hide when the latest on-chain batch has no markets (system not creating markets)
+  if (apiBatches && apiBatches.length > 0) {
+    const latestBatch = apiBatches.reduce((a, b) => (a.id > b.id ? a : b))
+    if (latestBatch.marketCount === 0) return null
+  }
 
   return (
     <div className="px-6 lg:px-12">

@@ -27,12 +27,12 @@ export default function SourcesPageClient() {
   const totalAssets = sources.reduce((sum, s) => sum + s.totalAssets, 0)
 
   return (
-    <main className="min-h-screen bg-page">
+    <>
       <div className="max-w-site-wide mx-auto px-4 md:px-8">
         {/* Page header */}
         <div className="pt-10 pb-0">
           <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">
-            Admin
+            Data Sources
           </p>
           <h1 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">
             Source Monitoring
@@ -151,6 +151,6 @@ export default function SourcesPageClient() {
           onClose={() => setSelectedSourceId(null)}
         />
       </div>
-    </main>
+    </>
   )
 }

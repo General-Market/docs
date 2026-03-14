@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { Link } from '@/i18n/routing'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -26,7 +27,7 @@ export default async function LegalVisionPage({ params }: { params: Promise<{ lo
       <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
-          <a href="/" className="text-text-inverse-muted text-sm hover:text-text-inverse">{t('back')}</a>
+          <Link href="/" className="text-text-inverse-muted text-sm hover:text-text-inverse">{t('back')}</Link>
           <h1 className="text-3xl font-bold text-text-inverse mt-4">{t('title')}</h1>
           <p className="text-text-inverse-muted mt-2">{t('last_updated')}</p>
           <p className="text-text-inverse-muted text-xs mt-1">{t('entity')}</p>
@@ -125,9 +126,9 @@ export default async function LegalVisionPage({ params }: { params: Promise<{ lo
         {/* Links */}
         <section className="pt-8 mt-12 border-t border-border-dark">
           <div className="flex items-center gap-6 text-sm">
-            <a href="/legal-index" className="text-text-inverse-muted hover:text-text-inverse">Index Legal</a>
-            <a href="/terms" className="text-text-inverse-muted hover:text-text-inverse">Terms</a>
-            <a href="/privacy" className="text-text-inverse-muted hover:text-text-inverse">Privacy</a>
+            <Link href="/legal-index" className="text-text-inverse-muted hover:text-text-inverse">Index Legal</Link>
+            <Link href="/terms" className="text-text-inverse-muted hover:text-text-inverse">Terms</Link>
+            <Link href="/privacy" className="text-text-inverse-muted hover:text-text-inverse">Privacy</Link>
           </div>
         </section>
       </div>

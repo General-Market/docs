@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import type { SourceCategory } from '@/lib/vision/sources'
 import { SOURCE_CATEGORIES, getCategoryCounts } from '@/lib/vision/source-categories'
 

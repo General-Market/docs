@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import type { VisionSource } from '@/lib/vision/sources'
 import { getDataNodeSourceId } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
@@ -246,18 +246,10 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
         </div>
       </div>
 
-      {/* Action buttons — full bleed outside padding */}
-      <div className="grid grid-cols-3 border-t border-border-light">
-        <Link href={`/source/${source.id}`} className="py-2.5 text-center bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
-          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">Markets</span>
-        </Link>
-        <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
-          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Batch</span>
-        </Link>
-        <Link href={`/source/${source.id}`} className="py-2.5 text-center border-l border-border-light hover:bg-[var(--surface)] transition-colors">
-          <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-black">Details</span>
-        </Link>
-      </div>
+      {/* Action button — full bleed outside padding */}
+      <Link href={`/source/${source.id}`} className="block py-2.5 text-center border-t border-border-light bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
+        <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">View Source &rarr;</span>
+      </Link>
     </div>
   )
 }

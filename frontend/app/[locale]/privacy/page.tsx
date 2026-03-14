@@ -1,5 +1,8 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
+import { Link } from '@/i18n/routing'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -22,11 +25,12 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
   const t = await getTranslations({ locale, namespace: 'pages.privacy' })
 
   return (
-    <main className="min-h-screen bg-page">
+    <main className="min-h-screen bg-page flex flex-col">
+      <Header />
       <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
-          <a href="/" className="text-text-muted text-sm hover:text-text-primary">{t('back')}</a>
+          <Link href="/" className="text-text-muted text-sm hover:text-text-primary">{t('back')}</Link>
           <h1 className="text-3xl font-bold text-text-primary mt-4">{t('title')}</h1>
           <p className="text-text-muted mt-2">{t('last_updated')}</p>
           <p className="text-text-muted text-xs mt-1">{t('entity')}</p>
@@ -92,13 +96,15 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
         {/* Links */}
         <section className="pt-8 mt-12 border-t border-border-light">
           <div className="flex items-center gap-6 text-sm">
-            <a href="/terms" className="text-text-muted hover:text-text-primary">Terms</a>
-            <a href="/legal-vision" className="text-text-muted hover:text-text-primary">Vision Legal</a>
-            <a href="/legal-index" className="text-text-muted hover:text-text-primary">Index Legal</a>
+            <Link href="/terms" className="text-text-muted hover:text-text-primary">Terms</Link>
+            <Link href="/legal-vision" className="text-text-muted hover:text-text-primary">Vision Legal</Link>
+            <Link href="/legal-index" className="text-text-muted hover:text-text-primary">Index Legal</Link>
             <a href="https://x.com/otc_max" target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-text-primary">@otc_max</a>
           </div>
         </section>
       </div>
+      <div className="flex-1" />
+      <Footer />
     </main>
   )
 }

@@ -255,7 +255,7 @@ export function Header() {
                 </button>
               )}
               {/* Hamburger */}
-              <div className="relative">
+              <div className="relative sm:hidden">
                 <button
                   className="p-2 text-text-muted hover:text-text-primary"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -294,7 +294,7 @@ export function Header() {
                     <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.explorer')}</Link>
                     <Link href="/points" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.points')}</Link>
                     <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.about')}</Link>
-                    <a href="/docs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
+                    <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
                     <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
                     <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.privacy_policy')}</Link>
                     <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.terms_of_service')}</Link>

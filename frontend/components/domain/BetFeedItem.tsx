@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { Tooltip } from '@/components/ui/Tooltip'
 import type { RecentBetEvent, BetEventType } from '@/hooks/useRecentBets'
 import { truncateAddress } from '@/lib/utils/address'

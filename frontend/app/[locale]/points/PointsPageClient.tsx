@@ -7,7 +7,7 @@ import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 
 function formatPoints(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`

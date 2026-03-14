@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
+import { Link } from '@/i18n/routing'
 import { OddsBadge } from './OddsBadge'
 import { SignatureProgress } from './SignatureProgress'
 import { Tooltip } from '@/components/ui/Tooltip'
