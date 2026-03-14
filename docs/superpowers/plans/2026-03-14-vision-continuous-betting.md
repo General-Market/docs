@@ -109,13 +109,22 @@ function updateBatchConfig(
 
     b.nextConfigHash = configHash;
     b.nextLockOffset = lockOffset;
-    b.nextTickDuration = tickDuration;  // NEW: stage for promotion
+    _nextTickDuration[batchId] = tickDuration;  // NEW: stage for promotion (separate mapping)
 
     emit BatchConfigUpdated(batchId, configHash, lockOffset, tickDuration);
 }
 ```
 
-Add `nextTickDuration` to Batch struct storage. Update `_promoteConfigIfNeeded()` to promote tickDuration:
+**STORAGE LAYOUT WARNING:** Do NOT add `nextTickDuration` inside the existing `Batch` struct — inserting a field mid-struct shifts all subsequent storage slots, corrupting data for the 43 live batches. Instead, use a SEPARATE mapping:
+
+```solidity
+// In VisionStorage.sol — separate mapping, not inside Batch struct:
+mapping(uint256 => uint256) internal _nextTickDuration; // batchId => staged tickDuration
+```
+
+This preserves the existing storage layout while adding the new field. Access via `_nextTickDuration[batchId]` instead of `b.nextTickDuration`.
+
+Update `_promoteConfigIfNeeded()` to promote tickDuration:
 
 ```solidity
 function _promoteConfigIfNeeded(uint256 batchId) internal {
@@ -127,8 +136,10 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         bytes32 oldHash = b.configHash;
         b.configHash = b.nextConfigHash;
         b.lockOffset = b.nextLockOffset;
-        if (b.nextTickDuration > 0) {
-            b.tickDuration = b.nextTickDuration;
+        uint256 staged = _nextTickDuration[batchId];
+        if (staged > 0) {
+            b.tickDuration = staged;
+            _nextTickDuration[batchId] = 0;
         }
         // CRITICAL FIX: recompute lastPromotionTick with NEW tickDuration
         // If we stored currentTick (computed with old tickDuration), the next
@@ -137,7 +148,6 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         b.lastPromotionTick = block.timestamp / b.tickDuration;
         b.nextConfigHash = bytes32(0);
         b.nextLockOffset = 0;
-        b.nextTickDuration = 0;
         emit BatchConfigPromoted(batchId, oldHash, b.configHash, b.lastPromotionTick);
     }
 }
@@ -632,10 +642,14 @@ impl BitmapStore {
 
     /// Clean up stale pending bitmaps for batches where resolution keeps failing.
     /// Called periodically (e.g. every 60s) to prevent unbounded pending growth.
-    pub async fn cleanup_stale_pending(&self, batch_id: u64, current_tick_id: u64) {
+    /// Uses last_resolved_tick_id (not current_tick_id) as reference to avoid
+    /// deleting bitmaps that are still valid during slow resolution.
+    /// Window of 5 ticks (not 2) to tolerate multi-tick resolution delays.
+    pub async fn cleanup_stale_pending(&self, batch_id: u64, last_resolved_tick_id: u64) {
         let mut slots = self.slots.write().await;
+        let cutoff = last_resolved_tick_id.saturating_sub(3); // keep 5 ticks of headroom
         slots.pending.retain(|(bid, _), bm| {
-            *bid != batch_id || bm.target_tick_id >= current_tick_id.saturating_sub(2)
+            *bid != batch_id || bm.target_tick_id >= cutoff
         });
     }
 
@@ -710,18 +724,29 @@ pub async fn persist_pending_to_db(&self, pool: &PgPool, batch_id: u64, player: 
     Ok(())
 }
 
-/// SECURITY FIX: Atomic DB flip in a transaction. Must be called BEFORE
-/// the in-memory flip. If this fails, the caller must NOT flip in-memory.
-/// On crash recovery, load_from_db restores the pre-flip state, which is
-/// consistent with the on-chain state (tick was already resolved, so the
-/// idempotency guard in Step 0 handles the retry).
-pub async fn persist_flip_to_db(&self, pool: &PgPool, batch_id: u64) -> Result<(), sqlx::Error> {
+/// SECURITY FIX: Atomic DB flip + mark_resolved in a SINGLE transaction.
+/// Combines bitmap slot flip and tick resolution marker so crash recovery
+/// never sees the half-state (flipped bitmaps + unresolved tick marker).
+/// Must be called BEFORE the in-memory flip.
+pub async fn persist_flip_and_mark_resolved(
+    &self, pool: &PgPool, batch_id: u64, resolved_tick_id: u64
+) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
-    // Also clean up stale active bitmaps in the same transaction
+    // 1. Delete old active bitmaps
     sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
         .bind(batch_id as i64).execute(&mut *tx).await?;
+    // 2. Promote pending → active
     sqlx::query("UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'")
         .bind(batch_id as i64).execute(&mut *tx).await?;
+    // 3. Mark tick as resolved (in same transaction!)
+    sqlx::query(
+        "INSERT INTO vision_batch_state (batch_id, last_resolved_tick_id)
+         VALUES ($1, $2)
+         ON CONFLICT (batch_id) DO UPDATE SET last_resolved_tick_id = EXCLUDED.last_resolved_tick_id"
+    )
+    .bind(batch_id as i64)
+    .bind(resolved_tick_id as i64)
+    .execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
@@ -937,7 +962,15 @@ impl ConfigCache {
 
         // SECURITY: Verify fetched config hash matches requested hash.
         // Prevents cache poisoning from compromised/MITM'd data-node.
-        let computed_hash = compute_config_hash(&resp);
+        // IMPORTANT: The config hash is computed from (source_id, tick_duration,
+        // lock_offset, markets) — NOT just markets. The API response must include
+        // all fields, and compute_config_hash must use the SAME function as
+        // data-node/src/batch_engine.rs:compute_config_hash().
+        // The GET /batches/config/{hash} response must return:
+        //   { source_id, tick_duration, lock_offset, markets: [...] }
+        let computed_hash = compute_config_hash(
+            &resp.source_id, resp.tick_duration, resp.lock_offset, &resp.markets
+        );
         if computed_hash != *config_hash {
             return Err(anyhow!(
                 "Config hash mismatch: requested {:?}, got {:?}. Possible cache poisoning.",
@@ -1031,14 +1064,34 @@ In the resolution loop, add bitmap flip AFTER consensus completes successfully (
 // and consensus fails, the bitmaps are lost — players who submitted
 // predictions would be silently dropped from the next tick.
 
-// Step 0: Check if this tick was already resolved on-chain (idempotency guard).
-// This prevents double-submit on retry after on-chain tx fail + engine restart.
-if scheduler.is_tick_resolved_on_chain(&db_pool, batch_id, resolved_tick_id).await {
-    tracing::info!(batch_id, resolved_tick_id, "Tick already resolved on-chain, skipping");
-    // Flip bitmaps if we haven't yet (crash between on-chain submit and flip)
-    bitmap_store.flip(batch_id).await;
-    bitmap_store.persist_flip_to_db(&db_pool, batch_id).await.ok(); // best-effort
-    scheduler.mark_resolved_with_db(&db_pool, batch_id, resolved_tick_id).await;
+// Step 0: Idempotency guard — two-layer check.
+//
+// Layer 1 (local DB): Check vision_batch_state.last_resolved_tick_id.
+// This catches the common restart case without an RPC call.
+// Layer 2 (on-chain): If DB says not resolved, check the contract's
+// settleTickResult nonce or batch.lastResolvedTickId storage.
+// This catches crash-after-on-chain-submit-but-before-DB-update.
+//
+// IMPORTANT: The contract MUST reject duplicate tick resolution
+// (require tick_id > batch.lastResolvedTickId). This is the ultimate
+// safety net against double-submission regardless of off-chain state.
+let db_resolved = scheduler.is_resolved_in_db(&db_pool, batch_id, resolved_tick_id).await;
+let onchain_resolved = if !db_resolved {
+    scheduler.is_resolved_on_chain(batch_id, resolved_tick_id).await
+} else {
+    true
+};
+
+if onchain_resolved {
+    tracing::info!(batch_id, resolved_tick_id, "Tick already resolved, recovering state");
+    // Check if DB already flipped (crash between DB flip and mark_resolved)
+    if !db_resolved {
+        // DB didn't record the resolution — flip + mark in single transaction
+        bitmap_store.persist_flip_and_mark_resolved(&db_pool, batch_id, resolved_tick_id).await?;
+        bitmap_store.flip(batch_id).await;
+    }
+    // If db_resolved is true, both DB flip and mark_resolved already happened.
+    // In-memory state was lost on restart but load_from_db restored it correctly.
     continue;
 }
 
@@ -1050,15 +1103,14 @@ let consensus_result = proposal.wait_for_completion().await?;
 // Step 4: Submit on-chain and WAIT for confirmation
 let tx_receipt = submit_tick_resolution(consensus_result).await?;
 // If submit fails (revert, gas, nonce), the ? propagates and we skip flip.
-// On next loop iteration, Step 0 checks on-chain state to avoid double-submit.
+// On next loop iteration, Step 0 checks both DB and on-chain state.
 
-// Step 5: DB-first atomic flip (see CRITICAL FIX below).
-// DB transaction FIRST, then in-memory flip. If DB fails, don't flip in-memory.
-// This ensures crash recovery via load_from_db always restores correct state.
-bitmap_store.persist_flip_to_db(&db_pool, batch_id).await?;
+// Step 5: ATOMIC DB flip + mark_resolved in SINGLE transaction.
+// This eliminates the crash window between flip and mark_resolved.
+// If the transaction fails, neither happens — consistent state.
+bitmap_store.persist_flip_and_mark_resolved(&db_pool, batch_id, resolved_tick_id).await?;
+// Step 6: In-memory flip (safe — DB is source of truth on restart)
 bitmap_store.flip(batch_id).await;
-// Mark tick resolved AFTER flip to ensure consistent state on recovery.
-scheduler.mark_resolved_with_db(&db_pool, batch_id, resolved_tick_id).await;
 
 // Config promotion is handled by chain listener via BatchConfigPromoted event
 ```
@@ -2001,6 +2053,10 @@ git commit -m "feat(frontend): clean up all remaining static source/multiplier/l
 ```rust
 // In batch_config_orchestrator.rs, add migration function:
 pub async fn run_migration_round(&mut self) -> Result<()> {
+    // IMPORTANT: Pause normal config orchestrator rounds during migration
+    // to prevent nonce contention. The migration flag is checked in the
+    // orchestrator's main loop: `if self.migration_in_progress { return; }`
+    self.migration_in_progress = true;
     let batches = self.scheduler.get_all_batches().await;
 
     for batch in &batches {
@@ -2026,6 +2082,7 @@ pub async fn run_migration_round(&mut self) -> Result<()> {
         tokio::time::sleep(Duration::from_secs(5)).await;
     }
 
+    self.migration_in_progress = false;
     tracing::info!("Migration complete: all batches set to lockOffset=0");
     Ok(())
 }
@@ -2115,4 +2172,4 @@ Leader proposes `activation_tick_id = current_tick + 2` via BLS consensus. All i
 | 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances) + activation_tick_id + bitmap gossip |
 | 6 | 18-21 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
 | 7 | 22-25 | Frontend: dynamic registry + continuous betting UX |
-| 8 | 26-27 | Issuer-driven migration + deploy sequence (data-node → issuers → contract → activate → frontend) |
+| 8 | 26-27 | Issuer-driven migration + deploy sequence (data-node → stop issuers → contract → issuers → migrate → activate → frontend) |
