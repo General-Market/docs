@@ -1,5 +1,6 @@
 mod config;
 mod manifest;
+pub mod token_registry;
 
 use clap::Parser;
 use tracing::info;
