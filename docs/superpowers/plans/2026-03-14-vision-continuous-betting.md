@@ -93,9 +93,11 @@ function updateBatchConfig(
     _requireNotLocked(batchId);
 
     Batch storage b = _batches[batchId];
-    if (b.configHash == configHash && b.nextConfigHash == bytes32(0)) return;
+    // No-op check: skip if BOTH configHash AND tickDuration are unchanged
+    if (b.configHash == configHash && b.nextConfigHash == bytes32(0)
+        && b.tickDuration == tickDuration) return;
 
-    if (tickDuration == 0 || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+    if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
     if (lockOffset >= tickDuration && lockOffset != 0) revert LockOffsetTooLarge();
 
     bytes32 messageHash = keccak256(abi.encode(
@@ -133,11 +135,16 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         b.lockOffset = b.nextLockOffset;
         if (b.nextTickDuration > 0) {
             b.tickDuration = b.nextTickDuration;
+            // CRITICAL: Reset createdAtTick to re-anchor the epoch.
+            // _currentTickId() computes: (block.timestamp / tickDuration) - createdAtTick
+            // If we don't reset createdAtTick, changing tickDuration from 600→300
+            // doubles the absolute tick number while createdAtTick stays the same,
+            // producing a massive jump in _currentTickId (e.g., 2→14).
+            // This breaks player startTick references, claimRewards ranges, and
+            // bitmap tick targeting.
+            b.createdAtTick = block.timestamp / b.tickDuration;
         }
-        // CRITICAL FIX: recompute lastPromotionTick with NEW tickDuration
-        // If we stored currentTick (computed with old tickDuration), the next
-        // check `block.timestamp / newTickDuration` would produce a different
-        // tick number — causing instant re-promotion or permanent freeze.
+        // Recompute lastPromotionTick with the (potentially new) tickDuration
         b.lastPromotionTick = block.timestamp / b.tickDuration;
         b.nextConfigHash = bytes32(0);
         b.nextLockOffset = 0;
@@ -193,6 +200,7 @@ In `Vision.sol`, add constant and check in `_createBatch()`:
 
 ```solidity
 uint256 public constant MAX_BATCHES = 200;
+uint256 public constant MIN_TICK_DURATION = 60;  // Prevent DoS via 1-second ticks
 
 function _createBatch(...) internal returns (uint256 batchId) {
     if (sourceIdHasBatch[sourceId]) return sourceIdToBatchId[sourceId];
@@ -581,6 +589,7 @@ impl BitmapStore {
 
     pub async fn store_pending(
         &self,
+        pool: &PgPool,  // DB-first persistence for crash safety
         player: Address,
         batch_id: u64,
         bitmap: Vec<u8>,
@@ -597,6 +606,10 @@ impl BitmapStore {
             config_hash, target_tick_id,
             received_at: now_epoch(),
         };
+        // SECURITY FIX: Persist to DB FIRST, then update in-memory.
+        // On crash, load_from_db recovers all persisted bitmaps.
+        // Without this, bitmaps stored only in-memory are lost on crash.
+        self.persist_pending_to_db(pool, batch_id, player, &entry).await?;
         self.slots.write().await.pending.insert((batch_id, player), entry);
         Ok(())
     }
@@ -977,10 +990,15 @@ impl ConfigCache {
         }
 
         // Bounded cache: evict oldest entries if full
+        // SECURITY: Never evict configs referenced by active bitmaps.
+        // Pass pinned_hashes from bitmap_store.get_all_active_config_hashes().
         let mut cache = self.cache.write().await;
         if cache.len() >= MAX_CACHE_ENTRIES {
-            // Evict oldest 10%
-            let mut entries: Vec<_> = cache.iter().map(|(k, v)| (*k, v.inserted_at)).collect();
+            let pinned = self.get_pinned_config_hashes().await;
+            let mut entries: Vec<_> = cache.iter()
+                .filter(|(k, _)| !pinned.contains(k))  // never evict pinned
+                .map(|(k, v)| (*k, v.inserted_at))
+                .collect();
             entries.sort_by_key(|(_, t)| *t);
             for (key, _) in entries.iter().take(MAX_CACHE_ENTRIES / 10) {
                 cache.remove(key);
@@ -1198,9 +1216,15 @@ let value: u128 = if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.
     scaled.parse::<u128>().unwrap_or(0)
 } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
     // Legacy fallback — round once here
+    // SECURITY: Guard against negative values (would produce wrong u128 via saturating cast)
+    if f < 0.0 {
+        tracing::error!(market = ?market_id, value = f, "Negative price value — skipping market");
+        continue; // Skip this market entirely, don't silently convert to 0
+    }
     (f * 1e8).round() as u128
 } else {
-    0
+    tracing::warn!(market = ?market_id, "Missing price value — skipping market");
+    continue; // Don't default to 0 — skip the market
 };
 ```
 
@@ -1527,7 +1551,53 @@ VisionP2PMessage::BitmapGossip { batch_id, player, bitmap_hash, .. } => {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Add BitmapRequest/BitmapResponse message handlers**
+
+Define the full request/response cycle for bitmap data exchange:
+
+```rust
+// Add to P2P message types:
+pub enum VisionP2PMessage {
+    // ... existing ...
+    BitmapGossip { batch_id: u64, player: Address, bitmap_hash: H256, config_hash: H256, target_tick_id: u64 },
+    BitmapRequest { batch_id: u64, player: Address, bitmap_hash: H256 },
+    BitmapResponse { batch_id: u64, player: Address, bitmap: Vec<u8>, bitmap_hash: H256, config_hash: H256, target_tick_id: u64 },
+}
+
+// Handler for BitmapRequest — serve bitmap data to requesting peer:
+VisionP2PMessage::BitmapRequest { batch_id, player, bitmap_hash } => {
+    if let Some(entry) = bitmap_store.get_pending(batch_id, player).await {
+        if entry.hash == bitmap_hash {
+            p2p.send(sender_id, VisionP2PMessage::BitmapResponse {
+                batch_id, player,
+                bitmap: entry.bitmap.clone(),
+                bitmap_hash: entry.hash,
+                config_hash: entry.config_hash,
+                target_tick_id: entry.target_tick_id,
+            }).await;
+        }
+    }
+}
+
+// Handler for BitmapResponse — store received bitmap:
+VisionP2PMessage::BitmapResponse { batch_id, player, bitmap, bitmap_hash, config_hash, target_tick_id } => {
+    // Verify hash matches what we requested
+    if !outstanding_requests.contains(&(batch_id, player)) { return; }
+    outstanding_requests.remove(&(batch_id, player));
+
+    // Verify bitmap hash matches
+    let computed_hash = keccak256(&bitmap);
+    if H256::from(computed_hash) != bitmap_hash { return; }
+
+    // Store in pending slot + persist to DB
+    bitmap_store.store_pending(player, batch_id, bitmap, bitmap_hash, config_hash, target_tick_id).await;
+    bitmap_store.persist_pending_to_db(&db_pool, batch_id, player, &entry).await;
+}
+```
+
+Add a pre-resolution gossip deadline: 10 seconds before tick boundary, issuers broadcast hashes of all pending bitmaps they have. Peers request any missing ones. This ensures maximum bitmap coverage before resolution.
+
+- [ ] **Step 5: Run tests**
 
 Run: `cd issuer && cargo test gossip -v`
 Expected: PASS

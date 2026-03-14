@@ -576,12 +576,7 @@ Change to:
 - `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
 - Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
-**One-time migration**: For each of the 43 batches:
-1. Read `batches[batchId].nonce` on-chain to get current config nonce
-2. Call `updateBatchConfig(batchId, currentConfigHash, 0, tickDuration, blsSig, nonce, bitmask)` with `lockOffset = 0`
-3. Issuers BLS-sign each update
-
-This is 43 sequential calls in a single migration script. Note: setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
+**Fresh deploy**: All batches are created with `lockOffset = 0` from the start via `DeployAllVisionBatches.s.sol`. No migration needed — full redeploy wipes previous state. Setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
 
 ### 6. Frontend — Remove Static Dependencies
 
@@ -735,26 +730,23 @@ Replace with:
 
 ---
 
-## Migration Plan
+## Deployment Strategy
 
-**Tick-based activation (prevents mixed old/new code consensus failures):**
+**Full redeploy — no backward compatibility, no migration.**
 
-The two-slot model activation is tick-based, not deployment-based. All issuers deploy new code first, but continue old behavior until a BLS-signed activation config is pushed.
+All contracts, issuers, and DB are deployed fresh. Previous bitmaps are wiped. No dual-mode / `activation_tick_id` mechanism needed.
 
-1. **Deploy contract changes** — add `tickDuration` to `updateBatchConfig()`, add `MAX_BATCHES`
-2. **Deploy ALL issuer instances simultaneously** (stop all 3, deploy, start all 3). New code supports both old and new behavior, controlled by an `activation_tick_id` config per batch. Before activation, old single-slot behavior. At/after activation, two-slot behavior. This prevents consensus failure from mixed code versions.
-3. **Push `lockOffset=0` + `activation_tick_id`** for all batches via BLS-signed `updateBatchConfig()` calls. Set `activation_tick_id` to `current_tick + 2` (gives one full tick for all issuers to see the activation config).
-4. **Deploy frontend** (remove static deps, multiplier UI, add next-tick UX)
+1. **Deploy data-node** — lock removal, /sources/registry, integer prices, BLS verification
+2. **Stop all issuers + wipe vision DB tables** (vision_bitmaps, vision_batch_state)
+3. **Deploy fresh contracts** — `DeployAllVisionBatches.s.sol` creates all batches with `lockOffset=0`
+4. **Deploy new issuers** — continuous-only mode, fresh DB migration on startup
+5. **Deploy frontend** — remove static deps, multiplier UI, add next-tick UX
 
-**Stale bitmap cleanup:** Before activation, clear all existing bitmaps in the issuer bitmap store. Old bitmaps were encoded for the single-slot model (bet on current tick). They must not leak into the two-slot model where they'd be treated as "pending for next tick."
-
-Player positions and balances are unaffected. The transition happens at the `activation_tick_id` boundary — old model resolves the last tick before it, new model starts from that tick.
-
-**First tick after activation:** The first tick under the new model has NO active bitmaps (pending slot was just introduced). All players sit out. This is safe — balances unchanged. Players must submit new bitmaps under the new UX to participate in subsequent ticks.
+**First tick:** All batches start fresh with no active bitmaps. Players must submit new bitmaps to participate. This is safe — balances unchanged.
 
 **Fix i64 overflow in `apply_tick_balances_with_db`.** The current `pb.new_balance.as_u128() as i64` silently overflows for balances > i64::MAX (possible with 18-decimal USDC). Store balance as `TEXT`/`NUMERIC` in DB, matching the approach in `store_balance_proof` which already uses `balance.to_string()`.
 
-**Rollback plan**: Push `activation_tick_id = MAX_U64` (effectively disabling new model) for each batch via BLS. Issuer code falls back to old single-slot behavior. Frontend can be redeployed from previous commit. Contract changes are additive (new parameter), not breaking.
+**Rollback plan**: Redeploy previous contract + issuer + frontend versions. Full revert since no backward-compatible state to preserve.
 
 ---
 
@@ -763,11 +755,11 @@ Player positions and balances are unaffected. The transition happens at the `act
 - **Issuer unit tests**: Resolver without multiplier, bitmap flip logic, sit-out handling
 - **Issuer unit tests**: `multiplier.rs` tests deleted — verify no regressions in resolver
 - **Integration test**: Full tick lifecycle — submit pending, resolve, flip, verify sit-out
-- **Integration test**: Transition boundary — last old-model tick resolves, first new-model tick uses two-slot model
+- **Integration test**: Fresh deploy — first tick has no active bitmaps, all players sit out safely
 - **Integration test**: All players sit out — verify no payouts, no panics, balances unchanged
 - **Integration test**: Concurrent bitmap submission during tick flip — verify correct slot assignment
 - **Config orchestrator**: Mock data-node `GET /batches/recommended` returns new config → verify on-chain update
-- **Migration script**: Run against local Anvil — verify all 43 batches get `lockOffset = 0`
+- **Deploy script**: Run DeployAllVisionBatches against local Anvil — verify all batches get `lockOffset = 0`
 - **Batch auto-detection**: Deploy new batch on-chain → issuers pick up `BatchCreated` event → batch appears in API
 - **Auto-creation pipeline**: Add source to data-node → orchestrator creates batch → issuers detect → frontend shows
 - **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
@@ -786,7 +778,7 @@ Player positions and balances are unaffected. The transition happens at the `act
 - **Degraded mode**: Force proposal failure → verify NO balance changes applied (tick skipped)
 - **i64 overflow**: Player with balance > i64::MAX → verify DB stores correctly, crash recovery preserves balance
 - **First-tick skip**: New batch first tick → verify resolution skipped, reference prices established
-- **Activation tick**: Deploy new code, push activation_tick_id → old behavior until activation, new behavior after
+- **Fresh deploy**: Stop issuers, wipe DB, deploy new contracts + issuers, verify continuous mode works from first tick
 
 ---
 
