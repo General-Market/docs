@@ -1,4 +1,6 @@
+pub mod chain;
 mod config;
+pub mod data_node;
 mod manifest;
 pub mod token_registry;
 
