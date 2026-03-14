@@ -1306,10 +1306,12 @@ async fn aum_ranking(
     State(state): State<Arc<AppState>>,
     Query(params): Query<AumRankingQuery>,
 ) -> Result<Json<AumRankingResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let result = tokio::time::timeout(Duration::from_secs(30), async {
+    let result = tokio::time::timeout(Duration::from_secs(10), async {
     let top_n = params.top_n.unwrap_or(10);
+    // Max chart columns: sampling reduces N² problem to O(MAX_SNAPSHOTS × assets)
+    const MAX_SNAPSHOTS: usize = 50;
 
-    // Default to last 7 days when no date range is provided to avoid full-scan N² explosion
+    // Default to last 7 days
     let from: Option<DateTime<Utc>> = params
         .from
         .as_ref()
@@ -1321,16 +1323,26 @@ async fn aum_ranking(
         .and_then(|s| s.parse().ok());
 
     // 1. Fetch all snapshots chronologically
-    let snapshots = db::query_all_snapshots_chronological(&state.pool, from, to)
+    let all_snapshots = db::query_all_snapshots_chronological(&state.pool, from, to)
         .await
         .map_err(|e| db_error(e))?;
 
-    if snapshots.is_empty() {
+    if all_snapshots.is_empty() {
         return Ok(Json(AumRankingResponse {
             snapshots: vec![],
             all_symbols: HashMap::new(),
         }));
     }
+
+    // Evenly sample at most MAX_SNAPSHOTS from the full list to keep computation fast
+    let snapshots: Vec<_> = if all_snapshots.len() <= MAX_SNAPSHOTS {
+        all_snapshots
+    } else {
+        let step = all_snapshots.len() as f64 / MAX_SNAPSHOTS as f64;
+        (0..MAX_SNAPSHOTS)
+            .map(|i| all_snapshots[(i as f64 * step) as usize].clone())
+            .collect()
+    };
 
     // 2. Cache creation NAVs for perf ratio
     let mut initial_navs: HashMap<String, String> = HashMap::new();
@@ -1363,11 +1375,13 @@ async fn aum_ranking(
 
     // Build address→symbol map from symbol_map (address→pair→symbol)
     let mut all_symbols: HashMap<String, String> = HashMap::new();
+    // Also build addr→pair map for price lookups
+    let mut addr_to_pair: HashMap<String, String> = HashMap::new();
     for addr in &all_addr_set {
         if let Some(pair) = state.symbol_map.get(&addr.to_lowercase()) {
-            // Extract symbol from pair (e.g., "BTCUSDT" → "BTC")
             let symbol = pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string();
             all_symbols.insert(addr.clone(), symbol);
+            addr_to_pair.insert(addr.clone(), pair.clone());
         } else {
             all_symbols.insert(
                 addr.clone(),
@@ -1376,7 +1390,26 @@ async fn aum_ranking(
         }
     }
 
-    // 4. Walk snapshots, maintaining ITP state and computing rankings
+    // 4. Batch-fetch latest prices for ALL unique symbols in ONE query (no per-row DB calls)
+    let unique_pairs: Vec<&str> = addr_to_pair.values().map(|s| s.as_str()).collect();
+    let price_rows = db::query_freshest_prices_batch(&state.pool, &unique_pairs)
+        .await
+        .unwrap_or_default();
+    let price_cache: HashMap<String, f64> = price_rows
+        .into_iter()
+        .map(|row| (row.symbol, row.price.parse::<f64>().unwrap_or(0.0)))
+        .collect();
+
+    // Helper: look up price for an address via the batch cache
+    let price_for_addr = |addr: &str| -> f64 {
+        addr_to_pair
+            .get(addr)
+            .and_then(|pair| price_cache.get(pair.as_str()))
+            .copied()
+            .unwrap_or(0.0)
+    };
+
+    // 5. Walk snapshots, maintaining ITP state and computing rankings
     struct ItpState {
         assets: Vec<String>,
         inventory: Vec<String>,
@@ -1397,7 +1430,7 @@ async fn aum_ranking(
             },
         );
 
-        // Compute AUM for each asset across ALL active ITPs
+        // Compute AUM for each asset across ALL active ITPs using cached prices
         let mut asset_aum: HashMap<String, f64> = HashMap::new();
         let mut total_aum: f64 = 0.0;
 
@@ -1406,18 +1439,10 @@ async fn aum_ranking(
                 if i >= itp.inventory.len() {
                     continue;
                 }
-
-                // Look up price
-                let pair = match state.symbol_map.get(&addr.to_lowercase()) {
-                    Some(p) => p,
-                    None => continue,
-                };
-
-                let price_val = match db::query_nearest_price(&state.pool, pair, snap.valid_from).await {
-                    Ok(Some(row)) => row.price.parse::<f64>().unwrap_or(0.0),
-                    _ => continue,
-                };
-
+                let price_val = price_for_addr(addr);
+                if price_val == 0.0 {
+                    continue;
+                }
                 let aum = compute_asset_aum(&itp.inventory[i], &itp.total_supply, price_val);
                 *asset_aum.entry(addr.clone()).or_insert(0.0) += aum;
                 total_aum += aum;
@@ -1463,22 +1488,14 @@ async fn aum_ranking(
             })
             .collect();
 
-        // Compute NAV for the triggering ITP
+        // Compute NAV for the triggering ITP using cached prices
         let triggering_itp = &itp_states[&snap.itp_id];
         let mut nav_sum: f64 = 0.0;
         for (i, addr) in triggering_itp.assets.iter().enumerate() {
             if i >= triggering_itp.inventory.len() {
                 continue;
             }
-            let addr_lower = addr.to_lowercase();
-            let pair = match state.symbol_map.get(&addr_lower) {
-                Some(p) => p,
-                None => continue,
-            };
-            let price_val = match db::query_nearest_price(&state.pool, pair, snap.valid_from).await {
-                Ok(Some(row)) => row.price.parse::<f64>().unwrap_or(0.0),
-                _ => 0.0,
-            };
+            let price_val = price_for_addr(addr);
             let qty: f64 = triggering_itp.inventory[i].parse().unwrap_or(0.0);
             nav_sum += qty * price_val;
         }

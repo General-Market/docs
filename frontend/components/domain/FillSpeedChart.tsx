@@ -62,7 +62,7 @@ export function FillSpeedChart() {
         return {
           time: unixTime,
           timeLabel: formatTime(unixTime),
-          buyAmount: e.side === 0 ? parseFloat(e.amount) / 1e6 : null,
+          buyAmount: e.side === 0 ? parseFloat(e.amount) / 1e18 : null,
           sellAmount: e.side === 1 ? parseFloat(e.amount) / 1e18 : null,
           orderId: e.order_id,
           filled: e.fill_time !== null,
