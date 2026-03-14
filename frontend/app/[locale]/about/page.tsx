@@ -96,7 +96,8 @@ export default async function AboutPage() {
         subtitle="On-chain protocol for index products and AI prediction markets. Built on an Orbit L3."
       />
 
-      <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
+      <div className="px-6 lg:px-12">
+      <div className="max-w-site mx-auto w-full pb-16">
         {/* What We Build */}
         <SectionBar title="What We Build" value="2 Products" />
 
@@ -286,6 +287,7 @@ export default async function AboutPage() {
             </a>
           </div>
         </div>
+      </div>
       </div>
 
       <div className="flex-1" />

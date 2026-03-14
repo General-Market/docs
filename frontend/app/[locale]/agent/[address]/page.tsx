@@ -40,7 +40,8 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
         subtitle={address}
       />
 
-      <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
+      <div className="px-6 lg:px-12">
+      <div className="max-w-site mx-auto w-full pb-16">
         {isLoading ? (
           <div className="py-12 text-center">
             <div className="text-sm text-text-muted animate-pulse">Loading agent data...</div>
@@ -155,6 +156,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
             )}
           </>
         )}
+      </div>
       </div>
 
       <div className="flex-1" />
