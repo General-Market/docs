@@ -189,6 +189,11 @@ pub struct ServeArgs {
     #[arg(long, env = "ADMIN_TOKEN")]
     pub admin_token: Option<String>,
 
+    /// Bearer token for protecting sim API endpoints (/sim/*)
+    /// If unset, sim endpoints are open (backwards compatible for local dev)
+    #[arg(long, env = "SIM_AUTH_TOKEN")]
+    pub sim_auth_token: Option<String>,
+
     /// Enable Polymarket prediction market data (no key needed)
     #[arg(long, default_value = "false", env = "POLYMARKET_ENABLED")]
     pub polymarket_enabled: bool,

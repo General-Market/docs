@@ -2435,6 +2435,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         sim_cache,
         chain_cache,
         admin_token: args.admin_token.clone().filter(|t| !t.is_empty()),
+        sim_auth_token: args.sim_auth_token.clone().filter(|t| !t.is_empty()),
         cors_origins: args.cors_origin.clone(),
         health_stats_cache,
         batch_engine: batch_state,

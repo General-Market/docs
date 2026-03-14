@@ -235,6 +235,9 @@ pub struct AppState {
     pub chain_cache: Arc<crate::chain_cache::ChainCache>,
     /// Optional admin token for protecting destructive admin endpoints.
     pub admin_token: Option<String>,
+    /// Optional bearer token for protecting sim API endpoints.
+    /// If None, sim endpoints are open (backwards compatible for local dev).
+    pub sim_auth_token: Option<String>,
     /// P2.8: Allowed CORS origins (empty = allow any, with warning)
     pub cors_origins: Vec<String>,
     /// Background-refreshed health stats (zero/stale counts per source)
@@ -3638,8 +3641,10 @@ fn build_dominance_regime(
 
 async fn sim_run(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimRunQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
         (StatusCode::BAD_REQUEST, Json(ErrorResponse {
             error: format!("Invalid weighting '{}', use 'equal', 'mcap', 'momentum_N', 'invvol_N', or 'dual_mom_N'", params.weighting),
@@ -3727,8 +3732,10 @@ use tokio_stream::wrappers::ReceiverStream;
 
 async fn sim_run_stream(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimRunQuery>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let weighting = simulation::Weighting::from_str(&params.weighting).ok_or_else(|| {
         (StatusCode::BAD_REQUEST, Json(ErrorResponse {
             error: format!("Invalid weighting '{}', use 'equal', 'mcap', 'momentum_N', 'invvol_N', or 'dual_mom_N'", params.weighting),
@@ -3921,8 +3928,10 @@ fn default_sweep_top_n() -> i32 { 10 }
 
 async fn sim_sweep_stream(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimSweepQuery>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     // Build regime/filter structs from query params
     let fng_regime = build_fng_regime(&params.fng_mode, params.fng_fear_threshold, params.fng_greed_threshold, params.fng_cash_pct);
     let dominance_regime = build_dominance_regime(&params.dom_mode, params.dom_lookback);
@@ -4377,8 +4386,10 @@ struct SimResultsQuery {
 
 async fn sim_results(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimResultsQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let runs = db::sim_list_runs(&state.pool, params.category_id.as_deref())
         .await
         .map_err(|e| db_error(e))?;
@@ -4393,8 +4404,10 @@ struct SimCompareQuery {
 
 async fn sim_compare(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimCompareQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let ids: Vec<i64> = params.run_ids.split(',')
         .filter_map(|s| s.trim().parse().ok())
         .collect();
@@ -4421,8 +4434,10 @@ struct SimHoldingsQuery {
 
 async fn sim_holdings(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimHoldingsQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let holdings = db::sim_query_holdings_at(&state.pool, params.run_id, params.date)
         .await
         .map_err(|e| db_error(e))?;
@@ -4437,8 +4452,10 @@ struct SimInvalidateQuery {
 
 async fn sim_invalidate(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimInvalidateQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let deleted = db::sim_delete_run(&state.pool, params.run_id)
         .await
         .map_err(|e| db_error(e))?;
@@ -4457,8 +4474,10 @@ struct SimBenchmarkQuery {
 
 async fn sim_benchmarks(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<SimBenchmarkQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    check_sim_auth(&state, &headers)?;
     let start = chrono::NaiveDate::parse_from_str(&params.start_date, "%Y-%m-%d")
         .map_err(|_| (StatusCode::BAD_REQUEST, Json(ErrorResponse { error: "Invalid start_date".into() })))?;
     let end = params.end_date.as_ref()
@@ -5637,6 +5656,45 @@ async fn record_batch_settlement(
 }
 
 // ---- Admin auth helper ----
+
+/// Validates the Authorization: Bearer header against the configured sim auth token.
+/// If no token is configured, all requests are allowed (backwards compatible for local dev).
+fn check_sim_auth(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> Result<(), (StatusCode, Json<ErrorResponse>)> {
+    let Some(expected) = &state.sim_auth_token else {
+        return Ok(()); // No token configured → open access
+    };
+
+    let auth = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "));
+
+    match auth {
+        Some(token) => {
+            let expected_hash = Sha256::digest(expected.as_bytes());
+            let provided_hash = Sha256::digest(token.as_bytes());
+            if expected_hash.ct_eq(&provided_hash).unwrap_u8() == 1 {
+                Ok(())
+            } else {
+                Err((
+                    StatusCode::UNAUTHORIZED,
+                    Json(ErrorResponse {
+                        error: "unauthorized".to_string(),
+                    }),
+                ))
+            }
+        }
+        None => Err((
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse {
+                error: "unauthorized".to_string(),
+            }),
+        )),
+    }
+}
 
 /// Validates the Authorization header against the configured admin token.
 /// Returns 403 if no token is configured or if the provided token does not match.
