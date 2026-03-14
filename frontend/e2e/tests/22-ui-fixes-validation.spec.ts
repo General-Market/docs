@@ -126,7 +126,7 @@ test.describe('Batch Entry Panel', () => {
     }
   });
 
-  test('Enter Batch button is disabled without predictions', async ({ page }) => {
+  test('Enter Batch button is disabled without stake', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(3_000);
 
@@ -141,7 +141,7 @@ test.describe('Batch Entry Panel', () => {
     await sourceLink.click();
     await page.waitForTimeout(3_000);
 
-    // The Enter Batch button should be disabled when no stake and no predictions
+    // The Enter Batch button should be disabled when no stake is set (predictions default to DOWN)
     const enterBtn = page.getByRole('button', { name: /Enter Batch/ });
     if (await enterBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await expect(enterBtn).toBeDisabled();

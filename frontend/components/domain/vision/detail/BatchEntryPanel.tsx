@@ -160,9 +160,11 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // Lock only blocks new joins (prediction required), not deposits by existing players
-  // New joins need at least some predictions set and a stake — unset markets default to DOWN
-  const canSubmit = isConnected && hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
+  // Lock only blocks new joins, not deposits by existing players.
+  // Unset markets default to DOWN — no need to require explicit predictions to submit.
+  // New joins require: stake + tick open + configHash + markets loaded.
+  const canSubmit = isConnected && hasStake && activeStep === 'idle'
+    && (isJoined || (!tickState.isLocked && !!configHash && marketIds.length > 0))
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
