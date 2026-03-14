@@ -630,12 +630,12 @@ impl BitmapStore {
         }
     }
 
-    /// Clean up stale active bitmaps whose target_tick_id < current_tick_id.
-    /// Call before flip to prevent unbounded growth.
-    pub async fn cleanup_stale(&self, batch_id: u64, current_tick_id: u64) {
+    /// Clean up stale pending bitmaps for batches where resolution keeps failing.
+    /// Called periodically (e.g. every 60s) to prevent unbounded pending growth.
+    pub async fn cleanup_stale_pending(&self, batch_id: u64, current_tick_id: u64) {
         let mut slots = self.slots.write().await;
-        slots.active.retain(|(bid, _), bm| {
-            *bid != batch_id || bm.target_tick_id >= current_tick_id
+        slots.pending.retain(|(bid, _), bm| {
+            *bid != batch_id || bm.target_tick_id >= current_tick_id.saturating_sub(2)
         });
     }
 
@@ -710,12 +710,14 @@ pub async fn persist_pending_to_db(&self, pool: &PgPool, batch_id: u64, player: 
     Ok(())
 }
 
-/// SECURITY FIX: Use a transaction for atomic flip. The DELETE+UPDATE must
-/// succeed together or not at all. Without a transaction, a crash between
-/// DELETE and UPDATE loses all bitmaps. Also propagate errors instead of
-/// swallowing with .ok().
+/// SECURITY FIX: Atomic DB flip in a transaction. Must be called BEFORE
+/// the in-memory flip. If this fails, the caller must NOT flip in-memory.
+/// On crash recovery, load_from_db restores the pre-flip state, which is
+/// consistent with the on-chain state (tick was already resolved, so the
+/// idempotency guard in Step 0 handles the retry).
 pub async fn persist_flip_to_db(&self, pool: &PgPool, batch_id: u64) -> Result<(), sqlx::Error> {
     let mut tx = pool.begin().await?;
+    // Also clean up stale active bitmaps in the same transaction
     sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
         .bind(batch_id as i64).execute(&mut *tx).await?;
     sqlx::query("UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'")
@@ -728,13 +730,15 @@ pub async fn persist_flip_to_db(&self, pool: &PgPool, batch_id: u64) -> Result<(
 - [ ] **Step 3: Update load_from_db for slot awareness**
 
 ```rust
+/// Load from DB on startup/recovery. Uses single RwLock (must match
+/// the BitmapStore struct which wraps both maps in one RwLock<BitmapSlots>).
 pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
     let rows = sqlx::query_as::<_, BitmapRow>(
         "SELECT batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash FROM vision_bitmaps"
     ).fetch_all(pool).await?;
 
-    let mut pending = self.pending.write().await;
-    let mut active = self.active.write().await;
+    // Single lock acquisition — matches the BitmapSlots design from Task 7
+    let mut slots = self.slots.write().await;
 
     for row in rows {
         let entry = SlottedBitmap {
@@ -748,8 +752,8 @@ pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
         };
         let key = (entry.batch_id, entry.player);
         match row.slot.as_str() {
-            "pending" => { pending.insert(key, entry); }
-            "active" => { active.insert(key, entry); }
+            "pending" => { slots.pending.insert(key, entry); }
+            "active" => { slots.active.insert(key, entry); }
             _ => {}
         }
     }
@@ -904,9 +908,16 @@ The resolver needs to decode bitmaps using the config they were encoded against,
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
+const MAX_CACHE_ENTRIES: usize = 500;
+
 pub struct ConfigCache {
-    cache: RwLock<HashMap<H256, Vec<MarketConfig>>>,
+    cache: RwLock<HashMap<H256, CachedConfig>>,
     data_node_url: String,
+}
+
+struct CachedConfig {
+    configs: Vec<MarketConfig>,
+    inserted_at: u64,
 }
 
 impl ConfigCache {
@@ -915,18 +926,52 @@ impl ConfigCache {
     }
 
     pub async fn get_or_fetch(&self, config_hash: &H256) -> Result<Vec<MarketConfig>> {
-        if let Some(configs) = self.cache.read().await.get(config_hash) {
-            return Ok(configs.clone());
+        // Check cache first
+        if let Some(cached) = self.cache.read().await.get(config_hash) {
+            return Ok(cached.configs.clone());
         }
+
+        // Fetch from data-node
         let url = format!("{}/batches/config/{:?}", self.data_node_url, config_hash);
         let resp = reqwest::get(&url).await?.json::<Vec<MarketConfig>>().await?;
-        self.cache.write().await.insert(*config_hash, resp.clone());
+
+        // SECURITY: Verify fetched config hash matches requested hash.
+        // Prevents cache poisoning from compromised/MITM'd data-node.
+        let computed_hash = compute_config_hash(&resp);
+        if computed_hash != *config_hash {
+            return Err(anyhow!(
+                "Config hash mismatch: requested {:?}, got {:?}. Possible cache poisoning.",
+                config_hash, computed_hash
+            ));
+        }
+
+        // Bounded cache: evict oldest entries if full
+        let mut cache = self.cache.write().await;
+        if cache.len() >= MAX_CACHE_ENTRIES {
+            // Evict oldest 10%
+            let mut entries: Vec<_> = cache.iter().map(|(k, v)| (*k, v.inserted_at)).collect();
+            entries.sort_by_key(|(_, t)| *t);
+            for (key, _) in entries.iter().take(MAX_CACHE_ENTRIES / 10) {
+                cache.remove(key);
+            }
+        }
+        cache.insert(*config_hash, CachedConfig {
+            configs: resp.clone(),
+            inserted_at: now_epoch(),
+        });
         Ok(resp)
     }
 
-    /// Insert known config (e.g. from signed batch responses)
-    pub async fn insert(&self, config_hash: H256, configs: Vec<MarketConfig>) {
-        self.cache.write().await.insert(config_hash, configs);
+    /// Insert known config with hash verification
+    pub async fn insert(&self, config_hash: H256, configs: Vec<MarketConfig>) -> Result<()> {
+        let computed = compute_config_hash(&configs);
+        if computed != config_hash {
+            return Err(anyhow!("Config hash mismatch on insert"));
+        }
+        self.cache.write().await.insert(config_hash, CachedConfig {
+            configs, inserted_at: now_epoch(),
+        });
+        Ok(())
     }
 }
 ```
@@ -947,6 +992,14 @@ for ab in &active_bitmaps {
     // Decode using bitmap_market_configs, not the batch's current market_configs
     // This ensures players who bet on config X are scored against config X's markets
 }
+
+// SECURITY (TOCTOU fix): The bitmap reveal handler must accept bitmaps
+// encoded against ANY of the last 3 config hashes (current + 2 previous).
+// This handles the race where frontend checks config, config changes,
+// then the on-chain commit lands with the old config_hash. The bitmap's
+// config_hash field ensures correct decoding at resolution time.
+// The ConfigCache retains historical configs (bounded to 500 entries)
+// so get_or_fetch works for recent configs even after rotation.
 ```
 
 - [ ] **Step 5: Run tests**
@@ -978,20 +1031,34 @@ In the resolution loop, add bitmap flip AFTER consensus completes successfully (
 // and consensus fails, the bitmaps are lost — players who submitted
 // predictions would be silently dropped from the next tick.
 
+// Step 0: Check if this tick was already resolved on-chain (idempotency guard).
+// This prevents double-submit on retry after on-chain tx fail + engine restart.
+if scheduler.is_tick_resolved_on_chain(&db_pool, batch_id, resolved_tick_id).await {
+    tracing::info!(batch_id, resolved_tick_id, "Tick already resolved on-chain, skipping");
+    // Flip bitmaps if we haven't yet (crash between on-chain submit and flip)
+    bitmap_store.flip(batch_id).await;
+    bitmap_store.persist_flip_to_db(&db_pool, batch_id).await.ok(); // best-effort
+    scheduler.mark_resolved_with_db(&db_pool, batch_id, resolved_tick_id).await;
+    continue;
+}
+
 // Step 1: Compute bitmap_set_hash (see Step 3 below)
 // Step 2: Create proposal
 let proposal = tc.create_proposal(&result, bitmap_set_hash).await?;
 // Step 3: Wait for BLS consensus (all issuers sign)
 let consensus_result = proposal.wait_for_completion().await?;
-// Step 4: Submit on-chain
-submit_tick_resolution(consensus_result).await?;
-// Step 5: NOW flip bitmaps — consensus succeeded, on-chain tx submitted
-bitmap_store.cleanup_stale(batch_id, current_tick_id).await;
-bitmap_store.flip(batch_id).await;
+// Step 4: Submit on-chain and WAIT for confirmation
+let tx_receipt = submit_tick_resolution(consensus_result).await?;
+// If submit fails (revert, gas, nonce), the ? propagates and we skip flip.
+// On next loop iteration, Step 0 checks on-chain state to avoid double-submit.
+
+// Step 5: DB-first atomic flip (see CRITICAL FIX below).
+// DB transaction FIRST, then in-memory flip. If DB fails, don't flip in-memory.
+// This ensures crash recovery via load_from_db always restores correct state.
 bitmap_store.persist_flip_to_db(&db_pool, batch_id).await?;
-// If persist_flip_to_db fails, log critical error but don't panic —
-// in-memory state is correct, DB will be inconsistent until restart
-// which triggers load_from_db recovery.
+bitmap_store.flip(batch_id).await;
+// Mark tick resolved AFTER flip to ensure consistent state on recovery.
+scheduler.mark_resolved_with_db(&db_pool, batch_id, resolved_tick_id).await;
 
 // Config promotion is handled by chain listener via BatchConfigPromoted event
 ```
@@ -1334,15 +1401,34 @@ if current_tick_id < batch.activation_tick_id {
 }
 ```
 
-- [ ] **Step 3: Set activation_tick_id via BLS consensus**
+- [ ] **Step 3: Set activation_tick_id via BLS consensus — persisted + validated**
 
-Add a new BLS-signed message type `SET_ACTIVATION_TICK` that all issuers must agree on:
+Add a new BLS-signed message type `SET_ACTIVATION_TICK`:
 
 ```rust
 // Leader proposes activation after confirming all issuers are on new code:
 // 1. Leader pings all issuers for version (existing P2P health check)
-// 2. If all 3 report new version, propose activation_tick_id = current_tick + 2
+// 2. If all 3 report new version, propose activation_tick_id = current_tick + 10
+//    (margin of 10 ticks absorbs clock drift and P2P delay between issuers)
 // 3. BLS-sign and store activation_tick_id per batch
+
+// SECURITY: Validate activation_tick_id is in the future
+if proposed_activation_tick <= current_tick_id + 5 {
+    return Err(anyhow!("activation_tick_id must be at least 5 ticks in the future"));
+}
+
+// SECURITY: Persist to DB so it survives restarts
+sqlx::query(
+    "INSERT INTO vision_batch_state (batch_id, activation_tick_id)
+     VALUES ($1, $2)
+     ON CONFLICT (batch_id) DO UPDATE SET activation_tick_id = EXCLUDED.activation_tick_id"
+)
+.bind(batch_id as i64)
+.bind(proposed_activation_tick as i64)
+.execute(&db_pool).await?;
+
+// On startup, load_from_db reads activation_tick_id from vision_batch_state.
+// If activation_tick_id is 0 or missing, default to legacy mode.
 ```
 
 - [ ] **Step 4: Run tests**
@@ -1402,13 +1488,31 @@ p2p.broadcast(VisionP2PMessage::BitmapGossip {
 }).await;
 ```
 
-- [ ] **Step 3: Handle gossip receipt**
+- [ ] **Step 3: Handle gossip receipt with DoS protection**
 
 ```rust
-// When receiving gossip, if we don't have this bitmap, request it from the sender:
+// Rate-limit gossip processing per peer (prevent flood attacks)
+const MAX_GOSSIP_PER_PEER_PER_SECOND: usize = 50;
+const MAX_OUTSTANDING_REQUESTS_PER_PEER: usize = 10;
+
 VisionP2PMessage::BitmapGossip { batch_id, player, bitmap_hash, .. } => {
-    if bitmap_store.get_pending(batch_id, player).await.is_none() {
-        // Request full bitmap from sender
+    // Rate limit check
+    if !gossip_rate_limiter.check(sender_id) {
+        tracing::warn!(peer = ?sender_id, "Gossip rate limit exceeded, dropping");
+        return;
+    }
+
+    // Validate: only process gossip for known batches
+    if !scheduler.has_batch(batch_id).await {
+        return; // Unknown batch — ignore
+    }
+
+    // Only request if we don't have it and haven't already requested it
+    if bitmap_store.get_pending(batch_id, player).await.is_none()
+        && !outstanding_requests.contains(&(batch_id, player))
+        && outstanding_requests.count_for_peer(sender_id) < MAX_OUTSTANDING_REQUESTS_PER_PEER
+    {
+        outstanding_requests.insert((batch_id, player), sender_id);
         p2p.request_bitmap(sender_id, batch_id, player, bitmap_hash).await;
     }
 }
@@ -1809,7 +1913,7 @@ git commit -m "feat(frontend): VisionMarketsGrid uses dynamic source registry fr
 
 - Always open (no locked/disabled state)
 - Header: "Set predictions for next tick"
-- Add config freshness check before submit:
+- Add config freshness check before submit (note: this is best-effort — there's an inherent TOCTOU race between check and on-chain tx. The issuer side must also accept bitmaps for recent configs):
 
 ```typescript
 // Before calling updateBitmap():
@@ -1821,6 +1925,11 @@ if (freshBatch && freshBatch.config_hash !== currentConfigHash) {
   // Re-fetch market list, re-encode bitmap, then submit
   return
 }
+// IMPORTANT: Even with this check, config can change between check and tx.
+// The issuer MUST accept bitmaps encoded against any of the last 3 configs
+// (current + 2 previous) to handle this race. The ConfigCache already stores
+// historical configs. The bitmap's config_hash field ensures correct decoding
+// regardless of which config was used.
 ```
 
 - After submit: "Your bets are set for tick N+1"
@@ -1951,19 +2060,30 @@ git commit -m "feat(issuer): BLS-driven migration for lockOffset=0 on all batche
 
 **No code changes — operational steps. CRITICAL: deploy ordering matters.**
 
-The contract's new `updateBatchConfig()` requires a `tickDuration` parameter. Old issuers don't send it. If we deploy the contract first, issuers can't push config updates until they're also updated. Deploy issuers first — they can tolerate the old contract (just pass tickDuration=0 which gets ignored by old contract).
+Adding `tickDuration` to `updateBatchConfig()` changes the function selector. Old issuers can't call the new contract (wrong selector), new issuers can't call the old contract (wrong selector). The ONLY safe approach is atomic deployment: stop issuers, deploy contract, deploy issuers, start issuers.
 
 - [ ] **Step 1: Deploy data-node changes** (lock removal, /sources/registry, integer prices, BLS verification)
 
-Data-node changes are backward compatible — old issuers can still read responses (they ignore `value_scaled` field).
+Data-node changes are backward compatible — old issuers can still read responses (they ignore `value_scaled` field). Deploy this first with zero downtime.
 
-- [ ] **Step 2: Deploy ALL issuer instances simultaneously** (stop all 3, deploy new code with `activation_tick_id=0` / migration mode disabled, start all 3)
+- [ ] **Step 2: Atomic contract + issuer deployment**
 
-New issuers with `activation_tick_id=0` run in legacy mode — they produce identical consensus as old issuers. Verify consensus still works.
+This MUST be a single coordinated operation:
 
-- [ ] **Step 3: Deploy contract changes** (tickDuration param + MAX_BATCHES)
+```bash
+# 1. Stop all issuers (brief downtime — no tick resolution during deploy)
+ssh index-maker/prod/be "cd /home/max/index && docker compose -f docker/testnet/issuer/docker-compose.yml stop"
 
-Now issuers can use the new `updateBatchConfig()` signature.
+# 2. Deploy contract upgrade (tickDuration param + MAX_BATCHES)
+cd contracts && forge script script/DeployVisionUpgrade.s.sol --fork-url $RPC --broadcast
+
+# 3. Deploy new issuer code (new updateBatchConfig signature, activation_tick_id=0)
+ssh index-maker/prod/be "cd /home/max/index && git pull && docker compose -f docker/testnet/issuer/docker-compose.yml up -d --build"
+
+# Total downtime: ~2-3 minutes (build + restart)
+```
+
+New issuers start in legacy mode (`activation_tick_id=0`). Verify consensus works with new contract.
 
 - [ ] **Step 4: Run issuer migration** (restart issuers with `--run-migration` flag)
 
