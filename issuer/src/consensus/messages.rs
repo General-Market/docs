@@ -1291,7 +1291,7 @@ impl ConsensusMessageHandler {
         if current_phase != ConsensusPhase::PriceVoting
             && current_phase != ConsensusPhase::PriceProposal
         {
-            warn!(
+            debug!(
                 ?current_phase,
                 "PriceVote received in unexpected phase"
             );

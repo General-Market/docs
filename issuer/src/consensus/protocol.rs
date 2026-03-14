@@ -3089,7 +3089,7 @@ where
                 debug!("Message buffered for future cycle");
             }
             MessageHandleResult::UnexpectedPhase => {
-                warn!(code = "INFRA-007", "Message received in unexpected phase");
+                debug!(code = "INFRA-007", "Message received in unexpected phase");
             }
             MessageHandleResult::Ignored => {}
         }
@@ -3341,7 +3341,21 @@ where
         };
 
         info!(cycle_number, approved, "Sending PriceVote to leader");
-        self.p2p.send_to(leader_id, message).await
+        self.p2p.send_to(leader_id, message).await?;
+
+        // Mark price consensus as complete from follower's perspective.
+        // The follower's job is done after sending its vote — it doesn't
+        // need to wait for the leader's result. Without this, the polling
+        // loop in run_follower_protocol_price_only times out (INFRA-007)
+        // because nothing ever transitions price_state to Complete.
+        {
+            let mut state = self.price_state.write().await;
+            if let Some(round) = state.current_round_mut() {
+                round.set_phase(ConsensusPhase::Complete);
+            }
+        }
+
+        Ok(())
     }
 
     /// Follower: Handle batch proposal
