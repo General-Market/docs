@@ -784,7 +784,9 @@ CREATE TABLE vision_bitmaps (
 DROP TABLE IF EXISTS vision_batch_state;
 CREATE TABLE vision_batch_state (
     batch_id BIGINT PRIMARY KEY,
-    last_resolved_tick_id BIGINT NOT NULL DEFAULT 0
+    current_tick_id BIGINT NOT NULL DEFAULT 0,
+    last_resolved_tick_id BIGINT NOT NULL DEFAULT 0,
+    active_config_hash TEXT NOT NULL DEFAULT ''
 );
 ```
 
@@ -1400,7 +1402,20 @@ Remove the check in `run_leader_round()` (line 235).
 Remove the check in `publish_to_data_node()` (line 320).
 Remove the check in `replicate_to_own_data_node()` (line 357).
 
-- [ ] **Step 2: Run tests**
+- [ ] **Step 2: Change orchestrator interval to per-tick**
+
+The orchestrator currently runs on a fixed 120s interval. Per spec, it should run every tick to match config changes to tick boundaries:
+
+```rust
+// In orchestrator main loop:
+// OLD: tokio::time::sleep(Duration::from_secs(120)).await;
+// NEW: sleep until next tick boundary, min 30s
+let min_tick = scheduler.get_min_tick_duration().await;
+let sleep_duration = Duration::from_secs(min_tick.min(120));
+tokio::time::sleep(sleep_duration).await;
+```
+
+- [ ] **Step 3: Run tests**
 
 Run: `cd issuer && cargo test orchestrator -v`
 Expected: PASS
@@ -1471,6 +1486,16 @@ Also change unknown source handling (line 294-296):
 None => { reject_count += 1; }
 ```
 
+Also add exact match on `resolution_type` per market:
+```rust
+// In follower verification, for each market config:
+if leader_market.resolution_type != follower_market.resolution_type {
+    reject_count += 1;
+    tracing::warn!(market = %leader_market.market_id, "resolution_type mismatch");
+    continue;
+}
+```
+
 - [ ] **Step 3: Update updateBatchConfig call signature**
 
 The orchestrator calls `updateBatchConfig` on-chain. Update to include `tickDuration` parameter:
@@ -1516,6 +1541,80 @@ Expected: PASS
 ```bash
 git add issuer/src/vision/batch_config_orchestrator.rs
 git commit -m "feat(issuer): batch auto-creation with rate limit, tightened follower verification"
+```
+
+---
+
+### Task 15b: BatchCreated event handler + data-node retry
+
+**Files:**
+- Modify: `issuer/src/chain_listener.rs` (or equivalent event handler)
+- Modify: `issuer/src/vision/tick_scheduler.rs`
+- Modify: `issuer/src/vision/engine.rs` (retry logic)
+
+**Context:** Spec section 4 requires issuers to auto-detect new batches via `BatchCreated` chain events. Also, spec requires retry with exponential backoff for data-node downtime.
+
+- [ ] **Step 1: Add BatchCreated event handler in ChainListener**
+
+```rust
+// In chain_listener.rs, subscribe to Vision BatchCreated events:
+VisionEvent::BatchCreated { batch_id, source_id, config_hash, tick_duration } => {
+    tracing::info!(batch_id, %source_id, "New batch detected on-chain");
+    tick_scheduler.on_batch_created(batch_id, source_id, config_hash, tick_duration).await;
+}
+```
+
+- [ ] **Step 2: Add on_batch_created to tick_scheduler**
+
+```rust
+pub async fn on_batch_created(&self, batch_id: u64, source_id: H256, config_hash: H256, tick_duration: u64) {
+    let mut batches = self.batches.write().await;
+    if batches.contains_key(&batch_id) { return; } // already known
+    batches.insert(batch_id, BatchState {
+        source_id, config_hash, tick_duration,
+        last_resolved_tick_id: 0,
+        ..Default::default()
+    });
+    tracing::info!(batch_id, "Batch added to scheduler via chain event");
+}
+```
+
+Engine will pick up the new batch in its next resolution cycle.
+
+- [ ] **Step 3: Add retry with exponential backoff for data-node fetches**
+
+In `engine.rs`, wrap data-node snapshot fetch with retry:
+
+```rust
+async fn fetch_snapshot_with_retry(url: &str, source: &str, secret: &Option<String>) -> Result<Value> {
+    let delays = [Duration::from_secs(5), Duration::from_secs(15), Duration::from_secs(45)];
+    let mut last_err = None;
+    for (attempt, delay) in std::iter::once(Duration::ZERO).chain(delays.iter().copied()).enumerate() {
+        if attempt > 0 { tokio::time::sleep(delay).await; }
+        match fetch_snapshot_data_inner_with_secret(url, source, secret).await {
+            Ok(data) => return Ok(data),
+            Err(e) => {
+                tracing::warn!(attempt, source, error = %e, "Data-node fetch failed, retrying");
+                last_err = Some(e);
+            }
+        }
+    }
+    Err(last_err.unwrap_or_else(|| anyhow!("All retries exhausted")))
+}
+```
+
+Replace all direct `fetch_snapshot_data_inner_with_secret` calls with `fetch_snapshot_with_retry`.
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd issuer && cargo test chain_listener -v && cargo test scheduler -v`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add issuer/src/chain_listener.rs issuer/src/vision/tick_scheduler.rs issuer/src/vision/engine.rs
+git commit -m "feat(issuer): BatchCreated event auto-detection + data-node retry with exponential backoff"
 ```
 
 ---
@@ -2117,6 +2216,9 @@ git commit -m "feat(frontend): continuous betting UX — always-open panel, no m
 - Modify: `frontend/components/domain/vision/sources/NextBatches.tsx` — remove lockOffset prop
 - Modify: `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references
 - Modify: `frontend/components/domain/vision/ExpandedBatch.tsx` — remove static imports if any
+- Modify: `frontend/components/domain/vision/sources/SourcesGrid.tsx` — switch to useSourceRegistry hook
+- Modify: `frontend/components/domain/vision/detail/SourceDetailCategoryNav.tsx` — derive categories from API
+- Modify: `frontend/components/domain/vision/VisionSection.tsx` (explorer) — use dynamic source data
 - Modify: `frontend/e2e/helpers/vision-api.ts` — remove static file scanning
 - Clean up any remaining imports of deleted functions
 
@@ -2240,7 +2342,7 @@ cd frontend && vercel --prod
 | 2 | 3-6 | Data-node: lock removal, source registry, integer prices, BLS verification |
 | 3 | 7-8 | Issuer: two-slot bitmap model (single RwLock) + DB schema (atomic transactions) |
 | 4 | 9-13 | Issuer: resolver/engine (multiplier removal, flat indexing, config cache, bitmap flip after consensus, fixed-point prices) |
-| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances) + remove legacy path + bitmap gossip |
+| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances, interval) + BatchCreated handler + retry + remove legacy path + bitmap gossip |
 | 6 | 18-21 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
 | 7 | 22-25 | Frontend: dynamic registry + continuous betting UX |
 | 8 | 26-27 | Fresh deploy: wipe DB + deploy contracts/issuers/frontend (no migration) |
