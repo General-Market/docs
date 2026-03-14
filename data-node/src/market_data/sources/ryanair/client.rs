@@ -6,7 +6,7 @@
 //!
 //! Assets are static -- defined in config/ryanair.json (40 airports).
 //!
-//! API: https://www.ryanair.com/api/farfnd/v4/ (unofficial, may change)
+//! API: https://services-api.ryanair.com/farfnd/v4/ (unofficial, may change)
 //! Auth: None
 //! Rate limit: Conservative 20 req/5min (Ryanair is strict about bot traffic)
 
@@ -27,8 +27,8 @@ use crate::market_data::traits::{
 
 const ASSET_JSON: &str = include_str!("../../../config/ryanair.json");
 
-/// Ryanair fare finder API base
-const API_BASE: &str = "https://www.ryanair.com/api/farfnd/v4/oneWayFares";
+/// Ryanair fare finder API base (services-api bypasses WAF on www.ryanair.com)
+const API_BASE: &str = "https://services-api.ryanair.com/farfnd/v4/oneWayFares";
 
 /// Delay between per-airport requests (Ryanair blocks aggressive crawling)
 const INTER_REQUEST_DELAY_MS: u64 = 1500;

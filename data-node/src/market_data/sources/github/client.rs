@@ -285,7 +285,10 @@ impl MarketDataSource for GithubMarketSource {
             .map(|r| AssetUpdate {
                 asset_id: make_asset_id(&r.full_name),
                 symbol: format!("GH:{}", r.full_name),
-                name: r.description.clone().unwrap_or_else(|| r.full_name.clone()),
+                name: {
+                    let raw = r.description.clone().unwrap_or_else(|| r.full_name.clone());
+                    raw.chars().take(200).collect()
+                },
                 category: Some("sentiment".to_string()),
                 metadata: serde_json::json!({
                     "api_ref": format!("repo:{}", r.full_name),
@@ -372,7 +375,10 @@ impl MarketDataSource for GithubMarketSource {
             .map(|r| AssetEntry {
                 asset_id: make_asset_id(&r.full_name),
                 symbol: format!("GH:{}", r.full_name),
-                name: r.description.clone().unwrap_or_else(|| r.full_name.clone()),
+                name: {
+                    let raw = r.description.clone().unwrap_or_else(|| r.full_name.clone());
+                    raw.chars().take(200).collect()
+                },
                 category: "sentiment".to_string(),
                 subcategory: "repositories".to_string(),
                 api_ref: format!("repo:{}", r.full_name),
