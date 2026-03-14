@@ -1267,18 +1267,13 @@ let call = vision.update_batch_config(
 );
 ```
 
-Also update the BLS message hash to match the new contract domain. **CRITICAL:** The Solidity `abi.encode` encodes string literals as `bytes32` (via keccak), NOT as ABI-encoded dynamic strings. Match the Solidity encoding exactly:
+Also update the BLS message hash to match the new contract domain. Solidity `abi.encode` treats string literals as **dynamic `string` types** (offset pointer + length prefix + padded data), NOT as `bytes32`. Use `Token::String(...)` to match — this is the pattern used everywhere in the existing codebase (see `tick_consensus.rs:52`, `engine.rs:588`, `deposit_watcher.rs:1331`):
 
 ```rust
-// Must match Solidity: keccak256(abi.encode(block.chainid, address(this), "UPDATE_BATCH_CONFIG", ...))
-// abi.encode pads string literals to 32 bytes. Use ethers abi.encode with
-// the same types the contract uses.
 let message = ethers::abi::encode(&[
     Token::Uint(chain_id.into()),
     Token::Address(vision_address),
-    // Solidity string literal in abi.encode is encoded as bytes32
-    // keccak256("UPDATE_BATCH_CONFIG") to match abi.encode behavior
-    Token::FixedBytes(ethers::utils::keccak256("UPDATE_BATCH_CONFIG").to_vec()),
+    Token::String("UPDATE_BATCH_CONFIG".to_string()),  // dynamic string, matches abi.encode
     Token::Uint(batch_id.into()),
     Token::FixedBytes(config_hash.as_bytes().to_vec()),
     Token::Uint(lock_offset.into()),
@@ -1286,7 +1281,9 @@ let message = ethers::abi::encode(&[
 ]);
 ```
 
-**Verification:** Write a test that computes the message hash in Rust and compares to the Solidity output from a forge test. BLS messages MUST match byte-for-byte or consensus breaks.
+**WARNING:** Do NOT use `Token::FixedBytes(keccak256("UPDATE_BATCH_CONFIG"))` — this produces completely different bytes than what the Solidity contract computes and would break BLS verification on every call.
+
+**Verification:** Write a cross-language test: compute message hash in Rust, compare to Solidity output from a forge test. BLS messages MUST match byte-for-byte.
 
 - [ ] **Step 4: Run tests**
 
