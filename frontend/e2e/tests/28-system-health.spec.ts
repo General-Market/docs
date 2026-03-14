@@ -16,21 +16,19 @@ test.describe('System Health', () => {
   })
 
   test('issuer nodes show active status', async ({ page }) => {
-    await page.goto('/index')
-    // Scroll to System Status section to trigger SSE data
-    await page.evaluate(() => {
-      const h = [...document.querySelectorAll('h2, h3')].find(el => /issuer|system/i.test(el.textContent || ''))
-      h?.scrollIntoView()
-    })
+    // Navigate directly to System section via hash
+    await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.waitForTimeout(3_000)
+    const systemSection = page.locator('#system')
+    await expect(systemSection).toBeVisible({ timeout: 30_000 })
+    await systemSection.scrollIntoViewIfNeeded()
+
     let hasNodes = await page.getByText(/Alpha|Beta|Gamma/i).first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasNodes) {
-      // Retry — SSE data may not have loaded
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
-      await page.evaluate(() => {
-        const h = [...document.querySelectorAll('h2, h3')].find(el => /issuer|system/i.test(el.textContent || ''))
-        h?.scrollIntoView()
-      })
+      // Retry — SSE data may not have loaded yet
+      await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForTimeout(5_000)
+      await page.locator('#system').scrollIntoViewIfNeeded()
       hasNodes = await page.getByText(/Alpha|Beta|Gamma/i).first().isVisible({ timeout: 45_000 }).catch(() => false)
     }
     expect(hasNodes).toBe(true)

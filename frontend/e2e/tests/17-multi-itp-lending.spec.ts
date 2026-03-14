@@ -10,7 +10,6 @@
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
 import {
   ensureWalletConnected,
-  itpCard,
 } from '../helpers/selectors';
 import { getItpCountL3 } from '../helpers/backend-api';
 
@@ -24,33 +23,17 @@ test.describe('Multi-ITP Lending Visibility', () => {
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Wait for ITP listing — retry navigation if data-node is slow
-    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!itpVisible) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
-      await ensureWalletConnected(page, TEST_ADDRESS);
-      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
-    }
-    expect(itpVisible).toBe(true);
+    // Navigate to the Lend section which shows the markets table inline
+    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.waitForTimeout(3_000);
 
-    // Find ANY ITP card with a Borrow button (only ITPs with Morpho markets show it)
-    const allCards = itpCard(page);
-    const cardCount = await allCards.count();
-    let borrowClicked = false;
-    for (let i = 0; i < cardCount; i++) {
-      const btn = allCards.nth(i).getByRole('button', { name: 'Borrow', exact: true });
-      if (await btn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await btn.click();
-        borrowClicked = true;
-        break;
-      }
-    }
-    expect(borrowClicked, 'At least one ITP should have a Borrow button').toBe(true);
+    const lendSection = page.locator('#lend');
+    await expect(lendSection).toBeVisible({ timeout: 30_000 });
+    await lendSection.scrollIntoViewIfNeeded();
 
     // Wait for markets table to render
-    const marketsTable = page.locator('table');
-    await expect(marketsTable.first()).toBeVisible({ timeout: 15_000 });
+    const marketsTable = lendSection.locator('table');
+    await expect(marketsTable.first()).toBeVisible({ timeout: 30_000 });
 
     // Count table body rows (each row = one ITP market)
     const tableRows = marketsTable.locator('tbody tr');
@@ -70,32 +53,17 @@ test.describe('Multi-ITP Lending Visibility', () => {
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!itpVisible) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
-      await ensureWalletConnected(page, TEST_ADDRESS);
-      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
-    }
-    expect(itpVisible).toBe(true);
+    // Navigate to Lend section
+    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.waitForTimeout(3_000);
 
-    // Find ANY ITP card with a Borrow button
-    const allCards = itpCard(page);
-    const cardCount = await allCards.count();
-    let borrowClicked = false;
-    for (let i = 0; i < cardCount; i++) {
-      const btn = allCards.nth(i).getByRole('button', { name: 'Borrow', exact: true });
-      if (await btn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await btn.click();
-        borrowClicked = true;
-        break;
-      }
-    }
-    expect(borrowClicked, 'At least one ITP should have a Borrow button').toBe(true);
+    const lendSection = page.locator('#lend');
+    await expect(lendSection).toBeVisible({ timeout: 30_000 });
+    await lendSection.scrollIntoViewIfNeeded();
 
     // Wait for table and on-chain discovery
-    const marketsTable = page.locator('table');
-    await expect(marketsTable.first()).toBeVisible({ timeout: 15_000 });
+    const marketsTable = lendSection.locator('table');
+    await expect(marketsTable.first()).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(5_000);
 
     // Check for "Coming Soon" text (ITPs without Morpho market)
