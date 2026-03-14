@@ -77,11 +77,21 @@ active_bitmaps: HashMap<Address, (H256, Vec<u8>)>
 
 Flip at tick boundary during resolution.
 
+**Consensus on bitmap state.** The two-slot flip is deterministic and happens as part of the resolution consensus:
+1. All issuers resolve tick N using `active_bitmaps` (derived from on-chain `bitmapHash` — the contract remains source of truth for "has bitmap")
+2. All issuers sign the tick result via BLS
+3. After consensus is reached and result published, all issuers flip: `active = pending`, `pending = cleared`
+4. The flip is deterministic based on `tick_id`, not wall-clock time — all issuers flip at the same logical point
+
+**Ordering at tick boundary:** Resolution → BLS signing → publish → config promotion → bitmap flip. Config promotion happens before bitmap flip so that the newly active bitmaps are evaluated against the new config on their tick.
+
+**Remove multiplier types.** Delete `issuer/src/vision/multiplier.rs` entirely. Remove `PlayerMultiplier` from `types.rs`. Remove `join_timestamp` and `num_committed_ticks` from `PlayerPosition` (these only serve the multiplier). Remove all `use super::multiplier` imports.
+
 ### 2. Issuer — Config Orchestrator (`issuer/src/vision/batch_config_orchestrator.rs`)
 
 **Run every tick** (currently runs on a 120s interval). For each batch:
-1. Query data-node: `GET /vision/recommended-config?source={sourceId}`
-2. If config hash differs from current batch config → propose update
+1. Query data-node: `GET /batches/recommended` (bulk endpoint, returns all sources)
+2. For each source, if config hash differs from current batch config → propose update
 3. BLS consensus among issuers on new config
 4. Call `updateBatchConfig()` on-chain
 5. Lazy promotion at next tick boundary (already in contract)
@@ -115,7 +125,12 @@ Change to:
 - `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
 - Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
-**One-time migration**: Call `updateBatchConfig(batchId, currentConfigHash, 0, blsSig, nonce, bitmask)` for each batch to set `lockOffset = 0`. Issuers sign the update. Can be done in a single script.
+**One-time migration**: For each of the 43 batches:
+1. Read `batches[batchId].nonce` on-chain to get current config nonce
+2. Call `updateBatchConfig(batchId, currentConfigHash, 0, blsSig, nonce, bitmask)` with `lockOffset = 0`
+3. Issuers BLS-sign each update
+
+This is 43 sequential calls in a single migration script. Note: setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
 
 ### 5. Frontend — Remove Static Dependencies
 
@@ -136,9 +151,11 @@ All batch data comes from live API:
 ### 6. Frontend — Remove Multiplier UI
 
 **Files to clean up:**
-- `frontend/lib/vision/tick.ts` — remove `getMultiplier()`, `lockOffset` from `getBatchTickState()`
+- `frontend/lib/vision/tick.ts` — remove `getMultiplier()`, `lockOffset` from `getBatchTickState()`, update `getSourceKeyForBatch()` / `getBatchDisplayName()` / `getBatchLogo()` / `getAllBatches()` to not depend on static config
 - `frontend/components/domain/vision/detail/SourceDetail.tsx` — remove Multiplier column from batch bar
 - `frontend/components/domain/vision/detail/BatchEntryPanel.tsx` — remove multiplier display, lock state warnings
+- `frontend/components/domain/vision/sources/NextBatches.tsx` — remove `lockOffset` prop, `getMultiplier()` call
+- `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references
 - `frontend/hooks/vision/useBitmapEditor.ts` — no changes needed (bitmap UP/DOWN stays)
 
 ### 7. Frontend — Continuous Betting UX
@@ -162,18 +179,21 @@ All batch data comes from live API:
 **Files referencing vision-batches.json:**
 - `frontend/components/domain/vision/detail/SourceDetail.tsx` — static batch lookup
 - `frontend/components/domain/vision/detail/BatchEntryPanel.tsx` — static batchId
+- `frontend/components/domain/vision/ExpandedBatch.tsx` — static batch data import
 - `frontend/app/api/vision/batches/route.ts` — configHash→source reverse lookup
+- `frontend/e2e/helpers/vision-api.ts` — scans static file for unjoined batches (has fallback to on-chain scan, update to use only that)
 - `contracts/script/DeployAllVisionBatches.s.sol` — generates the file (keep for deploy, but frontend stops reading it)
 
 The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the issuer API response: issuers already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
 
 ### 9. Data-node — Config Recommendations
 
-**Ensure endpoint exists**: `GET /vision/recommended-config?source={sourceId}`
+**Endpoint already exists**: `GET /batches/recommended` (bulk, returns all sources at once)
 
-Returns:
+Returns a `RecommendedBatchesResponse` with a `batches` array, each entry containing:
 ```json
 {
+  "sourceId": "stocks",
   "configHash": "0x...",
   "markets": [
     { "assetId": "bitcoin", "resolutionType": "up_x", "thresholdBps": 200 }
@@ -188,7 +208,7 @@ Data-node generates this from its source-specific data collection. Markets can c
 - New assets added to a source
 - Seasonal relevance (e.g., sports seasons, market hours)
 
-The issuer config orchestrator calls this and proposes updates when the hash changes.
+The issuer config orchestrator calls this bulk endpoint and proposes updates per-source when the config hash changes.
 
 ---
 
@@ -201,15 +221,23 @@ The issuer config orchestrator calls this and proposes updates when the hash cha
 
 Player positions are unaffected. Existing balances carry over. The transition happens at a tick boundary — old model resolves the last tick, new model starts from the next one.
 
+**Rollback plan**: If issues arise after migration, push `lockOffset = original_value` back for each batch via the same `updateBatchConfig()` + BLS flow. Issuer code can be rolled back to previous Docker image. Frontend can be redeployed from previous commit. No contract changes means no irreversible state.
+
 ---
 
 ## Testing
 
 - **Issuer unit tests**: Resolver without multiplier, bitmap flip logic, sit-out handling
+- **Issuer unit tests**: `multiplier.rs` tests deleted — verify no regressions in resolver
 - **Integration test**: Full tick lifecycle — submit pending, resolve, flip, verify sit-out
+- **Integration test**: Transition boundary — last old-model tick resolves, first new-model tick uses two-slot model
+- **Integration test**: All players sit out — verify no payouts, no panics, balances unchanged
+- **Integration test**: Concurrent bitmap submission during tick flip — verify correct slot assignment
+- **Config orchestrator**: Mock data-node `GET /batches/recommended` returns new config → verify on-chain update
+- **Migration script**: Run against local Anvil — verify all 43 batches get `lockOffset = 0`
 - **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
-- **Config orchestrator**: Mock data-node returns new config → verify on-chain update
 - **Frontend**: Verify no references to vision-batches.json, multiplier UI gone, continuous betting UX works
+- **Frontend**: Verify `tick.ts` functions work without static config (use live API data only)
 
 ---
 
@@ -219,10 +247,14 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 |-----------|---------|
 | `vision-batches.json` | Frontend dependency removed (file kept for deploy scripts) |
 | Multiplier math | Issuer resolver, frontend display |
+| `multiplier.rs` | Entire file deleted (`issuer/src/vision/multiplier.rs`) |
+| `PlayerMultiplier` type | Removed from `types.rs` |
+| `join_timestamp`, `num_committed_ticks` | Removed from `PlayerPosition` in `types.rs` |
 | Lock window logic | Issuer, frontend timer/UI |
+| `is_in_lock_period()` | Dead code in `batch_config_orchestrator.rs` |
 | `getMultiplier()` | `frontend/lib/vision/tick.ts` |
-| Lock countdown | SourceDetail, BatchEntryPanel |
-| Static batch fallback | BatchEntryPanel, SourceDetail |
+| Lock countdown | SourceDetail, BatchEntryPanel, NextBatches |
+| Static batch fallback | BatchEntryPanel, SourceDetail, ExpandedBatch |
 | Early-entry incentive | Entire concept removed |
 
 ## What Stays
