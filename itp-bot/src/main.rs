@@ -1,6 +1,7 @@
 pub mod chain;
 mod config;
 pub mod data_node;
+pub mod deployer;
 mod manifest;
 pub mod rebalancer;
 pub mod token_registry;

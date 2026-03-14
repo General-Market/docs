@@ -86,6 +86,33 @@ impl ChainClient {
         Ok(state)
     }
 
+    /// Deploy a new ITP on-chain via `createITP`.
+    pub async fn create_itp(
+        &self,
+        name: String,
+        symbol: String,
+        weights: Vec<U256>,
+        assets: Vec<Address>,
+        prices: Vec<U256>,
+        bridge_nonce: U256,
+    ) -> Result<TransactionReceipt, Box<dyn std::error::Error>> {
+        let tx = self
+            .contract
+            .create_itp(name, symbol, weights, assets, prices, bridge_nonce);
+
+        let pending = tx.send().await?;
+        let receipt = pending
+            .await?
+            .ok_or("Transaction dropped from mempool")?;
+
+        info!(
+            tx_hash = ?receipt.transaction_hash,
+            "createITP confirmed"
+        );
+
+        Ok(receipt)
+    }
+
     /// Submit an on-chain rebalance request for the given ITP.
     pub async fn request_rebalance(
         &self,
