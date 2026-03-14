@@ -143,7 +143,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               Tick
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {activeBatch ? `#${activeBatch.currentTick}` : '—'}
+              {activeBatch ? `#${activeBatch.currentTick}` : '#0'}
             </div>
           </div>
           <div>
@@ -151,7 +151,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               Players
             </div>
             <div className="text-[16px] font-bold font-mono text-black">
-              {activeBatch?.playerCount ?? '—'}
+              {activeBatch?.playerCount ?? 0}
             </div>
           </div>
           <div>
@@ -159,7 +159,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               Pool
             </div>
             <div className="text-[16px] font-bold font-mono text-color-up">
-              {activeBatch ? formatTvl(activeBatch.tvl) : '—'}
+              {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
             </div>
           </div>
           {/* Progress bar */}

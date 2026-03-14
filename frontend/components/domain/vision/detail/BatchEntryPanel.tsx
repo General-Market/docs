@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useReadContract } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -18,6 +18,7 @@ import { getBatchTickState, getMultiplier } from '@/lib/vision/tick'
 import { getSource, getBatchKey } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
+import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
 import { WithdrawModal } from '../WithdrawModal'
 import StrategyList from './StrategyList'
@@ -127,6 +128,9 @@ export default function BatchEntryPanel({
     error: submitError,
   } = useSubmitBitmap()
 
+  // -- Wallet connection --
+  const { isConnected } = useAccount()
+
   // -- Vision balance (for deposit prompt when empty) --
   const { total: visionBalance, isLoading: isBalanceLoading } = useVisionBalance()
   const hasZeroBalance = !isBalanceLoading && visionBalance === 0n
@@ -154,14 +158,11 @@ export default function BatchEntryPanel({
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
   const stakeValue = parseFloat(stakeInput) || 0
   const hasStake = stakeValue > 0
-  // ALL markets must have predictions — no unset markets allowed
-  const allMarketsSet = marketIds.length > 0 && marketIds.every(id => {
-    const cell = bitmapEditor.state[id]
-    return cell === 'up' || cell === 'down'
-  })
+  const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
   // Lock only blocks new joins (prediction required), not deposits by existing players
-  const canSubmit = hasStake && (isJoined || allMarketsSet) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
+  // New joins need at least some predictions set and a stake — unset markets default to DOWN
+  const canSubmit = isConnected && hasStake && (isJoined || hasPredictions) && activeStep === 'idle' && (isJoined || !tickState.isLocked) && (isJoined || !!configHash)
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
@@ -221,6 +222,7 @@ export default function BatchEntryPanel({
 
   // -- Button label --
   const buttonLabel = useMemo(() => {
+    if (!isConnected) return 'Connect Wallet'
     if (isSubmitting) return 'Submitting...'
     if (isJoinConfirming || isDepositConfirming) return 'Confirming...'
     if (isJoinPending || isDepositPending) return 'Waiting for wallet...'
@@ -233,7 +235,7 @@ export default function BatchEntryPanel({
     }
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
-  }, [joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
+  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
 
   const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
     || (depositStep !== 'idle' && depositStep !== 'error' && depositStep !== 'done')
@@ -288,8 +290,18 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Deposit prompt when balance is 0 */}
-        {hasZeroBalance && !isJoined && (
+        {/* Connect wallet prompt when not connected */}
+        {!isConnected && !isJoined && (
+          <WalletActionButton
+            onClick={() => {}}
+            className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
+          >
+            <p className="text-[11px] font-bold text-neutral-700">Connect Wallet</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
+          </WalletActionButton>
+        )}
+        {/* Deposit prompt when connected but balance is 0 */}
+        {isConnected && hasZeroBalance && !isJoined && (
           <button
             type="button"
             onClick={() => setShowDepositModal(true)}
@@ -380,15 +392,14 @@ export default function BatchEntryPanel({
           </div>
         )}
 
-        {/* Enter batch button */}
-        <button
-          type="button"
+        {/* Enter batch button — connects wallet when not connected */}
+        <WalletActionButton
           onClick={handleEnterBatch}
           disabled={!canSubmit || isProcessing}
           className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
         >
           {buttonLabel}
-        </button>
+        </WalletActionButton>
 
         {/* Batch info footer */}
         {activeBatch && (
