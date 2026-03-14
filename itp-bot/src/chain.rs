@@ -23,6 +23,7 @@ pub type SignerClient = SignerMiddleware<Provider<Http>, LocalWallet>;
 /// L3 chain client for ITP operations.
 pub struct ChainClient {
     contract: IInvestment<SignerClient>,
+    wallet_address: Address,
 }
 
 impl ChainClient {
@@ -40,18 +41,34 @@ impl ChainClient {
         let provider = Provider::<Http>::try_from(rpc_url)?
             .interval(std::time::Duration::from_millis(50));
 
+        let wallet_address = wallet.address();
         let client = SignerMiddleware::new(provider, wallet);
         let client = Arc::new(client);
-
         let contract = IInvestment::new(contract_addr, client);
 
         info!(
             contract = ?contract_addr,
             rpc = %rpc_url,
+            wallet = ?wallet_address,
             "ChainClient initialized"
         );
 
-        Ok(Self { contract })
+        Ok(Self { contract, wallet_address })
+    }
+
+    /// Return the wallet address used for signing.
+    pub fn wallet_address(&self) -> Address {
+        self.wallet_address
+    }
+
+    /// Get the native gas balance of the bot wallet.
+    pub async fn get_balance(&self) -> Result<U256, Box<dyn std::error::Error>> {
+        let balance = self
+            .contract
+            .client()
+            .get_balance(self.wallet_address, None)
+            .await?;
+        Ok(balance)
     }
 
     /// Return the total number of ITPs that exist on-chain.

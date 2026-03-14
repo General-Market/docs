@@ -22,6 +22,10 @@ pub struct Args {
     #[arg(long, env = "BOT_KEY_FILE", default_value = "/tmp/bot-key.txt")]
     pub key_file: String,
 
+    /// Path to deployed-assets.json for the token registry
+    #[arg(long, env = "DEPLOYED_ASSETS_PATH", default_value = "frontend/public/deployed-assets.json")]
+    pub deployed_assets: String,
+
     #[arg(long, default_value = "5.0")]
     pub drift_threshold_pct: f64,
 
