@@ -1553,23 +1553,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     }
 
-    // eBird — gated on API key
-    if let Some(ref key) = args.ebird_api_key {
-        std::env::set_var("EBIRD_API_KEY", key);
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("ebird", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::ebird::EbirdMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("eBird init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("eBird bird observation provider started");
-    }
+    // eBird — DISABLED: API key expired/invalid (returns 403), all prices zero-filled
+    // To re-enable: get new key from ebird.org/api/keygen, restore spawn_resilient block
 
     info!("Bet on Everything sources started (volcano, earthquake, spaceweather, flights, epidemic, sports, iss, weather_alerts, animals + key-gated: wildfire, maritime, movebank, ebird)");
 
@@ -1623,28 +1608,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Pump.fun token tracker started (Dexscreener)");
     }
 
-    // Reddit — always-on (public JSON API fallback when no OAuth credentials)
-    {
-        if let Some(ref client_id) = args.reddit_client_id {
-            std::env::set_var("REDDIT_CLIENT_ID", client_id);
-        }
-        if let Some(ref client_secret) = args.reddit_client_secret {
-            std::env::set_var("REDDIT_CLIENT_SECRET", client_secret);
-        }
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("reddit", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::reddit::RedditMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("Reddit init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("Reddit community tracker started");
-    }
+    // Reddit — DISABLED: public mode returns 0 subreddits, OAuth not configured
+    // To re-enable: restore spawn_resilient block and remove record_not_started below
 
     // Shelter — always-on, no auth needed (Austin Animal Center Socrata SODA)
     {
@@ -1731,22 +1696,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("NOAA Tides & Currents monitoring started");
     }
 
-    // NRC Nuclear Reactors — no key needed (daily data, hourly sync)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("nrc_nuclear", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::nrc_nuclear::NrcNuclearMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("NRC Nuclear init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("NRC Nuclear reactor status started");
-    }
+    // NRC Nuclear Reactors — DISABLED: nrc.gov unreachable from EU VPS (TLS/HTTP2 hangs)
+    // To re-enable: restore spawn_resilient block and remove record_not_started below
 
     // CityBikes — no key needed
     {
@@ -2047,22 +1998,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         }
     }
 
-    // CBP Border Wait Times — no key needed (US government API)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("cbp_border", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::cbp_border::CbpBorderMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("CBP Border Wait Times init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("CBP Border Wait Times started");
-    }
+    // CBP Border Wait Times — DISABLED: bwt.cbp.dhs.gov returns 403 from EU VPS
+    // To re-enable: restore spawn_resilient block and remove record_not_started below
 
     // FAA Airport Delays — no key needed (US government API)
     {
@@ -2217,22 +2154,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Ryanair Flight Delays started");
     }
 
-    // IODA Internet Outage Detection — no key needed (free CAIDA API)
-    {
-        let pool_c = pool.clone();
-        let bh = broadcast_hub.clone();
-        let pw = price_writer.clone();
-        spawn_resilient("ioda", pw.clone(), move || {
-            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
-            async move {
-                match market_data::sources::ioda::IodaMarketSource::from_env() {
-                    Ok(source) => { let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
-                    Err(e) => { tracing::error!("IODA Internet Outages init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
-                }
-            }
-        });
-        info!("IODA Internet Outages started");
-    }
+    // IODA Internet Outage Detection — DISABLED: API returns 0 prices (broken response format)
+    // To re-enable: restore spawn_resilient block and remove record_not_started below
 
     // US Power Outages — no key needed (free PowerOutage.us/ODIN API)
     {
@@ -2249,6 +2172,23 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }
         });
         info!("US Power Outages started");
+    }
+
+    // World Bank — public API, no key needed (ScheduledSyncEngine for daily fetch)
+    {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("worldbank", pw.clone(), move || {
+            let pool_c = pool_c.clone(); let bh = bh.clone(); let pw = pw.clone();
+            async move {
+                match market_data::sources::worldbank::WorldBankMarketSource::from_env() {
+                    Ok(source) => { let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw); engine.run().await; }
+                    Err(e) => { tracing::error!("World Bank init failed: {e}"); tokio::time::sleep(std::time::Duration::from_secs(60)).await; }
+                }
+            }
+        });
+        info!("World Bank started");
     }
 
     // Record not_started for any source that was gated off (missing keys, disabled flags)
@@ -2324,16 +2264,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.movebank_user.is_none() || args.movebank_password.is_none() {
             tracker.record_not_started("movebank", "Missing --movebank-user / --movebank-password");
         }
-        // eBird
-        if args.ebird_api_key.is_none() {
-            tracker.record_not_started("ebird", "Missing --ebird-api-key");
-        }
+        // eBird — unconditional record_not_started added below (API key expired)
         // FINRA
         if args.finra_client_id.is_none() || args.finra_client_secret.is_none() {
             tracker.record_not_started("finra", "Missing --finra-client-id / --finra-client-secret");
         }
         // Pump.fun — always-on (Dexscreener, no key needed)
-        // Reddit — always-on (public fallback), no not_started needed
+        // Reddit — disabled (unconditional record_not_started added below)
         // Chaturbate
         if std::env::var("CHATURBATE_WM").is_err() {
             tracker.record_not_started("chaturbate", "Missing CHATURBATE_WM env var");
@@ -2361,6 +2298,13 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.adzuna_app_id.is_none() || args.adzuna_app_key.is_none() {
             tracker.record_not_started("adzuna", "Missing --adzuna-app-id / --adzuna-app-key");
         }
+
+        // Sources disabled due to external API issues (not key-related)
+        tracker.record_not_started("ebird", "API key expired (403) — get new key from ebird.org/api/keygen");
+        tracker.record_not_started("nrc_nuclear", "nrc.gov unreachable from EU VPS (TLS/HTTP2 hangs)");
+        tracker.record_not_started("cbp_border", "bwt.cbp.dhs.gov returns 403 from EU VPS");
+        tracker.record_not_started("ioda", "CAIDA IODA API returns 0 prices (broken response)");
+        tracker.record_not_started("reddit", "Public mode returns 0 subreddits — needs OAuth credentials");
 
     }
 
