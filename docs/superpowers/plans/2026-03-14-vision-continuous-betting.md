@@ -147,21 +147,18 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         b.configHash = b.nextConfigHash;
         b.lockOffset = b.nextLockOffset;
         if (b.nextTickDuration > 0) {
-            // CRITICAL: Use epochOffset to maintain tick continuity.
+            // CRITICAL: Use epochOffset (int256) to maintain tick continuity.
             // We CANNOT reset createdAtTick because existing players have
             // startTick and lastClaimedTick values in the old epoch.
-            // Resetting would make _currentTickId() return small values
-            // while lastClaimedTick is still large → permanent claim lockout.
             //
-            // Instead: compute epochOffset so _currentTickId() returns the
-            // same value before and after the tickDuration change.
-            // oldTickId = (timestamp / oldDuration) - createdAtTick + oldEpochOffset
-            // newTickId = (timestamp / newDuration) - createdAtTick + newEpochOffset
-            // Set newEpochOffset so oldTickId == newTickId at promotion time.
-            uint256 oldTickId = currentTick - b.createdAtTick + b.epochOffset;
+            // epochOffset can be NEGATIVE when tickDuration decreases:
+            // e.g., duration 600→300 doubles the absolute tick number,
+            // so epochOffset becomes negative to compensate.
+            // Must use int256 to avoid underflow revert.
+            int256 oldTickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
             b.tickDuration = b.nextTickDuration;
-            uint256 newAbsTick = block.timestamp / b.tickDuration;
-            b.epochOffset = oldTickId - (newAbsTick - b.createdAtTick);
+            int256 newAbsTick = int256(block.timestamp / b.tickDuration);
+            b.epochOffset = oldTickId - (newAbsTick - int256(b.createdAtTick));
         }
         // Recompute lastPromotionTick with the (potentially new) tickDuration
         b.lastPromotionTick = block.timestamp / b.tickDuration;
@@ -173,16 +170,18 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
 }
 ```
 
-Add `epochOffset` to the `Batch` struct in `IVision.sol` (defaults to 0, full redeploy).
+Add `epochOffset` as `int256` to the `Batch` struct in `IVision.sol` (defaults to 0, full redeploy).
 
-Update `_currentTickId()`:
+Update `_currentTickId()` to handle signed offset:
 
 ```solidity
 function _currentTickId(uint256 batchId) internal view returns (uint256) {
     Batch storage b = _batches[batchId];
     uint256 currentTick = block.timestamp / b.tickDuration;
-    if (currentTick < b.createdAtTick) return 0;
-    return currentTick - b.createdAtTick + b.epochOffset;
+    // epochOffset is int256 — can be negative after tickDuration decrease
+    int256 tickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
+    if (tickId < 0) return 0;
+    return uint256(tickId);
 }
 ```
 
@@ -193,17 +192,22 @@ Harden `claimRewards()` to prevent gap attacks (skipping lossy ticks):
 ```solidity
 // In claimRewards(), replace the existing check:
 // OLD: if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
-// NEW: Enforce strict sequential claims — no gaps allowed
+// NEW: Enforce sequential claims — no gaps after first claim
 if (position.lastClaimedTick == 0) {
-    // First claim: must start from startTick + 1
-    if (fromTick != position.startTick + 1) revert InvalidTickRange();
+    // First claim: any tick after startTick is valid.
+    // Players may sit out their first tick(s) — that's OK.
+    // Issuers sign a no-change proof covering sit-out ticks.
+    if (fromTick <= position.startTick) revert InvalidTickRange();
 } else {
-    // Subsequent claims: must be exactly contiguous
+    // Subsequent claims: must be exactly contiguous — no gaps
     if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
 }
 ```
 
-This prevents players from skipping ticks where they lost to avoid deductions.
+This prevents gap attacks (skipping lossy ticks) while allowing the first claim
+to start at any tick after join. Issuers MUST generate balance proofs for ALL
+ticks including sit-outs (newBalance = oldBalance) once the first claim establishes
+the contiguous chain.
 
 - [ ] **Step 4: Fix MIN_STAKE_PER_TICK for L3 18-decimal USDC**
 
@@ -918,10 +922,16 @@ In `resolver.rs`, replace lines 121-144 (multiplier computation block) with flat
 
 ```rust
 // OLD: let multipliers = multiplier::compute_all_multipliers(...);
-// NEW: Use raw stake_per_tick directly
-let per_market_stake = |player: &PlayerPosition| -> U256 {
+// NEW: Use raw stake_per_tick directly, with remainder distribution
+// to prevent truncation dust drain.
+// stake_per_tick / num_markets leaves a remainder of stake_per_tick % num_markets.
+// Distribute 1 extra wei to the first R markets to conserve the total.
+let num_markets = U256::from(market_configs.len());
+let per_market_stake = |player: &PlayerPosition, market_idx: usize| -> U256 {
     if market_configs.is_empty() { return U256::zero(); }
-    player.stake_per_tick / U256::from(market_configs.len())
+    let base = player.stake_per_tick / num_markets;
+    let remainder = player.stake_per_tick % num_markets;
+    if U256::from(market_idx) < remainder { base + U256::one() } else { base }
 };
 ```
 
@@ -1892,12 +1902,29 @@ git commit -m "feat(frontend): remove hardcoded VISION_SOURCES, CATEGORY_GROUPS,
 // frontend/app/api/vision/sources/route.ts
 import { DATA_NODE_URL } from '@/lib/config'
 
+// SECURITY: Sanitize dynamic source registry data to prevent XSS
+// via injected brandBg (CSS injection), logo paths, or HTML in names.
+function sanitizeSource(s: any) {
+  return {
+    ...s,
+    name: String(s.name ?? '').replace(/[<>]/g, ''),
+    description: String(s.description ?? '').replace(/[<>]/g, ''),
+    // brandBg must be a hex color only — no CSS injection
+    brandBg: /^#[0-9A-Fa-f]{3,8}$/.test(s.brandBg) ? s.brandBg : '#888',
+    // logo must be a safe relative path
+    logo: /^\/logos\/[\w.-]+\.(svg|png|webp)$/.test(s.logo) ? s.logo : '/logos/default.svg',
+  }
+}
+
 export async function GET() {
   try {
     const res = await fetch(`${DATA_NODE_URL}/sources/registry`, { next: { revalidate: 300 } })
     if (!res.ok) return Response.json({ sources: [], categories: [] }, { status: 502 })
     const data = await res.json()
-    return Response.json(data)
+    return Response.json({
+      sources: (data.sources ?? []).map(sanitizeSource),
+      categories: data.categories ?? [],
+    })
   } catch {
     return Response.json({ sources: [], categories: [] }, { status: 502 })
   }
