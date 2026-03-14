@@ -3258,7 +3258,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
     K: issuer::KeyRegistry + Send + Sync + 'static,
     PF: issuer::PriceFetcher + Send + Sync + 'static,
 {
-    info!(cycle = current_cycle, "Rebalance processing: starting scan");
+    debug!(cycle = current_cycle, "Rebalance processing: starting scan");
     // 1. Query pending rebalances from L3
     let pending_rebalances = match chain_reader.get_pending_rebalances().await {
         Ok(rebalances) => rebalances,
@@ -3277,7 +3277,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
         return;
     }
 
-    info!(cycle = current_cycle, count = pending_rebalances.len(), "Rebalance processing: found pending rebalances");
+    if current_cycle % 60 == 0 {
+        info!(cycle = current_cycle, count = pending_rebalances.len(), "Rebalance processing: found pending rebalances");
+    }
 
     // 1b. Filter out ITPs already being processed by another cycle (dedup)
     let orch_read = orchestrator.read().await;
@@ -3286,11 +3288,13 @@ async fn run_rebalance_processing<P, W, K, PF>(
     for rebalance in &pending_rebalances {
         let itp_h256 = ethers::types::H256::from(rebalance.itp_id);
         if orch_read.is_rebalance_in_progress(&itp_h256).await {
-            info!(
-                itp_id = ?itp_h256,
-                cycle = current_cycle,
-                "Skipping rebalance: already in progress from another cycle"
-            );
+            if current_cycle % 60 == 0 {
+                debug!(
+                    itp_id = ?itp_h256,
+                    cycle = current_cycle,
+                    "Skipping rebalance: already in progress from another cycle"
+                );
+            }
             continue;
         }
         filtered_rebalances.push(rebalance);
@@ -3299,7 +3303,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
     drop(orch_read);
 
     if filtered_rebalances.is_empty() {
-        info!(cycle = current_cycle, "All pending rebalances already in progress");
+        if current_cycle % 60 == 0 {
+            debug!(cycle = current_cycle, "All pending rebalances already in progress");
+        }
         return;
     }
 
@@ -3369,7 +3375,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
         }
 
         if missing_price || prices.is_empty() {
-            warn!(itp_id = ?itp_h256, "Stalling rebalance — missing prices, will retry next cycle");
+            if current_cycle % 60 == 0 {
+                warn!(itp_id = ?itp_h256, "Stalling rebalance — missing prices, will retry");
+            }
             orchestrator.read().await.mark_rebalance_completed(&itp_h256).await;
             continue;
         }
