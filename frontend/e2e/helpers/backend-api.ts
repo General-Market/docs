@@ -435,22 +435,34 @@ function withL3NonceLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
+ * Singleton L3 chain + clients (reuse across calls for correct nonce tracking).
+ */
+const _l3Chain = defineChain({
+  id: ENV_CHAIN_ID,
+  name: 'Index L3',
+  nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+  rpcUrls: { default: { http: [L3_RPC] } },
+});
+const _l3Account = IS_ANVIL ? undefined : privateKeyToAccount(TEST_PRIVATE_KEY);
+const _l3Pub = createPublicClient({ chain: _l3Chain, transport: rpcHttp(L3_RPC) });
+
+/** Track nonce ourselves to avoid getTransactionCount race conditions on L3. */
+let _l3NextNonce: number | null = null;
+
+/**
  * Send a signed transaction on L3 using the deployer private key.
  * Used on testnet where anvil_impersonateAccount is not available.
- * Uses a mutex to prevent parallel nonce conflicts.
+ * Uses a mutex + local nonce tracking to prevent nonce-too-low errors.
  */
 async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
   return withL3NonceLock(async () => {
-    const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-    const chain = defineChain({
-      id: ENV_CHAIN_ID,
-      name: 'Index L3',
-      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [L3_RPC] } },
-    });
-    const pub = createPublicClient({ chain, transport: rpcHttp(L3_RPC) });
-    const nonce = await pub.getTransactionCount({ address: account.address });
-    const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) });
+    const account = _l3Account ?? privateKeyToAccount(TEST_PRIVATE_KEY);
+    if (_l3NextNonce === null) {
+      _l3NextNonce = await _l3Pub.getTransactionCount({ address: account.address, blockTag: 'pending' });
+    }
+    const nonce = _l3NextNonce;
+    _l3NextNonce++;
+    const client = createWalletClient({ account, chain: _l3Chain, transport: rpcHttp(L3_RPC) });
     const hash = await client.sendTransaction({
       to: to as `0x${string}`,
       data: data as `0x${string}`,
@@ -458,7 +470,7 @@ async function l3SignedSend(to: string, data: string, value?: bigint): Promise<s
       gas: 1_000_000n,
       nonce,
     });
-    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+    await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
     return hash;
   });
 }
