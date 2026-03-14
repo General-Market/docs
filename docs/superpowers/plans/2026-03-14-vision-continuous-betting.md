@@ -50,9 +50,18 @@ function test_updateBatchConfig_changesTickDuration() public {
     assertEq(newTickDuration, 300);
 }
 
-function test_promoteConfig_recomputesLastPromotionTick() public {
+function test_promoteConfig_maintainsTickContinuity() public {
     // Create batch with tickDuration=600
     uint256 batchId = _createTestBatch(600, 0);
+
+    // Advance 3 ticks (1800s) so _currentTickId = 3
+    vm.warp(block.timestamp + 1800);
+    uint256 tickBefore = vision.currentTickId(batchId);
+    assertEq(tickBefore, 3);
+
+    // Player joins at tick 3
+    vm.prank(alice);
+    vision.joinBatch(batchId, 1e18, ...);
 
     // Update config with tickDuration=300
     bytes32 newConfigHash = keccak256("new-config");
@@ -61,13 +70,17 @@ function test_promoteConfig_recomputesLastPromotionTick() public {
 
     // Advance 601s to trigger promotion
     vm.warp(block.timestamp + 601);
-    // Any call that triggers _promoteConfigIfNeeded
     vision.updateBatchConfig(batchId, newConfigHash, 0, 300, blsSig, _nextNonce(), 7);
 
-    // After promotion, lastPromotionTick should be block.timestamp / 300 (NEW duration)
-    // NOT block.timestamp / 600 (OLD duration)
-    (,,,,, uint256 lastPromotionTick,) = vision.getBatchInfo(batchId);
-    assertEq(lastPromotionTick, block.timestamp / 300);
+    // CRITICAL: _currentTickId must be continuous, NOT reset to 0.
+    // Before: tick 3 at t=1800 with duration=600
+    // After:  tick should be ~4 at t=2401 with duration=300 (epochOffset absorbs the jump)
+    uint256 tickAfter = vision.currentTickId(batchId);
+    assertTrue(tickAfter >= tickBefore, "Tick ID must not decrease after tickDuration change");
+    assertTrue(tickAfter < tickBefore + 10, "Tick ID must not jump wildly");
+
+    // Player's startTick=3 should still be valid for claimRewards
+    // (fromTick=4, toTick=tickAfter should work without TickAlreadyClaimed)
 }
 ```
 
@@ -134,15 +147,21 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         b.configHash = b.nextConfigHash;
         b.lockOffset = b.nextLockOffset;
         if (b.nextTickDuration > 0) {
+            // CRITICAL: Use epochOffset to maintain tick continuity.
+            // We CANNOT reset createdAtTick because existing players have
+            // startTick and lastClaimedTick values in the old epoch.
+            // Resetting would make _currentTickId() return small values
+            // while lastClaimedTick is still large → permanent claim lockout.
+            //
+            // Instead: compute epochOffset so _currentTickId() returns the
+            // same value before and after the tickDuration change.
+            // oldTickId = (timestamp / oldDuration) - createdAtTick + oldEpochOffset
+            // newTickId = (timestamp / newDuration) - createdAtTick + newEpochOffset
+            // Set newEpochOffset so oldTickId == newTickId at promotion time.
+            uint256 oldTickId = currentTick - b.createdAtTick + b.epochOffset;
             b.tickDuration = b.nextTickDuration;
-            // CRITICAL: Reset createdAtTick to re-anchor the epoch.
-            // _currentTickId() computes: (block.timestamp / tickDuration) - createdAtTick
-            // If we don't reset createdAtTick, changing tickDuration from 600→300
-            // doubles the absolute tick number while createdAtTick stays the same,
-            // producing a massive jump in _currentTickId (e.g., 2→14).
-            // This breaks player startTick references, claimRewards ranges, and
-            // bitmap tick targeting.
-            b.createdAtTick = block.timestamp / b.tickDuration;
+            uint256 newAbsTick = block.timestamp / b.tickDuration;
+            b.epochOffset = oldTickId - (newAbsTick - b.createdAtTick);
         }
         // Recompute lastPromotionTick with the (potentially new) tickDuration
         b.lastPromotionTick = block.timestamp / b.tickDuration;
@@ -154,16 +173,67 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
 }
 ```
 
-- [ ] **Step 3: Run test**
+Add `epochOffset` to the `Batch` struct in `IVision.sol` (defaults to 0, full redeploy).
 
-Run: `cd contracts && forge test --match-test test_updateBatchConfig_changesTickDuration -vvv`
+Update `_currentTickId()`:
+
+```solidity
+function _currentTickId(uint256 batchId) internal view returns (uint256) {
+    Batch storage b = _batches[batchId];
+    uint256 currentTick = block.timestamp / b.tickDuration;
+    if (currentTick < b.createdAtTick) return 0;
+    return currentTick - b.createdAtTick + b.epochOffset;
+}
+```
+
+- [ ] **Step 3: Enforce sequential claims in claimRewards**
+
+Harden `claimRewards()` to prevent gap attacks (skipping lossy ticks):
+
+```solidity
+// In claimRewards(), replace the existing check:
+// OLD: if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
+// NEW: Enforce strict sequential claims — no gaps allowed
+if (position.lastClaimedTick == 0) {
+    // First claim: must start from startTick + 1
+    if (fromTick != position.startTick + 1) revert InvalidTickRange();
+} else {
+    // Subsequent claims: must be exactly contiguous
+    if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
+}
+```
+
+This prevents players from skipping ticks where they lost to avoid deductions.
+
+- [ ] **Step 4: Fix MIN_STAKE_PER_TICK for L3 18-decimal USDC**
+
+In `Vision.sol`, update the minimum stake:
+
+```solidity
+// OLD: uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals) — WRONG for L3
+// NEW: 0.10 USDC with 18 decimals
+uint256 public constant MIN_STAKE_PER_TICK = 1e17;
+```
+
+- [ ] **Step 5: Fix lockOffset validation**
+
+```solidity
+// OLD: if (lockOffset >= tickDuration && lockOffset != 0) revert LockOffsetTooLarge();
+// NEW: lockOffset must be strictly less than tickDuration (lockOffset=0 is valid for continuous betting)
+if (lockOffset >= tickDuration) revert LockOffsetTooLarge();
+```
+
+- [ ] **Step 6: Run tests**
+
+Run: `cd contracts && forge test --match-test test_updateBatchConfig -vvv`
+Run: `cd contracts && forge test --match-test test_promoteConfig -vvv`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add contracts/src/vision/Vision.sol contracts/test/Vision.t.sol
-git commit -m "feat(contract): add tickDuration param to updateBatchConfig"
+git add contracts/src/vision/Vision.sol contracts/src/interfaces/IVision.sol contracts/test/Vision.t.sol
+git commit -m "feat(contract): add tickDuration param, epochOffset tick continuity, sequential claims, MIN_STAKE fix"
 ```
 
 ---
