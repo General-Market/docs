@@ -391,31 +391,66 @@ Replace with flat weighting: every active player's `stakePerTick` counts equally
 - `pending_bitmap`: what the player submitted during the current tick (for next tick)
 - `active_bitmap`: what's being used for current tick resolution (submitted during previous tick)
 
-At tick resolution:
-1. Resolve current tick using `active_bitmap` for each player
-2. Players without `active_bitmap` → sit out (balance unchanged)
-3. Promote: `active_bitmap = pending_bitmap` for each player
-4. Clear: `pending_bitmap = None`
+Each pending bitmap stores the `config_hash` it was encoded against. When the bitmap becomes active, the resolver decodes it using THAT config — not the "current" config. This prevents config/bitmap desync: if a config update lands between submission and resolution, the bitmap is still decoded against the config the player used to encode it.
 
-**Bitmap submission timestamp tracking.** The issuer already stores bitmaps in memory. Add a `submitted_at_tick` field so the resolver knows which tick the bitmap targets:
-- If `submitted_at_tick == current_tick` → this is a pending bitmap (for next tick)
-- If `submitted_at_tick == current_tick - 1` → this was promoted and is now active
-
-Simpler approach: just maintain two HashMaps per batch:
 ```rust
-pending_bitmaps: HashMap<Address, (H256, Vec<u8>)>  // hash + data
-active_bitmaps: HashMap<Address, (H256, Vec<u8>)>
+struct SlottedBitmap {
+    bitmap_hash: H256,
+    bitmap_data: Vec<u8>,
+    config_hash: H256,       // config active when player submitted
+    submitted_at_tick: u64,  // tick ID during which this was submitted
+}
+
+// Per batch, two slots:
+pending_bitmaps: HashMap<Address, SlottedBitmap>  // submitted during current tick
+active_bitmaps: HashMap<Address, SlottedBitmap>   // being resolved this tick
 ```
 
-Flip at tick boundary during resolution.
+At tick resolution:
+1. Resolve current tick using `active_bitmaps` — decode each bitmap using its stored `config_hash`
+2. Players without `active_bitmap` → sit out (balance unchanged)
+3. Flip: `active_bitmaps = pending_bitmaps`, `pending_bitmaps = cleared`
+4. Config promotion (if pending) — new config applies to FUTURE submissions only
 
-**Consensus on bitmap state.** The two-slot flip is deterministic and happens as part of the resolution consensus:
-1. All issuers resolve tick N using `active_bitmaps` (derived from on-chain `bitmapHash` — the contract remains source of truth for "has bitmap")
-2. All issuers sign the tick result via BLS
-3. After consensus is reached and result published, all issuers flip: `active = pending`, `pending = cleared`
-4. The flip is deterministic based on `tick_id`, not wall-clock time — all issuers flip at the same logical point
+**Deterministic slot assignment.** When a bitmap is received, it goes to `pending_bitmaps` for `current_tick_id + 1`. The `current_tick_id` is derived from the chain — all issuers agree on it via BLS-signed tick resolution. Bitmaps received AFTER the flip (new tick started) go to the new `pending_bitmaps` for `new_tick_id + 1`.
 
-**Ordering at tick boundary:** Resolution → BLS signing → publish → config promotion → bitmap flip. Config promotion happens before bitmap flip so that the newly active bitmaps are evaluated against the new config on their tick.
+**Ordering at tick boundary (CRITICAL — order matters for safety):**
+1. Resolution: resolve tick N using `active_bitmaps` (each decoded with its own `config_hash`)
+2. BLS signing: sign tick result (includes `tick_id`, `config_hash`, `bitmap_set_hash`)
+3. Publish results
+4. Bitmap flip: `active = pending`, `pending = cleared`
+5. Config promotion (if pending) — new config is now "current" for new submissions
+
+Config promotion happens AFTER bitmap flip. This means:
+- Active bitmaps are always decoded against the config they were encoded with (stored `config_hash`)
+- Config updates only affect bitmaps submitted AFTER the promotion
+- No market-order scrambling is possible
+
+**Bitmap set hash in BLS message.** The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs in active set)`. This ensures all issuers agree on which bitmaps are active before resolution. If any issuer has a different active set, BLS consensus fails — preventing silent divergence.
+
+**Cross-issuer bitmap gossip.** Before resolution, issuers exchange "bitmap inventory" messages listing `(player, bitmap_hash)` pairs in their active set. If an issuer is missing a bitmap (e.g., player's reveal didn't reach it), it requests the missing bitmap from peers. Resolution proceeds only with the INTERSECTION of bitmaps confirmed by all issuers. This prevents a single missed reveal from breaking consensus.
+
+**DB persistence for crash recovery.** The `vision_bitmaps` table must include:
+- `slot` column: `'pending'` or `'active'`
+- `target_tick_id`: which tick this bitmap is for
+- `config_hash`: which config the bitmap was encoded against
+
+```sql
+ALTER TABLE vision_bitmaps ADD COLUMN slot TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE vision_bitmaps ADD COLUMN target_tick_id BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE vision_bitmaps ADD COLUMN config_hash TEXT NOT NULL DEFAULT '';
+```
+
+On crash recovery, `load_from_db()` restores both `pending_bitmaps` and `active_bitmaps` using the `slot` column. Also persist `current_tick_id` per batch in a `vision_batch_state` table so recovery knows which tick boundary to reference.
+
+```sql
+CREATE TABLE vision_batch_state (
+    batch_id BIGINT PRIMARY KEY,
+    current_tick_id BIGINT NOT NULL,
+    last_resolved_tick_id BIGINT NOT NULL,
+    active_config_hash TEXT NOT NULL
+);
+```
 
 **Remove multiplier types.** Delete `issuer/src/vision/multiplier.rs` entirely. Remove `PlayerMultiplier` from `types.rs`. Remove `join_timestamp` and `num_committed_ticks` from `PlayerPosition` (these only serve the multiplier). Remove all `use super::multiplier` imports.
 
@@ -436,6 +471,18 @@ Flip at tick boundary during resolution.
 
 **Add batch auto-creation.** When `GET /batches/recommended` returns a source with no on-chain batch, propose `createBatchAndJoin()` via BLS consensus. Currently the orchestrator only updates existing batches.
 
+**Batch creation safeguards:**
+- Hard cap on-chain: `require(nextBatchId < MAX_BATCHES)` (e.g., 200). Prevents unbounded batch flooding from a compromised data-node.
+- Rate limit in orchestrator: max 3 new batches per hour. Prevents gas exhaustion from rapid auto-creation.
+- Minimum healthy assets: only create a batch for a source that has at least 5 healthy markets with recent data. Prevents empty/dead batches.
+- Admin alert: log WARN when auto-creating a batch. Log CRITICAL if creation rate exceeds 1 per 10 minutes.
+
+**Tighten follower verification tolerances.** Current tolerances are dangerously loose (`THRESHOLD_TOLERANCE = 0.50`, `ASSET_COUNT_TOLERANCE = 0.50`). A compromised leader could craft adversarial configs that pass follower verification. Change to:
+- `THRESHOLD_TOLERANCE = 0.20` (20% threshold drift max)
+- `ASSET_COUNT_TOLERANCE = 0.30` (30% asset count drift max)
+- `UNKNOWN_ASSET_TOLERANCE = 0.05` (max 5% unknown assets)
+- Exact match on `resolution_type` per market (not just `threshold_bps`)
+
 ### 3. Issuer — Tick Engine (`issuer/src/vision/engine.rs`)
 
 **Remove multiplier from PnL calculation.** The `TickResolver` currently:
@@ -450,8 +497,14 @@ Change to:
 
 **Add bitmap flip to resolution cycle.** After resolving tick N:
 1. Compute payouts (existing logic minus multiplier)
-2. Flip bitmaps: `active = pending`, `pending = cleared`
-3. Publish results via BLS consensus (existing flow)
+2. BLS sign tick result — message includes `tick_id`, `config_hash`, `bitmap_set_hash` (hash of active player set)
+3. Publish results via BLS consensus
+4. Flip bitmaps: `active = pending`, `pending = cleared`
+5. Config promotion (if pending config exists)
+
+**Remove degraded-mode balance application.** Currently `engine.rs` falls back to applying balances directly when `TickConsensus::create_proposal()` fails. This MUST be removed — in degraded mode, skip the tick entirely and retry next cycle. Never apply balance changes without BLS consensus. Log a CRITICAL alert.
+
+**Fixed-point price conversion.** The data-node MUST return prices as integer-scaled values (price * 1e8 as string) in the snapshot response. Issuers parse directly to `u128`, never going through `f64`. This eliminates non-deterministic float-to-integer rounding that can cause BLS consensus failure across issuers on different hardware. Add a `price_scale` field to the snapshot response (default `100000000` = 1e8). Current `(start_price * 1e8) as u128` in `resolver.rs` is non-deterministic — replace with integer parsing.
 
 ### 4. Issuer — Batch Auto-Detection from Chain Events
 
@@ -469,17 +522,23 @@ Change to:
 
 **Who creates batches?** The config orchestrator. When the data-node's `GET /batches/recommended` returns a source that has no on-chain batch yet, the orchestrator proposes `createBatchAndJoin()` via BLS consensus. This means: add a source to the data-node → orchestrator creates the batch → issuers detect it → frontend shows it. Fully automatic pipeline.
 
-### 5. Contract — Vision.sol (minimal)
+### 5. Contract — Vision.sol (minor changes)
 
-**No code changes required.** All behavioral changes are issuer-side. Bitmap commit-reveal stays the same (player calls `updateBitmap()` on-chain, reveals to issuers).
+**Two contract changes required:**
 
+1. **Add `tickDuration` parameter to `updateBatchConfig()`.** Currently the function only accepts `configHash` and `lockOffset`. The spec requires dynamic tick pacing where each config update can change the tick duration. Add `tickDuration` as a parameter, store it in the batch struct, emit it in the `BatchConfigUpdated` event. Issuers read `tickDuration` from the event to schedule the next tick.
+
+2. **Add `MAX_BATCHES` constant.** Prevent unbounded batch creation: `uint256 public constant MAX_BATCHES = 200;` and `require(nextBatchId < MAX_BATCHES, "TooManyBatches")` in `createBatch()`.
+
+**Unchanged:**
+- Bitmap commit-reveal stays the same (player calls `updateBitmap()` on-chain, reveals to issuers)
 - `lockOffset = 0`: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
 - `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
 - Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
 **One-time migration**: For each of the 43 batches:
 1. Read `batches[batchId].nonce` on-chain to get current config nonce
-2. Call `updateBatchConfig(batchId, currentConfigHash, 0, blsSig, nonce, bitmask)` with `lockOffset = 0`
+2. Call `updateBatchConfig(batchId, currentConfigHash, 0, tickDuration, blsSig, nonce, bitmask)` with `lockOffset = 0`
 3. Issuers BLS-sign each update
 
 This is 43 sequential calls in a single migration script. Note: setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
@@ -516,7 +575,8 @@ All batch data comes from live API:
 **BatchEntryPanel changes:**
 - Always open for submissions (no "locked" disabled state)
 - Header: "Set predictions for next tick" (not "Enter Batch")
-- Submit flow unchanged: player commits `bitmapHash` on-chain (`updateBitmap()`) → reveals bitmap bytes to issuers (`POST /vision/bitmap`). Commit-reveal preserved.
+- Submit flow: player commits `bitmapHash` on-chain (`updateBitmap()`) → reveals bitmap bytes to issuers (`POST /vision/bitmap`). Commit-reveal preserved.
+- **Config freshness check before submit:** Before calling `updateBitmap()`, re-fetch the latest config from `GET /batches/signed` and compare `configHash` to the one used for bitmap encoding. If mismatch (config updated between last poll and submit), re-encode the bitmap against the new config before sending the transaction. This prevents committed hashes with unresolvable bitmaps. The issuer stores the `config_hash` with each pending bitmap to ensure correct decoding.
 - After submit: "Your bets are set for tick N+1" confirmation
 - Show active status: "You have active bets on tick N" when participating
 - Show sit-out status: "No bets set — sitting out this tick" when player didn't submit
@@ -542,12 +602,14 @@ The API proxy route (`/api/vision/batches`) still needs configHash→source mapp
 
 ### 10. Data-node — Changes
 
-**Existing endpoints (no changes needed):**
-- `GET /batches/recommended` — returns unsigned recommended configs per source. Data-node generates these every 60s from collected market data.
+**Existing endpoints (changes noted):**
+- `GET /batches/recommended` — returns unsigned recommended configs per source. Data-node generates these every 60s from collected market data. **Now returns integer-scaled prices** (price * 1e8 as string) instead of floats, plus a `price_scale` field.
 - `GET /batches/config/{hash}` — resolves configHash to full config (market list, order). Lookup chain: memory → DB → deploy-hash reverse.
 - `GET /batches/signed` — returns BLS-signed configs (latest per source). Frontend polls this every 15s.
-- `POST /batches/signed` — stores signed config from issuer (after BLS consensus). Already validates hash tampering (DN-1) and nonce monotonicity (DN-4).
+- `POST /batches/signed` — stores signed config from issuer (after BLS consensus). **Add BLS signature verification on ingestion**: verify that `keccak256(abi.encode(config_body))` matches the claimed `configHash`, and that the BLS signature over that hash is valid against the registered issuer aggregate pubkey. This turns the admin token into defense-in-depth rather than the sole trust boundary. Use per-issuer admin tokens and rotate periodically.
 - `POST /batches/replicate` — follower issuers replicate signed configs.
+
+**HMAC hard-fail.** In `engine.rs`, when `snapshot_hmac_secret` is configured and the response header `x-snapshot-hmac` is missing, this MUST be an error (reject snapshot), not a warning. A missing HMAC on a supposedly authenticated channel means MITM or compromise.
 
 **Remove lock period freeze.** `batch_engine.rs` (line 454-462) skips config generation during lock periods. With `lockOffset = 0`, remove this check.
 
@@ -635,14 +697,24 @@ Replace with:
 
 ## Migration Plan
 
-1. **Deploy issuer changes first** (resolver, bitmap model, config orchestrator)
-2. **Push lockOffset=0** for all batches via BLS-signed `updateBatchConfig()` calls
-3. **Deploy frontend** (remove static deps, multiplier UI, add next-tick UX)
-4. **No contract deployment needed** — all behavioral changes are off-chain
+**Tick-based activation (prevents mixed old/new code consensus failures):**
 
-Player positions are unaffected. Existing balances carry over. The transition happens at a tick boundary — old model resolves the last tick, new model starts from the next one.
+The two-slot model activation is tick-based, not deployment-based. All issuers deploy new code first, but continue old behavior until a BLS-signed activation config is pushed.
 
-**Rollback plan**: If issues arise after migration, push `lockOffset = original_value` back for each batch via the same `updateBatchConfig()` + BLS flow. Issuer code can be rolled back to previous Docker image. Frontend can be redeployed from previous commit. No contract changes means no irreversible state.
+1. **Deploy contract changes** — add `tickDuration` to `updateBatchConfig()`, add `MAX_BATCHES`
+2. **Deploy ALL issuer instances simultaneously** (stop all 3, deploy, start all 3). New code supports both old and new behavior, controlled by an `activation_tick_id` config per batch. Before activation, old single-slot behavior. At/after activation, two-slot behavior. This prevents consensus failure from mixed code versions.
+3. **Push `lockOffset=0` + `activation_tick_id`** for all batches via BLS-signed `updateBatchConfig()` calls. Set `activation_tick_id` to `current_tick + 2` (gives one full tick for all issuers to see the activation config).
+4. **Deploy frontend** (remove static deps, multiplier UI, add next-tick UX)
+
+**Stale bitmap cleanup:** Before activation, clear all existing bitmaps in the issuer bitmap store. Old bitmaps were encoded for the single-slot model (bet on current tick). They must not leak into the two-slot model where they'd be treated as "pending for next tick."
+
+Player positions and balances are unaffected. The transition happens at the `activation_tick_id` boundary — old model resolves the last tick before it, new model starts from that tick.
+
+**First tick after activation:** The first tick under the new model has NO active bitmaps (pending slot was just introduced). All players sit out. This is safe — balances unchanged. Players must submit new bitmaps under the new UX to participate in subsequent ticks.
+
+**Fix i64 overflow in `apply_tick_balances_with_db`.** The current `pb.new_balance.as_u128() as i64` silently overflows for balances > i64::MAX (possible with 18-decimal USDC). Store balance as `TEXT`/`NUMERIC` in DB, matching the approach in `store_balance_proof` which already uses `balance.to_string()`.
+
+**Rollback plan**: Push `activation_tick_id = MAX_U64` (effectively disabling new model) for each batch via BLS. Issuer code falls back to old single-slot behavior. Frontend can be redeployed from previous commit. Contract changes are additive (new parameter), not breaking.
 
 ---
 
@@ -664,6 +736,49 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 - **Frontend**: Source grid loads entirely from data-node — no hardcoded sources, new sources appear automatically
 - **Data-node**: `GET /sources/registry` returns all sources with metadata, categories
 - **Tick scheduling**: Config update with different `tickDuration` → verify next tick uses new duration
+- **Crash recovery**: Kill issuer mid-tick, restart, verify pending/active slots restored correctly from DB
+- **Config/bitmap desync**: Submit bitmap under config C1, update config to C2 before resolution → verify bitmap decoded with C1 (its stored `config_hash`)
+- **Cross-issuer gossip**: One issuer misses a bitmap reveal → gossip fills the gap → consensus succeeds
+- **Bitmap set hash**: Issuers with different active sets → BLS consensus fails (correct behavior)
+- **Batch creation cap**: Attempt to create batch beyond `MAX_BATCHES` → reverts
+- **HMAC hard-fail**: Remove HMAC header from data-node response → issuer rejects snapshot (not just warn)
+- **Fixed-point prices**: Verify all issuers produce identical `u128` prices from same integer-scaled data-node response
+- **Degraded mode**: Force proposal failure → verify NO balance changes applied (tick skipped)
+- **i64 overflow**: Player with balance > i64::MAX → verify DB stores correctly, crash recovery preserves balance
+- **First-tick skip**: New batch first tick → verify resolution skipped, reference prices established
+- **Activation tick**: Deploy new code, push activation_tick_id → old behavior until activation, new behavior after
+
+---
+
+## Security Mitigations
+
+Findings from multi-round cross-referenced security review by 5 independent reviewers.
+
+### Tick Boundary Front-Running (no lock window)
+
+**Concern:** With `lockOffset = 0` and no multiplier, bots can wait until maximum information before submitting.
+
+**Mitigation:** The bet-on-next-tick model is the primary defense. During tick N, a player submitting is betting on tick N+1's price DIRECTION — not tick N's. They cannot know which way prices will move during N+1. The tick boundary creates a natural cut-off: bitmaps submitted before the flip go to N+1, after the flip go to N+2. The only exploitable window is between tick N's final prices becoming known and the flip completing (seconds during BLS consensus). During this window, a bot knows N+1's START prices but not its price DIRECTION. Knowing start prices doesn't help predict UP/DOWN.
+
+**Remaining risk:** LOW. A bot with superior price prediction models has an edge, but this is true with any prediction market. The lock window only prevented _observing_ current tick prices — it didn't prevent _predicting_ next tick prices.
+
+### Config Promotion Timing Mismatch (contract vs issuer)
+
+**Problem:** Contract promotes config lazily (triggered by user interactions). Issuer promotes via events. If no user interacts, contract and issuer can desync.
+
+**Mitigation:** Issuers accept bitmaps for BOTH the current AND pending config hashes during the transition window. Each bitmap stores its `config_hash`. The resolver uses the bitmap's stored `config_hash` to decode, not the "current" config. This makes the timing of on-chain promotion irrelevant — the bitmap always gets decoded correctly.
+
+### First-Tick Reference Price Manipulation
+
+**Problem:** New batch's first tick has no reference prices. `change_pct` from data-node is unverified.
+
+**Mitigation:** For the first tick of any newly created batch, skip resolution entirely. Use the first tick only to establish reference prices. Players who submit bitmaps during tick 0 sit out (their bitmaps become active for tick 1, which has proper reference prices from tick 0). This eliminates the attack surface.
+
+### Data-Node Downtime
+
+**Problem:** If data-node is unavailable, issuers can't fetch snapshots → ticks don't resolve → players can't claim.
+
+**Mitigation:** Each issuer already has its own data-node instance. Add retry with exponential backoff (3 attempts, 5s/15s/45s). If all retries fail for a tick, skip the tick (balances unchanged, no PnL applied). Players who were active simply sit out that tick. On recovery, the next tick resolves normally. No funds are at risk — only temporarily idle.
 
 ---
 
@@ -693,7 +808,7 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 
 | Component | Unchanged |
 |-----------|-----------|
-| Vision.sol contract | No code changes |
+| Vision.sol contract | Minor: add `tickDuration` param to `updateBatchConfig()`, add `MAX_BATCHES` cap |
 | Parimutuel settlement | Same matching logic |
 | BLS consensus | Same signing/verification |
 | Deposit/withdraw | Same flow |
