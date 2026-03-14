@@ -1,6 +1,8 @@
 import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/routing'
+import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -23,7 +25,8 @@ export default async function LegalIndexPage({ params }: { params: Promise<{ loc
   const t = await getTranslations({ locale, namespace: 'pages.legal_index' })
 
   return (
-    <main className="min-h-screen bg-page">
+    <main className="min-h-screen bg-page flex flex-col">
+      <Header />
       <div className="max-w-2xl mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-12">
@@ -136,6 +139,8 @@ export default async function LegalIndexPage({ params }: { params: Promise<{ loc
           </div>
         </section>
       </div>
+      <div className="flex-1" />
+      <Footer />
     </main>
   )
 }

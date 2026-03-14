@@ -76,7 +76,9 @@ export function BotTradingNotice({ className = '', dismissible = false }: BotTra
             {t('bot_notice.description')}
           </p>
           <a
-            href="/docs"
+            href="https://docs.generalmarket.io"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-color-info hover:text-color-info/80 mt-2 transition-colors"
           >
             {t('bot_notice.learn_more')}

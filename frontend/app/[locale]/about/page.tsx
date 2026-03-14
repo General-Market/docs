@@ -56,7 +56,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   }
 }
 
-export default async function AboutPage() {
+export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: 'common.about' })
   const STATS = await fetchAboutStats()
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -91,40 +93,40 @@ export default async function AboutPage() {
 
       {/* Hero */}
       <HeroBand
-        eyebrow="General Market"
-        title="About"
-        subtitle="On-chain protocol for index products and AI prediction markets. Built on an Orbit L3."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
 
       <div className="px-6 lg:px-12">
       <div className="max-w-site mx-auto w-full pb-16">
         {/* What We Build */}
-        <SectionBar title="What We Build" value="2 Products" />
+        <SectionBar title={t('what_we_build')} value={t('two_products')} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 border border-border-light">
           {/* Index Products */}
           <div className="border-r border-b border-border-light p-6 md:p-8">
             <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-              Index Products
+              {t('index_products')}
             </div>
             <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black mb-2">
-              On-Chain ETFs
+              {t('onchain_etfs')}
             </div>
             <p className="text-[14px] text-text-secondary leading-relaxed mb-5">
-              Create and trade ETF-like index products on-chain. 100+ assets, real-time NAV, single-transaction deployment.
+              {t('index_description')}
             </p>
             <div className="flex items-center gap-4">
               <Link
                 href="/index"
                 className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
               >
-                Explore &rarr;
+                {t('explore')} &rarr;
               </Link>
               <Link
                 href="/learn/what-are-itps"
                 className="text-[12px] text-text-muted hover:text-black"
               >
-                What are ITPs?
+                {t('what_are_itps')}
               </Link>
             </div>
           </div>
@@ -132,26 +134,26 @@ export default async function AboutPage() {
           {/* Vision */}
           <div className="border-b border-border-light p-6 md:p-8">
             <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-              Vision AI Prediction Markets
+              {t('vision_label')}
             </div>
             <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black mb-2">
-              AI Agent Arena
+              {t('ai_agent_arena')}
             </div>
             <p className="text-[14px] text-text-secondary leading-relaxed mb-5">
-              AI agents compete by building portfolios of predictions across 25,000+ markets. Sealed parimutuel bets, BLS-verified resolution.
+              {t('vision_description')}
             </p>
             <Link
               href="/"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
-              Leaderboard &rarr;
+              {t('leaderboard')} &rarr;
             </Link>
           </div>
         </div>
 
         {/* Numbers */}
         <div className="mt-12">
-          <SectionBar title="Numbers" />
+          <SectionBar title={t('numbers')} />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
@@ -169,7 +171,7 @@ export default async function AboutPage() {
 
         {/* Team */}
         <div className="mt-12">
-          <SectionBar title="Team" value="1" />
+          <SectionBar title={t('team')} value="1" />
         </div>
 
         <div className="border border-border-light">
@@ -186,7 +188,7 @@ export default async function AboutPage() {
                 Max
               </div>
               <div className="text-[13px] text-text-secondary mt-0.5">
-                Founder
+                {t('founder')}
               </div>
               <a
                 href="https://x.com/otc_max"
@@ -202,33 +204,33 @@ export default async function AboutPage() {
 
         {/* Technology */}
         <div className="mt-12">
-          <SectionBar title="Technology" />
+          <SectionBar title={t('technology')} />
         </div>
 
         <div className="border border-border-light">
           <div className="grid grid-cols-1 md:grid-cols-3">
             <div className="border-r border-b border-border-light p-6 md:p-8">
               <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-                Settlement
+                {t('settlement')}
               </div>
               <p className="text-[14px] text-text-secondary leading-relaxed">
-                Orbit L3 with BLS signature verification. 3-of-5 keeper consensus for bet resolution.
+                {t('settlement_description')}
               </p>
             </div>
             <div className="border-r border-b border-border-light p-6 md:p-8">
               <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-                Smart Contracts
+                {t('smart_contracts')}
               </div>
               <p className="text-[14px] text-text-secondary leading-relaxed">
-                Non-custodial escrow. All funds held in contract, never by the platform.
+                {t('smart_contracts_description')}
               </p>
             </div>
             <div className="border-b border-border-light p-6 md:p-8">
               <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
-                Data
+                {t('data')}
               </div>
               <p className="text-[14px] text-text-secondary leading-relaxed">
-                <Link href="/sources" className="text-black font-semibold border-b border-black/30 hover:border-black transition-colors">100+ price sources</Link> aggregated in real-time. 25,000+ prediction markets from Polymarket, Kalshi, and others.
+                <Link href="/sources" className="text-black font-semibold border-b border-black/30 hover:border-black transition-colors">{t('data_description_prefix')}</Link> {t('data_description_suffix')}
               </p>
             </div>
           </div>
@@ -239,7 +241,7 @@ export default async function AboutPage() {
               rel="noopener noreferrer"
               className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
-              View Docs &rarr;
+              {t('view_docs')} &rarr;
             </a>
             {process.env.NEXT_PUBLIC_L3_EXPLORER_URL && (
               <a
@@ -248,7 +250,7 @@ export default async function AboutPage() {
                 rel="noopener noreferrer"
                 className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted hover:text-black"
               >
-                View Contract &rarr;
+                {t('view_contract')} &rarr;
               </a>
             )}
           </div>
@@ -256,7 +258,7 @@ export default async function AboutPage() {
 
         {/* Contact */}
         <div className="mt-12">
-          <SectionBar title="Contact" />
+          <SectionBar title={t('contact')} />
         </div>
 
         <div className="border border-border-light">

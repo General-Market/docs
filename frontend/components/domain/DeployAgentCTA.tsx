@@ -101,7 +101,7 @@ export function DeployAgentCTA() {
         <div className="flex items-center justify-center gap-4 text-xs text-text-muted font-mono">
           <span>{t('deploy_agent.requirements')}</span>
           <span className="text-zinc-900">|</span>
-          <a href="/docs" className="text-zinc-900 hover:text-zinc-700 transition-colors">
+          <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="text-zinc-900 hover:text-zinc-700 transition-colors">
             {t('deploy_agent.full_docs')}
           </a>
         </div>

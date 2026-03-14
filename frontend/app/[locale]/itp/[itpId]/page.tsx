@@ -5,6 +5,7 @@ import { BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { ItpPageClient } from '@/components/domain/itp-page/ItpPageClient'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { Link } from '@/i18n/routing'
 import { computeEnrichment } from '@/lib/api/itp-enrichment'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
@@ -128,9 +129,9 @@ export default async function ItpPage({ params }: Props) {
       <div className="flex-1 px-6 lg:px-12 py-8">
         <div className="max-w-6xl mx-auto">
           <nav className="text-sm text-text-muted mb-4">
-            <a href="/" className="hover:text-text-primary transition-colors">{tBreadcrumbs('home')}</a>
+            <Link href="/" className="hover:text-text-primary transition-colors">{tBreadcrumbs('home')}</Link>
             <span className="mx-2">/</span>
-            <a href="/index" className="hover:text-text-primary transition-colors">{tBreadcrumbs('markets')}</a>
+            <Link href="/index" className="hover:text-text-primary transition-colors">{tBreadcrumbs('markets')}</Link>
             <span className="mx-2">/</span>
             <span className="text-text-primary">{data.name}</span>
           </nav>
