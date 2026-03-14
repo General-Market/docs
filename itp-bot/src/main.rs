@@ -71,6 +71,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => warn!("Failed to read on-chain ITP count: {}", e),
     }
 
+    // Spawn health endpoint
+    tokio::spawn(async {
+        use axum::{routing::get, Router};
+        let app = Router::new().route("/health", get(|| async { "ok" }));
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:8210").await.unwrap();
+        axum::serve(listener, app).await.unwrap();
+    });
+
     let min_gas = parse_ether("0.01")?;
     let mut rng = rand::thread_rng();
 

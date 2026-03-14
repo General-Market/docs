@@ -23,7 +23,9 @@ pub struct SimRunResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct SimStats {
+    #[serde(default)]
     pub total_return_pct: f64,
+    #[serde(default)]
     pub sharpe_ratio: f64,
 }
 

@@ -38,8 +38,14 @@ fn weight_u256_to_f64(w: U256) -> f64 {
 /// Convert an f64 weight (0.0–1.0) to a U256 weight (1e18 scale) via `rust_decimal`
 /// to avoid floating-point precision loss.
 fn weight_f64_to_u256(w: f64) -> U256 {
-    let weight_dec = Decimal::try_from(w).unwrap_or_default();
-    let scale = Decimal::from(SCALE_1E18 as i64);
+    let weight_dec = match Decimal::try_from(w) {
+        Ok(d) => d,
+        Err(_) => {
+            warn!("Invalid f64 value {}: NaN or Infinity, treating as zero", w);
+            Decimal::ZERO
+        }
+    };
+    let scale = Decimal::from(SCALE_1E18);
     let scaled = weight_dec * scale;
     let val = scaled.to_u128().unwrap_or(0);
     U256::from(val)
@@ -123,11 +129,12 @@ pub fn compute_rebalance_diff(
     remove_indices.sort_unstable_by(|a, b| b.cmp(a));
 
     // 6. Compute adds: target assets not on-chain.
-    let add_assets: Vec<Address> = target_map
+    let mut add_assets: Vec<Address> = target_map
         .keys()
         .filter(|addr| !on_chain_map.contains_key(addr))
         .copied()
         .collect();
+    add_assets.sort();
 
     for &addr in &add_assets {
         let sym = registry.get_symbol(&addr).unwrap_or("???");

@@ -61,7 +61,13 @@ pub async fn deploy_itp(
     let mut weights_u128: Vec<u128> = Vec::with_capacity(resolved.len());
 
     for (h, _) in &resolved {
-        let weight_dec = Decimal::try_from(h.weight).unwrap_or_default();
+        let weight_dec = match Decimal::try_from(h.weight) {
+            Ok(d) => d,
+            Err(_) => {
+                warn!("Invalid f64 weight {}: NaN or Infinity, treating as zero", h.weight);
+                Decimal::ZERO
+            }
+        };
         let w = (weight_dec * scale).to_u128().unwrap_or(0);
         weights_u128.push(w);
     }
@@ -69,7 +75,13 @@ pub async fn deploy_itp(
     // ── 4. Convert prices f64 → U256 via Decimal ──────────────────────────
     let mut prices_u256: Vec<U256> = Vec::with_capacity(resolved.len());
     for (h, _) in &resolved {
-        let price_dec = Decimal::try_from(h.price_usd).unwrap_or_default();
+        let price_dec = match Decimal::try_from(h.price_usd) {
+            Ok(d) => d,
+            Err(_) => {
+                warn!("Invalid f64 price {}: NaN or Infinity, treating as zero", h.price_usd);
+                Decimal::ZERO
+            }
+        };
         let p = (price_dec * scale).to_u128().unwrap_or(0);
         prices_u256.push(U256::from(p));
     }
