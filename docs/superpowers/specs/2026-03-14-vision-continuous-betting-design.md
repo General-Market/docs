@@ -123,11 +123,35 @@ TICK RESOLUTION:
     ├─ BLS sign tick result (3 issuers co-sign)
     └─ Player claims via claimRewards() + BLS proof
 
+CONFIG RESOLUTION (how frontend/bots know what markets are in a batch):
+
+  Issuer                          Data-node                    Vision.sol
+    │                                │                             │
+    │  1. Decide new config          │                             │
+    │     (markets, order, thresholds)                             │
+    │  2. BLS consensus              │                             │
+    │  3. Push config data ─────────→│  stores config by hash      │
+    │  4. Push configHash on-chain ──┼────────────────────────────→│
+    │                                │                             │
+
+  Frontend/Bot                    Data-node                    Vision.sol
+    │                                │                             │
+    │  1. Read configHash from chain ┼────────────────────────────→│
+    │     (or from issuer API)       │                             │
+    │  2. Fetch config data ────────→│                             │
+    │     GET /batches/config/{hash} │                             │
+    │  ←─ market list + order ───────│                             │
+    │  3. Now knows: bit 0 = market A, bit 1 = market B, ...      │
+    │  4. Player picks UP/DOWN per market                          │
+    │  5. Encodes bitmap, commits hash on-chain                    │
+
 CONFIG UPDATES (every 120s):
 
   Config Orchestrator
     ├─ GET /batches/recommended (data-node)
-    ├─ If config hash changed → BLS consensus → updateBatchConfig() on-chain
+    ├─ If config hash changed → BLS consensus
+    │    ├─ Push new config data to data-node
+    │    └─ Push configHash on-chain via updateBatchConfig()
     └─ ⚠ Blocked during lock window
 ```
 
@@ -167,27 +191,52 @@ CONFIG UPDATES (every 120s):
 │  ✅ Zero hardcoded sources in frontend                                │
 └─────────────────────────────────────────────────────────────────────┘
 
+CONFIG RESOLUTION (same as current, issuer pushes config to data-node):
+
+  Issuer                          Data-node                    Vision.sol
+    │                                │                             │
+    │  1. Decide new config (BLS)    │                             │
+    │  2. Push config data ─────────→│  stores config by hash      │
+    │  3. Push configHash on-chain ──┼────────────────────────────→│
+    │                                │                             │
+    │  New source? → createBatchAndJoin() via BLS                  │
+    │  Config changed? → updateBatchConfig() via BLS               │
+    │  ✅ No lock guard — updates anytime                           │
+
+  Frontend/Bot                    Data-node                    Vision.sol
+    │                                │                             │
+    │  1. Read configHash            │                             │
+    │     (from issuer API or chain) │                             │
+    │  2. GET /batches/config/{hash}→│                             │
+    │  ←─ market list + order ───────│                             │
+    │  3. bit 0 = market A, bit 1 = market B, ...                  │
+    │  4. Player picks UP/DOWN                                     │
+    │  5. Commits bitmapHash on-chain                              │
+
 PLAYER BETTING FLOW (tick N — betting for tick N+1):
 
-  Player                        Frontend              Issuer              Vision.sol
+  Player                        Frontend              Data-node           Vision.sol
     │                              │                     │                     │
-    │  1. View markets             │                     │                     │
+    │  1. View source page         │                     │                     │
     │─────────────────────────────→│                     │                     │
     │                              │  GET /api/snapshot  │                     │
-    │                              │  GET /api/sources   │ (registry)         │
-    │                              │←── prices+meta ─────│                     │
-    │←──── prices ─────────────────│                     │                     │
+    │                              │────────────────────→│  (prices)          │
+    │                              │  GET /api/sources   │  (registry)        │
+    │                              │────────────────────→│                     │
+    │                              │  GET /batches/config/{hash}              │
+    │                              │────────────────────→│  (market list)     │
+    │                              │←── prices+markets ──│                     │
+    │←──── UI shows markets ───────│                     │                     │
     │                              │                     │                     │
     │  2. Choose UP/DOWN for NEXT tick (N+1)             │                     │
-    │  3. Commit hash on-chain     │                     │                     │
+    │     (frontend builds bitmap from config order)     │                     │
+    │  3. Commit bitmapHash on-chain                     │                     │
     │─────── updateBitmap(hash) ───┼─────────────────────┼────────────────────→│
     │                              │                     │  stores bitmapHash  │
-    │                              │                     │←── ChainListener ───│
-    │                              │                     │  → PENDING slot     │
     │                              │                     │                     │
-    │  4. Reveal bitmap to issuers │                     │                     │
-    │─────── POST /vision/bitmap ─→│                     │                     │
-    │                              │── fan-out ─────────→│                     │
+    │  4. Reveal bitmap to issuers │                     │      Issuer         │
+    │─────── POST /vision/bitmap ─→│                     │        │            │
+    │                              │── fan-out ──────────┼───────→│            │
     │                              │                     │  verify hash match  │
     │                              │                     │  store in PENDING   │
     │                              │                     │                     │
@@ -235,12 +284,18 @@ TICK RESOLUTION:
     │
     └─ Player claims via claimRewards() + BLS proof
 
-CONFIG UPDATES (every tick):
+CONFIG UPDATES (every tick, fully automatic):
 
   Config Orchestrator
     ├─ GET /batches/recommended (data-node, bulk)
-    ├─ New source with no batch? → createBatchAndJoin() via BLS
-    ├─ Config hash changed? → updateBatchConfig() via BLS
+    ├─ New source with no batch?
+    │    ├─ BLS consensus on createBatchAndJoin()
+    │    ├─ Push config data to data-node
+    │    └─ Push on-chain → issuers detect BatchCreated event
+    ├─ Config hash changed for existing batch?
+    │    ├─ BLS consensus on updateBatchConfig()
+    │    ├─ Push new config data to data-node (by hash)
+    │    └─ Push configHash on-chain
     ├─ New tickDuration → defines next tick's settlement time
     └─ ✅ No lock guard — updates anytime
 ```
@@ -252,12 +307,16 @@ CONFIG UPDATES (every tick):
 The commit-reveal scheme ensures **issuers cannot see your bets before they're committed on-chain**:
 
 ```
-1. Player encodes bitmap (UP/DOWN per market)
-2. Player computes bitmapHash = keccak256(bitmap)
-3. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
+1. Issuer pushes batch config (market list, order) to data-node
+2. Issuer pushes configHash on-chain via updateBatchConfig()
+3. Frontend/bot reads configHash → fetches config from data-node
+   → now knows: bit 0 = market A, bit 1 = market B, ...
+4. Player picks UP/DOWN per market, encodes bitmap
+5. Player computes bitmapHash = keccak256(bitmap)
+6. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
    → hash is now immutably committed on-chain
    → nobody can see the actual bets yet (only the hash)
-4. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
+7. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
    → issuers verify: keccak256(revealed) == on-chain hash
    → if mismatch: reject (player can't change bets after commit)
 ```
@@ -266,6 +325,7 @@ The commit-reveal scheme ensures **issuers cannot see your bets before they're c
 - Issuers seeing bets before commit → front-running impossible
 - Players changing bets after seeing price movements → hash locks the commitment
 - Issuers submitting fake bitmaps → hash must match on-chain commitment
+- Config manipulation → configHash on-chain, config data verifiable by anyone
 
 **This model is unchanged in the new system.** The only difference is WHEN bets apply: current system bets on tick N (same tick), new system bets on tick N+1 (next tick). The commit-reveal mechanism is identical.
 
@@ -279,6 +339,7 @@ The commit-reveal scheme ensures **issuers cannot see your bets before they're c
 | **Tick resolution** | BLS consensus (3 issuers must agree) | Single issuer can't manipulate outcomes |
 | **Payouts (claimRewards)** | BLS-signed proof verified on-chain | Fake payouts rejected by contract |
 | **Withdrawals** | On-chain, player's wallet tx | Only player can withdraw their funds |
+| **Batch config** | configHash on-chain, data on data-node | Config data verifiable against on-chain hash |
 | **Sit-out** | No active bitmap → balance unchanged | Not betting = no risk |
 
 ### What Issuers Control vs What Players Control
