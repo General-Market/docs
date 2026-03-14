@@ -430,6 +430,8 @@ Config promotion happens AFTER bitmap flip. This means:
 
 **Cross-issuer bitmap gossip.** Before resolution, issuers exchange "bitmap inventory" messages listing `(player, bitmap_hash)` pairs in their active set. If an issuer is missing a bitmap (e.g., player's reveal didn't reach it), it requests the missing bitmap from peers. Resolution proceeds only with the INTERSECTION of bitmaps confirmed by all issuers. This prevents a single missed reveal from breaking consensus.
 
+**Trust assumption (threshold model):** With 2-of-3 BLS threshold, two colluding issuers can selectively exclude any player from resolution (by claiming they don't have the bitmap). This is inherent to ANY threshold consensus system — a quorum of malicious actors can censor participants. Mitigations: (1) the `bitmap_set_hash` in BLS messages makes exclusion auditable (anyone can compare the signed set against the on-chain committed hashes), (2) a monitoring service can flag when a player's committed bitmap is excluded from resolution despite all issuers having received it, (3) long-term: increase issuer set size beyond 3 to make collusion harder.
+
 **DB persistence for crash recovery.** The `vision_bitmaps` table must include:
 - `slot` column: `'pending'` or `'active'`
 - `target_tick_id`: which tick this bitmap is for
