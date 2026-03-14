@@ -14,8 +14,18 @@ const COUNTRY_TO_LOCALE: Record<string, string> = {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Already has locale prefix — pass through
-  if (LOCALES.some(l => pathname === `/${l}` || pathname.startsWith(`/${l}/`))) {
+  // Already has locale prefix
+  const matchedLocale = LOCALES.find(l => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
+  if (matchedLocale) {
+    // Catch double-locale paths like /ja/ko — redirect to the inner path with the outer locale
+    const rest = pathname.slice(matchedLocale.length + 1) // e.g. "/ja/ko/about" → "/ko/about"
+    const nestedLocale = LOCALES.find(l => rest === `/${l}` || rest.startsWith(`/${l}/`))
+    if (nestedLocale) {
+      const cleanPath = rest.slice(nestedLocale.length + 1) || '/' // "/ko/about" → "/about"
+      const url = request.nextUrl.clone()
+      url.pathname = `/${matchedLocale}${cleanPath}`
+      return NextResponse.redirect(url)
+    }
     return NextResponse.next()
   }
 
