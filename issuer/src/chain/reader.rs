@@ -10,7 +10,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use ethers::prelude::*;
 use tokio::sync::RwLock;
-use tracing::{debug, error, warn, trace};
+use tracing::{debug, error, info, warn, trace};
 
 use common::bindings;
 use common::error::Error;

@@ -45,6 +45,12 @@ const L3_MAX_BLOCK_RANGE: u64 = 50_000;
 /// Protects against rare L3 Orbit reorgs (AUDIT FIX round 3).
 const L3_CONFIRMATION_BUFFER: u64 = 5;
 
+/// Maximum age (seconds) for a `Pending` deposit before it is abandoned.
+/// If both credit AND refund fail for this long, the deposit is forcibly removed.
+/// This prevents infinite retry loops when consensus can't be reached.
+/// Set to 24 hours — well beyond the auto-refund timeout (typically 2h).
+const DEPOSIT_ABANDON_TIMEOUT_SECS: u64 = 86400;
+
 /// Vision deposit watcher: watches Settlement for deposits, L3 for withdrawals.
 ///
 /// This is an independent background task that runs alongside the tick engine
@@ -806,6 +812,9 @@ impl VisionDepositWatcher {
         // Collect candidates first (immutable borrow)
         let mut candidates: Vec<(u64, bool)> = Vec::new(); // (order_id, should_refund)
 
+        // Track deposits to abandon (exceeded DEPOSIT_ABANDON_TIMEOUT_SECS)
+        let mut abandon_ids: Vec<u64> = Vec::new();
+
         for (order_id, deposit) in &self.pending_deposits {
             // Only refund Pending deposits, NEVER CreditedOnL3
             if deposit.status != DepositStatus::Pending {
@@ -813,6 +822,20 @@ impl VisionDepositWatcher {
             }
 
             let age = now.saturating_sub(deposit.created_at);
+
+            // If deposit has been stuck for >24h, abandon it — both credit and refund
+            // have been failing repeatedly and consensus can't be reached.
+            if age > DEPOSIT_ABANDON_TIMEOUT_SECS {
+                warn!(
+                    order_id,
+                    age_secs = age,
+                    "Abandoning deposit: stuck for >{} seconds, consensus unreachable",
+                    DEPOSIT_ABANDON_TIMEOUT_SECS,
+                );
+                abandon_ids.push(*order_id);
+                continue;
+            }
+
             if age > timeout {
                 // CRITICAL SAFETY CHECK: Before enqueuing refund, query L3 to confirm
                 // the credit has NOT been processed. This prevents the credit+refund
@@ -898,6 +921,19 @@ impl VisionDepositWatcher {
 
         for (order_id, user, amount, status) in db_updates {
             self.upsert_deposit_status(order_id, user, amount, status).await;
+        }
+
+        // Third pass: abandon deposits that exceeded the max age
+        for order_id in &abandon_ids {
+            if let Some(deposit) = self.pending_deposits.remove(order_id) {
+                self.upsert_deposit_status(
+                    *order_id,
+                    deposit.user,
+                    deposit.amount,
+                    DepositStatus::Refunded,
+                )
+                .await;
+            }
         }
     }
 
