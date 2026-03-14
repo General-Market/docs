@@ -21,7 +21,7 @@ import ssl
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8547
 UPSTREAM = sys.argv[2] if len(sys.argv) > 2 else "https://rpc.testnet.soniclabs.com"
 CACHE_TTL = 1.0  # seconds
-RATE_LIMIT = 0.05  # min seconds between upstream requests (20 req/s)
+RATE_LIMIT = 0.01  # min seconds between upstream requests (100 req/s)
 
 cache = {}  # {body_hash: (response_bytes, timestamp)}
 cache_lock = threading.Lock()
