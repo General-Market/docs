@@ -222,6 +222,10 @@ CONFIG RESOLUTION (data-node generates, issuer signs, data-node stores):
 
 PLAYER BETTING FLOW (tick N — betting for tick N+1):
 
+  Two reveal strategies — frontend reveals immediately, bots reveal later.
+
+  FRONTEND (immediate reveal):
+
   Player                        Frontend              Data-node           Vision.sol
     │                              │                     │                     │
     │  1. View source page         │                     │                     │
@@ -241,15 +245,42 @@ PLAYER BETTING FLOW (tick N — betting for tick N+1):
     │─────── updateBitmap(hash) ───┼─────────────────────┼────────────────────→│
     │                              │                     │  stores bitmapHash  │
     │                              │                     │                     │
-    │  4. Reveal bitmap to issuers │                     │      Issuer         │
+    │  4. Reveal bitmap IMMEDIATELY to issuers           │      Issuer         │
     │─────── POST /vision/bitmap ─→│                     │        │            │
     │                              │── fan-out ──────────┼───────→│            │
     │                              │                     │  verify hash match  │
     │                              │                     │  store in PENDING   │
     │                              │                     │                     │
-    │  ✅ NO LOCK — can change anytime during tick        │                     │
-    │  ✅ No submit = sit out next tick (balance safe)    │                     │
-    │                              │                     │                     │
+
+  VISION-BOT (delayed reveal):
+
+  Bot                                                 Data-node           Vision.sol
+    │                                                    │                     │
+    │  1. Fetch config + prices                          │                     │
+    │────── GET /batches/signed ────────────────────────→│                     │
+    │────── GET /vision/snapshot ───────────────────────→│                     │
+    │←──── config + prices ─────────────────────────────│                     │
+    │                                                    │                     │
+    │  2. Build bitmap, commit hash on-chain             │                     │
+    │─────── updateBitmap(hash) ─────────────────────────┼────────────────────→│
+    │                                                    │  stores bitmapHash  │
+    │                                                    │                     │
+    │  ... bot keeps bets private ...                    │                     │
+    │  ... waits until closer to tick boundary ...       │                     │
+    │                                                    │                     │
+    │  3. Reveal bitmap to issuers (LATER, before tick boundary)   Issuer     │
+    │─────── POST /vision/bitmap (direct to each issuer) ─────────→│         │
+    │                                                    │  verify hash match  │
+    │                                                    │  store in PENDING   │
+    │                                                    │                     │
+
+  Key difference: frontend reveals via Next.js proxy (fan-out), bot reveals
+  directly to each issuer endpoint. Both commit hash on-chain first.
+
+    ✅ NO LOCK — can change anytime during tick
+    ✅ No submit = sit out next tick (balance safe)
+    ✅ Reveal can happen anytime between commit and tick boundary
+    ⚠ No reveal before tick boundary = sit out (hash on-chain but issuer has no bitmap data)
 
 TWO-SLOT BITMAP MODEL (per player per batch):
 
@@ -324,9 +355,12 @@ The commit-reveal scheme ensures **issuers cannot see your bets before they're c
 7. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
    → hash is now immutably committed on-chain
    → nobody can see the actual bets yet (only the hash)
-8. Player reveals bitmap bytes to issuers (POST /vision/bitmap)
+8. Player reveals bitmap bytes to issuers
+   → Frontend: reveals IMMEDIATELY via POST /vision/bitmap (fan-out through proxy)
+   → Vision-bot: reveals LATER, directly to each issuer, closer to tick boundary
    → issuers verify: keccak256(revealed) == on-chain hash
    → if mismatch: reject (player can't change bets after commit)
+   → if no reveal before tick boundary: player sits out (hash exists but no bitmap data)
 ```
 
 **What this prevents:**
@@ -335,7 +369,11 @@ The commit-reveal scheme ensures **issuers cannot see your bets before they're c
 - Issuers submitting fake bitmaps → hash must match on-chain commitment
 - Config manipulation → configHash on-chain, config data verifiable by anyone
 
-**This model is unchanged in the new system.** The only difference is WHEN bets apply: current system bets on tick N (same tick), new system bets on tick N+1 (next tick). The commit-reveal mechanism is identical.
+**Reveal timing strategies:**
+- **Frontend (immediate):** Commit + reveal in same user flow. Simpler UX, bets are visible to issuers sooner. Issuers can't act on them (BLS consensus + commit-reveal prevents front-running).
+- **Vision-bot (delayed):** Commit hash early, reveal just before tick boundary. Maximizes bet privacy — other participants (including other bots monitoring issuer APIs) cannot see the bot's positions until the last moment. The on-chain hash locks the bet regardless of reveal timing.
+
+Both strategies are equally safe. The commit-reveal scheme guarantees bets can't be changed after commit. Delayed reveal is an optimization for competitive privacy, not a security difference.
 
 ### Fund Safety
 
