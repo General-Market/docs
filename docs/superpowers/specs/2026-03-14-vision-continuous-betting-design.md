@@ -31,6 +31,7 @@ Tick N+1 starts
 
 - **Multiplier** — all stakes weighted equally, no early-entry advantage
 - **Lock window** — `lockOffset = 0`, players can submit/change bets anytime
+- **Player-side `updateBitmap()` on-chain call** — issuers handle this on behalf of players
 - **vision-batches.json** — frontend uses live API data only
 - **Static batch IDs** — frontend matches batches by sourceId from proxy, not hardcoded IDs
 - **Hardcoded `VISION_SOURCES`** — source metadata (name, logo, description, category) loaded from data-node API
@@ -119,13 +120,51 @@ Change to:
 2. Flip bitmaps: `active = pending`, `pending = cleared`
 3. Publish results via BLS consensus (existing flow)
 
-### 4. Contract — Vision.sol (minimal)
+### 4. Issuer — Bitmap Relay (issuers call `updateBitmap()` on-chain)
 
-**No code changes required.** All behavioral changes are issuer-side.
+**Current flow:** Player calls `updateBitmap(batchId, bitmapHash)` on Vision.sol themselves, then submits the actual bitmap bytes to issuers via `POST /vision/bitmap`. Two transactions: one on-chain (player pays gas), one off-chain.
 
-- `lockOffset = 0`: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
-- `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
-- Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
+**New flow:** Player only submits bitmap bytes to issuers via `POST /vision/bitmap`. The **issuer** calls `updateBitmap()` on-chain on behalf of the player. One step for the player, zero on-chain transactions from their wallet for bitmap updates.
+
+**How it works:**
+1. Player sends `POST /vision/bitmap` with `{ batchId, bitmap, signature }` to all issuers (fan-out via frontend proxy, same as today)
+2. Issuer receives bitmap, computes `bitmapHash = keccak256(bitmap)`
+3. Issuer stores bitmap in pending slot (in-memory + Postgres)
+4. **Leader issuer** batches all pending bitmap hashes and calls `updateBitmap(batchId, player, bitmapHash)` on-chain via BLS-signed transaction
+5. Contract stores `bitmapHash` in player's position (existing logic)
+6. Other issuers see the on-chain event and confirm their local state matches
+
+**Requires contract change:** `updateBitmap()` currently requires `msg.sender == player`. Change to allow issuer-signed calls: add a `updateBitmapFor(batchId, player, bitmapHash, blsSig, nonce, bitmask)` function that verifies BLS signature from registered issuers, similar to `claimRewards()`.
+
+**Batching:** Issuers can batch multiple bitmap updates into a single transaction per tick. Collect all bitmap submissions during the tick, then submit them together before resolution. This reduces gas costs significantly (one tx per tick per batch instead of one tx per player per submission).
+
+**Player signature:** The `POST /vision/bitmap` request must include a player signature (EIP-712 typed data: `{ batchId, bitmapHash, nonce }`) so issuers can prove the player authorized this bitmap. This prevents issuers from submitting arbitrary bitmaps.
+
+### 5. Issuer — Batch Auto-Detection from Chain Events
+
+**Current flow:** Issuers know about batches from their startup config or manual registration. The config orchestrator checks for config updates but doesn't discover new batches.
+
+**New flow:** Issuers auto-detect new batches from `BatchCreated` events on Vision.sol. The `ChainListener` already processes Vision events — add handling for `BatchCreated`:
+
+1. `ChainListener` receives `BatchCreated(batchId, sourceId, configHash, tickDuration)` event
+2. Calls `tick_scheduler.on_batch_created(batchId, sourceId, configHash, tickDuration)`
+3. Scheduler adds the batch to its `batches` HashMap
+4. Config orchestrator automatically includes the new batch in its next check cycle
+5. Tick engine starts resolving ticks for the new batch
+
+**No manual registration needed.** Deploy a batch on-chain → issuers pick it up automatically → it appears on the frontend via the batches API.
+
+**Who creates batches?** The config orchestrator. When the data-node's `GET /batches/recommended` returns a source that has no on-chain batch yet, the orchestrator proposes `createBatchAndJoin()` via BLS consensus. This means: add a source to the data-node → orchestrator creates the batch → issuers detect it → frontend shows it. Fully automatic pipeline.
+
+### 6. Contract — Vision.sol
+
+**Changes required:**
+
+1. **`updateBitmapFor()`** — New function allowing issuers to update a player's bitmap hash on their behalf, with BLS signature verification. Same pattern as `claimRewards()`.
+
+2. **`lockOffset = 0`**: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
+3. **`_requireNotLocked` check**: becomes a no-op when `lockOffset = 0`
+4. Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
 **One-time migration**: For each of the 43 batches:
 1. Read `batches[batchId].nonce` on-chain to get current config nonce
@@ -134,7 +173,7 @@ Change to:
 
 This is 43 sequential calls in a single migration script. Note: setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
 
-### 5. Frontend — Remove Static Dependencies
+### 7. Frontend — Remove Static Dependencies
 
 **Delete `frontend/lib/contracts/vision-batches.json`.**
 
@@ -150,7 +189,7 @@ All batch data comes from live API:
 **Update `SourceDetail.tsx`:**
 - Same: remove static fallback, use live data only
 
-### 6. Frontend — Remove Multiplier UI
+### 8. Frontend — Remove Multiplier UI
 
 **Files to clean up:**
 - `frontend/lib/vision/tick.ts` — remove `getMultiplier()`, `lockOffset` from `getBatchTickState()`, update `getSourceKeyForBatch()` / `getBatchDisplayName()` / `getBatchLogo()` / `getAllBatches()` to not depend on static config
@@ -160,11 +199,12 @@ All batch data comes from live API:
 - `frontend/hooks/vision/useSignedBatches.ts` — remove lockOffset references
 - `frontend/hooks/vision/useBitmapEditor.ts` — no changes needed (bitmap UP/DOWN stays)
 
-### 7. Frontend — Continuous Betting UX
+### 9. Frontend — Continuous Betting UX
 
 **BatchEntryPanel changes:**
 - Always open for submissions (no "locked" disabled state)
 - Header: "Set predictions for next tick" (not "Enter Batch")
+- Submit flow: player signs bitmap (EIP-712) → `POST /vision/bitmap` → issuers handle on-chain `updateBitmapFor()`. **No wallet transaction needed** for bitmap updates — only a signature.
 - After submit: "Your bets are set for tick N+1" confirmation
 - Show active status: "You have active bets on tick N" when participating
 - Show sit-out status: "No bets set — sitting out this tick" when player didn't submit
@@ -176,7 +216,7 @@ All batch data comes from live API:
 - Timer is just a countdown, no lock phase
 - Consider adding: "ACTIVE BETTORS" count (players with active bitmaps for current tick)
 
-### 8. Frontend — Remove vision-batches.json Consumers
+### 10. Frontend — Remove vision-batches.json Consumers
 
 **Files referencing vision-batches.json:**
 - `frontend/components/domain/vision/detail/SourceDetail.tsx` — static batch lookup
@@ -188,7 +228,7 @@ All batch data comes from live API:
 
 The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the issuer API response: issuers already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
 
-### 9. Data-node — Config Recommendations
+### 11. Data-node — Config Recommendations
 
 **Endpoint already exists**: `GET /batches/recommended` (bulk, returns all sources at once)
 
@@ -212,7 +252,7 @@ Data-node generates this from its source-specific data collection. Markets can c
 
 The issuer config orchestrator calls this bulk endpoint and proposes updates per-source when the config hash changes.
 
-### 10. Tick Scheduling — Each Config Defines Next Settlement
+### 12. Tick Scheduling — Each Config Defines Next Settlement
 
 Each `updateBatchConfig()` call sets the tick duration for subsequent ticks. The config includes `tickDuration` which defines how long the next tick runs. Settlement time is deterministic:
 
@@ -232,7 +272,7 @@ This means the data-node controls tick pacing per source. If a source wants fast
 
 **Frontend timer** already reads `tickDuration` from the batch API response and computes countdown. No change needed — it naturally shows the correct countdown for the current tick.
 
-### 11. Frontend — Dynamic Source Registry (Remove Hardcoded VISION_SOURCES)
+### 13. Frontend — Dynamic Source Registry (Remove Hardcoded VISION_SOURCES)
 
 **Current problem:** `frontend/lib/vision/sources.ts` hardcodes 75+ sources with metadata (name, logo, description, category, prefixes). Adding a new data source requires a frontend deploy. Same for `CATEGORY_GROUPS` in `VisionMarketsGrid.tsx`, `PREFIX_MAP` in `market-categories.ts`, and `SOURCE_CATEGORIES` in `source-categories.ts`.
 
@@ -313,7 +353,11 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 - **Integration test**: Concurrent bitmap submission during tick flip — verify correct slot assignment
 - **Config orchestrator**: Mock data-node `GET /batches/recommended` returns new config → verify on-chain update
 - **Migration script**: Run against local Anvil — verify all 43 batches get `lockOffset = 0`
-- **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
+- **Contract**: `updateBitmapFor()` with valid BLS sig → bitmap hash stored. Without BLS sig → revert.
+- **Issuer bitmap relay**: Player signs bitmap → issuer batches → calls `updateBitmapFor()` → on-chain hash matches
+- **Batch auto-detection**: Deploy new batch on-chain → issuers pick up `BatchCreated` event → batch appears in API
+- **Auto-creation pipeline**: Add source to data-node → orchestrator creates batch → issuers detect → frontend shows
+- **E2E**: Player submits bet (signature only, no on-chain tx), waits for tick, verifies payout
 - **Frontend**: Verify no references to vision-batches.json, multiplier UI gone, continuous betting UX works
 - **Frontend**: Verify `tick.ts` functions work without static config (use live API data only)
 - **Frontend**: Source grid loads entirely from data-node — no hardcoded sources, new sources appear automatically
@@ -341,13 +385,14 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 | `SOURCE_CATEGORIES` / `getCategoryCounts()` | `frontend/lib/vision/source-categories.ts` — from API |
 | `PREFIX_MAP` / `BARE_CRYPTO` / `CATEGORY_ORDER` | `frontend/lib/vision/market-categories.ts` — from API |
 | `CATEGORY_GROUPS` / `SOURCE_DISPLAY_OVERRIDES` | `VisionMarketsGrid.tsx` — from API |
+| Player-side `updateBitmap()` call | Issuers call `updateBitmapFor()` on behalf of players |
 | Early-entry incentive | Entire concept removed |
 
 ## What Stays
 
 | Component | Unchanged |
 |-----------|-----------|
-| Vision.sol contract | No code changes |
+| Vision.sol contract | Add `updateBitmapFor()` (issuer-relayed bitmap), rest unchanged |
 | Parimutuel settlement | Same matching logic |
 | BLS consensus | Same signing/verification |
 | Deposit/withdraw | Same flow |
