@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useAccount, useConnect } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 import { useVisionPoints } from '@/hooks/vision/useVisionPoints'
@@ -60,6 +61,16 @@ export default function PointsPageClient() {
 
   const totalBatches = allBatches?.length ?? 0
   const coveragePercent = totalBatches > 0 ? Math.round((activeBatches / totalBatches) * 100) : 0
+
+  const ROWS_PER_PAGE = 10
+
+  const [positionsPage, setPositionsPage] = useState(1)
+  const positionsTotalPages = Math.max(1, Math.ceil(batches.length / ROWS_PER_PAGE))
+  const paginatedBatches = batches.slice((positionsPage - 1) * ROWS_PER_PAGE, positionsPage * ROWS_PER_PAGE)
+
+  const [leaderboardPage, setLeaderboardPage] = useState(1)
+  const leaderboardTotalPages = Math.max(1, Math.ceil(leaderboard.length / ROWS_PER_PAGE))
+  const paginatedLeaderboard = leaderboard.slice((leaderboardPage - 1) * ROWS_PER_PAGE, leaderboardPage * ROWS_PER_PAGE)
 
   return (
     <main className="min-h-screen bg-page flex flex-col">
@@ -279,77 +290,100 @@ export default function PointsPageClient() {
 
                 {/* Positions table */}
                 {batches.length > 0 && (
-                  <div className="border border-border-light overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                          <th className="text-left py-2.5 px-4">Batch</th>
-                          <th className="text-right py-2.5 px-4">Your Stake</th>
-                          <th className="text-right py-2.5 px-4">Pool TVL</th>
-                          <th className="text-right py-2.5 px-4">Your Share</th>
-                          <th className="text-right py-2.5 px-4">Pts / Tick</th>
-                          <th className="text-right py-2.5 px-4">Pts / Hour</th>
-                          <th className="text-right py-2.5 px-4">Est. Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {batches.map((b, i) => (
-                          <tr
-                            key={b.batchId}
-                            className={`border-b border-border-light text-[13px] hover:bg-surface/60 transition-colors ${
-                              i % 2 === 1 ? 'bg-surface/30' : ''
-                            }`}
-                          >
-                            <td className="py-3 px-4 font-mono text-[12px] text-text-muted">
-                              #{b.batchId}
+                  <>
+                    <div className="border border-border-light overflow-hidden">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                            <th className="text-left py-2.5 px-4">Batch</th>
+                            <th className="text-right py-2.5 px-4">Your Stake</th>
+                            <th className="text-right py-2.5 px-4">Pool TVL</th>
+                            <th className="text-right py-2.5 px-4">Your Share</th>
+                            <th className="text-right py-2.5 px-4">Pts / Tick</th>
+                            <th className="text-right py-2.5 px-4">Pts / Hour</th>
+                            <th className="text-right py-2.5 px-4">Est. Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedBatches.map((b, i) => (
+                            <tr
+                              key={b.batchId}
+                              className={`border-b border-border-light text-[13px] hover:bg-surface/60 transition-colors ${
+                                i % 2 === 1 ? 'bg-surface/30' : ''
+                              }`}
+                            >
+                              <td className="py-3 px-4 font-mono text-[12px] text-text-muted">
+                                #{b.batchId}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums font-semibold text-black">
+                                {formatUsd(b.myBalanceUsd)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
+                                {formatUsd(b.batchTvlUsd)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums font-bold">
+                                <span className={b.myShare >= 0.5 ? 'text-green-600' : b.myShare >= 0.1 ? 'text-black' : 'text-text-secondary'}>
+                                  {(b.myShare * 100).toFixed(1)}%
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums text-black">
+                                {b.pointsPerTick.toFixed(1)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-green-600">
+                                +{formatPoints(b.pointsPerHour)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
+                                {formatPoints(b.estimatedTotalPoints)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        {/* Totals row */}
+                        <tfoot>
+                          <tr className="bg-black text-white text-[13px] font-bold">
+                            <td className="py-3 px-4 text-[11px] uppercase tracking-[0.06em] font-extrabold">
+                              Total
                             </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums font-semibold text-black">
-                              {formatUsd(b.myBalanceUsd)}
+                            <td className="py-3 px-4 text-right font-mono tabular-nums">
+                              {formatUsd(batches.reduce((s, b) => s + b.myBalanceUsd, 0))}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
-                              {formatUsd(b.batchTvlUsd)}
+                            <td className="py-3 px-4" />
+                            <td className="py-3 px-4" />
+                            <td className="py-3 px-4 text-right font-mono tabular-nums">
+                              {totalPointsPerTick.toFixed(1)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums font-bold">
-                              <span className={b.myShare >= 0.5 ? 'text-green-600' : b.myShare >= 0.1 ? 'text-black' : 'text-text-secondary'}>
-                                {(b.myShare * 100).toFixed(1)}%
-                              </span>
+                            <td className="py-3 px-4 text-right font-mono tabular-nums text-green-400">
+                              +{formatPoints(totalPointsPerHour)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums text-black">
-                              {b.pointsPerTick.toFixed(1)}
-                            </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-green-600">
-                              +{formatPoints(b.pointsPerHour)}
-                            </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
-                              {formatPoints(b.estimatedTotalPoints)}
+                            <td className="py-3 px-4 text-right font-mono tabular-nums">
+                              {formatPoints(estimatedTotalPoints)}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                      {/* Totals row */}
-                      <tfoot>
-                        <tr className="bg-black text-white text-[13px] font-bold">
-                          <td className="py-3 px-4 text-[11px] uppercase tracking-[0.06em] font-extrabold">
-                            Total
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums">
-                            {formatUsd(batches.reduce((s, b) => s + b.myBalanceUsd, 0))}
-                          </td>
-                          <td className="py-3 px-4" />
-                          <td className="py-3 px-4" />
-                          <td className="py-3 px-4 text-right font-mono tabular-nums">
-                            {totalPointsPerTick.toFixed(1)}
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums text-green-400">
-                            +{formatPoints(totalPointsPerHour)}
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums">
-                            {formatPoints(estimatedTotalPoints)}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                        </tfoot>
+                      </table>
+                    </div>
+                    {positionsTotalPages > 1 && (
+                      <div className="flex items-center justify-between mt-3">
+                        <button
+                          onClick={() => setPositionsPage(p => Math.max(1, p - 1))}
+                          disabled={positionsPage === 1}
+                          className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          &larr; Previous
+                        </button>
+                        <span className="text-[11px] text-text-muted">
+                          Page {positionsPage} of {positionsTotalPages}
+                        </span>
+                        <button
+                          onClick={() => setPositionsPage(p => Math.min(positionsTotalPages, p + 1))}
+                          disabled={positionsPage === positionsTotalPages}
+                          className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next &rarr;
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -399,9 +433,9 @@ export default function PointsPageClient() {
                       </tr>
                     )}
 
-                    {leaderboard.map((entry, i) => {
+                    {paginatedLeaderboard.map((entry, i) => {
                       const isYou = address && entry.walletAddress.toLowerCase() === address.toLowerCase()
-                      const rank = entry.rank || i + 1
+                      const rank = entry.rank || ((leaderboardPage - 1) * ROWS_PER_PAGE + i + 1)
 
                       return (
                         <tr
@@ -446,6 +480,27 @@ export default function PointsPageClient() {
                   </tbody>
                 </table>
               </div>
+              {leaderboardTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => setLeaderboardPage(p => Math.max(1, p - 1))}
+                    disabled={leaderboardPage === 1}
+                    className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    &larr; Previous
+                  </button>
+                  <span className="text-[11px] text-text-muted">
+                    Page {leaderboardPage} of {leaderboardTotalPages}
+                  </span>
+                  <button
+                    onClick={() => setLeaderboardPage(p => Math.min(leaderboardTotalPages, p + 1))}
+                    disabled={leaderboardPage === leaderboardTotalPages}
+                    className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -39,6 +39,33 @@ function getCellState(state: Record<string, CellState>, marketId: string): CellS
   return state[marketId] ?? 'up'
 }
 
+/** Shorten multi-word value labels to fit the Type column on 1 line */
+const SHORT_TYPE_LABELS: Record<string, string> = {
+  'Viewer Count': 'Viewers',
+  'Delay Minutes': 'Delay',
+  'Active Flights': 'Flights',
+  'Transaction Count': 'Txns',
+  'Probability': 'Odds',
+  'Short Volume': 'Short Vol',
+  'Avg Salary': 'Salary',
+  'Basket Price': 'Basket',
+  'Alert Level': 'Alert',
+  'Water Level': 'Level',
+  'Wave Height': 'Waves',
+  'Stage Height': 'Stage',
+  'Kp Index': 'Kp',
+  'Sale Price': 'Sale',
+  'Avg Delay': 'Delay',
+  'Wait Time': 'Wait',
+  'Avg Wait': 'Wait',
+  'Free Spaces': 'Spaces',
+  '% Broken': 'Broken',
+}
+
+function shortTypeLabel(label: string): string {
+  return SHORT_TYPE_LABELS[label] ?? label
+}
+
 /** Format a numeric value for compact display */
 function formatValue(v: string, isPrice?: boolean, unit?: string): string {
   const n = parseFloat(v)
@@ -237,7 +264,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
-            <span className="text-[13px] font-bold text-black">{source.valueLabel}</span>
+            <span className="text-[13px] font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Updated</div>
