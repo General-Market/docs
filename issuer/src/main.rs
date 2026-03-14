@@ -3336,7 +3336,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
     let price_map: HashMap<ethers::types::Address, ethers::types::U256> = match price_fetcher.fetch_prices(&all_assets).await {
         Ok(fetched) => fetched.into_iter().map(|p| (p.asset, p.price)).collect(),
         Err(e) => {
-            warn!(cycle = current_cycle, error = %e, "Price fetch failed for rebalance prices");
+            if current_cycle % 60 == 0 {
+                warn!(cycle = current_cycle, error = %e, "Price fetch failed for rebalance prices");
+            }
             HashMap::new()
         }
     };
@@ -3347,14 +3349,16 @@ async fn run_rebalance_processing<P, W, K, PF>(
     // 5. Leader election
     let am_leader = calculate_bridge_leader(rebalance_cycle, num_issuers, node_index);
 
-    info!(
-        cycle = current_cycle,
-        rebalance_cycle,
-        count = filtered_rebalances.len(),
-        price_count = price_map.len(),
-        am_leader,
-        "Found pending rebalances (after dedup)"
-    );
+    if current_cycle % 60 == 0 {
+        info!(
+            cycle = current_cycle,
+            rebalance_cycle,
+            count = filtered_rebalances.len(),
+            price_count = price_map.len(),
+            am_leader,
+            "Found pending rebalances (after dedup)"
+        );
+    }
 
     // 6. For each ITP, run single-phase rebalance consensus + on-chain submission
     for rebalance in &filtered_rebalances {
@@ -3367,7 +3371,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
             match price_map.get(addr) {
                 Some(&price) if !price.is_zero() => prices.push(price),
                 _ => {
-                    warn!(itp_id = ?itp_h256, asset = ?addr, "Missing or zero price for asset, skipping ITP");
+                    if current_cycle % 60 == 0 {
+                        warn!(itp_id = ?itp_h256, asset = ?addr, "Missing or zero price for asset, skipping ITP");
+                    }
                     missing_price = true;
                     break;
                 }
@@ -3404,7 +3410,9 @@ async fn run_rebalance_processing<P, W, K, PF>(
             match price_map.get(add_addr) {
                 Some(&price) if !price.is_zero() => rebalance_prices.push(price),
                 _ => {
-                    warn!(itp_id = ?itp_h256, asset = ?add_addr, "Missing price for added asset, stalling rebalance");
+                    if current_cycle % 60 == 0 {
+                        warn!(itp_id = ?itp_h256, asset = ?add_addr, "Missing price for added asset, stalling rebalance");
+                    }
                     missing_add_price = true;
                     break;
                 }
