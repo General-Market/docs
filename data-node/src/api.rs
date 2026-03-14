@@ -4902,6 +4902,8 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("nyc311", "NYC 311 Complaints", 600),
     // ── Food / Entertainment ────────────────────────────────────────────
     ("mcbroken", "McBroken Ice Cream", 600),
+    // ── Chess ──────────────────────────────────────────────────────────
+    ("lichess", "Lichess Chess", 300),
 ];
 
 /// Per-source explanation of why assets may be stale.
@@ -5040,29 +5042,24 @@ use crate::market_data::models::MarketPriceSummary;
 
 /// Build source schedule list from DB stats + hardcoded metadata (36 entries: 21 original + 15 new)
 async fn build_source_schedules(pool: &PgPool) -> Result<Vec<SourceSchedule>, anyhow::Error> {
-    // Get per-source stats from market_prices.
-    // NOTE: CoinGecko (source_id="crypto") and DeFiLlama (source_id="defi") now implement
-    // MarketDataSource and write to market_prices, so the old UNION with coingecko_market_caps
-    // and defillama_protocols is no longer needed. If the new pipeline is running, their stats
-    // will appear in the market_prices GROUP BY. The old UNION ALL fallback is kept below
-    // in case the legacy collectors are still active and no market_prices rows exist yet.
-    // TODO: Remove the UNION ALL fallback once the old cg_collector/dl_collector pipelines
-    // are fully decommissioned and all crypto/defi data flows through MarketDataSource.
+    // Use market_prices_latest cache table (374K rows) instead of market_prices (65M rows).
+    // The old query did COUNT(DISTINCT asset_id) on the full 18 GB market_prices table,
+    // taking 10+ minutes and stacking up connections that block migrations on restart.
     let rows: Vec<(String, i64, Option<DateTime<Utc>>)> = sqlx::query_as(
         r#"
-        SELECT source, COUNT(DISTINCT asset_id) as cnt, MAX(fetched_at) as last_sync
-        FROM market_prices
+        SELECT source, COUNT(*) as cnt, MAX(fetched_at) as last_sync
+        FROM market_prices_latest
         GROUP BY source
         UNION ALL
         SELECT 'crypto'::text, COUNT(DISTINCT coin_id), MAX(fetched_at)
         FROM coingecko_market_caps
         WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM coingecko_market_caps)
-          AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'crypto' LIMIT 1)
+          AND NOT EXISTS (SELECT 1 FROM market_prices_latest WHERE source = 'crypto' LIMIT 1)
         UNION ALL
         SELECT 'defi'::text, COUNT(*), MAX(updated_at)
         FROM defillama_protocols
         WHERE tvl IS NOT NULL AND tvl > 0
-          AND NOT EXISTS (SELECT 1 FROM market_prices WHERE source = 'defi' LIMIT 1)
+          AND NOT EXISTS (SELECT 1 FROM market_prices_latest WHERE source = 'defi' LIMIT 1)
         "#,
     )
     .fetch_all(pool)
