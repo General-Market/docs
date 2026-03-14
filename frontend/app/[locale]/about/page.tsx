@@ -6,13 +6,39 @@ import { HeroBand } from '@/components/ui/HeroBand'
 import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
 import Image from 'next/image'
+import { getItpSummaries } from '@/lib/api/server-data'
+import { ISSUER_VISION_URL, DATA_NODE_SERVER } from '@/lib/config'
 
-const STATS = [
-  { label: 'ITPs', value: '1' },
-  { label: 'Vision Batches', value: '100' },
-  { label: 'Markets', value: '25,000+' },
-  { label: 'Players', value: '195' },
-]
+async function fetchAboutStats() {
+  const [itps, leaderboardData, batchData, snapshotMeta] = await Promise.all([
+    getItpSummaries(),
+    fetch(`${ISSUER_VISION_URL}/vision/leaderboard`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(3_000),
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${ISSUER_VISION_URL}/vision/batches`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(3_000),
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(`${DATA_NODE_SERVER}/snapshot/meta`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(3_000),
+    }).then(r => r.ok ? r.json() : null).catch(() => null),
+  ])
+
+  const itpCount = itps.length || 1
+  const totalAum = itps.reduce((sum, itp) => sum + (itp.aum || 0), 0)
+  const batchCount = batchData?.batches?.length ?? 100
+  const playerCount = leaderboardData?.leaderboard?.length ?? 195
+  const marketCount = snapshotMeta?.total_assets ?? 25000
+
+  return [
+    { label: 'ITPs', value: String(itpCount) },
+    { label: 'AUM', value: totalAum > 0 ? `$${(totalAum / 1e6).toFixed(1)}M` : '$—' },
+    { label: 'Batches', value: String(batchCount) },
+    { label: 'Markets', value: marketCount >= 1000 ? `${Math.round(marketCount / 1000)}K+` : String(marketCount) },
+  ]
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params
@@ -31,6 +57,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default async function AboutPage() {
+  const STATS = await fetchAboutStats()
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
@@ -69,7 +96,7 @@ export default async function AboutPage() {
         subtitle="On-chain protocol for index products and AI prediction markets. Built on an Orbit L3."
       />
 
-      <div className="max-w-site mx-auto w-full px-4 md:px-8 pb-16">
+      <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
         {/* What We Build */}
         <SectionBar title="What We Build" value="2 Products" />
 
