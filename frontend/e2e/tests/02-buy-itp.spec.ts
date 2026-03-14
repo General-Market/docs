@@ -24,15 +24,14 @@ test.describe('Buy ITP', () => {
     // 2. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 3. Wait for ITP listing to load — retry navigation if needed
-    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!itpVisible) {
+    // 3. Wait for ITP listing to load (SSE delivers data async — use toBeVisible which polls)
+    try {
+      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
+    } catch {
       // Data-node may be slow on testnet — retry once with fresh navigation
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
-      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
+      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     }
-    expect(itpVisible).toBe(true);
 
     // 4. Click Buy on first ITP
     const buyBtn = buyButton(page);

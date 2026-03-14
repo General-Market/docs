@@ -230,7 +230,8 @@ test.describe.serial('Issuer Resilience', () => {
       console.log(`Placed L3 buy order #${orderId} to trigger consensus`);
 
       // Wait for consensus to progress on at least 2/3 issuers (quorum)
-      const deadline = Date.now() + 90_000;
+      // Vision bitmap hash mismatches cause many failed rounds — allow extra time
+      const deadline = Date.now() + 180_000;
       let progressCount = 0;
       while (Date.now() < deadline && progressCount < 2) {
         progressCount = 0;

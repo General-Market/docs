@@ -14,15 +14,14 @@ test.describe('Sell ITP', () => {
     // 1. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 2. Wait for ITP listing — retry if data-node is slow
-    let itpVisible = await itpCard(page).first().isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!itpVisible) {
+    // 2. Wait for ITP listing (SSE delivers data async — use toBeVisible which polls)
+    try {
+      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
+    } catch {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
       await ensureWalletConnected(page, TEST_ADDRESS);
-      itpVisible = await itpCard(page).first().isVisible({ timeout: 45_000 }).catch(() => false);
+      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     }
-    expect(itpVisible).toBe(true);
 
     // 3. Verify user has shares from prior buy test (no minting — real system state)
     const existingShares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
