@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount, useReadContract, useConnect } from 'wagmi'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -130,6 +130,18 @@ export default function BatchEntryPanel({
 
   // -- Wallet connection --
   const { isConnected } = useAccount()
+  const { connect, connectors } = useConnect()
+  const handleConnectWallet = useCallback(async () => {
+    const injectedConnector = connectors.find(c => c.id === 'injected')
+    if (!injectedConnector) return
+    const chainIdHex = `0x${indexL3.id.toString(16)}`
+    const provider = (window as any).ethereum
+    if (provider) {
+      try { await provider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: chainIdHex, chainName: indexL3.name, nativeCurrency: indexL3.nativeCurrency, rpcUrls: [indexL3.rpcUrls.default.http[0]] }] }) } catch { /* chain may exist */ }
+      try { await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainIdHex }] }) } catch { /* user rejected */ }
+    }
+    connect({ connector: injectedConnector, chainId: indexL3.id })
+  }, [connect, connectors])
 
   // -- Vision balance (for deposit prompt when empty) --
   const { total: visionBalance, isLoading: isBalanceLoading } = useVisionBalance()
@@ -294,13 +306,14 @@ export default function BatchEntryPanel({
 
         {/* Connect wallet prompt when not connected */}
         {!isConnected && !isJoined && (
-          <WalletActionButton
-            onClick={() => {}}
+          <button
+            type="button"
+            onClick={handleConnectWallet}
             className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
           >
             <p className="text-[11px] font-bold text-neutral-700">Connect Wallet</p>
             <p className="text-[10px] text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
-          </WalletActionButton>
+          </button>
         )}
         {/* Deposit prompt when connected but balance is 0 */}
         {isConnected && hasZeroBalance && !isJoined && (
