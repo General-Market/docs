@@ -977,6 +977,27 @@ export async function placeL3SellOrderDirect(
 }
 
 /**
+ * Read on-chain order status from L3 Index.
+ * Returns: 0=Pending, 1=Processing, 2=Filled, 3=Cancelled, 4=Expired
+ */
+export async function getL3OrderStatus(orderId: number): Promise<number> {
+  // orders(uint256) returns a tuple — status is the last field
+  const calldata = encodeFunctionData({
+    abi: INDEX_ABI,
+    functionName: 'getOrder',
+    args: [BigInt(orderId)],
+  });
+  const result = await l3RpcCall('eth_call', [
+    { to: L3_INDEX, data: calldata },
+    'latest',
+  ]) as string;
+  if (!result || result === '0x') return 0;
+  // getOrder returns packed struct — last 32 bytes is the status field
+  const statusHex = '0x' + result.slice(-64);
+  return Number(BigInt(statusHex));
+}
+
+/**
  * Request rebalance via BridgeProxy (event-only, picked up by issuers).
  * Shifts 0.5% weight between asset[0] and asset[1].
  * Returns the rebalance nonce.

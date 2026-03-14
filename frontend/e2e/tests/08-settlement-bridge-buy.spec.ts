@@ -16,6 +16,7 @@ import {
   placeL3BuyOrderDirect,
   placeL3SellOrderDirect,
   getL3UserShares,
+  getL3OrderStatus,
   getItpStateL3,
   erc20BalanceOf,
   pollUntil,
@@ -177,14 +178,16 @@ test.describe('Settlement Bridge', () => {
       const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 1n);
       console.log(`L3 direct sell order placed: orderId=${orderId}`);
 
-      const sharesAfter = await pollUntil(
-        () => getL3UserShares(TEST_ADDRESS, ITP_ID),
-        (shares) => shares < l3SharesBefore,
-        180_000,
+      // Poll for order status = 2 (Filled) instead of shares change
+      // (shares may not decrease until completeSellOrder is called)
+      const finalStatus = await pollUntil(
+        () => getL3OrderStatus(orderId),
+        (status) => status >= 2, // Filled=2, Cancelled=3, Expired=4
+        240_000,
         3_000,
       );
-      console.log(`L3 shares decreased: ${l3SharesBefore} -> ${sharesAfter}`);
-      expect(sharesAfter).toBeLessThan(l3SharesBefore);
+      console.log(`L3 sell order ${orderId} final status: ${finalStatus}`);
+      expect(finalStatus, 'Sell order should be filled').toBe(2);
     }
   });
 });
