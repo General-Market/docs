@@ -9,7 +9,6 @@ import {
   getL3UserShares,
   mintL3Shares,
   mintMorphoCollateral,
-  rebalanceItp,
   placeL3BuyOrderDirect,
   pollUntil,
   withdrawCollateralDirect,
@@ -103,14 +102,6 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       await expect(lendingModal.borrow.successText(page)).toBeVisible({ timeout: 60_000 });
       console.log('Step 2: Borrow (UI)');
 
-      // Step 2.5: Rebalance (non-blocking)
-      try {
-        await rebalanceItp(ITP_ID, 60_000);
-        await page.waitForTimeout(4_000);
-      } catch (e) {
-        console.log(`Rebalance timed out (non-blocking): ${e}`);
-      }
-
       // Step 3: Repay
       await lendingModal.repayTab(page).click();
       await expect(page.getByText(/Debt:\s+[1-9]/)).toBeVisible({ timeout: 30_000 });
@@ -197,13 +188,6 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       console.log(`Position after borrow: borrowShares=${posAfterBorrow.borrowShares}`);
       expect(posAfterBorrow.borrowShares).toBeGreaterThan(posAfterDeposit.borrowShares);
       console.log('Step 2: Borrow (backend API)');
-
-      // Step 2.5: Rebalance (non-blocking)
-      try {
-        await rebalanceItp(ITP_ID, 60_000);
-      } catch (e) {
-        console.log(`Rebalance timed out (non-blocking): ${e}`);
-      }
 
       // Step 3: Repay (direct RPC) — repay the borrowed amount
       // Need to mint USDC to cover accrued interest
