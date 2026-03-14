@@ -51,20 +51,16 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const marketCount = metaCount > 0 ? metaCount : (sourceMarkets.length || undefined)
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
-  // Pick the active batch matching this source via static config (batchId lookup)
-  // Falls back to a minimal static batch when API data isn't available yet
+  // Pick the active batch matching this source.
+  // Route proxy now deduplicates to one batch per source and sets sourceId correctly
+  // from configHash (stable across redeployments). Match by sourceId string first.
   const batchKey = getBatchKey(sourceId)
   const staticEntry = (batchConfig.batches as Record<string, { batchId: number; configHash: string; tickDuration?: number }>)[batchKey]
   const activeBatch = useMemo(() => {
-    // Try to find from live API data first
+    // Try to find from live API data by sourceId (route proxy resolves configHash → name)
     if (batches && batches.length > 0) {
-      if (staticEntry) {
-        const fromApi = batches.find(b => b.id === staticEntry.batchId)
-        if (fromApi) return fromApi
-      }
-      // Fallback: try matching by source_id string (for dynamically created batches)
       const bySource = batches.find(b =>
-        b.sourceId === sourceId || b.sourceId === dataNodeId
+        b.sourceId === sourceId || b.sourceId === dataNodeId || b.sourceId === batchKey
       )
       if (bySource) return bySource
     }
