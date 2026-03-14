@@ -108,28 +108,26 @@ test.describe('Vision Sources — Browse', () => {
     await expect(page.getByText('FINANCE').first()).toBeVisible()
   })
 
-  test('source card has action links (Markets, Batch, Details)', async ({ page }) => {
+  test('source card has View Source action link', async ({ page }) => {
     await page.goto('/')
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // First card should have MARKETS, BATCH, DETAILS action links
+    // First card should have a "VIEW SOURCE" action link
     const firstCard = cards.first()
-    await expect(firstCard.getByRole('link', { name: 'Markets' }).first()).toBeVisible()
-    await expect(firstCard.getByRole('link', { name: 'Batch' })).toBeVisible()
-    await expect(firstCard.getByRole('link', { name: 'Details' })).toBeVisible()
+    await expect(firstCard.getByRole('link', { name: /view source/i }).first()).toBeVisible()
   })
 
-  test('clicking a source card navigates to detail page', async ({ page }) => {
+  test('clicking View Source navigates to detail page', async ({ page }) => {
     await page.goto('/')
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // Click MARKETS link on first card to navigate to detail
+    // Click VIEW SOURCE link on first card to navigate to detail
     const firstCard = cards.first()
-    const marketsLink = firstCard.getByRole('link', { name: 'Markets' }).first()
-    await expect(marketsLink).toBeVisible({ timeout: 5_000 })
-    await marketsLink.click()
+    const viewLink = firstCard.getByRole('link', { name: /view source/i }).first()
+    await expect(viewLink).toBeVisible({ timeout: 5_000 })
+    await viewLink.click()
 
     // Should navigate to /source/{id} — use networkidle for Next.js client-side routing
     await page.waitForURL(/\/source\//, { timeout: 60_000, waitUntil: 'domcontentloaded' })
