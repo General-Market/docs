@@ -23,6 +23,8 @@ interface IVision {
         uint256 tickDuration;            // seconds per tick
         uint256 lockOffset;              // active lock window (seconds before tick end)
         uint256 nextLockOffset;          // pending lock offset for next tick — F3
+        uint256 nextTickDuration;        // staged tickDuration for next promotion
+        int256 epochOffset;              // signed offset for tick continuity across tickDuration changes
         uint256 createdAtTick;           // block.timestamp / tickDuration at creation
         uint256 lastPromotionTick;       // tick at which config was last promoted — F3
         bool paused;
@@ -64,6 +66,7 @@ interface IVision {
     error InvalidTickRange();
     error InvalidTickDuration();
     error InvalidLockOffset();           // lockOffset >= tickDuration
+    error LockOffsetTooLarge();          // lockOffset >= tickDuration in updateBatchConfig
     error InsolventPayout();
     error BotAlreadyRegistered();
     error BotNotRegistered();
@@ -89,7 +92,8 @@ interface IVision {
     event BatchConfigUpdated(
         uint256 indexed batchId,
         bytes32 nextConfigHash,
-        uint256 nextLockOffset
+        uint256 nextLockOffset,
+        uint256 nextTickDuration
     );
 
     event BatchConfigPromoted(
@@ -201,20 +205,22 @@ interface IVision {
         bytes32 bitmapHash
     ) external returns (uint256 batchId);
 
-    /// @notice Update a batch's config hash. Takes effect NEXT tick (F3 deferred
-    ///         promotion). Writes to nextConfigHash/nextLockOffset; promotion happens
+    /// @notice Update a batch's config hash and optionally tickDuration.
+    ///         Takes effect NEXT tick (F3 deferred promotion). Writes to
+    ///         nextConfigHash/nextLockOffset/nextTickDuration; promotion happens
     ///         lazily via _promoteConfigIfNeeded().
     /// @dev BLS message = keccak256(abi.encode(
     ///        block.chainid, address(this), "UPDATE_BATCH_CONFIG",
-    ///        batchId, configHash, lockOffset
+    ///        batchId, configHash, lockOffset, tickDuration
     ///      ))
     ///      Distinct domain tag from CREATE_BATCH (Issue 9).
     ///      Enforces lock window check (Issue 9) -- cannot update config during lock.
-    ///      If configHash == batch.configHash AND no pending next, no-op without revert.
+    ///      If configHash == batch.configHash AND tickDuration unchanged AND no pending, no-op.
     function updateBatchConfig(
         uint256 batchId,
         bytes32 configHash,
         uint256 lockOffset,
+        uint256 tickDuration,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask

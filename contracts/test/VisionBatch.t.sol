@@ -28,7 +28,7 @@ contract VisionBatchTest is TestHelper {
 
     function setUp() public {
         // Deploy mock tokens
-        usdc = new MockERC20("USDC", "USDC", 6);
+        usdc = new MockERC20("USDC", "USDC", 18);
 
         // Deploy governance and issuer registry for BLS verification
         governance = deployGovernance(address(this));
@@ -68,7 +68,8 @@ contract VisionBatchTest is TestHelper {
     function _signUpdateConfig(
         uint256 batchId,
         bytes32 configHash,
-        uint256 lockOffset
+        uint256 lockOffset,
+        uint256 tickDuration
     ) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -76,7 +77,8 @@ contract VisionBatchTest is TestHelper {
             "UPDATE_BATCH_CONFIG",
             batchId,
             configHash,
-            lockOffset
+            lockOffset,
+            tickDuration
         ));
         return signWithTestIssuers(message);
     }
@@ -91,8 +93,10 @@ contract VisionBatchTest is TestHelper {
 
     function _preparePlayer(address player, uint256 amount) internal {
         usdc.mint(player, amount);
-        vm.prank(player);
+        vm.startPrank(player);
         usdc.approve(address(vision), type(uint256).max);
+        vision.depositBalance(amount);
+        vm.stopPrank();
     }
 
     // ════════════════════════════════════════════════
@@ -157,7 +161,7 @@ contract VisionBatchTest is TestHelper {
 
     function test_createBatchAndJoin_firstCallCreatesBatch() public {
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         bytes memory blsSig = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
 
@@ -165,7 +169,7 @@ contract VisionBatchTest is TestHelper {
         uint256 batchId = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, keccak256("bitmap")
+            10e18, 1e18, keccak256("bitmap")
         );
 
         assertEq(batchId, 0, "First batch should be ID 0");
@@ -182,7 +186,7 @@ contract VisionBatchTest is TestHelper {
     function test_createBatchAndJoin_secondCallJoinsExisting() public {
         // Player 1 creates batch
         address player1 = makeAddr("player1");
-        _preparePlayer(player1, 10e6);
+        _preparePlayer(player1, 10e18);
 
         bytes memory blsSig = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
 
@@ -190,18 +194,18 @@ contract VisionBatchTest is TestHelper {
         uint256 batchId1 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, keccak256("bitmap1")
+            10e18, 1e18, keccak256("bitmap1")
         );
 
         // Player 2 calls createBatchAndJoin with same sourceId
         address player2 = makeAddr("player2");
-        _preparePlayer(player2, 5e6);
+        _preparePlayer(player2, 5e18);
 
         vm.prank(player2);
         uint256 batchId2 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            5e6, 1e6, keccak256("bitmap2")
+            5e18, 1e18, keccak256("bitmap2")
         );
 
         // Should return same batch ID — no new batch created
@@ -215,7 +219,7 @@ contract VisionBatchTest is TestHelper {
 
     function test_createBatchAndJoin_differentSourceIds() public {
         address player = makeAddr("player1");
-        _preparePlayer(player, 20e6);
+        _preparePlayer(player, 20e18);
 
         bytes32 sourceA = keccak256("source_A");
         bytes32 sourceB = keccak256("source_B");
@@ -229,18 +233,18 @@ contract VisionBatchTest is TestHelper {
         uint256 batchIdA = vision.createBatchAndJoin(
             sourceA, configA, TICK_DURATION, LOCK_OFFSET,
             sigA, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, keccak256("bitmapA")
+            10e18, 1e18, keccak256("bitmapA")
         );
 
         // Need a second player for batch B since player already joined A
         address player2 = makeAddr("player2");
-        _preparePlayer(player2, 10e6);
+        _preparePlayer(player2, 10e18);
 
         vm.prank(player2);
         uint256 batchIdB = vision.createBatchAndJoin(
             sourceB, configB, TICK_DURATION, LOCK_OFFSET,
             sigB, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, keccak256("bitmapB")
+            10e18, 1e18, keccak256("bitmapB")
         );
 
         assertEq(batchIdA, 0, "First source should get batch 0");
@@ -262,8 +266,8 @@ contract VisionBatchTest is TestHelper {
 
         // Stage a new config via updateBatchConfig
         uint256 newLockOffset = 120;
-        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, newLockOffset);
-        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, newLockOffset, updateSig, REF_NONCE, SIGNERS_BITMASK);
+        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, newLockOffset, TICK_DURATION);
+        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, newLockOffset, TICK_DURATION, updateSig, REF_NONCE, SIGNERS_BITMASK);
 
         IVision.Batch memory batchAfterUpdate = vision.getBatch(batchId);
         assertEq(batchAfterUpdate.configHash, CONFIG_HASH, "Active config should not change yet");
@@ -277,10 +281,10 @@ contract VisionBatchTest is TestHelper {
         // We use getBatchIdBySourceId which doesn't trigger promotion,
         // but joinBatch does. Let's have a player join to trigger it.
         address player = makeAddr("player_promotion");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH_V2, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH_V2, 10e18, 1e18, keccak256("bitmap"));
 
         // Now check that config was promoted
         IVision.Batch memory batchAfterPromotion = vision.getBatch(batchId);
@@ -294,17 +298,17 @@ contract VisionBatchTest is TestHelper {
         uint256 batchId = _createBatch();
 
         // Stage a new config
-        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET);
-        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, updateSig, REF_NONCE, SIGNERS_BITMASK);
+        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION);
+        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION, updateSig, REF_NONCE, SIGNERS_BITMASK);
 
         // DO NOT advance time — still in same tick
         // Join should use the OLD config
         address player = makeAddr("player_same_tick");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Should require the original CONFIG_HASH since promotion hasn't happened
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         // Config should still be the original
         IVision.Batch memory batch = vision.getBatch(batchId);
@@ -316,8 +320,8 @@ contract VisionBatchTest is TestHelper {
         uint256 batchId = _createBatch();
 
         // Stage V2
-        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET);
-        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, updateSig, REF_NONCE, SIGNERS_BITMASK);
+        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION);
+        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION, updateSig, REF_NONCE, SIGNERS_BITMASK);
 
         // Advance to next tick
         vm.warp(block.timestamp + TICK_DURATION);
@@ -329,17 +333,17 @@ contract VisionBatchTest is TestHelper {
 
         // Trigger promotion via updateBatchConfig (which calls _promoteConfigIfNeeded)
         bytes32 configV3 = keccak256("config_v3");
-        bytes memory updateSig2 = _signUpdateConfig(batchId, configV3, LOCK_OFFSET);
-        vision.updateBatchConfig(batchId, configV3, LOCK_OFFSET, updateSig2, REF_NONCE, SIGNERS_BITMASK);
+        bytes memory updateSig2 = _signUpdateConfig(batchId, configV3, LOCK_OFFSET, TICK_DURATION);
+        vision.updateBatchConfig(batchId, configV3, LOCK_OFFSET, TICK_DURATION, updateSig2, REF_NONCE, SIGNERS_BITMASK);
     }
 
     function test_updateBatchConfig_noopIfSameAsActive() public {
         uint256 batchId = _createBatch();
 
         // Try to update with same configHash as active — should no-op
-        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH, LOCK_OFFSET);
+        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION);
         // This should return without reverting (no-op path in the contract)
-        vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, updateSig, REF_NONCE, SIGNERS_BITMASK);
+        vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION, updateSig, REF_NONCE, SIGNERS_BITMASK);
 
         IVision.Batch memory batch = vision.getBatch(batchId);
         assertEq(batch.nextConfigHash, bytes32(0), "No pending config for no-op");
@@ -352,7 +356,7 @@ contract VisionBatchTest is TestHelper {
     function test_lockWindow_joinBatchRevertsInLockPeriod() public {
         uint256 batchId = _createBatch();
         address player = makeAddr("player_lock");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Compute lock boundary
         IVision.Batch memory batch = vision.getBatch(batchId);
@@ -365,13 +369,13 @@ contract VisionBatchTest is TestHelper {
 
         vm.expectRevert(IVision.TickLocked.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
     }
 
     function test_lockWindow_joinBatchSucceedsBeforeLockPeriod() public {
         uint256 batchId = _createBatch();
         address player = makeAddr("player_before_lock");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Compute one second before lock boundary
         IVision.Batch memory batch = vision.getBatch(batchId);
@@ -384,7 +388,7 @@ contract VisionBatchTest is TestHelper {
 
         // Should succeed
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         assertTrue(vision.getPosition(batchId, player).stakePerTick > 0);
     }
@@ -392,11 +396,11 @@ contract VisionBatchTest is TestHelper {
     function test_lockWindow_updateBitmapRevertsInLockPeriod() public {
         uint256 batchId = _createBatch();
         address player = makeAddr("player_bitmap_lock");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Join before lock period
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap_old"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap_old"));
 
         // Warp to lock period
         IVision.Batch memory batch = vision.getBatch(batchId);
@@ -418,9 +422,9 @@ contract VisionBatchTest is TestHelper {
         uint256 tickEnd = (currentAbsoluteTick + 1) * batch.tickDuration;
         vm.warp(tickEnd - batch.lockOffset);
 
-        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET);
+        bytes memory updateSig = _signUpdateConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION);
         vm.expectRevert(IVision.TickLocked.selector);
-        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, updateSig, REF_NONCE, SIGNERS_BITMASK);
+        vision.updateBatchConfig(batchId, CONFIG_HASH_V2, LOCK_OFFSET, TICK_DURATION, updateSig, REF_NONCE, SIGNERS_BITMASK);
     }
 
     function test_lockWindow_zeroLockOffsetNeverLocks() public {
@@ -448,10 +452,10 @@ contract VisionBatchTest is TestHelper {
 
         // Should NOT revert — zero lock offset means no lock window
         address player = makeAddr("player_no_lock");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, configHash, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, configHash, 10e18, 1e18, keccak256("bitmap"));
 
         assertTrue(vision.getPosition(batchId, player).stakePerTick > 0);
     }
@@ -465,13 +469,17 @@ contract VisionBatchTest is TestHelper {
 
         assertEq(vision.currentTickId(batchId), 0, "Initial tick should be 0");
 
-        vm.warp(block.timestamp + TICK_DURATION);
+        // Use absolute tick boundaries to avoid block.timestamp stale-read issues in Foundry
+        IVision.Batch memory b = vision.getBatch(batchId);
+        uint256 createdAtTick = b.createdAtTick;
+
+        vm.warp((createdAtTick + 1) * TICK_DURATION);
         assertEq(vision.currentTickId(batchId), 1, "After 1 tick duration");
 
-        vm.warp(block.timestamp + TICK_DURATION);
+        vm.warp((createdAtTick + 2) * TICK_DURATION);
         assertEq(vision.currentTickId(batchId), 2, "After 2 tick durations");
 
-        vm.warp(block.timestamp + 10 * TICK_DURATION);
+        vm.warp((createdAtTick + 12) * TICK_DURATION);
         assertEq(vision.currentTickId(batchId), 12, "After 12 tick durations total");
     }
 

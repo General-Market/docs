@@ -28,9 +28,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ CONSTANTS ============
 
     uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
-    uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
+    uint256 public constant MIN_STAKE_PER_TICK = 1e17; // 0.1 USDC (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
-    uint256 public constant MAX_TICK_DURATION = 30 days;
+    uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
+    uint256 public constant MAX_TICK_DURATION = 604800;   // 1 week maximum
+    uint256 public constant MAX_BATCHES = 200;
 
     // ============ IMMUTABLES ============
 
@@ -127,13 +129,28 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
             b.configHash = b.nextConfigHash;
             b.lockOffset = b.nextLockOffset;
-            b.lastPromotionTick = currentTick;
+
+            // Handle tickDuration change: recalculate epochOffset to preserve tick continuity
+            if (b.nextTickDuration > 0) {
+                // Compute old relative tickId before changing tickDuration
+                int256 oldTickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
+                // Switch to new tickDuration
+                b.tickDuration = b.nextTickDuration;
+                // Compute new absolute tick under new duration
+                int256 newAbsTick = int256(block.timestamp / b.tickDuration);
+                // epochOffset adjustment: oldTickId must equal newAbsTick - createdAtTick + newEpochOffset
+                b.epochOffset = oldTickId - (newAbsTick - int256(b.createdAtTick));
+                b.nextTickDuration = 0;
+            }
+
+            // lastPromotionTick is always in terms of current tickDuration
+            b.lastPromotionTick = block.timestamp / b.tickDuration;
 
             // Clear pending
             b.nextConfigHash = bytes32(0);
             b.nextLockOffset = 0;
 
-            emit BatchConfigPromoted(batchId, oldHash, b.configHash, currentTick);
+            emit BatchConfigPromoted(batchId, oldHash, b.configHash, b.lastPromotionTick);
         }
     }
 
@@ -144,8 +161,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function _currentTickId(uint256 batchId) internal view returns (uint256) {
         Batch storage b = _batches[batchId];
         uint256 currentTick = block.timestamp / b.tickDuration;
-        if (currentTick < b.createdAtTick) return 0;
-        return currentTick - b.createdAtTick;
+        int256 tickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
+        if (tickId < 0) return 0;
+        return uint256(tickId);
     }
 
     /// @notice Revert if the batch is in its lock window (Issue 6 / F6).
@@ -228,7 +246,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         }
 
         // Validate parameters
-        if (tickDuration == 0 || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+        if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
         if (lockOffset >= tickDuration) revert InvalidLockOffset();
 
         // BLS verification — proves issuers signed this config (F1/F4)
@@ -271,6 +289,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 batchId,
         bytes32 configHash,
         uint256 lockOffset,
+        uint256 tickDuration,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -285,13 +304,15 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // Lock window check (Issue 9) — cannot update config during lock
         _requireNotLocked(batchId);
 
-        // If configHash == active AND no pending next, no-op
-        if (b.configHash == configHash && b.nextConfigHash == bytes32(0)) {
-            return;
-        }
+        // No-op check: skip if configHash, lockOffset, AND tickDuration are ALL unchanged with no pending update
+        if (b.configHash == configHash && b.lockOffset == lockOffset && b.nextConfigHash == bytes32(0)
+            && b.tickDuration == tickDuration) return;
 
-        // Validate lockOffset
-        if (lockOffset >= b.tickDuration) revert InvalidLockOffset();
+        // Validate tickDuration
+        if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+
+        // Validate lockOffset against the proposed tickDuration
+        if (lockOffset >= tickDuration) revert LockOffsetTooLarge();
 
         // BLS verification with distinct domain tag (Issue 9)
         bytes32 message = keccak256(abi.encode(
@@ -300,15 +321,17 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             "UPDATE_BATCH_CONFIG",
             batchId,
             configHash,
-            lockOffset
+            lockOffset,
+            tickDuration
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Stage for next tick (F3 deferred promotion)
         b.nextConfigHash = configHash;
         b.nextLockOffset = lockOffset;
+        b.nextTickDuration = tickDuration;
 
-        emit BatchConfigUpdated(batchId, configHash, lockOffset);
+        emit BatchConfigUpdated(batchId, configHash, lockOffset, tickDuration);
     }
 
     /// @inheritdoc IVision
@@ -434,8 +457,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     ) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
-        if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
         if (toTick < fromTick) revert InvalidTickRange();
+        if (position.lastClaimedTick == 0) {
+            if (fromTick <= position.startTick) revert InvalidTickRange();
+        } else {
+            if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
+        }
 
         // BLS verify: issuers sign the new balance for this player over this tick range (F1)
         bytes32 message = keccak256(abi.encode(
@@ -497,9 +524,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             finalBalance
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
-
-        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
-        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
 
         // Fee on profit only — exclude already-claimed (and already-taxed) amounts
         uint256 totalDeposited = position.totalDeposited;
@@ -683,9 +707,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             finalBalance
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
-
-        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
-        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
 
         // Fee on profit only — exclude already-claimed (and already-taxed) amounts
         uint256 totalDeposited = position.totalDeposited;

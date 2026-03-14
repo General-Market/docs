@@ -29,8 +29,8 @@ contract VisionTest is TestHelper {
         creator = makeAddr("creator");
         nonCreator = makeAddr("nonCreator");
 
-        // Deploy mock tokens
-        usdc = new MockERC20("USDC", "USDC", 6);
+        // Deploy mock tokens (18 decimals — L3 USDC is 18 decimals)
+        usdc = new MockERC20("USDC", "USDC", 18);
 
         // Deploy governance and issuer registry for BLS verification
         governance = deployGovernance(address(this));
@@ -99,11 +99,13 @@ contract VisionTest is TestHelper {
         );
     }
 
-    /// @dev Mint USDC to player, approve Vision, and return the player address
+    /// @dev Mint USDC to player, approve Vision, and deposit into Vision's internal balance
     function _preparePlayer(address player, uint256 amount) internal {
         usdc.mint(player, amount);
-        vm.prank(player);
+        vm.startPrank(player);
         usdc.approve(address(vision), type(uint256).max);
+        vision.depositBalance(amount);
+        vm.stopPrank();
     }
 
     // ============ createBatch ============
@@ -185,7 +187,7 @@ contract VisionTest is TestHelper {
     }
 
     function test_createBatch_revertExcessiveTickDuration() public {
-        uint256 badDuration = 30 days + 1;
+        uint256 badDuration = 604800 + 1; // MAX_TICK_DURATION (1 week) + 1
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(vision),
@@ -241,7 +243,7 @@ contract VisionTest is TestHelper {
 
     function test_createBatchAndJoin() public {
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -260,7 +262,7 @@ contract VisionTest is TestHelper {
         uint256 batchId = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, bitmapHash
+            10e18, 1e18, bitmapHash
         );
 
         assertEq(batchId, 0, "First batch should have ID 0");
@@ -273,18 +275,18 @@ contract VisionTest is TestHelper {
         // Verify player joined
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.bitmapHash, bitmapHash, "bitmapHash should match");
-        assertEq(pos.stakePerTick, 1e6, "stakePerTick should match");
-        assertEq(pos.balance, 10e6, "balance should equal deposit");
+        assertEq(pos.stakePerTick, 1e18, "stakePerTick should match");
+        assertEq(pos.balance, 10e18, "balance should equal deposit");
         assertEq(pos.configHash, CONFIG_HASH, "Position configHash should match");
 
-        // Verify USDC transferred
-        assertEq(usdc.balanceOf(address(vision)), 10e6, "Vision should hold the USDC");
+        // Vision holds USDC deposited via depositBalance
+        assertEq(usdc.balanceOf(address(vision)), 10e18, "Vision should hold the USDC");
     }
 
     function test_createBatchAndJoin_idempotent() public {
         // First player creates + joins
         address player1 = makeAddr("player1");
-        _preparePlayer(player1, 10e6);
+        _preparePlayer(player1, 10e18);
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -301,18 +303,18 @@ contract VisionTest is TestHelper {
         uint256 batchId1 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            10e6, 1e6, keccak256("bitmap1")
+            10e18, 1e18, keccak256("bitmap1")
         );
 
         // Second player calls createBatchAndJoin with same sourceId - should join existing
         address player2 = makeAddr("player2");
-        _preparePlayer(player2, 5e6);
+        _preparePlayer(player2, 5e18);
 
         vm.prank(player2);
         uint256 batchId2 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
             blsSig, REF_NONCE, SIGNERS_BITMASK,
-            5e6, 1e6, keccak256("bitmap2")
+            5e18, 1e18, keccak256("bitmap2")
         );
 
         assertEq(batchId1, batchId2, "Should join existing batch");
@@ -321,8 +323,8 @@ contract VisionTest is TestHelper {
         // Both players should have positions
         IVision.PlayerPosition memory pos1 = vision.getPosition(batchId1, player1);
         IVision.PlayerPosition memory pos2 = vision.getPosition(batchId2, player2);
-        assertEq(pos1.stakePerTick, 1e6, "Player1 should have position");
-        assertEq(pos2.stakePerTick, 1e6, "Player2 should have position");
+        assertEq(pos1.stakePerTick, 1e18, "Player1 should have position");
+        assertEq(pos2.stakePerTick, 1e18, "Player2 should have position");
     }
 
     // ============ joinBatch ============
@@ -330,98 +332,98 @@ contract VisionTest is TestHelper {
     function test_joinBatch() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
-        uint256 stakePerTick = 1e6;
+        uint256 stakePerTick = 1e18;
         bytes32 bitmapHash = keccak256("bitmap1");
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, stakePerTick, bitmapHash);
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, stakePerTick, bitmapHash);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.bitmapHash, bitmapHash, "bitmapHash should match");
         assertEq(pos.configHash, CONFIG_HASH, "configHash should match");
         assertEq(pos.stakePerTick, stakePerTick, "stakePerTick should match");
-        assertEq(pos.balance, 10e6, "balance should equal deposit");
-        assertEq(pos.totalDeposited, 10e6, "totalDeposited should equal deposit");
+        assertEq(pos.balance, 10e18, "balance should equal deposit");
+        assertEq(pos.totalDeposited, 10e18, "totalDeposited should equal deposit");
         assertEq(pos.joinTimestamp, block.timestamp, "joinTimestamp should be current");
         assertEq(pos.totalClaimed, 0, "totalClaimed should be 0");
         assertEq(pos.lastClaimedTick, 0, "lastClaimedTick should be 0");
 
-        // Verify USDC transferred
-        assertEq(usdc.balanceOf(address(vision)), 10e6, "Vision should hold the USDC");
-        assertEq(usdc.balanceOf(player), 0, "Player should have 0 USDC left");
+        // USDC is in Vision (deposited via depositBalance in _preparePlayer)
+        assertEq(usdc.balanceOf(address(vision)), 10e18, "Vision should hold the USDC");
+        assertEq(usdc.balanceOf(player), 0, "Player should have 0 USDC");
     }
 
     function test_joinBatch_revertConfigMismatch() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Use wrong configHash
         bytes32 wrongConfig = keccak256("wrong_config");
         vm.expectRevert(IVision.BatchNotFound.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, wrongConfig, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, wrongConfig, 10e18, 1e18, keccak256("bitmap"));
     }
 
     function test_joinBatch_revertNotEnoughDeposit() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
-        // stakePerTick = 5 USDC, deposit = 3 USDC (< stakePerTick)
+        // stakePerTick = 5e18, deposit = 3e18 (< stakePerTick)
         vm.expectRevert(IVision.InsufficientDeposit.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 3e6, 5e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 3e18, 5e18, keccak256("bitmap"));
     }
 
     function test_joinBatch_revertStakeBelowMinimum() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
-        // MIN_STAKE_PER_TICK is 1e5, use 1e4
+        // MIN_STAKE_PER_TICK is 1e17 (0.1 USDC with 18 decimals), use 1e16
         vm.expectRevert(IVision.StakeBelowMinimum.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 1e4, 1e4, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 1e16, 1e16, keccak256("bitmap"));
     }
 
     function test_joinBatch_revertAlreadyJoined() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 20e6);
+        _preparePlayer(player, 20e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         // Try joining again
         vm.expectRevert(IVision.AlreadyJoined.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 5e6, 1e6, keccak256("bitmap2"));
+        vision.joinBatch(batchId, CONFIG_HASH, 5e18, 1e18, keccak256("bitmap2"));
     }
 
     function test_joinBatch_revertBatchNotFound() public {
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.expectRevert(IVision.BatchNotFound.selector);
         vm.prank(player);
-        vision.joinBatch(999, CONFIG_HASH, 5e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(999, CONFIG_HASH, 5e18, 1e18, keccak256("bitmap"));
     }
 
     function test_joinBatch_minimumStakeExactly() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 1e5);
+        _preparePlayer(player, 1e17);
 
-        // Exactly MIN_STAKE_PER_TICK should work
+        // Exactly MIN_STAKE_PER_TICK (1e17) should work
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 1e5, 1e5, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 1e17, 1e17, keccak256("bitmap"));
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
-        assertEq(pos.stakePerTick, 1e5);
-        assertEq(pos.balance, 1e5);
+        assertEq(pos.stakePerTick, 1e17);
+        assertEq(pos.balance, 1e17);
     }
 
     // ============ deposit ============
@@ -429,31 +431,32 @@ contract VisionTest is TestHelper {
     function test_deposit() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 20e6);
+        _preparePlayer(player, 20e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         vm.expectEmit(true, true, false, true);
-        emit IVision.PlayerDeposited(batchId, player, 5e6);
+        emit IVision.PlayerDeposited(batchId, player, 5e18);
 
         vm.prank(player);
-        vision.deposit(batchId, 5e6);
+        vision.deposit(batchId, 5e18);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
-        assertEq(pos.balance, 15e6, "Balance should be 10 + 5 = 15 USDC");
-        assertEq(pos.totalDeposited, 15e6, "totalDeposited should be 10 + 5 = 15 USDC");
-        assertEq(usdc.balanceOf(address(vision)), 15e6);
+        assertEq(pos.balance, 15e18, "Balance should be 10 + 5 = 15 USDC");
+        assertEq(pos.totalDeposited, 15e18, "totalDeposited should be 10 + 5 = 15 USDC");
+        // USDC in Vision = all deposited via depositBalance (20e18)
+        assertEq(usdc.balanceOf(address(vision)), 20e18);
     }
 
     function test_deposit_revertNotJoined() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.expectRevert(IVision.NotJoined.selector);
         vm.prank(player);
-        vision.deposit(batchId, 5e6);
+        vision.deposit(batchId, 5e18);
     }
 
     // ============ updateBitmap ============
@@ -461,10 +464,10 @@ contract VisionTest is TestHelper {
     function test_updateBitmap() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap1"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap1"));
 
         bytes32 newHash = keccak256("bitmap2");
         vm.prank(player);
@@ -489,18 +492,15 @@ contract VisionTest is TestHelper {
     function test_claimRewards_happyPath() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        // Simulate: another player deposited and lost, so the contract has extra USDC
-        usdc.mint(address(vision), 5e6); // simulate losers' funds in pool
-
-        // Issuers determined newBalance = 13e6 (player won 3 USDC)
+        // First claim must start at tick > startTick (0), so fromTick=1
         uint256 fromTick = 1;
         uint256 toTick = 5;
-        uint256 newBalance = 13e6;
+        uint256 newBalance = 13e18; // player won 3 USDC
 
         bytes32 message = keccak256(abi.encode(
             block.chainid,
@@ -514,10 +514,11 @@ contract VisionTest is TestHelper {
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
-        // winnings = 13e6 - 10e6 = 3e6
-        // fee = 3e6 * 30 / 10000 = 9000
-        // payout = 3e6 - 9000 = 2991000
-        uint256 expectedPayout = 3e6 - (3e6 * 30 / 10000);
+        // winnings = 13e18 - 10e18 = 3e18
+        // fee = 3e18 * 30 / 10000 = 9e15
+        // payout = 3e18 - 9e15 = 2.991e18
+        uint256 expectedFees = 3e18 * 30 / 10000;
+        uint256 expectedPayout = 3e18 - expectedFees;
 
         vm.expectEmit(true, true, false, true);
         emit IVision.RewardsClaimed(batchId, player, expectedPayout);
@@ -526,24 +527,25 @@ contract VisionTest is TestHelper {
         vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
-        assertEq(pos.balance, 13e6, "Balance should be updated to newBalance");
+        assertEq(pos.balance, 13e18, "Balance should be updated to newBalance");
         assertEq(pos.lastClaimedTick, toTick, "lastClaimedTick should be updated");
         assertEq(pos.totalClaimed, expectedPayout, "totalClaimed should track payout");
-        assertEq(usdc.balanceOf(player), expectedPayout, "Player should receive payout");
-        assertEq(vision.accumulatedFees(), 9000, "Fees should accumulate");
+        // Payout credited to realBalance, not USDC directly
+        assertEq(vision.realBalance(player), expectedPayout, "Payout should be in player realBalance");
+        assertEq(vision.accumulatedFees(), expectedFees, "Fees should accumulate");
     }
 
     function test_claimRewards_lossRecorded() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         uint256 fromTick = 1;
         uint256 toTick = 5;
-        uint256 newBalance = 7e6;
+        uint256 newBalance = 7e18;
 
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "CLAIM", batchId, player,
@@ -555,10 +557,10 @@ contract VisionTest is TestHelper {
         vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
-        assertEq(pos.balance, 7e6, "Balance should decrease to newBalance");
+        assertEq(pos.balance, 7e18, "Balance should decrease to newBalance");
         assertEq(pos.lastClaimedTick, toTick, "lastClaimedTick should be updated");
         assertEq(pos.totalClaimed, 0, "No payout on loss");
-        assertEq(usdc.balanceOf(player), 0, "Player receives nothing on loss");
+        assertEq(vision.realBalance(player), 0, "No credit on loss");
     }
 
     function test_claimRewards_revertNotJoined() public {
@@ -567,33 +569,33 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(IVision.NotJoined.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 1, 5, 10e6, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
+        vision.claimRewards(batchId, 1, 5, 10e18, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
     }
 
     function test_claimRewards_revertInvalidTickRange() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         // toTick < fromTick
         vm.expectRevert(IVision.InvalidTickRange.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 5, 3, 10e6, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
+        vision.claimRewards(batchId, 5, 3, 10e18, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
     }
 
     function test_claimRewards_revertTickAlreadyClaimed() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        // First claim: ticks 1-5
-        uint256 newBalance = 10e6;
+        // First claim: ticks 1-5 (startTick=0, so fromTick=1 is valid)
+        uint256 newBalance = 10e18;
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "CLAIM", batchId, player,
             uint256(1), uint256(5), newBalance
@@ -603,25 +605,57 @@ contract VisionTest is TestHelper {
         vm.prank(player);
         vision.claimRewards(batchId, 1, 5, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
-        // Second claim with overlapping ticks (fromTick=3 <= lastClaimedTick=5)
+        // Second claim with non-sequential fromTick (must be 6, using 3 or 8 triggers error)
         vm.expectRevert(IVision.TickAlreadyClaimed.selector);
         vm.prank(player);
-        vision.claimRewards(batchId, 3, 8, 10e6, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
+        vision.claimRewards(batchId, 3, 8, 10e18, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
+    }
+
+    function test_claimRewards_sequential_succeeds() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e18);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
+
+        // First claim: ticks 1-5
+        uint256 newBalance1 = 10e18;
+        bytes32 msg1 = keccak256(abi.encode(
+            block.chainid, address(vision), "CLAIM", batchId, player,
+            uint256(1), uint256(5), newBalance1
+        ));
+        bytes memory sig1 = signWithTestIssuers(msg1);
+        vm.prank(player);
+        vision.claimRewards(batchId, 1, 5, newBalance1, sig1, REF_NONCE, SIGNERS_BITMASK);
+
+        // Second claim: ticks 6-10 (sequential after 5)
+        uint256 newBalance2 = 10e18;
+        bytes32 msg2 = keccak256(abi.encode(
+            block.chainid, address(vision), "CLAIM", batchId, player,
+            uint256(6), uint256(10), newBalance2
+        ));
+        bytes memory sig2 = signWithTestIssuers(msg2);
+        vm.prank(player);
+        vision.claimRewards(batchId, 6, 10, newBalance2, sig2, REF_NONCE, SIGNERS_BITMASK);
+
+        IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
+        assertEq(pos.lastClaimedTick, 10, "lastClaimedTick should be 10 after second claim");
     }
 
     function test_claimRewards_revertInvalidBLS() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
 
         vm.expectRevert();
         vm.prank(player);
-        vision.claimRewards(batchId, 1, 5, 12e6, wrongSig, REF_NONCE, SIGNERS_BITMASK);
+        vision.claimRewards(batchId, 1, 5, 12e18, wrongSig, REF_NONCE, SIGNERS_BITMASK);
     }
 
     // ============ withdraw ============
@@ -629,21 +663,18 @@ contract VisionTest is TestHelper {
     function test_withdraw_happyPath_withProfit() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        // Simulate pool having enough to pay out
-        usdc.mint(address(vision), 5e6);
-
-        uint256 finalBalance = 14e6; // profit = 4 USDC
+        uint256 finalBalance = 14e18; // profit = 4 USDC (extra balance assumed from game pool)
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
-        uint256 expectedFee = 4e6 * 30 / 10000;
+        uint256 expectedFee = 4e18 * 30 / 10000;
         uint256 expectedPayout = finalBalance - expectedFee;
 
         vm.expectEmit(true, true, false, true);
@@ -656,19 +687,20 @@ contract VisionTest is TestHelper {
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
         assertEq(pos.balance, 0, "Position should be deleted");
 
-        assertEq(usdc.balanceOf(player), expectedPayout, "Player gets payout");
+        // Payout credited to realBalance, not USDC
+        assertEq(vision.realBalance(player), expectedPayout, "Player gets payout in realBalance");
         assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
     }
 
     function test_withdraw_happyPath_withLoss() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        uint256 finalBalance = 7e6;
+        uint256 finalBalance = 7e18;
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
@@ -680,7 +712,7 @@ contract VisionTest is TestHelper {
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
 
-        assertEq(usdc.balanceOf(player), 7e6, "Player gets remaining balance");
+        assertEq(vision.realBalance(player), 7e18, "Player gets remaining balance in realBalance");
         assertEq(vision.accumulatedFees(), 0, "No fees on loss");
     }
 
@@ -690,22 +722,22 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(IVision.NotJoined.selector);
         vm.prank(player);
-        vision.withdraw(batchId, 10e6, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
+        vision.withdraw(batchId, 10e18, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
     }
 
     function test_withdraw_revertInvalidBLS() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
         bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
 
         vm.expectRevert();
         vm.prank(player);
-        vision.withdraw(batchId, 10e6, wrongSig, REF_NONCE, SIGNERS_BITMASK);
+        vision.withdraw(batchId, 10e18, wrongSig, REF_NONCE, SIGNERS_BITMASK);
     }
 
     // ============ getPosition ============
@@ -827,14 +859,12 @@ contract VisionTest is TestHelper {
     function test_collectFees() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        usdc.mint(address(vision), 5e6);
-
-        uint256 finalBalance = 14e6;
+        uint256 finalBalance = 14e18; // profit = 4 USDC
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
@@ -843,14 +873,14 @@ contract VisionTest is TestHelper {
         vm.prank(player);
         vision.withdraw(batchId, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
-        uint256 expectedFees = 4e6 * 30 / 10000;
+        uint256 expectedFees = 4e18 * 30 / 10000;
         assertEq(vision.accumulatedFees(), expectedFees, "Fees should be accumulated");
 
-        uint256 collectorBalanceBefore = usdc.balanceOf(address(this));
+        uint256 collectorRealBalBefore = vision.realBalance(address(this));
         vision.collectFees();
 
         assertEq(vision.accumulatedFees(), 0, "Fees should be zero after collection");
-        assertEq(usdc.balanceOf(address(this)), collectorBalanceBefore + expectedFees, "Collector should receive fees");
+        assertEq(vision.realBalance(address(this)), collectorRealBalBefore + expectedFees, "Collector should receive fees in realBalance");
     }
 
     function test_collectFees_revertUnauthorized() public {
@@ -940,20 +970,18 @@ contract VisionTest is TestHelper {
     function test_forceWithdraw_happyPath_withProfit() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        usdc.mint(address(vision), 5e6);
-
-        uint256 finalBalance = 14e6;
+        uint256 finalBalance = 14e18;
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
-        uint256 expectedFee = 4e6 * 30 / 10000;
+        uint256 expectedFee = 4e18 * 30 / 10000;
         uint256 expectedPayout = finalBalance - expectedFee;
 
         vm.expectEmit(true, true, false, true);
@@ -964,30 +992,30 @@ contract VisionTest is TestHelper {
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
 
-        assertEq(usdc.balanceOf(player), expectedPayout, "Player gets payout");
+        assertEq(vision.realBalance(player), expectedPayout, "Player gets payout in realBalance");
         assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
     }
 
     function test_forceWithdraw_happyPath_withLoss() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        uint256 finalBalance = 7e6;
+        uint256 finalBalance = 7e18;
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.expectEmit(true, true, false, true);
-        emit IVision.ForceWithdrawn(batchId, player, 7e6);
+        emit IVision.ForceWithdrawn(batchId, player, 7e18);
 
         vision.forceWithdraw(batchId, player, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
-        assertEq(usdc.balanceOf(player), 7e6, "Player gets remaining balance");
+        assertEq(vision.realBalance(player), 7e18, "Player gets remaining balance in realBalance");
         assertEq(vision.accumulatedFees(), 0, "No fees on loss");
     }
 
@@ -996,12 +1024,12 @@ contract VisionTest is TestHelper {
         address player = makeAddr("player1");
 
         bytes32 message = keccak256(abi.encode(
-            block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, uint256(10e6)
+            block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, uint256(10e18)
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
         vm.expectRevert(IVision.NotJoined.selector);
-        vision.forceWithdraw(batchId, player, 10e6, blsSig, REF_NONCE, SIGNERS_BITMASK);
+        vision.forceWithdraw(batchId, player, 10e18, blsSig, REF_NONCE, SIGNERS_BITMASK);
     }
 
     // ============ pause prevents join ============
@@ -1016,11 +1044,11 @@ contract VisionTest is TestHelper {
         vision.pause(batchId, pauseSig, REF_NONCE, SIGNERS_BITMASK);
 
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         vm.expectRevert(IVision.BatchPaused.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
     }
 
     // ============ lock window ============
@@ -1028,7 +1056,7 @@ contract VisionTest is TestHelper {
     function test_joinBatch_revertWhenLocked() public {
         uint256 batchId = _createDefaultBatch();
         address player = makeAddr("player1");
-        _preparePlayer(player, 10e6);
+        _preparePlayer(player, 10e18);
 
         // Advance time to within lock window (last LOCK_OFFSET seconds of tick)
         IVision.Batch memory batch = vision.getBatch(batchId);
@@ -1039,28 +1067,181 @@ contract VisionTest is TestHelper {
 
         vm.expectRevert(IVision.TickLocked.selector);
         vm.prank(player);
-        vision.joinBatch(batchId, CONFIG_HASH, 10e6, 1e6, keccak256("bitmap"));
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
     }
 
     // ============ currentTickId ============
 
     function test_currentTickId() public {
+        // Start at a clean tick boundary for predictability
         uint256 batchId = _createDefaultBatch();
+        uint256 createdAt = block.timestamp;
+        uint256 createdAtTick = createdAt / TICK_DURATION;
 
         uint256 tickId = vision.currentTickId(batchId);
         assertEq(tickId, 0, "Initial tick should be 0");
 
-        // Advance 1 full tick
-        vm.warp(block.timestamp + TICK_DURATION);
-        assertEq(vision.currentTickId(batchId), 1, "Should be tick 1 after 1 duration");
+        // Advance to next full tick
+        uint256 nextTick = (createdAtTick + 1) * TICK_DURATION;
+        vm.warp(nextTick);
+        assertEq(vision.currentTickId(batchId), 1, "Should be tick 1 after crossing first boundary");
 
         // Advance another tick
-        vm.warp(block.timestamp + TICK_DURATION);
-        assertEq(vision.currentTickId(batchId), 2, "Should be tick 2 after 2 durations");
+        vm.warp(nextTick + TICK_DURATION);
+        assertEq(vision.currentTickId(batchId), 2, "Should be tick 2 after crossing second boundary");
     }
 
     function test_currentTickId_revertBatchNotFound() public {
         vm.expectRevert(IVision.BatchNotFound.selector);
         vision.currentTickId(999);
+    }
+
+    // ============ New tests for Task 1 features ============
+
+    function test_updateBatchConfig_changesTickDuration() public {
+        uint256 batchId = _createDefaultBatch();
+
+        IVision.Batch memory batchBefore = vision.getBatch(batchId);
+        assertEq(batchBefore.tickDuration, TICK_DURATION, "Initial tick duration should match");
+
+        // Stage a new tickDuration (2 hours instead of 1 hour)
+        uint256 newTickDuration = 2 hours;
+        uint256 newLockOffset = 120; // 2 minutes
+
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(vision),
+            "UPDATE_BATCH_CONFIG",
+            batchId,
+            CONFIG_HASH,
+            newLockOffset,
+            newTickDuration
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vision.updateBatchConfig(batchId, CONFIG_HASH, newLockOffset, newTickDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
+
+        // Should be staged, not yet active
+        IVision.Batch memory batchAfterStage = vision.getBatch(batchId);
+        assertEq(batchAfterStage.tickDuration, TICK_DURATION, "tickDuration should not change until promotion");
+        assertEq(batchAfterStage.nextTickDuration, newTickDuration, "nextTickDuration should be staged");
+
+        // Advance time to next tick boundary to allow promotion
+        vm.warp(block.timestamp + TICK_DURATION);
+
+        // Trigger promotion by calling a function that promotes
+        address player = makeAddr("player_td");
+        _preparePlayer(player, 10e18);
+        vm.prank(player);
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap_td"));
+
+        // Now check promoted values
+        IVision.Batch memory batchAfterPromotion = vision.getBatch(batchId);
+        assertEq(batchAfterPromotion.tickDuration, newTickDuration, "tickDuration should be promoted");
+        assertEq(batchAfterPromotion.nextTickDuration, 0, "nextTickDuration should be cleared");
+        assertEq(batchAfterPromotion.lockOffset, newLockOffset, "lockOffset should be promoted");
+    }
+
+    function test_promoteConfig_maintainsTickContinuity() public {
+        // Batch created at time T with tickDuration=1 hour
+        uint256 batchId = _createDefaultBatch();
+
+        // Advance 3 full ticks
+        vm.warp(block.timestamp + 3 * TICK_DURATION);
+        assertEq(vision.currentTickId(batchId), 3, "Should be at tick 3");
+
+        // Stage new tickDuration = 30 min
+        uint256 newTickDuration = 30 minutes;
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(vision),
+            "UPDATE_BATCH_CONFIG",
+            batchId,
+            CONFIG_HASH,
+            uint256(60), // lockOffset
+            newTickDuration
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+        vision.updateBatchConfig(batchId, CONFIG_HASH, 60, newTickDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
+
+        // Advance to next tick boundary (under OLD tickDuration)
+        IVision.Batch memory b = vision.getBatch(batchId);
+        uint256 currentAbsTick = block.timestamp / b.tickDuration;
+        uint256 nextAbsTick = (currentAbsTick + 1) * b.tickDuration;
+        vm.warp(nextAbsTick);
+
+        // Record tick ID before promotion
+        uint256 tickBeforePromotion = vision.currentTickId(batchId);
+
+        // Trigger promotion
+        address player = makeAddr("player_continuity");
+        _preparePlayer(player, 10e18);
+        vm.prank(player);
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap_c"));
+
+        // After promotion, tick should continue from where it was
+        uint256 tickAfterPromotion = vision.currentTickId(batchId);
+        // The epochOffset ensures tick continuity — should be close to tickBeforePromotion
+        // (may differ by at most 1 due to exact boundary timing)
+        assertApproxEqAbs(tickAfterPromotion, tickBeforePromotion, 1, "Tick should be continuous across tickDuration change");
+    }
+
+    function test_updateBatchConfig_noop_whenNoChange() public {
+        uint256 batchId = _createDefaultBatch();
+
+        // Try to update with same configHash AND same tickDuration — should no-op
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
+            batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+        // This should return without reverting (no-op path)
+        vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION, blsSig, REF_NONCE, SIGNERS_BITMASK);
+
+        IVision.Batch memory batch = vision.getBatch(batchId);
+        assertEq(batch.nextConfigHash, bytes32(0), "No pending config for no-op");
+        assertEq(batch.nextTickDuration, 0, "No pending tickDuration for no-op");
+    }
+
+    function test_updateBatchConfig_revertInvalidTickDuration() public {
+        uint256 batchId = _createDefaultBatch();
+
+        uint256 badDuration = 604800 + 1; // > MAX_TICK_DURATION
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
+            batchId, CONFIG_HASH, LOCK_OFFSET, badDuration
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(IVision.InvalidTickDuration.selector);
+        vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, badDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
+    }
+
+    function test_updateBatchConfig_revertLockOffsetTooLarge() public {
+        uint256 batchId = _createDefaultBatch();
+
+        // lockOffset >= tickDuration should revert with LockOffsetTooLarge
+        bytes32 message = keccak256(abi.encode(
+            block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
+            batchId, CONFIG_HASH, TICK_DURATION, TICK_DURATION
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(IVision.LockOffsetTooLarge.selector);
+        vision.updateBatchConfig(batchId, CONFIG_HASH, TICK_DURATION, TICK_DURATION, blsSig, REF_NONCE, SIGNERS_BITMASK);
+    }
+
+    function test_claimRewards_revertFirstClaimAtOrBeforeStartTick() public {
+        uint256 batchId = _createDefaultBatch();
+        address player = makeAddr("player1");
+        _preparePlayer(player, 10e18);
+
+        vm.prank(player);
+        vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
+
+        // Player joined at tick 0, so fromTick=0 should fail (must be > startTick=0)
+        vm.expectRevert(IVision.InvalidTickRange.selector);
+        vm.prank(player);
+        vision.claimRewards(batchId, 0, 0, 10e18, new bytes(64), REF_NONCE, SIGNERS_BITMASK);
     }
 }
