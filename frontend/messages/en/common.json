@@ -19,12 +19,15 @@
     "system": "System",
     "vision_nav": "Vision",
     "leaderboard": "Leaderboard",
-    "markets_data": "Markets"
+    "markets_data": "Markets",
+    "explorer": "Explorer",
+    "about": "About"
   },
   "footer": {
     "product": "Product",
     "resources": "Resources",
     "indexes": "Index Products",
+    "vision": "Vision",
     "data_sources": "Data Sources",
     "explorer": "Explorer",
     "points": "Points — Season 1",
@@ -84,7 +87,8 @@
     "connect_to_buy": "Connect your wallet to buy ITP shares",
     "connect_to_sell": "Connect your wallet to sell ITP shares",
     "connect_to_create": "Connect your wallet to create a batch",
-    "sign_up": "Sign Up"
+    "sign_up": "Sign Up",
+    "deposit": "Deposit"
   },
   "status": {
     "pending": "Pending",

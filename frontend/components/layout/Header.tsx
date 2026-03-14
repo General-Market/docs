@@ -197,13 +197,16 @@ export function Header() {
                 {t('nav.vision')}
               </Link>
               <div className="ml-4 flex items-center gap-3">
-                <Link href="/explorer" className="text-[12px] text-text-secondary hover:text-black transition-colors">Explorer</Link>
-                <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">About</Link>
+                <Link href="/explorer" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.explorer')}</Link>
+                <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.about')}</Link>
               </div>
             </nav>
 
-            {/* Right side — Balance + Wallet + Hamburger */}
+            {/* Right side — Language + Balance + Wallet + Hamburger */}
             <div className="flex items-center gap-3 shrink-0">
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
               {isVision && <VisionBalanceBar />}
               {mounted && authenticated && address ? (
                 <div className="flex items-center gap-2">
@@ -221,7 +224,7 @@ export function Header() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"
                       >
-                        Deposit
+                        {t('wallet.deposit')}
                       </a>
                     ) : null
                   )}
@@ -287,8 +290,8 @@ export function Header() {
                       </Link>
                     </div>
 
-                    <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">Explorer</Link>
-                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">About</Link>
+                    <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.explorer')}</Link>
+                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.about')}</Link>
                     <a href="/docs" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
                     <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
                     <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.privacy_policy')}</Link>

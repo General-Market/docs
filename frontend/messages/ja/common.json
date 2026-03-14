@@ -19,12 +19,15 @@
     "system": "システム",
     "vision_nav": "Vision",
     "leaderboard": "リーダーボード",
-    "markets_data": "マーケット"
+    "markets_data": "マーケット",
+    "explorer": "エクスプローラー",
+    "about": "概要"
   },
   "footer": {
     "product": "プロダクト",
     "resources": "リソース",
     "indexes": "インデックス商品",
+    "vision": "Vision",
     "data_sources": "データソース",
     "explorer": "エクスプローラー",
     "points": "ポイント — シーズン1",
@@ -84,7 +87,8 @@
     "connect_to_buy": "ITTシェアを購入するにはウォレットを接続してください",
     "connect_to_sell": "ITTシェアを売却するにはウォレットを接続してください",
     "connect_to_create": "バッチを作成するにはウォレットを接続してください",
-    "sign_up": "サインアップ"
+    "sign_up": "サインアップ",
+    "deposit": "入金"
   },
   "status": {
     "pending": "保留中",

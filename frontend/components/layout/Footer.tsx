@@ -48,7 +48,7 @@ export function Footer() {
             <span className="text-white/80 font-semibold text-[11px] uppercase tracking-[0.1em] block mb-3">{t('footer.product')}</span>
             <ul className="space-y-2">
               <li><Link href="/index" className="hover:text-white transition-colors">{t('footer.indexes')}</Link></li>
-              <li><Link href="/" className="hover:text-white transition-colors">Vision</Link></li>
+              <li><Link href="/" className="hover:text-white transition-colors">{t('footer.vision')}</Link></li>
               <li><Link href="/sources" className="hover:text-white transition-colors">{t('footer.data_sources')}</Link></li>
               <li><Link href="/explorer" className="hover:text-white transition-colors">{t('footer.explorer')}</Link></li>
               <li><Link href="/points" className="hover:text-white transition-colors">{t('footer.points')}</Link></li>

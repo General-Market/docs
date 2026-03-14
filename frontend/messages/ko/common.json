@@ -19,12 +19,15 @@
     "system": "시스템",
     "vision_nav": "Vision",
     "leaderboard": "리더보드",
-    "markets_data": "마켓"
+    "markets_data": "마켓",
+    "explorer": "탐색기",
+    "about": "소개"
   },
   "footer": {
     "product": "상품",
     "resources": "리소스",
     "indexes": "인덱스 상품",
+    "vision": "Vision",
     "data_sources": "데이터 소스",
     "explorer": "탐색기",
     "points": "포인트 — 시즌 1",
@@ -84,7 +87,8 @@
     "connect_to_buy": "ITP 주식을 구매하려면 지갑을 연결하세요",
     "connect_to_sell": "ITP 주식을 판매하려면 지갑을 연결하세요",
     "connect_to_create": "배치를 생성하려면 지갑을 연결하세요",
-    "sign_up": "가입하기"
+    "sign_up": "가입하기",
+    "deposit": "입금"
   },
   "status": {
     "pending": "대기 중",
