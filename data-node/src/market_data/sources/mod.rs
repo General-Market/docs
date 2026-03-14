@@ -95,6 +95,7 @@ pub mod power_outages;
 pub mod mcbroken;
 pub mod nyc311;
 pub mod worldbank;
+pub mod lichess;
 
 // Index-only sources (3) + shared ticker list
 pub mod tracked_tickers;
@@ -192,6 +193,7 @@ pub use power_outages::PowerOutagesMarketSource;
 pub use mcbroken::McBrokenMarketSource;
 pub use nyc311::Nyc311MarketSource;
 pub use worldbank::WorldBankMarketSource;
+pub use lichess::LichessMarketSource;
 
 // Re-exports — Index-only sources
 pub use finra_short_vol::FinraShortVolMarketSource;
