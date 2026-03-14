@@ -122,7 +122,8 @@ pub struct EthersChainReader<M: Middleware> {
     // Caches
     known_order_ids: RwLock<Vec<U256>>,
     settled_order_ids: RwLock<HashSet<U256>>,
-    known_rebalances: RwLock<std::collections::HashMap<[u8; 32], (Vec<U256>, Vec<U256>, Vec<Address>, u64)>>,
+    // (new_weights, remove_indices, add_assets, proposed_at_block, return_count)
+    known_rebalances: RwLock<std::collections::HashMap<[u8; 32], (Vec<U256>, Vec<U256>, Vec<Address>, u64, u32)>>,
 }
 
 impl EthersChainReader<Provider<Http>> {
@@ -614,10 +615,11 @@ where
                 let itp_id: [u8; 32] = event.itp_id.into();
                 let block = meta.block_number.as_u64();
                 let entry = known.entry(itp_id).or_insert_with(|| {
-                    (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block)
+                    (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0)
                 });
                 if block > entry.3 {
-                    *entry = (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block);
+                    // New event for this ITP — reset return count since it's a fresh request
+                    *entry = (event.new_weights.clone(), event.remove_indices.clone(), event.add_assets.clone(), block, 0);
                 }
             }
         }
@@ -634,13 +636,25 @@ where
         let mut pending = Vec::new();
         let mut completed_itps = Vec::new();
 
-        for (itp_id, (new_weights, remove_indices, add_assets, proposed_at_block)) in &known {
+        for (itp_id, (new_weights, remove_indices, add_assets, proposed_at_block, return_count)) in &known {
             // Skip stale rebalances older than ~2 hours (~7200 blocks at 1s/block)
             if latest_block > *proposed_at_block && latest_block - *proposed_at_block > 7200 {
                 info!(
                     itp_id = ?H256::from(*itp_id),
                     age_blocks = latest_block - *proposed_at_block,
                     "Rebalance too old (>7200 blocks), removing stale entry from cache"
+                );
+                completed_itps.push(*itp_id);
+                continue;
+            }
+
+            // Skip rebalances that have been returned too many times without resolution.
+            // This prevents infinite retry loops when assets have no price mappings.
+            if *return_count > 10 {
+                warn!(
+                    itp_id = ?H256::from(*itp_id),
+                    return_count,
+                    "Rebalance stalled (returned >10 times without resolution), removing from cache"
                 );
                 completed_itps.push(*itp_id);
                 continue;
@@ -684,11 +698,17 @@ where
             }
         }
 
-        // Remove completed rebalances from cache
-        if !completed_itps.is_empty() {
+        // Remove completed rebalances from cache and increment return count for pending ones
+        {
             let mut known_w = self.known_rebalances.write().await;
             for itp_id in &completed_itps {
                 known_w.remove(itp_id);
+            }
+            // Increment return count for each ITP that was returned as pending
+            for rebalance in &pending {
+                if let Some(entry) = known_w.get_mut(&rebalance.itp_id) {
+                    entry.4 += 1;
+                }
             }
         }
 
