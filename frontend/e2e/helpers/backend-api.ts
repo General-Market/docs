@@ -446,32 +446,41 @@ const _l3Chain = defineChain({
 const _l3Account = IS_ANVIL ? undefined : privateKeyToAccount(TEST_PRIVATE_KEY);
 const _l3Pub = createPublicClient({ chain: _l3Chain, transport: rpcHttp(L3_RPC) });
 
-/** Track nonce ourselves to avoid getTransactionCount race conditions on L3. */
-let _l3NextNonce: number | null = null;
 
 /**
  * Send a signed transaction on L3 using the deployer private key.
  * Used on testnet where anvil_impersonateAccount is not available.
- * Uses a mutex + local nonce tracking to prevent nonce-too-low errors.
+ * Uses a mutex + nonce retry to handle nonce conflicts with the browser wallet
+ * (which sends txs from the same key via a separate code path).
  */
 async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
   return withL3NonceLock(async () => {
     const account = _l3Account ?? privateKeyToAccount(TEST_PRIVATE_KEY);
-    if (_l3NextNonce === null) {
-      _l3NextNonce = await _l3Pub.getTransactionCount({ address: account.address, blockTag: 'pending' });
-    }
-    const nonce = _l3NextNonce;
-    _l3NextNonce++;
     const client = createWalletClient({ account, chain: _l3Chain, transport: rpcHttp(L3_RPC) });
-    const hash = await client.sendTransaction({
-      to: to as `0x${string}`,
-      data: data as `0x${string}`,
-      value,
-      gas: 1_000_000n,
-      nonce,
-    });
-    await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
-    return hash;
+
+    // Retry up to 3 times on nonce-too-low (browser wallet may have sent txs)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const nonce = await _l3Pub.getTransactionCount({ address: account.address, blockTag: 'pending' });
+      try {
+        const hash = await client.sendTransaction({
+          to: to as `0x${string}`,
+          data: data as `0x${string}`,
+          value,
+          gas: 1_000_000n,
+          nonce,
+        });
+        await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+        return hash;
+      } catch (err: any) {
+        if (err?.message?.includes('nonce too low') && attempt < 2) {
+          console.log(`[l3SignedSend] nonce too low (attempt ${attempt + 1}), retrying...`);
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error('l3SignedSend: max retries exceeded');
   });
 }
 
