@@ -123,7 +123,29 @@ Existing learn pages with overlapping topics:
 - No `canonical` pointing between them — they serve different intents. Google handles topically related but structurally different pages fine.
 - The knowledge pages are shorter (800-1200 words) and definition-structured. The learn pages are longer (1500-3000 words) and narrative. The overlap is topical, not textual.
 
-### 2.6 Frontmatter Spec
+### 2.6 Content Overlap Strategy with `docs.generalmarket.io`
+
+Nearly every knowledge page has a counterpart on the docs site:
+- `parimutuel-prediction-markets` ↔ `docs/vision/concepts/` pages
+- `on-chain-index-products` ↔ `docs/index/concepts/itps.mdx`
+- `nav-calculation` ↔ `docs/index/concepts/itps.mdx` (NAV section)
+- `bls-consensus` ↔ `docs/index/architecture/issuer-nodes.mdx`
+- `build-prediction-market-bot` ↔ `docs/vision/bots/quickstart.mdx`
+- `prediction-market-api` ↔ `docs/vision/api/` pages
+- `on-chain-index-api` ↔ `docs/index/api/` pages
+- `backtest-prediction-markets` ↔ `docs/index/guides/backtesting.mdx`
+
+**No canonical conflict.** `www.generalmarket.io` and `docs.generalmarket.io` are separate origins — Google and AI crawlers treat subdomains as distinct sites.
+
+**Differentiation by intent:**
+- **Docs** = for developers already using the product. Assumes context. Starts with "how to configure," "endpoint reference," "getting started." Technical, imperative, procedural.
+- **Knowledge** = for someone who has never heard of the product. Assumes nothing. Starts with "A parimutuel prediction market is..." Definitional, explanatory, citable.
+
+This intent difference is how AI agents pick which to cite. A query like "What is a parimutuel prediction market?" triggers the knowledge page. A query like "How do I submit a bitmap to the Vision API?" triggers the docs page.
+
+**No changes to docs site.** No canonical tags, no noindex, no cross-domain linking. The two layers coexist by serving different query intents.
+
+### 2.7 Frontmatter Spec
 
 ```yaml
 ---
@@ -143,7 +165,7 @@ faq:
 ---
 ```
 
-### 2.7 Page List
+### 2.8 Page List
 
 **Product concepts (`category: "concept"`, `proficiencyLevel: "Beginner"`):**
 
@@ -208,7 +230,7 @@ faq:
     - Schema: `["HowTo", "TechArticle"]`
     - Content: simulation engine, historical data access, strategy evaluation, example backtest
 
-### 2.8 Writing Rules (Passage-Level Optimization)
+### 2.9 Writing Rules (Passage-Level Optimization)
 
 Every `/knowledge/` page follows these rules:
 
