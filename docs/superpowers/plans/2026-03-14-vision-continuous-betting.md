@@ -47,9 +47,30 @@ function test_updateBatchConfig_changesTickDuration() public {
     (,, uint256 newTickDuration,,,,) = vision.getBatchInfo(batchId);
     assertEq(newTickDuration, 300);
 }
+
+function test_promoteConfig_recomputesLastPromotionTick() public {
+    // Create batch with tickDuration=600
+    uint256 batchId = _createTestBatch(600, 0);
+
+    // Update config with tickDuration=300
+    bytes32 newConfigHash = keccak256("new-config");
+    bytes memory blsSig = _signUpdateConfig(batchId, newConfigHash, 0, 300);
+    vision.updateBatchConfig(batchId, newConfigHash, 0, 300, blsSig, _nextNonce(), 7);
+
+    // Advance 601s to trigger promotion
+    vm.warp(block.timestamp + 601);
+    // Any call that triggers _promoteConfigIfNeeded
+    vision.updateBatchConfig(batchId, newConfigHash, 0, 300, blsSig, _nextNonce(), 7);
+
+    // After promotion, lastPromotionTick should be block.timestamp / 300 (NEW duration)
+    // NOT block.timestamp / 600 (OLD duration)
+    (,,,,, uint256 lastPromotionTick,) = vision.getBatchInfo(batchId);
+    assertEq(lastPromotionTick, block.timestamp / 300);
+}
 ```
 
 Run: `cd contracts && forge test --match-test test_updateBatchConfig_changesTickDuration -vvv`
+Run: `cd contracts && forge test --match-test test_promoteConfig_recomputesLastPromotionTick -vvv`
 Expected: FAIL — function signature mismatch
 
 - [ ] **Step 2: Add tickDuration parameter to updateBatchConfig()**
@@ -72,8 +93,8 @@ function updateBatchConfig(
     Batch storage b = _batches[batchId];
     if (b.configHash == configHash && b.nextConfigHash == bytes32(0)) return;
 
-    require(tickDuration > 0 && tickDuration <= MAX_TICK_DURATION, "InvalidTickDuration");
-    require(lockOffset < tickDuration || lockOffset == 0, "LockOffsetTooLarge");
+    if (tickDuration == 0 || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+    if (lockOffset >= tickDuration && lockOffset != 0) revert LockOffsetTooLarge();
 
     bytes32 messageHash = keccak256(abi.encode(
         block.chainid,
@@ -109,11 +130,15 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         if (b.nextTickDuration > 0) {
             b.tickDuration = b.nextTickDuration;
         }
-        b.lastPromotionTick = currentTick;
+        // CRITICAL FIX: recompute lastPromotionTick with NEW tickDuration
+        // If we stored currentTick (computed with old tickDuration), the next
+        // check `block.timestamp / newTickDuration` would produce a different
+        // tick number — causing instant re-promotion or permanent freeze.
+        b.lastPromotionTick = block.timestamp / b.tickDuration;
         b.nextConfigHash = bytes32(0);
         b.nextLockOffset = 0;
         b.nextTickDuration = 0;
-        emit BatchConfigPromoted(batchId, oldHash, b.configHash, currentTick);
+        emit BatchConfigPromoted(batchId, oldHash, b.configHash, b.lastPromotionTick);
     }
 }
 ```
@@ -528,16 +553,25 @@ Expected: FAIL — methods don't exist
 - [ ] **Step 3: Implement two-slot BitmapStore**
 
 ```rust
+// SECURITY FIX: Single RwLock wrapping both maps to prevent deadlock.
+// Two separate RwLocks can deadlock if flip() holds one lock while another
+// method holds the other and both try to acquire the second.
+struct BitmapSlots {
+    pending: HashMap<(u64, Address), SlottedBitmap>,
+    active: HashMap<(u64, Address), SlottedBitmap>,
+}
+
 pub struct BitmapStore {
-    pending: RwLock<HashMap<(u64, Address), SlottedBitmap>>,
-    active: RwLock<HashMap<(u64, Address), SlottedBitmap>>,
+    slots: RwLock<BitmapSlots>,
 }
 
 impl BitmapStore {
     pub fn new() -> Self {
         Self {
-            pending: RwLock::new(HashMap::new()),
-            active: RwLock::new(HashMap::new()),
+            slots: RwLock::new(BitmapSlots {
+                pending: HashMap::new(),
+                active: HashMap::new(),
+            }),
         }
     }
 
@@ -559,47 +593,56 @@ impl BitmapStore {
             config_hash, target_tick_id,
             received_at: now_epoch(),
         };
-        self.pending.write().await.insert((batch_id, player), entry);
+        self.slots.write().await.pending.insert((batch_id, player), entry);
         Ok(())
     }
 
     pub async fn get_active(&self, batch_id: u64, player: Address) -> Option<SlottedBitmap> {
-        self.active.read().await.get(&(batch_id, player)).cloned()
+        self.slots.read().await.active.get(&(batch_id, player)).cloned()
     }
 
     pub async fn get_pending(&self, batch_id: u64, player: Address) -> Option<SlottedBitmap> {
-        self.pending.read().await.get(&(batch_id, player)).cloned()
+        self.slots.read().await.pending.get(&(batch_id, player)).cloned()
     }
 
     pub async fn get_all_active_for_batch(&self, batch_id: u64) -> Vec<SlottedBitmap> {
-        self.active.read().await.iter()
+        self.slots.read().await.active.iter()
             .filter(|((bid, _), _)| *bid == batch_id)
             .map(|(_, v)| v.clone())
             .collect()
     }
 
     pub async fn flip(&self, batch_id: u64) {
-        let mut pending = self.pending.write().await;
-        let mut active = self.active.write().await;
+        let mut slots = self.slots.write().await;
 
         // Remove old active for this batch
-        active.retain(|(bid, _), _| *bid != batch_id);
+        slots.active.retain(|(bid, _), _| *bid != batch_id);
 
         // Move pending → active for this batch
-        let to_move: Vec<_> = pending.iter()
+        let to_move: Vec<_> = slots.pending.iter()
             .filter(|((bid, _), _)| *bid == batch_id)
             .map(|(k, v)| (*k, v.clone()))
             .collect();
 
         for (key, val) in to_move {
-            pending.remove(&key);
-            active.insert(key, val);
+            slots.pending.remove(&key);
+            slots.active.insert(key, val);
         }
     }
 
+    /// Clean up stale active bitmaps whose target_tick_id < current_tick_id.
+    /// Call before flip to prevent unbounded growth.
+    pub async fn cleanup_stale(&self, batch_id: u64, current_tick_id: u64) {
+        let mut slots = self.slots.write().await;
+        slots.active.retain(|(bid, _), bm| {
+            *bid != batch_id || bm.target_tick_id >= current_tick_id
+        });
+    }
+
     pub async fn remove(&self, batch_id: u64, player: Address) {
-        self.pending.write().await.remove(&(batch_id, player));
-        self.active.write().await.remove(&(batch_id, player));
+        let mut slots = self.slots.write().await;
+        slots.pending.remove(&(batch_id, player));
+        slots.active.remove(&(batch_id, player));
     }
 }
 ```
@@ -649,7 +692,7 @@ CREATE TABLE IF NOT EXISTS vision_batch_state (
 - [ ] **Step 2: Update persist_to_db for slots**
 
 ```rust
-pub async fn persist_pending_to_db(&self, pool: &PgPool, batch_id: u64, player: Address, bitmap: &SlottedBitmap) {
+pub async fn persist_pending_to_db(&self, pool: &PgPool, batch_id: u64, player: Address, bitmap: &SlottedBitmap) -> Result<(), sqlx::Error> {
     sqlx::query(
         "INSERT INTO vision_bitmaps (batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash)
          VALUES ($1, $2, $3, $4, 'pending', $5, $6)
@@ -663,15 +706,22 @@ pub async fn persist_pending_to_db(&self, pool: &PgPool, batch_id: u64, player: 
     .bind(format!("{:?}", bitmap.hash))
     .bind(bitmap.target_tick_id as i64)
     .bind(format!("{:?}", bitmap.config_hash))
-    .execute(pool).await.ok();
+    .execute(pool).await?;
+    Ok(())
 }
 
-pub async fn persist_flip_to_db(&self, pool: &PgPool, batch_id: u64) {
-    // Delete old active, rename pending → active
+/// SECURITY FIX: Use a transaction for atomic flip. The DELETE+UPDATE must
+/// succeed together or not at all. Without a transaction, a crash between
+/// DELETE and UPDATE loses all bitmaps. Also propagate errors instead of
+/// swallowing with .ok().
+pub async fn persist_flip_to_db(&self, pool: &PgPool, batch_id: u64) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
     sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
-        .bind(batch_id as i64).execute(pool).await.ok();
+        .bind(batch_id as i64).execute(&mut *tx).await?;
     sqlx::query("UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'")
-        .bind(batch_id as i64).execute(pool).await.ok();
+        .bind(batch_id as i64).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
 }
 ```
 
@@ -845,7 +895,45 @@ In `resolver.rs`, replace lines 227-230:
 let bit_index = market_idx;
 ```
 
-- [ ] **Step 3: Use bitmap's config_hash for market lookup**
+- [ ] **Step 3: Implement ConfigCache for config_hash → market list lookup**
+
+The resolver needs to decode bitmaps using the config they were encoded against, not the batch's current config. Create a cache:
+
+```rust
+// New file: issuer/src/vision/config_cache.rs
+use std::collections::HashMap;
+use tokio::sync::RwLock;
+
+pub struct ConfigCache {
+    cache: RwLock<HashMap<H256, Vec<MarketConfig>>>,
+    data_node_url: String,
+}
+
+impl ConfigCache {
+    pub fn new(data_node_url: String) -> Self {
+        Self { cache: RwLock::new(HashMap::new()), data_node_url }
+    }
+
+    pub async fn get_or_fetch(&self, config_hash: &H256) -> Result<Vec<MarketConfig>> {
+        if let Some(configs) = self.cache.read().await.get(config_hash) {
+            return Ok(configs.clone());
+        }
+        let url = format!("{}/batches/config/{:?}", self.data_node_url, config_hash);
+        let resp = reqwest::get(&url).await?.json::<Vec<MarketConfig>>().await?;
+        self.cache.write().await.insert(*config_hash, resp.clone());
+        Ok(resp)
+    }
+
+    /// Insert known config (e.g. from signed batch responses)
+    pub async fn insert(&self, config_hash: H256, configs: Vec<MarketConfig>) {
+        self.cache.write().await.insert(config_hash, configs);
+    }
+}
+```
+
+Wire into AppState and pass to resolver. Add `pub mod config_cache;` to `mod.rs`.
+
+- [ ] **Step 4: Use bitmap's config_hash for market lookup**
 
 In `resolve_tick()`, change bitmap fetching to use the active slot and decode with the bitmap's own config:
 
@@ -855,21 +943,22 @@ let active_bitmaps = self.bitmap_store.get_all_active_for_batch(batch.id).await;
 
 // For each active bitmap, look up the market configs it was encoded against
 for ab in &active_bitmaps {
-    let bitmap_market_configs = config_cache.get_or_fetch(&ab.config_hash).await?;
+    let bitmap_market_configs = self.config_cache.get_or_fetch(&ab.config_hash).await?;
     // Decode using bitmap_market_configs, not the batch's current market_configs
+    // This ensures players who bet on config X are scored against config X's markets
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 5: Run tests**
 
 Run: `cd issuer && cargo test resolver -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add issuer/src/vision/resolver.rs
-git commit -m "feat(issuer): flat bitmap indexing + config_hash-aware decoding"
+git add issuer/src/vision/resolver.rs issuer/src/vision/config_cache.rs issuer/src/vision/mod.rs
+git commit -m "feat(issuer): flat bitmap indexing, config cache, config_hash-aware decoding"
 ```
 
 ---
@@ -881,17 +970,30 @@ git commit -m "feat(issuer): flat bitmap indexing + config_hash-aware decoding"
 
 - [ ] **Step 1: Add bitmap flip after resolution in engine**
 
-In the resolution loop (after BLS consensus succeeds), add:
+In the resolution loop, add bitmap flip AFTER consensus completes successfully (not after `create_proposal()` — consensus involves all 3 issuers signing):
 
 ```rust
-// After successful tick resolution + BLS consensus:
+// CRITICAL: Flip happens AFTER consensus.wait_for_completion() succeeds.
+// If we flip after create_proposal() but before consensus completes,
+// and consensus fails, the bitmaps are lost — players who submitted
+// predictions would be silently dropped from the next tick.
 
-// 1. Flip bitmaps: active = pending, pending = cleared
+// Step 1: Compute bitmap_set_hash (see Step 3 below)
+// Step 2: Create proposal
+let proposal = tc.create_proposal(&result, bitmap_set_hash).await?;
+// Step 3: Wait for BLS consensus (all issuers sign)
+let consensus_result = proposal.wait_for_completion().await?;
+// Step 4: Submit on-chain
+submit_tick_resolution(consensus_result).await?;
+// Step 5: NOW flip bitmaps — consensus succeeded, on-chain tx submitted
+bitmap_store.cleanup_stale(batch_id, current_tick_id).await;
 bitmap_store.flip(batch_id).await;
-bitmap_store.persist_flip_to_db(&db_pool, batch_id).await;
+bitmap_store.persist_flip_to_db(&db_pool, batch_id).await?;
+// If persist_flip_to_db fails, log critical error but don't panic —
+// in-memory state is correct, DB will be inconsistent until restart
+// which triggers load_from_db recovery.
 
-// 2. Config promotion (if pending) — new config applies to future submissions only
-// (handled by chain listener via BatchConfigPromoted event, no engine action needed)
+// Config promotion is handled by chain listener via BatchConfigPromoted event
 ```
 
 - [ ] **Step 2: Remove degraded-mode balance application**
@@ -1165,19 +1267,26 @@ let call = vision.update_batch_config(
 );
 ```
 
-Also update the BLS message hash to match the new contract domain:
+Also update the BLS message hash to match the new contract domain. **CRITICAL:** The Solidity `abi.encode` encodes string literals as `bytes32` (via keccak), NOT as ABI-encoded dynamic strings. Match the Solidity encoding exactly:
 
 ```rust
+// Must match Solidity: keccak256(abi.encode(block.chainid, address(this), "UPDATE_BATCH_CONFIG", ...))
+// abi.encode pads string literals to 32 bytes. Use ethers abi.encode with
+// the same types the contract uses.
 let message = ethers::abi::encode(&[
     Token::Uint(chain_id.into()),
     Token::Address(vision_address),
-    Token::String("UPDATE_BATCH_CONFIG".into()),
+    // Solidity string literal in abi.encode is encoded as bytes32
+    // keccak256("UPDATE_BATCH_CONFIG") to match abi.encode behavior
+    Token::FixedBytes(ethers::utils::keccak256("UPDATE_BATCH_CONFIG").to_vec()),
     Token::Uint(batch_id.into()),
     Token::FixedBytes(config_hash.as_bytes().to_vec()),
     Token::Uint(lock_offset.into()),
     Token::Uint(tick_duration.into()),  // NEW
 ]);
 ```
+
+**Verification:** Write a test that computes the message hash in Rust and compares to the Solidity output from a forge test. BLS messages MUST match byte-for-byte or consensus breaks.
 
 - [ ] **Step 4: Run tests**
 
@@ -1193,9 +1302,155 @@ git commit -m "feat(issuer): batch auto-creation with rate limit, tightened foll
 
 ---
 
+### Task 16: Activation tick dual-mode mechanism
+
+**Files:**
+- Modify: `issuer/src/vision/engine.rs`
+- Modify: `issuer/src/vision/types.rs`
+
+**Context:** During migration, not all issuers update simultaneously. An `activation_tick_id` ensures the new bitmap model only activates after a coordinated tick boundary, preventing mixed old/new code consensus failures.
+
+- [ ] **Step 1: Add activation_tick_id to batch config**
+
+```rust
+// In types.rs, add to BatchConfig or a new MigrationConfig:
+pub struct BatchMigration {
+    /// Tick ID at which new bitmap model activates. 0 = not yet set.
+    pub activation_tick_id: u64,
+}
+```
+
+- [ ] **Step 2: Add dual-mode resolution in engine**
+
+```rust
+// In engine.rs resolution loop:
+let current_tick_id = compute_tick_id(batch.tick_duration);
+
+if current_tick_id < batch.activation_tick_id {
+    // OLD MODE: Use legacy single-bitmap resolution
+    // This keeps consensus working with old-code issuers
+    resolve_tick_legacy(batch, current_tick_id, &players, &prices).await?;
+} else {
+    // NEW MODE: Two-slot bitmap resolution
+    let active_bitmaps = bitmap_store.get_all_active_for_batch(batch.id).await;
+    resolve_tick_continuous(batch, current_tick_id, &active_bitmaps, &prices).await?;
+}
+```
+
+- [ ] **Step 3: Set activation_tick_id via BLS consensus**
+
+Add a new BLS-signed message type `SET_ACTIVATION_TICK` that all issuers must agree on:
+
+```rust
+// Leader proposes activation after confirming all issuers are on new code:
+// 1. Leader pings all issuers for version (existing P2P health check)
+// 2. If all 3 report new version, propose activation_tick_id = current_tick + 2
+// 3. BLS-sign and store activation_tick_id per batch
+```
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd issuer && cargo test activation -v`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add issuer/src/vision/engine.rs issuer/src/vision/types.rs
+git commit -m "feat(issuer): activation_tick_id dual-mode for safe migration"
+```
+
+---
+
+### Task 17: Cross-issuer bitmap gossip
+
+**Files:**
+- Modify: `issuer/src/vision/engine.rs`
+- Modify: `issuer/src/p2p/` (message types)
+
+**Context:** If a player reveals their bitmap to only one issuer, the other two won't have it for consensus. Cross-issuer gossip ensures bitmap availability. This is a security requirement from the spec.
+
+- [ ] **Step 1: Add bitmap gossip P2P message**
+
+```rust
+// New P2P message type:
+pub enum VisionP2PMessage {
+    // ... existing variants ...
+    BitmapGossip {
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,  // Don't gossip raw bitmap — just the hash
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+}
+```
+
+- [ ] **Step 2: Gossip on bitmap receipt**
+
+When an issuer receives a bitmap reveal from a player, gossip the hash to other issuers:
+
+```rust
+// In bitmap reveal handler:
+bitmap_store.store_pending(player, batch_id, bitmap, hash, config_hash, tick_id).await?;
+bitmap_store.persist_pending_to_db(&db_pool, batch_id, player, &entry).await?;
+
+// Gossip to other issuers (hash only, not raw bitmap)
+p2p.broadcast(VisionP2PMessage::BitmapGossip {
+    batch_id,
+    player,
+    bitmap_hash: hash,
+    config_hash,
+    target_tick_id: tick_id,
+}).await;
+```
+
+- [ ] **Step 3: Handle gossip receipt**
+
+```rust
+// When receiving gossip, if we don't have this bitmap, request it from the sender:
+VisionP2PMessage::BitmapGossip { batch_id, player, bitmap_hash, .. } => {
+    if bitmap_store.get_pending(batch_id, player).await.is_none() {
+        // Request full bitmap from sender
+        p2p.request_bitmap(sender_id, batch_id, player, bitmap_hash).await;
+    }
+}
+```
+
+- [ ] **Step 4: Add resolution_type exact match in follower verification**
+
+When a follower verifies a leader's tick resolution proposal, verify that the `resolution_type` (legacy vs continuous) matches what the follower would compute:
+
+```rust
+// In follower verification:
+let expected_resolution_type = if current_tick_id < batch.activation_tick_id {
+    ResolutionType::Legacy
+} else {
+    ResolutionType::Continuous
+};
+if proposal.resolution_type != expected_resolution_type {
+    return Err(anyhow!("Resolution type mismatch: leader={:?}, follower={:?}",
+        proposal.resolution_type, expected_resolution_type));
+}
+```
+
+- [ ] **Step 5: Run tests**
+
+Run: `cd issuer && cargo test gossip -v && cargo test follower_verification -v`
+Expected: PASS
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add issuer/src/vision/ issuer/src/p2p/
+git commit -m "feat(issuer): cross-issuer bitmap gossip + resolution_type verification"
+```
+
+---
+
 ## Chunk 6: Frontend — Remove Static Dependencies
 
-### Task 16: Remove vision-batches.json from API proxy route
+### Task 18: Remove vision-batches.json from API proxy route
 
 **Files:**
 - Modify: `frontend/app/api/vision/batches/route.ts`
@@ -1234,7 +1489,7 @@ git commit -m "feat(frontend): remove vision-batches.json from API proxy, use is
 
 ---
 
-### Task 17: Remove vision-batches.json from tick.ts
+### Task 19: Remove vision-batches.json from tick.ts
 
 **Files:**
 - Modify: `frontend/lib/vision/tick.ts`
@@ -1266,7 +1521,7 @@ git commit -m "feat(frontend): remove multiplier/lock/static-batch from tick.ts"
 
 ---
 
-### Task 18: Remove static fallbacks from BatchEntryPanel, SourceDetail, MarketsTable
+### Task 20: Remove static fallbacks from BatchEntryPanel, SourceDetail, MarketsTable
 
 **Files:**
 - Modify: `frontend/components/domain/vision/detail/BatchEntryPanel.tsx`
@@ -1310,7 +1565,7 @@ git commit -m "feat(frontend): remove static batch fallbacks and multiplier from
 
 ---
 
-### Task 19: Delete hardcoded source registries
+### Task 21: Delete hardcoded source registries
 
 **Files:**
 - Delete contents of: `frontend/lib/vision/sources.ts` (keep file, export empty/hooks)
@@ -1392,7 +1647,7 @@ git commit -m "feat(frontend): remove hardcoded VISION_SOURCES, CATEGORY_GROUPS,
 
 ## Chunk 7: Frontend — Dynamic Source Registry + Continuous UX
 
-### Task 20: useSourceRegistry hook + proxy route
+### Task 22: useSourceRegistry hook + proxy route
 
 **Files:**
 - Create: `frontend/hooks/vision/useSourceRegistry.ts`
@@ -1501,7 +1756,7 @@ git commit -m "feat(frontend): useSourceRegistry hook + proxy for dynamic source
 
 ---
 
-### Task 21: Update VisionMarketsGrid to use dynamic registry
+### Task 23: Update VisionMarketsGrid to use dynamic registry
 
 **Files:**
 - Modify: `frontend/components/domain/vision/VisionMarketsGrid.tsx`
@@ -1547,7 +1802,7 @@ git commit -m "feat(frontend): VisionMarketsGrid uses dynamic source registry fr
 
 ---
 
-### Task 22: Continuous betting UX — BatchEntryPanel + SourceDetail
+### Task 24: Continuous betting UX — BatchEntryPanel + SourceDetail
 
 **Files:**
 - Modify: `frontend/components/domain/vision/detail/BatchEntryPanel.tsx`
@@ -1591,7 +1846,7 @@ git commit -m "feat(frontend): continuous betting UX — always-open panel, no m
 
 ---
 
-### Task 23: Update remaining components + cleanup
+### Task 25: Update remaining components + cleanup
 
 **Files:**
 - Modify: `frontend/components/domain/vision/sources/NextBatches.tsx` — remove lockOffset prop
@@ -1626,68 +1881,109 @@ git commit -m "feat(frontend): clean up all remaining static source/multiplier/l
 
 ## Chunk 8: Migration + Deployment
 
-### Task 24: Create migration script
+### Task 26: Create migration script
 
 **Files:**
 - Create: `contracts/script/MigrateContinuousBetting.s.sol`
 
-**Context:** Push `lockOffset=0` + `tickDuration` for all existing batches via BLS-signed `updateBatchConfig()` calls. Set `activation_tick_id` per batch.
+**Context:** Push `lockOffset=0` + `tickDuration` for all existing batches. BLS signing must happen through the issuer consensus flow, NOT via Foundry FFI (which has no access to BLS keys and `vm.ffi(_blsSign())` is undefined).
 
-- [ ] **Step 1: Write migration script**
+**Migration strategy:** Issuer-driven, not script-driven. The issuers already have the BLS signing pipeline. We add a one-shot migration mode that pushes `lockOffset=0` for all existing batches through the normal BLS consensus flow.
 
-```solidity
-contract MigrateContinuousBetting is Script {
-    function run() external {
-        Vision vision = Vision(vm.envAddress("VISION_ADDRESS"));
-        uint256 referenceNonce = IIssuerRegistry(vision.blsIssuerRegistry()).lastSnapshotNonce();
+- [ ] **Step 1: Add migration mode to issuer orchestrator**
 
-        // For each batch, push lockOffset=0 with current tickDuration
-        string memory json = vm.readFile("frontend/lib/contracts/vision-batches.json");
-        string[] memory sources = vm.parseJsonKeys(json, ".batches");
+```rust
+// In batch_config_orchestrator.rs, add migration function:
+pub async fn run_migration_round(&mut self) -> Result<()> {
+    let batches = self.scheduler.get_all_batches().await;
 
-        for (uint256 i = 0; i < sources.length; i++) {
-            string memory key = string.concat(".batches.", sources[i]);
-            uint256 batchId = vm.parseJsonUint(json, string.concat(key, ".batchId"));
-            bytes32 configHash = vm.parseJsonBytes32(json, string.concat(key, ".configHash"));
-            uint256 tickDuration = vm.parseJsonUint(json, string.concat(key, ".tickDuration"));
-
-            // BLS sign: UPDATE_BATCH_CONFIG with lockOffset=0
-            bytes32 messageHash = keccak256(abi.encode(
-                block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
-                batchId, configHash, uint256(0), tickDuration
-            ));
-            bytes memory sig = vm.ffi(_blsSign(messageHash));
-
-            vision.updateBatchConfig(batchId, configHash, 0, tickDuration, sig, referenceNonce + i, 7);
+    for batch in &batches {
+        // Skip batches already at lockOffset=0
+        if batch.lock_offset == 0 {
+            continue;
         }
+
+        // Push same configHash but with lockOffset=0 and current tickDuration
+        let message_hash = compute_update_config_hash(
+            self.chain_id,
+            self.vision_address,
+            batch.id,
+            batch.config_hash,
+            0, // lockOffset = 0
+            batch.tick_duration,
+        );
+
+        // This goes through normal BLS consensus — all 3 issuers sign
+        self.propose_config_update(batch.id, batch.config_hash, 0, batch.tick_duration, message_hash).await?;
+
+        // Rate limit: 1 per 5 seconds to avoid nonce contention
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
+
+    tracing::info!("Migration complete: all batches set to lockOffset=0");
+    Ok(())
 }
 ```
 
-- [ ] **Step 2: Test on local Anvil**
+- [ ] **Step 2: Add CLI flag to trigger migration**
 
-Run: `cd contracts && forge script script/MigrateContinuousBetting.s.sol --fork-url http://localhost:8545 --broadcast`
-Expected: All 43 batches updated, no reverts
+```rust
+// In main.rs or config:
+if config.run_migration {
+    orchestrator.run_migration_round().await?;
+    // Continue normal operation after migration
+}
+```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Test on local Anvil**
+
+Deploy issuers with `--run-migration` flag. Verify all 43 batches get `lockOffset=0` pushed through BLS consensus.
+
+Run: SSH to VPS, start issuer with migration flag, check logs for "Migration complete"
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add contracts/script/MigrateContinuousBetting.s.sol
-git commit -m "feat(contracts): migration script for lockOffset=0 on all batches"
+git add issuer/src/vision/batch_config_orchestrator.rs issuer/src/main.rs
+git commit -m "feat(issuer): BLS-driven migration for lockOffset=0 on all batches"
 ```
 
 ---
 
-### Task 25: Deploy sequence
+### Task 27: Deploy sequence
 
-**No code changes — operational steps:**
+**No code changes — operational steps. CRITICAL: deploy ordering matters.**
 
-- [ ] **Step 1: Deploy contract changes** (tickDuration param + MAX_BATCHES)
-- [ ] **Step 2: Deploy data-node changes** (lock removal, /sources/registry, integer prices)
-- [ ] **Step 3: Deploy ALL issuer instances simultaneously** (stop all 3, deploy new code, start all 3)
-- [ ] **Step 4: Run migration script** (push lockOffset=0 for all batches)
-- [ ] **Step 5: Deploy frontend** (`cd frontend && vercel --prod`)
-- [ ] **Step 6: Verify** — check Vision source pages load, no multiplier shown, bets work, tick resolution succeeds
+The contract's new `updateBatchConfig()` requires a `tickDuration` parameter. Old issuers don't send it. If we deploy the contract first, issuers can't push config updates until they're also updated. Deploy issuers first — they can tolerate the old contract (just pass tickDuration=0 which gets ignored by old contract).
+
+- [ ] **Step 1: Deploy data-node changes** (lock removal, /sources/registry, integer prices, BLS verification)
+
+Data-node changes are backward compatible — old issuers can still read responses (they ignore `value_scaled` field).
+
+- [ ] **Step 2: Deploy ALL issuer instances simultaneously** (stop all 3, deploy new code with `activation_tick_id=0` / migration mode disabled, start all 3)
+
+New issuers with `activation_tick_id=0` run in legacy mode — they produce identical consensus as old issuers. Verify consensus still works.
+
+- [ ] **Step 3: Deploy contract changes** (tickDuration param + MAX_BATCHES)
+
+Now issuers can use the new `updateBatchConfig()` signature.
+
+- [ ] **Step 4: Run issuer migration** (restart issuers with `--run-migration` flag)
+
+Issuers push `lockOffset=0` for all 43 batches through BLS consensus. Verify on-chain.
+
+- [ ] **Step 5: Activate new bitmap mode**
+
+Leader proposes `activation_tick_id = current_tick + 2` via BLS consensus. All issuers switch to continuous mode at the agreed tick.
+
+- [ ] **Step 6: Deploy frontend** (`cd frontend && vercel --prod`)
+
+- [ ] **Step 7: Verify**
+- Check Vision source pages load dynamically from `/sources/registry`
+- No multiplier shown anywhere
+- Bets work (submit prediction, wait for tick, see resolution)
+- Tick resolution succeeds in continuous mode
+- Check issuer logs for any BLS failures or bitmap mismatches
 
 ---
 
@@ -1697,9 +1993,9 @@ git commit -m "feat(contracts): migration script for lockOffset=0 on all batches
 |-------|-------|-------|
 | 1 | 1-2 | Contract: tickDuration param, MAX_BATCHES cap |
 | 2 | 3-6 | Data-node: lock removal, source registry, integer prices, BLS verification |
-| 3 | 7-8 | Issuer: two-slot bitmap model + DB schema |
-| 4 | 9-13 | Issuer: resolver/engine (multiplier removal, flat indexing, bitmap flip, fixed-point prices) |
-| 5 | 14-15 | Issuer: orchestrator (lock removal, auto-creation, tolerances) |
-| 6 | 16-19 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
-| 7 | 20-23 | Frontend: dynamic registry + continuous betting UX |
-| 8 | 24-25 | Migration script + deploy sequence |
+| 3 | 7-8 | Issuer: two-slot bitmap model (single RwLock) + DB schema (atomic transactions) |
+| 4 | 9-13 | Issuer: resolver/engine (multiplier removal, flat indexing, config cache, bitmap flip after consensus, fixed-point prices) |
+| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances) + activation_tick_id + bitmap gossip |
+| 6 | 18-21 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
+| 7 | 22-25 | Frontend: dynamic registry + continuous betting UX |
+| 8 | 26-27 | Issuer-driven migration + deploy sequence (data-node → issuers → contract → activate → frontend) |
