@@ -10,7 +10,9 @@
 
 **Spec:** `docs/superpowers/specs/2026-03-14-vision-continuous-betting-design.md`
 
-**Dependency order:** Contract → Data-node → Issuer → Frontend → Migration
+**Deployment:** Full redeploy — wipe previous bitmaps, fresh contracts, no backward compatibility. No migration script needed.
+
+**Dependency order:** Contract → Data-node → Issuer → Frontend → Fresh Deploy
 
 ---
 
@@ -109,20 +111,13 @@ function updateBatchConfig(
 
     b.nextConfigHash = configHash;
     b.nextLockOffset = lockOffset;
-    _nextTickDuration[batchId] = tickDuration;  // NEW: stage for promotion (separate mapping)
+    b.nextTickDuration = tickDuration;  // NEW: stage for promotion
 
     emit BatchConfigUpdated(batchId, configHash, lockOffset, tickDuration);
 }
 ```
 
-**STORAGE LAYOUT WARNING:** Do NOT add `nextTickDuration` inside the existing `Batch` struct — inserting a field mid-struct shifts all subsequent storage slots, corrupting data for the 43 live batches. Instead, use a SEPARATE mapping:
-
-```solidity
-// In VisionStorage.sol — separate mapping, not inside Batch struct:
-mapping(uint256 => uint256) internal _nextTickDuration; // batchId => staged tickDuration
-```
-
-This preserves the existing storage layout while adding the new field. Access via `_nextTickDuration[batchId]` instead of `b.nextTickDuration`.
+Add `nextTickDuration` to the `Batch` struct in `IVision.sol` (full redeploy — no storage layout concerns).
 
 Update `_promoteConfigIfNeeded()` to promote tickDuration:
 
@@ -136,10 +131,8 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         bytes32 oldHash = b.configHash;
         b.configHash = b.nextConfigHash;
         b.lockOffset = b.nextLockOffset;
-        uint256 staged = _nextTickDuration[batchId];
-        if (staged > 0) {
-            b.tickDuration = staged;
-            _nextTickDuration[batchId] = 0;
+        if (b.nextTickDuration > 0) {
+            b.tickDuration = b.nextTickDuration;
         }
         // CRITICAL FIX: recompute lastPromotionTick with NEW tickDuration
         // If we stored currentTick (computed with old tickDuration), the next
@@ -148,6 +141,7 @@ function _promoteConfigIfNeeded(uint256 batchId) internal {
         b.lastPromotionTick = block.timestamp / b.tickDuration;
         b.nextConfigHash = bytes32(0);
         b.nextLockOffset = 0;
+        b.nextTickDuration = 0;
         emit BatchConfigPromoted(batchId, oldHash, b.configHash, b.lastPromotionTick);
     }
 }
@@ -681,25 +675,29 @@ git commit -m "feat(issuer): two-slot bitmap store with pending/active and confi
 - Create: `issuer/migrations/YYYYMMDDHHMMSS_bitmap_slots.sql`
 - Modify: `issuer/src/vision/bitmap_store.rs` — persist_to_db and load_from_db
 
-- [ ] **Step 1: Write migration SQL**
+- [ ] **Step 1: Write fresh DB schema SQL**
+
+Full redeploy — no ALTER TABLE migration needed. Drop and recreate from scratch:
 
 ```sql
--- Add slot tracking to vision_bitmaps
-ALTER TABLE vision_bitmaps ADD COLUMN slot TEXT NOT NULL DEFAULT 'pending';
-ALTER TABLE vision_bitmaps ADD COLUMN target_tick_id BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE vision_bitmaps ADD COLUMN config_hash TEXT NOT NULL DEFAULT '';
+-- Fresh bitmap table with slot tracking (full redeploy, wipe previous bitmaps)
+DROP TABLE IF EXISTS vision_bitmaps;
+CREATE TABLE vision_bitmaps (
+    batch_id BIGINT NOT NULL,
+    player TEXT NOT NULL,
+    bitmap BYTEA NOT NULL,
+    bitmap_hash TEXT NOT NULL,
+    slot TEXT NOT NULL DEFAULT 'pending',
+    target_tick_id BIGINT NOT NULL DEFAULT 0,
+    config_hash TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (batch_id, player, slot)
+);
 
--- Drop old unique constraint, add new one with slot
-ALTER TABLE vision_bitmaps DROP CONSTRAINT IF EXISTS vision_bitmaps_pkey;
-ALTER TABLE vision_bitmaps DROP CONSTRAINT IF EXISTS vision_bitmaps_batch_id_player_key;
-ALTER TABLE vision_bitmaps ADD PRIMARY KEY (batch_id, player, slot);
-
--- Batch state table for crash recovery
-CREATE TABLE IF NOT EXISTS vision_batch_state (
+-- Fresh batch state table for crash recovery
+DROP TABLE IF EXISTS vision_batch_state;
+CREATE TABLE vision_batch_state (
     batch_id BIGINT PRIMARY KEY,
-    current_tick_id BIGINT NOT NULL DEFAULT 0,
-    last_resolved_tick_id BIGINT NOT NULL DEFAULT 0,
-    active_config_hash TEXT NOT NULL DEFAULT ''
+    last_resolved_tick_id BIGINT NOT NULL DEFAULT 0
 );
 ```
 
@@ -1418,81 +1416,40 @@ git commit -m "feat(issuer): batch auto-creation with rate limit, tightened foll
 
 ---
 
-### Task 16: Activation tick dual-mode mechanism
+### Task 16: Remove legacy resolution path from engine
 
 **Files:**
 - Modify: `issuer/src/vision/engine.rs`
-- Modify: `issuer/src/vision/types.rs`
 
-**Context:** During migration, not all issuers update simultaneously. An `activation_tick_id` ensures the new bitmap model only activates after a coordinated tick boundary, preventing mixed old/new code consensus failures.
+**Context:** Full redeploy — all issuers deploy fresh simultaneously with new code. No dual-mode mechanism needed. Remove any legacy single-bitmap resolution paths and ensure the engine only uses the two-slot bitmap model.
 
-- [ ] **Step 1: Add activation_tick_id to batch config**
+- [ ] **Step 1: Remove legacy resolution path**
 
-```rust
-// In types.rs, add to BatchConfig or a new MigrationConfig:
-pub struct BatchMigration {
-    /// Tick ID at which new bitmap model activates. 0 = not yet set.
-    pub activation_tick_id: u64,
-}
-```
-
-- [ ] **Step 2: Add dual-mode resolution in engine**
+Delete `resolve_tick_legacy()` and any `if activation_tick_id` branching. The engine should only use the continuous two-slot model:
 
 ```rust
-// In engine.rs resolution loop:
+// In engine.rs resolution loop — NO dual-mode branching:
 let current_tick_id = compute_tick_id(batch.tick_duration);
-
-if current_tick_id < batch.activation_tick_id {
-    // OLD MODE: Use legacy single-bitmap resolution
-    // This keeps consensus working with old-code issuers
-    resolve_tick_legacy(batch, current_tick_id, &players, &prices).await?;
-} else {
-    // NEW MODE: Two-slot bitmap resolution
-    let active_bitmaps = bitmap_store.get_all_active_for_batch(batch.id).await;
-    resolve_tick_continuous(batch, current_tick_id, &active_bitmaps, &prices).await?;
-}
+let active_bitmaps = bitmap_store.get_all_active_for_batch(batch.id).await;
+resolve_tick_continuous(batch, current_tick_id, &active_bitmaps, &prices).await?;
 ```
 
-- [ ] **Step 3: Set activation_tick_id via BLS consensus — persisted + validated**
+Remove `BatchMigration`, `activation_tick_id`, `resolve_tick_legacy()`, and any related DB columns.
 
-Add a new BLS-signed message type `SET_ACTIVATION_TICK`:
+- [ ] **Step 2: Remove degraded mode**
 
-```rust
-// Leader proposes activation after confirming all issuers are on new code:
-// 1. Leader pings all issuers for version (existing P2P health check)
-// 2. If all 3 report new version, propose activation_tick_id = current_tick + 10
-//    (margin of 10 ticks absorbs clock drift and P2P delay between issuers)
-// 3. BLS-sign and store activation_tick_id per batch
+In `engine.rs` (lines 1378-1394), remove `degraded_mode` fallback that was part of the old system.
 
-// SECURITY: Validate activation_tick_id is in the future
-if proposed_activation_tick <= current_tick_id + 5 {
-    return Err(anyhow!("activation_tick_id must be at least 5 ticks in the future"));
-}
+- [ ] **Step 3: Run tests**
 
-// SECURITY: Persist to DB so it survives restarts
-sqlx::query(
-    "INSERT INTO vision_batch_state (batch_id, activation_tick_id)
-     VALUES ($1, $2)
-     ON CONFLICT (batch_id) DO UPDATE SET activation_tick_id = EXCLUDED.activation_tick_id"
-)
-.bind(batch_id as i64)
-.bind(proposed_activation_tick as i64)
-.execute(&db_pool).await?;
-
-// On startup, load_from_db reads activation_tick_id from vision_batch_state.
-// If activation_tick_id is 0 or missing, default to legacy mode.
-```
-
-- [ ] **Step 4: Run tests**
-
-Run: `cd issuer && cargo test activation -v`
+Run: `cd issuer && cargo test engine -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add issuer/src/vision/engine.rs issuer/src/vision/types.rs
-git commit -m "feat(issuer): activation_tick_id dual-mode for safe migration"
+git add issuer/src/vision/engine.rs
+git commit -m "feat(issuer): remove legacy resolution path, continuous-only mode"
 ```
 
 ---
@@ -1570,29 +1527,12 @@ VisionP2PMessage::BitmapGossip { batch_id, player, bitmap_hash, .. } => {
 }
 ```
 
-- [ ] **Step 4: Add resolution_type exact match in follower verification**
+- [ ] **Step 4: Run tests**
 
-When a follower verifies a leader's tick resolution proposal, verify that the `resolution_type` (legacy vs continuous) matches what the follower would compute:
-
-```rust
-// In follower verification:
-let expected_resolution_type = if current_tick_id < batch.activation_tick_id {
-    ResolutionType::Legacy
-} else {
-    ResolutionType::Continuous
-};
-if proposal.resolution_type != expected_resolution_type {
-    return Err(anyhow!("Resolution type mismatch: leader={:?}, follower={:?}",
-        proposal.resolution_type, expected_resolution_type));
-}
-```
-
-- [ ] **Step 5: Run tests**
-
-Run: `cd issuer && cargo test gossip -v && cargo test follower_verification -v`
+Run: `cd issuer && cargo test gossip -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add issuer/src/vision/ issuer/src/p2p/
@@ -2037,122 +1977,86 @@ git commit -m "feat(frontend): clean up all remaining static source/multiplier/l
 
 ---
 
-## Chunk 8: Migration + Deployment
+## Chunk 8: Fresh Deploy (No Migration)
 
-### Task 26: Create migration script
+### Task 26: Wipe DB and prepare fresh deploy
 
 **Files:**
-- Create: `contracts/script/MigrateContinuousBetting.s.sol`
+- No code changes — operational preparation
 
-**Context:** Push `lockOffset=0` + `tickDuration` for all existing batches. BLS signing must happen through the issuer consensus flow, NOT via Foundry FFI (which has no access to BLS keys and `vm.ffi(_blsSign())` is undefined).
+**Context:** Full redeploy with bitmap wipe. No migration of existing data. All batches will be recreated by `DeployAllVisionBatches.s.sol` with `lockOffset=0` from the start. Issuers deploy fresh with new code — no legacy mode, no migration script.
 
-**Migration strategy:** Issuer-driven, not script-driven. The issuers already have the BLS signing pipeline. We add a one-shot migration mode that pushes `lockOffset=0` for all existing batches through the normal BLS consensus flow.
-
-- [ ] **Step 1: Add migration mode to issuer orchestrator**
-
-```rust
-// In batch_config_orchestrator.rs, add migration function:
-pub async fn run_migration_round(&mut self) -> Result<()> {
-    // IMPORTANT: Pause normal config orchestrator rounds during migration
-    // to prevent nonce contention. The migration flag is checked in the
-    // orchestrator's main loop: `if self.migration_in_progress { return; }`
-    self.migration_in_progress = true;
-    let batches = self.scheduler.get_all_batches().await;
-
-    for batch in &batches {
-        // Skip batches already at lockOffset=0
-        if batch.lock_offset == 0 {
-            continue;
-        }
-
-        // Push same configHash but with lockOffset=0 and current tickDuration
-        let message_hash = compute_update_config_hash(
-            self.chain_id,
-            self.vision_address,
-            batch.id,
-            batch.config_hash,
-            0, // lockOffset = 0
-            batch.tick_duration,
-        );
-
-        // This goes through normal BLS consensus — all 3 issuers sign
-        self.propose_config_update(batch.id, batch.config_hash, 0, batch.tick_duration, message_hash).await?;
-
-        // Rate limit: 1 per 5 seconds to avoid nonce contention
-        tokio::time::sleep(Duration::from_secs(5)).await;
-    }
-
-    self.migration_in_progress = false;
-    tracing::info!("Migration complete: all batches set to lockOffset=0");
-    Ok(())
-}
-```
-
-- [ ] **Step 2: Add CLI flag to trigger migration**
-
-```rust
-// In main.rs or config:
-if config.run_migration {
-    orchestrator.run_migration_round().await?;
-    // Continue normal operation after migration
-}
-```
-
-- [ ] **Step 3: Test on local Anvil**
-
-Deploy issuers with `--run-migration` flag. Verify all 43 batches get `lockOffset=0` pushed through BLS consensus.
-
-Run: SSH to VPS, start issuer with migration flag, check logs for "Migration complete"
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 1: Prepare DB wipe script**
 
 ```bash
-git add issuer/src/vision/batch_config_orchestrator.rs issuer/src/main.rs
-git commit -m "feat(issuer): BLS-driven migration for lockOffset=0 on all batches"
+# Run on VPS before deploy:
+ssh index-maker/prod/be "docker exec -i postgres psql -U index -c '
+  DROP TABLE IF EXISTS vision_bitmaps;
+  DROP TABLE IF EXISTS vision_batch_state;
+'"
+```
+
+The new issuer code will run the fresh `CREATE TABLE` migration from Task 8 on startup.
+
+- [ ] **Step 2: Verify DeployAllVisionBatches creates batches with lockOffset=0**
+
+Check `contracts/script/DeployAllVisionBatches.s.sol` — all batches should be created with `lockOffset=0` in the constructor/creation call. No migration needed.
+
+- [ ] **Step 3: Commit any deploy script changes**
+
+```bash
+git add contracts/script/
+git commit -m "chore(contracts): verify batch creation uses lockOffset=0"
 ```
 
 ---
 
-### Task 27: Deploy sequence
+### Task 27: Fresh deploy sequence
 
-**No code changes — operational steps. CRITICAL: deploy ordering matters.**
+**No code changes — operational steps. Full redeploy with wiped state.**
 
-Adding `tickDuration` to `updateBatchConfig()` changes the function selector. Old issuers can't call the new contract (wrong selector), new issuers can't call the old contract (wrong selector). The ONLY safe approach is atomic deployment: stop issuers, deploy contract, deploy issuers, start issuers.
+All contracts, issuers, and DB are deployed fresh. No migration, no dual-mode, no activation step.
 
-- [ ] **Step 1: Deploy data-node changes** (lock removal, /sources/registry, integer prices, BLS verification)
+- [ ] **Step 1: Deploy data-node changes**
 
-Data-node changes are backward compatible — old issuers can still read responses (they ignore `value_scaled` field). Deploy this first with zero downtime.
+Deploy data-node first (lock removal, /sources/registry, integer prices, BLS verification). Data-node changes are backward compatible — deploy with zero downtime.
 
-- [ ] **Step 2: Atomic contract + issuer deployment**
-
-This MUST be a single coordinated operation:
+- [ ] **Step 2: Stop issuers + wipe DB**
 
 ```bash
-# 1. Stop all issuers (brief downtime — no tick resolution during deploy)
+# Stop all issuers
 ssh index-maker/prod/be "cd /home/max/index && docker compose -f docker/testnet/issuer/docker-compose.yml stop"
 
-# 2. Deploy contract upgrade (tickDuration param + MAX_BATCHES)
-cd contracts && forge script script/DeployVisionUpgrade.s.sol --fork-url $RPC --broadcast
-
-# 3. Deploy new issuer code (new updateBatchConfig signature, activation_tick_id=0)
-ssh index-maker/prod/be "cd /home/max/index && git pull && docker compose -f docker/testnet/issuer/docker-compose.yml up -d --build"
-
-# Total downtime: ~2-3 minutes (build + restart)
+# Wipe vision bitmap and batch state tables (Task 26 step 1)
+ssh index-maker/prod/be "docker exec -i postgres psql -U index -c '
+  DROP TABLE IF EXISTS vision_bitmaps;
+  DROP TABLE IF EXISTS vision_batch_state;
+'"
 ```
 
-New issuers start in legacy mode (`activation_tick_id=0`). Verify consensus works with new contract.
+- [ ] **Step 3: Deploy fresh contracts**
 
-- [ ] **Step 4: Run issuer migration** (restart issuers with `--run-migration` flag)
+```bash
+# Deploy new Vision contract (tickDuration param + MAX_BATCHES)
+cd contracts && forge script script/DeployAllVisionBatches.s.sol --fork-url $RPC --broadcast
+# All batches created fresh with lockOffset=0
+```
 
-Issuers push `lockOffset=0` for all 43 batches through BLS consensus. Verify on-chain.
+- [ ] **Step 4: Deploy new issuers**
 
-- [ ] **Step 5: Activate new bitmap mode**
+```bash
+ssh index-maker/prod/be "cd /home/max/index && git pull && docker compose -f docker/testnet/issuer/docker-compose.yml up -d --build"
+# Issuers start fresh — continuous mode only, no legacy path
+# Fresh DB migration runs on startup (CREATE TABLE from Task 8)
+```
 
-Leader proposes `activation_tick_id = current_tick + 2` via BLS consensus. All issuers switch to continuous mode at the agreed tick.
+- [ ] **Step 5: Deploy frontend**
 
-- [ ] **Step 6: Deploy frontend** (`cd frontend && vercel --prod`)
+```bash
+cd frontend && vercel --prod
+```
 
-- [ ] **Step 7: Verify**
+- [ ] **Step 6: Verify**
 - Check Vision source pages load dynamically from `/sources/registry`
 - No multiplier shown anywhere
 - Bets work (submit prediction, wait for tick, see resolution)
@@ -2169,7 +2073,7 @@ Leader proposes `activation_tick_id = current_tick + 2` via BLS consensus. All i
 | 2 | 3-6 | Data-node: lock removal, source registry, integer prices, BLS verification |
 | 3 | 7-8 | Issuer: two-slot bitmap model (single RwLock) + DB schema (atomic transactions) |
 | 4 | 9-13 | Issuer: resolver/engine (multiplier removal, flat indexing, config cache, bitmap flip after consensus, fixed-point prices) |
-| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances) + activation_tick_id + bitmap gossip |
+| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances) + remove legacy path + bitmap gossip |
 | 6 | 18-21 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
 | 7 | 22-25 | Frontend: dynamic registry + continuous betting UX |
-| 8 | 26-27 | Issuer-driven migration + deploy sequence (data-node → stop issuers → contract → issuers → migrate → activate → frontend) |
+| 8 | 26-27 | Fresh deploy: wipe DB + deploy contracts/issuers/frontend (no migration) |
