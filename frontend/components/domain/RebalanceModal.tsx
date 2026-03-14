@@ -305,12 +305,19 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
         const params = rebalanceParamsRef.current
         if (!params) throw new Error('Rebalance params missing')
 
-        // Fetch current prices for ALL assets
+        // Fetch current prices for ALL assets (with one retry on transient 5xx)
         const addresses = assets.map(a => a.address).join(',')
-        const priceRes = await fetch(
+        let priceRes = await fetch(
           `${DATA_NODE_URL}/fast-prices-by-address?addresses=${addresses}`,
           { signal: AbortSignal.timeout(10_000) },
         )
+        if (priceRes.status >= 500) {
+          await new Promise(r => setTimeout(r, 2_000))
+          priceRes = await fetch(
+            `${DATA_NODE_URL}/fast-prices-by-address?addresses=${addresses}`,
+            { signal: AbortSignal.timeout(10_000) },
+          )
+        }
         if (!priceRes.ok) throw new Error(`Failed to fetch prices: ${priceRes.status}`)
         const priceJson = await priceRes.json() as {
           prices: Record<string, { price: string; symbol: string }>

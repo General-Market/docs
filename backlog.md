@@ -1,6 +1,19 @@
 # Design Decision Backlog
 
-## Session: 20260313-t4k9 (TMDb + Esports collector stability)
+## Session: 20260314-b3f9 (ITP deploy price fetch fix)
+
+- [DECISION] "AP returned 500" on ITP deploy: root cause is data-node's `prices-by-address` returning HTTP 500 when PostgreSQL query fails (DB not yet populated, or transient connection error). Production (Vercel) shows only 200s; error manifests in E2E Anvil mode where local data-node starts fresh without price history.
+- [DECISION] Fix 1 — E2E interceptor: added `prices-by-address` and `fast-prices-by-address` interceptors in `api-interceptor.ts` that try the backend first and fall back to mock $1 prices on 5xx. Sufficient for E2E since prices only need to be non-zero for the ITP NAV computation to proceed.
+- [DECISION] Fix 2 — Frontend retry: `CreateItpSection.tsx` and `RebalanceModal.tsx` now retry once after 2s on 5xx, then show a user-friendly error message instead of the raw "AP returned 500" status code.
+
+## Session: 20260313-x7m2 (Crypto/DeFi stale asset deactivation)
+
+- [DECISION] Added `deactivate_stale_assets()` to both `SyncEngine` and `ScheduledSyncEngine`. Deactivates assets with no price in `market_prices_latest` (never priced) or with `fetched_at` older than 7 days (stale). Runs after every hourly `sync_assets()` metadata refresh and every 100 price syncs.
+- [DECISION] Reactivation path: `sync_assets()` sets `is_active=true` via ON CONFLICT upsert for all config entries. The stale-asset sweep runs immediately after to re-deactivate dead ones. Net effect: only assets with recent prices stay active. If a token comes back to life, the 1-hour window between `sync_assets()` and the next sweep gives it time to get a price.
+- [DECISION] Safety guard: `deactivate_stale_assets()` checks `COUNT(*) FROM market_prices_latest WHERE source = $1` before running. On a fresh DB with no prices yet, the sweep is skipped to prevent mass deactivation of all assets before the first price sync completes.
+- [DECISION] Not running deactivation on initial startup — only on periodic metadata refresh and every-100-syncs prune. This prevents deactivating all assets on a cold start before prices have been fetched.
+
+## Session: 20260313-t4k9 (TMDb + Esports collector stability — round 1)
 
 - [DECISION] TMDb root cause: 28,691 assets never got prices because `fetch_assets()` and `fetch_prices()` independently queried TMDb popular lists, which rotate between calls. 50 pages deep (1000 items/category) accumulated 37k unique assets over time, but each `fetch_prices()` only covers the current ~3400. Assets registered in one cycle rotated off the list by the next.
 - [DECISION] TMDb fix 1: Reduced page depth from 50 to 10 per category (200 movies + 200 TV + ~300 people = ~700 total). Only tracks the truly popular items that stay on the list.
@@ -9,6 +22,18 @@
 - [DECISION] Esports root cause: 22% missing 1d because finished matches returned `Decimal::ZERO` from `fetch_prices()` instead of being skipped. The zero price was identical to the initial "not started" value, so the change-detection logic often didn't write it, leaving stale data.
 - [DECISION] Esports fix 1: Added `fetch_past_matches()` (1 page of recently finished matches sorted by `-end_at`). `fetch_prices()` now includes past matches so final scores are recorded before deactivation.
 - [DECISION] Esports fix 2: Matches absent from running/upcoming/past endpoints are now skipped in `fetch_prices()` instead of returning a bogus zero. The sync engine's hourly `fetch_assets()` deactivation handles cleanup.
+
+## Session: 20260313-r8p3 (TMDb + Esports collector stability — round 2)
+
+- [DECISION] TMDb still at 37,502 registered / 8,811 priced after round 1. Remaining issue: snapshot approach prevents new orphans within a single cycle, but assets already in the DB from prior cycles still get passed to `fetch_prices()` via `asset_ids`. Since the snapshot only has currently-popular items, these old assets get no price.
+- [DECISION] TMDb fix 4: Reduced page depth further from 10 to 5 per category (~100 movies + ~100 TV + ~200 people = ~400 total). Smaller surface = fewer new orphans per cycle.
+- [DECISION] TMDb fix 5: Added `last_priced: Mutex<HashMap<String, DateTime<Utc>>>` cache (same pattern as mcbroken/lastfm). `fetch_assets()` now excludes assets not priced in 48h. This causes the sync engine to deactivate them, preventing unbounded growth of registered assets.
+- [DECISION] TMDb fix 6: `fetch_prices()` now does individual detail lookups via `/movie/{id}`, `/tv/{id}`, `/person/{id}` for assets in `asset_ids` that are NOT in the snapshot. This catches assets that rotated off the popular lists but are still active in the DB. If the detail lookup also fails (deleted movie, etc.), the asset is not priced and will be deactivated after 48h.
+- [DECISION] Esports still at 22% missing 1d+. Issue: `MAX_PAST_PAGES = 1` (100 matches) not enough to capture all recently-finished matches in busy tournament periods. Also `fetch_assets()` only returns running+upcoming, so finished matches are immediately deactivated before final scores can be recorded.
+- [DECISION] Esports fix 3: Increased `MAX_PAST_PAGES` from 1 to 3 (300 past matches). Covers even the busiest tournament days between 5-min sync cycles.
+- [DECISION] Esports fix 4: `fetch_assets()` now includes past matches (running + upcoming + past). This keeps recently-finished matches active in the DB long enough for `fetch_prices()` to record their final scores via the past endpoint.
+- [DECISION] Esports fix 5: Unknown metrics in `fetch_prices()` now `continue` (skip) instead of emitting `Decimal::ZERO`. Prevents bogus zero prices for unexpected metric types.
+- [DECISION] Esports fix 6: Extracted `build_assets_from_matches()` as a shared helper to deduplicate asset-building logic between the running/upcoming/past sources in `fetch_assets()`.
 
 ## Session: 20260313-wstb (Weather/OpenMeteo collector stability)
 

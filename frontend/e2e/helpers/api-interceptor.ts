@@ -341,6 +341,16 @@ async function handleMorphoPosition(route: Route): Promise<void> {
   }
 }
 
+/** Build a mock prices-by-address response with $1.00 per token for each address. */
+function mockPricesByAddress(addresses: string[]): Record<string, { price: string; symbol: string }> {
+  const ONE_DOLLAR_WEI = (1n * 10n ** 18n).toString(); // $1.00 in 18-decimal wei
+  const prices: Record<string, { price: string; symbol: string }> = {};
+  for (const addr of addresses) {
+    if (addr) prices[addr.toLowerCase()] = { price: ONE_DOLLAR_WEI, symbol: 'MOCK' };
+  }
+  return prices;
+}
+
 /**
  * Install API interceptors on a Playwright page.
  * Intercepts /user-state and /morpho-position requests that the backend can't serve
@@ -403,6 +413,35 @@ export async function installApiInterceptors(page: Page): Promise<void> {
   await page.route('**/morpho-position**', async (route) => {
     await handleMorphoPosition(route);
   });
+
+  // Intercept prices-by-address and fast-prices-by-address: try backend first,
+  // fall back to mock $1 prices on 5xx or network error.
+  // On local Anvil the data-node DB may lack price data (just started), causing 500.
+  // The ITP creation and rebalance flows need prices to compute NAV — $1 is sufficient for E2E.
+  async function handlePricesByAddress(route: import('@playwright/test').Route): Promise<void> {
+    try {
+      const response = await route.fetch({ timeout: 10_000 });
+      if (response.ok()) {
+        const body = await response.text();
+        await route.fulfill({ status: 200, contentType: 'application/json', body });
+        return;
+      }
+      // Backend returned 5xx — fall through to mock
+    } catch {
+      // Network error or timeout — fall through to mock
+    }
+    // Parse addresses from query string and return mock $1 prices
+    const url = new URL(route.request().url());
+    const rawAddresses = url.searchParams.get('addresses') || '';
+    const addresses = rawAddresses.split(',').map(a => a.trim()).filter(Boolean);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ prices: mockPricesByAddress(addresses) }),
+    });
+  }
+  await page.route('**/prices-by-address**', handlePricesByAddress);
+  await page.route('**/fast-prices-by-address**', handlePricesByAddress);
 
   // Proxy /rpc requests to L3 RPC from Node.js side.
   // Vercel rewrites to raw IPs fail (DNS_HOSTNAME_RESOLVED_PRIVATE),

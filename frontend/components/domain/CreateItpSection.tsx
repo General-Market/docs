@@ -275,14 +275,20 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     const weights = selectedAssets.map(a => BigInt(a.weight) * BigInt(1e16))
     const assets = selectedAssets.map(a => a.address as `0x${string}`)
 
-    // Fetch real prices from AP proxy
+    // Fetch real prices from data-node (with one retry on transient 5xx)
     setIsFetchingPrices(true)
     let prices: bigint[]
     try {
       const query = `?addresses=${assets.join(',')}`
       console.log('[CreateITP] Fetching prices:', `${DATA_NODE_URL}/prices-by-address${query}`)
-      const res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(30_000) })
-      if (!res.ok) throw new Error(`AP returned ${res.status}`)
+
+      let res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(30_000) })
+      // Retry once on transient 5xx (data-node may be temporarily overloaded)
+      if (res.status >= 500) {
+        await new Promise(r => setTimeout(r, 2_000))
+        res = await fetch(`${DATA_NODE_URL}/prices-by-address${query}`, { signal: AbortSignal.timeout(30_000) })
+      }
+      if (!res.ok) throw new Error(`price service returned ${res.status} — please retry in a moment`)
       const data = await res.json()
       console.log('[CreateITP] Price response:', data)
       const priceMap: Record<string, string> = {}
@@ -293,14 +299,14 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       prices = assets.map((addr, i) => {
         const p = priceMap[addr.toLowerCase()]
         if (!p || p === '0') {
-          throw new Error(`No price for ${selectedAssets[i].symbol} (${addr})`)
+          throw new Error(`No price for ${selectedAssets[i].symbol} — asset may not be listed yet`)
         }
         return BigInt(p)
       })
     } catch (e: any) {
       setIsFetchingPrices(false)
-      setTxError(t('errors.failed_prices', { message: e.message || 'AP unreachable' }))
-      capture('create_itp_failed', { error_message: e.message || 'AP unreachable', step: 'fetch_prices' })
+      setTxError(t('errors.failed_prices', { message: e.message || 'price service unreachable' }))
+      capture('create_itp_failed', { error_message: e.message || 'price service unreachable', step: 'fetch_prices' })
       return
     }
     setIsFetchingPrices(false)
