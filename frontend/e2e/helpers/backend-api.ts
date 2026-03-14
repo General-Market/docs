@@ -425,29 +425,42 @@ export async function l3RpcCall(method: string, params: unknown[]): Promise<unkn
   });
 }
 
+/** Simple async mutex to prevent parallel nonce conflicts on testnet. */
+let _l3NonceLock: Promise<void> = Promise.resolve();
+function withL3NonceLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = _l3NonceLock;
+  let resolve: () => void;
+  _l3NonceLock = new Promise(r => { resolve = r; });
+  return prev.then(fn).finally(() => resolve!());
+}
+
 /**
  * Send a signed transaction on L3 using the deployer private key.
  * Used on testnet where anvil_impersonateAccount is not available.
+ * Uses a mutex to prevent parallel nonce conflicts.
  */
 async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
-  const account = privateKeyToAccount(TEST_PRIVATE_KEY);
-  const chain = defineChain({
-    id: ENV_CHAIN_ID,
-    name: 'Index L3',
-    nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-    rpcUrls: { default: { http: [L3_RPC] } },
+  return withL3NonceLock(async () => {
+    const account = privateKeyToAccount(TEST_PRIVATE_KEY);
+    const chain = defineChain({
+      id: ENV_CHAIN_ID,
+      name: 'Index L3',
+      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+      rpcUrls: { default: { http: [L3_RPC] } },
+    });
+    const pub = createPublicClient({ chain, transport: rpcHttp(L3_RPC) });
+    const nonce = await pub.getTransactionCount({ address: account.address });
+    const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) });
+    const hash = await client.sendTransaction({
+      to: to as `0x${string}`,
+      data: data as `0x${string}`,
+      value,
+      gas: 1_000_000n,
+      nonce,
+    });
+    await pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+    return hash;
   });
-  const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) });
-  const hash = await client.sendTransaction({
-    to: to as `0x${string}`,
-    data: data as `0x${string}`,
-    value,
-    gas: 1_000_000n,
-  });
-  // Wait for mining so sequential calls (e.g. approve → supplyCollateral) don't race
-  const pub = createPublicClient({ chain, transport: rpcHttp(L3_RPC) });
-  await pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
-  return hash;
 }
 
 /** Simple async mutex to prevent parallel nonce conflicts on testnet. */
