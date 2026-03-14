@@ -1,3 +1,5 @@
+import { ITP_PAGE_CONTENT } from './itp-page-content'
+
 // Section IDs — each maps to one React component
 export type SectionId =
   | 'key-stats'
@@ -77,4 +79,24 @@ const ITP_TYPE_MAP: Record<string, ItpPageType> = {
 export function getItpPageConfig(itpId: string): ItpPageConfig {
   const pageType = ITP_TYPE_MAP[itpId.toLowerCase()] ?? 'default'
   return CONFIGS[pageType]
+}
+
+export function getItpPageConfigByTicker(ticker: string): ItpPageConfig {
+  const content = ITP_PAGE_CONTENT[ticker.toUpperCase()]
+  if (!content) return CONFIGS['default']
+
+  return {
+    tabs: {
+      overview: ['investment-objective', 'breakdown', 'concentration', 'founders'],
+      performance: ['performance'],
+      'key-facts': ['fund-facts'],
+      holdings: ['holdings'],
+    },
+    heroStyle: 'white',
+    label: content.label,
+    investmentObjective: {
+      whyPoints: content.whyPoints,
+      objective: content.objective,
+    },
+  }
 }
