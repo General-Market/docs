@@ -285,6 +285,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   }
 
   const activeCount = orders.filter(o => o.status < 2).length
+  // Only count completed fills in Trades tab — pending ones are tracked in Orders tab
+  const filledTradeCount = trades.filter(tr => tr.status === 'filled').length
   const totalPnl = mergedSummary ? parseFloat(mergedSummary.total_pnl) : 0
   const positionsValue = mergedSummary ? parseFloat(mergedSummary.total_value) : 0
   // Include pending/batched order amounts in total value
@@ -430,7 +432,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
                 const label = t(`tabs.${tab}`)
                 const count = tab === 'positions' ? (mergedSummary?.positions.length || 0)
-                  : tab === 'trades' ? trades.length
+                  : tab === 'trades' ? filledTradeCount
                   : activeCount
                 return (
                   <button
@@ -675,9 +677,11 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
 function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfolio>['trades']; itpNameMap: Map<string, string> }) {
   const t = useTranslations('portfolio')
   const [page, setPage] = useState(1)
-  const totalPages = Math.max(1, Math.ceil(trades.length / PAGE_SIZE))
+  // Only show completed fills — pending orders belong in the Orders tab
+  const filledTrades = trades.filter(trade => trade.status === 'filled')
+  const totalPages = Math.max(1, Math.ceil(filledTrades.length / PAGE_SIZE))
   const clampedPage = Math.min(page, totalPages)
-  if (trades.length === 0) {
+  if (filledTrades.length === 0) {
     return (
       <div className="bg-card rounded-xl border border-border-light p-10 text-center">
         <div className="max-w-sm mx-auto">
@@ -711,7 +715,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
             </tr>
           </thead>
           <tbody>
-            {trades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(trade => (
+            {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(trade => (
               <tr key={trade.order_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
                 <td className="px-4 py-3 text-text-secondary text-xs">
                   {getTimeAgo(new Date(trade.timestamp))}
