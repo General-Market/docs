@@ -635,6 +635,17 @@ where
         let mut completed_itps = Vec::new();
 
         for (itp_id, (new_weights, remove_indices, add_assets, proposed_at_block)) in &known {
+            // Skip stale rebalances older than ~2 hours (~7200 blocks at 1s/block)
+            if latest_block > *proposed_at_block && latest_block - *proposed_at_block > 7200 {
+                info!(
+                    itp_id = ?H256::from(*itp_id),
+                    age_blocks = latest_block - *proposed_at_block,
+                    "Rebalance too old (>7200 blocks), removing stale entry from cache"
+                );
+                completed_itps.push(*itp_id);
+                continue;
+            }
+
             match contract.get_itp_state(*itp_id).call().await {
                 Ok((_creator, _total_supply, _nav, assets, current_weights, _inventory)) => {
                     if current_weights == *new_weights && remove_indices.is_empty() && add_assets.is_empty() {
