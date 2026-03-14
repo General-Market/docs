@@ -1,59 +1,21 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useConnect, useDisconnect, usePublicClient, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
-import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { BRIDGE_PROXY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { useState, useEffect, useMemo } from 'react'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
-import { LendItpModal } from './LendItpModal'
 import { ChartModal } from './ChartModal'
 import { RebalanceModal } from './RebalanceModal'
-import { YouTubeLite as YouTubeLiteShared, extractYouTubeId as extractYouTubeIdShared } from '@/components/ui/YouTubeLite'
-import { CostBasisCard } from './CostBasisCard'
-import { OrderbookDrawer } from './OrderbookDrawer'
 import { useItpNav } from '@/hooks/useItpNav'
-import { useUserItpShares } from '@/hooks/useUserItpShares'
 import { useItpMetadata } from '@/hooks/useItpMetadata'
 import { useDeployerName } from '@/hooks/useDeployerName'
-import { useTransactionNotification } from '@/hooks/useTransactionNotification'
-import { useItpOrderbook, prefetchOrderbook } from '@/hooks/useItpOrderbook'
-import { hasLendingMarket, getKnownItpVault } from '@/lib/contracts/morpho-markets-registry'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { indexL3, settlementChainId } from '@/lib/wagmi'
+import { indexL3 } from '@/lib/wagmi'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
-
-// ERC20 ABI for balance queries — used by ItpCard detail expansion (low priority migration)
-const ERC20_ABI = [
-  {
-    inputs: [{ name: 'account', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
-    name: 'totalSupply',
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const
-
-// Known addresses to track for minted balances
-const TRACKED_HOLDERS = [
-  { label: 'AP (Keeper)', address: '0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC' as `0x${string}` },
-  { label: 'Deployer', address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}` },
-  { label: 'User 1', address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' as `0x${string}` },
-  { label: 'User 2', address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC' as `0x${string}` },
-  { label: 'Test User', address: '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4' as `0x${string}` },
-  { label: 'MockBitgetVault', address: INDEX_PROTOCOL.mockBitgetVault as `0x${string}` },
-]
 
 interface ItpInfo {
   id: string
@@ -83,13 +45,10 @@ interface ItpListingProps {
   onItpsLoaded?: (itps: DeployedItpRef[]) => void
 }
 
-// Use shared YouTube components
-const extractYouTubeId = extractYouTubeIdShared
-const YouTubeLite = YouTubeLiteShared
+const PAGE_SIZE = 9
 
 /**
  * Derive ITP number from hex itp_id (e.g. "0x000...0001" -> 1).
- * Returns 0 if parsing fails.
  */
 function itpIdToNumber(itpId: string): number {
   try {
@@ -102,23 +61,23 @@ function itpIdToNumber(itpId: string): number {
 
 /**
  * Convert SSE NavSnapshot[] into ItpInfo[] for the listing.
- * SSE provides: itp_id, nav_per_share, total_supply, aum_usd
- * Missing from SSE: name, symbol, creator, createdAt — derived from ITP number or filled by per-card hooks.
  */
 function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
   const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
 
   const itps: ItpInfo[] = navList
     .filter(nav => !blacklistSet.has(nav.itp_id.toLowerCase()))
+    // Hide ITPs stuck at exactly $1.0000 with no real AUM — these are empty test artifacts
+    .filter(nav => !(Math.abs(nav.nav_per_share - 1.0) < 0.0001 && nav.aum_usd < 1))
     .map(nav => {
       const num = itpIdToNumber(nav.itp_id)
       return {
         id: nav.itp_id,
         itpId: nav.itp_id,
-        admin: '', // Not available from SSE — shown per-card via useItpMetadata
+        admin: '',
         name: nav.name || `ITP #${num}`,
         symbol: nav.symbol || `ITP${num}`,
-        createdAt: 0, // Not available from SSE
+        createdAt: 0,
         source: 'index' as const,
         completed: true,
         settlementAddress: nav.settlement_address ?? undefined,
@@ -127,21 +86,17 @@ function navSnapshotsToItpInfos(navList: NavSnapshot[]): ItpInfo[] {
       }
     })
 
-  // Sort by AUM descending
-  itps.sort((a, b) => {
-    const aVal = Number(a.totalValue || 0n)
-    const bVal = Number(b.totalValue || 0n)
-    return bVal - aVal
-  })
-
   return itps
 }
+
+type SortMode = 'aum_desc' | 'aum_asc' | 'nav_desc' | 'name_az'
+type FilterMode = 'all' | 'active' | 'pending'
 
 export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
   const t = useTranslations('markets')
   const tc = useTranslations('common')
-  const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnectPending } = useConnect()
+  const { isConnected } = useAccount()
+  const { connect, connectors } = useConnect()
   const { disconnect } = useDisconnect()
 
   const injectedConnector = connectors.find(c => c.id === 'injected')
@@ -160,15 +115,19 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
     }
   }
 
-  // ── SSE-driven ITP list (replaces getItpCount + getITP loop + bridge loop + getLogs) ──
+  // ── SSE-driven ITP list ──
   const navList = useSSENav()
   const loading = navList.length === 0
-  const [buyModal, setBuyModal] = useState<{ itpId: string; videoUrl?: string } | null>(null)
-  const [sellModal, setSellModal] = useState<{ itpId: string; videoUrl?: string } | null>(null)
-  const [lendModalItp, setLendModalItp] = useState<ItpInfo | null>(null)
-  const [chartModalItp, setChartModalItp] = useState<{ itpId: string; name: string; createdAt?: number } | null>(null)
+  const [buyModal, setBuyModal] = useState<{ itpId: string } | null>(null)
+  const [sellModal, setSellModal] = useState<{ itpId: string } | null>(null)
+  const [chartModalItp, setChartModalItp] = useState<{ itpId: string; name: string } | null>(null)
   const [rebalanceModalItp, setRebalanceModalItp] = useState<{ itpId: string; name: string } | null>(null)
-  const [currentPage, setCurrentPage] = useState(0)
+
+  // Filter / search / sort / pagination state
+  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortMode, setSortMode] = useState<SortMode>('aum_desc')
+  const [page, setPage] = useState(0)
 
   // Derive ITP list from SSE nav snapshots
   const itps = useMemo(() => navSnapshotsToItpInfos(navList), [navList])
@@ -184,10 +143,53 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
     }
   }, [itps, onItpsLoaded])
 
-  const activeItps = itps.filter(i => i.source === 'index' || i.completed)
-  const pendingItps = itps.filter(i => i.source !== 'index' && !i.completed)
-  const [showAll, setShowAll] = useState(false)
-  const displayedItps = showAll ? itps : itps.slice(0, 6)
+  // Apply filters
+  const filtered = useMemo(() => {
+    let list = itps
+
+    // Filter mode
+    if (filterMode === 'active') {
+      list = list.filter(i => i.source === 'index' || i.completed)
+    } else if (filterMode === 'pending') {
+      list = list.filter(i => i.source !== 'index' && !i.completed)
+    }
+
+    // Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim()
+      list = list.filter(i =>
+        i.name.toLowerCase().includes(q) ||
+        i.symbol.toLowerCase().includes(q)
+      )
+    }
+
+    // Sort
+    list = [...list].sort((a, b) => {
+      switch (sortMode) {
+        case 'aum_desc':
+          return Number(b.totalValue || 0n) - Number(a.totalValue || 0n)
+        case 'aum_asc':
+          return Number(a.totalValue || 0n) - Number(b.totalValue || 0n)
+        case 'nav_desc':
+          return Number(b.totalValue || 0n) - Number(a.totalValue || 0n) // NAV sort uses per-card hook, approximate with AUM
+        case 'name_az':
+          return a.name.localeCompare(b.name)
+        default:
+          return 0
+      }
+    })
+
+    return list
+  }, [itps, filterMode, searchQuery, sortMode])
+
+  // Reset page when filters change
+  useEffect(() => { setPage(0) }, [filterMode, searchQuery, sortMode])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const displayedItps = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  const activeCount = itps.filter(i => i.source === 'index' || i.completed).length
+  const pendingCount = itps.filter(i => i.source !== 'index' && !i.completed).length
 
   return (
     <>
@@ -206,28 +208,44 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
         </div>
       </div>
 
-      {/* Filter Bar — mockup: padding 20px 48px */}
+      {/* Filter Bar */}
       <div className="py-5 px-6 lg:px-12 border-b border-border-light">
         <div className="max-w-site mx-auto flex items-center gap-3 flex-wrap">
           <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-text-primary mr-1">{t('filters.label')}</span>
           <button
-            onClick={() => { setCurrentPage(0); setShowAll(false) }}
-            className={`filter-pill ${currentPage === 0 ? 'active' : ''}`}
+            onClick={() => setFilterMode('all')}
+            className={`filter-pill ${filterMode === 'all' ? 'active' : ''}`}
           >
             {t('filters.all', { count: itps.length })}
           </button>
-          <button className="filter-pill">{t('filters.active', { count: activeItps.length })}</button>
-          <button className="filter-pill">{t('filters.pending', { count: pendingItps.length })}</button>
+          <button
+            onClick={() => setFilterMode('active')}
+            className={`filter-pill ${filterMode === 'active' ? 'active' : ''}`}
+          >
+            {t('filters.active', { count: activeCount })}
+          </button>
+          <button
+            onClick={() => setFilterMode('pending')}
+            className={`filter-pill ${filterMode === 'pending' ? 'active' : ''}`}
+          >
+            {t('filters.pending', { count: pendingCount })}
+          </button>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('filters.search_placeholder')}
             className="flex-1 min-w-0 md:min-w-[200px] max-w-[320px] border-2 border-border-light rounded-full px-4 py-[9px] text-[13px] text-text-primary placeholder-text-muted focus:outline-none focus:border-black transition-colors"
           />
-          <select className="ml-auto border border-border-light rounded-md px-3.5 py-2 text-[12px] font-medium text-text-secondary bg-white focus:outline-none cursor-pointer">
-            <option>{t('filters.sort_aum_desc')}</option>
-            <option>{t('filters.sort_aum_asc')}</option>
-            <option>{t('filters.sort_newest')}</option>
-            <option>{t('filters.sort_name_az')}</option>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as SortMode)}
+            className="ml-auto border border-border-light rounded-md px-3.5 py-2 text-[12px] font-medium text-text-secondary bg-white focus:outline-none cursor-pointer"
+          >
+            <option value="aum_desc">{t('filters.sort_aum_desc')}</option>
+            <option value="aum_asc">{t('filters.sort_aum_asc')}</option>
+            <option value="nav_desc">{t('filters.sort_newest')}</option>
+            <option value="name_az">{t('filters.sort_name_az')}</option>
           </select>
         </div>
       </div>
@@ -241,7 +259,10 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
               <div className="section-bar-value">{t('section_bar.subtitle')}</div>
             </div>
             <div className="section-bar-right">
-              {showAll ? t('section_bar.showing_all', { total: itps.length }) : t('section_bar.showing_partial', { shown: Math.min(6, itps.length), total: itps.length })}
+              {filtered.length === 0
+                ? 'No results'
+                : `${page * PAGE_SIZE + 1}-${Math.min((page + 1) * PAGE_SIZE, filtered.length)} of ${filtered.length}`
+              }
             </div>
           </div>
         </div>
@@ -249,13 +270,15 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
       {loading ? (
         <div className="text-center py-12 text-text-muted">{t('itp_card.loading')}</div>
-      ) : itps.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-text-muted mb-4">{t('itp_card.no_itps')}</p>
+          <p className="text-text-muted mb-4">
+            {searchQuery ? 'No ITPs match your search.' : t('itp_card.no_itps')}
+          </p>
         </div>
       ) : (
         <>
-          {/* Fund Cards Grid — mockup: .fund-grid padding: 24px 48px */}
+          {/* Fund Cards Grid */}
           <div className="px-6 lg:px-12 py-6">
             <div className="max-w-site mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light">
@@ -272,8 +295,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       if (!itp.itpId) return
                       setSellModal({ itpId: itp.itpId })
                     }}
-                    onLend={(settlementAddr) => setLendModalItp({ ...itp, settlementAddress: settlementAddr })}
-                    onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}`, createdAt: itp.createdAt })}
+                    onChart={() => itp.itpId && setChartModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
                     onRebalance={() => itp.itpId && setRebalanceModalItp({ itpId: itp.itpId, name: itp.name || `ITP #${itp.nonce ?? itp.id}` })}
                   />
                 ))}
@@ -281,14 +303,35 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
             </div>
           </div>
 
-          {/* Show All button — mockup: .show-more padding: 16px 48px 32px */}
-          {!showAll && itps.length > 6 && (
-            <div className="pt-4 pb-8 text-center">
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pb-8 flex items-center justify-center gap-2">
               <button
-                onClick={() => setShowAll(true)}
-                className="inline-flex items-center gap-2 px-8 py-3 border-2 border-black rounded-md text-[13px] font-bold text-black hover:bg-black hover:text-white transition-colors"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-4 py-2 border border-border-light rounded-md text-[13px] font-medium text-text-secondary hover:border-black hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                {tc('actions.show_all', { count: itps.length })}
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i)}
+                  className={`w-9 h-9 rounded-md text-[13px] font-bold transition-colors ${
+                    i === page
+                      ? 'bg-black text-white'
+                      : 'border border-border-light text-text-secondary hover:border-black hover:text-black'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-4 py-2 border border-border-light rounded-md text-[13px] font-medium text-text-secondary hover:border-black hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
               </button>
             </div>
           )}
@@ -296,16 +339,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       )}
 
       {buyModal && (
-        <BuyItpModal itpId={buyModal.itpId} videoUrl={buyModal.videoUrl} onClose={() => setBuyModal(null)} />
+        <BuyItpModal itpId={buyModal.itpId} onClose={() => setBuyModal(null)} />
       )}
       {sellModal && (
-        <SellItpModal itpId={sellModal.itpId} videoUrl={sellModal.videoUrl} onClose={() => setSellModal(null)} />
-      )}
-      {lendModalItp && (
-        <LendItpModal itpInfo={lendModalItp} isOpen={true} onClose={() => setLendModalItp(null)} />
+        <SellItpModal itpId={sellModal.itpId} onClose={() => setSellModal(null)} />
       )}
       {chartModalItp && (
-        <ChartModal itpId={chartModalItp.itpId} itpName={chartModalItp.name} createdAt={chartModalItp.createdAt} onClose={() => setChartModalItp(null)} />
+        <ChartModal itpId={chartModalItp.itpId} itpName={chartModalItp.name} onClose={() => setChartModalItp(null)} />
       )}
       {rebalanceModalItp && (
         <RebalanceModal itpId={rebalanceModalItp.itpId} itpName={rebalanceModalItp.name} onClose={() => setRebalanceModalItp(null)} />
@@ -314,502 +354,107 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   )
 }
 
-interface TokenHolder {
-  address: `0x${string}`
-  label: string
-  balance: bigint
-  percentage: number
-}
-
 interface ItpCardProps {
   itp: ItpInfo
   index: number
   onBuy: () => void
   onSell: () => void
-  onLend: (settlementAddress: string) => void
   onChart: () => void
   onRebalance: () => void
 }
 
-function ItpCard({ itp, index, onBuy, onSell, onLend, onChart, onRebalance }: ItpCardProps) {
+function ItpCard({ itp, index, onBuy, onSell, onChart, onRebalance }: ItpCardProps) {
   const t = useTranslations('markets')
   const tc = useTranslations('common')
-  const { address } = useAccount()
-  const publicClient = usePublicClient({ chainId: indexL3.id })
-  const [showDetails, setShowDetails] = useState(false)
-  const [totalSupply, setTotalSupply] = useState<bigint>(0n)
-  const [holders, setHolders] = useState<TokenHolder[]>([])
-  const [loadingHolders, setLoadingHolders] = useState(false)
-  const [holderError, setHolderError] = useState(false)
-  const [showEditMeta, setShowEditMeta] = useState(false)
-  const [editDesc, setEditDesc] = useState('')
-  const [editUrl, setEditUrl] = useState('')
-  const [editVideo, setEditVideo] = useState('')
-  const [isHovered, setIsHovered] = useState(false)
 
-  const { metadata, refetch: refetchMetadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
+  const { metadata } = useItpMetadata(itp.itpId as `0x${string}` | undefined)
   const { name: deployerName } = useDeployerName(itp.admin as `0x${string}` | undefined)
-  const { writeContractAsync, data: txHash, isPending: isWriting, error: writeError } = useWriteContract()
-  const { isLoading: isTxConfirming, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({ hash: txHash, chainId: settlementChainId })
-
-  // Toast notifications for metadata edit
-  useTransactionNotification({
-    hash: txHash,
-    isPending: isWriting,
-    isConfirming: isTxConfirming,
-    isSuccess: isTxConfirmed,
-    error: writeError as Error | null,
-    label: 'Update ITP metadata',
-  })
-
-  // Refetch metadata after tx confirms
-  useEffect(() => {
-    if (isTxConfirmed) {
-      refetchMetadata()
-      setShowEditMeta(false)
-    }
-  }, [isTxConfirmed, refetchMetadata])
-
-  const isDeployer = address && itp.admin && address.toLowerCase() === itp.admin.toLowerCase()
-
-  const handleEditMeta = useCallback(() => {
-    setEditDesc(metadata?.description ?? '')
-    setEditUrl(metadata?.websiteUrl ?? '')
-    setEditVideo(metadata?.videoUrl ?? '')
-    setShowEditMeta(true)
-  }, [metadata])
-
-  const handleSaveMeta = useCallback(async () => {
-    if (!itp.itpId) return
-    try {
-      await writeContractAsync({
-        address: INDEX_PROTOCOL.bridgeProxy,
-        abi: BRIDGE_PROXY_ABI,
-        functionName: 'setItpMetadata',
-        args: [itp.itpId as `0x${string}`, editDesc, editUrl, editVideo],
-        chainId: settlementChainId,
-      })
-    } catch {
-      // User rejected or tx failed
-    }
-  }, [writeContractAsync, itp.itpId, editDesc, editUrl, editVideo])
-
-  const { navPerShare, totalAssetCount, pricedAssetCount, isLoading: isNavLoading } = useItpNav(itp.itpId)
-  const { shares: userShares } = useUserItpShares(
-    itp.itpId as `0x${string}` | undefined,
-    address as `0x${string}` | undefined
-  )
-
-  // settlementAddress from SSE, with fallback to deployment.json vault mapping
-  // (data-node returns null when BridgeProxy isn't deployed on settlement chain)
-  const effectiveSettlementAddress = itp.settlementAddress ?? getKnownItpVault(itp.itpId)
+  const { navPerShare, totalAssetCount, isLoading: isNavLoading } = useItpNav(itp.itpId)
 
   const isActive = itp.source === 'index' || itp.completed
 
-  // Prefetch orderbook on mount so data is cached before hover
-  useEffect(() => {
-    if (isActive && itp.itpId) prefetchOrderbook(itp.itpId)
-  }, [isActive, itp.itpId])
-
-  const {
-    data: orderbookData,
-    isLoading: orderbookLoading,
-    error: orderbookError,
-    aggregationBps,
-    setAggregationBps,
-  } = useItpOrderbook(itp.itpId, isHovered && isActive)
-
-  const createdDate = itp.createdAt > 0 ? new Date(itp.createdAt * 1000) : null
-  const timeAgo = createdDate ? getTimeAgo(createdDate) : ''
-
-  const shortenAddress = (addr: string) =>
-    addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : 'N/A'
-
-  // Fetch minted balances when details are expanded (low priority migration to REST)
-  useEffect(() => {
-    // Skip if conditions not met
-    if (!showDetails || !effectiveSettlementAddress) return
-
-    let cancelled = false
-
-    async function fetchHolders() {
-      // Ensure publicClient is ready
-      if (!publicClient) {
-        setHolderError(true)
-        return
-      }
-
-      setLoadingHolders(true)
-      setHolderError(false)
-
-      try {
-        const tokenAddr = effectiveSettlementAddress as `0x${string}`
-
-        // Get total supply with error handling
-        let supply: bigint
-        try {
-          supply = await publicClient.readContract({
-            address: tokenAddr,
-            abi: ERC20_ABI,
-            functionName: 'totalSupply',
-          })
-        } catch {
-          if (!cancelled) {
-            setHolderError(true)
-            setLoadingHolders(false)
-          }
-          return
-        }
-
-        if (cancelled) return
-        if (supply === 0n) {
-          setLoadingHolders(false)
-          return
-        }
-
-        setTotalSupply(supply)
-
-        // Get balances for tracked addresses
-        const holderData: TokenHolder[] = []
-        for (const tracked of TRACKED_HOLDERS) {
-          if (cancelled) return
-          try {
-            const balance = await publicClient.readContract({
-              address: tokenAddr,
-              abi: ERC20_ABI,
-              functionName: 'balanceOf',
-              args: [tracked.address],
-            })
-            if (balance > 0n) {
-              holderData.push({
-                address: tracked.address,
-                label: tracked.label,
-                balance,
-                percentage: supply > 0n ? Number((balance * 10000n) / supply) / 100 : 0,
-              })
-            }
-          } catch {
-            // Skip if can't read balance
-          }
-        }
-        if (!cancelled) {
-          setHolders(holderData.sort((a, b) => Number(b.balance - a.balance)))
-        }
-      } catch {
-        if (!cancelled) {
-          setHolderError(true)
-        }
-      }
-      if (!cancelled) {
-        setLoadingHolders(false)
-      }
-    }
-
-    fetchHolders()
-    return () => { cancelled = true }
-  }, [showDetails, publicClient, effectiveSettlementAddress])
-
   return (
-    <div
-      id={itp.itpId ? `itp-card-${itp.itpId}` : undefined}
-      className="relative overflow-visible bg-white border-r border-b border-border-light"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Video or card header banner */}
-      {(() => {
-        const rawUrl = metadata?.videoUrl
-        const videoId = rawUrl ? extractYouTubeId(rawUrl) : null
-        if (videoId) {
-          return <YouTubeLite videoId={videoId} title={itp.name || 'ITP'} />
-        }
-        return (
-          <Link href={`/itp/${itp.itpId}`} className="block group">
-            <div className="aspect-video bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex flex-col items-center justify-center px-6 text-center cursor-pointer relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              <h3 className="text-[22px] font-extrabold text-white tracking-[-0.02em] leading-tight relative z-10">
-                {itp.name || `ITP #${itp.nonce ?? itp.id}`}
-              </h3>
-              <p className="text-[13px] font-mono text-white/50 mt-1.5 relative z-10">
-                ${itp.symbol || 'N/A'}
-              </p>
-              <span className="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40 group-hover:text-white/70 transition-colors relative z-10 flex items-center gap-1.5">
-                View Details
-                <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </div>
-          </Link>
-        )
-      })()}
-
-      {/* Card content — mockup: .fund-body padding: 16px 20px */}
-      <div className="px-5 py-4">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
-          {deployerName && <p className="text-[11px] text-text-muted">{t('itp_card.by', { name: deployerName })}</p>}
-          <p className="text-[12px] text-text-muted font-mono font-medium">${itp.symbol || 'N/A'}</p>
-          {metadata?.description && (
-            <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">{metadata.description}</p>
-          )}
-          {metadata?.websiteUrl && (
-            <a href={metadata.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-700 block truncate mt-0.5">
-              {metadata.websiteUrl.replace(/^https?:\/\//, '')}
-            </a>
-          )}
+    <div className="relative bg-white border-r border-b border-border-light flex flex-col">
+      {/* Card header — links to detail page */}
+      <Link href={`/itp/${itp.itpId}`} className="block group">
+        <div className="aspect-video bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex flex-col items-center justify-center px-6 text-center cursor-pointer relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          <h3 className="text-[22px] font-extrabold text-white tracking-[-0.02em] leading-tight relative z-10">
+            {itp.name || `ITP #${itp.nonce ?? itp.id}`}
+          </h3>
+          <p className="text-[13px] font-mono text-white/50 mt-1.5 relative z-10">
+            ${itp.symbol || 'N/A'}
+          </p>
+          <span className="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40 group-hover:text-white/70 transition-colors relative z-10 flex items-center gap-1.5">
+            View Details
+            <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className={`w-[6px] h-[6px] rounded-full ${isActive ? 'bg-color-up' : 'bg-text-muted'}`} />
-          <span className={`text-[11px] font-semibold ${isActive ? 'text-color-up' : 'text-text-muted'}`}>{isActive ? tc('status.active') : tc('status.pending')}</span>
-        </div>
-      </div>
+      </Link>
 
-      {/* Metrics Row — mockup: .fund-metrics border-t/b, .fund-metric padding: 10px 0, value 15px/700 */}
-      {isActive && (
-        <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5">
-          <div className="py-2.5 pr-3">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.nav_per_share')}</div>
-            {isNavLoading || navPerShare === 0 ? (
-              <span className="text-sm text-text-muted animate-pulse">...</span>
-            ) : (
-              <span className="text-[15px] font-bold text-black font-mono tabular-nums">${navPerShare.toFixed(4)}</span>
+      {/* Card body */}
+      <div className="px-5 py-4 flex-1 flex flex-col">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{itp.name || `ITP #${itp.nonce ?? itp.id}`}</h3>
+            {deployerName && <p className="text-[11px] text-text-muted">{t('itp_card.by', { name: deployerName })}</p>}
+            <p className="text-[12px] text-text-muted font-mono font-medium">${itp.symbol || 'N/A'}</p>
+            {metadata?.description && (
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">{metadata.description}</p>
             )}
           </div>
-          <div className="py-2.5 px-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.assets')}</div>
-            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalAssetCount || '—'}</span>
-          </div>
-          <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">TVL</div>
-            <span className="text-[15px] font-bold text-black font-mono tabular-nums">
-              {itp.totalValue && itp.totalValue > 0n
-                ? `$${parseFloat(formatUnits(itp.totalValue, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : '—'}
-            </span>
+          <div className="flex items-center gap-1">
+            <span className={`w-[6px] h-[6px] rounded-full ${isActive ? 'bg-color-up' : 'bg-text-muted'}`} />
+            <span className={`text-[11px] font-semibold ${isActive ? 'text-color-up' : 'text-text-muted'}`}>{isActive ? tc('status.active') : tc('status.pending')}</span>
           </div>
         </div>
-      )}
 
-      {/* Action links — mockup: .fund-actions padding-top: 12px, .fund-action padding: 6px 0, separator margin: 0 10px */}
-      {itp.itpId && isActive && (
-        <div className="pt-3 flex items-center flex-wrap">
-          <WalletActionButton onClick={onBuy} className="text-[12px] font-bold uppercase tracking-[0.04em] text-brand-dark hover:text-brand transition-colors py-1.5">{t('itp_card.buy')}</WalletActionButton>
-          <span className="mx-2.5 text-border-light font-normal">|</span>
-          <WalletActionButton onClick={onSell} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.sell')}</WalletActionButton>
-          <span className="mx-2.5 text-border-light font-normal">|</span>
-          <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.chart')}</button>
-          <span className="mx-2.5 text-border-light font-normal">|</span>
-          <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.rebalance')}</WalletActionButton>
-          {effectiveSettlementAddress && hasLendingMarket(effectiveSettlementAddress) && (
-            <>
-              <span className="mx-2.5 text-border-light font-normal">|</span>
-              <WalletActionButton onClick={() => onLend(effectiveSettlementAddress)} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.borrow')}</WalletActionButton>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Pending fill status */}
-      {itp.itpId && !isActive && (
-        <div className="pt-2 text-[11px] text-text-muted uppercase tracking-wider">{t('itp_card.pending_fill')}</div>
-      )}
-
-      {/* Expandable details toggle */}
-      <button
-        onClick={() => setShowDetails(!showDetails)}
-        className="mt-2 text-[11px] text-text-muted hover:text-text-primary transition-colors underline"
-      >
-        {showDetails ? tc('actions.hide_details') : tc('actions.details')}
-      </button>
-
-      {showDetails && (
-        <div className="mt-3 pt-3 border-t border-border-light space-y-3 text-xs">
-          {/* Description + website */}
-          {metadata?.description && (
-            <p className="text-text-muted line-clamp-3">{metadata.description}</p>
-          )}
-          {metadata?.websiteUrl && (
-            <a
-              href={metadata.websiteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-700 hover:text-zinc-900 block truncate"
-            >
-              {metadata.websiteUrl.replace(/^https?:\/\//, '')}
-            </a>
-          )}
-
-          <div className="text-text-muted space-y-0.5">
-            {itp.nonce !== undefined && <p>{t('itp_card.request_number', { number: itp.nonce })}</p>}
-            {itp.admin && <p className="truncate">{t('itp_card.admin')} {shortenAddress(itp.admin)}</p>}
-            {timeAgo && <p>{timeAgo}</p>}
-          </div>
-
-          {isDeployer && !showEditMeta && (
-            <button
-              onClick={handleEditMeta}
-              className="text-zinc-700 hover:text-zinc-900 underline"
-            >
-              {t('itp_card.edit_itp_info')}
-            </button>
-          )}
-          {showEditMeta && (
-            <div className="bg-muted rounded p-3 space-y-2">
-              <textarea
-                value={editDesc}
-                onChange={e => setEditDesc(e.target.value)}
-                maxLength={280}
-                rows={3}
-                placeholder={t('itp_card.description_placeholder')}
-                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none resize-none"
-              />
-              <input
-                type="text"
-                value={editUrl}
-                onChange={e => setEditUrl(e.target.value)}
-                maxLength={128}
-                placeholder={t('itp_card.website_placeholder')}
-                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
-              />
-              <input
-                type="text"
-                value={editVideo}
-                onChange={e => setEditVideo(e.target.value)}
-                maxLength={256}
-                placeholder={t('itp_card.video_placeholder')}
-                className="w-full bg-card border border-border-medium rounded px-2 py-1 text-xs text-text-primary placeholder-text-muted focus:border-zinc-600 outline-none"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveMeta}
-                  disabled={isWriting}
-                  className="px-3 py-1 bg-zinc-900 text-white text-xs font-semibold rounded hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-                >
-                  {isWriting ? tc('actions.saving') : tc('actions.save')}
-                </button>
-                <button
-                  onClick={() => setShowEditMeta(false)}
-                  className="px-3 py-1 border border-border-medium text-text-secondary text-xs rounded hover:border-zinc-500 transition-colors"
-                >
-                  {tc('actions.cancel')}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {effectiveSettlementAddress && (
-            <div className="bg-muted rounded p-2 font-mono space-y-1">
-              <span className="text-text-muted">{t('itp_card.settlement_erc20')}</span>
-              <p className="text-text-secondary break-all">{effectiveSettlementAddress}</p>
-            </div>
-          )}
-
-          {itp.itpId && (
-            <div className="bg-muted rounded p-2 font-mono">
-              <span className="text-text-muted">{t('itp_card.itp_id')}</span>
-              <p className="text-text-secondary break-all">{itp.itpId.slice(0, 22)}...{itp.itpId.slice(-8)}</p>
-            </div>
-          )}
-
-          {/* Cost Basis / Position */}
-          {itp.itpId && isActive && (
-            <CostBasisCard itpId={itp.itpId} />
-          )}
-
-          {/* Minted Balances Section */}
-          {effectiveSettlementAddress && (
-            <div className="bg-muted rounded p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-text-secondary font-medium">{t('itp_card.minted_supply')}</span>
-                <span className="text-text-primary font-mono">
-                  {parseFloat(formatUnits(totalSupply, 18)).toFixed(4)} {itp.symbol}
-                </span>
-              </div>
-              {loadingHolders ? (
-                <div className="text-text-muted text-center py-2">{t('itp_card.loading_holders')}</div>
-              ) : holderError ? (
-                <div className="text-text-muted text-center py-2">{t('itp_card.unable_fetch_holders')}</div>
-              ) : holders.length === 0 ? (
-                <div className="text-text-muted text-center py-2">{t('itp_card.no_tracked_holders')}</div>
+        {/* Metrics Row */}
+        {isActive && (
+          <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5">
+            <div className="py-2.5 pr-3">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.nav_per_share')}</div>
+              {isNavLoading || navPerShare === 0 ? (
+                <span className="text-sm text-text-muted animate-pulse">...</span>
               ) : (
-                <div className="space-y-1">
-                  {holders.map(holder => (
-                    <div key={holder.address} className="flex justify-between items-center">
-                      <span className="text-text-secondary">{holder.label}</span>
-                      <div className="flex gap-2">
-                        <span className="text-text-muted font-mono">
-                          {parseFloat(formatUnits(holder.balance, 18)).toFixed(2)}
-                        </span>
-                        <span className="text-text-primary w-12 text-right font-mono">{holder.percentage.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  ))}
-                  {/* Unaccounted balance */}
-                  {(() => {
-                    const accountedBalance = holders.reduce((sum, h) => sum + h.balance, 0n)
-                    const unaccounted = totalSupply - accountedBalance
-                    if (unaccounted > 0n && totalSupply > 0n) {
-                      return (
-                        <div className="flex justify-between items-center pt-1 border-t border-border-light mt-1">
-                          <span className="text-color-warning">{t('itp_card.other_holders')}</span>
-                          <div className="flex gap-2">
-                            <span className="text-color-warning/70 font-mono">
-                              {parseFloat(formatUnits(unaccounted, 18)).toFixed(2)}
-                            </span>
-                            <span className="text-color-warning w-12 text-right">
-                              {(Number((unaccounted * 10000n) / totalSupply) / 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
-                </div>
+                <span className="text-[15px] font-bold text-black font-mono tabular-nums">${navPerShare.toFixed(4)}</span>
               )}
             </div>
-          )}
-
-          {/* Technical Details */}
-          <div className="font-mono text-text-muted space-y-0.5">
-            {itp.nonce !== undefined && <p>{t('itp_card.nonce')} {itp.nonce}</p>}
-            <p>{t('itp_card.source')} {itp.source === 'index' ? t('itp_card.source_index') : t('itp_card.source_bridge')}</p>
-            {itp.admin && <p>{t('itp_card.admin')} {itp.admin}</p>}
-            {createdDate && <p>{t('itp_card.created')} {createdDate.toISOString()}</p>}
-            {effectiveSettlementAddress && <p className="break-all">{t('itp_card.settlement_address')} {effectiveSettlementAddress}</p>}
-            {itp.itpId && <p className="break-all">{t('itp_card.itp_id')} {itp.itpId}</p>}
+            <div className="py-2.5 px-3 border-l border-border-light">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('itp_card.assets')}</div>
+              <span className="text-[15px] font-bold text-black font-mono tabular-nums">{totalAssetCount || '—'}</span>
+            </div>
+            <div className="py-2.5 pl-3 border-l border-border-light">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">TVL</div>
+              <span className="text-[15px] font-bold text-black font-mono tabular-nums">
+                {itp.totalValue && itp.totalValue > 0n
+                  ? `$${parseFloat(formatUnits(itp.totalValue, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : '—'}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      </div>{/* end p-6 wrapper */}
+        {/* Action links */}
+        {itp.itpId && isActive && (
+          <div className="pt-3 mt-auto flex items-center flex-wrap">
+            <WalletActionButton onClick={onBuy} className="text-[12px] font-bold uppercase tracking-[0.04em] text-brand-dark hover:text-brand transition-colors py-1.5">{t('itp_card.buy')}</WalletActionButton>
+            <span className="mx-2.5 text-border-light font-normal">|</span>
+            <WalletActionButton onClick={onSell} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.sell')}</WalletActionButton>
+            <span className="mx-2.5 text-border-light font-normal">|</span>
+            <button onClick={onChart} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.chart')}</button>
+            <span className="mx-2.5 text-border-light font-normal">|</span>
+            <WalletActionButton onClick={onRebalance} className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:text-brand transition-colors py-1.5">{t('itp_card.rebalance')}</WalletActionButton>
+          </div>
+        )}
 
-      {/* Orderbook depth drawer — appears on hover */}
-      {isHovered && isActive && (
-        <div className="absolute top-0 left-full z-50 h-full shadow-lg">
-          <OrderbookDrawer
-            data={orderbookData}
-            isLoading={orderbookLoading}
-            error={orderbookError}
-            aggregationBps={aggregationBps}
-            onAggregationChange={setAggregationBps}
-          />
-        </div>
-      )}
+        {/* Pending status */}
+        {itp.itpId && !isActive && (
+          <div className="pt-2 text-[11px] text-text-muted uppercase tracking-wider">{t('itp_card.pending_fill')}</div>
+        )}
+      </div>
     </div>
   )
-}
-
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
-  if (seconds < 0) return 'just now'
-  if (seconds < 60) return `${seconds}s ago`
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
 }
