@@ -52,22 +52,26 @@ export default function BatchEntryPanel({
   marketIds = [],
 }: BatchEntryPanelProps) {
   // -- Batch data --
-  // Get the canonical batchId from vision-batches.json (source of truth for batch→source mapping)
+  // Get the canonical source key and static config from vision-batches.json
   const batchKey = getBatchKey(sourceId)
   const staticEntry = (batchConfig.batches as Record<string, { batchId: number; configHash: string }>)[batchKey]
-  const staticBatchId = staticEntry?.batchId ?? null
 
   // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
+  // The proxy deduplicates to the latest batch per source (highest ID), so match by
+  // sourceId rather than static batchId — batch IDs change on redeployment.
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
-    if (staticBatchId === null) return null
-    // Try to find the batch in the live API data
-    const fromApi = batches?.find(b => b.id === staticBatchId)
-    if (fromApi) return fromApi
-    // API may not list this batch (issuer DB vs on-chain mismatch).
-    // Construct a minimal BatchInfo from static config so the rest of the component works.
+    if (!staticEntry) return null
+    if (batches && batches.length > 0) {
+      // Match by sourceId (proxy resolves configHash → source name)
+      const bySource = batches.find(b =>
+        b.sourceId === sourceId || b.sourceId === batchKey
+      )
+      if (bySource) return bySource
+    }
+    // Fallback to static config when API isn't available
     return {
-      id: staticBatchId,
+      id: staticEntry.batchId,
       creator: '',
       sourceId: batchKey,
       marketIds: [] as string[],
@@ -79,16 +83,17 @@ export default function BatchEntryPanel({
       currentTick: 0,
       paused: false,
     } satisfies import('@/hooks/vision/useBatches').BatchInfo
-  }, [batches, staticBatchId, batchKey, staticEntry])
+  }, [batches, sourceId, batchKey, staticEntry])
 
   // -- Read configHash from on-chain batch state, with static fallback --
+  const activeBatchId = activeBatch?.id ?? null
   const { data: onChainBatch } = useReadContract({
     address: VISION_ADDRESS,
     abi: VISION_ABI,
     functionName: 'getBatch',
-    args: staticBatchId !== null ? [BigInt(staticBatchId)] : undefined,
+    args: activeBatchId !== null ? [BigInt(activeBatchId)] : undefined,
     chainId: indexL3.id,
-    query: { enabled: staticBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
   const onChainConfigHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
   // Use on-chain value when available, fall back to static config (from vision-batches.json)
@@ -98,7 +103,7 @@ export default function BatchEntryPanel({
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
 
   // -- Toast notification on tick resolution (balance change) --
-  useBalanceChangeNotification(position?.balance, isJoined)
+  const { suppress: suppressBalanceToast } = useBalanceChangeNotification(position?.balance, isJoined)
 
   // -- Join + submit hooks --
   const {
@@ -172,11 +177,11 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // Lock only blocks new joins, not deposits by existing players.
+  // Lock blocks both new joins AND deposits — no money moves during lock window.
   // Unset markets default to DOWN — no need to require explicit predictions to submit.
   // New joins require: stake + tick open + configHash + markets loaded.
-  const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (!tickState.isLocked && !!configHash && marketIds.length > 0))
+  const canSubmit = isConnected && hasStake && activeStep === 'idle' && !tickState.isLocked
+    && (isJoined || (!!configHash && marketIds.length > 0))
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
@@ -204,6 +209,9 @@ export default function BatchEntryPanel({
 
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e18))
+
+    // Suppress the "tick resolved" toast — this balance change is user-initiated
+    suppressBalanceToast()
 
     if (isJoined) {
       // Already in the batch — deposit additional funds instead of joinBatch
@@ -243,13 +251,14 @@ export default function BatchEntryPanel({
     if (joinStep === 'checking-balance') return 'Checking balance...'
     if (joinStep === 'joining') return 'Joining batch...'
     if (depositStep === 'depositing') return 'Depositing...'
+    if (tickState.isLocked) return `Locked — opens in ${tickState.remaining}s`
     if (isJoined) {
       if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
       return 'Deposit More'
     }
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
-  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
+  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined, tickState.isLocked, tickState.remaining])
 
   const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
     || (depositStep !== 'idle' && depositStep !== 'error' && depositStep !== 'done')
