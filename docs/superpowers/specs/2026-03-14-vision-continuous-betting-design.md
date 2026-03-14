@@ -2,7 +2,7 @@
 
 ## Goal
 
-Replace the current lock-window + multiplier betting model with a continuous next-tick betting model. Remove static `vision-batches.json`. Make batch configs dynamic (markets change per tick automatically).
+Replace the current lock-window + multiplier betting model with a continuous next-tick betting model. Remove static `vision-batches.json`. Remove hardcoded `VISION_SOURCES` frontend registry. Make batch configs dynamic (markets change per tick automatically). Load all source metadata from data-node so new sources can be added on the fly without frontend deploys.
 
 ## Core Model
 
@@ -33,6 +33,8 @@ Tick N+1 starts
 - **Lock window** — `lockOffset = 0`, players can submit/change bets anytime
 - **vision-batches.json** — frontend uses live API data only
 - **Static batch IDs** — frontend matches batches by sourceId from proxy, not hardcoded IDs
+- **Hardcoded `VISION_SOURCES`** — source metadata (name, logo, description, category) loaded from data-node API
+- **Hardcoded `CATEGORY_GROUPS`** — market grid categories derived from live data
 
 ### What Stays
 
@@ -41,7 +43,7 @@ Tick N+1 starts
 - Deposit/withdraw flow (Vision balance → batch position)
 - Bitmap UP/DOWN per market
 - `stakePerTick` — fixed amount at risk each active tick
-- Per-batch tick duration (immutable per batch, varies by source category)
+- Per-batch tick duration (varies by source category, set per config update)
 
 ---
 
@@ -210,6 +212,82 @@ Data-node generates this from its source-specific data collection. Markets can c
 
 The issuer config orchestrator calls this bulk endpoint and proposes updates per-source when the config hash changes.
 
+### 10. Tick Scheduling — Each Config Defines Next Settlement
+
+Each `updateBatchConfig()` call sets the tick duration for subsequent ticks. The config includes `tickDuration` which defines how long the next tick runs. Settlement time is deterministic:
+
+```
+next_settlement_time = tick_start_time + tickDuration
+```
+
+When a new config is promoted at a tick boundary:
+1. Current tick resolves and settles using the OLD config's tick duration
+2. New config activates (lazy promotion already in contract)
+3. Next tick starts with the NEW config's `tickDuration`
+4. Settlement for the new tick = `now + new_tickDuration`
+
+This means the data-node controls tick pacing per source. If a source wants faster ticks (e.g., during high-activity periods), the data-node returns a shorter `tickDuration` in the recommended config. The change takes effect at the next tick boundary.
+
+**Issuer engine** already computes `next_tick_time` from `batch.tickDuration`. No change needed — it naturally picks up the new duration after config promotion.
+
+**Frontend timer** already reads `tickDuration` from the batch API response and computes countdown. No change needed — it naturally shows the correct countdown for the current tick.
+
+### 11. Frontend — Dynamic Source Registry (Remove Hardcoded VISION_SOURCES)
+
+**Current problem:** `frontend/lib/vision/sources.ts` hardcodes 75+ sources with metadata (name, logo, description, category, prefixes). Adding a new data source requires a frontend deploy. Same for `CATEGORY_GROUPS` in `VisionMarketsGrid.tsx`, `PREFIX_MAP` in `market-categories.ts`, and `SOURCE_CATEGORIES` in `source-categories.ts`.
+
+**New model:** All source metadata comes from the data-node API. Frontend has zero hardcoded source knowledge.
+
+**Data-node: new endpoint `GET /sources/registry`**
+
+Returns all active sources with their display metadata:
+```json
+{
+  "sources": [
+    {
+      "sourceId": "stocks",
+      "name": "US Stocks",
+      "description": "NYSE & NASDAQ equities via Finnhub",
+      "category": "finance",
+      "logo": "/logos/finnhub.svg",
+      "brandBg": "#D4A574",
+      "prefixes": ["stock_"],
+      "valueLabel": "Price",
+      "valueUnit": "USD",
+      "isPrice": true
+    }
+  ],
+  "categories": [
+    { "key": "finance", "label": "Finance", "order": 0 },
+    { "key": "tech", "label": "Tech & Dev", "order": 3 }
+  ]
+}
+```
+
+This metadata currently lives in `sources.ts` — migrate it to the data-node config (e.g., `data-node/config/sources.json` or a TOML per source). The data-node serves it via API. When a new source is added to the data-node, it automatically appears on the frontend.
+
+**Frontend changes:**
+
+Delete static registries:
+- `frontend/lib/vision/sources.ts` — delete `VISION_SOURCES` array, `VISION_TO_DATANODE`, `DATANODE_TO_VISION` maps
+- `frontend/lib/vision/source-categories.ts` — delete `SOURCE_CATEGORIES`, `getSourcesByCategory()`, `getCategoryCounts()`
+- `frontend/lib/vision/market-categories.ts` — delete `PREFIX_MAP`, `BARE_CRYPTO`, `CATEGORY_ORDER`
+- `frontend/components/domain/vision/VisionMarketsGrid.tsx` — delete `CATEGORY_GROUPS`, `SOURCE_DISPLAY_OVERRIDES`, `COUNT_SOURCES`
+
+Replace with:
+- New hook: `useSourceRegistry()` → `GET /api/vision/sources` → data-node `/sources/registry`
+- New proxy route: `frontend/app/api/vision/sources/route.ts` → forwards to data-node
+- All components that used `VISION_SOURCES` now use the hook
+- `getCategory(marketId)` derives category from source's `prefixes` field (from API)
+- `formatMarketName(marketId)` strips known prefixes (from API)
+- `SourcesGrid`, `VisionMarketsGrid`, `SourceDetailCategoryNav`, `VisionSection` (explorer) — all switch to dynamic data
+
+**Logos:** Source logos (SVGs) stay in `frontend/public/logos/`. The data-node returns a path like `/logos/finnhub.svg`. New sources need their logo uploaded to the frontend public dir — this is the only manual step (acceptable; logos are static assets).
+
+**Caching:** `useSourceRegistry()` caches aggressively (SWR with 5min revalidation). Source metadata changes rarely. The hook returns stale data while revalidating, so the grid never flashes empty.
+
+**Fallback:** If the data-node is down, show a "Sources unavailable" message. No hardcoded fallback — the whole point is to eliminate static source lists.
+
 ---
 
 ## Migration Plan
@@ -238,6 +316,9 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 - **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
 - **Frontend**: Verify no references to vision-batches.json, multiplier UI gone, continuous betting UX works
 - **Frontend**: Verify `tick.ts` functions work without static config (use live API data only)
+- **Frontend**: Source grid loads entirely from data-node — no hardcoded sources, new sources appear automatically
+- **Data-node**: `GET /sources/registry` returns all sources with metadata, categories
+- **Tick scheduling**: Config update with different `tickDuration` → verify next tick uses new duration
 
 ---
 
@@ -255,6 +336,11 @@ Player positions are unaffected. Existing balances carry over. The transition ha
 | `getMultiplier()` | `frontend/lib/vision/tick.ts` |
 | Lock countdown | SourceDetail, BatchEntryPanel, NextBatches |
 | Static batch fallback | BatchEntryPanel, SourceDetail, ExpandedBatch |
+| `VISION_SOURCES` array | `frontend/lib/vision/sources.ts` — replaced by data-node API |
+| `VISION_TO_DATANODE` / `DATANODE_TO_VISION` | `frontend/lib/vision/sources.ts` — no longer needed |
+| `SOURCE_CATEGORIES` / `getCategoryCounts()` | `frontend/lib/vision/source-categories.ts` — from API |
+| `PREFIX_MAP` / `BARE_CRYPTO` / `CATEGORY_ORDER` | `frontend/lib/vision/market-categories.ts` — from API |
+| `CATEGORY_GROUPS` / `SOURCE_DISPLAY_OVERRIDES` | `VisionMarketsGrid.tsx` — from API |
 | Early-entry incentive | Entire concept removed |
 
 ## What Stays
