@@ -138,7 +138,7 @@ const hex = bitmapToHex(bitmap); // "0xb0"
 
 ## Verification
 
-The issuer verifies:
+The oracle verifies:
 1. Player exists in the batch (on-chain check).
 2. `expected_hash` matches the player's on-chain `bitmapHash` commitment.
 3. `keccak256(bitmap_bytes) == expected_hash` (bitmap is authentic).

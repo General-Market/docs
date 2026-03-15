@@ -35,7 +35,7 @@ Batch config consensus runs as an **independent async loop** on its own tokio ta
 
 ```
                     ┌─────────────────────────────────────────────────┐
-                    │                  Issuer Node                     │
+                    │                  Oracle Node                     │
                     │                                                  │
                     │  ┌──────────────┐    ┌────────────────────────┐ │
                     │  │ run_cycle()  │    │ BatchConfigOrchestrator│ │
@@ -58,7 +58,7 @@ Batch config consensus runs as an **independent async loop** on its own tokio ta
                               P2PMessage::BatchConfig*
                                          │
                               ┌──────────┴──────────┐
-                              │   Other Issuer Nodes │
+                              │   Other Oracle Nodes │
                               └─────────────────────┘
 ```
 
@@ -99,7 +99,7 @@ BatchConfigProposal {
 BatchConfigSign {
     /// Signer's peer ID
     signer_id: PeerId,
-    /// Signer's index in issuer set (for bitmap)
+    /// Signer's index in oracle set (for bitmap)
     signer_index: u8,
     /// Round number (identifies which proposal)
     round: u64,
@@ -110,7 +110,7 @@ BatchConfigSign {
 
 ### 2. BatchConfigOrchestrator
 
-New file: `issuer/src/batch_config/orchestrator.rs`
+New file: `oracle/src/batch_config/orchestrator.rs`
 
 ```rust
 use std::collections::HashMap;
@@ -234,7 +234,7 @@ pub struct BatchConfigOrchestrator {
     http_client: reqwest::Client,
     /// Consecutive failure counter
     consecutive_failures: RwLock<u32>,
-    /// Shared runtime config (reads num_issuers, node_index atomically)
+    /// Shared runtime config (reads num_oracles, node_index atomically)
     runtime_config: Arc<crate::consensus::protocol::RuntimeConfig>,
     /// Key registry for peer lookups
     key_registry: Arc<dyn crate::consensus::keys::KeyRegistry>,
@@ -291,9 +291,9 @@ impl BatchConfigOrchestrator {
             *r
         };
 
-        let num_issuers = self.runtime_config.num_issuers() as u64;
+        let num_oracles = self.runtime_config.num_oracles() as u64;
         let node_index = self.runtime_config.node_index() as u64;
-        let am_leader = (round % num_issuers) == node_index;
+        let am_leader = (round % num_oracles) == node_index;
 
         if am_leader {
             match self.run_leader_round(round).await {
@@ -352,11 +352,11 @@ impl BatchConfigOrchestrator {
         let leader_sig = self.bls_signer.sign_with_keypair(&self.bls_keypair, &bls_message)?;
 
         // Step 5: Create signature collector with leader's sig pre-seeded
-        let threshold = compute_threshold(self.runtime_config.num_issuers() as usize);
+        let threshold = compute_threshold(self.runtime_config.num_oracles() as usize);
         {
             let mut pending = self.pending_signatures.write().await;
             let mut collector = SignatureCollector::new(U256::from(round));
-            let my_index = self.runtime_config.issuer_registry_index();
+            let my_index = self.runtime_config.oracle_registry_index();
             collector.add_signature(my_index, leader_sig.clone());
             pending.insert(round, collector);
         }
@@ -478,7 +478,7 @@ Dispatched from `ConsensusProtocol::handle_message()` or a parallel message rout
         let signature = self.bls_signer.sign_with_keypair(&self.bls_keypair, &bls_message)?;
 
         // Step 4: Send sign message
-        let my_index = self.runtime_config.issuer_registry_index();
+        let my_index = self.runtime_config.oracle_registry_index();
         let sign_msg = P2PMessage::BatchConfigSign {
             signer_id: self.peer_id,
             signer_index: my_index,
@@ -955,7 +955,7 @@ tokio::spawn(async move {
 | #3: no batch config ConsensusPhase | Not needed: orchestrator doesn't use ConsensusPhase state machine | N/A |
 | #4: BatchConfigMessage not a P2PMessage variant | Added BatchConfigProposal + BatchConfigSign to P2PMessage enum | common/src/types/p2p.rs |
 | #5: sequential per-source consensus | All sources batched into single composite hash proposal | build_composite_hash() |
-| #6: leader rotation undefined | Uses same rotation as settlement: round % num_issuers == node_index | execute_round() |
+| #6: leader rotation undefined | Uses same rotation as settlement: round % num_oracles == node_index | execute_round() |
 | #7: "leader's data-node" wrong | Each follower replicates leader's config to OWN data-node | replicate_leader_config() |
 | #8: crash between aggregation and POST | Persist signed config to disk before POST; retry on startup | persist_state(), recover_from_crash() |
 | #9: config pile-up | Orchestrator has single round_interval timer; new round only starts after previous completes | execute_round() is sequential within run() |
@@ -978,7 +978,7 @@ The `run()` loop is sequential: `execute_round()` must complete (success or fail
 
 Same formula as settlement consensus:
 ```
-am_leader = (round % num_issuers) == node_index
+am_leader = (round % num_oracles) == node_index
 ```
 
 Where `round` is the batch config orchestrator's own monotonic counter (independent from settlement `cycle_number`). This means the batch config leader rotates independently from the settlement leader, which is intentional: they have different cadences.
@@ -986,14 +986,14 @@ Where `round` is the batch config orchestrator's own monotonic counter (independ
 ## File Layout
 
 ```
-issuer/src/
+oracle/src/
   batch_config/
     mod.rs           — pub mod orchestrator; pub use orchestrator::*;
     orchestrator.rs  — BatchConfigOrchestrator (this design)
     hash.rs          — build_batch_config_bls_hash(), build_composite_hash()
 common/src/types/
     p2p.rs           — Add BatchConfigProposal, BatchConfigSign variants
-issuer/src/consensus/
+oracle/src/consensus/
     messages.rs      — Add ForwardToBatchConfigOrchestrator handling
     protocol.rs      — Add batch_config_orchestrator field + setter
 ```
@@ -1015,7 +1015,7 @@ These are called by the orchestrator and must be implemented in data-node:
 
 ## What This Design Does NOT Cover
 
-1. **On-chain `createBatch()` / `updateBatchConfig()`** — users submit these, not issuers. The signed config is served via data-node API; frontends call the contract.
+1. **On-chain `createBatch()` / `updateBatchConfig()`** — users submit these, not oracles. The signed config is served via data-node API; frontends call the contract.
 2. **Settlement resolution** — separate concern. The resolver reads the config by hash from data-node.
 3. **BatchEngine implementation** — data-node side, covered in Task 2 of the auto-batch plan.
 4. **Frontend integration** — covered in F22/Task 10 of the auto-batch plan.

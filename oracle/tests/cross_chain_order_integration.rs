@@ -4,7 +4,7 @@
 //! and enriching them with getCrossChainOrder() data.
 
 use ethers::types::{Address, Bytes, H256, Log, U256, U64};
-use issuer::chain::events::{
+use oracle::chain::events::{
     CrossChainOrder, CrossChainOrderEvent, CrossChainOrderParseError,
     cross_chain_event_into_full_order, cross_chain_order_dedup_key,
     cross_chain_order_is_expired, cross_chain_order_validate,

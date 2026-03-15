@@ -20,7 +20,7 @@ use super::types::TickResult;
 use crate::consensus::aggregator::{compute_threshold, AggregationStatus, SignatureAggregator};
 
 /// Compute the deterministic hash of a tick result.
-/// This hash is what issuers sign via BLS.
+/// This hash is what oracles sign via BLS.
 ///
 /// hash = keccak256(abi.encode(
 ///   chain_id, vision_address, "VISION_TICK_SETTLEMENT",
@@ -75,11 +75,11 @@ pub struct TickConsensus {
     pub chain_id: u64,
     /// Vision contract address
     pub vision_address: Address,
-    /// Number of issuers for threshold computation
-    pub num_issuers: usize,
+    /// Number of oracles for threshold computation
+    pub num_oracles: usize,
     /// BLS signer (stateless, used for sign + aggregate)
     pub signer: Arc<Bn254BLSSigner>,
-    /// This issuer's BLS keypair
+    /// This oracle's BLS keypair
     pub keypair: Arc<BLSKeyPair>,
 }
 
@@ -87,7 +87,7 @@ impl TickConsensus {
     pub fn new(
         chain_id: u64,
         vision_address: Address,
-        num_issuers: usize,
+        num_oracles: usize,
         signer: Arc<Bn254BLSSigner>,
         keypair: Arc<BLSKeyPair>,
     ) -> Self {
@@ -95,7 +95,7 @@ impl TickConsensus {
             pending_rounds: RwLock::new(HashMap::new()),
             chain_id,
             vision_address,
-            num_issuers,
+            num_oracles,
             signer,
             keypair,
         }
@@ -131,7 +131,7 @@ impl TickConsensus {
             .map_err(|e| Error::BlsSigning(format!("tick consensus sign failed: {}", e)))?;
 
         // Create pending round (leader's own signature will be added via add_signature)
-        let threshold = compute_threshold(self.num_issuers);
+        let threshold = compute_threshold(self.num_oracles);
         let aggregator = SignatureAggregator::with_threshold(threshold);
 
         let round = PendingTickRound {

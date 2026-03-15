@@ -58,9 +58,9 @@
   <text x="310" y="450" text-anchor="middle" fill="white" font-size="10" font-family="JetBrains Mono, monospace" opacity="0.5">deposit() · withdraw()</text>
   <text x="310" y="478" text-anchor="middle" fill="white" font-size="10" font-style="italic" opacity="0.3">Only Vision.sol can call</text>
 
-  <!-- IssuerRegistry -->
+  <!-- OracleRegistry -->
   <rect x="500" y="368" width="260" height="140" rx="12" fill="white" opacity="0.08"/>
-  <text x="630" y="400" text-anchor="middle" fill="white" font-size="14" font-weight="600">IssuerRegistry</text>
+  <text x="630" y="400" text-anchor="middle" fill="white" font-size="14" font-weight="600">OracleRegistry</text>
   <text x="630" y="424" text-anchor="middle" fill="white" font-size="12" font-weight="600">BLS Public Keys</text>
   <text x="630" y="450" text-anchor="middle" fill="white" font-size="11" opacity="0.5">Aggregated Pubkey</text>
   <text x="630" y="478" text-anchor="middle" fill="white" font-size="13" font-weight="700">Threshold: &#x2308;2n/3&#x2309;</text>
@@ -71,7 +71,7 @@
   <circle cx="310" cy="366" r="3" fill="white" opacity="0.35"/>
   <text x="312" y="346" text-anchor="middle" fill="white" font-size="10" opacity="0.35">funds</text>
 
-  <!-- ===== Curved line: Vision.sol -> IssuerRegistry ===== -->
+  <!-- ===== Curved line: Vision.sol -> OracleRegistry ===== -->
   <path d="M 580 320 Q 610 350, 630 366" stroke="white" stroke-width="0.75" opacity="0.2" fill="none"/>
   <circle cx="580" cy="320" r="3" fill="white" opacity="0.35"/>
   <circle cx="630" cy="366" r="3" fill="white" opacity="0.35"/>

@@ -48,7 +48,7 @@ For non-custom types (UP_0, UP_30, DOWN_0, DOWN_30, FLAT_0), the threshold value
 
 ## Resolution Logic
 
-At the end of each tick, the issuer network computes the price change percentage for each market:
+At the end of each tick, the oracle network computes the price change percentage for each market:
 
 ```
 priceChange = (closePrice - openPrice) / openPrice * 10000  // in basis points
@@ -75,7 +75,7 @@ The outcome for each market is then determined by the resolution type:
 
 ## Storage
 
-Resolution types are stored as raw `uint8` values in the off-chain batch config (never on-chain). The issuer resolver interprets them at tick resolution time.
+Resolution types are stored as raw `uint8` values in the off-chain batch config (never on-chain). The oracle resolver interprets them at tick resolution time.
 
 ## Choosing a Resolution Type
 

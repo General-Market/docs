@@ -1,18 +1,18 @@
 [
   {
     "type": "function",
-    "name": "activeIssuerCount",
+    "name": "activeOracleCount",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "getIssuer",
-    "inputs": [{ "name": "issuerId", "type": "uint256" }],
+    "name": "getOracle",
+    "inputs": [{ "name": "oracleId", "type": "uint256" }],
     "outputs": [
       {
-        "name": "issuer",
+        "name": "oracle",
         "type": "tuple",
         "components": [
           { "name": "addr", "type": "address" },

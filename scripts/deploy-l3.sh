@@ -102,6 +102,6 @@ fi
 echo ""
 echo "NEXT STEPS:"
 echo "  1. Run verification: forge script scripts/deploy/VerifyL3Deployment.s.sol --rpc-url $RPC_URL -vvvv"
-echo "  2. Wire issuer node to contracts (Story 6.2)"
+echo "  2. Wire oracle node to contracts (Story 6.2)"
 echo "  3. Wire AP to contracts (Story 6.3)"
 echo "============================================"

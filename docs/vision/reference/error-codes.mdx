@@ -19,7 +19,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** BLS signature verification fails during `claimRewards`, `withdraw`, `forceWithdraw`, `pause`, `unpause`, or `updateBatchMarkets`.
 
-**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if issuers have rotated their keys or the aggregated public key has been updated in the IssuerRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `421611337`).
+**Fix:** Request a fresh balance proof from `GET /vision/balance/{batchId}/{player}`. BLS proofs can become stale if oracles have rotated their keys or the aggregated public key has been updated in the OracleRegistry. Always fetch the proof immediately before submitting the on-chain transaction. If the error persists, verify that the chain ID in the signed message matches the chain you are submitting to (chain ID `421611337`).
 
 ---
 
@@ -35,9 +35,9 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 ### BatchPaused
 
-**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the issuer network.
+**Reverts when:** A player tries to call `joinBatch` on a batch that has been paused by the oracle network.
 
-**Fix:** The batch has been temporarily suspended by issuer consensus (via BLS-signed `pause`). Wait for the issuers to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the issuer operators.
+**Fix:** The batch has been temporarily suspended by oracle consensus (via BLS-signed `pause`). Wait for the oracles to unpause the batch. You can monitor batch status by polling `getBatch(batchId)` and checking the `paused` field. If you believe the pause is in error, contact the batch creator or the oracle operators.
 
 ---
 
@@ -120,7 +120,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The `fromTick` parameter in `claimRewards` is less than or equal to the player's `lastClaimedTick` (when `lastClaimedTick != 0`). This prevents double-claiming the same tick range.
 
-**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the issuer API, request a balance proof for the tick range starting after your last claimed tick.
+**Fix:** Read the player's current position with `getPosition(batchId, playerAddress)` and check the `lastClaimedTick` field. Set `fromTick` to `lastClaimedTick + 1`. If you are using the oracle API, request a balance proof for the tick range starting after your last claimed tick.
 
 ---
 
@@ -162,7 +162,7 @@ Custom errors are decoded from transaction revert data using the contract ABI. I
 
 **Reverts when:** The Vision contract does not hold enough USDC to cover the payout plus accumulated fees. Checked by `USDC.balanceOf(address(this)) < payout + accumulatedFees`.
 
-**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the issuers. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
+**Fix:** This error indicates a critical solvency issue in the contract. Under normal operation, this should never happen because deposits from losers fund payouts to winners. If you encounter this error, it may indicate a bug in balance proof computation by the oracles. Do not retry the transaction -- report the issue to the protocol operators with the batch ID, your address, and the claim parameters.
 
 ---
 

@@ -2,7 +2,7 @@
  * Multi-ITP Order Processing E2E Tests
  *
  * Verifies that buy/sell orders work for ITP2 (not just ITP1).
- * Tests the multi-ITP issuer fix (per-order itp_id + per-ITP NAV cache)
+ * Tests the multi-ITP oracle fix (per-order itp_id + per-ITP NAV cache)
  * and the sell fills race condition fix (has_any_active_bridge_orders guard).
  *
  * Uses L3 direct path (no Settlement bridge needed) to avoid Settlement gas issues.
@@ -40,7 +40,7 @@ function itpIdFromNumber(n: number): string {
 import { IS_ANVIL } from '../env';
 
 test.describe('Multi-ITP Order Processing', () => {
-  test('buy ITP2 order fills via issuer consensus', async () => {
+  test('buy ITP2 order fills via oracle consensus', async () => {
     test.setTimeout(240_000);
 
     // 1. Verify ITP2 exists
@@ -107,7 +107,7 @@ test.describe('Multi-ITP Order Processing', () => {
     const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     console.log(`ITP2 L3 shares before sell: ${l3SharesBefore}`);
 
-    // 5. Start Settlement block miner (issuers need blocks for confirmation)
+    // 5. Start Settlement block miner (oracles need blocks for confirmation)
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {

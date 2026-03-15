@@ -13,20 +13,20 @@ curl https://generalmarket.io/api/vision/balance/{batchId}/{playerAddress}
 
 Response: `{ "batch_id": 1, "player": "0x...", "balance": "15000000", "stake_per_tick": "100000" }`
 
-To claim on-chain, you need BLS-signed proofs from 2/3+ issuers. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
+To claim on-chain, you need BLS-signed proofs from 2/3+ oracles. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
 
 ## BLS Verification Flow
 
 ```mermaid
 sequenceDiagram
     participant Player
-    participant Issuers
+    participant Oracles
     participant Contract
 
-    Player->>Issuers: GET /vision/balance/{batchId}/{player}
-    Issuers->>Issuers: Compute balance from tick results
-    Issuers->>Issuers: BLS-sign balance message
-    Issuers-->>Player: Return balance + partial BLS sig
+    Player->>Oracles: GET /vision/balance/{batchId}/{player}
+    Oracles->>Oracles: Compute balance from tick results
+    Oracles->>Oracles: BLS-sign balance message
+    Oracles-->>Player: Return balance + partial BLS sig
     Player->>Player: Aggregate 2/3+ BLS signatures
     Player->>Contract: claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
     Contract->>Contract: Verify BLS signature
@@ -40,7 +40,7 @@ Resolving every tick on-chain for every player in every market would be ruinousl
 - **On-chain**: Deposits, withdrawals, bitmap commitments, and BLS-verified claims.
 - **Off-chain**: Tick resolution, bitmap reveals, balance computation, and BLS signing.
 
-The contract does not know each player's balance after every tick. It trusts the issuer consensus: if 2/3+ of registered issuers agree on a player's balance, the contract accepts it. This is not blind faith. It is mathematics with a quorum.
+The contract does not know each player's balance after every tick. It trusts the oracle consensus: if 2/3+ of registered oracles agree on a player's balance, the contract accepts it. This is not blind faith. It is mathematics with a quorum.
 
 ## BLS Signature Flow
 
@@ -48,7 +48,7 @@ The balance proof lifecycle follows 5 steps. Each step is a negotiation between 
 
 ### Step 1: Player Requests Balance Proof
 
-The player queries an issuer node for their current balance:
+The player queries an oracle node for their current balance:
 
 ```bash
 GET /vision/balance/{batchId}/{playerAddress}
@@ -66,22 +66,22 @@ GET /vision/balance/{batchId}/{playerAddress}
 ```
 
 <Info>
-In the full implementation, each issuer returns a partial BLS signature. The player collects signatures from multiple issuers to aggregate.
+In the full implementation, each oracle returns a partial BLS signature. The player collects signatures from multiple oracles to aggregate.
 </Info>
 
-### Step 2: Issuers Compute Balance
+### Step 2: Oracles Compute Balance
 
-Each issuer independently computes your balance. Three machines, working alone, arriving at the same number -- or not. The process:
+Each oracle independently computes your balance. Three machines, working alone, arriving at the same number -- or not. The process:
 
 1. Tracks all tick results since the player's last claim.
 2. Sums deposits + winnings - losses - fees.
 3. Arrives at the player's `newBalance`.
 
-Since all issuers run the same deterministic resolution logic on the same price feeds and bitmaps, they should arrive at the same balance. When they do, it is consensus. When they do not, something is broken.
+Since all oracles run the same deterministic resolution logic on the same price feeds and bitmaps, they should arrive at the same balance. When they do, it is consensus. When they do not, something is broken.
 
-### Step 3: Issuers BLS-Sign the Balance
+### Step 3: Oracles BLS-Sign the Balance
 
-Each issuer signs the following message. The signature is the issuer's attestation: *I have computed this balance and I stake my cryptographic identity on it*:
+Each oracle signs the following message. The signature is the oracle's attestation: *I have computed this balance and I stake my cryptographic identity on it*:
 
 ```solidity
 bytes32 message = keccak256(abi.encode(
@@ -96,7 +96,7 @@ bytes32 message = keccak256(abi.encode(
 ));
 ```
 
-The player collects BLS partial signatures from at least 2/3 of registered issuers.
+The player collects BLS partial signatures from at least 2/3 of registered oracles.
 
 ### Step 4: Player Aggregates and Submits
 
@@ -117,7 +117,7 @@ function claimRewards(
 The contract performs its final duty -- verification followed by payment, or verification followed by silence:
 
 1. Reconstructs the same message hash from the parameters.
-2. Verifies the aggregated BLS signature against the issuer registry's aggregated public key.
+2. Verifies the aggregated BLS signature against the oracle registry's aggregated public key.
 3. If valid:
    - Compares `newBalance` to `oldBalance`.
    - If `newBalance > oldBalance`: computes winnings, deducts the 0.3% fee, and transfers the payout.
@@ -182,7 +182,7 @@ On withdrawal:
 
 ### Force Withdraw
 
-Issuers can force-withdraw a player via BLS consensus. This is the protocol's version of being asked to leave -- polite, cryptographically verified, and final:
+Oracles can force-withdraw a player via BLS consensus. This is the protocol's version of being asked to leave -- polite, cryptographically verified, and final:
 
 ```solidity
 function forceWithdraw(
@@ -193,7 +193,7 @@ function forceWithdraw(
 ) external;
 ```
 
-The BLS message uses the `"FORCE_WITHDRAW"` action tag. This is an issuer-level operation that requires consensus.
+The BLS message uses the `"FORCE_WITHDRAW"` action tag. This is an oracle-level operation that requires consensus.
 
 ## Claim Guards
 
@@ -222,25 +222,25 @@ const VISION_ABI = [
 async function claimRewards(
   visionContract: ethers.Contract,
   batchId: number,
-  issuerUrls: string[],
+  oracleUrls: string[],
   playerAddress: string
 ) {
   // 1. Get current position
   const position = await visionContract.getPosition(batchId, playerAddress);
   const lastClaimed = position.lastClaimedTick.toNumber();
 
-  // 2. Request balance proof from issuers
+  // 2. Request balance proof from oracles
   const proofs = await Promise.all(
-    issuerUrls.map(async (url) => {
+    oracleUrls.map(async (url) => {
       const resp = await fetch(`${url}/vision/balance/${batchId}/${playerAddress}`);
       return resp.json();
     })
   );
 
-  // 3. Verify issuers agree on balance
+  // 3. Verify oracles agree on balance
   const balances = proofs.map((p) => p.balance);
   const agreed = balances.every((b) => b === balances[0]);
-  if (!agreed) throw new Error("Issuers disagree on balance");
+  if (!agreed) throw new Error("Oracles disagree on balance");
 
   // 4. Aggregate BLS signatures (simplified)
   const aggregatedSig = aggregateBLSSignatures(proofs.map((p) => p.bls_signature));

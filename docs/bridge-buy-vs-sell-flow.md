@@ -33,9 +33,9 @@ STEP   FUNCTION                        CHAIN   WHAT IT DOES
        ↳ Emits CrossChainOrderCreated event on ARB
 
 ═══════════════════════════════════════════════════════════════════════════════
-  ⏳ WAITING FOR ISSUER RELAY (this is the 1.5 min)
+  ⏳ WAITING FOR ORACLE RELAY (this is the 1.5 min)
 ═══════════════════════════════════════════════════════════════════════════════
-  Issuers must:
+  Oracles must:
     a) Detect CrossChainOrderCreated on Arb (polling Arb chain)
     b) Submit order to L3 Index (BLS consensus, submit tx)
     c) Batch the order on L3 (BLS consensus, batch tx)
@@ -49,7 +49,7 @@ STEP   FUNCTION                        CHAIN   WHAT IT DOES
          getL3UserShares(user),
          shares > sharesBefore
        )
-       ↳ Waits for L3 shares to INCREASE (proves issuer filled on L3)
+       ↳ Waits for L3 shares to INCREASE (proves oracle filled on L3)
 
  5     pollUntil(                      ARB     Poll every 3s, timeout 60s
          erc20BalanceOf(BRIDGED_ITP),
@@ -60,7 +60,7 @@ STEP   FUNCTION                        CHAIN   WHAT IT DOES
  6     stopMiner()                     ARB     clearInterval
 ```
 
-**Total steps requiring issuer consensus**: 4 (submit + batch + fill + bridge mint)
+**Total steps requiring oracle consensus**: 4 (submit + batch + fill + bridge mint)
 **Each consensus round**: ~1s cycle time + BLS aggregation + tx confirmation
 **Why 1.5 min**: Real cross-chain flow. All 4 BLS consensus rounds must complete.
 
@@ -73,14 +73,14 @@ STEP   FUNCTION                        CHAIN   WHAT IT DOES
 ─────────────────────────────────────────────────────────────────────────────
  0     startArbBlockMiner(1000)        ARB     setInterval: mine 1 block/sec
 
- 1     mintBridgedItp(user, 10e18)     ARB     ← PRE-MINT (no issuer needed!)
+ 1     mintBridgedItp(user, 10e18)     ARB     ← PRE-MINT (no oracle needed!)
        │
        ├─ anvil_setBalance(BridgeProxy) ARB    Fund proxy with 100 ETH
        ├─ anvil_impersonateAccount      ARB    Impersonate BridgeProxy
        └─ BridgedITP.mint(user, 10e18)  ARB    Direct mint, bypass BLS
        ↳ User now has 10 BridgedITP on Arb
 
- 2     mintL3Shares(user, 10e18)       L3      ← PRE-MINT (no issuer needed!)
+ 2     mintL3Shares(user, 10e18)       L3      ← PRE-MINT (no oracle needed!)
        │
        ├─ anvil_setStorageAt            L3     Set _userShares[itpId][user] = 10e18
        ├─ anvil_setStorageAt            L3     Increase _itps[itpId].totalSupply
@@ -109,9 +109,9 @@ STEP   FUNCTION                        CHAIN   WHAT IT DOES
        ↳ Emits CrossChainSellOrderCreated event on ARB
 
 ═══════════════════════════════════════════════════════════════════════════════
-  ⏳ WAITING FOR ISSUER RELAY (should take ~1-2 min like buy)
+  ⏳ WAITING FOR ORACLE RELAY (should take ~1-2 min like buy)
 ═══════════════════════════════════════════════════════════════════════════════
-  Issuers must:
+  Oracles must:
     a) Detect CrossChainSellOrderCreated on Arb
     b) Submit sell order to L3 Index (BLS consensus)
     c) Batch the order on L3 (BLS consensus)
@@ -145,7 +145,7 @@ Order placement:    placeBuyOrderDirect            placeSellOrderDirect
                     (mints USDC, approves,         (approves BridgedITP,
                      calls buyITPFromArbitrum)       calls sellITPFromArbitrum)
 
-Issuer relay:       4 consensus rounds             4 consensus rounds
+Oracle relay:       4 consensus rounds             4 consensus rounds
                     submit → batch → fill →        submit → batch → fill →
                     bridge mint BridgedITP          bridge send USDC
 
@@ -160,15 +160,15 @@ ACTUAL TIME:        1.5 min ✅                      7.0 sec ⚠️
 
 ## Diagnosis
 
-**7.0s is TOO FAST for a real bridge sell flow.** The issuer relay alone (4 BLS consensus rounds) takes ~1-2 min minimum.
+**7.0s is TOO FAST for a real bridge sell flow.** The oracle relay alone (4 BLS consensus rounds) takes ~1-2 min minimum.
 
 ### Possible explanations:
 
-1. **Previous test's buy already filled something** — The buy test (08) runs before sell test (09). If the buy test left residual USDC in the user's Arb balance (from a previous run or test ordering), the `pollUntil(usdcBalance > usdcBefore)` check could pass IMMEDIATELY because `usdcBefore` was measured AFTER the buy test deposited USDC into custody but before issuers returned change.
+1. **Previous test's buy already filled something** — The buy test (08) runs before sell test (09). If the buy test left residual USDC in the user's Arb balance (from a previous run or test ordering), the `pollUntil(usdcBalance > usdcBefore)` check could pass IMMEDIATELY because `usdcBefore` was measured AFTER the buy test deposited USDC into custody but before oracles returned change.
 
-2. **Sell order never actually relayed** — The test passes because the USDC balance check was already satisfied from the buy test's bridge relay (which sends USDC back as change if the buy amount exceeds what was needed). The sell test would "pass" without the issuers doing anything.
+2. **Sell order never actually relayed** — The test passes because the USDC balance check was already satisfied from the buy test's bridge relay (which sends USDC back as change if the buy amount exceeds what was needed). The sell test would "pass" without the oracles doing anything.
 
-3. **Pre-existing USDC from test 08** — Test 08 places a buy for 100 USDC. If NAV is ~$1 and the buy mints shares, there could be leftover USDC returned via the bridge. Test 09 records `usdcBefore` and then places a sell — but if issuers are still processing test 08's bridge return, the USDC balance increases from test 08, not test 09.
+3. **Pre-existing USDC from test 08** — Test 08 places a buy for 100 USDC. If NAV is ~$1 and the buy mints shares, there could be leftover USDC returned via the bridge. Test 09 records `usdcBefore` and then places a sell — but if oracles are still processing test 08's bridge return, the USDC balance increases from test 08, not test 09.
 
 ### The smoking gun:
 Test 09 takes 7s = time for steps 1-4 (pre-mint + place order) with zero wait in step 5's poll. The `pollUntil` returned on its FIRST check, meaning `usdcAfter > usdcBefore` was already true before the sell order was even relayed.

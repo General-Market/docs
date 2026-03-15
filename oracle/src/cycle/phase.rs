@@ -1,4 +1,4 @@
-//! Cycle phase definitions for the issuer node.
+//! Cycle phase definitions for the oracle node.
 //!
 //! Each 1-second cycle progresses through 5 phases:
 //! 1. ProcessFills - Process fills from cycle N-1
@@ -10,7 +10,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Phases within a single issuer cycle.
+/// Phases within a single oracle cycle.
 ///
 /// The cycle progresses through these phases in order, then wraps
 /// back to ProcessFills for the next cycle.

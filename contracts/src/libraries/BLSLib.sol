@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 /// @title BLSLib - BLS signature verification using BN254 precompiles
-/// @notice Provides BLS signature verification for 11/20 issuer consensus on-chain
+/// @notice Provides BLS signature verification for 11/20 oracle consensus on-chain
 /// @dev Uses EIP-196/197 precompiles for efficient BN254 operations
 /// @custom:security-contact security@indexprotocol.com
 library BLSLib {
@@ -297,7 +297,7 @@ library BLSLib {
 
     /// @notice Verify a BLS signature against multiple individual signer pubkeys
     /// @dev Uses multi-pairing: e(-sig, G2_gen) * e(H(msg), pk[0]) * ... * e(H(msg), pk[N-1]) == 1
-    ///      This correctly handles subset signing where only some issuers sign.
+    ///      This correctly handles subset signing where only some oracles sign.
     /// @param pubkeys Array of G2 public keys (each 128 bytes: [x_im, x_re, y_im, y_re])
     /// @param message Message hash that was signed
     /// @param signature G1 signature (64 bytes: [x, y])

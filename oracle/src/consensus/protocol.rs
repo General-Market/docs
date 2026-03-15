@@ -66,11 +66,11 @@ use crate::bridge::{
     build_set_itp_nav_hash, SetItpNavResult,
     // NAV oracle (ITPNAVOracle on Arb — Phase 2B)
     build_nav_oracle_hash,
-    // MirrorIssuerRegistry sync (Step 12)
+    // MirrorOracleRegistry sync (Step 12)
     build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,
 };
 
-// Asset trades: Issuer-driven per-asset settlement
+// Asset trades: Oracle-driven per-asset settlement
 use crate::bridge::{AssetTrade, AssetTradesProposal, AssetTradesResult};
 use crate::netting::{decompose_and_net_orders, ItpDecompState};
 
@@ -93,7 +93,7 @@ use crate::bridge::{
 };
 
 use crate::arbitration::ArbitrationMessageSender;
-use crate::bootstrap::extract_issuer_id;
+use crate::bootstrap::extract_oracle_id;
 use crate::leader::LeaderElector;
 use crate::p2p::peer_scoring::PeerScorer;
 use crate::price::{PriceFetcher, ToleranceValidator};
@@ -123,7 +123,7 @@ fn message_cycle_number(msg: &P2PMessage) -> Option<u64> {
     }
 }
 
-/// Config update pushed by RegistrySyncHandler when the issuer set changes.
+/// Config update pushed by RegistrySyncHandler when the oracle set changes.
 ///
 /// Contains all the information needed to reconfigure the consensus protocol
 /// at the start of the next cycle: active count, BFT threshold, and the two
@@ -131,28 +131,28 @@ fn message_cycle_number(msg: &P2PMessage) -> Option<u64> {
 /// signer bitmaps).
 #[derive(Debug, Clone)]
 pub struct ConfigUpdate {
-    /// Number of currently active issuers
+    /// Number of currently active oracles
     pub active_count: u8,
     /// BFT signature threshold: compute_threshold(active_count)
     pub threshold: usize,
-    /// Dense 0-based index among active issuers (for LeaderElector)
+    /// Dense 0-based index among active oracles (for LeaderElector)
     pub node_index: u8,
-    /// On-chain issuer ID from IssuerRegistry (for signer bitmaps)
-    pub issuer_registry_index: u8,
+    /// On-chain oracle ID from OracleRegistry (for signer bitmaps)
+    pub oracle_registry_index: u8,
 }
 
 /// Runtime-mutable subset of ConsensusConfig.
 ///
-/// These fields can change when the issuer set changes (issuer join/leave).
+/// These fields can change when the oracle set changes (oracle join/leave).
 /// Uses atomics for lock-free interior mutability since ConsensusProtocol methods
 /// take `&self` (not `&mut self`).
 pub struct RuntimeConfig {
-    /// This node's dense index in the active issuer set (0-based, for leader election)
+    /// This node's dense index in the active oracle set (0-based, for leader election)
     pub node_index: std::sync::atomic::AtomicU8,
-    /// Total number of active issuers
-    pub num_issuers: std::sync::atomic::AtomicU8,
-    /// On-chain IssuerRegistry index for signer bitmap
-    pub issuer_registry_index: std::sync::atomic::AtomicU8,
+    /// Total number of active oracles
+    pub num_oracles: std::sync::atomic::AtomicU8,
+    /// On-chain OracleRegistry index for signer bitmap
+    pub oracle_registry_index: std::sync::atomic::AtomicU8,
     /// Signature threshold (BFT: floor(2n/3)+1)
     pub signature_threshold: std::sync::atomic::AtomicUsize,
 }
@@ -162,16 +162,16 @@ impl RuntimeConfig {
         use std::sync::atomic::{AtomicU8, AtomicUsize};
         Self {
             node_index: AtomicU8::new(config.node_index),
-            num_issuers: AtomicU8::new(config.num_issuers),
-            issuer_registry_index: AtomicU8::new(config.issuer_registry_index),
+            num_oracles: AtomicU8::new(config.num_oracles),
+            oracle_registry_index: AtomicU8::new(config.oracle_registry_index),
             signature_threshold: AtomicUsize::new(config.signature_threshold),
         }
     }
 
-    /// Get the current issuer_registry_index (for signer bitmaps)
+    /// Get the current oracle_registry_index (for signer bitmaps)
     #[inline]
-    pub fn issuer_registry_index(&self) -> u8 {
-        self.issuer_registry_index.load(std::sync::atomic::Ordering::Relaxed)
+    pub fn oracle_registry_index(&self) -> u8 {
+        self.oracle_registry_index.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Get the current node_index (for leader election)
@@ -180,10 +180,10 @@ impl RuntimeConfig {
         self.node_index.load(std::sync::atomic::Ordering::Relaxed)
     }
 
-    /// Get the current num_issuers
+    /// Get the current num_oracles
     #[inline]
-    pub fn num_issuers(&self) -> u8 {
-        self.num_issuers.load(std::sync::atomic::Ordering::Relaxed)
+    pub fn num_oracles(&self) -> u8 {
+        self.num_oracles.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -191,8 +191,8 @@ impl std::fmt::Debug for RuntimeConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RuntimeConfig")
             .field("node_index", &self.node_index())
-            .field("num_issuers", &self.num_issuers())
-            .field("issuer_registry_index", &self.issuer_registry_index())
+            .field("num_oracles", &self.num_oracles())
+            .field("oracle_registry_index", &self.oracle_registry_index())
             .field("signature_threshold", &self.signature_threshold.load(std::sync::atomic::Ordering::Relaxed))
             .finish()
     }
@@ -280,7 +280,7 @@ pub enum ConsensusResult {
         aggregated_signature: BLSSignature,
         /// Number of signers
         signer_count: usize,
-        /// Bitmask of which issuers signed
+        /// Bitmask of which oracles signed
         signers_bitmask: U256,
         /// Cycle number
         cycle_number: u64,
@@ -292,12 +292,12 @@ pub enum ConsensusResult {
 pub struct ConsensusConfig {
     /// This node's peer ID
     pub peer_id: PeerId,
-    /// Total number of issuers
-    pub num_issuers: u8,
-    /// This node's index in the issuer set (0-indexed, for leader election)
+    /// Total number of oracles
+    pub num_oracles: u8,
+    /// This node's index in the oracle set (0-indexed, for leader election)
     pub node_index: u8,
-    /// On-chain IssuerRegistry index for signer bitmap (may differ from node_index)
-    pub issuer_registry_index: u8,
+    /// On-chain OracleRegistry index for signer bitmap (may differ from node_index)
+    pub oracle_registry_index: u8,
     /// Timeout configuration
     pub timeouts: ConsensusTimeouts,
     /// Signature threshold (BFT: floor(2n/3)+1)
@@ -305,21 +305,21 @@ pub struct ConsensusConfig {
 }
 
 impl ConsensusConfig {
-    /// Create a new consensus config with BFT threshold derived from num_issuers
-    pub fn new(peer_id: PeerId, num_issuers: u8, node_index: u8) -> Self {
+    /// Create a new consensus config with BFT threshold derived from num_oracles
+    pub fn new(peer_id: PeerId, num_oracles: u8, node_index: u8) -> Self {
         Self {
             peer_id,
-            num_issuers,
+            num_oracles,
             node_index,
-            issuer_registry_index: node_index, // Default: same as node_index
+            oracle_registry_index: node_index, // Default: same as node_index
             timeouts: ConsensusTimeouts::default(),
-            signature_threshold: compute_threshold(num_issuers as usize),
+            signature_threshold: compute_threshold(num_oracles as usize),
         }
     }
 
-    /// Set the on-chain issuer registry index (for signer bitmap)
-    pub fn with_issuer_registry_index(mut self, index: u8) -> Self {
-        self.issuer_registry_index = index;
+    /// Set the on-chain oracle registry index (for signer bitmap)
+    pub fn with_oracle_registry_index(mut self, index: u8) -> Self {
+        self.oracle_registry_index = index;
         self
     }
 
@@ -336,7 +336,7 @@ impl ConsensusConfig {
     }
 }
 
-/// ConsensusProtocol coordinates consensus rounds between issuers
+/// ConsensusProtocol coordinates consensus rounds between oracles
 pub struct ConsensusProtocol<P, C, K, F>
 where
     P: P2PTransport,
@@ -372,8 +372,8 @@ where
     price_validator: ToleranceValidator,
     /// Configuration (immutable initial values — for fields that change at runtime, see `runtime_config`)
     config: ConsensusConfig,
-    /// Runtime-mutable config subset (node_index, num_issuers, issuer_registry_index, threshold).
-    /// Updated by `apply_pending_config_update` when the issuer set changes.
+    /// Runtime-mutable config subset (node_index, num_oracles, oracle_registry_index, threshold).
+    /// Updated by `apply_pending_config_update` when the oracle set changes.
     /// Uses atomics for lock-free interior mutability.
     runtime_config: RuntimeConfig,
     /// Optional fill verifier for on-chain verification (FR13)
@@ -387,8 +387,8 @@ where
     pending_config_update: Arc<RwLock<Option<ConfigUpdate>>>,
     /// Optional sender for forwarding arbitration P2P messages to the ArbitrationSubsystem
     arbitration_tx: RwLock<Option<ArbitrationMessageSender>>,
-    /// Ordered list of PeerIds for index->PeerId mapping (sorted by on-chain issuer ID).
-    /// Populated at startup from the key registry and updated when the issuer set changes.
+    /// Ordered list of PeerIds for index->PeerId mapping (sorted by on-chain oracle ID).
+    /// Populated at startup from the key registry and updated when the oracle set changes.
     peer_registry: Arc<RwLock<Vec<PeerId>>>,
     /// Optional peer scorer for recording peer reputation events (e.g. non-leader proposals).
     peer_scorer: Option<Arc<PeerScorer>>,
@@ -470,14 +470,14 @@ where
         price_fetcher: Arc<F>,
         config: ConsensusConfig,
     ) -> Self {
-        let leader_elector = LeaderElector::new(config.node_index, config.num_issuers);
+        let leader_elector = LeaderElector::new(config.node_index, config.num_oracles);
         let state = ConsensusState::with_timeouts(config.timeouts.clone());
         let aggregator = SignatureAggregator::with_threshold(config.signature_threshold);
         let runtime_config = RuntimeConfig::new(&config);
 
-        // Build ordered peer registry from key registry (sorted by on-chain issuer ID)
+        // Build ordered peer registry from key registry (sorted by on-chain oracle ID)
         let mut peers = key_registry.registered_peers();
-        peers.sort_by_key(|p| extract_issuer_id(p));
+        peers.sort_by_key(|p| extract_oracle_id(p));
 
         Self {
             bls_signer: Bn254BLSSigner::new(),
@@ -522,7 +522,7 @@ where
 
     /// Get a handle to the pending config update cell for RegistrySyncHandler
     ///
-    /// The handler writes a `ConfigUpdate` when the issuer set changes.
+    /// The handler writes a `ConfigUpdate` when the oracle set changes.
     /// The consensus loop reads it at cycle start and applies updates.
     pub fn pending_config_handle(&self) -> Arc<RwLock<Option<ConfigUpdate>>> {
         self.pending_config_update.clone()
@@ -548,9 +548,9 @@ where
         self.key_registry.set_settlement_registry_nonce(nonce);
     }
 
-    /// Get the configured number of issuers
-    pub fn num_issuers(&self) -> u8 {
-        self.runtime_config.num_issuers()
+    /// Get the configured number of oracles
+    pub fn num_oracles(&self) -> u8 {
+        self.runtime_config.num_oracles()
     }
 
     /// Check if this node is the leader for a given cycle (for mirror sync leader election)
@@ -561,8 +561,8 @@ where
     /// Apply any pending config update at cycle start
     ///
     /// Updates leader elector (using dense node_index), signature aggregator
-    /// (using BFT threshold), and runtime config (node_index, num_issuers,
-    /// issuer_registry_index) if RegistrySyncHandler has written a new config.
+    /// (using BFT threshold), and runtime config (node_index, num_oracles,
+    /// oracle_registry_index) if RegistrySyncHandler has written a new config.
     pub async fn apply_pending_config_update(&self) {
         let update = {
             let mut guard = self.pending_config_update.write().await;
@@ -573,7 +573,7 @@ where
                 active_count = cfg.active_count,
                 threshold = cfg.threshold,
                 node_index = cfg.node_index,
-                issuer_registry_index = cfg.issuer_registry_index,
+                oracle_registry_index = cfg.oracle_registry_index,
                 "Applying consensus config update from registry sync"
             );
             // Update leader elector with dense node index
@@ -588,14 +588,14 @@ where
                 .write()
                 .await
                 .set_threshold(cfg.threshold);
-            // Update runtime config (node_index, num_issuers, issuer_registry_index)
+            // Update runtime config (node_index, num_oracles, oracle_registry_index)
             use std::sync::atomic::Ordering::Relaxed;
             self.runtime_config.node_index.store(cfg.node_index, Relaxed);
-            self.runtime_config.num_issuers.store(cfg.active_count, Relaxed);
-            self.runtime_config.issuer_registry_index.store(cfg.issuer_registry_index, Relaxed);
+            self.runtime_config.num_oracles.store(cfg.active_count, Relaxed);
+            self.runtime_config.oracle_registry_index.store(cfg.oracle_registry_index, Relaxed);
             self.runtime_config.signature_threshold.store(cfg.threshold, Relaxed);
 
-            // Refresh peer registry to match updated issuer set
+            // Refresh peer registry to match updated oracle set
             self.refresh_peer_registry().await;
         }
     }
@@ -678,11 +678,11 @@ where
 
     /// Refresh the peer_registry from the key registry.
     ///
-    /// Called when the issuer set changes (e.g. after a config update)
+    /// Called when the oracle set changes (e.g. after a config update)
     /// to keep the ordered PeerId list in sync.
     pub async fn refresh_peer_registry(&self) {
         let mut peers = self.key_registry.registered_peers();
-        peers.sort_by_key(|p| extract_issuer_id(p));
+        peers.sort_by_key(|p| extract_oracle_id(p));
         let mut registry = self.peer_registry.write().await;
         *registry = peers;
     }
@@ -709,22 +709,22 @@ where
         peer[0] == 0xFE || peer[0] == 0xFF
     }
 
-    /// Compute the dense index (0-based position among active issuers) for a given PeerId.
+    /// Compute the dense index (0-based position among active oracles) for a given PeerId.
     ///
-    /// Uses the key registry to get all registered peers, sorts them by on-chain issuer ID,
+    /// Uses the key registry to get all registered peers, sorts them by on-chain oracle ID,
     /// and returns the position of the sender in that sorted list.
     /// Returns `None` if the peer is not in the registry.
     fn get_dense_index(&self, peer_id: &PeerId) -> Option<u8> {
         let mut peers = self.key_registry.registered_peers();
-        // Sort by on-chain issuer ID to get deterministic dense ordering
-        peers.sort_by_key(|p| extract_issuer_id(p));
+        // Sort by on-chain oracle ID to get deterministic dense ordering
+        peers.sort_by_key(|p| extract_oracle_id(p));
         peers.iter().position(|p| p == peer_id).map(|i| i as u8)
     }
 
     /// Verify that the sender is the expected leader for this cycle.
     ///
     /// During config propagation (~5s window), accept proposals from
-    /// the leader under current OR +-1 num_issuers count to tolerate
+    /// the leader under current OR +-1 num_oracles count to tolerate
     /// nodes that haven't yet seen the latest registry update.
     ///
     /// Zeroed and temp PeerIds are always accepted (they'll be re-verified
@@ -739,7 +739,7 @@ where
             return true;
         }
 
-        let current_count = self.runtime_config.num_issuers() as u64;
+        let current_count = self.runtime_config.num_oracles() as u64;
         if current_count == 0 {
             return true; // Safety: can't verify without count
         }
@@ -765,7 +765,7 @@ where
             return true;
         }
 
-        // Also accept under previous config (-1 issuer) for propagation tolerance
+        // Also accept under previous config (-1 oracle) for propagation tolerance
         if current_count > 1 {
             let prev_count = current_count - 1;
             if sender_index == cycle % prev_count {
@@ -773,7 +773,7 @@ where
             }
         }
 
-        // Also accept under next config (+1 issuer) for propagation tolerance
+        // Also accept under next config (+1 oracle) for propagation tolerance
         let next_count = current_count + 1;
         if sender_index == cycle % next_count {
             return true;
@@ -1083,7 +1083,7 @@ where
 
     /// Run the leader protocol
     ///
-    /// Price consensus is eliminated from the regular cycle — all issuers compute
+    /// Price consensus is eliminated from the regular cycle — all oracles compute
     /// the same NAV from on-chain inventory + shared price feed, so they always agree.
     /// Price updates are handled by standalone `run_price_cycle` when there are no orders.
     async fn run_leader_protocol(
@@ -1093,7 +1093,7 @@ where
         order_ids: Vec<u64>,
         fills: Vec<Fill>,
     ) -> ConsensusResult {
-        // Batch consensus only — price round eliminated (all issuers compute same NAV)
+        // Batch consensus only — price round eliminated (all oracles compute same NAV)
         match self
             .leader_batch_consensus(cycle_number, order_ids, fills)
             .await
@@ -1205,7 +1205,7 @@ where
         cycle_number: u64,
         vote_timeout: std::time::Duration,
     ) -> Result<u8, Error> {
-        let expected_voters = (self.runtime_config.num_issuers() - 1) as usize;
+        let expected_voters = (self.runtime_config.num_oracles() - 1) as usize;
         info!(
             cycle_number,
             vote_timeout_ms = vote_timeout.as_millis() as u64,
@@ -1281,7 +1281,7 @@ where
         // Add our own signature to aggregator
         {
             let mut aggregator = self.aggregator.write().await;
-            aggregator.add_signature(self.config.peer_id, self.runtime_config.issuer_registry_index(), signature.clone())?;
+            aggregator.add_signature(self.config.peer_id, self.runtime_config.oracle_registry_index(), signature.clone())?;
         }
 
         // Broadcast BATCH_PROPOSAL
@@ -1678,7 +1678,7 @@ where
             }
             MessageHandleResult::ProcessBatchSign { from, signature } => {
                 debug!(?from, "Processing BatchSign");
-                let signer_index = extract_issuer_id(&from) as u8;
+                let signer_index = extract_oracle_id(&from) as u8;
                 let mut aggregator = self.aggregator.write().await;
                 aggregator.add_signature(from, signer_index, BLSSignature(signature.0))?;
             }
@@ -2382,7 +2382,7 @@ where
                         Ok(signature) => {
                             let sign_msg = P2PMessage::AssetTradesSign {
                                 signer_id: self.config.peer_id,
-                                signer_index: self.runtime_config.issuer_registry_index(),
+                                signer_index: self.runtime_config.oracle_registry_index(),
                                 cycle_number: msg_cycle,
                                 signature: signature.clone(),
                             };
@@ -2765,7 +2765,7 @@ where
 
                 let message = P2PMessage::CompleteBuyOrderSign {
                     signer_id: self.config.peer_id,
-                    signer_index: self.runtime_config.issuer_registry_index(),
+                    signer_index: self.runtime_config.oracle_registry_index(),
                     cycle_number: msg_cycle,
                     signature,
                 };
@@ -2912,13 +2912,13 @@ where
                     );
                 }
             }
-            // MirrorIssuerRegistry sync (Step 12)
+            // MirrorOracleRegistry sync (Step 12)
             MessageHandleResult::ProcessMirrorSyncProposal {
                 from,
                 leader_id,
                 nonce,
-                issuer_pubkeys,
-                issuer_ids,
+                oracle_pubkeys,
+                oracle_ids,
                 active_bitmask,
                 active_count,
                 threshold,
@@ -2935,7 +2935,7 @@ where
                 );
                 if let Err(e) = self
                     .handle_mirror_sync_proposal(
-                        from, leader_id, nonce, issuer_pubkeys, issuer_ids,
+                        from, leader_id, nonce, oracle_pubkeys, oracle_ids,
                         active_bitmask, active_count, threshold,
                         chain_id, mirror_address, reference_nonce, leader_signature,
                     )
@@ -3178,7 +3178,7 @@ where
     /// Verify a leader's BLS signature on a pre-hashed message.
     ///
     /// Returns Ok(()) if valid. Returns Err(BlsVerification) if:
-    /// - Leader not in key registry (unknown issuer)
+    /// - Leader not in key registry (unknown oracle)
     /// - Signature invalid (tampered or wrong key)
     /// - Verification failed (BLS error)
     fn verify_leader_bls(
@@ -3716,7 +3716,7 @@ where
         {
             let mut aggregator = self.aggregator.write().await;
             aggregator
-                .add_signature(self.config.peer_id, self.runtime_config.issuer_registry_index(), signature.clone())
+                .add_signature(self.config.peer_id, self.runtime_config.oracle_registry_index(), signature.clone())
                 .map_err(|e| ConsensusError::BlsSigningError {
                     reason: e.to_string(),
                 })?;
@@ -3808,9 +3808,9 @@ where
         for (peer_id, signature) in signature_map.iter() {
             signatures.push(signature.clone());
 
-            // Extract issuer ID from peer_id (inverse of generate_peer_id)
-            let issuer_index = extract_issuer_id(peer_id);
-            signer_bitmap = signer_bitmap | (U256::one() << issuer_index);
+            // Extract oracle ID from peer_id (inverse of generate_peer_id)
+            let oracle_index = extract_oracle_id(peer_id);
+            signer_bitmap = signer_bitmap | (U256::one() << oracle_index);
 
             // Get pubkey from key registry
             if let Some(pubkey) = self.key_registry.get_public_key(peer_id) {
@@ -3986,14 +3986,14 @@ where
         // Step 4: Send signature to leader (include signer_id and signer_index for routing and bitmap)
         let message = P2PMessage::ItpCreationSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             nonce,
             signature: BLSSignature(signature.0),
         };
 
         debug!(
             nonce = %nonce,
-            signer_index = self.runtime_config.issuer_registry_index(),
+            signer_index = self.runtime_config.oracle_registry_index(),
             "Follower: Sending ITP creation signature to leader"
         );
         self.p2p.send_to(from, message).await
@@ -4003,7 +4003,7 @@ where
     ///
     /// # Arguments
     /// * `from` - Signer's peer ID
-    /// * `signer_index` - Signer's index in issuer set (for bitmap calculation)
+    /// * `signer_index` - Signer's index in oracle set (for bitmap calculation)
     /// * `nonce` - Request nonce
     /// * `signature` - BLS signature
     pub async fn handle_itp_creation_sign(
@@ -4016,14 +4016,14 @@ where
         debug!(
             ?from,
             signer_index,
-            issuer_id_from_peer = extract_issuer_id(&from),
+            oracle_id_from_peer = extract_oracle_id(&from),
             nonce = %nonce,
             "Leader: Received ITP creation signature"
         );
 
         // Add signature keyed by the real peer_id (generated by generate_peer_id).
         // signer_index extracted from peer_id for bitmask computation.
-        let signer_idx = extract_issuer_id(&from) as u8;
+        let signer_idx = extract_oracle_id(&from) as u8;
         let mut aggregator = self.aggregator.write().await;
         aggregator.add_signature(from, signer_idx, signature)?;
 
@@ -4182,7 +4182,7 @@ where
             "Leader: Bridge signature threshold reached"
         );
 
-        // Step 5: Execute bridge (mint L3Usdc to IssuerCustody L3)
+        // Step 5: Execute bridge (mint L3Usdc to OracleCustody L3)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
@@ -4596,7 +4596,7 @@ where
     }
 
     // ========================================================================
-    // Asset Trades Phase: Issuer-driven per-asset settlement
+    // Asset Trades Phase: Oracle-driven per-asset settlement
     // ========================================================================
 
     /// Run asset trades phase after batch confirmation.
@@ -4622,7 +4622,7 @@ where
             cycle_number,
             order_count = orders.len(),
             am_leader,
-            "Starting asset trades phase (issuer decomposition + cross-ITP netting)"
+            "Starting asset trades phase (oracle decomposition + cross-ITP netting)"
         );
 
         if orders.is_empty() {
@@ -4963,7 +4963,7 @@ where
         }),
         respond = |s, sig| P2PMessage::BridgeSettlementToL3Sign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -4983,7 +4983,7 @@ where
     /// Run bridge L3→Settlement consensus phase (Step 5 of vital-test.md)
     ///
     /// This method runs consensus for bridging USDC from L3 back to Settlement
-    /// after batch confirmation. USDC goes to IssuerCustody on Settlement.
+    /// after batch confirmation. USDC goes to OracleCustody on Settlement.
     ///
     /// # Arguments
     /// * `cycle_number` - The batch cycle number
@@ -5128,7 +5128,7 @@ where
             "Leader: L3→Settlement bridge signature threshold reached"
         );
 
-        // Step 5: Execute bridge (transfer USDC to IssuerCustody Settlement)
+        // Step 5: Execute bridge (transfer USDC to OracleCustody Settlement)
         let bridge_orch_guard = self.bridge_orchestrator.read().await;
         let bridge_orch = bridge_orch_guard.as_ref().ok_or_else(|| {
             ConsensusError::ChainWriterError {
@@ -5204,7 +5204,7 @@ where
         }),
         respond = |s, sig| P2PMessage::BridgeL3ToSettlementSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -5223,7 +5223,7 @@ where
 
     /// Run custody release to vault consensus phase (Step 6 of vital-test.md)
     ///
-    /// This method runs consensus for releasing USDC from IssuerCustody on Settlement
+    /// This method runs consensus for releasing USDC from OracleCustody on Settlement
     /// to MockBitgetVault for AP trading.
     ///
     /// # Arguments
@@ -5432,7 +5432,7 @@ where
         leader = (leader_id, leader_signature),
         params = (leader_id: PeerId, cycle_number: u64, order_ids: Vec<U256>, total_amount: U256, vault_address: Address, leader_signature: BLSSignature),
         hash = |cfg| build_release_to_vault_hash(
-            cfg.settlement_chain_id, cfg.issuer_custody_settlement, cycle_number, &order_ids, total_amount, vault_address,
+            cfg.settlement_chain_id, cfg.oracle_custody_settlement, cycle_number, &order_ids, total_amount, vault_address,
         ),
         validate = |orch, mh| orch.validate_release_proposal(&ReleaseToVaultProposal {
             leader_id, cycle_number, order_ids: order_ids.clone(), total_amount, vault_address,
@@ -5446,7 +5446,7 @@ where
         }),
         respond = |s, sig| P2PMessage::ReleaseToVaultSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -5483,7 +5483,7 @@ where
         }),
         respond = |s, sig| P2PMessage::SubmitOrderForUserSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             settlement_order_id,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -5520,7 +5520,7 @@ where
         }),
         respond = |s, sig| P2PMessage::ConfirmBatchSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -5553,7 +5553,7 @@ where
         }),
         respond = |s, sig| P2PMessage::ConfirmFillsSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -5795,7 +5795,7 @@ where
         sign = |orch, _hb| orch.sign_rebalance_batch(cycle_number, &itp_ids),
         respond = |s, sig| P2PMessage::RebalanceBatchSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: sig,
         },
@@ -5991,7 +5991,7 @@ where
         sign = |orch, _hb| orch.sign_update_weights(itp_id, &new_weights, &new_inventory, nav),
         respond = |s, sig| P2PMessage::UpdateWeightsSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             itp_id,
             signature: sig,
         },
@@ -6171,7 +6171,7 @@ where
         direct_sign = true,
         respond = |s, sig| P2PMessage::RebalanceSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             itp_id,
             signature: sig,
         },
@@ -6321,7 +6321,7 @@ where
         direct_sign = true,
         respond = |s, sig| P2PMessage::SetItpNavSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             itp_id,
             signature: sig,
         },
@@ -6392,12 +6392,12 @@ where
         // Send signature back to leader
         let message = P2PMessage::NavOracleSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             itp_address,
             signature,
         };
 
-        debug!(?itp_address, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending NavOracleSign to leader");
+        debug!(?itp_address, signer_index = self.runtime_config.oracle_registry_index(), "Follower: Sending NavOracleSign to leader");
         self.p2p.send_to(from, message).await
     }
 
@@ -6440,7 +6440,7 @@ where
     }
 
     // ============================================================================
-    // MirrorIssuerRegistry Sync (Step 12)
+    // MirrorOracleRegistry Sync (Step 12)
     // ============================================================================
 
     /// Handle incoming MirrorSyncProposal message (as follower).
@@ -6452,8 +6452,8 @@ where
         from: PeerId,
         leader_id: PeerId,
         nonce: u64,
-        issuer_pubkeys: Vec<Vec<u8>>,
-        issuer_ids: Vec<u64>,
+        oracle_pubkeys: Vec<Vec<u8>>,
+        oracle_ids: Vec<u64>,
         active_bitmask: U256,
         active_count: u64,
         threshold: u64,
@@ -6496,8 +6496,8 @@ where
             chain_id,
             mirror_address,
             nonce,
-            &issuer_pubkeys,
-            &issuer_ids,
+            &oracle_pubkeys,
+            &oracle_ids,
             active_bitmask,
             active_count,
             threshold,
@@ -6506,7 +6506,7 @@ where
         // Verify leader's BLS signature
         self.verify_leader_bls(&leader_id, &message_hash, &leader_signature, "mirror_sync")?;
 
-        // TODO: Verify proposed state matches L3 IssuerRegistry via chain_reader
+        // TODO: Verify proposed state matches L3 OracleRegistry via chain_reader
         // Currently trusts leader's proposal after chain_id + address validation above.
         // Full L3 state verification should be added as defense-in-depth.
 
@@ -6518,12 +6518,12 @@ where
         // Send signature back to leader
         let message = P2PMessage::MirrorSyncSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             nonce,
             signature,
         };
 
-        debug!(nonce, signer_index = self.runtime_config.issuer_registry_index(), "Follower: Sending MirrorSync signature to leader");
+        debug!(nonce, signer_index = self.runtime_config.oracle_registry_index(), "Follower: Sending MirrorSync signature to leader");
         self.p2p.send_to(from, message).await
     }
 
@@ -6567,7 +6567,7 @@ where
         Ok(())
     }
 
-    /// Leader-initiated: run MirrorIssuerRegistry sync BLS consensus.
+    /// Leader-initiated: run MirrorOracleRegistry sync BLS consensus.
     ///
     /// Called by the main loop when L3 nonce > mirror nonce. The caller is
     /// responsible for reading on-chain state and submitting the final tx.
@@ -6576,8 +6576,8 @@ where
     pub async fn run_mirror_sync_consensus(
         &self,
         l3_nonce: u64,
-        issuer_pubkeys: Vec<Vec<u8>>,
-        issuer_ids: Vec<u64>,
+        oracle_pubkeys: Vec<Vec<u8>>,
+        oracle_ids: Vec<u64>,
         active_bitmask: U256,
         active_count: u64,
         threshold: u64,
@@ -6591,8 +6591,8 @@ where
             settlement_chain_id,
             mirror_registry_address,
             l3_nonce,
-            &issuer_pubkeys,
-            &issuer_ids,
+            &oracle_pubkeys,
+            &oracle_ids,
             active_bitmask,
             active_count,
             threshold,
@@ -6616,8 +6616,8 @@ where
         let proposal = P2PMessage::MirrorSyncProposal {
             leader_id: self.config.peer_id,
             nonce: l3_nonce,
-            issuer_pubkeys: issuer_pubkeys.clone(),
-            issuer_ids: issuer_ids.clone(),
+            oracle_pubkeys: oracle_pubkeys.clone(),
+            oracle_ids: oracle_ids.clone(),
             active_bitmask,
             active_count,
             threshold,
@@ -6667,8 +6667,8 @@ where
 
         // Step 4: Build calldata for the caller to submit
         let calldata = build_mirror_registry_sync_calldata(
-            &issuer_pubkeys,
-            &issuer_ids,
+            &oracle_pubkeys,
+            &oracle_ids,
             active_bitmask,
             active_count,
             threshold,
@@ -6879,7 +6879,7 @@ where
         }),
         respond = |s, sig| P2PMessage::SubmitSellOrderSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -7019,7 +7019,7 @@ where
         }),
         respond = |s, sig| P2PMessage::BurnSellOrderSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -7173,7 +7173,7 @@ where
         }),
         respond = |s, sig| P2PMessage::CompleteSellOrderSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(sig.0),
         },
@@ -7343,7 +7343,7 @@ where
         direct_sign = true,
         respond = |s, sig| P2PMessage::RecordCollateralMoveSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: sig,
         },
@@ -7507,7 +7507,7 @@ where
         direct_sign = true,
         respond = |s, sig| P2PMessage::MintBridgedSharesSign {
             signer_id: s.config.peer_id,
-            signer_index: s.runtime_config.issuer_registry_index(),
+            signer_index: s.runtime_config.oracle_registry_index(),
             cycle_number,
             signature: sig,
         },
@@ -7756,10 +7756,10 @@ where
 
             // Create aggregator and add own signature
             let mut aggregator = SignatureAggregator::with_threshold(threshold);
-            let own_issuer_index = self.runtime_config.issuer_registry_index();
+            let own_oracle_index = self.runtime_config.oracle_registry_index();
             if let Err(e) = aggregator.add_signature(
                 self.config.peer_id,
-                own_issuer_index,
+                own_oracle_index,
                 BLSSignature(own_sig.0.clone()),
             ) {
                 ops_queue.write_result(op_tag, op_id, OpResult::Failed {
@@ -7852,7 +7852,7 @@ where
                             continue;
                         }
 
-                        let signer_index = extract_issuer_id(msg_from) as u8;
+                        let signer_index = extract_oracle_id(msg_from) as u8;
 
                         match aggregator.add_signature(
                             *msg_from,
@@ -8193,7 +8193,7 @@ where
 
         self.p2p.send_to(from, P2PMessage::VisionCreditBalanceSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(signature.0),
         }).await
@@ -8290,7 +8290,7 @@ where
 
         self.p2p.send_to(from, P2PMessage::VisionCompleteDepositSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(signature.0),
         }).await
@@ -8396,7 +8396,7 @@ where
 
         self.p2p.send_to(from, P2PMessage::VisionRefundDepositSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             order_id,
             signature: common::types::BLSSignature(signature.0),
         }).await
@@ -8492,7 +8492,7 @@ where
 
         self.p2p.send_to(from, P2PMessage::VisionCompleteWithdrawSign {
             signer_id: self.config.peer_id,
-            signer_index: self.runtime_config.issuer_registry_index(),
+            signer_index: self.runtime_config.oracle_registry_index(),
             withdraw_id,
             signature: common::types::BLSSignature(signature.0),
         }).await
@@ -8581,14 +8581,14 @@ mod tests {
 
     async fn create_test_protocol(
         peer_idx: u8,
-        num_issuers: u8,
+        num_oracles: u8,
     ) -> (
         ConsensusProtocol<MockP2P, MockChain, InMemoryKeyRegistry, crate::price::MockPriceFetcher>,
         Arc<MockP2P>,
         Arc<MockChain>,
     ) {
         let (_network, nodes) = MockP2PNetworkBuilder::new()
-            .with_node_count(num_issuers as usize)
+            .with_node_count(num_oracles as usize)
             .build()
             .await;
 
@@ -8597,13 +8597,13 @@ mod tests {
         let keypair = BLSKeyPair::generate();
 
         // Create key registry with test keys
-        let (key_registry, _) = InMemoryKeyRegistry::generate_test_registry(num_issuers as usize);
+        let (key_registry, _) = InMemoryKeyRegistry::generate_test_registry(num_oracles as usize);
         let key_registry = Arc::new(key_registry);
 
         // Create mock price fetcher
         let price_fetcher = Arc::new(MockPriceFetcherBuilder::new().build());
 
-        let config = ConsensusConfig::new(p2p.peer_id(), num_issuers, peer_idx);
+        let config = ConsensusConfig::new(p2p.peer_id(), num_oracles, peer_idx);
 
         let protocol = ConsensusProtocol::new(
             keypair,
@@ -8620,7 +8620,7 @@ mod tests {
     #[test]
     fn test_consensus_config_default() {
         let config = ConsensusConfig::new(test_peer_id(0), 20, 0);
-        assert_eq!(config.num_issuers, 20);
+        assert_eq!(config.num_oracles, 20);
         assert_eq!(config.node_index, 0);
         assert_eq!(config.signature_threshold, compute_threshold(20)); // BFT: 14
     }
@@ -8843,6 +8843,6 @@ mod tests {
 
     // Integration tests would require more setup with multiple nodes,
     // BridgeOrchestrator, and proper message passing, which is covered
-    // in issuer/tests/bridge_l3_to_settlement_integration.rs and
-    // issuer/tests/custody_release_integration.rs
+    // in oracle/tests/bridge_l3_to_settlement_integration.rs and
+    // oracle/tests/custody_release_integration.rs
 }

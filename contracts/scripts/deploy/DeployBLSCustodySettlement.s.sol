@@ -4,14 +4,14 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 import "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/core/BLSCustody.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployBLSCustodySettlement - Deploy BLSCustody and dependencies to Settlement
-/// @notice Deploys Governance, IssuerRegistry, and BLSCustody as UUPS proxies on Settlement One
+/// @notice Deploys Governance, OracleRegistry, and BLSCustody as UUPS proxies on Settlement One
 /// @dev Story 6.5: Deploys the full Settlement custody chain.
-///      Whitelist proposal is attempted but may fail if IssuerRegistry returns a non-empty
+///      Whitelist proposal is attempted but may fail if OracleRegistry returns a non-empty
 ///      aggregated pubkey (G1 64 bytes), because BLSCustody.proposeWhitelist(, 3, 7) calls
 ///      BLSLib.verifyBLS() which expects G2 pubkeys (128 bytes). This is a known Phase 1
 ///      limitation. Set SKIP_WHITELIST=true to skip whitelist proposals.
@@ -25,8 +25,8 @@ contract DeployBLSCustodySettlement is Script {
     // Deployed addresses
     address public governanceProxy;
     address public governanceImpl;
-    address public issuerRegistryProxy;
-    address public issuerRegistryImpl;
+    address public oracleRegistryProxy;
+    address public oracleRegistryImpl;
     address public blsCustodyProxy;
     address public blsCustodyImpl;
 
@@ -34,8 +34,8 @@ contract DeployBLSCustodySettlement is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        // Optional: allow overriding IssuerRegistry address if already deployed
-        address existingIssuerRegistry = vm.envOr("ISSUER_REGISTRY_ADDRESS", address(0));
+        // Optional: allow overriding OracleRegistry address if already deployed
+        address existingOracleRegistry = vm.envOr("ORACLE_REGISTRY_ADDRESS", address(0));
 
         console2.log("===========================================");
         console2.log("SETTLEMENT BLSCustody DEPLOYMENT");
@@ -47,16 +47,16 @@ contract DeployBLSCustodySettlement is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        if (existingIssuerRegistry != address(0)) {
-            // Use existing IssuerRegistry
-            issuerRegistryProxy = existingIssuerRegistry;
-            console2.log("Using existing IssuerRegistry:", existingIssuerRegistry);
+        if (existingOracleRegistry != address(0)) {
+            // Use existing OracleRegistry
+            oracleRegistryProxy = existingOracleRegistry;
+            console2.log("Using existing OracleRegistry:", existingOracleRegistry);
         } else {
-            // Deploy Governance (needed by IssuerRegistry)
+            // Deploy Governance (needed by OracleRegistry)
             _deployGovernance(deployer);
 
-            // Deploy IssuerRegistry
-            _deployIssuerRegistry();
+            // Deploy OracleRegistry
+            _deployOracleRegistry();
         }
 
         // Deploy BLSCustody
@@ -110,23 +110,23 @@ contract DeployBLSCustodySettlement is Script {
         console2.log("");
     }
 
-    function _deployIssuerRegistry() internal {
-        console2.log("Deploying IssuerRegistry...");
+    function _deployOracleRegistry() internal {
+        console2.log("Deploying OracleRegistry...");
 
-        IssuerRegistry irImpl = new IssuerRegistry();
-        issuerRegistryImpl = address(irImpl);
-        console2.log("  Implementation:", issuerRegistryImpl);
+        OracleRegistry irImpl = new OracleRegistry();
+        oracleRegistryImpl = address(irImpl);
+        console2.log("  Implementation:", oracleRegistryImpl);
 
         ERC1967Proxy irProxy = new ERC1967Proxy(
-            issuerRegistryImpl,
-            abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
+            oracleRegistryImpl,
+            abi.encodeCall(OracleRegistry.initialize, (governanceProxy))
         );
-        issuerRegistryProxy = address(irProxy);
-        console2.log("  Proxy:", issuerRegistryProxy);
+        oracleRegistryProxy = address(irProxy);
+        console2.log("  Proxy:", oracleRegistryProxy);
 
         // Verify
-        IssuerRegistry ir = IssuerRegistry(issuerRegistryProxy);
-        require(address(ir.governance()) == governanceProxy, "IssuerRegistry governance mismatch");
+        OracleRegistry ir = OracleRegistry(oracleRegistryProxy);
+        require(address(ir.governance()) == governanceProxy, "OracleRegistry governance mismatch");
         console2.log("  Governance:", address(ir.governance()));
         console2.log("");
     }
@@ -140,15 +140,15 @@ contract DeployBLSCustodySettlement is Script {
 
         ERC1967Proxy custodyProxy = new ERC1967Proxy(
             blsCustodyImpl,
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
         blsCustodyProxy = address(custodyProxy);
         console2.log("  Proxy:", blsCustodyProxy);
 
         // Verify
         BLSCustody custody = BLSCustody(blsCustodyProxy);
-        require(address(custody.issuerRegistry()) == issuerRegistryProxy, "BLSCustody registry mismatch");
-        console2.log("  IssuerRegistry:", address(custody.issuerRegistry()));
+        require(address(custody.oracleRegistry()) == oracleRegistryProxy, "BLSCustody registry mismatch");
+        console2.log("  OracleRegistry:", address(custody.oracleRegistry()));
         console2.log("");
     }
 
@@ -157,8 +157,8 @@ contract DeployBLSCustodySettlement is Script {
 
         BLSCustody custody = BLSCustody(blsCustodyProxy);
         // Empty BLS signature — proposeWhitelist() skips BLS verification when
-        // IssuerRegistry.getAggregatedPubkey() returns empty bytes (0 issuers registered).
-        // With a real IssuerRegistry that has issuers, this will revert (G1/G2 mismatch).
+        // OracleRegistry.getAggregatedPubkey() returns empty bytes (0 oracles registered).
+        // With a real OracleRegistry that has oracles, this will revert (G1/G2 mismatch).
         // Use SKIP_WHITELIST=true in that case and propose whitelist separately.
         bytes memory emptySignature = "";
 
@@ -187,8 +187,8 @@ contract DeployBLSCustodySettlement is Script {
             '  "contracts": {\n',
             '    "Governance": "', vm.toString(governanceProxy), '",\n',
             '    "GovernanceImpl": "', vm.toString(governanceImpl), '",\n',
-            '    "IssuerRegistry": "', vm.toString(issuerRegistryProxy), '",\n',
-            '    "IssuerRegistryImpl": "', vm.toString(issuerRegistryImpl), '",\n',
+            '    "OracleRegistry": "', vm.toString(oracleRegistryProxy), '",\n',
+            '    "OracleRegistryImpl": "', vm.toString(oracleRegistryImpl), '",\n',
             '    "BLSCustody": "', vm.toString(blsCustodyProxy), '",\n',
             '    "BLSCustodyImpl": "', vm.toString(blsCustodyImpl), '"\n',
             '  },\n',

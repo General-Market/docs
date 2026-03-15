@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix all 4 Vision deposit/refund/withdraw operations by replacing single-signer BLS with multi-issuer consensus, fixing settlement registry address, and adding balance proof aggregation for claimRewards/withdraw.
+**Goal:** Fix all 4 Vision deposit/refund/withdraw operations by replacing single-signer BLS with multi-oracle consensus, fixing settlement registry address, and adding balance proof aggregation for claimRewards/withdraw.
 
 **Architecture:** Deposit watcher stops signing — it enqueues ops to a `PendingOpsQueue`. A spawned Vision ops consensus task (leader-driven, like bridge consensus) drains the queue, collects 2/3 BLS signatures via P2P, and submits on-chain. Balance proofs aggregate via a fire-and-forget P2P broadcast after tick consensus.
 
@@ -19,22 +19,22 @@
 | `contracts/src/vision/Vision.sol` | Modify | Add `withdrawRequests` mapping + setter in `withdrawToSettlement()` |
 | `contracts/src/custody/SettlementBridgeCustody.sol` | Modify | Add `REFUND_TIMEOUT`, `depositCompleted` mapping |
 | `contracts/script/DeployVisionUpgrade.s.sol` | Create | Upgrade script for both contracts |
-| `issuer/src/consensus/keys.rs` | Modify | Fix nonce monotonicity in all 4 setters |
-| `issuer/src/vision/pending_ops.rs` | Create | PendingOpsQueue + VisionOp + OpResult + OpStatus |
-| `issuer/src/vision/mod.rs` | Modify | Add `pub mod pending_ops;` |
+| `oracle/src/consensus/keys.rs` | Modify | Fix nonce monotonicity in all 4 setters |
+| `oracle/src/vision/pending_ops.rs` | Create | PendingOpsQueue + VisionOp + OpResult + OpStatus |
+| `oracle/src/vision/mod.rs` | Modify | Add `pub mod pending_ops;` |
 | `common/src/types/p2p.rs` | Modify | Add 9 new P2P message variants (4 proposal + 4 sign + 1 balance batch) |
-| `issuer/src/consensus/messages.rs` | Modify | Route new message types to handler results |
-| `issuer/src/vision/deposit_watcher.rs` | Modify | Remove BLS, add queue-based submission, on-chain verification |
-| `issuer/src/consensus/protocol.rs` | Modify | Add vision ops consensus handlers (leader + follower) |
-| `issuer/src/vision/engine.rs` | Modify | Balance proof P2P broadcast + aggregation |
-| `issuer/src/main.rs` | Modify | Wire queue, spawn vision ops task, fix settlement registry |
+| `oracle/src/consensus/messages.rs` | Modify | Route new message types to handler results |
+| `oracle/src/vision/deposit_watcher.rs` | Modify | Remove BLS, add queue-based submission, on-chain verification |
+| `oracle/src/consensus/protocol.rs` | Modify | Add vision ops consensus handlers (leader + follower) |
+| `oracle/src/vision/engine.rs` | Modify | Balance proof P2P broadcast + aggregation |
+| `oracle/src/main.rs` | Modify | Wire queue, spawn vision ops task, fix settlement registry |
 | `testnet.sh` | Modify | Add `--vision-settlement-rpc-url` flag |
 
 ---
 
 ## Chunk 1: Contract Prerequisites + Nonce Fix
 
-These are the hard prerequisites. Contracts MUST deploy before the issuer fix goes live.
+These are the hard prerequisites. Contracts MUST deploy before the oracle fix goes live.
 
 ### Task 1: Vision.sol — Add `withdrawRequests` mapping
 
@@ -147,7 +147,7 @@ git commit -m "feat(custody): add REFUND_TIMEOUT and depositCompleted for consen
 ### Task 3: Nonce Monotonicity Guards
 
 **Files:**
-- Modify: `issuer/src/consensus/keys.rs:109-113` (inherent settlement setter), `181-184` (trait L3 setter), `191-195` (trait settlement setter)
+- Modify: `oracle/src/consensus/keys.rs:109-113` (inherent settlement setter), `181-184` (trait L3 setter), `191-195` (trait settlement setter)
 
 - [ ] **Step 1: Fix inherent set_settlement_registry_nonce (line 109)**
 
@@ -217,13 +217,13 @@ fn set_settlement_registry_nonce(&self, nonce: u64) {
 
 - [ ] **Step 4: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/consensus/keys.rs
+git add oracle/src/consensus/keys.rs
 git commit -m "fix(consensus): enforce nonce monotonicity in all 4 registry nonce setters"
 ```
 
@@ -234,9 +234,9 @@ git commit -m "fix(consensus): enforce nonce monotonicity in all 4 registry nonc
 **Files:**
 - Modify: `testnet.sh:676-694`
 
-- [ ] **Step 1: Add --vision-settlement-rpc-url to issuer Vision config**
+- [ ] **Step 1: Add --vision-settlement-rpc-url to oracle Vision config**
 
-In the `_issuer_command_yaml` function, inside the `if [ -n "$VISION_ADDR" ]; then` block (after the existing `--vision-settlement-bridge-custody` / `"$VISION_SETTLEMENT_CUSTODY"` lines), add:
+In the `_oracle_command_yaml` function, inside the `if [ -n "$VISION_ADDR" ]; then` block (after the existing `--vision-settlement-bridge-custody` / `"$VISION_SETTLEMENT_CUSTODY"` lines), add:
 
 ```bash
   - "--vision-settlement-rpc-url"
@@ -247,7 +247,7 @@ In the `_issuer_command_yaml` function, inside the `if [ -n "$VISION_ADDR" ]; th
 
 ```bash
 git add testnet.sh
-git commit -m "fix(testnet): add --vision-settlement-rpc-url to issuer config"
+git commit -m "fix(testnet): add --vision-settlement-rpc-url to oracle config"
 ```
 
 ---
@@ -257,12 +257,12 @@ git commit -m "fix(testnet): add --vision-settlement-rpc-url to issuer config"
 ### Task 5: PendingOpsQueue (new file)
 
 **Files:**
-- Create: `issuer/src/vision/pending_ops.rs`
-- Modify: `issuer/src/vision/mod.rs`
+- Create: `oracle/src/vision/pending_ops.rs`
+- Modify: `oracle/src/vision/mod.rs`
 
 - [ ] **Step 1: Create pending_ops.rs with types**
 
-Create `issuer/src/vision/pending_ops.rs`:
+Create `oracle/src/vision/pending_ops.rs`:
 
 ```rust
 //! Thread-safe queue for vision deposit/withdraw operations.
@@ -689,7 +689,7 @@ mod tests {
 
 - [ ] **Step 2: Add module to vision/mod.rs**
 
-In `issuer/src/vision/mod.rs`, add after the existing module declarations:
+In `oracle/src/vision/mod.rs`, add after the existing module declarations:
 
 ```rust
 pub mod pending_ops;
@@ -697,18 +697,18 @@ pub mod pending_ops;
 
 - [ ] **Step 3: Run tests**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo test -p issuer pending_ops -- --nocapture`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo test -p oracle pending_ops -- --nocapture`
 Expected: All 6 tests pass
 
 - [ ] **Step 4: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/vision/pending_ops.rs issuer/src/vision/mod.rs
+git add oracle/src/vision/pending_ops.rs oracle/src/vision/mod.rs
 git commit -m "feat(vision): add PendingOpsQueue for consensus-driven deposit operations"
 ```
 
@@ -718,7 +718,7 @@ git commit -m "feat(vision): add PendingOpsQueue for consensus-driven deposit op
 
 **Files:**
 - Modify: `common/src/types/p2p.rs` (P2PMessage enum)
-- Modify: `issuer/src/consensus/messages.rs` (message routing)
+- Modify: `oracle/src/consensus/messages.rs` (message routing)
 
 - [ ] **Step 1: Add 9 new P2P message variants to common/src/types/p2p.rs**
 
@@ -799,7 +799,7 @@ Add inside the `P2PMessage` enum (after the last existing variant, before the cl
 
 - [ ] **Step 2: Add message routing in messages.rs**
 
-In `issuer/src/consensus/messages.rs`, inside the `handle_message()` match block, add new arms (before the catch-all or last arm):
+In `oracle/src/consensus/messages.rs`, inside the `handle_message()` match block, add new arms (before the catch-all or last arm):
 
 ```rust
             // Vision consensus messages
@@ -957,13 +957,13 @@ In the `MessageHandleResult` enum (in `messages.rs`), add corresponding variants
 
 - [ ] **Step 4: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer -p common`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle -p common`
 Expected: Successful compilation (may have unused variant warnings — expected until handlers are wired)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add common/src/types/p2p.rs issuer/src/consensus/messages.rs
+git add common/src/types/p2p.rs oracle/src/consensus/messages.rs
 git commit -m "feat(consensus): add 9 P2P message types for vision consensus + balance proofs"
 ```
 
@@ -974,7 +974,7 @@ git commit -m "feat(consensus): add 9 P2P message types for vision consensus + b
 ### Task 7: Refactor Deposit Watcher — Remove BLS, Add Queue
 
 **Files:**
-- Modify: `issuer/src/vision/deposit_watcher.rs`
+- Modify: `oracle/src/vision/deposit_watcher.rs`
 
 This is the largest single refactor. The deposit watcher stops signing and submitting — it enqueues ops and polls results.
 
@@ -1119,13 +1119,13 @@ use std::sync::Arc;
 
 - [ ] **Step 12: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation (with possible warnings about unused imports — clean up as needed)
 
 - [ ] **Step 13: Commit**
 
 ```bash
-git add issuer/src/vision/deposit_watcher.rs
+git add oracle/src/vision/deposit_watcher.rs
 git commit -m "refactor(vision): replace single-signer BLS with queue-based consensus submission"
 ```
 
@@ -1136,12 +1136,12 @@ git commit -m "refactor(vision): replace single-signer BLS with queue-based cons
 ### Task 8: Consensus Protocol — Vision Ops Handlers
 
 **Files:**
-- Modify: `issuer/src/consensus/protocol.rs`
-- Modify: `issuer/src/consensus/handler_macros.rs` (register proposal handlers)
+- Modify: `oracle/src/consensus/protocol.rs`
+- Modify: `oracle/src/consensus/handler_macros.rs` (register proposal handlers)
 
 This is the core consensus logic — leader drives BLS signature collection, followers validate and sign.
 
-**IMPORTANT — All 4 operation types must be implemented together.** Do NOT selectively enable operation types or put any behind feature flags. The contract changes (REFUND_TIMEOUT, withdrawRequests) are security prerequisites — the issuer code assumes they exist. All 4 go through consensus in a single code path.
+**IMPORTANT — All 4 operation types must be implemented together.** Do NOT selectively enable operation types or put any behind feature flags. The contract changes (REFUND_TIMEOUT, withdrawRequests) are security prerequisites — the oracle code assumes they exist. All 4 go through consensus in a single code path.
 
 **Sign message architecture**: The leader's spawned task receives sign messages via a `tokio::sync::mpsc` channel. The main message dispatch (where `MessageHandleResult` is consumed) sends sign messages through this channel. The leader task polls the channel with a deadline (sign_timeout_ms). This follows the same pattern as existing bridge consensus.
 
@@ -1208,7 +1208,7 @@ Implementation outline:
    e. Add own signature to aggregator
    f. Broadcast proposal (e.g., `VisionCreditBalanceProposal`)
    g. **Collect sign messages**: poll `sign_rx` with `tokio::time::timeout(sign_timeout_ms)`. For each received sign:
-      - Derive `actual_signer_index` from `extract_issuer_id(&msg.from)` — NOT from self-reported field
+      - Derive `actual_signer_index` from `extract_oracle_id(&msg.from)` — NOT from self-reported field
       - Verify `order_id`/`withdraw_id` matches current op — discard if mismatch
       - Add to aggregator with `actual_signer_index`
       - Break when threshold reached
@@ -1225,7 +1225,7 @@ Implementation outline:
 
 - [ ] **Step 3: Add follower proposal handlers (4 handlers, all custom)**
 
-For each proposal type, add a handler method. These are custom (NOT using `bridge_proposal_handler!` or `bridge_sign_handler!` macro) because we need `extract_issuer_id(&from)` for signer_index validation.
+For each proposal type, add a handler method. These are custom (NOT using `bridge_proposal_handler!` or `bridge_sign_handler!` macro) because we need `extract_oracle_id(&from)` for signer_index validation.
 
 **CRITICAL — Fail-closed behavior**: ALL `eth_call` failures during follower validation MUST result in refusing to sign (return without sending a Sign message). This includes "function not found" errors from unupgraded contracts. Never treat RPC errors as "skip the check."
 
@@ -1329,19 +1329,19 @@ In the main `handle_message()` match (wherever `MessageHandleResult` is consumed
 
 - [ ] **Step 5: Register proposal handlers in handler_macros.rs**
 
-In `issuer/src/consensus/handler_macros.rs`, register the 4 new proposal message types using `bridge_proposal_handler!` macro if the pattern fits, OR add routing entries manually if the macro doesn't match (since vision proposals need settlement+L3 providers for validation).
+In `oracle/src/consensus/handler_macros.rs`, register the 4 new proposal message types using `bridge_proposal_handler!` macro if the pattern fits, OR add routing entries manually if the macro doesn't match (since vision proposals need settlement+L3 providers for validation).
 
 **Note**: Sign handlers are NOT registered via macro — they go through the mpsc channel (Step 4).
 
 - [ ] **Step 6: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add issuer/src/consensus/protocol.rs issuer/src/consensus/handler_macros.rs
+git add oracle/src/consensus/protocol.rs oracle/src/consensus/handler_macros.rs
 git commit -m "feat(consensus): add vision ops BLS consensus handlers (leader + follower)"
 ```
 
@@ -1352,7 +1352,7 @@ git commit -m "feat(consensus): add vision ops BLS consensus handlers (leader + 
 ### Task 9: Wire Vision Ops Task in main.rs
 
 **Files:**
-- Modify: `issuer/src/main.rs`
+- Modify: `oracle/src/main.rs`
 
 - [ ] **Step 1: Create PendingOpsQueue and pass to deposit watcher**
 
@@ -1414,13 +1414,13 @@ Clone it for the task like the other flags.
 
 - [ ] **Step 5: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add issuer/src/main.rs
+git add oracle/src/main.rs
 git commit -m "feat(main): wire PendingOpsQueue, spawn vision ops task, fix settlement registry"
 ```
 
@@ -1429,7 +1429,7 @@ git commit -m "feat(main): wire PendingOpsQueue, spawn vision ops task, fix sett
 ### Task 10: Balance Proof Aggregation
 
 **Files:**
-- Modify: `issuer/src/vision/engine.rs`
+- Modify: `oracle/src/vision/engine.rs`
 
 - [ ] **Step 1: Split generate_and_store_balance_proofs into sign + broadcast**
 
@@ -1451,12 +1451,12 @@ p2p.broadcast(msg).await;
 
 - [ ] **Step 3: Add BalanceProofCollector struct and peer proof handler**
 
-Add a new struct to `engine.rs` (or a separate `issuer/src/vision/balance_proof_collector.rs` if engine.rs is already large):
+Add a new struct to `engine.rs` (or a separate `oracle/src/vision/balance_proof_collector.rs` if engine.rs is already large):
 
 ```rust
 /// Collects BLS signatures from peers for balance proof aggregation.
 struct BalanceProofCollector {
-    /// Per-player signatures from all issuers: (batch_id, player) → Vec<(signer_index, signature_bytes)>
+    /// Per-player signatures from all oracles: (batch_id, player) → Vec<(signer_index, signature_bytes)>
     pending_sigs: HashMap<(u64, Address), Vec<(u8, Vec<u8>)>>,
     /// When collection started for each batch (for 5s timeout)
     batch_start: HashMap<u64, Instant>,
@@ -1482,7 +1482,7 @@ pub fn handle_vision_balance_proofs_batch(
 )
 ```
 
-1. Derive actual `signer_index` from `extract_issuer_id(from)` — NOT from self-reported field
+1. Derive actual `signer_index` from `extract_oracle_id(from)` — NOT from self-reported field
 2. For each proof `(player, balance, sig)`:
    - Verify balance matches own agreed balance for this player (reject mismatches)
    - Recompute expected message hash: `keccak256(abi.encode(l3_chain_id, vision_address, "WITHDRAW", batch_id, player, balance))`
@@ -1534,13 +1534,13 @@ In the `MessageHandleResult::ProcessVisionBalanceProofsBatch` arm, forward to th
 
 - [ ] **Step 6: Verify compilation**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo check -p oracle`
 Expected: Successful compilation
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add issuer/src/vision/engine.rs
+git add oracle/src/vision/engine.rs
 git commit -m "feat(vision): add balance proof P2P aggregation for claimRewards/withdraw"
 ```
 
@@ -1551,14 +1551,14 @@ git commit -m "feat(vision): add balance proof P2P aggregation for claimRewards/
 **Files:**
 - No new files
 
-- [ ] **Step 1: Build full issuer**
+- [ ] **Step 1: Build full oracle**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo build -p issuer`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo build -p oracle`
 Expected: Successful build
 
 - [ ] **Step 2: Run existing tests**
 
-Run: `cd /Users/maxguillabert/Downloads/index && cargo test -p issuer -- --nocapture`
+Run: `cd /Users/maxguillabert/Downloads/index && cargo test -p oracle -- --nocapture`
 Expected: All existing tests pass + new pending_ops tests pass
 
 - [ ] **Step 3: Build contracts**
@@ -1584,14 +1584,14 @@ Deploy upgraded `Vision.sol` and `SettlementBridgeCustody.sol` to testnet. Verif
 2. `SettlementBridgeCustody.REFUND_TIMEOUT()` returns `7200`
 3. `SettlementBridgeCustody.depositCompleted(0)` returns `false` — mapping exists
 
-- [ ] **Step 6: Build + sync issuer binary to VPS**
+- [ ] **Step 6: Build + sync oracle binary to VPS**
 
 ```bash
-cargo build -p issuer --release
+cargo build -p oracle --release
 # sync to VPS
 ```
 
-- [ ] **Step 7: Restart issuers via testnet.sh**
+- [ ] **Step 7: Restart oracles via testnet.sh**
 
 ```bash
 ssh index-maker/prod/be "cd /home/max/index && ./testnet.sh restart"
@@ -1599,9 +1599,9 @@ ssh index-maker/prod/be "cd /home/max/index && ./testnet.sh restart"
 
 - [ ] **Step 8: Verify deposit flow E2E**
 
-Deposit USDC on settlement, watch issuer logs for:
+Deposit USDC on settlement, watch oracle logs for:
 1. `VisionCreditBalanceProposal` broadcast
-2. Signature collection from 2/3 issuers
+2. Signature collection from 2/3 oracles
 3. `creditBalance` tx receipt — SUCCESS
 4. `completeVisionDeposit` tx receipt — SUCCESS
 

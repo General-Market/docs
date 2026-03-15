@@ -5,9 +5,9 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {IITPNAVOracle} from "../src/interfaces/IITPNAVOracle.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
-import {IMirrorIssuerRegistry} from "../src/interfaces/IMirrorIssuerRegistry.sol";
-import {IIssuerRegistry} from "../src/interfaces/IIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
+import {IMirrorOracleRegistry} from "../src/interfaces/IMirrorOracleRegistry.sol";
+import {IOracleRegistry} from "../src/interfaces/IOracleRegistry.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
 import {BLSLib} from "../src/libraries/BLSLib.sol";
@@ -18,13 +18,13 @@ import "./helpers/TestHelper.sol";
 
 /// @title ITPNAVOracleTest - Tests for Phase 2B ITPNAVOracle
 /// @notice Tests for ITPNAVOracle with BLSVerifier (multi-pairing, 2/3 threshold, snapshot-based).
-/// @dev The oracle now inherits BLSVerifier and reads from MirrorIssuerRegistry which
-///      implements IIssuerRegistry. The mirror must be synced (to populate individual pubkeys
+/// @dev The oracle now inherits BLSVerifier and reads from MirrorOracleRegistry which
+///      implements IOracleRegistry. The mirror must be synced (to populate individual pubkeys
 ///      and create a snapshot) before the oracle can verify any signatures.
 ///      Message hash: keccak256(abi.encode(chainid, address(this), itpAddress, newPrice, timestamp, cycleNumber))
 contract ITPNAVOracleTest is TestHelper {
     ITPNAVOracle public oracle;
-    MirrorIssuerRegistry public mirror;
+    MirrorOracleRegistry public mirror;
 
     address public admin = address(this);
     address public itpToken = address(0x1111);
@@ -36,12 +36,12 @@ contract ITPNAVOracleTest is TestHelper {
     // Snapshot nonce after sync
     uint256 public constant SYNC_NONCE = 1;
 
-    // Signers bitmask for 3 issuers (bits 0,1,2 set)
+    // Signers bitmask for 3 oracles (bits 0,1,2 set)
     uint256 public constant SIGNERS_BITMASK_3 = 0x07;
 
     // Individual pubkeys and IDs
-    bytes[] public issuerPubkeys;
-    uint256[] public issuerIds;
+    bytes[] public oraclePubkeys;
+    uint256[] public oracleIds;
 
     function setUp() public {
         // Set a reasonable block timestamp
@@ -50,20 +50,20 @@ contract ITPNAVOracleTest is TestHelper {
         // Generate real BLS aggregated pubkey from seeds 0,1,2
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
 
-        // Deploy MirrorIssuerRegistry as UUPS proxy with aggregated pubkey (TOFU bootstrap)
-        MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
+        // Deploy MirrorOracleRegistry as UUPS proxy with aggregated pubkey (TOFU bootstrap)
+        MirrorOracleRegistry mirrorImpl = new MirrorOracleRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(mirrorImpl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (aggPubkey, 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (aggPubkey, 2, 3, admin))
         );
-        mirror = MirrorIssuerRegistry(address(proxy));
+        mirror = MirrorOracleRegistry(address(proxy));
 
         // Prepare individual pubkeys for sync
-        issuerPubkeys = new bytes[](3);
-        issuerIds = new uint256[](3);
+        oraclePubkeys = new bytes[](3);
+        oracleIds = new uint256[](3);
         for (uint8 i = 0; i < 3; i++) {
-            issuerPubkeys[i] = blsPubkey(i);
-            issuerIds[i] = i;
+            oraclePubkeys[i] = blsPubkey(i);
+            oracleIds[i] = i;
         }
 
         // Sync the mirror registry to populate individual pubkeys and create a snapshot
@@ -77,14 +77,14 @@ contract ITPNAVOracleTest is TestHelper {
                 block.chainid,
                 address(mirror),
                 SYNC_NONCE,
-                keccak256(abi.encode(issuerPubkeys, issuerIds)),
+                keccak256(abi.encode(oraclePubkeys, oracleIds)),
                 newActiveBitmask,
                 newActiveCount,
                 newThreshold
             )
         );
-        bytes memory syncSig = signWithTestIssuers(syncHash);
-        mirror.sync(issuerPubkeys, issuerIds, newActiveBitmask, newActiveCount, newThreshold, SYNC_NONCE, syncSig, 0, 0);
+        bytes memory syncSig = signWithTestOracles(syncHash);
+        mirror.sync(oraclePubkeys, oracleIds, newActiveBitmask, newActiveCount, newThreshold, SYNC_NONCE, syncSig, 0, 0);
 
         // Deploy ITPNAVOracle pointing to the mirror registry
         oracle = new ITPNAVOracle(address(mirror), itpToken, INITIAL_PRICE);
@@ -93,19 +93,19 @@ contract ITPNAVOracleTest is TestHelper {
         mirror.setAuthorizedMissedCountCaller(address(oracle), true);
     }
 
-    /// @dev Sign an oracle price update with the 3 test issuers using new hash format
+    /// @dev Sign an oracle price update with the 3 test oracles using new hash format
     function _signNavUpdate(uint256 price_, uint256 timestamp_, uint256 cycleNumber_) internal returns (bytes memory) {
         bytes32 h = keccak256(
             abi.encode(block.chainid, address(oracle), itpToken, price_, timestamp_, cycleNumber_)
         );
-        return signWithTestIssuers(h);
+        return signWithTestOracles(h);
     }
 
     // ============ CONSTRUCTOR / DEPLOYMENT TESTS ============
 
     function test_constructor_setsImmutables() public view {
-        // mirrorRegistry is no longer a public field; BLSVerifier stores it as _blsIssuerRegistry
-        assertEq(address(oracle.blsIssuerRegistry()), address(mirror));
+        // mirrorRegistry is no longer a public field; BLSVerifier stores it as _blsOracleRegistry
+        assertEq(address(oracle.blsOracleRegistry()), address(mirror));
         assertEq(oracle.itpAddress(), itpToken);
         assertEq(oracle.currentPrice(), INITIAL_PRICE);
         assertEq(oracle.lastCycleNumber(), 0);
@@ -184,7 +184,7 @@ contract ITPNAVOracleTest is TestHelper {
 
     function test_updatePrice_invalidBLSSignature_reverts() public {
         // Use a signature over wrong message — real BLS verification will fail
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
         oracle.updatePrice(1.05e36, block.timestamp, 1, wrongSig, SYNC_NONCE, SIGNERS_BITMASK_3);
     }
@@ -388,13 +388,13 @@ contract ITPNAVOracleTest is TestHelper {
         oracle.updatePrice(newPrice, block.timestamp, cycleNumber, sig, SYNC_NONCE, SIGNERS_BITMASK_3);
     }
 
-    function test_lastUpdated_usesBlockTimestamp_notIssuerTimestamp() public {
+    function test_lastUpdated_usesBlockTimestamp_notOracleTimestamp() public {
         vm.warp(1000);
 
-        uint256 issuerTimestamp = block.timestamp - 100;
-        bytes memory sig = _signNavUpdate(1e36, issuerTimestamp, 1);
+        uint256 oracleTimestamp = block.timestamp - 100;
+        bytes memory sig = _signNavUpdate(1e36, oracleTimestamp, 1);
 
-        oracle.updatePrice(1e36, issuerTimestamp, 1, sig, SYNC_NONCE, SIGNERS_BITMASK_3);
+        oracle.updatePrice(1e36, oracleTimestamp, 1, sig, SYNC_NONCE, SIGNERS_BITMASK_3);
 
         assertEq(oracle.lastUpdated(), block.timestamp);
     }

@@ -5,13 +5,13 @@ import {Script, console} from "forge-std/Script.sol";
 import {IMorpho, MarketParams, Id} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MetaMorpho, IMetaMorphoBase} from "@metamorpho/MetaMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// ERC1967Proxy no longer needed — oracle uses the main IssuerRegistry
+// ERC1967Proxy no longer needed — oracle uses the main OracleRegistry
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployMorphoE2E - Deploy Morpho Blue + MetaMorpho (single-phase, no timelock wait)
@@ -36,8 +36,8 @@ contract DeployMorphoE2E is DeployBLSHelper {
     // MetaMorpho vault supply cap per market
     uint256 constant SUPPLY_CAP = type(uint184).max;
 
-    // BLS constants (3 issuers, 2/3 threshold)
-    uint256 constant ISSUER_COUNT = 3;
+    // BLS constants (3 oracles, 2/3 threshold)
+    uint256 constant ORACLE_COUNT = 3;
     uint256 constant BLS_THRESHOLD = 2;
 
     function run() external {
@@ -49,14 +49,14 @@ contract DeployMorphoE2E is DeployBLSHelper {
         // Read existing deployment addresses
         address settlementUSDC = vm.envAddress("SETTLEMENT_USDC");
         address itpVault = vm.envAddress("ITP_VAULT");
-        // Use the MAIN IssuerRegistry for the oracle — keeps nonces in sync
+        // Use the MAIN OracleRegistry for the oracle — keeps nonces in sync
         // when registry syncs happen during ITP creation/rebalance
-        address mainRegistry = vm.envAddress("ISSUER_REGISTRY");
+        address mainRegistry = vm.envAddress("ORACLE_REGISTRY");
 
         console.log("Deployer:", deployer);
         console.log("SettlementUSDC:", settlementUSDC);
         console.log("ITP Vault (collateral):", itpVault);
-        console.log("IssuerRegistry (shared):", mainRegistry);
+        console.log("OracleRegistry (shared):", mainRegistry);
 
         vm.startBroadcast(anvilKey);
 
@@ -68,21 +68,21 @@ contract DeployMorphoE2E is DeployBLSHelper {
         AdaptiveCurveIrm irm = new AdaptiveCurveIrm(address(morpho));
         console.log("AdaptiveCurveIRM deployed:", address(irm));
 
-        // 3. Deploy ITPNAVOracle using the main IssuerRegistry
-        // (no separate MirrorIssuerRegistry — avoids nonce desync when
+        // 3. Deploy ITPNAVOracle using the main OracleRegistry
+        // (no separate MirrorOracleRegistry — avoids nonce desync when
         //  registry syncs happen during ITP create/rebalance consensus)
         ITPNAVOracle oracle = new ITPNAVOracle(mainRegistry, itpVault, INITIAL_ORACLE_PRICE);
         console.log("ITPNAVOracle deployed:", address(oracle));
         console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(1:1 ITP/USDC, 36 decimal precision)");
 
         // Authorize ITPNAVOracle for incrementMissedCounts on main registry
-        MirrorIssuerRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
+        MirrorOracleRegistry(mainRegistry).setAuthorizedMissedCountCaller(address(oracle), true);
         console.log("  ITPNAVOracle authorized for incrementMissedCounts");
 
         // Push initial BLS-signed price update so oracle is not stale
         // Use the main registry's current nonce for BLS verification
-        uint256 registryNonce = MirrorIssuerRegistry(mainRegistry).lastSnapshotNonce();
-        uint256 activeBitmask = (1 << ISSUER_COUNT) - 1; // 0x07 for 3 issuers
+        uint256 registryNonce = MirrorOracleRegistry(mainRegistry).lastSnapshotNonce();
+        uint256 activeBitmask = (1 << ORACLE_COUNT) - 1; // 0x07 for 3 oracles
         bytes32 navHash = keccak256(
             abi.encode(block.chainid, address(oracle), itpVault, INITIAL_ORACLE_PRICE, block.timestamp, uint256(1))
         );

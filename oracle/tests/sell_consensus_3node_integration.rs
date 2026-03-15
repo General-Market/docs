@@ -12,12 +12,12 @@ use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::mocks::{MockChain, MockChainBuilder, MockP2PNetworkBuilder};
 use common::traits::{BLSSigner, P2PTransport};
 use common::types::{BLSSignature, Fill, LimitOrder, OrderStatus, PeerId, Side};
-use issuer::consensus::aggregator::calculate_threshold;
-use issuer::{
+use oracle::consensus::aggregator::calculate_threshold;
+use oracle::{
     ConsensusConfig, ConsensusProtocol, ConsensusResult, ConsensusTimeouts,
     InMemoryKeyRegistry, MockPriceFetcher, MockPriceFetcherBuilder,
 };
-use issuer::leader::elect_leader;
+use oracle::leader::elect_leader;
 
 /// Fast timeouts for tests: 100ms per phase, 1ms polling
 fn test_timeouts() -> ConsensusTimeouts {

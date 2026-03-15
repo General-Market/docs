@@ -34,7 +34,7 @@ const MAX_TRANSACTION_SIZE: usize = 1232;
 /// Expected threshold for 11/20 multisig (matching BLS threshold)
 pub const EXPECTED_THRESHOLD: u8 = 11;
 
-/// Expected number of members (20 issuers)
+/// Expected number of members (20 oracles)
 pub const EXPECTED_MEMBERS: usize = 20;
 
 /// Client for interacting with Squads v4 multisig on Solana

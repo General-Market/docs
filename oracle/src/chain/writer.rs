@@ -902,7 +902,7 @@ impl EthersChainWriter {
     /// * `creator_wins` - Whether the creator wins
     /// * `bls_signature` - Aggregated BLS signature (threshold)
     /// * `reference_nonce` - Reference nonce for replay protection
-    /// * `signer_bitmap` - Bitmap of signing issuer indices
+    /// * `signer_bitmap` - Bitmap of signing oracle indices
     pub async fn submit_settlement(
         &self,
         settlement_contract: Address,

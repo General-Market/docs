@@ -23,7 +23,7 @@ import { ensureWalletConnected } from '../helpers/selectors'
 
 test.describe('Vision Claim + Withdraw', () => {
   test('withdraw from batch and Vision balance via UI', async ({ walletPage: page }) => {
-    test.setTimeout(300_000) // 5 min — waiting for tick resolution + issuer BLS proof
+    test.setTimeout(300_000) // 5 min — waiting for tick resolution + oracle BLS proof
 
     // 0. Always ensure Vision balance exists for withdraw test
     // Deposit USDC to Vision balance regardless of prior tests
@@ -59,7 +59,7 @@ test.describe('Vision Claim + Withdraw', () => {
     // 3. If player has a position, wait for tick resolution then try batch withdraw
     if (hasPosition) {
       console.log('Waiting for tick to resolve (~30-60s)...')
-      // Wait for at least one tick cycle (30s) + some buffer for issuer processing
+      // Wait for at least one tick cycle (30s) + some buffer for oracle processing
       await page.waitForTimeout(45_000)
 
       // Check if position balance changed (indicates tick resolution)
@@ -105,7 +105,7 @@ test.describe('Vision Claim + Withdraw', () => {
                   await closeBtn.click()
                 }
               } else {
-                console.log('Batch withdrawal timed out — issuers may not have BLS proof yet. Continuing to balance withdraw.')
+                console.log('Batch withdrawal timed out — oracles may not have BLS proof yet. Continuing to balance withdraw.')
                 // Close modal if open
                 const closeX = page.locator('button:has-text("×")')
                 if (await closeX.isVisible({ timeout: 2_000 }).catch(() => false)) {

@@ -63,7 +63,7 @@
   <text x="572" y="290" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.4">Orbit  ·  Chain ID: 111222333</text>
   <text x="572" y="316" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">Vision.sol — Prediction markets</text>
   <text x="572" y="336" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">VisionReserve — USDC custody</text>
-  <text x="572" y="356" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">IssuerRegistry — BLS keys</text>
+  <text x="572" y="356" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">OracleRegistry — BLS keys</text>
   <text x="572" y="376" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#0A0A0A" opacity="0.5">BotRegistry — Automated trading</text>
 
   <!-- 60px gap before dark section -->
@@ -75,7 +75,7 @@
   <line x1="750" y1="389" x2="750" y2="446" stroke="#0A0A0A" stroke-opacity="0.12" stroke-width="1"/>
 
   <!-- ============================================ -->
-  <!-- ISSUER NETWORK — DARK FULL-BLEED SECTION -->
+  <!-- ORACLE NETWORK — DARK FULL-BLEED SECTION -->
   <!-- ============================================ -->
   <rect x="60" y="446" width="940" height="380" rx="16" fill="url(#darkGrad)"/>
 
@@ -83,13 +83,13 @@
   <circle cx="860" cy="636" r="180" fill="#FFFFFF" opacity="0.015"/>
 
   <!-- Header -->
-  <text x="92" y="490" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" letter-spacing="-0.5">ISSUER NETWORK</text>
+  <text x="92" y="490" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" letter-spacing="-0.5">ORACLE NETWORK</text>
   <text x="92" y="512" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">3x Rust  ·  BLS 2/3 Threshold</text>
 
-  <!-- Three issuer cards -->
-  <!-- ISSUER 1 -->
+  <!-- Three oracle cards -->
+  <!-- ORACLE 1 -->
   <rect x="92" y="536" width="280" height="180" rx="12" fill="#FFFFFF" fill-opacity="0.06"/>
-  <text x="232" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ISSUER 1</text>
+  <text x="232" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ORACLE 1</text>
   <line x1="112" y1="578" x2="352" y2="578" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
   <text x="232" y="600" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Tick Engine</text>
   <text x="232" y="620" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Resolver</text>
@@ -103,9 +103,9 @@
   <text x="232" y="744" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">Data Node 1</text>
   <text x="232" y="760" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#FFFFFF" opacity="0.4">98 sources</text>
 
-  <!-- ISSUER 2 -->
+  <!-- ORACLE 2 -->
   <rect x="392" y="536" width="280" height="180" rx="12" fill="#FFFFFF" fill-opacity="0.06"/>
-  <text x="532" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ISSUER 2</text>
+  <text x="532" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ORACLE 2</text>
   <line x1="412" y1="578" x2="652" y2="578" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
   <text x="532" y="600" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Tick Engine</text>
   <text x="532" y="620" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Resolver</text>
@@ -119,9 +119,9 @@
   <text x="532" y="744" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">Data Node 2</text>
   <text x="532" y="760" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#FFFFFF" opacity="0.4">98 sources</text>
 
-  <!-- ISSUER 3 -->
+  <!-- ORACLE 3 -->
   <rect x="692" y="536" width="280" height="180" rx="12" fill="#FFFFFF" fill-opacity="0.06"/>
-  <text x="832" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ISSUER 3</text>
+  <text x="832" y="566" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">ORACLE 3</text>
   <line x1="712" y1="578" x2="952" y2="578" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1"/>
   <text x="832" y="600" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Tick Engine</text>
   <text x="832" y="620" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#FFFFFF" opacity="0.5">Resolver</text>

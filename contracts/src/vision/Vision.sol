@@ -6,7 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {BLSVerifier} from "../libraries/BLSVerifier.sol";
 import {IVision} from "../interfaces/IVision.sol";
-import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 
 /// @title Vision — Auto-batch prediction market
 /// @notice Resolves all 10 issues from the 3-round review.
@@ -37,7 +37,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ IMMUTABLES ============
 
     IERC20 public immutable USDC;
-    address public immutable issuerRegistry;
+    address public immutable oracleRegistry;
 
     // ============ STATE ============
 
@@ -78,7 +78,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public totalRealBalance;    // sum(realBalance[all users])
     uint256 public totalVirtualBalance; // sum(virtualBalance[all users])
 
-    /// @notice Processed cross-chain deposit IDs (idempotency — survives issuer restarts)
+    /// @notice Processed cross-chain deposit IDs (idempotency — survives oracle restarts)
     mapping(uint256 => bool) public depositProcessed;
 
     /// @notice Auto-incrementing withdraw request ID
@@ -98,11 +98,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     // ============ CONSTRUCTOR ============
 
-    constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
+    constructor(address _usdc, address _oracleRegistry, address _feeCollector) {
         USDC = IERC20(_usdc);
-        issuerRegistry = _issuerRegistry;
+        oracleRegistry = _oracleRegistry;
         feeCollector = _feeCollector;
-        __BLSVerifier_init(_issuerRegistry);
+        __BLSVerifier_init(_oracleRegistry);
     }
 
     // ============ CRITICAL INTERNALS ============
@@ -256,7 +256,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
         if (lockOffset >= tickDuration) revert InvalidLockOffset();
 
-        // BLS verification — proves issuers signed this config (F1/F4)
+        // BLS verification — proves oracles signed this config (F1/F4)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
@@ -470,7 +470,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
         }
 
-        // BLS verify: issuers sign the new balance for this player over this tick range (F1)
+        // BLS verify: oracles sign the new balance for this player over this tick range (F1)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
@@ -497,7 +497,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // all stakes enter the contract via _debitBalance() at join time and never leave
         // until withdraw(). claimRewards() only updates the position's internal balance
         // (a redistribution of already-locked funds between winners and losers), backed
-        // by BLS-signed issuer consensus. No USDC is minted or moved; the accounting
+        // by BLS-signed oracle consensus. No USDC is minted or moved; the accounting
         // invariant USDC.balanceOf(this) >= totalRealBalance + active_batch_deposits +
         // accumulatedRealFees holds throughout.
         if (newBalance > oldBalance) {
@@ -662,7 +662,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         emit FeeCollectorUpdated(old, newCollector);
     }
 
-    // ============ ISSUER OPERATIONS ============
+    // ============ ORACLE OPERATIONS ============
 
     /// @inheritdoc IVision
     function pause(

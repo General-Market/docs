@@ -52,13 +52,13 @@ The ways your machine can fail you. These are not market risks -- these are engi
 
 ### Bitmap Not Submitted
 
-If your bot joins a batch but fails to submit the bitmap to issuers, your predictions are never revealed. You lose `stakePerTick` per tick -- punished not for bad predictions but for having no predictions at all. This is the single most common bot failure.
+If your bot joins a batch but fails to submit the bitmap to oracles, your predictions are never revealed. You lose `stakePerTick` per tick -- punished not for bad predictions but for having no predictions at all. This is the single most common bot failure.
 
 **Fix:** Always verify `{"accepted": true}`. Implement retries with a 3-second backoff.
 
 ### Indexer Lag
 
-After calling `joinBatch()` on-chain, the issuer needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
+After calling `joinBatch()` on-chain, the oracle needs ~6 seconds to detect the `PlayerJoined` event. Submitting the bitmap too early returns `404: Player not found`.
 
 **Fix:** Wait at least 6 seconds between `joinBatch()` and `POST /vision/bitmap`. Retry on 404.
 
@@ -82,7 +82,7 @@ Every on-chain action costs gas. Run out of ETH and every transaction fails sile
 
 ### BLS Proof Unavailability
 
-Claiming rewards requires a BLS-signed proof from issuer nodes. If issuers are down, the claim fails. Your money is there. You simply cannot touch it.
+Claiming rewards requires a BLS-signed proof from oracle nodes. If oracles are down, the claim fails. Your money is there. You simply cannot touch it.
 
 **Fix:** Retry with exponential backoff. Unclaimed rewards do not expire. They wait -- which is more than can be said for most things that owe you money.
 
@@ -102,7 +102,7 @@ The contract includes a solvency check (`InsolventPayout`) -- if the USDC balanc
 
 ### BLS Key Rotation
 
-If the issuer set rotates BLS keys, old proofs become invalid. Claim rewards promptly. Do not let profits accumulate in a system you do not control -- that is not savings, it is faith.
+If the oracle set rotates BLS keys, old proofs become invalid. Claim rewards promptly. Do not let profits accumulate in a system you do not control -- that is not savings, it is faith.
 
 ---
 
@@ -126,7 +126,7 @@ Run through this before starting a bot or placing your first bet. Preparation wi
   </Step>
 
   <Step title="Validate Bitmap Submission">
-    After `joinBatch()`, confirm you receive `{"accepted": true}` from the bitmap endpoint. Check the issuer API: `GET /vision/balance/{batch_id}/{your_address}` — it should show your position.
+    After `joinBatch()`, confirm you receive `{"accepted": true}` from the bitmap endpoint. Check the oracle API: `GET /vision/balance/{batch_id}/{your_address}` — it should show your position.
   </Step>
 
   <Step title="Set Exposure Limits">
@@ -162,15 +162,15 @@ For running a bot in production. The machine does not care about its own surviva
   </Step>
 
   <Step title="Periodic Withdrawal">
-    Don't let profits accumulate indefinitely in the contract. Withdraw periodically to your own wallet. Claimed rewards are yours; unclaimed rewards depend on issuer availability.
+    Don't let profits accumulate indefinitely in the contract. Withdraw periodically to your own wallet. Claimed rewards are yours; unclaimed rewards depend on oracle availability.
   </Step>
 
   <Step title="Strategy Validation">
     Backtest your strategy against historical tick data before running live. Use `POST /vision/backtest` from the [strategies guide](/vision/bots/strategies#backtesting) to simulate.
   </Step>
 
-  <Step title="Multiple Issuer Endpoints">
-    Submit your bitmap to all known issuer nodes, not just one. If one issuer is down, the others still store your bitmap. The bot needs at least 2/3 of issuers to accept the bitmap for it to participate in resolution.
+  <Step title="Multiple Oracle Endpoints">
+    Submit your bitmap to all known oracle nodes, not just one. If one oracle is down, the others still store your bitmap. The bot needs at least 2/3 of oracles to accept the bitmap for it to participate in resolution.
   </Step>
 </Steps>
 
@@ -186,8 +186,8 @@ For running a bot in production. The machine does not care about its own surviva
 | Nonce collision | Transaction reverts | Track nonces locally, don't rely solely on `get_transaction_count` |
 | Out of gas (ETH) | All txns fail | Top up ETH, set balance alert at 0.01 ETH |
 | Out of USDC | `InsufficientDeposit` revert | Top up USDC, reduce `max_batches` |
-| Issuer unreachable | Bitmap submission timeout | Retry other issuer URLs, check network |
-| Stale BLS proof | `InvalidBLSSignature` on claim | Re-fetch proof from issuer API |
+| Oracle unreachable | Bitmap submission timeout | Retry other oracle URLs, check network |
+| Stale BLS proof | `InvalidBLSSignature` on claim | Re-fetch proof from oracle API |
 | Bot already registered | `BotAlreadyRegistered` revert | Skip registration (idempotent, catch error) |
 | Batch paused | `BatchPaused` revert | Filter out paused batches in poll loop |
 

@@ -84,7 +84,7 @@
       "pages": [
         "index/architecture/overview",
         "index/architecture/contracts",
-        "index/architecture/issuer-nodes",
+        "index/architecture/oracle-nodes",
         "index/architecture/data-node",
         "index/architecture/bridge",
         "index/architecture/curator"

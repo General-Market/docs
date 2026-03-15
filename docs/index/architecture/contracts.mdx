@@ -18,13 +18,13 @@ The contracts are the truth. Everything else is commentary.
 | **BridgeProxy.sol** | Cross-chain order routing between Arbitrum L1/L2 and the L3. Relays user orders submitted on Arbitrum down to the Index contract on L3. |
 | **BridgedItpFactory.sol** | Factory that creates ERC-20 representations of ITP shares on Arbitrum, enabling L1/L2 composability without requiring users to interact with L3 directly. |
 | **Governance.sol** | Administrative controls including global pause, per-ITP pause, and role management. |
-| **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from issuer nodes. |
+| **BLSCustody.sol** | Executes custody operations (deposits, withdrawals) gated by BLS-signed consensus from oracle nodes. |
 
 ## Registry Contracts
 
 | Contract | Description |
 |---|---|
-| **IssuerRegistry.sol** | Stores issuer node BLS public keys, manages the aggregated public key, and handles key rotation. New issuer nodes must register in IssuerRegistry before participating in consensus. |
+| **OracleRegistry.sol** | Stores oracle node BLS public keys, manages the aggregated public key, and handles key rotation. New oracle nodes must register in OracleRegistry before participating in consensus. |
 | **CollateralRegistry.sol** | Maintains the whitelist of accepted collateral tokens (currently USDC). Controls which tokens can back ITP creation and order settlement. |
 | **AssetPairRegistry.sol** | Configures trading pairs available on the protocol -- maps asset identifiers to on-chain and off-chain parameters. |
 | **FeeRegistry.sol** | Defines fee tiers for different operations and manages deployer fee claiming. Protocol fees are accrued in FeeRegistry and claimable by authorized addresses. |
@@ -36,7 +36,7 @@ The contracts are the truth. Everything else is commentary.
 | **TypesLib.sol** | Shared struct definitions used across the protocol: `LimitOrder`, `Fill`, `ITP`, batch metadata, and more. |
 | **ErrorsLib.sol** | Custom error definitions ranging from `E001` through `E069+`. Every revert in the protocol uses a typed error from ErrorsLib. |
 | **EventsLib.sol** | Event definitions emitted by core contracts -- `OrderSubmitted`, `BatchConfirmed`, `FillExecuted`, `ITPCreated`, `WeightsUpdated`, etc. |
-| **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates issuer node consensus. |
+| **BLSLib.sol** | BLS signature verification using EVM precompiles on the BN254 curve. Called by every path that validates oracle node consensus. |
 
 ## Storage Layout
 
@@ -73,8 +73,8 @@ Every state change that matters requires cryptographic proof that the machines a
 </Warning>
 
 - **Curve:** BN254 (alt_bn128) -- precompiles at `0x06`, `0x07`, `0x08`
-- **Threshold:** `ceil(2n/3)` of registered issuer nodes
-- **Key management:** Aggregated public key in `IssuerRegistry.sol`, updated on join/leave/rotation
+- **Threshold:** `ceil(2n/3)` of registered oracle nodes
+- **Key management:** Aggregated public key in `OracleRegistry.sol`, updated on join/leave/rotation
 - **Verification:** `BLSLib.verify(message, signature, aggregatedPubkey)` in `confirmBatch()`, before any state change
 
 ## ITP Order Lifecycle
@@ -86,7 +86,7 @@ User submits order (L3 or via BridgeProxy)
   Index.sol stores pending order
         │
         ▼
-  Issuer nodes batch orders off-chain
+  Oracle nodes batch orders off-chain
         │
         ▼
   confirmBatch() called with BLS signature

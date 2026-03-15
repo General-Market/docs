@@ -236,12 +236,12 @@ pub fn aggregate_signatures_internal(
 ///
 /// To prevent this, the protocol MUST use one of:
 /// 1. **Proof-of-Possession (PoP)**: Each signer proves knowledge of their private key
-///    by signing their public key. This is verified during issuer registration.
+///    by signing their public key. This is verified during oracle registration.
 /// 2. **Key Aggregation with Coefficients**: Use MuSig2-style aggregation with
 ///    commitment-based coefficients.
 ///
 /// This implementation assumes PoP is verified at the protocol level during
-/// issuer onboarding (IssuerRegistry.registerIssuer verifies PoP signature).
+/// oracle onboarding (OracleRegistry.registerOracle verifies PoP signature).
 pub fn aggregate_pubkeys(pubkeys: &[BLSPublicKey]) -> Result<BLSPublicKey, Error> {
     if pubkeys.is_empty() {
         return Err(Error::SignatureAggregation(

@@ -5,18 +5,18 @@
 ```
                     ┌──────────────────┐
                     │    DATA-NODE     │  generates config every 60s
-                    │   (1 per issuer) │  per source (67 sources)
+                    │   (1 per oracle) │  per source (67 sources)
                     └────────┬─────────┘
                              │
               GET /batches/recommended
                              │
                     ┌────────▼─────────┐
-                    │  LEADER ISSUER   │  fetches from its own data-node
+                    │  LEADER ORACLE   │  fetches from its own data-node
                     │                  │  proposes to cluster
                     └────────┬─────────┘
                              │ P2P: BatchConfigProposal
                     ┌────────▼─────────┐
-                    │ OTHER ISSUERS    │  have THEIR OWN data-nodes
+                    │ OTHER ORACLES    │  have THEIR OWN data-nodes
                     │ (followers)      │  verify against their view
                     │                  │  BLS co-sign if OK
                     └────────┬─────────┘
@@ -240,12 +240,12 @@
                             │
                             │
  ═══════════════════════════════════════════════════════════════════════════════
-  STAGE 2: ISSUER BLS CONSENSUS                                every 120s
+  STAGE 2: ORACLE BLS CONSENSUS                                every 120s
  ═══════════════════════════════════════════════════════════════════════════════
                             │
                             ▼
   ┌───────────────────────────────────────────────────────────────────────┐
-  │  ISSUER CLUSTER                                                       │
+  │  ORACLE CLUSTER                                                       │
   │                                                                       │
   │  ┌─── LEADER (round-robin) ────────────────────────────────────────┐  │
   │  │                                                                  │  │
@@ -275,7 +275,7 @@
   │  │  │  ✓ threshold divergence < 50% on overlapping assets        │  │  │
   │  │  │                                                            │  │  │
   │  │  │  Pass → BLS co-sign + replicate to own data-node           │  │  │
-  │  │  │  Fail → reject (leader gets no signature from this issuer) │  │  │
+  │  │  │  Fail → reject (leader gets no signature from this oracle) │  │  │
   │  │  └────────────────────────────────────────────────────────────┘  │  │
   │  │                                                                  │  │
   │  └──────────────────────────────────────────────────────────────────┘  │
@@ -312,7 +312,7 @@
   │  │                                                                  │  │
   │  │  1. _createBatch():                                              │  │
   │  │     • Idempotent: if sourceId already has batch → return it      │  │
-  │  │     • BLS verify: proves issuers signed this config              │  │
+  │  │     • BLS verify: proves oracles signed this config              │  │
   │  │     • Stores: configHash, tickDuration, lockOffset               │  │
   │  │     • Emits: BatchCreated event                                  │  │
   │  │                                                                  │  │
@@ -482,7 +482,7 @@
   │          returns { current, staged } │
   └──────────────────────────────────────┤
                                          │
-  ┌─ ISSUER ORCHESTRATOR ────────────────┤
+  ┌─ ORACLE ORCHESTRATOR ────────────────┤
   │  OPEN:   BLS consensus + push to DN  │
   │  LOCKED: QUEUE updateBatchConfig()   │
   │          flush at next tick start    │
@@ -533,7 +533,7 @@
   │              │                                          │            │
   │              ▼                                          │            │
   │   ┌──────────────────┐                                  │            │
-  │   │ ISSUER CONSENSUS │  BLS multi-sign                  │            │
+  │   │ ORACLE CONSENSUS │  BLS multi-sign                  │            │
   │   └────────┬─────────┘                                  │            │
   │            │                                            │            │
   │   GET /batches/signed                                   │            │
@@ -581,8 +581,8 @@
   │  └──────────────────────────────────────────────────────────────────┘   │
   │                                                                          │
   │  ┌── CONSENSUS ─────────────────────────────────────────────────────┐   │
-  │  │  ✓ BLS multi-signature (2/3+ issuers)                            │   │
-  │  │  ✓ Each issuer verifies against ITS OWN data-node                │   │
+  │  │  ✓ BLS multi-signature (2/3+ oracles)                            │   │
+  │  │  ✓ Each oracle verifies against ITS OWN data-node                │   │
   │  │  ✓ tick_duration + lock_offset must match EXACTLY                │   │
   │  │  ✓ Asset count tolerance ±50%                                    │   │
   │  │  ✓ Unknown assets < 20%                                          │   │
@@ -600,7 +600,7 @@
   │                                                                          │
   │  ┌── TIMING ────────────────────────────────────────────────────────┐   │
   │  │  ✓ Data-node freezes config during lock period                   │   │
-  │  │  ✓ Issuer queues submission if in lock window                    │   │
+  │  │  ✓ Oracle queues submission if in lock window                    │   │
   │  │  ✓ On-chain reverts if submitted during lock                     │   │
   │  │  ✓ Frontend disables interaction during lock                     │   │
   │  │  ✓ Staged config available for next-tick preparation             │   │

@@ -1,0 +1,40 @@
+<h2>Index Tab — What to show?</h2>
+<p class="subtitle">Select all that belong on a public profile's Index tab</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="itp-holdings" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>ITP Holdings</h3>
+      <p>Which ITPs they hold, share count, current value. The portfolio.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="order-history" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Order History</h3>
+      <p>Buy/sell orders — amount, ITP, status (pending/completed/failed), timestamp.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="portfolio-value" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Portfolio Value Over Time</h3>
+      <p>Chart showing total ITP portfolio value. Requires historical NAV snapshots.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="pnl-per-itp" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>P&L Per ITP</h3>
+      <p>Profit/loss breakdown per ITP — entry price vs current NAV.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="total-volume" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>Total Volume</h3>
+      <p>Aggregate USDC traded across all ITP buys and sells.</p>
+    </div>
+  </div>
+</div>

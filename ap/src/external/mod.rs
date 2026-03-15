@@ -9,7 +9,7 @@
 //!
 //! # Future Modules
 //!
-//! - `bitget_readonly` - Bitget read-only API for Issuers (Story 5.2)
+//! - `bitget_readonly` - Bitget read-only API for Oracles (Story 5.2)
 //! - `1inch` - 1inch aggregator integration (Stories 5.4-5.8)
 //! - `uniswap` - On-chain fallback execution (Story 5.9)
 

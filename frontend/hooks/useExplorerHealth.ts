@@ -84,7 +84,7 @@ export function useExplorerHealth(): UseExplorerHealthReturn {
 }
 
 /** Compute deltas between consecutive aggregated snapshots for rate charts.
- *  Clamps negative deltas to 0 (counter reset detection on issuer restart). */
+ *  Clamps negative deltas to 0 (counter reset detection on oracle restart). */
 export function computeDeltas(
   snapshots: AggregatedSnapshot[],
   field: keyof AggregatedSnapshot

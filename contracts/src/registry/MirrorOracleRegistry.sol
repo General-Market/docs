@@ -5,23 +5,23 @@ import {BLSLib} from "../libraries/BLSLib.sol";
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 import {EventsLib} from "../libraries/EventsLib.sol";
 import {TypesLib} from "../libraries/TypesLib.sol";
-import {IMirrorIssuerRegistry} from "../interfaces/IMirrorIssuerRegistry.sol";
-import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
+import {IMirrorOracleRegistry} from "../interfaces/IMirrorOracleRegistry.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-/// @title MirrorIssuerRegistry
-/// @notice Mirror of L3 IssuerRegistry on Settlement (or any chain).
+/// @title MirrorOracleRegistry
+/// @notice Mirror of L3 OracleRegistry on Settlement (or any chain).
 ///         Synced via BLS-signed state proofs. Permissionless updates.
-///         Implements IIssuerRegistry subset so BLSVerifier can use it directly.
-/// @dev Stores individual issuer pubkeys for multi-pairing BLS verification.
+///         Implements IOracleRegistry subset so BLSVerifier can use it directly.
+/// @dev Stores individual oracle pubkeys for multi-pairing BLS verification.
 ///      First sync uses aggregated pubkey (TOFU bootstrap).
 ///      Subsequent syncs use multi-pairing with 2/3 threshold.
 ///
 ///      Chain of trust: Old keys sign the transition to new keys.
 ///      The initial deploy (initialize) is the trust anchor.
 /// @custom:security-contact security@indexprotocol.com
-contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initializable, UUPSUpgradeable {
+contract MirrorOracleRegistry is IMirrorOracleRegistry, IOracleRegistry, Initializable, UUPSUpgradeable {
     // ============ CONSTANTS ============
 
     /// @notice Expected BLS G2 public key length (128 bytes: x_im, x_re, y_im, y_re)
@@ -35,27 +35,27 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
     /// @notice BLS threshold (e.g., 2 for 2/3 quorum)
     uint256 public threshold;
 
-    /// @notice Active issuer count
+    /// @notice Active oracle count
     uint256 public activeCount;
 
     /// @notice Monotonically increasing nonce for replay protection
-    uint256 public override(IMirrorIssuerRegistry, IIssuerRegistry) registryNonce;
+    uint256 public override(IMirrorOracleRegistry, IOracleRegistry) registryNonce;
 
     /// @notice Admin address for upgrades only
     address public admin;
 
     /// @notice Nonce of the last snapshot stored
-    uint256 public override(IMirrorIssuerRegistry, IIssuerRegistry) lastSnapshotNonce;
+    uint256 public override(IMirrorOracleRegistry, IOracleRegistry) lastSnapshotNonce;
 
     /// @notice Historical aggregated pubkeys indexed by nonce (kept for backward compat)
     mapping(uint256 => bytes) private _pubkeyAtNonce;
 
     // --- Phase 2B additions (individual pubkeys + snapshots) ---
 
-    /// @notice Individual issuer pubkeys (issuer_id => G2 pubkey 128 bytes)
-    mapping(uint256 => bytes) private _issuerPubkeys;
+    /// @notice Individual oracle pubkeys (oracle_id => G2 pubkey 128 bytes)
+    mapping(uint256 => bytes) private _oraclePubkeys;
 
-    /// @notice Active issuer bitmask (bit i = issuer i is active)
+    /// @notice Active oracle bitmask (bit i = oracle i is active)
     uint256 public activeBitmask;
 
     /// @notice Snapshots for BLSVerifier historical lookups
@@ -84,10 +84,10 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
 
     // ============ INITIALIZER ============
 
-    /// @notice Initialize the MirrorIssuerRegistry
+    /// @notice Initialize the MirrorOracleRegistry
     /// @param aggPubkey Initial aggregated G2 pubkey (128 bytes)
     /// @param _threshold BLS threshold for signature verification
-    /// @param _activeCount Number of active issuers
+    /// @param _activeCount Number of active oracles
     /// @param _admin Admin address for upgrades
     function initialize(
         bytes calldata aggPubkey,
@@ -125,8 +125,8 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
     /// @dev First sync (lastSnapshotNonce == 0): uses BLSLib.verifyBLS against aggregated key (TOFU)
     ///      Subsequent syncs: uses verifyBLSMultiPairing with 2/3 threshold
     function sync(
-        bytes[] calldata issuerPubkeys,
-        uint256[] calldata issuerIds,
+        bytes[] calldata oraclePubkeys,
+        uint256[] calldata oracleIds,
         uint256 newActiveBitmask,
         uint256 newActiveCount,
         uint256 newThreshold,
@@ -141,8 +141,8 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         }
 
         // Validate pubkeys and IDs array lengths match
-        if (issuerPubkeys.length != issuerIds.length) {
-            revert ErrorsLib.E137_PubkeysIdsLengthMismatch(issuerPubkeys.length, issuerIds.length);
+        if (oraclePubkeys.length != oracleIds.length) {
+            revert ErrorsLib.E137_PubkeysIdsLengthMismatch(oraclePubkeys.length, oracleIds.length);
         }
 
         // Validate threshold configuration
@@ -151,8 +151,8 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         }
 
         // Validate all pubkeys are correct length
-        for (uint256 i = 0; i < issuerPubkeys.length; i++) {
-            if (issuerPubkeys[i].length != PUBKEY_LENGTH) {
+        for (uint256 i = 0; i < oraclePubkeys.length; i++) {
+            if (oraclePubkeys[i].length != PUBKEY_LENGTH) {
                 revert ErrorsLib.E091_InvalidAggPubkey();
             }
         }
@@ -164,7 +164,7 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
                 block.chainid,
                 address(this),
                 nonce,
-                keccak256(abi.encode(issuerPubkeys, issuerIds)),
+                keccak256(abi.encode(oraclePubkeys, oracleIds)),
                 newActiveBitmask,
                 newActiveCount,
                 newThreshold
@@ -197,8 +197,8 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         }
 
         // Store individual pubkeys
-        for (uint256 i = 0; i < issuerIds.length; i++) {
-            _issuerPubkeys[issuerIds[i]] = issuerPubkeys[i];
+        for (uint256 i = 0; i < oracleIds.length; i++) {
+            _oraclePubkeys[oracleIds[i]] = oraclePubkeys[i];
         }
 
         // Update state
@@ -210,7 +210,7 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         // Create snapshot for BLSVerifier historical lookups
         _snapshots[nonce] = TypesLib.RegistrySnapshot({
             activeCount: newActiveCount,
-            stateHash: keccak256(abi.encode(issuerPubkeys, issuerIds)),
+            stateHash: keccak256(abi.encode(oraclePubkeys, oracleIds)),
             aggregatedPubkey: [bytes32(0), bytes32(0), bytes32(0), bytes32(0)],
             blockNumber: block.number,
             activeBitmask: newActiveBitmask
@@ -222,15 +222,15 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
             nonce,
             newActiveCount,
             newThreshold,
-            keccak256(abi.encode(issuerPubkeys)),
+            keccak256(abi.encode(oraclePubkeys)),
             signersBitmask
         );
     }
 
-    // ============ IIssuerRegistry METHODS (BLSVerifier subset) ============
+    // ============ IOracleRegistry METHODS (BLSVerifier subset) ============
 
     /// @notice Get a registry snapshot by nonce
-    function getSnapshotAtNonce(uint256 nonce) external view override(IMirrorIssuerRegistry, IIssuerRegistry) returns (TypesLib.RegistrySnapshot memory) {
+    function getSnapshotAtNonce(uint256 nonce) external view override(IMirrorOracleRegistry, IOracleRegistry) returns (TypesLib.RegistrySnapshot memory) {
         return _snapshots[nonce];
     }
 
@@ -239,12 +239,12 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         uint256 signersBitmask,
         bytes32 messageHash,
         bytes calldata blsSignature
-    ) external view override(IMirrorIssuerRegistry, IIssuerRegistry) returns (bool) {
+    ) external view override(IMirrorOracleRegistry, IOracleRegistry) returns (bool) {
         return _verifyMultiPairing(signersBitmask, messageHash, blsSignature);
     }
 
-    /// @notice Increment missed counts for non-signing issuers (advisory)
-    function incrementMissedCounts(uint256 nonSignersBitmask) external override(IMirrorIssuerRegistry, IIssuerRegistry) {
+    /// @notice Increment missed counts for non-signing oracles (advisory)
+    function incrementMissedCounts(uint256 nonSignersBitmask) external override(IMirrorOracleRegistry, IOracleRegistry) {
         if (!authorizedMissedCountCallers[msg.sender]) {
             revert ErrorsLib.E136_NotAuthorizedMissedCountCaller(msg.sender);
         }
@@ -252,36 +252,36 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         uint256 bitmap = nonSignersBitmask;
         while (bitmap != 0) {
             uint256 bit = bitmap & (~bitmap + 1); // isolate lowest set bit
-            uint256 issuerId = _log2(bit);
-            _missedCounts[issuerId]++;
+            uint256 oracleId = _log2(bit);
+            _missedCounts[oracleId]++;
             bitmap ^= bit;
         }
 
         emit EventsLib.NonSignersRecorded(nonSignersBitmask);
     }
 
-    // ============ IIssuerRegistry VIEW FUNCTIONS (partially implemented) ============
+    // ============ IOracleRegistry VIEW FUNCTIONS (partially implemented) ============
 
     /// @notice Get the current aggregated G2 pubkey
-    function getAggregatedPubkey() external view override(IMirrorIssuerRegistry, IIssuerRegistry) returns (bytes memory) {
+    function getAggregatedPubkey() external view override(IMirrorOracleRegistry, IOracleRegistry) returns (bytes memory) {
         return aggregatedPubkey;
     }
 
-    /// @notice Get the active issuer bitmask
+    /// @notice Get the active oracle bitmask
     function getActiveBitmask() external view returns (uint256) {
         return activeBitmask;
     }
 
-    /// @notice Get the active issuer count
-    function activeIssuerCount() external view returns (uint256) {
+    /// @notice Get the active oracle count
+    function activeOracleCount() external view returns (uint256) {
         return activeCount;
     }
 
-    /// @notice Get individual BLS pubkeys for a list of issuer IDs
-    function getIssuerPubkeys(uint256[] calldata issuerIdList) external view returns (bytes[] memory pubkeys) {
-        pubkeys = new bytes[](issuerIdList.length);
-        for (uint256 i = 0; i < issuerIdList.length; i++) {
-            pubkeys[i] = _issuerPubkeys[issuerIdList[i]];
+    /// @notice Get individual BLS pubkeys for a list of oracle IDs
+    function getOraclePubkeys(uint256[] calldata oracleIdList) external view returns (bytes[] memory pubkeys) {
+        pubkeys = new bytes[](oracleIdList.length);
+        for (uint256 i = 0; i < oracleIdList.length; i++) {
+            pubkeys[i] = _oraclePubkeys[oracleIdList[i]];
         }
     }
 
@@ -290,88 +290,88 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         return _decodeBitmap(bitmap);
     }
 
-    /// @notice Get missed count for a specific issuer
-    function getMissedCount(uint256 issuerId) external view returns (uint256) {
-        return _missedCounts[issuerId];
+    /// @notice Get missed count for a specific oracle
+    function getMissedCount(uint256 oracleId) external view returns (uint256) {
+        return _missedCounts[oracleId];
     }
 
-    // ============ IIssuerRegistry STUBS (not applicable for mirror) ============
+    // ============ IOracleRegistry STUBS (not applicable for mirror) ============
     // These exist to satisfy the interface but are not meaningful on a mirror registry.
 
-    function addIssuer(address, bytes32, bytes calldata, bytes calldata) external pure returns (uint256) {
-        revert("MirrorIssuerRegistry: not supported");
+    function addOracle(address, bytes32, bytes calldata, bytes calldata) external pure returns (uint256) {
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function removeIssuer(uint256) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+    function removeOracle(uint256) external pure {
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function requestKeyRotation(uint256, bytes calldata, bytes calldata, bytes calldata) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function approveRotation(uint256, uint256, bytes calldata) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function executeRotation(uint256) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function forceRotationWindow(uint256) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function cancelRotation(uint256) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function getIssuer(uint256) external pure returns (TypesLib.Issuer memory) {
-        revert("MirrorIssuerRegistry: not supported");
+    function getOracle(uint256) external pure returns (TypesLib.Oracle memory) {
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function setAggregatedPubkey(bytes calldata, uint256) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function verifySignerBitmap(uint256) external pure returns (uint256, uint256[] memory) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function getPendingRotation(uint256) external pure returns (TypesLib.KeyRotation memory) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function canExecuteRotation(uint256) external pure returns (bool) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function getRegistryStateHash() external pure returns (bytes32) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function ROTATION_THRESHOLD() external pure returns (uint256) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function ROTATION_TIMELOCK() external pure returns (uint256) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function SAFE_PERIOD() external pure returns (uint256) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function ADMIN_FORCE_WINDOW() external pure returns (uint256) {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function getActiveIssuerEndpoints() external pure returns (uint256[] memory, bytes32[] memory, bytes[] memory) {
-        revert("MirrorIssuerRegistry: not supported");
+    function getActiveOracleEndpoints() external pure returns (uint256[] memory, bytes32[] memory, bytes[] memory) {
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function updateIssuerIp(uint256, bytes32, bytes calldata) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+    function updateOracleIp(uint256, bytes32, bytes calldata) external pure {
+        revert("MirrorOracleRegistry: not supported");
     }
 
     function consensusPaused() external pure returns (bool) {
@@ -379,15 +379,15 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
     }
 
     function setConsensusPaused(bool) external pure {
-        revert("MirrorIssuerRegistry: not supported");
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function getIssuers() external pure returns (TypesLib.Issuer[] memory) {
-        revert("MirrorIssuerRegistry: not supported");
+    function getOracles() external pure returns (TypesLib.Oracle[] memory) {
+        revert("MirrorOracleRegistry: not supported");
     }
 
-    function isActiveIssuer(address) external pure returns (bool) {
-        revert("MirrorIssuerRegistry: not supported");
+    function isActiveOracle(address) external pure returns (bool) {
+        revert("MirrorOracleRegistry: not supported");
     }
 
     // ============ ADMIN FUNCTIONS ============
@@ -440,9 +440,9 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
         uint256[] memory ids = _decodeBitmap(signersBitmask);
         bytes[] memory pubkeys = new bytes[](ids.length);
         for (uint256 i = 0; i < ids.length; i++) {
-            pubkeys[i] = _issuerPubkeys[ids[i]];
+            pubkeys[i] = _oraclePubkeys[ids[i]];
             if (pubkeys[i].length != PUBKEY_LENGTH) {
-                revert ErrorsLib.E135_MissingIssuerPubkey(ids[i]);
+                revert ErrorsLib.E135_MissingOraclePubkey(ids[i]);
             }
         }
         return BLSLib.verifyBLSMulti(pubkeys, messageHash, blsSignature);

@@ -41,9 +41,9 @@ test.describe('Vision Tick Resolution', () => {
       PLAYER1, batchId, currentConfigHash, depositAmount, stakePerTick,
       player1Bets, marketCount,
     );
-    // Bitmap acceptance is best-effort — issuers may lag behind on-chain state
+    // Bitmap acceptance is best-effort — oracles may lag behind on-chain state
     if (p1Result.bitmapAccepted === 0) {
-      console.log('P1: No issuers accepted bitmap (commitment mismatch) — continuing with deposit');
+      console.log('P1: No oracles accepted bitmap (commitment mismatch) — continuing with deposit');
     }
 
     console.log(`PLAYER2 joining batch ${batchId}...`);
@@ -52,7 +52,7 @@ test.describe('Vision Tick Resolution', () => {
       player2Bets, marketCount,
     );
     if (p2Result.bitmapAccepted === 0) {
-      console.log('P2: No issuers accepted bitmap (commitment mismatch) — continuing with deposit');
+      console.log('P2: No oracles accepted bitmap (commitment mismatch) — continuing with deposit');
     }
 
     // 5. Record balances before tick resolution
@@ -64,7 +64,7 @@ test.describe('Vision Tick Resolution', () => {
     console.log(`P1 lastClaimed=${p1PosBefore.lastClaimedTick}, P2 lastClaimed=${p2PosBefore.lastClaimedTick}`);
 
     // 6. Wait for at least one tick to resolve
-    // Poll until lastClaimedTick advances for either player (issuers resolved a tick)
+    // Poll until lastClaimedTick advances for either player (oracles resolved a tick)
     const startTick = p1PosBefore.lastClaimedTick > p2PosBefore.lastClaimedTick
       ? p1PosBefore.lastClaimedTick
       : p2PosBefore.lastClaimedTick;
@@ -92,8 +92,8 @@ test.describe('Vision Tick Resolution', () => {
     }
 
     if (!tickResolved) {
-      // Tick resolution depends on issuer timing — verify positions exist (pass trivially)
-      console.log('Tick did not resolve within 4min — issuers may be processing other batches');
+      // Tick resolution depends on oracle timing — verify positions exist (pass trivially)
+      console.log('Tick did not resolve within 4min — oracles may be processing other batches');
       expect(p1PosBefore.balance).toBeGreaterThan(0n);
       expect(p2PosBefore.balance).toBeGreaterThan(0n);
       return;

@@ -1,7 +1,7 @@
 //! NAV signature collector, BLS aggregation, and oracle pusher
 //!
 //! Implements the off-chain oracle collector pipeline:
-//! 1. Request NAV signatures from issuer nodes via HTTP
+//! 1. Request NAV signatures from oracle nodes via HTTP
 //! 2. Validate consensus (price/cycleNumber agreement)
 //! 3. Aggregate BLS signatures
 //! 4. Push aggregated result to ITPNAVOracle contract
@@ -20,7 +20,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tracing::{debug, warn};
 
-/// Maximum HTTP response size (1 MB) to prevent OOM from malicious issuers
+/// Maximum HTTP response size (1 MB) to prevent OOM from malicious oracles
 const MAX_RESPONSE_SIZE: u64 = 1_048_576;
 
 /// Errors from the collector pipeline
@@ -35,10 +35,10 @@ pub enum CollectorError {
     #[error("Threshold not met: received {received} of {required} required")]
     ThresholdNotMet { received: usize, required: usize },
 
-    #[error("Price disagreement among issuers")]
+    #[error("Price disagreement among oracles")]
     PriceDisagreement,
 
-    #[error("Cycle number disagreement among issuers")]
+    #[error("Cycle number disagreement among oracles")]
     CycleNumberDisagreement,
 
     #[error("Signature aggregation failed: {0}")]
@@ -64,7 +64,7 @@ pub enum PushError {
     AbiEncoding(String),
 }
 
-/// Response from an issuer's NAV sign endpoint
+/// Response from an oracle's NAV sign endpoint
 #[derive(Debug, Clone, Deserialize)]
 pub struct NavSignResponse {
     #[serde(rename = "itpAddress")]
@@ -80,13 +80,13 @@ pub struct NavSignResponse {
     #[serde(rename = "blsSignature")]
     pub bls_signature: String,
 
-    #[serde(rename = "issuerId")]
-    pub issuer_id: u8,
+    #[serde(rename = "oracleId")]
+    pub oracle_id: u8,
 
     pub pubkey: String,
 }
 
-/// Result of collecting from all issuers
+/// Result of collecting from all oracles
 #[derive(Debug)]
 pub struct CollectionResult {
     pub responses: Vec<NavSignResponse>,
@@ -102,22 +102,22 @@ pub struct ConsensusResult {
     pub signer_ids: Vec<u8>,
 }
 
-/// Collects NAV signatures from issuer nodes
+/// Collects NAV signatures from oracle nodes
 pub struct NavCollector {
-    pub issuer_urls: Vec<String>,
+    pub oracle_urls: Vec<String>,
     pub http_timeout: Duration,
 }
 
 impl NavCollector {
-    pub fn new(issuer_urls: Vec<String>) -> Self {
+    pub fn new(oracle_urls: Vec<String>) -> Self {
         Self {
-            issuer_urls,
+            oracle_urls,
             http_timeout: Duration::from_secs(10),
         }
     }
 
-    /// Request NAV signature from a single issuer
-    pub async fn request_nav_from_issuer(
+    /// Request NAV signature from a single oracle
+    pub async fn request_nav_from_oracle(
         &self,
         url: &str,
         itp_address: Address,
@@ -220,24 +220,24 @@ impl NavCollector {
         Ok(nav_response)
     }
 
-    /// Collect NAV signatures from all issuers concurrently
+    /// Collect NAV signatures from all oracles concurrently
     pub async fn collect_all(
         &self,
         itp_address: Address,
     ) -> Result<CollectionResult, CollectorError> {
         let mut handles = Vec::new();
 
-        for url in &self.issuer_urls {
+        for url in &self.oracle_urls {
             let url = url.clone();
             let itp = itp_address;
             let timeout = self.http_timeout;
 
             handles.push(tokio::spawn(async move {
                 let tmp = NavCollector {
-                    issuer_urls: vec![],
+                    oracle_urls: vec![],
                     http_timeout: timeout,
                 };
-                let result = tmp.request_nav_from_issuer(&url, itp).await;
+                let result = tmp.request_nav_from_oracle(&url, itp).await;
                 (url, result)
             }));
         }
@@ -249,14 +249,14 @@ impl NavCollector {
             match handle.await {
                 Ok((url, Ok(response))) => {
                     debug!(
-                        issuer_id = response.issuer_id,
+                        oracle_id = response.oracle_id,
                         url = %url,
                         "Received NAV signature"
                     );
                     responses.push(response);
                 }
                 Ok((url, Err(e))) => {
-                    warn!(url = %url, error = %e, "Failed to collect from issuer");
+                    warn!(url = %url, error = %e, "Failed to collect from oracle");
                     errors.push((url, e));
                 }
                 Err(e) => {
@@ -275,9 +275,9 @@ impl NavCollector {
     /// meets the BFT threshold, and returns consensus from that group.
     pub fn validate_consensus(
         responses: &[NavSignResponse],
-        total_issuer_count: usize,
+        total_oracle_count: usize,
     ) -> Result<ConsensusResult, CollectorError> {
-        let threshold = compute_threshold(total_issuer_count);
+        let threshold = compute_threshold(total_oracle_count);
 
         if responses.len() < threshold {
             return Err(CollectorError::ThresholdNotMet {
@@ -327,7 +327,7 @@ impl NavCollector {
         let price = U256::from_dec_str(&first.price)
             .map_err(|e| CollectorError::InvalidResponse(format!("Invalid price: {}", e)))?;
 
-        let signer_ids: Vec<u8> = group.iter().map(|r| r.issuer_id).collect();
+        let signer_ids: Vec<u8> = group.iter().map(|r| r.oracle_id).collect();
 
         Ok(ConsensusResult {
             price,
@@ -349,7 +349,7 @@ impl NavCollector {
         for r in responses {
             let sig_bytes = parse_bls_signature(&r.bls_signature)?;
             signatures.push(BLSSignature(sig_bytes));
-            signer_ids.push(r.issuer_id);
+            signer_ids.push(r.oracle_id);
         }
 
         let aggregated = signer
@@ -386,8 +386,8 @@ pub fn compute_signers_bitmask(signer_ids: &[u8]) -> U256 {
 }
 
 /// Compute BFT threshold: max(2, ceil(n * 2 / 3))
-pub fn compute_threshold(issuer_count: usize) -> usize {
-    std::cmp::max(2, (issuer_count * 2 + 2) / 3)
+pub fn compute_threshold(oracle_count: usize) -> usize {
+    std::cmp::max(2, (oracle_count * 2 + 2) / 3)
 }
 
 /// BLS-signed price data ready for on-chain submission
@@ -395,7 +395,7 @@ pub fn compute_threshold(issuer_count: usize) -> usize {
 pub struct BlsData {
     /// NAV price (Morpho-scaled, 36 decimals)
     pub price: U256,
-    /// Issuer timestamp
+    /// Oracle timestamp
     pub timestamp: u64,
     /// Cycle number
     pub cycle_number: u64,
@@ -432,9 +432,9 @@ pub struct OnDemandCollector {
 }
 
 impl OnDemandCollector {
-    pub fn new(issuer_urls: Vec<String>) -> Self {
+    pub fn new(oracle_urls: Vec<String>) -> Self {
         Self {
-            collector: NavCollector::new(issuer_urls),
+            collector: NavCollector::new(oracle_urls),
             cache: std::collections::HashMap::new(),
             cache_max_age: Duration::from_secs(120), // 2 min
             fetch_cooldown: Duration::from_secs(30),  // 30s per ITP
@@ -474,14 +474,14 @@ impl OnDemandCollector {
         self.fetch_on_demand(itp_address).await
     }
 
-    /// Immediate fetch from issuers (bypasses cache but respects rate limit)
+    /// Immediate fetch from oracles (bypasses cache but respects rate limit)
     pub async fn fetch_on_demand(
         &mut self,
         itp_address: Address,
     ) -> Result<BlsData, CollectorError> {
-        let total_issuers = self.collector.issuer_urls.len();
+        let total_oracles = self.collector.oracle_urls.len();
         let collection = self.collector.collect_all(itp_address).await?;
-        let consensus = NavCollector::validate_consensus(&collection.responses, total_issuers)?;
+        let consensus = NavCollector::validate_consensus(&collection.responses, total_oracles)?;
         let (signature, bitmask) = NavCollector::aggregate_nav_signatures(&collection.responses)?;
 
         let data = BlsData {
@@ -673,7 +673,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ab".repeat(64),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: "0x".to_string() + &"cd".repeat(128),
             },
             NavSignResponse {
@@ -682,7 +682,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ef".repeat(64),
-                issuer_id: 1,
+                oracle_id: 1,
                 pubkey: "0x".to_string() + &"01".repeat(128),
             },
             NavSignResponse {
@@ -691,7 +691,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"23".repeat(64),
-                issuer_id: 2,
+                oracle_id: 2,
                 pubkey: "0x".to_string() + &"45".repeat(128),
             },
         ];
@@ -711,7 +711,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ab".repeat(64),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: "0x".to_string() + &"cd".repeat(128),
             },
             NavSignResponse {
@@ -720,7 +720,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ef".repeat(64),
-                issuer_id: 1,
+                oracle_id: 1,
                 pubkey: "0x".to_string() + &"01".repeat(128),
             },
             NavSignResponse {
@@ -729,7 +729,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"23".repeat(64),
-                issuer_id: 2,
+                oracle_id: 2,
                 pubkey: "0x".to_string() + &"45".repeat(128),
             },
         ];
@@ -747,7 +747,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ab".repeat(64),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: "0x".to_string() + &"cd".repeat(128),
             },
             NavSignResponse {
@@ -756,7 +756,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 43, // Different!
                 bls_signature: "0x".to_string() + &"ef".repeat(64),
-                issuer_id: 1,
+                oracle_id: 1,
                 pubkey: "0x".to_string() + &"01".repeat(128),
             },
         ];
@@ -774,7 +774,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ab".repeat(64),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: "0x".to_string() + &"cd".repeat(128),
             },
         ];
@@ -792,7 +792,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ab".repeat(64),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: "0x".to_string() + &"cd".repeat(128),
             },
             NavSignResponse {
@@ -801,7 +801,7 @@ mod tests {
                 timestamp: 1706886400,
                 cycle_number: 42,
                 bls_signature: "0x".to_string() + &"ef".repeat(64),
-                issuer_id: 1,
+                oracle_id: 1,
                 pubkey: "0x".to_string() + &"01".repeat(128),
             },
         ];
@@ -819,11 +819,11 @@ mod tests {
 
     #[test]
     fn test_compute_threshold() {
-        assert_eq!(compute_threshold(3), 2); // 3 issuers → 2 needed
-        assert_eq!(compute_threshold(5), 4); // 5 issuers → 4 needed
-        assert_eq!(compute_threshold(10), 7); // 10 issuers → 7 needed
+        assert_eq!(compute_threshold(3), 2); // 3 oracles → 2 needed
+        assert_eq!(compute_threshold(5), 4); // 5 oracles → 4 needed
+        assert_eq!(compute_threshold(10), 7); // 10 oracles → 7 needed
         assert_eq!(compute_threshold(1), 2); // min 2
-        assert_eq!(compute_threshold(2), 2); // 2 issuers → 2 needed
+        assert_eq!(compute_threshold(2), 2); // 2 oracles → 2 needed
     }
 
     #[test]
@@ -836,7 +836,7 @@ mod tests {
 
         let signer = Bn254BLSSigner::new();
 
-        // Compute message hash (same as issuer does)
+        // Compute message hash (same as oracle does)
         let itp_address: Address = "0x1234567890123456789012345678901234567890"
             .parse()
             .unwrap();
@@ -845,7 +845,7 @@ mod tests {
         let cycle_number = 42u64;
 
         let message_hash =
-            issuer::api::build_nav_message_hash(itp_address, price, timestamp, cycle_number);
+            oracle::api::build_nav_message_hash(itp_address, price, timestamp, cycle_number);
 
         // Sign with each key
         let sig1 = signer.sign_message_hash(&kp1, &message_hash).unwrap();
@@ -860,7 +860,7 @@ mod tests {
                 timestamp,
                 cycle_number,
                 bls_signature: format!("0x{}", ethers::utils::hex::encode(&sig1.0)),
-                issuer_id: 0,
+                oracle_id: 0,
                 pubkey: format!("0x{}", ethers::utils::hex::encode(&kp1.public_key().0)),
             },
             NavSignResponse {
@@ -869,7 +869,7 @@ mod tests {
                 timestamp,
                 cycle_number,
                 bls_signature: format!("0x{}", ethers::utils::hex::encode(&sig2.0)),
-                issuer_id: 1,
+                oracle_id: 1,
                 pubkey: format!("0x{}", ethers::utils::hex::encode(&kp2.public_key().0)),
             },
             NavSignResponse {
@@ -878,7 +878,7 @@ mod tests {
                 timestamp,
                 cycle_number,
                 bls_signature: format!("0x{}", ethers::utils::hex::encode(&sig3.0)),
-                issuer_id: 2,
+                oracle_id: 2,
                 pubkey: format!("0x{}", ethers::utils::hex::encode(&kp3.public_key().0)),
             },
         ];

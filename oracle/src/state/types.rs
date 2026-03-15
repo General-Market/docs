@@ -1,7 +1,7 @@
-//! State types for Index L3 Issuer
+//! State types for Index L3 Oracle
 //!
-//! Defines IssuerState, ITPState, and Checkpoint types per architecture Appendix D.
-//! These types represent the reconstructed state of the issuer node.
+//! Defines OracleState, ITPState, and Checkpoint types per architecture Appendix D.
+//! These types represent the reconstructed state of the oracle node.
 
 use std::collections::HashMap;
 
@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 
 use common::types::LimitOrder;
 
-/// Issuer state reconstructed from chain data
+/// Oracle state reconstructed from chain data
 ///
 /// Per architecture Appendix D, this represents the complete state
-/// an issuer node needs to operate after restart.
+/// an oracle node needs to operate after restart.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct IssuerState {
+pub struct OracleState {
     /// Pending orders awaiting processing
     pub pending_orders: Vec<LimitOrder>,
 
@@ -54,8 +54,8 @@ pub struct IssuerState {
     pub observation_cycles_remaining: u64,
 }
 
-impl IssuerState {
-    /// Create a new empty IssuerState
+impl OracleState {
+    /// Create a new empty OracleState
     pub fn new() -> Self {
         Self::default()
     }
@@ -182,7 +182,7 @@ impl ITPState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Checkpoint {
     /// The reconstructed state
-    pub state: IssuerState,
+    pub state: OracleState,
 
     /// Block number where this checkpoint was taken
     pub block_number: u64,
@@ -202,7 +202,7 @@ impl Checkpoint {
     pub const CURRENT_VERSION: u32 = 1;
 
     /// Create a new checkpoint
-    pub fn new(state: IssuerState, block_number: u64, block_hash: [u8; 32]) -> Self {
+    pub fn new(state: OracleState, block_number: u64, block_hash: [u8; 32]) -> Self {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -245,8 +245,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_issuer_state_default() {
-        let state = IssuerState::default();
+    fn test_oracle_state_default() {
+        let state = OracleState::default();
         assert!(state.pending_orders.is_empty());
         assert!(state.itps.is_empty());
         assert_eq!(state.current_cycle, U256::zero());
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_checkpoint_creation() {
-        let state = IssuerState::default();
+        let state = OracleState::default();
         let checkpoint = Checkpoint::new(state, 100, [0u8; 32]);
 
         assert_eq!(checkpoint.block_number, 100);
@@ -311,8 +311,8 @@ mod tests {
     }
 
     #[test]
-    fn test_issuer_state_get_collateral() {
-        let mut state = IssuerState::default();
+    fn test_oracle_state_get_collateral() {
+        let mut state = OracleState::default();
         let itp_id = H256::random();
         let chain_id = U256::from(chains::SETTLEMENT);
         let amount = U256::from(1000) * U256::exp10(18);
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_observation_period() {
-        let mut state = IssuerState::default();
+        let mut state = OracleState::default();
 
         // Initially can participate (0 observation cycles)
         assert!(state.can_participate());

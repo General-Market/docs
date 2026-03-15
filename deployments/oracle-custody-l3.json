@@ -3,7 +3,7 @@
   "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "timestamp": 1770340945,
   "contracts": {
-    "IssuerCustodyL3": {
+    "OracleCustodyL3": {
       "proxy": "0x6A59CC73e334b018C9922793d96Df84B538E6fD5",
       "implementation": "0x871ACbEabBaf8Bed65c22ba7132beCFaBf8c27B5"
     }

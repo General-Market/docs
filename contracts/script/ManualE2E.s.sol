@@ -34,7 +34,7 @@ contract ManualE2E is Script {
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = 3;
         
-        // Empty sig works in testing mode when issuerRegistry.getAggregatedPubkey() returns empty bytes
+        // Empty sig works in testing mode when oracleRegistry.getAggregatedPubkey() returns empty bytes
         bytes memory emptySignature = new bytes(64);
         
         index.confirmBatch(cycleNumber, orderIds, emptySignature, 3, 7);

@@ -35,7 +35,7 @@ flowchart LR
     A[Predict UP/DOWN] --> B[Encode Bitmap]
     B --> C[keccak256 Hash]
     C --> D[Commit Hash On-Chain]
-    D --> E[Reveal Bytes to Issuers]
+    D --> E[Reveal Bytes to Oracles]
     E --> F[Tick Resolves]
 ```
 
@@ -48,7 +48,7 @@ Bitmaps are committed on-chain as a **keccak256 hash** before the actual bitmap 
 1. **Player constructs bitmap** locally (array of UP/DOWN predictions).
 2. **Player computes hash**: `bitmapHash = keccak256(bitmap)`.
 3. **Player commits hash on-chain** by calling `joinBatch(batchId, deposit, stakePerTick, bitmapHash)` or `updateBitmap(batchId, newBitmapHash)`.
-4. **Player reveals bitmap off-chain** by sending the actual bytes to issuers via `POST /vision/bitmap`.
+4. **Player reveals bitmap off-chain** by sending the actual bytes to oracles via `POST /vision/bitmap`.
 
 ```solidity
 // On-chain: only the hash is stored
@@ -59,17 +59,17 @@ struct PlayerPosition {
 ```
 
 <Warning>
-The keccak256 hash of the submitted bitmap bytes must match the on-chain `bitmapHash`. If they do not match, the issuer rejects the submission and the player's predictions are voided for that tick.
+The keccak256 hash of the submitted bitmap bytes must match the on-chain `bitmapHash`. If they do not match, the oracle rejects the submission and the player's predictions are voided for that tick.
 </Warning>
 
 ## Reveal Process
 
-After committing the hash on-chain, the player must reveal the actual bitmap bytes to issuers before the tick resolves. The sealed prediction becomes public. What was private becomes shared. What was hope becomes arithmetic.
+After committing the hash on-chain, the player must reveal the actual bitmap bytes to oracles before the tick resolves. The sealed prediction becomes public. What was private becomes shared. What was hope becomes arithmetic.
 
-### Submitting to Issuers
+### Submitting to Oracles
 
 ```bash
-curl -X POST https://issuer.example.com/vision/bitmap \
+curl -X POST https://oracle.example.com/vision/bitmap \
   -H "Content-Type: application/json" \
   -d '{
     "player": "0xYourAddress",
@@ -79,7 +79,7 @@ curl -X POST https://issuer.example.com/vision/bitmap \
   }'
 ```
 
-The issuer verifies:
+The oracle verifies:
 
 1. The player exists in the batch (checked against the on-chain scheduler state).
 2. The `expected_hash` matches the player's on-chain `bitmapHash` commitment.
@@ -89,14 +89,14 @@ If all checks pass, the bitmap is stored in memory for tick resolution.
 
 ### Reveal Window
 
-After a tick ends, there is a configurable **reveal window** (default: 600 seconds) before bitmaps are made public. During this window, issuers use the bitmaps for resolution but do not expose them via the API. After the window expires, anyone can query revealed bitmaps:
+After a tick ends, there is a configurable **reveal window** (default: 600 seconds) before bitmaps are made public. During this window, oracles use the bitmaps for resolution but do not expose them via the API. After the window expires, anyone can query revealed bitmaps:
 
 ```
 GET /vision/reveal/{batch_id}/{tick_id}
 ```
 
 <Tip>
-Players can update their bitmap at any time by calling `updateBitmap(batchId, newBitmapHash)` on-chain, then revealing the new bitmap to issuers. The new bitmap takes effect starting from the next tick.
+Players can update their bitmap at any time by calling `updateBitmap(batchId, newBitmapHash)` on-chain, then revealing the new bitmap to oracles. The new bitmap takes effect starting from the next tick.
 </Tip>
 
 ## Technical Details
@@ -222,7 +222,7 @@ For example, a batch with 3 markets only uses bits 0-2 of byte 0. Bits 3-7 are i
 
 #### Unrevealed Bitmaps
 
-If a player commits a bitmap hash on-chain but fails to reveal the actual bytes to issuers before resolution, the player is **voided** for that tick. They committed to having an opinion but never shared it. Voided players:
+If a player commits a bitmap hash on-chain but fails to reveal the actual bytes to oracles before resolution, the player is **voided** for that tick. They committed to having an opinion but never shared it. Voided players:
 
 - Do not participate in side matching for any market.
 - Keep their balance unchanged (delta = 0) -- they neither win nor lose.

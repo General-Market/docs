@@ -7,16 +7,16 @@ import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 import { getItpSummaries } from '@/lib/api/server-data'
-import { ISSUER_VISION_URL, DATA_NODE_SERVER } from '@/lib/config'
+import { ORACLE_VISION_URL, DATA_NODE_SERVER } from '@/lib/config'
 
 async function fetchAboutStats() {
   const [itps, leaderboardData, batchData, snapshotMeta] = await Promise.all([
     getItpSummaries(),
-    fetch(`${ISSUER_VISION_URL}/vision/leaderboard`, {
+    fetch(`${ORACLE_VISION_URL}/vision/leaderboard`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     }).then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(`${ISSUER_VISION_URL}/vision/batches`, {
+    fetch(`${ORACLE_VISION_URL}/vision/batches`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(3_000),
     }).then(r => r.ok ? r.json() : null).catch(() => null),

@@ -19,8 +19,8 @@
 ### Registry Contracts (keep all, no rename)
 | File | Action |
 |---|---|
-| `src/registry/IssuerRegistry.sol` | Keep - shared with Vision |
-| `src/registry/MirrorIssuerRegistry.sol` | Keep - shared with Vision |
+| `src/registry/OracleRegistry.sol` | Keep - shared with Vision |
+| `src/registry/MirrorOracleRegistry.sol` | Keep - shared with Vision |
 | `src/registry/CollateralRegistry.sol` | Keep - Investment-specific |
 | `src/registry/FeeRegistry.sol` | Keep - Investment-specific |
 | `src/registry/AssetPairRegistry.sol` | Keep - Investment-specific |
@@ -159,8 +159,8 @@ These contracts become the **shared layer** for the unified protocol:
 |---|---|
 | `BLSLib.sol` | Both - BLS verification is universal |
 | `BLSVerifier.sol` | Both - mixin for all BLS-verifying contracts |
-| `IssuerRegistry.sol` | Both - issuer management shared |
-| `MirrorIssuerRegistry.sol` | Both - cross-chain registry shared |
+| `OracleRegistry.sol` | Both - oracle management shared |
+| `MirrorOracleRegistry.sol` | Both - cross-chain registry shared |
 | `Governance.sol` | Both - system pause/unpause shared |
 | `DecimalLib.sol` | Both - decimal handling shared |
 

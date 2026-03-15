@@ -16,7 +16,7 @@
 //! ## Architecture
 //!
 //! Since Solana doesn't have BN254 precompiles (like EVM chains), we use Squads v4
-//! multisig instead of BLS signatures. Issuers hold both key types:
+//! multisig instead of BLS signatures. Oracles hold both key types:
 //! - BLS (BN254) keys for EVM chain custody
 //! - Ed25519 keys for Solana custody via Squads
 //!
@@ -34,7 +34,7 @@
 //! // Create a proposal
 //! let result = client.create_proposal(&keypair, transfer_instruction).await?;
 //!
-//! // Approve the proposal (each issuer does this with their key)
+//! // Approve the proposal (each oracle does this with their key)
 //! client.approve_proposal(&keypair, result.proposal_id).await?;
 //!
 //! // Execute when threshold reached

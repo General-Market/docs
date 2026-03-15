@@ -646,18 +646,18 @@ contract MockBitgetVaultTest is Test {
 
     // ============ FR13 COMPLIANCE TEST ============
 
-    function test_FR13_IssuerCanVerifyFillReadOnly() public {
+    function test_FR13_OracleCanVerifyFillReadOnly() public {
         // AP executes trade
         vm.prank(ap);
         vault.executeTrade(1, address(mockBTC), address(mockETH), SELL_AMOUNT, BUY_AMOUNT);
 
-        // Issuer reads fill data (simulated via different address)
-        address issuer = address(0x999);
-        vm.prank(issuer);
+        // Oracle reads fill data (simulated via different address)
+        address oracle = address(0x999);
+        vm.prank(oracle);
 
         MockBitgetVault.Trade memory fill = vault.getFill(1);
 
-        // Issuer can verify:
+        // Oracle can verify:
         assertEq(fill.sellToken, address(mockBTC));
         assertEq(fill.buyToken, address(mockETH));
         assertEq(fill.sellAmount, SELL_AMOUNT);

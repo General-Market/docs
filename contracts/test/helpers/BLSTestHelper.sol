@@ -39,7 +39,7 @@ abstract contract BLSTestHelper is Test {
         return result;
     }
 
-    /// @notice Get a single issuer's G2 public key from seed index via FFI
+    /// @notice Get a single oracle's G2 public key from seed index via FFI
     /// @param seedIndex The seed index
     /// @return pubkey The G2 public key (128 bytes)
     function blsPubkey(uint8 seedIndex) internal returns (bytes memory) {

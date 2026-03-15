@@ -1,4 +1,4 @@
-# Vision First Deposit via Issuer Bridge
+# Vision First Deposit via Oracle Bridge
 
 **Date:** 2026-02-27
 **Status:** Draft v7 — dual-balance architecture (post round-3 audit)
@@ -20,14 +20,14 @@ User has USDC on Arbitrum. Vision.sol on L3 needs USDC (18 dec). No Arb→L3 dep
 
 Each withdrawal path draws from its matching pool:
 - `withdrawBalance()` → sends real L3 USDC from contract → debits `realBalance`
-- `withdrawToArb()` → virtual debit, issuers release from ArbBridgeCustody → debits `virtualBalance`
+- `withdrawToArb()` → virtual debit, oracles release from ArbBridgeCustody → debits `virtualBalance`
 
 Batch operations debit from either pool (user's choice or auto: virtual first, then real). Batch payouts (claims, withdrawals, forceWithdraw) always credit `realBalance` because the batch pool holds real L3 USDC from all participants.
 
 ```
 DEPOSIT (Arb → Vision.sol)
 
-  User                ArbBridgeCustody         Issuers              Vision.sol (L3)
+  User                ArbBridgeCustody         Oracles              Vision.sol (L3)
    │── depositToVision() ─→│                      │                      │
    │   (locks USDC 6dec)   │── event ────────────→│                      │
    │                       │                      │── creditBalance() ──→│
@@ -45,7 +45,7 @@ DEPOSIT (L3 direct)
 
 WITHDRAW (to Arb)
 
-  User                Vision.sol (L3)          Issuers              ArbBridgeCustody
+  User                Vision.sol (L3)          Oracles              ArbBridgeCustody
    │── withdrawToArb() ───→│                      │                      │
    │                       │ virtualBalance -= amt │                      │
    │                       │ (NO L3 USDC moves)   │                      │
@@ -87,7 +87,7 @@ mapping(address => uint256) public virtualBalance;
 uint256 public totalRealBalance;    // sum(realBalance[all users])
 uint256 public totalVirtualBalance; // sum(virtualBalance[all users])
 
-/// @notice Processed cross-chain deposit IDs (idempotency — survives issuer restarts)
+/// @notice Processed cross-chain deposit IDs (idempotency — survives oracle restarts)
 mapping(uint256 => bool) public depositProcessed;
 
 /// @notice Auto-incrementing withdraw request ID
@@ -122,7 +122,7 @@ event WithdrawToArbRequested(address indexed user, uint256 amount, uint256 index
 ### New functions
 
 ```solidity
-/// @notice Credit virtual balance after cross-chain deposit (BLS-gated, issuers only)
+/// @notice Credit virtual balance after cross-chain deposit (BLS-gated, oracles only)
 /// @dev No L3 USDC enters the contract. Backed by ArbBridgeCustody on Arb.
 function creditBalance(
     address user,
@@ -169,9 +169,9 @@ function withdrawBalance(uint256 amount) external nonReentrant {
     emit RealBalanceWithdrawn(msg.sender, amount);
 }
 
-/// @notice Withdraw virtual balance back to Arbitrum via issuer bridge
+/// @notice Withdraw virtual balance back to Arbitrum via oracle bridge
 /// @dev Only draws from virtualBalance — backed by ArbBridgeCustody on Arb.
-///      No L3 USDC moves. Issuers release from ArbBridgeCustody.
+///      No L3 USDC moves. Oracles release from ArbBridgeCustody.
 function withdrawToArb(uint256 amount) external nonReentrant {
     if (virtualBalance[msg.sender] < amount) revert InsufficientBalance();
     if (amount == 0) revert ZeroAmount();
@@ -230,7 +230,7 @@ totalRealBalance += payout;
 // (When users join, their virtual balance was "converted" to batch pool USDC.)
 //
 // SOLVENCY CHECK (replaces old USDC.balanceOf check):
-// The BLS-signed newBalance determines the payout. The existing issuer consensus
+// The BLS-signed newBalance determines the payout. The existing oracle consensus
 // ensures payouts are correct. Additionally, since batch pool USDC is real (it was
 // either deposited via depositBalance, or the virtual debit at join time was offset
 // by another user's real deposit in the same batch), the contract always has enough
@@ -246,7 +246,7 @@ totalRealBalance += payout;
 // Same as claimRewards — batch payouts are always real.
 ```
 
-**5. `forceWithdraw()` (issuer emergency exit)** — line 647
+**5. `forceWithdraw()` (oracle emergency exit)** — line 647
 ```solidity
 // BEFORE: USDC.safeTransfer(player, payout);
 // AFTER:
@@ -345,7 +345,7 @@ function depositToVision(uint256 usdcAmount) external returns (uint256 orderId) 
     emit VisionDepositCreated(orderId, msg.sender, internalAmount);
 }
 
-/// @notice Mark deposit completed (issuers call after L3 credit confirmed)
+/// @notice Mark deposit completed (oracles call after L3 credit confirmed)
 function completeVisionDeposit(
     uint256 orderId,
     bytes calldata blsSignature,
@@ -364,7 +364,7 @@ function completeVisionDeposit(
     emit VisionDepositCompleted(orderId);
 }
 
-/// @notice Refund failed deposit (issuers call if L3 credit fails)
+/// @notice Refund failed deposit (oracles call if L3 credit fails)
 function refundVisionDeposit(
     uint256 orderId,
     bytes calldata blsSignature,
@@ -391,7 +391,7 @@ function refundVisionDeposit(
 
 ### New function: completeVisionWithdraw
 
-**AUDIT FIX C-01**: Existing `completeBridge()` sends USDC to `msg.sender` (issuer). Vision withdrawals must send to the user. New dedicated function with replay protection:
+**AUDIT FIX C-01**: Existing `completeBridge()` sends USDC to `msg.sender` (oracle). Vision withdrawals must send to the user. New dedicated function with replay protection:
 
 ```solidity
 /// @notice Replay protection for Vision withdrawals (AUDIT FIX: round 2+3 confirmed)
@@ -454,8 +454,8 @@ Add the 4 new functions + events to interface.
 
 The revised `withdrawToArb` flow:
 1. User calls `Vision.withdrawToArb(amount)` → virtual debit (no L3 USDC moves)
-2. Issuers detect `WithdrawToArbRequested` event on Vision.sol
-3. Issuers call `ArbBridgeCustody.completeVisionWithdraw(withdrawId, user, amount, blsSig)` on Arb
+2. Oracles detect `WithdrawToArbRequested` event on Vision.sol
+3. Oracles call `ArbBridgeCustody.completeVisionWithdraw(withdrawId, user, amount, blsSig)` on Arb
 4. ArbBridgeCustody sends USDC to user on Arb
 
 L3BridgeCustody continues to handle existing ITP L3→Arb flows only.
@@ -468,7 +468,7 @@ No changes. Bot registration/deregistration is independent of USDC flows.
 
 ---
 
-## 5. Issuer
+## 5. Oracle
 
 ### 5a. New module: `vision_deposit_watcher` (new file)
 
@@ -483,27 +483,27 @@ Config needed:
 
 On VisionDepositCreated(orderId, user, amount):
   1. Wait for Arb finality (~15 confirmations)
-  2. Consensus: propose creditBalance(user, amount, orderId) among issuers
+  2. Consensus: propose creditBalance(user, amount, orderId) among oracles
   3. Aggregate BLS signatures (11/20 threshold)
   4. Submit Vision.creditBalance(user, amount, orderId, blsSig) on L3
   5. Wait for L3 tx confirmation
-  6. Consensus: propose completeVisionDeposit(orderId) among issuers
+  6. Consensus: propose completeVisionDeposit(orderId) among oracles
   7. Submit ArbBridgeCustody.completeVisionDeposit(orderId, blsSig) on Arb
   8. On any failure at step 4-5: submit refundVisionDeposit(orderId, blsSig) on Arb instead
 
 On WithdrawToArbRequested(user, amount, withdrawId):  (from Vision.sol on L3)
   1. Balance already deducted on L3 (virtual debit — no L3 USDC moved)
   2. Wait for L3 finality (~few blocks on Orbit)
-  3. Consensus: propose completeVisionWithdraw(withdrawId, user, amount) among issuers
+  3. Consensus: propose completeVisionWithdraw(withdrawId, user, amount) among oracles
   4. Aggregate BLS signatures (11/20 threshold)
   5. Submit ArbBridgeCustody.completeVisionWithdraw(withdrawId, user, amount, blsSig) on Arb
   6. User receives USDC on Arb
   NOTE: No L3BridgeCustody involvement. No L3 USDC moves.
 ```
 
-Same pattern as existing `issuer/src/bridge/orchestrator.rs` for ITP buy orders.
+Same pattern as existing `oracle/src/bridge/orchestrator.rs` for ITP buy orders.
 
-**AUDIT FIX C-08 (no atomic rollback):** The deposit flow is a two-phase state machine persisted in `vision_deposit_orders` table. Each step updates status BEFORE submitting the tx. If `creditBalance` tx succeeds but `completeVisionDeposit` fails, on restart the issuer sees status = `credited_on_l3` and retries only the Arb completion step. On-chain `depositProcessed[depositId]` prevents double-credit even if the issuer retries `creditBalance`.
+**AUDIT FIX C-08 (no atomic rollback):** The deposit flow is a two-phase state machine persisted in `vision_deposit_orders` table. Each step updates status BEFORE submitting the tx. If `creditBalance` tx succeeds but `completeVisionDeposit` fails, on restart the oracle sees status = `credited_on_l3` and retries only the Arb completion step. On-chain `depositProcessed[depositId]` prevents double-credit even if the oracle retries `creditBalance`.
 
 **AUDIT FIX C-09 (restart idempotency):** On startup, the deposit watcher:
 1. Loads all `vision_deposit_orders` with status != `completed` and status != `refunded` from DB
@@ -511,9 +511,9 @@ Same pattern as existing `issuer/src/bridge/orchestrator.rs` for ITP buy orders.
 3. For each: checks on-chain `visionDeposits[orderId]` — if deleted, was already completed → mark done
 4. Resumes from the correct step. No duplicate credits possible.
 
-**AUDIT FIX H-06 (stuck deposits):** Deposits in `pending` status for >30 minutes trigger an alert. After 2 hours, issuers auto-refund via `refundVisionDeposit`. **CRITICAL: auto-refund MUST NOT fire for deposits with status `credited_on_l3`.** Only `pending` deposits are refundable. For `credited_on_l3` deposits where Arb completion keeps failing, retry forever with exponential backoff.
+**AUDIT FIX H-06 (stuck deposits):** Deposits in `pending` status for >30 minutes trigger an alert. After 2 hours, oracles auto-refund via `refundVisionDeposit`. **CRITICAL: auto-refund MUST NOT fire for deposits with status `credited_on_l3`.** Only `pending` deposits are refundable. For `credited_on_l3` deposits where Arb completion keeps failing, retry forever with exponential backoff.
 
-**AUDIT FIX round 3 (refund safety):** Before signing `refundVisionDeposit`, each issuer MUST query `Vision.depositProcessed[depositId]` on L3. If true (credit already landed), refuse to sign the refund. This prevents the credit+refund double-money race condition.
+**AUDIT FIX round 3 (refund safety):** Before signing `refundVisionDeposit`, each oracle MUST query `Vision.depositProcessed[depositId]` on L3. If true (credit already landed), refuse to sign the refund. This prevents the credit+refund double-money race condition.
 
 **AUDIT FIX H-05 (polling interval):** `deposit_poll_interval_ms` defaults to 5000 (5s). Configurable.
 
@@ -651,7 +651,7 @@ pub deposit_poll_interval_ms: u64,          // polling interval for Arb events
 pub deposit_finality_confirmations: u64,    // ~15 for Arb
 ```
 
-### 5g. Unchanged issuer modules
+### 5g. Unchanged oracle modules
 
 - `resolver.rs` — tick resolution unchanged (works on position balances, not global balance)
 - `side_matching.rs` — unchanged
@@ -750,7 +750,7 @@ export function useWithdrawBalance() {
 export function useWithdrawToArb() {
   // Chain: L3
   // Step 1: call Vision.withdrawToArb(amount)
-  // Step 2: poll for Arb USDC balance increase (or issuer API status)
+  // Step 2: poll for Arb USDC balance increase (or oracle API status)
   return {
     withdraw: (amount: bigint) => void,
     step: 'idle' | 'withdrawing' | 'bridging' | 'done' | 'error',
@@ -764,7 +764,7 @@ export function useWithdrawToArb() {
 ```typescript
 export function useVisionBalance() {
   // Reads Vision.realBalance(address) + Vision.virtualBalance(address) on L3
-  // Or fetches from issuer API: GET /vision/user/:address/balance
+  // Or fetches from oracle API: GET /vision/user/:address/balance
   return {
     realBalance: bigint,     // 18 dec, backed by L3 USDC in contract
     virtualBalance: bigint,  // 18 dec, backed by ArbBridgeCustody on Arb
@@ -899,7 +899,7 @@ export const ARB_USDC_DECIMALS = 6;       // Arb USDC (for deposit modal)
 **AUDIT FIX H-14 (no deposit status tracking):** Add a deposit status component:
 
 ```typescript
-// useDepositStatus.ts — poll issuer API for deposit state
+// useDepositStatus.ts — poll oracle API for deposit state
 export function useDepositStatus(orderId: bigint | null) {
   // GET /vision/deposit/:orderId/status → { status: 'pending' | 'credited' | 'completed' | 'refunded' }
   return { status, isLoading }
@@ -935,9 +935,9 @@ L3 uses GM (18 dec) as the native gas token. Every tx on L3 costs GM. Users and 
 
 User deposits USDC from Arbitrum → gets Vision balance. But they have 0 GM on L3 → can't submit any transaction.
 
-### Solution: Issuer gas drip
+### Solution: Oracle gas drip
 
-When issuers credit a user's Vision balance (via `creditBalance`), they also send a small GM drip to the user's L3 address. This is a simple native transfer, not a contract call.
+When oracles credit a user's Vision balance (via `creditBalance`), they also send a small GM drip to the user's L3 address. This is a simple native transfer, not a contract call.
 
 ```
 On VisionDepositCreated(orderId, user, amount):
@@ -950,14 +950,14 @@ On VisionDepositCreated(orderId, user, amount):
 **Drip rules:**
 - Amount: fixed small amount (e.g. 0.01 GM, enough for ~1000 L3 txs)
 - Only on first deposit (check if user's L3 GM balance < threshold)
-- Source: issuer hot wallet on L3 (funded at deploy time)
-- No BLS needed for the drip — it's a simple ETH-like transfer from issuer wallet
+- Source: oracle hot wallet on L3 (funded at deploy time)
+- No BLS needed for the drip — it's a simple ETH-like transfer from oracle wallet
 
-**Issuer config additions:**
+**Oracle config additions:**
 ```rust
 pub gas_drip_amount: U256,           // e.g. 10_000_000_000_000_000 (0.01 GM)
 pub gas_drip_threshold: U256,        // only drip if user GM balance < this
-pub gas_drip_wallet_key: String,     // issuer hot wallet private key for drips
+pub gas_drip_wallet_key: String,     // oracle hot wallet private key for drips
 ```
 
 ### Frontend
@@ -984,7 +984,7 @@ function useL3GasBalance() {
 
 Bots on L3 also need GM. Two paths:
 - **Local dev**: `start.sh` funds bots with GM (see section 10)
-- **Production**: bots call `ArbBridgeCustody.depositToVision()` → get auto-dripped GM on first deposit. Or issuers can manually fund known bot addresses.
+- **Production**: bots call `ArbBridgeCustody.depositToVision()` → get auto-dripped GM on first deposit. Or oracles can manually fund known bot addresses.
 
 ---
 
@@ -1106,16 +1106,16 @@ cast send --private-key $DEPLOYER_KEY --value 1ether $TEST_USER_ADDRESS --rpc-ur
 echo -e "  ${GREEN}Test user funded with 1 GM on L3${NC}"
 ```
 
-**Issuer args** — Vision is now on L3, update RPC reference:
+**Oracle args** — Vision is now on L3, update RPC reference:
 ```bash
 # BEFORE (line ~932):
-ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $ARB_RPC_URL"
+ORACLE_ARGS="$ORACLE_ARGS --vision-rpc-ws-url $ARB_RPC_URL"
 
 # AFTER:
-ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
+ORACLE_ARGS="$ORACLE_ARGS --vision-rpc-ws-url $RPC_URL"
 # Add Arb watcher for cross-chain deposits:
-ISSUER_ARGS="$ISSUER_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
-ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_BRIDGE_CUSTODY"
+ORACLE_ARGS="$ORACLE_ARGS --vision-arb-rpc-url $ARB_RPC_URL"
+ORACLE_ARGS="$ORACLE_ARGS --vision-arb-bridge-custody $ARB_BRIDGE_CUSTODY"
 ```
 
 ### DeployVision.s.sol
@@ -1123,7 +1123,7 @@ ISSUER_ARGS="$ISSUER_ARGS --vision-arb-bridge-custody $ARB_BRIDGE_CUSTODY"
 Update to accept L3 USDC address and L3BridgeCustody:
 ```solidity
 // Constructor or post-deploy setup:
-Vision vision = new Vision(l3UsdcAddress, issuerRegistry, feeCollector);
+Vision vision = new Vision(l3UsdcAddress, oracleRegistry, feeCollector);
 // Set L3BridgeCustody reference (BLS-gated or at deploy time)
 ```
 
@@ -1163,12 +1163,12 @@ INVARIANT 6 (batch payout direction):
 
 1. **BLS on all cross-chain ops**: `creditBalance`, `completeVisionDeposit`, `refundVisionDeposit`, `completeVisionWithdraw`
 2. **Idempotency**: `depositProcessed[depositId]` prevents double-credit. `withdrawProcessed[withdrawId]` prevents replay withdrawals. Both on-chain.
-3. **Refund safety**: before signing `refundVisionDeposit`, each issuer MUST query `Vision.depositProcessed[depositId]` on L3. If true → refuse to sign. Prevents credit+refund double-money.
-4. **Dual-balance separation**: `realBalance` withdrawable via `withdrawBalance` (L3 USDC). `virtualBalance` withdrawable via `withdrawToArb` (Arb USDC via issuers). No mixing.
+3. **Refund safety**: before signing `refundVisionDeposit`, each oracle MUST query `Vision.depositProcessed[depositId]` on L3. If true → refuse to sign. Prevents credit+refund double-money.
+4. **Dual-balance separation**: `realBalance` withdrawable via `withdrawBalance` (L3 USDC). `virtualBalance` withdrawable via `withdrawToArb` (Arb USDC via oracles). No mixing.
 5. **Batch entry debits virtual first**: `_debitBalance` uses virtual before real when joining batches. Batch payouts always credit real — virtual gradually converts to real through trading.
 6. **Decimal conversion**: `DecimalLib.toInternal()` (6→18) / `DecimalLib.toUsdc()` (18→6) at every cross-chain boundary.
 7. **Balance isolation**: global balance is user-controlled. Batch pause doesn't lock it.
-8. **forceWithdraw credits realBalance**: issuer emergency exit puts funds in user's `realBalance`.
+8. **forceWithdraw credits realBalance**: oracle emergency exit puts funds in user's `realBalance`.
 9. **Withdrawal sends to user, not caller**: `completeVisionWithdraw` sends to `user` param, not `msg.sender`.
 10. **No L3BridgeCustody in Vision flows**: `withdrawToArb` is virtual debit. No L3 USDC moves.
 11. **Deposit state machine**: DB-persisted status + on-chain idempotency = crash-safe pipeline.
@@ -1189,13 +1189,13 @@ INVARIANT 6 (batch payout direction):
 | **IArbBridgeCustody** | `contracts/src/interfaces/IBridge.sol` | Add 4 new functions + events to interface. |
 | **L3BridgeCustody** | `contracts/src/custody/L3BridgeCustody.sol` | No changes. Not involved in Vision flows. |
 | **Deploy script** | `contracts/script/DeployVision.s.sol` | Deploy on L3 (not Arb). Same constructor args, no L3BridgeCustody needed. |
-| **Issuer: deposit watcher** | `issuer/src/vision/vision_deposit_watcher.rs` | Watch `VisionDepositCreated` on Arb, credit on L3 (virtualBalance) + GM drip, complete/refund on Arb. Watch `WithdrawToArbRequested` on L3, bridge to Arb. Refund safety: query `depositProcessed` before signing. |
-| **Issuer: chain_listener** | `issuer/src/vision/chain_listener.rs` | Add handlers for `BalanceCredited` (virtual), `BalanceDeposited` (real), `RealBalanceWithdrawn`, `WithdrawToArbRequested`. Infer implicit balance changes from `PlayerJoined`/`RewardsClaimed`/`PlayerWithdrawn`/`ForceWithdrawn`. |
-| **Issuer: tick_scheduler** | `issuer/src/vision/tick_scheduler.rs` | Add `user_real_balances` + `user_virtual_balances` maps. Dual-balance event handlers. |
-| **Issuer: api** | `issuer/src/vision/api.rs` | `GET /vision/user/:address/balance` returns `{ realBalance, virtualBalance, total }`. |
-| **Issuer: types** | `issuer/src/vision/types.rs` | Add `PendingVisionDeposit`, `DepositStatus`. |
-| **Issuer: config** | `issuer/src/vision/config.rs` | Add `arb_rpc_url`, `arb_bridge_custody_address`, `arb_chain_id`, gas drip config. |
-| **Issuer: mod.rs** | `issuer/src/vision/mod.rs` | Declare new `vision_deposit_watcher` module. |
+| **Oracle: deposit watcher** | `oracle/src/vision/vision_deposit_watcher.rs` | Watch `VisionDepositCreated` on Arb, credit on L3 (virtualBalance) + GM drip, complete/refund on Arb. Watch `WithdrawToArbRequested` on L3, bridge to Arb. Refund safety: query `depositProcessed` before signing. |
+| **Oracle: chain_listener** | `oracle/src/vision/chain_listener.rs` | Add handlers for `BalanceCredited` (virtual), `BalanceDeposited` (real), `RealBalanceWithdrawn`, `WithdrawToArbRequested`. Infer implicit balance changes from `PlayerJoined`/`RewardsClaimed`/`PlayerWithdrawn`/`ForceWithdrawn`. |
+| **Oracle: tick_scheduler** | `oracle/src/vision/tick_scheduler.rs` | Add `user_real_balances` + `user_virtual_balances` maps. Dual-balance event handlers. |
+| **Oracle: api** | `oracle/src/vision/api.rs` | `GET /vision/user/:address/balance` returns `{ realBalance, virtualBalance, total }`. |
+| **Oracle: types** | `oracle/src/vision/types.rs` | Add `PendingVisionDeposit`, `DepositStatus`. |
+| **Oracle: config** | `oracle/src/vision/config.rs` | Add `arb_rpc_url`, `arb_bridge_custody_address`, `arb_chain_id`, gas drip config. |
+| **Oracle: mod.rs** | `oracle/src/vision/mod.rs` | Declare new `vision_deposit_watcher` module. |
 | **Database** | migrations | `vision_user_balances` (real_balance + virtual_balance), `vision_deposit_orders`, `vision_withdraw_orders`. |
 | **Frontend: new hooks** | `frontend/hooks/vision/` | `useDepositToVision`, `useDepositBalance`, `useWithdrawBalance`, `useWithdrawToArb`, `useVisionBalance` (returns real+virtual+total), `useL3GasBalance` (6 new hooks). |
 | **Frontend: modified hooks** | `frontend/hooks/vision/` | `useJoinBatch` (remove approve), `useDeposit` (remove approve), `useWithdraw` (credits realBalance), `useClaim` (credits realBalance). |
@@ -1208,7 +1208,7 @@ INVARIANT 6 (batch payout direction):
 | **Bots: config** | `vision-bot/config.toml` | RPC URL points to L3 (not Arb). |
 | **Bots** | — | Need GM + USDC on L3. `depositBalance()` before joining. Auto-dripped GM on first cross-chain deposit. |
 | **Data node** | — | No changes. |
-| **start.sh** | `start.sh` | Deploy Vision on L3 (not Arb). Fund bots + test user with GM + L3 USDC. Update issuer args for L3 RPC. |
+| **start.sh** | `start.sh` | Deploy Vision on L3 (not Arb). Fund bots + test user with GM + L3 USDC. Update oracle args for L3 RPC. |
 | **DeployVision.s.sol** | `contracts/script/DeployVision.s.sol` | Target L3 chain, accept L3 USDC address. |
 
 ---
@@ -1221,7 +1221,7 @@ Three rounds of parallel cynical audit agents reviewed this design against the a
 
 | ID | Finding | Fix |
 |----|---------|-----|
-| C-01 | `ArbBridgeCustody.completeBridge()` sends USDC to `msg.sender` (issuer), not user | New `completeVisionWithdraw()` that sends to explicit `user` param (Section 2) |
+| C-01 | `ArbBridgeCustody.completeBridge()` sends USDC to `msg.sender` (oracle), not user | New `completeVisionWithdraw()` that sends to explicit `user` param (Section 2) |
 | C-02 | `L3BridgeCustody.initiateBridge()` uses pull model (`safeTransferFrom`), design used push | Removed L3BridgeCustody from Vision flows entirely. `withdrawToArb` is virtual debit (Section 3) |
 | C-03 | No solvency invariant — no `totalBalance` tracking | Replaced with dual `totalRealBalance` + `totalVirtualBalance` in v7 (Section 1) |
 | C-04 | `collectFees` could drain pool below user balances | Fixed in v7: `collectFees` credits `realBalance[feeCollector]` instead of `safeTransfer` (Section 1) |
@@ -1229,7 +1229,7 @@ Three rounds of parallel cynical audit agents reviewed this design against the a
 | C-06 | All frontend Vision components hardcode 6 decimals, L3 USDC is 18 | Added `VISION_USDC_DECIMALS = 18` constant, replace all instances (Section 6e) |
 | C-07 | Bot `DECIMALS = 6` hardcoded, loads `ARB_USDC` address | Fixed to `DECIMALS = 18`, `L3_USDC` address, L3 RPC URL (Section 8) |
 | C-08 | Two-phase deposit has no atomic rollback | DB-persisted state machine with on-chain idempotency (Section 5a) |
-| C-09 | No duplicate-credit protection across issuer restarts | `depositProcessed[depositId]` on-chain + startup recovery from DB state (Section 5a) |
+| C-09 | No duplicate-credit protection across oracle restarts | `depositProcessed[depositId]` on-chain + startup recovery from DB state (Section 5a) |
 | C-10 | Vision.sol not upgradeable — migration plan missing | Noted: full redeploy required. Same constructor args. (Section 1) |
 | C-11 | L3BridgeCustody pull/push mismatch blocks withdrawals | Same fix as C-02 — L3BridgeCustody not used (Section 3) |
 
@@ -1266,7 +1266,7 @@ Three rounds of parallel cynical audit agents reviewed this design against the a
 
 | ID | Finding | Resolution |
 |----|---------|------------|
-| R2-H-01 | Auto-refund race: credit lands on L3, auto-refund fires on Arb before DB update → double money. | **Downgraded to MEDIUM in round 3.** BLS consensus = all issuers must agree. Added rule: query `depositProcessed` on L3 before signing refund. Only `pending` deposits are refundable. (Section 5a) |
+| R2-H-01 | Auto-refund race: credit lands on L3, auto-refund fires on Arb before DB update → double money. | **Downgraded to MEDIUM in round 3.** BLS consensus = all oracles must agree. Added rule: query `depositProcessed` on L3 before signing refund. Only `pending` deposits are refundable. (Section 5a) |
 | R2-H-02 | `ArbBridgeCustody` shared pool: ITP flows + Vision flows share same USDC pool with no accounting. | **Downgraded to LOW in round 3.** Added `visionReserve` counter on ArbBridgeCustody (Section 2). In practice, ITP USDC passes through and doesn't stay in custody long. |
 | R2-H-03 | `useChainWriteContract` forces L3 chain for all writes. Cross-chain deposit needs Arb writes. | Addressed in Section 6d — wagmi multi-chain config. |
 | R2-H-04 | `BatchEntryPanel` 1e6 → 10^12 underflow: displays amounts with 6 decimals but L3 uses 18. | Addressed in Section 6e — `VISION_USDC_DECIMALS = 18` constant. |

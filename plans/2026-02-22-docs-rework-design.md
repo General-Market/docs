@@ -59,7 +59,7 @@ docs/
 │   │   └── morpho.mdx                # restored
 │   ├── architecture/
 │   │   ├── contracts.mdx             # restored — Index.sol, BLS
-│   │   ├── issuer-nodes.mdx          # restored — L3 issuer consensus
+│   │   ├── oracle-nodes.mdx          # restored — L3 oracle consensus
 │   │   └── data-node.mdx             # restored
 │   └── reference/
 │       ├── error-codes.mdx           # restored — Index-specific errors
@@ -270,7 +270,7 @@ This is served at `generalmarket.io/llms-full.txt` via frontend route or static 
     },
     {
       "group": "Architecture",
-      "pages": ["index/architecture/contracts", "index/architecture/issuer-nodes", "index/architecture/data-node"]
+      "pages": ["index/architecture/contracts", "index/architecture/oracle-nodes", "index/architecture/data-node"]
     },
     {
       "group": "Reference",

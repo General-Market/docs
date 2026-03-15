@@ -1,7 +1,7 @@
 /**
  * Local bitmap persistence for hit rate computation.
  *
- * After each SUBMIT (bitmap sent to issuers), we store the player's
+ * After each SUBMIT (bitmap sent to oracles), we store the player's
  * predictions in localStorage. On page load, we cross-reference stored
  * bitmaps against market outcomes from batch history to compute hit rate.
  *

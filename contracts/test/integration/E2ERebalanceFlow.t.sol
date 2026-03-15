@@ -7,7 +7,7 @@ import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -65,10 +65,10 @@ contract E2ERebalanceFlowTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Deploy IssuerRegistry, register real BLS test issuers, wire to Index
-        IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, admin);
-        index.setIssuerRegistry(address(issuerRegistry));
+        // Deploy OracleRegistry, register real BLS test oracles, wire to Index
+        OracleRegistry oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, admin);
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Fund creator with USDC
         usdc.mint(creator, INITIAL_USDC);
@@ -129,12 +129,12 @@ contract E2ERebalanceFlowTest is TestHelper {
 
     function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signRebalance(
@@ -149,7 +149,7 @@ contract E2ERebalanceFlowTest is TestHelper {
             block.chainid, address(index), "rebalance",
             _itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ HELPERS ============

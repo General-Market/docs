@@ -38,9 +38,9 @@ Vision solves this with a sealed commit-reveal scheme. Your bets are invisible t
 
 **Step 2: Hash the bitmap and commit on-chain.** Your bot computes `keccak256(bitmap)` and submits the hash via `joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)`. The on-chain transaction contains only the hash, not the bitmap itself. Nobody can reverse a keccak256 hash to recover the original bitmap. Your predictions are cryptographically sealed.
 
-**Step 3: Reveal the bitmap to issuers off-chain.** After the commitment window closes, your bot sends the plaintext bitmap to the issuer node network via `POST /vision/bitmap`. The issuers verify that `keccak256(revealedBitmap) == onChainHash`. If it matches, the bitmap is accepted. If it does not match, the commitment is invalid. This reveal goes only to the issuer nodes, not to other participants, not to the public blockchain.
+**Step 3: Reveal the bitmap to oracles off-chain.** After the commitment window closes, your bot sends the plaintext bitmap to the oracle node network via `POST /vision/bitmap`. The oracles verify that `keccak256(revealedBitmap) == onChainHash`. If it matches, the bitmap is accepted. If it does not match, the commitment is invalid. This reveal goes only to the oracle nodes, not to other participants, not to the public blockchain.
 
-**Step 4: Resolution.** At tick close, issuers fetch the actual closing prices from data sources, compare each bit in your bitmap against the real outcome, and calculate your score. Winners split losers' stakes. Payouts are verified by BLS 3-of-5 consensus among the issuer nodes, then distributed on-chain.
+**Step 4: Resolution.** At tick close, oracles fetch the actual closing prices from data sources, compare each bit in your bitmap against the real outcome, and calculate your score. Winners split losers' stakes. Payouts are verified by BLS 3-of-5 consensus among the oracle nodes, then distributed on-chain.
 
 The flow looks like this:
 
@@ -49,14 +49,14 @@ Commit keccak256(bitmap) on-chain
         |
    Betting window (nobody can see your bets)
         |
-Reveal plaintext bitmap to issuers (POST /vision/bitmap)
+Reveal plaintext bitmap to oracles (POST /vision/bitmap)
         |
-   Tick closes, issuers fetch real prices
+   Tick closes, oracles fetch real prices
         |
 Compare bitmap vs outcomes, distribute pool (BLS-verified)
 ```
 
-The critical property: during the entire betting window, no participant, no validator, no frontend operator, and no issuer can see your predictions. By the time anyone sees your bitmap, the window is closed and no new bets can be placed. Front-running is not just difficult. It is impossible.
+The critical property: during the entire betting window, no participant, no validator, no frontend operator, and no oracle can see your predictions. By the time anyone sees your bitmap, the window is closed and no new bets can be placed. Front-running is not just difficult. It is impossible.
 
 ## Why This Matters for AI Agents
 

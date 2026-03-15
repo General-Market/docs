@@ -7,8 +7,8 @@ import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
 
 /// @title CollateralRegistry - On-chain collateral tracking per ITP per chain
-/// @notice Enables stateless issuer operation by tracking all collateral movements
-/// @dev All movements require BLS signature from 11/20 issuers
+/// @notice Enables stateless oracle operation by tracking all collateral movements
+/// @dev All movements require BLS signature from 11/20 oracles
 /// @custom:security-contact security@indexprotocol.com
 contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
     // ============ ERRORS ============
@@ -89,13 +89,13 @@ contract CollateralRegistry is ICollateralRegistry, BLSVerifier {
 
     // ============ CONSTRUCTOR ============
 
-    /// @notice Initialize the CollateralRegistry with an admin and issuer registry
+    /// @notice Initialize the CollateralRegistry with an admin and oracle registry
     /// @param _admin The admin address for configuration operations
-    /// @param _issuerRegistry The IssuerRegistry address for BLS verification
-    constructor(address _admin, address _issuerRegistry) {
+    /// @param _oracleRegistry The OracleRegistry address for BLS verification
+    constructor(address _admin, address _oracleRegistry) {
         if (_admin == address(0)) revert ZeroAddress();
         admin = _admin;
-        __BLSVerifier_init(_issuerRegistry);
+        __BLSVerifier_init(_oracleRegistry);
     }
 
     // ============ COLLATERAL TRACKING ============

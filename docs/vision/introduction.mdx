@@ -55,7 +55,7 @@ Four steps separate you from the consequences of your convictions.
     ┌─────────────┐       ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
     │             │       │             │       │             │       │             │
     │  Pick a     │       │  Predict    │       │  Tick ends  │       │  Withdraw   │
-    │  batch from │──────>│  UP or DOWN │──────>│  Issuers    │──────>│  winnings   │
+    │  batch from │──────>│  UP or DOWN │──────>│  Oracles    │──────>│  winnings   │
     │  98+ source │       │  per market │       │  fetch real │       │  with BLS   │
     │  categories │       │  Sealed as  │       │  data and   │       │  verified   │
     │             │       │  hash on-   │       │  resolve    │       │  balance    │
@@ -73,11 +73,11 @@ Four steps separate you from the consequences of your convictions.
          v                      v                      v                      v
     Browse active          Encode into a          Real prices from       BLS aggregate
     batches across         compact bitmap         external APIs          signature from
-    all categories         and commit hash        determine UP/DOWN      issuer network
+    all categories         and commit hash        determine UP/DOWN      oracle network
 ```
 
 <Info>
-Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to issuers off-chain. Nobody can see or copy your bets before the tick closes. Your folly is your own until the moment of reckoning.
+Your predictions are **sealed** -- you submit a hash of your bitmap on-chain, then reveal the actual bytes to oracles off-chain. Nobody can see or copy your bets before the tick closes. Your folly is your own until the moment of reckoning.
 </Info>
 
 ## What Makes Vision Different
@@ -118,7 +118,7 @@ Most prediction markets let you bet on elections and football. Vision lets you b
     Crypto, weather, earthquakes, train delays, Twitch streams, npm downloads, nuclear reactors, ice cream machines, military aircraft. The catalogue of measurable phenomena is vast. The catalogue of predictable ones is smaller. See the [full source directory](/vision/concepts/sources).
   </Card>
   <Card title="Sealed Commitments" icon="lock">
-    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to issuers. No front-running, no copying. Your mistakes are at least original.
+    Players submit `keccak256(bitmap)` on-chain before revealing actual predictions to oracles. No front-running, no copying. Your mistakes are at least original.
   </Card>
   <Card title="Bot-Friendly" icon="robot">
     Free registration with `registerBot()`. Poll for batches, encode bitmaps, and join programmatically. Delegate your hubris to a machine -- it will lose money faster and without complaint.
@@ -127,7 +127,7 @@ Most prediction markets let you bet on elections and football. Vision lets you b
     0.3% fee on profits only. If you lose, you pay nothing extra. The protocol taxes fortune, not misfortune.
   </Card>
   <Card title="BLS-Verified Claims" icon="shield-check">
-    Every claim and withdrawal requires a valid aggregated BLS signature from the issuer network. Trust is a threshold, not an emotion.
+    Every claim and withdrawal requires a valid aggregated BLS signature from the oracle network. Trust is a threshold, not an emotion.
   </Card>
   <Card title="Points (Season 1)" icon="star">
     Earn points for every tick you participate in. Season 1 is live. Points accrue for presence, not for being right. The protocol rewards those who show up.
@@ -199,7 +199,7 @@ Ninety-eight APIs feed numbers into a Rust process that feeds them into a databa
                            │
                            ▼
         ┌────────────────────────────────────────┐
-        │            ISSUERS (3x)                │
+        │            ORACLES (3x)                │
         │                                        │
         │   Read prices ──> Resolve ticks        │
         │                ──> BLS sign            │

@@ -1,15 +1,15 @@
 //! Shared logging infrastructure for Index L3 components.
 //!
 //! Provides structured JSON logging with required fields, dual output (file + stdout),
-//! and rolling file appender support. Both issuer and AP binaries should use
+//! and rolling file appender support. Both oracle and AP binaries should use
 //! `init_logging()` instead of implementing their own setup.
 //!
 //! # Required JSON Fields
 //!
 //! All log entries include: `timestamp` (ISO 8601), `level`, `cycle_number`,
-//! `issuer_id`, `order_id`, `itp_id`, `message`, `details`.
+//! `oracle_id`, `order_id`, `itp_id`, `message`, `details`.
 //!
-//! Contextual fields (`cycle_number`, `issuer_id`, `order_id`, `itp_id`) are
+//! Contextual fields (`cycle_number`, `oracle_id`, `order_id`, `itp_id`) are
 //! injected via `tracing::Span` from calling code. When not applicable, they
 //! default to empty/zero values.
 
@@ -31,7 +31,7 @@ pub struct LogConfig {
     /// When false: JSON to file, human-readable to stdout.
     /// When true: JSON to both.
     pub json_enabled: bool,
-    /// Component name used as log file prefix (e.g., "issuer-1", "ap").
+    /// Component name used as log file prefix (e.g., "oracle-1", "ap").
     pub component_name: String,
     /// Optional node identifier for multi-node deployments.
     pub node_id: Option<u32>,
@@ -55,7 +55,7 @@ impl Default for LogConfig {
 /// - **File**: Always JSON format with daily rotation via `tracing-appender`
 /// - **Stdout**: JSON when `json_enabled=true`, human-readable otherwise
 ///
-/// Contextual fields (`cycle_number`, `issuer_id`, `order_id`, `itp_id`) are
+/// Contextual fields (`cycle_number`, `oracle_id`, `order_id`, `itp_id`) are
 /// populated automatically from active `tracing::Span` context.
 ///
 /// # Errors

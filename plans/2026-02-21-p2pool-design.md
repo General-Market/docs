@@ -8,7 +8,7 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 
 ```
 ┌──────────────────┐     ┌──────────────────────┐     ┌──────────────────┐
-│   DATA NODE      │────→│   ISSUER NODES        │────→│   VISION.SOL     │
+│   DATA NODE      │────→│   ORACLE NODES        │────→│   VISION.SOL     │
 │   (raw prices)   │     │   Tick engine:        │     │   (on-chain)     │
 │   Collectors:    │     │   - Per-batch sched   │     │   - Batches      │
 │   - Crypto       │     │   - Resolution        │     │   - Positions    │
@@ -16,7 +16,7 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 │   - Twitch       │     │   - BLS signing       │     │   - Bot registry │
 │   - HackerNews   │     │   - Bitmap store      │     │   - 0.3% fee     │
 │   - Weather      │     │   - Reveal            │     │                  │
-│                  │     │                       │     │   IssuerRegistry │
+│                  │     │                       │     │   OracleRegistry │
 │   Market catalog │     │   Chain indexer:      │     │   (BLS verify)   │
 │   + price API    │     │   - Vision.sol → PG   │     │                  │
 │                  │     │                       │     │                  │
@@ -45,21 +45,21 @@ Replace Vision's bilateral betting system (CollateralVault + KeeperRegistry) wit
 | Contract architecture | Single `Vision.sol` monolith | Absorbs BatchRegistry + PoolVault + BotRegistry into one contract |
 | Collateral | USDC | Per brief specification |
 | Minimum stake | $0.10/tick | Prevent dust positions |
-| Market registry | Hybrid: data-node catalog + issuer BLS whitelist | Data-node has the data, issuers curate what's valid |
+| Market registry | Hybrid: data-node catalog + oracle BLS whitelist | Data-node has the data, oracles curate what's valid |
 | Resolution model | Universal % change for all sources | `(end - start) / start × 100` → check threshold. Same for crypto, polymarket, twitch, HN, weather |
 | Tick scheduling | Per-batch independent clocks | Each batch has its own tickDuration and resolves independently |
-| Withdrawal | Player-initiated: request BLS proof from issuers → submit tx | User controls timing, issuers just sign |
-| Bitmap distribution | User sends to all issuers directly | Each issuer verifies `keccak256(bitmap) == on-chain hash` independently |
+| Withdrawal | Player-initiated: request BLS proof from oracles → submit tx | User controls timing, oracles just sign |
+| Bitmap distribution | User sends to all oracles directly | Each oracle verifies `keccak256(bitmap) == on-chain hash` independently |
 | Bitmap privacy | Sealed during tick, 10-min reveal after resolution | Anti-copy, strategy protection. Non-revealed = void |
 | Side matching | Parimutuel per sub-market | UP vs DOWN matched, excess refunded, minority side gets better odds |
 | Strategy execution | Client-side Pyodide (WASM Python) | Strategies run in browser, not on server |
 | Coexistence | ITP cycle engine stays, tick engine runs in parallel | Two products, shared infra (prices, BLS, P2P) |
 | Migration | Build in parallel, delete old Vision when P2Pool is live | Zero downtime migration |
-| Data persistence | Chain-indexed state on issuer, not data-node | Single indexer avoids consistency issues between two indexers. Data-node stays pure price data. |
+| Data persistence | Chain-indexed state on oracle, not data-node | Single indexer avoids consistency issues between two indexers. Data-node stays pure price data. |
 
 ## Contract: Vision.sol
 
-Single Solidity contract handling all P2Pool logic. External deps: `IssuerRegistry` (BLS verify), `IERC20(usdc)`, `IERC20(wind)` (bot staking).
+Single Solidity contract handling all P2Pool logic. External deps: `OracleRegistry` (BLS verify), `IERC20(usdc)`, `IERC20(wind)` (bot staking).
 
 ### Bot Registry (absorbed)
 - `registerBot(endpoint, pubkeyHash)` + WIND stake
@@ -68,7 +68,7 @@ Single Solidity contract handling all P2Pool logic. External deps: `IssuerRegist
 
 ### Batch Management
 - `createBatch(marketIds[], resolutionTypes[], tickDuration, customThresholds[])` → batchId
-  - Permissionless. Issuers validate off-chain (reject resolution for invalid markets)
+  - Permissionless. Oracles validate off-chain (reject resolution for invalid markets)
 - `updateBatchMarkets(batchId, marketIds[], resolutionTypes[])` — creator only, after current tick resolves
 - `getBatch(batchId)` → full batch config
 
@@ -77,11 +77,11 @@ Single Solidity contract handling all P2Pool logic. External deps: `IssuerRegist
   - Minimum stake: 0.1 USDC per tick
   - Stores: bitmapHash (32B), stakePerTick, startTick, balance, joinTimestamp
 - `deposit(batchId)` — top up existing position
-- `claimRewards(batchId, tickRange, balance, blsSig)` — BLS-verified via IssuerRegistry, 0.3% fee
+- `claimRewards(batchId, tickRange, balance, blsSig)` — BLS-verified via OracleRegistry, 0.3% fee
 - `withdraw(batchId, balance, blsSig)` — exit with BLS-signed balance proof, 0.3% fee
 
-### Issuer Operations
-- `pause(batchId)` — freeze batch (issuer-only, BLS-verified)
+### Oracle Operations
+- `pause(batchId)` — freeze batch (oracle-only, BLS-verified)
 - `forceWithdraw(batchId, player)` — emergency return funds (minus fee)
 
 ### Storage Layout
@@ -110,9 +110,9 @@ mapping(uint256 => mapping(address => PlayerPosition)) positions;
 // batchId => player => position
 ```
 
-## Issuer: Tick Engine
+## Oracle: Tick Engine
 
-New `p2pool/` module in the issuer Rust crate, running alongside existing ITP cycle engine.
+New `p2pool/` module in the oracle Rust crate, running alongside existing ITP cycle engine.
 
 ### Tick Scheduler
 - Tracks all active batches from on-chain events
@@ -145,12 +145,12 @@ New `p2pool/` module in the issuer Rust crate, running alongside existing ITP cy
    - All losers (threshold unmet): everyone refunded
    - All same side (no opponents): everyone refunded
 9. **Update balances** — deduct stakes, add winnings + refunds
-10. **BLS consensus** — all issuers compute same result, aggregate signatures
+10. **BLS consensus** — all oracles compute same result, aggregate signatures
 11. **Store**: `{tick_id, market_results[], player_balances[]}`
 
 ### Bitmap Management
-- REST: `POST /p2pool/bitmap` — player submits bitmap (sent to all issuers)
-- Each issuer: verify `keccak256(bitmap) == on-chain hash`
+- REST: `POST /p2pool/bitmap` — player submits bitmap (sent to all oracles)
+- Each oracle: verify `keccak256(bitmap) == on-chain hash`
 - Store: `player → batch_id → bitmap_bytes`
 - Post-tick: publish all bitmaps for that tick (10-min reveal window)
 - Non-revealed after 10 min → void
@@ -163,7 +163,7 @@ New `p2pool/` module in the issuer Rust crate, running alongside existing ITP cy
 - Unified chain listener watches Vision.sol events and does BOTH:
   - In-memory scheduler updates (for tick resolution)
   - Postgres writes (for REST API — batches, positions, tick results)
-- Single indexer eliminates consistency issues (previously planned as two separate indexers on data-node and issuer)
+- Single indexer eliminates consistency issues (previously planned as two separate indexers on data-node and oracle)
 - Uses kv_store bookmark to resume from last indexed block on restart
 - Tables: `p2pool_batches`, `p2pool_positions`, `p2pool_tick_results`, `kv_store`
 
@@ -176,20 +176,20 @@ New `p2pool/` module in the issuer Rust crate, running alongside existing ITP cy
 ### Coexistence
 - Existing cycle engine stays for ITP
 - Tick engine runs as separate tokio tasks
-- Shared: price fetching, BLS signing infrastructure, P2P layer, IssuerRegistry sync
+- Shared: price fetching, BLS signing infrastructure, P2P layer, OracleRegistry sync
 
 ## Data Node: Market Catalog + Price Collectors
 
-The data-node serves raw price data only. Chain-indexed state (batches, positions, tick results) and batch/history/backtest APIs live on the issuer.
+The data-node serves raw price data only. Chain-indexed state (batches, positions, tick results) and batch/history/backtest APIs live on the oracle.
 
 ### Hybrid Market Registry
 - Data-node provides full asset catalog from all collectors
-- Issuers curate active whitelist via BLS-signed JSON:
+- Oracles curate active whitelist via BLS-signed JSON:
   ```json
   { "markets": [{ "id": "btc_usd_10m", "source": "crypto", ... }], "version": 42, "blsSig": "..." }
   ```
 - `GET /markets` — full catalog (all sources)
-- `GET /markets/active` — issuer-whitelisted only
+- `GET /markets/active` — oracle-whitelisted only
 
 ### Universal Resolution Data
 All sources provide the same interface: `(market_id, timestamp) → f64 value`
@@ -209,7 +209,7 @@ Each collector implements the same trait: poll source, store `(market_id, timest
 
 ### Endpoints
 - `GET /p2pool/snapshot` — bulk market data for strategy scripts: `{ id, value, change_24h, change_7d, volume, mcap }`
-- `GET /p2pool/markets/active` — issuer-whitelisted active markets
+- `GET /p2pool/markets/active` — oracle-whitelisted active markets
 
 ## Frontend
 
@@ -252,8 +252,8 @@ Auto-select tab by market count:
 - Input: market snapshot from data-node `/p2pool/snapshot` endpoint
 - Output: bitmap array (1/0 per market per tick)
 - Templates: pre-built strategies users can fork/modify
-- Backtest: run against historical data from issuer `/p2pool/backtest` endpoint
-- Bots: skip UI entirely, call data-node for prices + issuer for batch state + submit bitmap directly
+- Backtest: run against historical data from oracle `/p2pool/backtest` endpoint
+- Bots: skip UI entirely, call data-node for prices + oracle for batch state + submit bitmap directly
 
 ### Batch Creation Flow
 - Pick markets from active registry
@@ -274,11 +274,11 @@ Auto-select tab by market count:
 - Vision markets grid components
 - Keeper-related UI
 
-### Issuer
+### Oracle
 - Keeper arbitration code (if any)
 
 ### Kept
-- `IssuerRegistry.sol` — BLS infra
+- `OracleRegistry.sol` — BLS infra
 - `BotRegistry.sol` logic → absorbed into Vision.sol
 - ITP/Investment — separate product, untouched
 - Data-node existing collectors — extended, not replaced

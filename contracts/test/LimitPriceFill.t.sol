@@ -10,7 +10,7 @@ import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 
 /// @title LimitPriceFill.t.sol - Tests for on-chain limit price enforcement
 /// @notice Tests that fill prices are validated against order limitPrice in confirmFills
@@ -44,10 +44,10 @@ contract LimitPriceFillTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Setup IssuerRegistry with real BLS keys for verification
-        IssuerRegistry registry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(registry, address(this));
-        index.setIssuerRegistry(address(registry));
+        // Setup OracleRegistry with real BLS keys for verification
+        OracleRegistry registry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(registry, address(this));
+        index.setOracleRegistry(address(registry));
 
         // Create test ITP with 1 asset
         uint256[] memory weights = new uint256[](1);
@@ -73,12 +73,12 @@ contract LimitPriceFillTest is TestHelper {
 
     function _signBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     /// @notice Submit a BUY order, batch it, and fill it in one shot

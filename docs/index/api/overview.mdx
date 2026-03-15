@@ -24,7 +24,7 @@ Every request from the browser passes through a Next.js proxy. The browser never
                           |                    |                    |
                           v                    v                    v
                   +-------+-------+    +-------+-------+   +-------+-------+
-                  |  Data Node    |    |    L3 RPC     |   | Issuer API    |
+                  |  Data Node    |    |    L3 RPC     |   | Oracle API    |
                   |  (port 8200)  |    | (chain reads) |   | (port 10001)  |
                   |               |    |               |   |               |
                   | - prices      |    | - getITPState |   | - /vision/*   |
@@ -122,9 +122,9 @@ Vision-specific routes (see [Vision API Reference](/vision/api/overview)):
 ```
   METHOD   PATH                          UPSTREAM          DESCRIPTION
   ------   ----------------------------  ----------------  --------------------------------
-  GET      /api/vision/batches           Issuer API        List active prediction batches
-  POST     /api/vision/bitmap            All Issuers       Fan-out bitmap submission
-  GET      /api/vision/leaderboard       Issuer API        Player PnL rankings
+  GET      /api/vision/batches           Oracle API        List active prediction batches
+  POST     /api/vision/bitmap            All Oracles       Fan-out bitmap submission
+  GET      /api/vision/leaderboard       Oracle API        Player PnL rankings
   GET      /api/vision/snapshot          Data Node         Market price snapshots
   GET      /api/vision/snapshot/meta     Data Node         Source health + asset counts
 ```

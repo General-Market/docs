@@ -12,7 +12,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 │                  INDEX L3 (Chain 111222333)              │
 │                                                         │
 │  ┌──────────┐  ┌────────────────┐  ┌─────────────────┐  │
-│  │  Index    │  │  Governance    │  │  IssuerRegistry │  │
+│  │  Index    │  │  Governance    │  │  OracleRegistry │  │
 │  └──────────┘  └────────────────┘  └─────────────────┘  │
 │  ┌──────────────────┐  ┌───────────────────────────┐    │
 │  │ CollateralRegistry│  │  BLSCustody              │    │
@@ -40,7 +40,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 │  │ SettlementBridgeProxy    │  │ SettlementBridgeCust.│ │
 │  └──────────────────────────┘  └──────────────────────┘ │
 │  ┌──────────────────────────┐  ┌──────────────────────┐ │
-│  │ SettlementBridgedItpFact.│  │ SettlementIssuerReg. │ │
+│  │ SettlementBridgedItpFact.│  │ SettlementOracleReg. │ │
 │  └──────────────────────────┘  └──────────────────────┘ │
 │  ┌──────────────────────────┐                           │
 │  │ Settlement USDC (6d)     │                           │
@@ -64,7 +64,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 | **Chain ID** | `111222333` |
 | **RPC Endpoint** | `http://142.132.164.24/` |
 | **Collateral Token** | WUSDC (18 decimals on L3) |
-| **Consensus** | Arbitrum Orbit with BLS issuer consensus |
+| **Consensus** | Arbitrum Orbit with BLS oracle consensus |
 
 ### Settlement
 
@@ -82,7 +82,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 |----------|---------|-------------|
 | **Index** | `0xc405a458b63b5ee8E19eB5C4ECf86fAD41F2E902` | Main entry point for order management, ITP creation, and NAV computation. |
 | **Governance** | `0xE0A07455F9e92FFf3e8DF8EBd64BB68463D3bcEC` | Administrative controls for pausing, parameter updates, and UUPS upgrades. |
-| **IssuerRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Manages issuer node registration and BLS public key storage. |
+| **OracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Manages oracle node registration and BLS public key storage. |
 | **CollateralRegistry** | `0x907eCdB6AD282122893D2Ea0f733421497b693a7` | Whitelist of accepted collateral tokens for order placement. |
 
 ### Bridge & Custody
@@ -120,7 +120,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 |----------|---------|-------------|
 | **Morpho** | `0x2b43723840e5935a4E4b832d18C7c033a1C15074` | Morpho core lending protocol. |
 | **Adaptive IRM** | `0x095e7F85a7569B64cdEA8d4b5F148ff77f371907` | Interest rate model for the USDC/ITP market. |
-| **MirrorIssuerRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Mirror of IssuerRegistry used as oracle registry. |
+| **MirrorOracleRegistry** | `0xB2b2c21Fa066b216a583493aE0e82eb16A37f275` | Mirror of OracleRegistry used as oracle registry. |
 | **ITP NAV Oracle** | `0x172D6F3330CD4c993C4F49341E38f8d551E1c5d3` | Oracle providing ITP NAV for Morpho liquidation pricing. |
 | **MetaMorpho Vault** | `0xB4FF430878a980cf23d06CC31EEE2f26AbD1bbb2` | Curated vault for USDC lending against ITP collateral. |
 
@@ -131,7 +131,7 @@ The addresses are the protocol. Everything else -- the code, the documentation, 
 | **SettlementBridgeProxy** | `0x8026b02F341248339C65a2c07727a0fB34F8f36f` | Settlement-side bridge proxy for cross-chain order routing. |
 | **SettlementBridgeCustody** | `0x774095bC7E274Bb3e9A42f481Eeb6D636354E937` | Holds escrowed USDC on Settlement during bridge operations. |
 | **SettlementBridgedItpFactory** | `0x86169A8852e99f98d1C3b9412fD01f0f4fE5eE11` | Factory that deploys ITP share tokens on Settlement. |
-| **SettlementIssuerRegistry** | `0xe880B2E9c546cBe478C05bcb551AC97B1EC89371` | Issuer registry mirror on Settlement for BLS verification. |
+| **SettlementOracleRegistry** | `0xe880B2E9c546cBe478C05bcb551AC97B1EC89371` | Oracle registry mirror on Settlement for BLS verification. |
 
 ### Tokens
 
@@ -158,7 +158,7 @@ import deployment from "@/lib/contracts/deployment.json";
 
 // Access individual contract addresses
 const indexAddress = deployment.contracts.Index;
-const issuerRegistry = deployment.contracts.IssuerRegistry;
+const oracleRegistry = deployment.contracts.OracleRegistry;
 ```
 
 ### Adding to a Wallet

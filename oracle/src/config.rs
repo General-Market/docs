@@ -1,4 +1,4 @@
-//! Configuration management for the Issuer node.
+//! Configuration management for the Oracle node.
 //!
 //! Supports configuration from multiple sources with priority:
 //! CLI arguments > Environment variables > Config file > Defaults
@@ -11,14 +11,14 @@
 //! # Environment Variables
 //!
 //! All configuration fields can be set via environment variables:
-//! - `ISSUER_NODE_ID` - Node ID (1-20)
-//! - `ISSUER_PORT` - P2P listen port
-//! - `ISSUER_RPC_URL` - Chain RPC endpoint
-//! - `ISSUER_BLS_KEY_PATH` - Path to BLS key file
-//! - `ISSUER_PEERS` - Comma-separated list of peer addresses
-//! - `ISSUER_LOG_LEVEL` - Log level (trace, debug, info, warn, error)
-//! - `ISSUER_LOG_DIR` - Log output directory
-//! - `ISSUER_JSON_LOGS` - Output logs as JSON (true/false)
+//! - `ORACLE_NODE_ID` - Node ID (1-20)
+//! - `ORACLE_PORT` - P2P listen port
+//! - `ORACLE_RPC_URL` - Chain RPC endpoint
+//! - `ORACLE_BLS_KEY_PATH` - Path to BLS key file
+//! - `ORACLE_PEERS` - Comma-separated list of peer addresses
+//! - `ORACLE_LOG_LEVEL` - Log level (trace, debug, info, warn, error)
+//! - `ORACLE_LOG_DIR` - Log output directory
+//! - `ORACLE_JSON_LOGS` - Output logs as JSON (true/false)
 
 use ethers::types::Address;
 use serde::{Deserialize, Serialize};
@@ -69,13 +69,13 @@ pub enum ConfigError {
     InvalidAddress { value: String, reason: String },
 }
 
-/// Issuer node configuration.
+/// Oracle node configuration.
 ///
 /// All fields are optional to support layered configuration from multiple sources.
 /// Use the `effective_*` methods to get values with defaults applied.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct IssuerConfig {
-    /// Issuer node ID (1-20). Required for operation.
+pub struct OracleConfig {
+    /// Oracle node ID (1-20). Required for operation.
     pub node_id: Option<u32>,
 
     /// P2P listen port. Defaults to 9000 + node_id if not set.
@@ -107,8 +107,8 @@ pub struct IssuerConfig {
     /// Governance.sol contract address (proxy).
     pub governance_address: Option<String>,
 
-    /// IssuerRegistry.sol contract address (proxy).
-    pub issuer_registry_address: Option<String>,
+    /// OracleRegistry.sol contract address (proxy).
+    pub oracle_registry_address: Option<String>,
 
     /// CollateralRegistry.sol contract address.
     pub collateral_registry_address: Option<String>,
@@ -125,7 +125,7 @@ pub struct IssuerConfig {
     pub deployment_file: Option<PathBuf>,
 
     /// Private key for signing transactions (hex string, with or without 0x prefix).
-    /// Prefer using `ISSUER_PRIVATE_KEY` env var instead of storing in config file.
+    /// Prefer using `ORACLE_PRIVATE_KEY` env var instead of storing in config file.
     #[serde(skip_serializing)]
     pub private_key: Option<String>,
 
@@ -151,7 +151,7 @@ pub struct IssuerConfig {
     pub settlement_chain_id: Option<u64>,
 
     /// Separate private key for settlement chain writes (e.g. completeCreateItp).
-    /// If not set, the issuer's own key is used. Needed when issuer keys are
+    /// If not set, the oracle's own key is used. Needed when oracle keys are
     /// incompatible with the settlement chain (e.g. EIP-7702 delegates on Sonic).
     pub settlement_private_key: Option<String>,
 
@@ -163,21 +163,21 @@ pub struct IssuerConfig {
 
     // --- MockBitgetVault fields (Story 6.17) ---
     /// MockBitgetVault contract address for on-chain fill verification (E2E testing).
-    /// When set, issuers read fill data from MockBitgetVault.getFill() instead of
+    /// When set, oracles read fill data from MockBitgetVault.getFill() instead of
     /// polling in-memory MockBitget (FR13: no direct AP communication).
     pub bitget_vault: Option<String>,
 
-    // --- IssuerCustody fields (Story 7.7) ---
-    /// IssuerCustody contract address on L3 (holds L3Usdc after bridge from Settlement).
-    /// Used by issuers to execute BLS-signed transfers for submitOrder flow.
-    pub issuer_custody_l3: Option<String>,
+    // --- OracleCustody fields (Story 7.7) ---
+    /// OracleCustody contract address on L3 (holds L3Usdc after bridge from Settlement).
+    /// Used by oracles to execute BLS-signed transfers for submitOrder flow.
+    pub oracle_custody_l3: Option<String>,
 
-    /// IssuerCustody contract address on Settlement (holds SettlementUSDC after bridge from L3).
-    /// Used by issuers to execute BLS-signed transfers for vault release flow.
-    pub issuer_custody_settlement: Option<String>,
+    /// OracleCustody contract address on Settlement (holds SettlementUSDC after bridge from L3).
+    /// Used by oracles to execute BLS-signed transfers for vault release flow.
+    pub oracle_custody_settlement: Option<String>,
 
     /// SettlementBridgeCustody contract address (Story 7.8).
-    /// Locks user's SettlementUSDC when buying ITP from Settlement chain. Issuers observe
+    /// Locks user's SettlementUSDC when buying ITP from Settlement chain. Oracles observe
     /// CrossChainOrderCreated events from this contract for cross-chain buy flow.
     pub settlement_custody: Option<String>,
 
@@ -195,8 +195,8 @@ pub struct IssuerConfig {
 
     // --- Registry Sync fields (Story 8.4) ---
     /// Enable the registry sync endpoint (GET /api/registry-sync).
-    /// When enabled, the issuer watches for RegistryStateChanged events from L3 IssuerRegistry
-    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Settlement chain.
+    /// When enabled, the oracle watches for RegistryStateChanged events from L3 OracleRegistry
+    /// and serves BLS-signed registry state proofs for MirrorOracleRegistry sync on Settlement chain.
     /// Defaults to false.
     pub registry_sync_enabled: Option<bool>,
 
@@ -205,25 +205,25 @@ pub struct IssuerConfig {
     pub registry_sync_poll_interval_ms: Option<u64>,
 
     /// MockUSDT token contract address for USDT-pair fill verification (Story 7.18).
-    /// When set, issuer fill verification accepts this address as a valid USDT token
+    /// When set, oracle fill verification accepts this address as a valid USDT token
     /// in sell/buy fields (not just MockUSDC).
     pub mock_usdt: Option<String>,
 
     /// Data-node backend URL for fetching asset prices.
-    /// When set, the issuer uses BackendPriceFetcher instead of BitgetPriceFetcher.
+    /// When set, the oracle uses BackendPriceFetcher instead of BitgetPriceFetcher.
     /// Can also be set via DATA_NODE_URL env var.
     pub data_node_url: Option<String>,
 
     /// TLS certificate path for P2P connections.
-    /// Can also be set via ISSUER_TLS_CERT_PATH env var.
+    /// Can also be set via ORACLE_TLS_CERT_PATH env var.
     pub tls_cert_path: Option<String>,
 
     /// TLS key path for P2P connections.
-    /// Can also be set via ISSUER_TLS_KEY_PATH env var.
+    /// Can also be set via ORACLE_TLS_KEY_PATH env var.
     pub tls_key_path: Option<String>,
 
     /// TLS CA cert path for P2P connections.
-    /// Can also be set via ISSUER_TLS_CA_PATH env var.
+    /// Can also be set via ORACLE_TLS_CA_PATH env var.
     pub tls_ca_path: Option<String>,
 
     // --- Arbitration subsystem fields ---
@@ -261,12 +261,12 @@ pub struct IssuerConfig {
     /// ITP token address that the NAV oracle prices.
     pub itp_token_address: Option<String>,
 
-    /// MirrorIssuerRegistry contract address on Settlement chain (Step 12).
-    /// When set, the issuer actively syncs L3 registry state to the mirror on Settlement.
+    /// MirrorOracleRegistry contract address on Settlement chain (Step 12).
+    /// When set, the oracle actively syncs L3 registry state to the mirror on Settlement.
     pub mirror_registry_address: Option<String>,
 }
 
-impl IssuerConfig {
+impl OracleConfig {
     /// Load configuration from a YAML or TOML file.
     ///
     /// The file format is detected from the extension:
@@ -287,11 +287,11 @@ impl IssuerConfig {
 
         match extension.to_lowercase().as_str() {
             "yaml" | "yml" => {
-                let config: IssuerConfig = serde_yaml::from_str(&contents)?;
+                let config: OracleConfig = serde_yaml::from_str(&contents)?;
                 Ok(config)
             }
             "toml" => {
-                let config: IssuerConfig = toml::from_str(&contents)?;
+                let config: OracleConfig = toml::from_str(&contents)?;
                 Ok(config)
             }
             _ => Err(ConfigError::UnsupportedFormat(extension.to_string())),
@@ -301,26 +301,26 @@ impl IssuerConfig {
     /// Load configuration from environment variables.
     ///
     /// Reads the following environment variables:
-    /// - `ISSUER_NODE_ID` - parsed as u32
-    /// - `ISSUER_PORT` - parsed as u16
-    /// - `ISSUER_RPC_URL` - used as-is
-    /// - `ISSUER_BLS_KEY_PATH` - converted to PathBuf
-    /// - `ISSUER_PEERS` - comma-separated list
-    /// - `ISSUER_LOG_LEVEL` - used as-is
-    /// - `ISSUER_LOG_DIR` - converted to PathBuf
-    /// - `ISSUER_JSON_LOGS` - parsed as bool
+    /// - `ORACLE_NODE_ID` - parsed as u32
+    /// - `ORACLE_PORT` - parsed as u16
+    /// - `ORACLE_RPC_URL` - used as-is
+    /// - `ORACLE_BLS_KEY_PATH` - converted to PathBuf
+    /// - `ORACLE_PEERS` - comma-separated list
+    /// - `ORACLE_LOG_LEVEL` - used as-is
+    /// - `ORACLE_LOG_DIR` - converted to PathBuf
+    /// - `ORACLE_JSON_LOGS` - parsed as bool
     ///
     /// # Warnings
     ///
     /// If an environment variable is set but cannot be parsed, a warning is logged
     /// via `eprintln!` and the value is ignored (treated as unset).
     pub fn from_env() -> Self {
-        IssuerConfig {
-            node_id: parse_env_var("ISSUER_NODE_ID"),
-            port: parse_env_var("ISSUER_PORT"),
-            rpc_url: std::env::var("ISSUER_RPC_URL").ok(),
-            bls_key_path: std::env::var("ISSUER_BLS_KEY_PATH").ok().map(PathBuf::from),
-            peers: std::env::var("ISSUER_PEERS")
+        OracleConfig {
+            node_id: parse_env_var("ORACLE_NODE_ID"),
+            port: parse_env_var("ORACLE_PORT"),
+            rpc_url: std::env::var("ORACLE_RPC_URL").ok(),
+            bls_key_path: std::env::var("ORACLE_BLS_KEY_PATH").ok().map(PathBuf::from),
+            peers: std::env::var("ORACLE_PEERS")
                 .ok()
                 .map(|v| {
                     v.split(',')
@@ -329,98 +329,98 @@ impl IssuerConfig {
                         .collect()
                 })
                 .unwrap_or_default(),
-            log_level: std::env::var("ISSUER_LOG_LEVEL").ok(),
-            log_dir: std::env::var("ISSUER_LOG_DIR").ok().map(PathBuf::from),
-            json_logs: parse_env_var("ISSUER_JSON_LOGS"),
-            index_address: std::env::var("ISSUER_INDEX_ADDRESS").ok(),
-            governance_address: std::env::var("ISSUER_GOVERNANCE_ADDRESS").ok(),
-            issuer_registry_address: std::env::var("ISSUER_ISSUER_REGISTRY_ADDRESS").ok(),
-            collateral_registry_address: std::env::var("ISSUER_COLLATERAL_REGISTRY_ADDRESS").ok(),
-            bls_custody_address: std::env::var("ISSUER_BLS_CUSTODY_ADDRESS").ok(),
-            l3_bridge_custody_address: std::env::var("ISSUER_L3_BRIDGE_CUSTODY_ADDRESS").ok(),
-            deployment_file: std::env::var("ISSUER_DEPLOYMENT_FILE")
+            log_level: std::env::var("ORACLE_LOG_LEVEL").ok(),
+            log_dir: std::env::var("ORACLE_LOG_DIR").ok().map(PathBuf::from),
+            json_logs: parse_env_var("ORACLE_JSON_LOGS"),
+            index_address: std::env::var("ORACLE_INDEX_ADDRESS").ok(),
+            governance_address: std::env::var("ORACLE_GOVERNANCE_ADDRESS").ok(),
+            oracle_registry_address: std::env::var("ORACLE_ORACLE_REGISTRY_ADDRESS").ok(),
+            collateral_registry_address: std::env::var("ORACLE_COLLATERAL_REGISTRY_ADDRESS").ok(),
+            bls_custody_address: std::env::var("ORACLE_BLS_CUSTODY_ADDRESS").ok(),
+            l3_bridge_custody_address: std::env::var("ORACLE_L3_BRIDGE_CUSTODY_ADDRESS").ok(),
+            deployment_file: std::env::var("ORACLE_DEPLOYMENT_FILE")
                 .ok()
                 .map(PathBuf::from),
-            private_key: std::env::var("ISSUER_PRIVATE_KEY").ok(),
-            private_key_path: std::env::var("ISSUER_PRIVATE_KEY_PATH")
+            private_key: std::env::var("ORACLE_PRIVATE_KEY").ok(),
+            private_key_path: std::env::var("ORACLE_PRIVATE_KEY_PATH")
                 .ok()
                 .map(PathBuf::from),
-            oneinch_api_key: std::env::var("ISSUER_ONEINCH_API_KEY").ok(),
-            settlement_rpc_url: std::env::var("ISSUER_SETTLEMENT_RPC_URL").ok(),
-            settlement_custody_address: std::env::var("ISSUER_SETTLEMENT_CUSTODY_ADDRESS").ok(),
-            bridge_proxy_address: std::env::var("ISSUER_BRIDGE_PROXY_ADDRESS").ok(),
-            settlement_chain_id: std::env::var("ISSUER_SETTLEMENT_CHAIN_ID")
+            oneinch_api_key: std::env::var("ORACLE_ONEINCH_API_KEY").ok(),
+            settlement_rpc_url: std::env::var("ORACLE_SETTLEMENT_RPC_URL").ok(),
+            settlement_custody_address: std::env::var("ORACLE_SETTLEMENT_CUSTODY_ADDRESS").ok(),
+            bridge_proxy_address: std::env::var("ORACLE_BRIDGE_PROXY_ADDRESS").ok(),
+            settlement_chain_id: std::env::var("ORACLE_SETTLEMENT_CHAIN_ID")
                 .ok()
                 .and_then(|s| s.parse().ok()),
-            settlement_private_key: std::env::var("ISSUER_SETTLEMENT_PRIVATE_KEY").ok(),
-            settlement_private_key_path: std::env::var("ISSUER_SETTLEMENT_PRIVATE_KEY_PATH").ok().map(PathBuf::from),
-            oneinch_fusion_api_key: std::env::var("ISSUER_ONEINCH_FUSION_API_KEY").ok(),
-            bitget_vault: std::env::var("ISSUER_BITGET_VAULT").ok(),
-            issuer_custody_l3: std::env::var("ISSUER_CUSTODY_L3").ok(),
-            issuer_custody_settlement: std::env::var("ISSUER_CUSTODY_SETTLEMENT").ok(),
-            settlement_custody: std::env::var("ISSUER_SETTLEMENT_CUSTODY").ok(),
-            l3_usdc: std::env::var("ISSUER_L3_USDC").ok(),
-            settlement_usdc: std::env::var("ISSUER_SETTLEMENT_USDC").ok(),
-            ntp_server: std::env::var("ISSUER_NTP_SERVER").ok(),
-            ntp_tolerance_ms: parse_env_var("ISSUER_NTP_TOLERANCE_MS"),
-            registry_sync_enabled: parse_env_var("ISSUER_REGISTRY_SYNC"),
-            registry_sync_poll_interval_ms: parse_env_var("ISSUER_REGISTRY_SYNC_POLL_INTERVAL_MS"),
-            mock_usdt: std::env::var("ISSUER_MOCK_USDT").ok(),
+            settlement_private_key: std::env::var("ORACLE_SETTLEMENT_PRIVATE_KEY").ok(),
+            settlement_private_key_path: std::env::var("ORACLE_SETTLEMENT_PRIVATE_KEY_PATH").ok().map(PathBuf::from),
+            oneinch_fusion_api_key: std::env::var("ORACLE_ONEINCH_FUSION_API_KEY").ok(),
+            bitget_vault: std::env::var("ORACLE_BITGET_VAULT").ok(),
+            oracle_custody_l3: std::env::var("ORACLE_CUSTODY_L3").ok(),
+            oracle_custody_settlement: std::env::var("ORACLE_CUSTODY_SETTLEMENT").ok(),
+            settlement_custody: std::env::var("ORACLE_SETTLEMENT_CUSTODY").ok(),
+            l3_usdc: std::env::var("ORACLE_L3_USDC").ok(),
+            settlement_usdc: std::env::var("ORACLE_SETTLEMENT_USDC").ok(),
+            ntp_server: std::env::var("ORACLE_NTP_SERVER").ok(),
+            ntp_tolerance_ms: parse_env_var("ORACLE_NTP_TOLERANCE_MS"),
+            registry_sync_enabled: parse_env_var("ORACLE_REGISTRY_SYNC"),
+            registry_sync_poll_interval_ms: parse_env_var("ORACLE_REGISTRY_SYNC_POLL_INTERVAL_MS"),
+            mock_usdt: std::env::var("ORACLE_MOCK_USDT").ok(),
             data_node_url: std::env::var("DATA_NODE_URL").ok(),
-            tls_cert_path: std::env::var("ISSUER_TLS_CERT_PATH").ok(),
-            tls_key_path: std::env::var("ISSUER_TLS_KEY_PATH").ok(),
-            tls_ca_path: std::env::var("ISSUER_TLS_CA_PATH").ok(),
-            arbitration_enabled: parse_env_var("ISSUER_ARBITRATION_ENABLED"),
-            arbitration_collateral_vault: std::env::var("ISSUER_ARBITRATION_COLLATERAL_VAULT").ok(),
-            arbitration_settlement_contract: std::env::var("ISSUER_ARBITRATION_SETTLEMENT_CONTRACT").ok(),
-            arbitration_threshold: parse_env_var("ISSUER_ARBITRATION_THRESHOLD"),
-            arbitration_poll_interval: parse_env_var("ISSUER_ARBITRATION_POLL_INTERVAL"),
-            arbitration_data_node_url: std::env::var("ISSUER_ARBITRATION_DATA_NODE_URL").ok(),
+            tls_cert_path: std::env::var("ORACLE_TLS_CERT_PATH").ok(),
+            tls_key_path: std::env::var("ORACLE_TLS_KEY_PATH").ok(),
+            tls_ca_path: std::env::var("ORACLE_TLS_CA_PATH").ok(),
+            arbitration_enabled: parse_env_var("ORACLE_ARBITRATION_ENABLED"),
+            arbitration_collateral_vault: std::env::var("ORACLE_ARBITRATION_COLLATERAL_VAULT").ok(),
+            arbitration_settlement_contract: std::env::var("ORACLE_ARBITRATION_SETTLEMENT_CONTRACT").ok(),
+            arbitration_threshold: parse_env_var("ORACLE_ARBITRATION_THRESHOLD"),
+            arbitration_poll_interval: parse_env_var("ORACLE_ARBITRATION_POLL_INTERVAL"),
+            arbitration_data_node_url: std::env::var("ORACLE_ARBITRATION_DATA_NODE_URL").ok(),
             data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
             exchange_mode: std::env::var("EXCHANGE_MODE").ok(),
-            nav_oracle_address: std::env::var("ISSUER_NAV_ORACLE_ADDRESS").ok(),
-            itp_token_address: std::env::var("ISSUER_ITP_TOKEN_ADDRESS").ok(),
-            mirror_registry_address: std::env::var("ISSUER_MIRROR_REGISTRY_ADDRESS").ok(),
+            nav_oracle_address: std::env::var("ORACLE_NAV_ORACLE_ADDRESS").ok(),
+            itp_token_address: std::env::var("ORACLE_ITP_TOKEN_ADDRESS").ok(),
+            mirror_registry_address: std::env::var("ORACLE_MIRROR_REGISTRY_ADDRESS").ok(),
             vision: {
-                let enabled: Option<bool> = parse_env_var("ISSUER_VISION_ENABLED");
+                let enabled: Option<bool> = parse_env_var("ORACLE_VISION_ENABLED");
                 if enabled == Some(true) {
                     Some(crate::vision::config::VisionConfig {
                         enabled: true,
-                        vision_address: std::env::var("ISSUER_VISION_ADDRESS").unwrap_or_default(),
-                        data_node_url: std::env::var("ISSUER_VISION_DATA_NODE_URL")
+                        vision_address: std::env::var("ORACLE_VISION_ADDRESS").unwrap_or_default(),
+                        data_node_url: std::env::var("ORACLE_VISION_DATA_NODE_URL")
                             .unwrap_or_else(|_| "http://localhost:8200".into()),
-                        database_url: std::env::var("ISSUER_VISION_DATABASE_URL")
+                        database_url: std::env::var("ORACLE_VISION_DATABASE_URL")
                             .unwrap_or_else(|_| "postgres://localhost:5432/vision".into()),
-                        rpc_ws_url: std::env::var("ISSUER_VISION_RPC_WS_URL")
+                        rpc_ws_url: std::env::var("ORACLE_VISION_RPC_WS_URL")
                             .unwrap_or_else(|_| "ws://localhost:8546".into()),
-                        start_block: parse_env_var("ISSUER_VISION_START_BLOCK").unwrap_or(0),
-                        reveal_window_secs: parse_env_var("ISSUER_VISION_REVEAL_WINDOW_SECS").unwrap_or(600),
-                        commitment_offset: parse_env_var("ISSUER_VISION_COMMITMENT_OFFSET").unwrap_or(9),
-                        staleness_threshold_secs: parse_env_var("ISSUER_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
-                        tick_poll_interval_ms: parse_env_var("ISSUER_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
+                        start_block: parse_env_var("ORACLE_VISION_START_BLOCK").unwrap_or(0),
+                        reveal_window_secs: parse_env_var("ORACLE_VISION_REVEAL_WINDOW_SECS").unwrap_or(600),
+                        commitment_offset: parse_env_var("ORACLE_VISION_COMMITMENT_OFFSET").unwrap_or(9),
+                        staleness_threshold_secs: parse_env_var("ORACLE_VISION_STALENESS_THRESHOLD_SECS").unwrap_or(300),
+                        tick_poll_interval_ms: parse_env_var("ORACLE_VISION_TICK_POLL_INTERVAL_MS").unwrap_or(1000),
                         data_node_token: std::env::var("DATA_NODE_TOKEN").ok(),
                         snapshot_hmac_secret: std::env::var("SNAPSHOT_HMAC_SECRET").ok(),
                         // BLS tick consensus fields (T-32)
-                        chain_id: parse_env_var("ISSUER_VISION_CHAIN_ID").unwrap_or(111222333),
-                        num_issuers: parse_env_var("ISSUER_VISION_NUM_ISSUERS").unwrap_or(1),
-                        node_index: parse_env_var::<u8>("ISSUER_VISION_NODE_INDEX").unwrap_or(0),
+                        chain_id: parse_env_var("ORACLE_VISION_CHAIN_ID").unwrap_or(111222333),
+                        num_oracles: parse_env_var("ORACLE_VISION_NUM_ORACLES").unwrap_or(1),
+                        node_index: parse_env_var::<u8>("ORACLE_VISION_NODE_INDEX").unwrap_or(0),
                         // Cross-chain deposit fields (Vision First Deposit)
-                        // Falls back to global ISSUER_SETTLEMENT_* if vision-specific vars not set
-                        settlement_rpc_url: std::env::var("ISSUER_VISION_SETTLEMENT_RPC_URL")
-                            .or_else(|_| std::env::var("ISSUER_SETTLEMENT_RPC_URL"))
+                        // Falls back to global ORACLE_SETTLEMENT_* if vision-specific vars not set
+                        settlement_rpc_url: std::env::var("ORACLE_VISION_SETTLEMENT_RPC_URL")
+                            .or_else(|_| std::env::var("ORACLE_SETTLEMENT_RPC_URL"))
                             .unwrap_or_else(|_| "https://arb1.arbitrum.io/rpc".into()),
-                        settlement_bridge_custody_address: std::env::var("ISSUER_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS")
+                        settlement_bridge_custody_address: std::env::var("ORACLE_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS")
                             .unwrap_or_default(),
-                        settlement_chain_id: parse_env_var("ISSUER_VISION_SETTLEMENT_CHAIN_ID")
-                            .or_else(|| parse_env_var("ISSUER_SETTLEMENT_CHAIN_ID"))
+                        settlement_chain_id: parse_env_var("ORACLE_VISION_SETTLEMENT_CHAIN_ID")
+                            .or_else(|| parse_env_var("ORACLE_SETTLEMENT_CHAIN_ID"))
                             .unwrap_or(42161),
-                        deposit_poll_interval_ms: parse_env_var("ISSUER_VISION_DEPOSIT_POLL_INTERVAL_MS").unwrap_or(5000),
-                        deposit_finality_confirmations: parse_env_var("ISSUER_VISION_DEPOSIT_FINALITY_CONFIRMATIONS").unwrap_or(15),
-                        gas_drip_amount_wei: std::env::var("ISSUER_VISION_GAS_DRIP_AMOUNT_WEI")
+                        deposit_poll_interval_ms: parse_env_var("ORACLE_VISION_DEPOSIT_POLL_INTERVAL_MS").unwrap_or(5000),
+                        deposit_finality_confirmations: parse_env_var("ORACLE_VISION_DEPOSIT_FINALITY_CONFIRMATIONS").unwrap_or(15),
+                        gas_drip_amount_wei: std::env::var("ORACLE_VISION_GAS_DRIP_AMOUNT_WEI")
                             .unwrap_or_else(|_| "10000000000000000".into()),
-                        gas_drip_threshold_wei: std::env::var("ISSUER_VISION_GAS_DRIP_THRESHOLD_WEI")
+                        gas_drip_threshold_wei: std::env::var("ORACLE_VISION_GAS_DRIP_THRESHOLD_WEI")
                             .unwrap_or_else(|_| "5000000000000000".into()),
-                        deposit_auto_refund_timeout_secs: parse_env_var("ISSUER_VISION_DEPOSIT_AUTO_REFUND_TIMEOUT_SECS").unwrap_or(7200),
+                        deposit_auto_refund_timeout_secs: parse_env_var("ORACLE_VISION_DEPOSIT_AUTO_REFUND_TIMEOUT_SECS").unwrap_or(7200),
                     })
                 } else {
                     None
@@ -435,7 +435,7 @@ impl IssuerConfig {
     /// - If `other` has `Some(value)`, use it
     /// - If `other` has `None`, keep the existing value
     /// - For `peers`, only override if `other.peers` is non-empty
-    pub fn merge(&mut self, other: &IssuerConfig) {
+    pub fn merge(&mut self, other: &OracleConfig) {
         if other.node_id.is_some() {
             self.node_id = other.node_id;
         }
@@ -466,8 +466,8 @@ impl IssuerConfig {
         if other.governance_address.is_some() {
             self.governance_address = other.governance_address.clone();
         }
-        if other.issuer_registry_address.is_some() {
-            self.issuer_registry_address = other.issuer_registry_address.clone();
+        if other.oracle_registry_address.is_some() {
+            self.oracle_registry_address = other.oracle_registry_address.clone();
         }
         if other.collateral_registry_address.is_some() {
             self.collateral_registry_address = other.collateral_registry_address.clone();
@@ -514,11 +514,11 @@ impl IssuerConfig {
         if other.bitget_vault.is_some() {
             self.bitget_vault = other.bitget_vault.clone();
         }
-        if other.issuer_custody_l3.is_some() {
-            self.issuer_custody_l3 = other.issuer_custody_l3.clone();
+        if other.oracle_custody_l3.is_some() {
+            self.oracle_custody_l3 = other.oracle_custody_l3.clone();
         }
-        if other.issuer_custody_settlement.is_some() {
-            self.issuer_custody_settlement = other.issuer_custody_settlement.clone();
+        if other.oracle_custody_settlement.is_some() {
+            self.oracle_custody_settlement = other.oracle_custody_settlement.clone();
         }
         if other.settlement_custody.is_some() {
             self.settlement_custody = other.settlement_custody.clone();
@@ -623,7 +623,7 @@ impl IssuerConfig {
         match &self.rpc_url {
             Some(url) => url.clone(),
             None => {
-                tracing::warn!("ISSUER_RPC_URL not set — falling back to http://localhost:8545 (not suitable for production)");
+                tracing::warn!("ORACLE_RPC_URL not set — falling back to http://localhost:8545 (not suitable for production)");
                 "http://localhost:8545".to_string()
             }
         }
@@ -676,20 +676,20 @@ impl IssuerConfig {
         })
     }
 
-    /// Get the effective IssuerCustody L3 address.
+    /// Get the effective OracleCustody L3 address.
     ///
     /// Returns the parsed address if configured, or None if not set.
-    pub fn effective_issuer_custody_l3(&self) -> Option<Address> {
-        self.issuer_custody_l3
+    pub fn effective_oracle_custody_l3(&self) -> Option<Address> {
+        self.oracle_custody_l3
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
 
-    /// Get the effective IssuerCustody Settlement address.
+    /// Get the effective OracleCustody Settlement address.
     ///
     /// Returns the parsed address if configured, or None if not set.
-    pub fn effective_issuer_custody_settlement(&self) -> Option<Address> {
-        self.issuer_custody_settlement
+    pub fn effective_oracle_custody_settlement(&self) -> Option<Address> {
+        self.oracle_custody_settlement
             .as_ref()
             .and_then(|addr| addr.parse::<Address>().ok())
     }
@@ -726,7 +726,7 @@ impl IssuerConfig {
     ///   "contracts": {
     ///     "Index": "0x...",
     ///     "Governance": "0x...",
-    ///     "IssuerRegistry": "0x...",
+    ///     "OracleRegistry": "0x...",
     ///     ...
     ///   }
     /// }
@@ -754,9 +754,9 @@ impl IssuerConfig {
                 self.governance_address = Some(addr.to_string());
             }
         }
-        if self.issuer_registry_address.is_none() {
-            if let Some(addr) = contracts.get("IssuerRegistry").and_then(|v| v.as_str()) {
-                self.issuer_registry_address = Some(addr.to_string());
+        if self.oracle_registry_address.is_none() {
+            if let Some(addr) = contracts.get("OracleRegistry").and_then(|v| v.as_str()) {
+                self.oracle_registry_address = Some(addr.to_string());
             }
         }
         if self.collateral_registry_address.is_none() {
@@ -779,14 +779,14 @@ impl IssuerConfig {
                 self.bitget_vault = Some(addr.to_string());
             }
         }
-        if self.issuer_custody_l3.is_none() {
-            if let Some(addr) = contracts.get("IssuerCustodyL3").and_then(|v| v.as_str()) {
-                self.issuer_custody_l3 = Some(addr.to_string());
+        if self.oracle_custody_l3.is_none() {
+            if let Some(addr) = contracts.get("OracleCustodyL3").and_then(|v| v.as_str()) {
+                self.oracle_custody_l3 = Some(addr.to_string());
             }
         }
-        if self.issuer_custody_settlement.is_none() {
-            if let Some(addr) = contracts.get("IssuerCustodyArb").and_then(|v| v.as_str()) {
-                self.issuer_custody_settlement = Some(addr.to_string());
+        if self.oracle_custody_settlement.is_none() {
+            if let Some(addr) = contracts.get("OracleCustodyArb").and_then(|v| v.as_str()) {
+                self.oracle_custody_settlement = Some(addr.to_string());
             }
         }
         if self.settlement_custody.is_none() {
@@ -817,7 +817,7 @@ impl IssuerConfig {
             }
         }
         if self.mirror_registry_address.is_none() {
-            if let Some(addr) = contracts.get("SettlementIssuerRegistry").and_then(|v| v.as_str()) {
+            if let Some(addr) = contracts.get("SettlementOracleRegistry").and_then(|v| v.as_str()) {
                 self.mirror_registry_address = Some(addr.to_string());
             }
         }
@@ -848,15 +848,15 @@ impl IssuerConfig {
             Some(addr) => Self::parse_address("governance", addr)?,
             None => Address::zero(),
         };
-        let issuer_registry = match &self.issuer_registry_address {
-            Some(addr) => Self::parse_address("issuer_registry", addr)?,
+        let oracle_registry = match &self.oracle_registry_address {
+            Some(addr) => Self::parse_address("oracle_registry", addr)?,
             None => Address::zero(),
         };
 
         Ok(crate::ContractAddresses {
             index,
             governance,
-            issuer_registry,
+            oracle_registry,
         })
     }
 
@@ -894,9 +894,9 @@ impl IssuerConfig {
         if addrs.governance == Address::zero() {
             return Err(ConfigError::InvalidContractAddress { name: "governance" });
         }
-        if addrs.issuer_registry == Address::zero() {
+        if addrs.oracle_registry == Address::zero() {
             return Err(ConfigError::InvalidContractAddress {
-                name: "issuer_registry",
+                name: "oracle_registry",
             });
         }
 
@@ -909,41 +909,41 @@ impl IssuerConfig {
         Ok(())
     }
 
-    /// Validate IssuerCustody addresses for bridge flow operations.
+    /// Validate OracleCustody addresses for bridge flow operations.
     ///
     /// Call this before processing bridge flows that require custody contracts.
     /// Returns an error if either custody address is not configured or invalid.
     ///
     /// # Errors
     ///
-    /// - `ConfigError::MissingField` if `issuer_custody_l3` or `issuer_custody_settlement` is not set
+    /// - `ConfigError::MissingField` if `oracle_custody_l3` or `oracle_custody_settlement` is not set
     /// - `ConfigError::InvalidAddress` if the address string cannot be parsed
     pub fn validate_custody_addresses(&self) -> Result<(), ConfigError> {
-        // Validate IssuerCustody L3
-        match &self.issuer_custody_l3 {
+        // Validate OracleCustody L3
+        match &self.oracle_custody_l3 {
             None => {
-                return Err(ConfigError::MissingField("issuer_custody_l3"));
+                return Err(ConfigError::MissingField("oracle_custody_l3"));
             }
             Some(addr) => {
                 if addr.parse::<Address>().is_err() {
                     return Err(ConfigError::InvalidAddress {
                         value: addr.clone(),
-                        reason: "invalid IssuerCustody L3 address".to_string(),
+                        reason: "invalid OracleCustody L3 address".to_string(),
                     });
                 }
             }
         }
 
-        // Validate IssuerCustody Settlement
-        match &self.issuer_custody_settlement {
+        // Validate OracleCustody Settlement
+        match &self.oracle_custody_settlement {
             None => {
-                return Err(ConfigError::MissingField("issuer_custody_settlement"));
+                return Err(ConfigError::MissingField("oracle_custody_settlement"));
             }
             Some(addr) => {
                 if addr.parse::<Address>().is_err() {
                     return Err(ConfigError::InvalidAddress {
                         value: addr.clone(),
-                        reason: "invalid IssuerCustody Settlement address".to_string(),
+                        reason: "invalid OracleCustody Settlement address".to_string(),
                     });
                 }
             }
@@ -958,7 +958,7 @@ impl IssuerConfig {
     pub fn effective_settlement_rpc_url(&self) -> Result<String, String> {
         self.settlement_rpc_url
             .clone()
-            .ok_or_else(|| "ISSUER_SETTLEMENT_RPC_URL not configured".to_string())
+            .ok_or_else(|| "ORACLE_SETTLEMENT_RPC_URL not configured".to_string())
     }
 
     /// Get the effective Settlement BLSCustody address.
@@ -982,16 +982,16 @@ impl IssuerConfig {
     /// Get the effective Settlement chain ID.
     ///
     /// Returns an error if not configured (no silent fallback to 42161).
-    /// Set ISSUER_SETTLEMENT_CHAIN_ID explicitly.
+    /// Set ORACLE_SETTLEMENT_CHAIN_ID explicitly.
     pub fn effective_settlement_chain_id(&self) -> Result<u64, String> {
         self.settlement_chain_id
-            .ok_or_else(|| "ISSUER_SETTLEMENT_CHAIN_ID not configured".to_string())
+            .ok_or_else(|| "ORACLE_SETTLEMENT_CHAIN_ID not configured".to_string())
     }
 
     /// Get the effective private key (from env var, config field, or key file).
     ///
     /// Resolution order: private_key field > private_key_path file contents.
-    /// The `ISSUER_PRIVATE_KEY` env var is already merged into `private_key` field.
+    /// The `ORACLE_PRIVATE_KEY` env var is already merged into `private_key` field.
     pub fn effective_private_key(&self) -> Result<Option<String>, ConfigError> {
         if let Some(ref key) = self.private_key {
             return Ok(Some(key.clone()));
@@ -1006,8 +1006,8 @@ impl IssuerConfig {
     /// Get the effective settlement private key (from env var or key file).
     ///
     /// Resolution order: settlement_private_key field > settlement_private_key_path file contents.
-    /// The `ISSUER_SETTLEMENT_PRIVATE_KEY` env var is already merged into `settlement_private_key` field.
-    /// Returns None if neither is set (caller falls back to the issuer's own key).
+    /// The `ORACLE_SETTLEMENT_PRIVATE_KEY` env var is already merged into `settlement_private_key` field.
+    /// Returns None if neither is set (caller falls back to the oracle's own key).
     pub fn effective_settlement_private_key(&self) -> Result<Option<String>, ConfigError> {
         if let Some(ref key) = self.settlement_private_key {
             return Ok(Some(key.clone()));
@@ -1109,7 +1109,7 @@ fn parse_env_var<T: std::str::FromStr>(name: &str) -> Option<T> {
 pub struct ConfigBuilder {
     config_file_path: Option<PathBuf>,
     deployment_file_path: Option<PathBuf>,
-    cli_config: IssuerConfig,
+    cli_config: OracleConfig,
 }
 
 impl ConfigBuilder {
@@ -1141,7 +1141,7 @@ impl ConfigBuilder {
     ///
     /// # Arguments
     ///
-    /// * `node_id` - Issuer node ID (1-20)
+    /// * `node_id` - Oracle node ID (1-20)
     /// * `port` - P2P listen port
     /// * `rpc` - Chain RPC endpoint URL
     /// * `bls_key_path` - Path to BLS key file
@@ -1160,7 +1160,7 @@ impl ConfigBuilder {
         json_logs: Option<bool>,
         peers: Vec<String>,
     ) -> Self {
-        self.cli_config = IssuerConfig {
+        self.cli_config = OracleConfig {
             node_id,
             port,
             rpc_url: rpc,
@@ -1176,35 +1176,35 @@ impl ConfigBuilder {
 
     /// Set the MockBitgetVault address CLI override.
     ///
-    /// When set, issuers read fill data from MockBitgetVault.getFill()
+    /// When set, oracles read fill data from MockBitgetVault.getFill()
     /// instead of polling in-memory MockBitget (FR13: no direct AP communication).
     pub fn with_bitget_vault(mut self, address: Option<String>) -> Self {
         self.cli_config.bitget_vault = address;
         self
     }
 
-    /// Set the IssuerCustody L3 address CLI override (Story 7.7).
+    /// Set the OracleCustody L3 address CLI override (Story 7.7).
     ///
-    /// IssuerCustody L3 holds L3Usdc after bridge from Settlement.
+    /// OracleCustody L3 holds L3Usdc after bridge from Settlement.
     /// Used for BLS-signed transfers to Index contract in submitOrder flow.
-    pub fn with_issuer_custody_l3(mut self, address: Option<String>) -> Self {
-        self.cli_config.issuer_custody_l3 = address;
+    pub fn with_oracle_custody_l3(mut self, address: Option<String>) -> Self {
+        self.cli_config.oracle_custody_l3 = address;
         self
     }
 
-    /// Set the IssuerCustody Settlement address CLI override (Story 7.7).
+    /// Set the OracleCustody Settlement address CLI override (Story 7.7).
     ///
-    /// IssuerCustody Settlement holds SettlementUSDC after bridge from L3.
+    /// OracleCustody Settlement holds SettlementUSDC after bridge from L3.
     /// Used for BLS-signed transfers to MockBitgetVault in vault release flow.
-    pub fn with_issuer_custody_settlement(mut self, address: Option<String>) -> Self {
-        self.cli_config.issuer_custody_settlement = address;
+    pub fn with_oracle_custody_settlement(mut self, address: Option<String>) -> Self {
+        self.cli_config.oracle_custody_settlement = address;
         self
     }
 
     /// Set the SettlementBridgeCustody address CLI override (Story 7.8).
     ///
     /// SettlementBridgeCustody locks user's SettlementUSDC when buying ITP from Settlement chain.
-    /// Issuers observe CrossChainOrderCreated events for cross-chain buy flow.
+    /// Oracles observe CrossChainOrderCreated events for cross-chain buy flow.
     pub fn with_settlement_custody(mut self, address: Option<String>) -> Self {
         self.cli_config.settlement_custody = address;
         self
@@ -1212,7 +1212,7 @@ impl ConfigBuilder {
 
     /// Set the MockUSDT address CLI override (Story 7.18).
     ///
-    /// When set, issuer fill verification accepts this address as a valid USDT token.
+    /// When set, oracle fill verification accepts this address as a valid USDT token.
     pub fn with_mock_usdt(mut self, address: Option<String>) -> Self {
         self.cli_config.mock_usdt = address;
         self
@@ -1220,7 +1220,7 @@ impl ConfigBuilder {
 
     /// Enable the registry sync endpoint (Story 8.4, Task 7.1).
     ///
-    /// When enabled, the issuer watches for RegistryStateChanged events from L3 IssuerRegistry
+    /// When enabled, the oracle watches for RegistryStateChanged events from L3 OracleRegistry
     /// and serves BLS-signed registry state proofs via GET /api/registry-sync endpoint.
     pub fn with_registry_sync(mut self, enabled: bool) -> Self {
         if enabled {
@@ -1232,7 +1232,7 @@ impl ConfigBuilder {
     /// Set arbitration subsystem CLI overrides.
     ///
     /// Configures the arbitration subsystem for resolving bilateral bet disputes
-    /// via BLS consensus among issuers.
+    /// via BLS consensus among oracles.
     pub fn with_arbitration(
         mut self,
         enabled: Option<bool>,
@@ -1290,7 +1290,7 @@ impl ConfigBuilder {
         self
     }
 
-    /// Set MirrorIssuerRegistry contract address on Settlement chain (Step 12).
+    /// Set MirrorOracleRegistry contract address on Settlement chain (Step 12).
     pub fn with_mirror_registry(mut self, address: Option<String>) -> Self {
         if address.is_some() {
             self.cli_config.mirror_registry_address = address;
@@ -1308,18 +1308,18 @@ impl ConfigBuilder {
     /// - `ConfigError::YamlParse` or `ConfigError::TomlParse` on parse errors
     /// - `ConfigError::InvalidNodeId` if node_id is outside valid range
     /// - `ConfigError::DeploymentFileParse` if the deployment file is invalid
-    pub fn build(self) -> Result<IssuerConfig, ConfigError> {
+    pub fn build(self) -> Result<OracleConfig, ConfigError> {
         // Start with defaults
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
 
         // Layer 1: Load from config file if provided
         if let Some(path) = &self.config_file_path {
-            let file_config = IssuerConfig::from_file(path)?;
+            let file_config = OracleConfig::from_file(path)?;
             config.merge(&file_config);
         }
 
         // Layer 2: Override with environment variables
-        let env_config = IssuerConfig::from_env();
+        let env_config = OracleConfig::from_env();
         config.merge(&env_config);
 
         // Layer 3: Override with CLI arguments (highest priority)
@@ -1396,8 +1396,8 @@ port: 9005
 rpc_url: "http://example.com:8545"
 bls_key_path: "./keys/bls.key"
 peers:
-  - "issuer2.local:9002"
-  - "issuer3.local:9003"
+  - "oracle2.local:9002"
+  - "oracle3.local:9003"
 log_level: "debug"
 log_dir: "./custom-logs"
 json_logs: true
@@ -1407,7 +1407,7 @@ json_logs: true
         file.write_all(yaml_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let config = IssuerConfig::from_file(file.path()).unwrap();
+        let config = OracleConfig::from_file(file.path()).unwrap();
 
         assert_eq!(config.node_id, Some(5));
         assert_eq!(config.port, Some(9005));
@@ -1415,7 +1415,7 @@ json_logs: true
         assert_eq!(config.bls_key_path, Some(PathBuf::from("./keys/bls.key")));
         assert_eq!(
             config.peers,
-            vec!["issuer2.local:9002", "issuer3.local:9003"]
+            vec!["oracle2.local:9002", "oracle3.local:9003"]
         );
         assert_eq!(config.log_level, Some("debug".to_string()));
         assert_eq!(config.log_dir, Some(PathBuf::from("./custom-logs")));
@@ -1439,7 +1439,7 @@ json_logs = false
         file.write_all(toml_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let config = IssuerConfig::from_file(file.path()).unwrap();
+        let config = OracleConfig::from_file(file.path()).unwrap();
 
         assert_eq!(config.node_id, Some(7));
         assert_eq!(config.port, Some(9007));
@@ -1460,13 +1460,13 @@ json_logs = false
         file.write_all(b"{}").unwrap();
         file.flush().unwrap();
 
-        let result = IssuerConfig::from_file(file.path());
+        let result = OracleConfig::from_file(file.path());
         assert!(matches!(result, Err(ConfigError::UnsupportedFormat(_))));
     }
 
     #[test]
     fn test_config_merge() {
-        let mut base = IssuerConfig {
+        let mut base = OracleConfig {
             node_id: Some(1),
             port: Some(9001),
             rpc_url: Some("http://base.com".to_string()),
@@ -1478,7 +1478,7 @@ json_logs = false
             ..Default::default()
         };
 
-        let override_config = IssuerConfig {
+        let override_config = OracleConfig {
             node_id: Some(2),
             port: None, // Should not override
             rpc_url: Some("http://override.com".to_string()),
@@ -1504,7 +1504,7 @@ json_logs = false
 
     #[test]
     fn test_config_validation_valid() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             node_id: Some(10),
             ..Default::default()
         };
@@ -1513,7 +1513,7 @@ json_logs = false
 
     #[test]
     fn test_config_validation_invalid_node_id_zero() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             node_id: Some(0),
             ..Default::default()
         };
@@ -1525,7 +1525,7 @@ json_logs = false
 
     #[test]
     fn test_config_validation_invalid_node_id_too_high() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             node_id: Some(21),
             ..Default::default()
         };
@@ -1537,7 +1537,7 @@ json_logs = false
 
     #[test]
     fn test_effective_defaults() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             node_id: Some(3),
             ..Default::default()
         };
@@ -1595,7 +1595,7 @@ log_level: "trace"
         file.flush().unwrap();
 
         // Use EnvGuard for safe cleanup even on panic
-        let _guard = EnvGuard::new(&[("ISSUER_NODE_ID", "10"), ("ISSUER_LOG_LEVEL", "debug")]);
+        let _guard = EnvGuard::new(&[("ORACLE_NODE_ID", "10"), ("ORACLE_LOG_LEVEL", "debug")]);
 
         let config = ConfigBuilder::new()
             .with_config_file(Some(file.path().to_path_buf()))
@@ -1661,7 +1661,7 @@ log_level: "trace"
             "chainId": 111222333,
             "contracts": {
                 "Governance": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-                "IssuerRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+                "OracleRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
                 "Index": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
                 "BLSCustody": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
                 "L3BridgeCustody": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
@@ -1673,7 +1673,7 @@ log_level: "trace"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
@@ -1685,7 +1685,7 @@ log_level: "trace"
             Some("0x5FbDB2315678afecb367f032d93F642f64180aa3".to_string())
         );
         assert_eq!(
-            config.issuer_registry_address,
+            config.oracle_registry_address,
             Some("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707".to_string())
         );
         assert_eq!(
@@ -1716,7 +1716,7 @@ log_level: "trace"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig {
+        let mut config = OracleConfig {
             index_address: Some("0x1111111111111111111111111111111111111111".to_string()),
             ..Default::default()
         };
@@ -1742,36 +1742,36 @@ log_level: "trace"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
         let result = config.load_deployment_file(file.path());
         assert!(matches!(result, Err(ConfigError::DeploymentFileParse(_))));
     }
 
     #[test]
     fn test_effective_contract_addresses() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             index_address: Some("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".to_string()),
             governance_address: Some("0x5FbDB2315678afecb367f032d93F642f64180aa3".to_string()),
-            issuer_registry_address: Some("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707".to_string()),
+            oracle_registry_address: Some("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707".to_string()),
             ..Default::default()
         };
 
         let addrs = config.effective_contract_addresses().unwrap();
         assert_ne!(addrs.index, Address::zero());
         assert_ne!(addrs.governance, Address::zero());
-        assert_ne!(addrs.issuer_registry, Address::zero());
+        assert_ne!(addrs.oracle_registry, Address::zero());
     }
 
     #[test]
     fn test_effective_contract_addresses_defaults_to_zero() {
-        let config = IssuerConfig::default();
+        let config = OracleConfig::default();
         let addrs = config.effective_contract_addresses().unwrap();
         assert_eq!(addrs.index, Address::zero());
     }
 
     #[test]
     fn test_effective_contract_addresses_invalid_address() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             index_address: Some("not-an-address".to_string()),
             ..Default::default()
         };
@@ -1781,7 +1781,7 @@ log_level: "trace"
 
     #[test]
     fn test_effective_writer_addresses() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             index_address: Some("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".to_string()),
             l3_bridge_custody_address: Some(
                 "0x0165878A594ca255338adfa4d48449f69242Eb8F".to_string(),
@@ -1796,7 +1796,7 @@ log_level: "trace"
 
     #[test]
     fn test_validate_contract_addresses_all_zero_fails() {
-        let config = IssuerConfig::default();
+        let config = OracleConfig::default();
         let result = config.validate_contract_addresses();
         assert!(matches!(
             result,
@@ -1806,10 +1806,10 @@ log_level: "trace"
 
     #[test]
     fn test_validate_contract_addresses_all_set_passes() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             index_address: Some("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".to_string()),
             governance_address: Some("0x5FbDB2315678afecb367f032d93F642f64180aa3".to_string()),
-            issuer_registry_address: Some("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707".to_string()),
+            oracle_registry_address: Some("0x5FC8d32690cc91D4c39d9d3abcBD16989F875707".to_string()),
             l3_bridge_custody_address: Some(
                 "0x0165878A594ca255338adfa4d48449f69242Eb8F".to_string(),
             ),
@@ -1822,16 +1822,16 @@ log_level: "trace"
     fn test_env_var_contract_addresses() {
         let _guard = EnvGuard::new(&[
             (
-                "ISSUER_INDEX_ADDRESS",
+                "ORACLE_INDEX_ADDRESS",
                 "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
             ),
             (
-                "ISSUER_GOVERNANCE_ADDRESS",
+                "ORACLE_GOVERNANCE_ADDRESS",
                 "0x5FbDB2315678afecb367f032d93F642f64180aa3",
             ),
         ]);
 
-        let config = IssuerConfig::from_env();
+        let config = OracleConfig::from_env();
         assert_eq!(
             config.index_address,
             Some("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".to_string())
@@ -1848,7 +1848,7 @@ log_level: "trace"
 node_id: 1
 index_address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 governance_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-issuer_registry_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+oracle_registry_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 "#;
 
@@ -1856,7 +1856,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         file.write_all(yaml_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let config = IssuerConfig::from_file(file.path()).unwrap();
+        let config = OracleConfig::from_file(file.path()).unwrap();
         assert_eq!(
             config.index_address,
             Some("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512".to_string())
@@ -1871,7 +1871,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             "contracts": {
                 "Index": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
                 "Governance": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-                "IssuerRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+                "OracleRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
                 "CollateralRegistry": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
                 "BLSCustody": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
                 "L3BridgeCustody": "0x0165878A594ca255338adfa4d48449f69242Eb8F"
@@ -1897,12 +1897,12 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_merge_preserves_new_fields() {
-        let mut base = IssuerConfig {
+        let mut base = OracleConfig {
             index_address: Some("0x1111111111111111111111111111111111111111".to_string()),
             ..Default::default()
         };
 
-        let other = IssuerConfig {
+        let other = OracleConfig {
             governance_address: Some("0x2222222222222222222222222222222222222222".to_string()),
             ..Default::default()
         };
@@ -1920,7 +1920,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_effective_private_key_from_field() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             private_key: Some(
                 "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".to_string(),
             ),
@@ -1938,7 +1938,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             .unwrap();
         file.flush().unwrap();
 
-        let config = IssuerConfig {
+        let config = OracleConfig {
             private_key_path: Some(file.path().to_path_buf()),
             ..Default::default()
         };
@@ -1952,62 +1952,62 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_effective_private_key_none() {
-        let config = IssuerConfig::default();
+        let config = OracleConfig::default();
         let key = config.effective_private_key().unwrap();
         assert!(key.is_none());
     }
 
-    // ============ ISSUER CUSTODY TESTS (Story 7.7) ============
+    // ============ ORACLE CUSTODY TESTS (Story 7.7) ============
 
     #[test]
-    fn test_effective_issuer_custody_l3_valid() {
-        let config = IssuerConfig {
-            issuer_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
+    fn test_effective_oracle_custody_l3_valid() {
+        let config = OracleConfig {
+            oracle_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
             ..Default::default()
         };
-        let addr = config.effective_issuer_custody_l3();
+        let addr = config.effective_oracle_custody_l3();
         assert!(addr.is_some());
         assert_ne!(addr.unwrap(), Address::zero());
     }
 
     #[test]
-    fn test_effective_issuer_custody_l3_none() {
-        let config = IssuerConfig::default();
-        assert!(config.effective_issuer_custody_l3().is_none());
+    fn test_effective_oracle_custody_l3_none() {
+        let config = OracleConfig::default();
+        assert!(config.effective_oracle_custody_l3().is_none());
     }
 
     #[test]
-    fn test_effective_issuer_custody_l3_invalid() {
-        let config = IssuerConfig {
-            issuer_custody_l3: Some("not-an-address".to_string()),
+    fn test_effective_oracle_custody_l3_invalid() {
+        let config = OracleConfig {
+            oracle_custody_l3: Some("not-an-address".to_string()),
             ..Default::default()
         };
         // Invalid address returns None (parse fails silently)
-        assert!(config.effective_issuer_custody_l3().is_none());
+        assert!(config.effective_oracle_custody_l3().is_none());
     }
 
     #[test]
-    fn test_effective_issuer_custody_settlement_valid() {
-        let config = IssuerConfig {
-            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+    fn test_effective_oracle_custody_settlement_valid() {
+        let config = OracleConfig {
+            oracle_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
-        let addr = config.effective_issuer_custody_settlement();
+        let addr = config.effective_oracle_custody_settlement();
         assert!(addr.is_some());
         assert_ne!(addr.unwrap(), Address::zero());
     }
 
     #[test]
-    fn test_effective_issuer_custody_settlement_none() {
-        let config = IssuerConfig::default();
-        assert!(config.effective_issuer_custody_settlement().is_none());
+    fn test_effective_oracle_custody_settlement_none() {
+        let config = OracleConfig::default();
+        assert!(config.effective_oracle_custody_settlement().is_none());
     }
 
     #[test]
     fn test_validate_custody_addresses_both_set() {
-        let config = IssuerConfig {
-            issuer_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
-            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+        let config = OracleConfig {
+            oracle_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
+            oracle_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         assert!(config.validate_custody_addresses().is_ok());
@@ -2015,29 +2015,29 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_validate_custody_addresses_l3_missing() {
-        let config = IssuerConfig {
-            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+        let config = OracleConfig {
+            oracle_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
-        assert!(matches!(result, Err(ConfigError::MissingField("issuer_custody_l3"))));
+        assert!(matches!(result, Err(ConfigError::MissingField("oracle_custody_l3"))));
     }
 
     #[test]
     fn test_validate_custody_addresses_settlement_missing() {
-        let config = IssuerConfig {
-            issuer_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
+        let config = OracleConfig {
+            oracle_custody_l3: Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
-        assert!(matches!(result, Err(ConfigError::MissingField("issuer_custody_settlement"))));
+        assert!(matches!(result, Err(ConfigError::MissingField("oracle_custody_settlement"))));
     }
 
     #[test]
     fn test_validate_custody_addresses_l3_invalid() {
-        let config = IssuerConfig {
-            issuer_custody_l3: Some("not-an-address".to_string()),
-            issuer_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
+        let config = OracleConfig {
+            oracle_custody_l3: Some("not-an-address".to_string()),
+            oracle_custody_settlement: Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()),
             ..Default::default()
         };
         let result = config.validate_custody_addresses();
@@ -2046,27 +2046,27 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_config_merge_custody_addresses() {
-        let mut base = IssuerConfig {
-            issuer_custody_l3: Some("0x1111111111111111111111111111111111111111".to_string()),
+        let mut base = OracleConfig {
+            oracle_custody_l3: Some("0x1111111111111111111111111111111111111111".to_string()),
             ..Default::default()
         };
 
-        let other = IssuerConfig {
-            issuer_custody_l3: Some("0x2222222222222222222222222222222222222222".to_string()),
-            issuer_custody_settlement: Some("0x3333333333333333333333333333333333333333".to_string()),
+        let other = OracleConfig {
+            oracle_custody_l3: Some("0x2222222222222222222222222222222222222222".to_string()),
+            oracle_custody_settlement: Some("0x3333333333333333333333333333333333333333".to_string()),
             ..Default::default()
         };
 
         base.merge(&other);
 
-        // issuer_custody_l3 should be overridden
+        // oracle_custody_l3 should be overridden
         assert_eq!(
-            base.issuer_custody_l3,
+            base.oracle_custody_l3,
             Some("0x2222222222222222222222222222222222222222".to_string())
         );
-        // issuer_custody_settlement should be set
+        // oracle_custody_settlement should be set
         assert_eq!(
-            base.issuer_custody_settlement,
+            base.oracle_custody_settlement,
             Some("0x3333333333333333333333333333333333333333".to_string())
         );
     }
@@ -2075,17 +2075,17 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     fn test_config_builder_with_custody_addresses() {
         let config = ConfigBuilder::new()
             .with_cli_args(Some(1), None, None, None, None, None, None, vec![])
-            .with_issuer_custody_l3(Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()))
-            .with_issuer_custody_settlement(Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()))
+            .with_oracle_custody_l3(Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string()))
+            .with_oracle_custody_settlement(Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string()))
             .build()
             .unwrap();
 
         assert_eq!(
-            config.issuer_custody_l3,
+            config.oracle_custody_l3,
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_settlement,
+            config.oracle_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
         assert!(config.validate_custody_addresses().is_ok());
@@ -2097,8 +2097,8 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
             "chainId": 111222333,
             "contracts": {
                 "Index": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-                "IssuerCustodyL3": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
-                "IssuerCustodyArb": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"
+                "OracleCustodyL3": "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1",
+                "OracleCustodyArb": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"
             }
         }"#;
 
@@ -2106,15 +2106,15 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
-            config.issuer_custody_l3,
+            config.oracle_custody_l3,
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_settlement,
+            config.oracle_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
     }
@@ -2122,17 +2122,17 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     #[test]
     fn test_env_var_custody_addresses() {
         let _guard = EnvGuard::new(&[
-            ("ISSUER_CUSTODY_L3", "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"),
-            ("ISSUER_CUSTODY_SETTLEMENT", "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"),
+            ("ORACLE_CUSTODY_L3", "0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1"),
+            ("ORACLE_CUSTODY_SETTLEMENT", "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF"),
         ]);
 
-        let config = IssuerConfig::from_env();
+        let config = OracleConfig::from_env();
         assert_eq!(
-            config.issuer_custody_l3,
+            config.oracle_custody_l3,
             Some("0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1".to_string())
         );
         assert_eq!(
-            config.issuer_custody_settlement,
+            config.oracle_custody_settlement,
             Some("0x0E801D84Fa97b50751Dbf25036d067dCf18858bF".to_string())
         );
     }
@@ -2141,7 +2141,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_effective_settlement_custody_valid() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             settlement_custody: Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string()),
             ..Default::default()
         };
@@ -2152,13 +2152,13 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_effective_settlement_custody_none() {
-        let config = IssuerConfig::default();
+        let config = OracleConfig::default();
         assert!(config.effective_settlement_custody().is_none());
     }
 
     #[test]
     fn test_effective_settlement_custody_invalid() {
-        let config = IssuerConfig {
+        let config = OracleConfig {
             settlement_custody: Some("not-an-address".to_string()),
             ..Default::default()
         };
@@ -2169,10 +2169,10 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
     #[test]
     fn test_env_var_settlement_custody() {
         let _guard = EnvGuard::new(&[
-            ("ISSUER_SETTLEMENT_CUSTODY", "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"),
+            ("ORACLE_SETTLEMENT_CUSTODY", "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"),
         ]);
 
-        let config = IssuerConfig::from_env();
+        let config = OracleConfig::from_env();
         assert_eq!(
             config.settlement_custody,
             Some("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0".to_string())
@@ -2193,7 +2193,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
@@ -2217,7 +2217,7 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
         file.write_all(json_content.as_bytes()).unwrap();
         file.flush().unwrap();
 
-        let mut config = IssuerConfig::default();
+        let mut config = OracleConfig::default();
         config.load_deployment_file(file.path()).unwrap();
 
         assert_eq!(
@@ -2243,12 +2243,12 @@ l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
 
     #[test]
     fn test_config_merge_settlement_custody() {
-        let mut base = IssuerConfig {
+        let mut base = OracleConfig {
             settlement_custody: Some("0x1111111111111111111111111111111111111111".to_string()),
             ..Default::default()
         };
 
-        let other = IssuerConfig {
+        let other = OracleConfig {
             settlement_custody: Some("0x2222222222222222222222222222222222222222".to_string()),
             ..Default::default()
         };

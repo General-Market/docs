@@ -57,9 +57,9 @@ pub use types::{
     build_set_itp_nav_calldata, build_set_itp_nav_hash, SetItpNavResult,
     // NAV oracle (ITPNAVOracle on Settlement — Phase 2B)
     build_nav_oracle_hash, build_update_price_calldata,
-    // MirrorIssuerRegistry sync (Step 12)
+    // MirrorOracleRegistry sync (Step 12)
     build_mirror_registry_sync_hash, build_mirror_registry_sync_calldata,
-    // Issuer-driven per-asset settlement
+    // Oracle-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
     // Cross-chain buy completion

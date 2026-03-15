@@ -40,16 +40,16 @@ pub trait KeyRegistry: Send + Sync {
     fn set_settlement_registry_nonce(&self, _nonce: u64) {}
 }
 
-/// In-memory key registry for issuer BLS public keys
+/// In-memory key registry for oracle BLS public keys
 ///
-/// In production, this would be populated from on-chain IssuerRegistry contract.
+/// In production, this would be populated from on-chain OracleRegistry contract.
 /// For now, it provides a simple in-memory store that can be pre-populated.
 pub struct InMemoryKeyRegistry {
     /// Map of peer ID to BLS public key
     keys: RwLock<HashMap<PeerId, BLSPublicKey>>,
-    /// L3 IssuerRegistry lastSnapshotNonce (for L3 BLS verification)
+    /// L3 OracleRegistry lastSnapshotNonce (for L3 BLS verification)
     nonce: RwLock<u64>,
-    /// Settlement MirrorIssuerRegistry lastSnapshotNonce (for Settlement BLS verification)
+    /// Settlement MirrorOracleRegistry lastSnapshotNonce (for Settlement BLS verification)
     settlement_nonce: RwLock<u64>,
 }
 
@@ -128,7 +128,7 @@ impl InMemoryKeyRegistry {
     /// with bootstrap and registry_sync, but seed indices remain 0..count
     /// for deterministic key generation.
     ///
-    /// This is useful when the on-chain IssuerRegistry has keys registered
+    /// This is useful when the on-chain OracleRegistry has keys registered
     /// at different indices than the seed indices used to generate them.
     pub fn generate_test_registry_with_offset(count: usize, offset: usize) -> (Self, Vec<(PeerId, BLSKeyPair)>) {
         let mut keys = HashMap::new();
@@ -299,7 +299,7 @@ mod tests {
     #[test]
     fn test_print_bls_pubkeys() {
         // Print BLS public keys for first 3 test seeds
-        // These need to match IssuerRegistry for BLS verification to work
+        // These need to match OracleRegistry for BLS verification to work
         // Seed format must match bls-tool: vec![idx; 32]
         for i in 0..3 {
             let seed = vec![i as u8; 32];

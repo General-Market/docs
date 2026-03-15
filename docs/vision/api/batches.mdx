@@ -84,7 +84,7 @@ for (const batch of batches) {
 | `tick_duration` | number | Seconds between tick resolutions |
 | `player_count` | number | Current number of active players (from live in-memory state) |
 | `tvl` | string | Total value locked across all players, in wei |
-| `paused` | boolean | Whether the batch is currently paused by issuer consensus |
+| `paused` | boolean | Whether the batch is currently paused by oracle consensus |
 
 ---
 
@@ -92,7 +92,7 @@ for (const batch of batches) {
 
 `GET /vision/markets`
 
-Returns the issuer-curated whitelist of supported markets. The menu of measurable things.
+Returns the oracle-curated whitelist of supported markets. The menu of measurable things.
 
 <Tabs>
 <Tab title="cURL">

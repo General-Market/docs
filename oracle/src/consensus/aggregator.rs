@@ -17,11 +17,11 @@ pub const DISAGREEMENT_PERCENT: u8 = 20; // 20% disagree triggers retry
 pub const MAX_PRICE_RETRIES: u8 = 3;
 pub const MAX_BATCH_RETRIES: u8 = 3;
 
-/// BFT threshold: ceil(2n/3). Requires >=2/3 of issuers to sign.
+/// BFT threshold: ceil(2n/3). Requires >=2/3 of oracles to sign.
 /// For n=20: threshold=14. For n=3: threshold=2.
-pub fn compute_threshold(num_issuers: usize) -> usize {
-    if num_issuers == 0 { return 1; }
-    (num_issuers * 2 + 2) / 3
+pub fn compute_threshold(num_oracles: usize) -> usize {
+    if num_oracles == 0 { return 1; }
+    (num_oracles * 2 + 2) / 3
 }
 
 /// Status of signature aggregation
@@ -123,7 +123,7 @@ impl SignatureAggregator {
     ///
     /// # Arguments
     /// * `peer_id` - The peer's unique identifier
-    /// * `signer_index` - The signer's index in the issuer registry (for bitmask computation)
+    /// * `signer_index` - The signer's index in the oracle registry (for bitmask computation)
     /// * `signature` - The BLS signature
     pub fn add_signature(
         &mut self,
@@ -226,7 +226,7 @@ impl SignatureAggregator {
 
 impl Default for SignatureAggregator {
     fn default() -> Self {
-        // Default to BFT threshold for 20 issuers
+        // Default to BFT threshold for 20 oracles
         Self::new(compute_threshold(20))
     }
 }
@@ -435,7 +435,7 @@ mod tests {
 
     #[test]
     fn test_compute_threshold_zero_nodes() {
-        // 0 issuers returns 1 (guard)
+        // 0 oracles returns 1 (guard)
         assert_eq!(compute_threshold(0), 1);
     }
 }

@@ -1,6 +1,6 @@
 /**
  * Vision E2E helpers.
- * Direct L3 RPC + issuer API calls for testing Vision contract interactions.
+ * Direct L3 RPC + oracle API calls for testing Vision contract interactions.
  * Vision lives on L3 (port 8545) and uses L3_WUSDC (18 decimals).
  */
 
@@ -14,7 +14,7 @@ const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 
 import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
-  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ISSUER_URLS,
+  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ORACLE_URLS,
   RPC_TIMEOUT,
 } from '../env'
 
@@ -606,7 +606,7 @@ export async function getPosition(batchId: number, player: string): Promise<Play
   }
 }
 
-// ── Vision issuer API ────────────────────────────────────────
+// ── Vision oracle API ────────────────────────────────────────
 
 export interface BatchInfo {
   id: number
@@ -648,25 +648,25 @@ export async function getBatchState(batchId: number): Promise<BatchState> {
   return res.json()
 }
 
-async function submitBitmapToIssuers(
+async function submitBitmapToOracles(
   player: string,
   batchId: number,
   bitmapHex: string,
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
-  const issuerUrls = ISSUER_URLS
-  // Issuers poll L3 every 2s — on testnet with variable block times, events can take
+  const oracleUrls = ORACLE_URLS
+  // Oracles poll L3 every 2s — on testnet with variable block times, events can take
   // 6-15s to index. Use longer delays and more attempts to avoid race conditions.
   const retryDelay = IS_ANVIL ? 1_000 : 3_000
   const maxAttempts = IS_ANVIL ? 5 : 10
 
-  // Pre-check: wait until at least one issuer sees this player in the batch.
-  // This avoids wasting bitmap submission attempts while issuers haven't indexed yet.
+  // Pre-check: wait until at least one oracle sees this player in the batch.
+  // This avoids wasting bitmap submission attempts while oracles haven't indexed yet.
   if (!IS_ANVIL) {
     const readyDeadline = Date.now() + 15_000
-    let issuerReady = false
+    let oracleReady = false
     while (Date.now() < readyDeadline) {
-      for (const url of issuerUrls) {
+      for (const url of oracleUrls) {
         try {
           const res = await fetch(`${url}/vision/batch/${batchId}/state`, {
             signal: AbortSignal.timeout(5_000),
@@ -674,27 +674,27 @@ async function submitBitmapToIssuers(
           if (res.ok) {
             const state = await res.json() as { players?: Array<{ address: string }> }
             if (state.players?.some(p => p.address.toLowerCase() === player.toLowerCase())) {
-              issuerReady = true
+              oracleReady = true
               break
             }
           }
-        } catch { /* issuer unavailable, try next */ }
+        } catch { /* oracle unavailable, try next */ }
       }
-      if (issuerReady) break
-      console.log(`[bitmap] Waiting for issuers to index player ${player.slice(0, 10)}... in batch ${batchId}`)
+      if (oracleReady) break
+      console.log(`[bitmap] Waiting for oracles to index player ${player.slice(0, 10)}... in batch ${batchId}`)
       await new Promise(r => setTimeout(r, 3_000))
     }
-    if (!issuerReady) {
-      console.warn(`[bitmap] No issuer indexed player after 15s — submitting anyway`)
+    if (!oracleReady) {
+      console.warn(`[bitmap] No oracle indexed player after 15s — submitting anyway`)
     }
   }
 
-  // Retry loop: submit bitmap to all issuers
+  // Retry loop: submit bitmap to all oracles
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (attempt > 0) await new Promise(r => setTimeout(r, retryDelay))
 
     const results = await Promise.allSettled(
-      issuerUrls.map(async (url) => {
+      oracleUrls.map(async (url) => {
         const res = await fetch(`${url}/vision/bitmap`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -715,11 +715,11 @@ async function submitBitmapToIssuers(
     )
 
     const accepted = results.filter(r => r.status === 'fulfilled' && r.value).length
-    if (accepted >= 2 || attempt === maxAttempts - 1) return { accepted, total: issuerUrls.length }
-    console.log(`Bitmap attempt ${attempt + 1}: ${accepted}/${issuerUrls.length} accepted, retrying...`)
+    if (accepted >= 2 || attempt === maxAttempts - 1) return { accepted, total: oracleUrls.length }
+    console.log(`Bitmap attempt ${attempt + 1}: ${accepted}/${oracleUrls.length} accepted, retrying...`)
   }
 
-  return { accepted: 0, total: issuerUrls.length }
+  return { accepted: 0, total: oracleUrls.length }
 }
 
 // ── Convenience: full join flow ──────────────────────────────
@@ -732,7 +732,7 @@ export interface JoinResult {
 }
 
 /**
- * Complete join flow: deposit USDC to Vision balance → joinBatch on-chain → submit bitmap to issuers.
+ * Complete join flow: deposit USDC to Vision balance → joinBatch on-chain → submit bitmap to oracles.
  * With the dual-balance architecture, joinBatch debits from Vision balance (not direct USDC transfer).
  * @param configHash  Active configHash for the batch (read from chain or vision-batches.json)
  */
@@ -781,8 +781,8 @@ export async function fullJoinBatch(
   // 4. Join batch on-chain (debits from Vision balance, requires configHash binding)
   await joinBatch(player, batchId, configHash, depositAmount, stakePerTick, bmHash)
 
-  // 5. Submit bitmap to issuers
-  const { accepted } = await submitBitmapToIssuers(player, batchId, bmHex, bmHash)
+  // 5. Submit bitmap to oracles
+  const { accepted } = await submitBitmapToOracles(player, batchId, bmHex, bmHash)
 
   return { bitmap, bitmapHash: bmHash, bitmapHex: bmHex, bitmapAccepted: accepted }
 }
@@ -796,7 +796,7 @@ export async function getVisionUsdcBalance(): Promise<bigint> {
 }
 
 /**
- * Read batch count and info directly from the Vision contract (bypasses issuer API).
+ * Read batch count and info directly from the Vision contract (bypasses oracle API).
  * The new Batch struct is all fixed-size fields (no dynamic arrays):
  *   creator, sourceId, configHash, nextConfigHash, tickDuration,
  *   lockOffset, nextLockOffset, createdAtTick, lastPromotionTick, paused
@@ -941,7 +941,7 @@ export async function ensureBatchExists(): Promise<BatchInfo[]> {
     // API unavailable — fall through to on-chain check
   }
 
-  // Check on-chain — batches may exist but issuers aren't indexing them
+  // Check on-chain — batches may exist but oracles aren't indexing them
   const batches = await getBatchesFromChain()
   if (batches.length > 0) return batches
 
@@ -1050,7 +1050,7 @@ const VISION_VIRTUAL_BALANCE_ABI = [{
 }] as const
 
 /**
- * Read a player's virtual balance on Vision (credited by issuers from Settlement deposits).
+ * Read a player's virtual balance on Vision (credited by oracles from Settlement deposits).
  */
 export async function getVisionVirtualBalance(player: string): Promise<bigint> {
   const data = encodeFunctionData({

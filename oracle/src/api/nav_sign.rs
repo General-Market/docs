@@ -1,4 +1,4 @@
-//! NAV signing endpoint handler for issuer node
+//! NAV signing endpoint handler for oracle node
 //!
 //! Implements `GET /api/nav-sign?itp={address}` which returns a BLS-signed NAV price.
 //!
@@ -11,7 +11,7 @@
 //!   "timestamp": 1706886400,
 //!   "cycleNumber": 42,
 //!   "blsSignature": "0x...",
-//!   "issuerId": 2,
+//!   "oracleId": 2,
 //!   "pubkey": "0x..."
 //! }
 //! ```
@@ -20,8 +20,8 @@
 //!
 //! This endpoint is public (AC7). Security comes from BLS verification:
 //! - Individual signatures are harmless
-//! - Only aggregated signatures (2/3+ of issuers) are useful
-//! - On-chain verification uses IssuerRegistry aggregated pubkey
+//! - Only aggregated signatures (2/3+ of oracles) are useful
+//! - On-chain verification uses OracleRegistry aggregated pubkey
 
 use ethers::types::{Address, U256};
 use serde::{Deserialize, Serialize};
@@ -51,7 +51,7 @@ pub struct NavSignResponse {
     /// Unix timestamp (seconds) when NAV was computed
     pub timestamp: u64,
 
-    /// Current issuer cycle number
+    /// Current oracle cycle number
     #[serde(rename = "cycleNumber")]
     pub cycle_number: u64,
 
@@ -59,11 +59,11 @@ pub struct NavSignResponse {
     #[serde(rename = "blsSignature")]
     pub bls_signature: String,
 
-    /// This issuer's on-chain ID from IssuerRegistry
-    #[serde(rename = "issuerId")]
-    pub issuer_id: u8,
+    /// This oracle's on-chain ID from OracleRegistry
+    #[serde(rename = "oracleId")]
+    pub oracle_id: u8,
 
-    /// This issuer's BLS G2 public key (128 bytes, hex-encoded with 0x prefix)
+    /// This oracle's BLS G2 public key (128 bytes, hex-encoded with 0x prefix)
     pub pubkey: String,
 }
 
@@ -130,8 +130,8 @@ pub struct NavSignHandler<NC, CR> {
     chain_reader: CR,
     /// BLS keypair for signing (None if not configured)
     bls_keypair: Option<common::bls::BLSKeyPair>,
-    /// This issuer's on-chain ID
-    issuer_id: u8,
+    /// This oracle's on-chain ID
+    oracle_id: u8,
     /// Current cycle number provider
     cycle_number: std::sync::Arc<std::sync::atomic::AtomicU64>,
     /// NAV cache for consistency within cycles
@@ -150,14 +150,14 @@ where
         nav_calculator: NC,
         chain_reader: CR,
         bls_keypair: Option<common::bls::BLSKeyPair>,
-        issuer_id: u8,
+        oracle_id: u8,
         initial_cycle: u64,
     ) -> Self {
         Self {
             nav_calculator,
             chain_reader,
             bls_keypair,
-            issuer_id,
+            oracle_id,
             cycle_number: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(initial_cycle)),
             nav_cache: std::sync::Arc::new(tokio::sync::RwLock::new(
                 std::collections::HashMap::new(),
@@ -283,7 +283,7 @@ where
             timestamp,
             cycle_number,
             bls_signature: format!("0x{}", hex::encode(signature)),
-            issuer_id: self.issuer_id,
+            oracle_id: self.oracle_id,
             pubkey: format!("0x{}", hex::encode(&keypair.public_key().0)),
         }
     }
@@ -480,7 +480,7 @@ mod tests {
             timestamp: 1706886400,
             cycle_number: 42,
             bls_signature: "0xaabbccdd".to_string(),
-            issuer_id: 1,
+            oracle_id: 1,
             pubkey: "0xeeff".to_string(),
         };
 
@@ -488,7 +488,7 @@ mod tests {
         assert!(json.contains("itpAddress"));
         assert!(json.contains("cycleNumber"));
         assert!(json.contains("blsSignature"));
-        assert!(json.contains("issuerId"));
+        assert!(json.contains("oracleId"));
     }
 
     #[test]
@@ -557,7 +557,7 @@ mod tests {
         let timestamp = 1706886400u64;
         let cycle_number = 42u64;
 
-        // Generate 3 keypairs (simulating 3 issuers)
+        // Generate 3 keypairs (simulating 3 oracles)
         let kp1 = BLSKeyPair::from_seed(&[1u8; 32]).unwrap();
         let kp2 = BLSKeyPair::from_seed(&[2u8; 32]).unwrap();
         let kp3 = BLSKeyPair::from_seed(&[3u8; 32]).unwrap();
@@ -565,7 +565,7 @@ mod tests {
         let signer = Bn254BLSSigner::new();
         let message_hash = build_nav_message_hash(itp_address, price, timestamp, cycle_number);
 
-        // Each issuer signs the same message hash
+        // Each oracle signs the same message hash
         let sig1 = signer.sign_message_hash(&kp1, &message_hash).unwrap();
         let sig2 = signer.sign_message_hash(&kp2, &message_hash).unwrap();
         let sig3 = signer.sign_message_hash(&kp3, &message_hash).unwrap();

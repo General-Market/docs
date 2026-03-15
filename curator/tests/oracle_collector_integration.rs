@@ -1,13 +1,13 @@
 //! Integration tests for the Oracle BLS Collector (Story 8.10)
 //!
-//! Tests the full pipeline: collect from mock issuer endpoints → validate consensus →
+//! Tests the full pipeline: collect from mock oracle endpoints → validate consensus →
 //! aggregate BLS signatures → verify aggregated signature
 
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
 use common::types::BLSSignature;
 use curator::collector::NavCollector;
 use ethers::types::{Address, U256};
-use issuer::api::{
+use oracle::api::{
     build_nav_message_hash, handle_nav_sign_request, ItpInfo, ItpRegistryReader,
     MockNavCalculator, NavSignHandler,
 };
@@ -15,7 +15,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
-/// Mock ITP registry for test issuers
+/// Mock ITP registry for test oracles
 struct MockItpRegistry {
     itps: std::collections::HashMap<Address, ItpInfo>,
 }
@@ -52,24 +52,24 @@ fn test_itp_info() -> ItpInfo {
     }
 }
 
-/// Spin up a mock issuer TCP server that handles GET /api/nav-sign requests
-async fn start_mock_issuer(
+/// Spin up a mock oracle TCP server that handles GET /api/nav-sign requests
+async fn start_mock_oracle(
     port: u16,
     keypair: BLSKeyPair,
-    issuer_id: u8,
+    oracle_id: u8,
     cycle_number: u64,
     itp_address: Address,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let listener = TcpListener::bind(format!("127.0.0.1:{}", port))
             .await
-            .expect("Failed to bind mock issuer");
+            .expect("Failed to bind mock oracle");
 
         let handler = Arc::new(NavSignHandler::new(
             MockNavCalculator::one(),
             MockItpRegistry::new_with_itp(itp_address, test_itp_info()),
             Some(keypair),
-            issuer_id,
+            oracle_id,
             cycle_number,
         ));
 
@@ -119,10 +119,10 @@ async fn test_collect_aggregate_and_verify() {
     let kp2 = BLSKeyPair::from_seed(&[2u8; 32]).unwrap();
     let kp3 = BLSKeyPair::from_seed(&[3u8; 32]).unwrap();
 
-    // Start 3 mock issuers on different ports
-    let _h1 = start_mock_issuer(19001, kp1.clone(), 0, cycle_number, itp_address).await;
-    let _h2 = start_mock_issuer(19002, kp2.clone(), 1, cycle_number, itp_address).await;
-    let _h3 = start_mock_issuer(19003, kp3.clone(), 2, cycle_number, itp_address).await;
+    // Start 3 mock oracles on different ports
+    let _h1 = start_mock_oracle(19001, kp1.clone(), 0, cycle_number, itp_address).await;
+    let _h2 = start_mock_oracle(19002, kp2.clone(), 1, cycle_number, itp_address).await;
+    let _h3 = start_mock_oracle(19003, kp3.clone(), 2, cycle_number, itp_address).await;
 
     // Give servers time to bind
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -134,7 +134,7 @@ async fn test_collect_aggregate_and_verify() {
         "http://127.0.0.1:19003".to_string(),
     ]);
 
-    // Collect from all issuers
+    // Collect from all oracles
     let collection = collector.collect_all(itp_address).await.unwrap();
     assert_eq!(
         collection.responses.len(),
@@ -187,9 +187,9 @@ async fn test_collect_with_partial_failure() {
     let kp1 = BLSKeyPair::from_seed(&[11u8; 32]).unwrap();
     let kp2 = BLSKeyPair::from_seed(&[12u8; 32]).unwrap();
 
-    // Start only 2 of 3 mock issuers
-    let _h1 = start_mock_issuer(19011, kp1.clone(), 0, cycle_number, itp_address).await;
-    let _h2 = start_mock_issuer(19012, kp2.clone(), 1, cycle_number, itp_address).await;
+    // Start only 2 of 3 mock oracles
+    let _h1 = start_mock_oracle(19011, kp1.clone(), 0, cycle_number, itp_address).await;
+    let _h2 = start_mock_oracle(19012, kp2.clone(), 1, cycle_number, itp_address).await;
     // Port 19013 is NOT running → connection refused
 
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -215,7 +215,7 @@ async fn test_collect_with_partial_failure() {
     assert_eq!(agg_sig_bytes.len(), 64);
     assert_eq!(bitmask, U256::from(0x03)); // bits 0,1
 
-    // Verify aggregated signature of 2 issuers
+    // Verify aggregated signature of 2 oracles
     let agg_pk = aggregate_pubkeys(&[kp1.public_key(), kp2.public_key()]).unwrap();
     let message_hash = build_nav_message_hash(
         itp_address,
@@ -238,8 +238,8 @@ async fn test_collect_with_timeout() {
 
     let kp1 = BLSKeyPair::from_seed(&[21u8; 32]).unwrap();
 
-    // Start only 1 of 3 mock issuers
-    let _h1 = start_mock_issuer(19021, kp1.clone(), 0, 300, itp_address).await;
+    // Start only 1 of 3 mock oracles
+    let _h1 = start_mock_oracle(19021, kp1.clone(), 0, 300, itp_address).await;
 
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 

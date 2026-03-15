@@ -46,7 +46,7 @@ export const ANVIL_ACCOUNTS = [
 
 // ── Health endpoints ─────────────────────────────────────────────────
 
-export const ISSUER_HEALTH_PORTS = [10001, 10002, 10003];
+export const ORACLE_HEALTH_PORTS = [10001, 10002, 10003];
 export const AP_HEALTH_PORT = 9100;
 export const BACKEND_URL = 'http://localhost:8200';
 

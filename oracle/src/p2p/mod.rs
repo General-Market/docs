@@ -1,7 +1,7 @@
-//! P2P transport module for issuer nodes
+//! P2P transport module for oracle nodes
 //!
 //! Implements TCP + TLS + MessagePack based peer-to-peer communication
-//! between issuer nodes for consensus coordination.
+//! between oracle nodes for consensus coordination.
 //!
 //! # Architecture
 //!

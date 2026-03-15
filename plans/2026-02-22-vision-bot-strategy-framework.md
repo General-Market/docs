@@ -694,7 +694,7 @@ def test_executor_init_requires_private_key():
     with pytest.raises(ValueError, match="private_key"):
         Executor(rpc_url="http://fake", vision_addr="0x" + "0" * 40,
                  usdc_addr="0x" + "0" * 40, private_key="",
-                 issuer_urls=["http://localhost:10001"])
+                 oracle_urls=["http://localhost:10001"])
 
 def test_executor_init_with_valid_key():
     """Executor initializes with a valid private key (doesn't connect yet)."""
@@ -705,7 +705,7 @@ def test_executor_init_with_valid_key():
         vision_addr="0x" + "11" * 20,
         usdc_addr="0x" + "22" * 20,
         private_key=key,
-        issuer_urls=["http://localhost:10001"],
+        oracle_urls=["http://localhost:10001"],
     )
     assert ex.bot_addr is not None
     assert ex.bot_addr.startswith("0x")
@@ -773,19 +773,19 @@ class Executor:
     Handles all blockchain interaction:
     - USDC approval and balance checks
     - Joining batches on-chain
-    - Submitting bitmaps to issuer nodes
+    - Submitting bitmaps to oracle nodes
     - Reading positions and batch info
     """
 
     def __init__(self, rpc_url: str, vision_addr: str, usdc_addr: str,
-                 private_key: str, issuer_urls: list[str]):
+                 private_key: str, oracle_urls: list[str]):
         if not private_key:
             raise ValueError("private_key is required")
 
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.w3.eth.account.from_key(private_key)
         self.bot_addr = self.account.address
-        self.issuer_urls = issuer_urls
+        self.oracle_urls = oracle_urls
 
         self.vision = self.w3.eth.contract(
             address=Web3.to_checksum_address(vision_addr), abi=VISION_ABI)
@@ -837,12 +837,12 @@ class Executor:
 
     def submit_bitmap(self, batch_id: int, bitmap: bytes, bitmap_hash: bytes,
                       retries: int = 3) -> int:
-        """Submit bitmap to issuer nodes. Returns number of acceptances."""
+        """Submit bitmap to oracle nodes. Returns number of acceptances."""
         bm_hex = "0x" + bitmap.hex()
         hash_hex = "0x" + bitmap_hash.hex()
         accepted = 0
         for attempt in range(retries):
-            for url in self.issuer_urls:
+            for url in self.oracle_urls:
                 try:
                     resp = requests.post(
                         f"{url}/vision/bitmap",
@@ -858,7 +858,7 @@ class Executor:
                 break
             log.info("Bitmap retry %d/%d...", attempt + 1, retries)
             time.sleep(3)
-        log.info("Bitmap submitted to %d/%d issuers", accepted, len(self.issuer_urls))
+        log.info("Bitmap submitted to %d/%d oracles", accepted, len(self.oracle_urls))
         return accepted
 
     def register_bot(self):
@@ -878,7 +878,7 @@ class Executor:
             log.warning("Bot registration failed: %s", e)
 
     def fetch_batches(self, api_url: str) -> list[dict]:
-        """Fetch active batches from issuer Vision API."""
+        """Fetch active batches from oracle Vision API."""
         try:
             resp = requests.get(f"{api_url}/vision/batches", timeout=10)
             if resp.ok:
@@ -1216,7 +1216,7 @@ Usage:
 
 Environment:
     L3_RPC_URL              Chain RPC (default: http://localhost:8546)
-    VISION_API_URL          Issuer Vision API (default: http://localhost:10001)
+    VISION_API_URL          Oracle Vision API (default: http://localhost:10001)
     DATA_NODE_URL           Data-node URL (default: http://localhost:8200)
     BOT_PRIVATE_KEY         Bot wallet private key (required)
     STRATEGY                Strategy name (default: random)
@@ -1399,7 +1399,7 @@ def main():
         vision_addr=vision_addr,
         usdc_addr=usdc_addr,
         private_key=BOT_PRIVATE_KEY,
-        issuer_urls=[
+        oracle_urls=[
             "http://localhost:10001",
             "http://localhost:10002",
             "http://localhost:10003",

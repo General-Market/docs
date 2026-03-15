@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check zero-sum invariant from issuer balance update logs."""
+"""Check zero-sum invariant from oracle balance update logs."""
 import sys
 
 per_tick = {}

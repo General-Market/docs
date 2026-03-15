@@ -4,15 +4,15 @@
 
 **Goal:** Replace lock-window + multiplier betting with continuous next-tick betting, dynamic source registry from data-node, and automatic batch lifecycle.
 
-**Architecture:** Contract gets minor additions (tickDuration param, MAX_BATCHES cap). Issuer gets a two-slot bitmap model (pending/active with per-bitmap config_hash), multiplier removal, fixed-point price pipeline, and batch auto-creation. Data-node gets lock removal, integer-scaled prices, source registry endpoint, and BLS verification. Frontend removes all hardcoded sources/batches, switches to dynamic API data, and removes multiplier UI.
+**Architecture:** Contract gets minor additions (tickDuration param, MAX_BATCHES cap). Oracle gets a two-slot bitmap model (pending/active with per-bitmap config_hash), multiplier removal, fixed-point price pipeline, and batch auto-creation. Data-node gets lock removal, integer-scaled prices, source registry endpoint, and BLS verification. Frontend removes all hardcoded sources/batches, switches to dynamic API data, and removes multiplier UI.
 
-**Tech Stack:** Solidity (Foundry), Rust (issuer + data-node), TypeScript/React (Next.js frontend)
+**Tech Stack:** Solidity (Foundry), Rust (oracle + data-node), TypeScript/React (Next.js frontend)
 
 **Spec:** `docs/superpowers/specs/2026-03-14-vision-continuous-betting-design.md`
 
 **Deployment:** Full redeploy — wipe previous bitmaps, fresh contracts, no backward compatibility. No migration script needed.
 
-**Dependency order:** Contract → Data-node → Issuer → Frontend → Fresh Deploy
+**Dependency order:** Contract → Data-node → Oracle → Frontend → Fresh Deploy
 
 ---
 
@@ -196,7 +196,7 @@ Harden `claimRewards()` to prevent gap attacks (skipping lossy ticks):
 if (position.lastClaimedTick == 0) {
     // First claim: any tick after startTick is valid.
     // Players may sit out their first tick(s) — that's OK.
-    // Issuers sign a no-change proof covering sit-out ticks.
+    // Oracles sign a no-change proof covering sit-out ticks.
     if (fromTick <= position.startTick) revert InvalidTickRange();
 } else {
     // Subsequent claims: must be exactly contiguous — no gaps
@@ -205,7 +205,7 @@ if (position.lastClaimedTick == 0) {
 ```
 
 This prevents gap attacks (skipping lossy ticks) while allowing the first claim
-to start at any tick after join. Issuers MUST generate balance proofs for ALL
+to start at any tick after join. Oracles MUST generate balance proofs for ALL
 ticks including sit-outs (newBalance = oldBalance) once the first claim establishes
 the contiguous chain.
 
@@ -474,7 +474,7 @@ git commit -m "feat(data-node): add GET /sources/registry endpoint for dynamic s
 - Modify: `data-node/src/api.rs` (snapshot endpoint)
 - Modify: `data-node/src/batch_engine.rs` (config generation)
 
-**Context:** Issuers currently parse prices as f64, then convert `(price * 1e8) as u128` — non-deterministic across hardware. Data-node must return integer-scaled values so issuers parse directly to u128.
+**Context:** Oracles currently parse prices as f64, then convert `(price * 1e8) as u128` — non-deterministic across hardware. Data-node must return integer-scaled values so oracles parse directly to u128.
 
 - [ ] **Step 1: Add `price_scaled` field to snapshot response**
 
@@ -488,7 +488,7 @@ market_json["value_scaled"] = serde_json::Value::String(value_scaled.to_string()
 market_json["price_scale"] = serde_json::json!(100_000_000u64);
 ```
 
-The rounding happens ONCE at the data-node (single source of truth), then all issuers parse the same string → identical u128 values.
+The rounding happens ONCE at the data-node (single source of truth), then all oracles parse the same string → identical u128 values.
 
 - [ ] **Step 2: Test snapshot response includes value_scaled**
 
@@ -511,9 +511,9 @@ git commit -m "feat(data-node): add integer-scaled prices (value_scaled) to snap
 
 **Context:** Two security fixes: (1) HMAC missing header must be an error when secret is configured, (2) POST /batches/signed should verify BLS signature before storing.
 
-- [ ] **Step 1: HMAC hard-fail — issuer-side change**
+- [ ] **Step 1: HMAC hard-fail — oracle-side change**
 
-This is an issuer change, not data-node. Flag for Task in Chunk 4. The data-node change here is BLS verification.
+This is an oracle change, not data-node. Flag for Task in Chunk 4. The data-node change here is BLS verification.
 
 - [ ] **Step 2: Add BLS signature verification to store_signed_batch**
 
@@ -545,13 +545,13 @@ git commit -m "feat(data-node): add BLS sig verification on POST /batches/signed
 
 ---
 
-## Chunk 3: Issuer — Two-Slot Bitmap Model
+## Chunk 3: Oracle — Two-Slot Bitmap Model
 
 ### Task 7: SlottedBitmap struct + two-slot BitmapStore
 
 **Files:**
-- Modify: `issuer/src/vision/types.rs` — add SlottedBitmap
-- Rewrite: `issuer/src/vision/bitmap_store.rs` — two-slot model
+- Modify: `oracle/src/vision/types.rs` — add SlottedBitmap
+- Rewrite: `oracle/src/vision/bitmap_store.rs` — two-slot model
 
 **Context:** The current BitmapStore has a single `HashMap<(u64, Address), StoredBitmap>`. The new model needs `pending_bitmaps` and `active_bitmaps` per batch, each storing config_hash and target_tick_id alongside bitmap data.
 
@@ -633,7 +633,7 @@ async fn test_no_pending_means_sit_out() {
 }
 ```
 
-Run: `cd issuer && cargo test test_two_slot -v`
+Run: `cd oracle && cargo test test_two_slot -v`
 Expected: FAIL — methods don't exist
 
 - [ ] **Step 3: Implement two-slot BitmapStore**
@@ -744,14 +744,14 @@ impl BitmapStore {
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd issuer && cargo test test_two_slot -v`
+Run: `cd oracle && cargo test test_two_slot -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/vision/types.rs issuer/src/vision/bitmap_store.rs
-git commit -m "feat(issuer): two-slot bitmap store with pending/active and config_hash tracking"
+git add oracle/src/vision/types.rs oracle/src/vision/bitmap_store.rs
+git commit -m "feat(oracle): two-slot bitmap store with pending/active and config_hash tracking"
 ```
 
 ---
@@ -759,8 +759,8 @@ git commit -m "feat(issuer): two-slot bitmap store with pending/active and confi
 ### Task 8: DB schema migration for bitmap slots
 
 **Files:**
-- Create: `issuer/migrations/YYYYMMDDHHMMSS_bitmap_slots.sql`
-- Modify: `issuer/src/vision/bitmap_store.rs` — persist_to_db and load_from_db
+- Create: `oracle/migrations/YYYYMMDDHHMMSS_bitmap_slots.sql`
+- Modify: `oracle/src/vision/bitmap_store.rs` — persist_to_db and load_from_db
 
 - [ ] **Step 1: Write fresh DB schema SQL**
 
@@ -875,27 +875,27 @@ pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd issuer && cargo test bitmap_store -v`
+Run: `cd oracle && cargo test bitmap_store -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/migrations/ issuer/src/vision/bitmap_store.rs
-git commit -m "feat(issuer): bitmap DB schema with slot/tick_id/config_hash, crash recovery"
+git add oracle/migrations/ oracle/src/vision/bitmap_store.rs
+git commit -m "feat(oracle): bitmap DB schema with slot/tick_id/config_hash, crash recovery"
 ```
 
 ---
 
-## Chunk 4: Issuer — Resolver + Engine Changes
+## Chunk 4: Oracle — Resolver + Engine Changes
 
 ### Task 9: Remove multiplier from resolver
 
 **Files:**
-- Modify: `issuer/src/vision/resolver.rs:121-144, 238`
-- Delete: `issuer/src/vision/multiplier.rs`
-- Modify: `issuer/src/vision/types.rs` — remove PlayerMultiplier, join_timestamp, num_committed_ticks
-- Modify: `issuer/src/vision/mod.rs` — remove `pub mod multiplier`
+- Modify: `oracle/src/vision/resolver.rs:121-144, 238`
+- Delete: `oracle/src/vision/multiplier.rs`
+- Modify: `oracle/src/vision/types.rs` — remove PlayerMultiplier, join_timestamp, num_committed_ticks
+- Modify: `oracle/src/vision/mod.rs` — remove `pub mod multiplier`
 
 - [ ] **Step 1: Write test — resolver uses flat stakePerTick**
 
@@ -942,7 +942,7 @@ Update line 238 where `mult.effective_stake` is used to use `per_market_stake(pl
 - [ ] **Step 3: Delete multiplier.rs**
 
 ```bash
-rm issuer/src/vision/multiplier.rs
+rm oracle/src/vision/multiplier.rs
 ```
 
 Remove from `mod.rs`:
@@ -961,19 +961,19 @@ Remove all `use super::multiplier` imports from `resolver.rs` and `engine.rs`.
 
 - [ ] **Step 4: Fix compilation**
 
-Run: `cd issuer && cargo build 2>&1 | head -50`
+Run: `cd oracle && cargo build 2>&1 | head -50`
 Fix any remaining references to multiplier, join_timestamp, num_committed_ticks.
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd issuer && cargo test resolver -v`
+Run: `cd oracle && cargo test resolver -v`
 Expected: PASS
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add -A issuer/src/vision/
-git commit -m "feat(issuer): remove multiplier system, use flat stakePerTick weighting"
+git add -A oracle/src/vision/
+git commit -m "feat(oracle): remove multiplier system, use flat stakePerTick weighting"
 ```
 
 ---
@@ -981,7 +981,7 @@ git commit -m "feat(issuer): remove multiplier system, use flat stakePerTick wei
 ### Task 10: Flat bitmap indexing + config_hash-aware decoding
 
 **Files:**
-- Modify: `issuer/src/vision/resolver.rs:227-245`
+- Modify: `oracle/src/vision/resolver.rs:227-245`
 
 **Context:** Current bitmap uses tick-major indexing: `bit_index = tick_offset * num_markets + market_idx`. New model: single tick per bitmap, so `bit_index = market_idx`.
 
@@ -1022,7 +1022,7 @@ let bit_index = market_idx;
 The resolver needs to decode bitmaps using the config they were encoded against, not the batch's current config. Create a cache:
 
 ```rust
-// New file: issuer/src/vision/config_cache.rs
+// New file: oracle/src/vision/config_cache.rs
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
@@ -1135,14 +1135,14 @@ for ab in &active_bitmaps {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd issuer && cargo test resolver -v`
+Run: `cd oracle && cargo test resolver -v`
 Expected: PASS
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add issuer/src/vision/resolver.rs issuer/src/vision/config_cache.rs issuer/src/vision/mod.rs
-git commit -m "feat(issuer): flat bitmap indexing, config cache, config_hash-aware decoding"
+git add oracle/src/vision/resolver.rs oracle/src/vision/config_cache.rs oracle/src/vision/mod.rs
+git commit -m "feat(oracle): flat bitmap indexing, config cache, config_hash-aware decoding"
 ```
 
 ---
@@ -1150,11 +1150,11 @@ git commit -m "feat(issuer): flat bitmap indexing, config cache, config_hash-awa
 ### Task 11: Bitmap flip in engine + remove degraded mode
 
 **Files:**
-- Modify: `issuer/src/vision/engine.rs:1265-1460`
+- Modify: `oracle/src/vision/engine.rs:1265-1460`
 
 - [ ] **Step 1: Add bitmap flip after resolution in engine**
 
-In the resolution loop, add bitmap flip AFTER consensus completes successfully (not after `create_proposal()` — consensus involves all 3 issuers signing):
+In the resolution loop, add bitmap flip AFTER consensus completes successfully (not after `create_proposal()` — consensus involves all 3 oracles signing):
 
 ```rust
 // CRITICAL: Flip happens AFTER consensus.wait_for_completion() succeeds.
@@ -1196,7 +1196,7 @@ if onchain_resolved {
 // Step 1: Compute bitmap_set_hash (see Step 3 below)
 // Step 2: Create proposal
 let proposal = tc.create_proposal(&result, bitmap_set_hash).await?;
-// Step 3: Wait for BLS consensus (all issuers sign)
+// Step 3: Wait for BLS consensus (all oracles sign)
 let consensus_result = proposal.wait_for_completion().await?;
 // Step 4: Submit on-chain and WAIT for confirmation
 let tx_receipt = submit_tick_resolution(consensus_result).await?;
@@ -1270,14 +1270,14 @@ if is_first_tick {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd issuer && cargo test engine -v`
+Run: `cd oracle && cargo test engine -v`
 Expected: PASS
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add issuer/src/vision/engine.rs
-git commit -m "feat(issuer): bitmap flip in resolution, remove degraded mode, first-tick skip, bitmap_set_hash"
+git add oracle/src/vision/engine.rs
+git commit -m "feat(oracle): bitmap flip in resolution, remove degraded mode, first-tick skip, bitmap_set_hash"
 ```
 
 ---
@@ -1285,9 +1285,9 @@ git commit -m "feat(issuer): bitmap flip in resolution, remove degraded mode, fi
 ### Task 12: Fixed-point price parsing + HMAC hard-fail
 
 **Files:**
-- Modify: `issuer/src/vision/engine.rs:322-332` (price parsing)
-- Modify: `issuer/src/vision/engine.rs:284-286` (HMAC)
-- Modify: `issuer/src/vision/resolver.rs:200-203` (price conversion)
+- Modify: `oracle/src/vision/engine.rs:322-332` (price parsing)
+- Modify: `oracle/src/vision/engine.rs:284-286` (HMAC)
+- Modify: `oracle/src/vision/resolver.rs:200-203` (price conversion)
 
 - [ ] **Step 1: Parse integer-scaled prices from data-node**
 
@@ -1343,14 +1343,14 @@ if self.config.snapshot_hmac_secret.is_some() {
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd issuer && cargo test -v`
+Run: `cd oracle && cargo test -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/vision/engine.rs issuer/src/vision/resolver.rs
-git commit -m "feat(issuer): fixed-point price parsing from data-node, HMAC hard-fail"
+git add oracle/src/vision/engine.rs oracle/src/vision/resolver.rs
+git commit -m "feat(oracle): fixed-point price parsing from data-node, HMAC hard-fail"
 ```
 
 ---
@@ -1358,7 +1358,7 @@ git commit -m "feat(issuer): fixed-point price parsing from data-node, HMAC hard
 ### Task 13: Fix i64 overflow in apply_tick_balances_with_db
 
 **Files:**
-- Modify: `issuer/src/vision/tick_scheduler.rs:174`
+- Modify: `oracle/src/vision/tick_scheduler.rs:174`
 
 - [ ] **Step 1: Fix the overflow**
 
@@ -1382,18 +1382,18 @@ let balance = U256::from_dec_str(&row.balance_str).unwrap_or_default();
 - [ ] **Step 3: Commit**
 
 ```bash
-git add issuer/src/vision/tick_scheduler.rs
-git commit -m "fix(issuer): use TEXT for balance persistence, prevent i64 overflow"
+git add oracle/src/vision/tick_scheduler.rs
+git commit -m "fix(oracle): use TEXT for balance persistence, prevent i64 overflow"
 ```
 
 ---
 
-## Chunk 5: Issuer — Config Orchestrator + Batch Auto-Creation
+## Chunk 5: Oracle — Config Orchestrator + Batch Auto-Creation
 
 ### Task 14: Remove lock period checks from orchestrator
 
 **Files:**
-- Modify: `issuer/src/vision/batch_config_orchestrator.rs:158-169, 320, 357`
+- Modify: `oracle/src/vision/batch_config_orchestrator.rs:158-169, 320, 357`
 
 - [ ] **Step 1: Remove is_in_lock_period() and all callers**
 
@@ -1417,14 +1417,14 @@ tokio::time::sleep(sleep_duration).await;
 
 - [ ] **Step 3: Run tests**
 
-Run: `cd issuer && cargo test orchestrator -v`
+Run: `cd oracle && cargo test orchestrator -v`
 Expected: PASS
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add issuer/src/vision/batch_config_orchestrator.rs
-git commit -m "feat(issuer): remove lock period checks from config orchestrator"
+git add oracle/src/vision/batch_config_orchestrator.rs
+git commit -m "feat(oracle): remove lock period checks from config orchestrator"
 ```
 
 ---
@@ -1432,7 +1432,7 @@ git commit -m "feat(issuer): remove lock period checks from config orchestrator"
 ### Task 15: Add batch auto-creation + safeguards
 
 **Files:**
-- Modify: `issuer/src/vision/batch_config_orchestrator.rs`
+- Modify: `oracle/src/vision/batch_config_orchestrator.rs`
 
 - [ ] **Step 1: Add auto-creation in leader round**
 
@@ -1533,14 +1533,14 @@ let message = ethers::abi::encode(&[
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd issuer && cargo test orchestrator -v`
+Run: `cd oracle && cargo test orchestrator -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/vision/batch_config_orchestrator.rs
-git commit -m "feat(issuer): batch auto-creation with rate limit, tightened follower verification"
+git add oracle/src/vision/batch_config_orchestrator.rs
+git commit -m "feat(oracle): batch auto-creation with rate limit, tightened follower verification"
 ```
 
 ---
@@ -1548,11 +1548,11 @@ git commit -m "feat(issuer): batch auto-creation with rate limit, tightened foll
 ### Task 15b: BatchCreated event handler + data-node retry
 
 **Files:**
-- Modify: `issuer/src/chain_listener.rs` (or equivalent event handler)
-- Modify: `issuer/src/vision/tick_scheduler.rs`
-- Modify: `issuer/src/vision/engine.rs` (retry logic)
+- Modify: `oracle/src/chain_listener.rs` (or equivalent event handler)
+- Modify: `oracle/src/vision/tick_scheduler.rs`
+- Modify: `oracle/src/vision/engine.rs` (retry logic)
 
-**Context:** Spec section 4 requires issuers to auto-detect new batches via `BatchCreated` chain events. Also, spec requires retry with exponential backoff for data-node downtime.
+**Context:** Spec section 4 requires oracles to auto-detect new batches via `BatchCreated` chain events. Also, spec requires retry with exponential backoff for data-node downtime.
 
 - [ ] **Step 1: Add BatchCreated event handler in ChainListener**
 
@@ -1607,14 +1607,14 @@ Replace all direct `fetch_snapshot_data_inner_with_secret` calls with `fetch_sna
 
 - [ ] **Step 4: Run tests**
 
-Run: `cd issuer && cargo test chain_listener -v && cargo test scheduler -v`
+Run: `cd oracle && cargo test chain_listener -v && cargo test scheduler -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/chain_listener.rs issuer/src/vision/tick_scheduler.rs issuer/src/vision/engine.rs
-git commit -m "feat(issuer): BatchCreated event auto-detection + data-node retry with exponential backoff"
+git add oracle/src/chain_listener.rs oracle/src/vision/tick_scheduler.rs oracle/src/vision/engine.rs
+git commit -m "feat(oracle): BatchCreated event auto-detection + data-node retry with exponential backoff"
 ```
 
 ---
@@ -1622,9 +1622,9 @@ git commit -m "feat(issuer): BatchCreated event auto-detection + data-node retry
 ### Task 16: Remove legacy resolution path from engine
 
 **Files:**
-- Modify: `issuer/src/vision/engine.rs`
+- Modify: `oracle/src/vision/engine.rs`
 
-**Context:** Full redeploy — all issuers deploy fresh simultaneously with new code. No dual-mode mechanism needed. Remove any legacy single-bitmap resolution paths and ensure the engine only uses the two-slot bitmap model.
+**Context:** Full redeploy — all oracles deploy fresh simultaneously with new code. No dual-mode mechanism needed. Remove any legacy single-bitmap resolution paths and ensure the engine only uses the two-slot bitmap model.
 
 - [ ] **Step 1: Remove legacy resolution path**
 
@@ -1645,25 +1645,25 @@ In `engine.rs` (lines 1378-1394), remove `degraded_mode` fallback that was part 
 
 - [ ] **Step 3: Run tests**
 
-Run: `cd issuer && cargo test engine -v`
+Run: `cd oracle && cargo test engine -v`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add issuer/src/vision/engine.rs
-git commit -m "feat(issuer): remove legacy resolution path, continuous-only mode"
+git add oracle/src/vision/engine.rs
+git commit -m "feat(oracle): remove legacy resolution path, continuous-only mode"
 ```
 
 ---
 
-### Task 17: Cross-issuer bitmap gossip
+### Task 17: Cross-oracle bitmap gossip
 
 **Files:**
-- Modify: `issuer/src/vision/engine.rs`
-- Modify: `issuer/src/p2p/` (message types)
+- Modify: `oracle/src/vision/engine.rs`
+- Modify: `oracle/src/p2p/` (message types)
 
-**Context:** If a player reveals their bitmap to only one issuer, the other two won't have it for consensus. Cross-issuer gossip ensures bitmap availability. This is a security requirement from the spec.
+**Context:** If a player reveals their bitmap to only one oracle, the other two won't have it for consensus. Cross-oracle gossip ensures bitmap availability. This is a security requirement from the spec.
 
 - [ ] **Step 1: Add bitmap gossip P2P message**
 
@@ -1683,14 +1683,14 @@ pub enum VisionP2PMessage {
 
 - [ ] **Step 2: Gossip on bitmap receipt**
 
-When an issuer receives a bitmap reveal from a player, gossip the hash to other issuers:
+When an oracle receives a bitmap reveal from a player, gossip the hash to other oracles:
 
 ```rust
 // In bitmap reveal handler:
 bitmap_store.store_pending(player, batch_id, bitmap, hash, config_hash, tick_id).await?;
 bitmap_store.persist_pending_to_db(&db_pool, batch_id, player, &entry).await?;
 
-// Gossip to other issuers (hash only, not raw bitmap)
+// Gossip to other oracles (hash only, not raw bitmap)
 p2p.broadcast(VisionP2PMessage::BitmapGossip {
     batch_id,
     player,
@@ -1774,18 +1774,18 @@ VisionP2PMessage::BitmapResponse { batch_id, player, bitmap, bitmap_hash, config
 }
 ```
 
-Add a pre-resolution gossip deadline: 10 seconds before tick boundary, issuers broadcast hashes of all pending bitmaps they have. Peers request any missing ones. This ensures maximum bitmap coverage before resolution.
+Add a pre-resolution gossip deadline: 10 seconds before tick boundary, oracles broadcast hashes of all pending bitmaps they have. Peers request any missing ones. This ensures maximum bitmap coverage before resolution.
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd issuer && cargo test gossip -v`
+Run: `cd oracle && cargo test gossip -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add issuer/src/vision/ issuer/src/p2p/
-git commit -m "feat(issuer): cross-issuer bitmap gossip + resolution_type verification"
+git add oracle/src/vision/ oracle/src/p2p/
+git commit -m "feat(oracle): cross-oracle bitmap gossip + resolution_type verification"
 ```
 
 ---
@@ -1797,7 +1797,7 @@ git commit -m "feat(issuer): cross-issuer bitmap gossip + resolution_type verifi
 **Files:**
 - Modify: `frontend/app/api/vision/batches/route.ts`
 
-**Context:** This route builds a `configHashToSource` reverse map from vision-batches.json. Instead, the issuer API response should include sourceId directly.
+**Context:** This route builds a `configHashToSource` reverse map from vision-batches.json. Instead, the oracle API response should include sourceId directly.
 
 - [ ] **Step 1: Remove static import and build reverse map from API response**
 
@@ -1805,10 +1805,10 @@ git commit -m "feat(issuer): cross-issuer bitmap gossip + resolution_type verifi
 // DELETE: import batchConfig from '@/lib/contracts/vision-batches.json'
 
 export async function GET() {
-  const res = await fetch(`${ISSUER_API_URL}/vision/batches`)
+  const res = await fetch(`${ORACLE_API_URL}/vision/batches`)
   const data = await res.json()
 
-  // Issuer API now includes source_id per batch — no reverse lookup needed
+  // Oracle API now includes source_id per batch — no reverse lookup needed
   // Deduplicate: keep latest batch per source
   const latestPerSource = new Map<string, any>()
   for (const batch of data.batches) {
@@ -1826,7 +1826,7 @@ export async function GET() {
 
 ```bash
 git add frontend/app/api/vision/batches/route.ts
-git commit -m "feat(frontend): remove vision-batches.json from API proxy, use issuer source_id"
+git commit -m "feat(frontend): remove vision-batches.json from API proxy, use oracle source_id"
 ```
 
 ---
@@ -2171,7 +2171,7 @@ git commit -m "feat(frontend): VisionMarketsGrid uses dynamic source registry fr
 
 - Always open (no locked/disabled state)
 - Header: "Set predictions for next tick"
-- Add config freshness check before submit (note: this is best-effort — there's an inherent TOCTOU race between check and on-chain tx. The issuer side must also accept bitmaps for recent configs):
+- Add config freshness check before submit (note: this is best-effort — there's an inherent TOCTOU race between check and on-chain tx. The oracle side must also accept bitmaps for recent configs):
 
 ```typescript
 // Before calling updateBitmap():
@@ -2184,7 +2184,7 @@ if (freshBatch && freshBatch.config_hash !== currentConfigHash) {
   return
 }
 // IMPORTANT: Even with this check, config can change between check and tx.
-// The issuer MUST accept bitmaps encoded against any of the last 3 configs
+// The oracle MUST accept bitmaps encoded against any of the last 3 configs
 // (current + 2 previous) to handle this race. The ConfigCache already stores
 // historical configs. The bitmap's config_hash field ensures correct decoding
 // regardless of which config was used.
@@ -2253,7 +2253,7 @@ git commit -m "feat(frontend): clean up all remaining static source/multiplier/l
 **Files:**
 - No code changes — operational preparation
 
-**Context:** Full redeploy with bitmap wipe. No migration of existing data. All batches will be recreated by `DeployAllVisionBatches.s.sol` with `lockOffset=0` from the start. Issuers deploy fresh with new code — no legacy mode, no migration script.
+**Context:** Full redeploy with bitmap wipe. No migration of existing data. All batches will be recreated by `DeployAllVisionBatches.s.sol` with `lockOffset=0` from the start. Oracles deploy fresh with new code — no legacy mode, no migration script.
 
 - [ ] **Step 1: Prepare DB wipe script**
 
@@ -2265,7 +2265,7 @@ ssh index-maker/prod/be "docker exec -i postgres psql -U index -c '
 '"
 ```
 
-The new issuer code will run the fresh `CREATE TABLE` migration from Task 8 on startup.
+The new oracle code will run the fresh `CREATE TABLE` migration from Task 8 on startup.
 
 - [ ] **Step 2: Verify DeployAllVisionBatches creates batches with lockOffset=0**
 
@@ -2284,17 +2284,17 @@ git commit -m "chore(contracts): verify batch creation uses lockOffset=0"
 
 **No code changes — operational steps. Full redeploy with wiped state.**
 
-All contracts, issuers, and DB are deployed fresh. No migration, no dual-mode, no activation step.
+All contracts, oracles, and DB are deployed fresh. No migration, no dual-mode, no activation step.
 
 - [ ] **Step 1: Deploy data-node changes**
 
 Deploy data-node first (lock removal, /sources/registry, integer prices, BLS verification). Data-node changes are backward compatible — deploy with zero downtime.
 
-- [ ] **Step 2: Stop issuers + wipe DB**
+- [ ] **Step 2: Stop oracles + wipe DB**
 
 ```bash
-# Stop all issuers
-ssh index-maker/prod/be "cd /home/max/index && docker compose -f docker/testnet/issuer/docker-compose.yml stop"
+# Stop all oracles
+ssh index-maker/prod/be "cd /home/max/index && docker compose -f docker/testnet/oracle/docker-compose.yml stop"
 
 # Wipe vision bitmap and batch state tables (Task 26 step 1)
 ssh index-maker/prod/be "docker exec -i postgres psql -U index -c '
@@ -2311,11 +2311,11 @@ cd contracts && forge script script/DeployAllVisionBatches.s.sol --fork-url $RPC
 # All batches created fresh with lockOffset=0
 ```
 
-- [ ] **Step 4: Deploy new issuers**
+- [ ] **Step 4: Deploy new oracles**
 
 ```bash
-ssh index-maker/prod/be "cd /home/max/index && git pull && docker compose -f docker/testnet/issuer/docker-compose.yml up -d --build"
-# Issuers start fresh — continuous mode only, no legacy path
+ssh index-maker/prod/be "cd /home/max/index && git pull && docker compose -f docker/testnet/oracle/docker-compose.yml up -d --build"
+# Oracles start fresh — continuous mode only, no legacy path
 # Fresh DB migration runs on startup (CREATE TABLE from Task 8)
 ```
 
@@ -2330,7 +2330,7 @@ cd frontend && vercel --prod
 - No multiplier shown anywhere
 - Bets work (submit prediction, wait for tick, see resolution)
 - Tick resolution succeeds in continuous mode
-- Check issuer logs for any BLS failures or bitmap mismatches
+- Check oracle logs for any BLS failures or bitmap mismatches
 
 ---
 
@@ -2340,9 +2340,9 @@ cd frontend && vercel --prod
 |-------|-------|-------|
 | 1 | 1-2 | Contract: tickDuration param, MAX_BATCHES cap |
 | 2 | 3-6 | Data-node: lock removal, source registry, integer prices, BLS verification |
-| 3 | 7-8 | Issuer: two-slot bitmap model (single RwLock) + DB schema (atomic transactions) |
-| 4 | 9-13 | Issuer: resolver/engine (multiplier removal, flat indexing, config cache, bitmap flip after consensus, fixed-point prices) |
-| 5 | 14-17 | Issuer: orchestrator (lock removal, auto-creation, tolerances, interval) + BatchCreated handler + retry + remove legacy path + bitmap gossip |
+| 3 | 7-8 | Oracle: two-slot bitmap model (single RwLock) + DB schema (atomic transactions) |
+| 4 | 9-13 | Oracle: resolver/engine (multiplier removal, flat indexing, config cache, bitmap flip after consensus, fixed-point prices) |
+| 5 | 14-17 | Oracle: orchestrator (lock removal, auto-creation, tolerances, interval) + BatchCreated handler + retry + remove legacy path + bitmap gossip |
 | 6 | 18-21 | Frontend: remove static deps (vision-batches.json, VISION_SOURCES, CATEGORY_GROUPS) |
 | 7 | 22-25 | Frontend: dynamic registry + continuous betting UX |
-| 8 | 26-27 | Fresh deploy: wipe DB + deploy contracts/issuers/frontend (no migration) |
+| 8 | 26-27 | Fresh deploy: wipe DB + deploy contracts/oracles/frontend (no migration) |

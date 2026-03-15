@@ -42,7 +42,7 @@ impl DeploymentConfig {
             )));
         }
 
-        let required = ["Index", "IssuerRegistry", "L3BridgeCustody"];
+        let required = ["Index", "OracleRegistry", "L3BridgeCustody"];
         for name in &required {
             let addr = self.get_contract_address(name)?;
             if addr == Address::zero() {
@@ -74,9 +74,9 @@ impl DeploymentConfig {
         self.get_contract_address("Index")
     }
 
-    /// Get the IssuerRegistry contract address
-    pub fn issuer_registry_address(&self) -> Result<Address, Error> {
-        self.get_contract_address("IssuerRegistry")
+    /// Get the OracleRegistry contract address
+    pub fn oracle_registry_address(&self) -> Result<Address, Error> {
+        self.get_contract_address("OracleRegistry")
     }
 
     /// Get the FeeRegistry contract address
@@ -139,7 +139,7 @@ mod tests {
   "timestamp": 1769655467,
   "contracts": {
     "Governance": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "IssuerRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "OracleRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     "FeeRegistry": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
     "AssetPairRegistry": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
     "CollateralRegistry": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
@@ -193,8 +193,8 @@ mod tests {
         let index = config.index_address().unwrap();
         assert_ne!(index, Address::zero());
 
-        let issuer_reg = config.issuer_registry_address().unwrap();
-        assert_ne!(issuer_reg, Address::zero());
+        let oracle_reg = config.oracle_registry_address().unwrap();
+        assert_ne!(oracle_reg, Address::zero());
 
         let bridge = config.l3_bridge_custody_address().unwrap();
         assert_ne!(bridge, Address::zero());
@@ -227,7 +227,7 @@ mod tests {
   "timestamp": 1,
   "contracts": {
     "Index": "0x0000000000000000000000000000000000000000",
-    "IssuerRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "OracleRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     "L3BridgeCustody": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"
   }
 }"#;
@@ -265,7 +265,7 @@ mod tests {
   "contracts": {
     "Index": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
     "IndexImpl": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-    "IssuerRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "OracleRegistry": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
     "L3BridgeCustody": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e"
   }
 }"#;

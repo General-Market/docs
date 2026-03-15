@@ -94,7 +94,7 @@ pub struct QuoteMarket {
 pub struct OracleUpdateData {
     /// NAV price (Morpho 36-decimal format)
     pub price: String,
-    /// Issuer timestamp
+    /// Oracle timestamp
     pub timestamp: u64,
     /// Cycle number
     #[serde(rename = "cycleNumber")]

@@ -147,7 +147,7 @@ fn test_configurable_cycle_duration() {
 /// Test CycleManager creation and accessors.
 #[test]
 fn test_cycle_manager_creation() {
-    let manager = CycleManager::new(CycleConfig::default().with_issuer_id(5));
+    let manager = CycleManager::new(CycleConfig::default().with_oracle_id(5));
 
     assert_eq!(manager.get_current_cycle(), 0);
     assert_eq!(manager.get_cycle_phase(), CyclePhase::ProcessFills);

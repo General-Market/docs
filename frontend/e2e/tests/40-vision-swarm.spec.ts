@@ -20,7 +20,7 @@ import {
   verifySolvency,
   verifyBatchConservation,
   checkDataNodeHealth,
-  checkIssuerHealthViaSSH,
+  checkOracleHealthViaSSH,
   checkL3Rpc,
   pollUntil,
   botLogs,
@@ -39,7 +39,7 @@ const FAST_BATCHES = BATCH_ENTRIES
   .filter((b) => b.tickDuration <= 300)
   .map((b) => b.batchId);
 
-const ISSUER_PORTS = [10001, 10002, 10003];
+const ORACLE_PORTS = [10001, 10002, 10003];
 const ZERO_HASH = ("0x" + "0".repeat(64)) as Hex;
 
 test.describe.configure({ mode: "serial" });
@@ -52,8 +52,8 @@ test("Stage 1: infrastructure health", async () => {
   expect(l3, "L3 RPC unreachable").toBe(true);
   expect(dataNode, "Data node unreachable").toBe(true);
 
-  for (const port of ISSUER_PORTS) {
-    expect(checkIssuerHealthViaSSH(port), `Issuer :${port} unreachable`).toBe(true);
+  for (const port of ORACLE_PORTS) {
+    expect(checkOracleHealthViaSSH(port), `Oracle :${port} unreachable`).toBe(true);
   }
 });
 

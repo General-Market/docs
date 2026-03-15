@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 
 // Contracts for interface calls
 import {Governance} from "../../src/Governance.sol";
-import {IssuerRegistry} from "../../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
 import {FeeRegistry} from "../../src/registry/FeeRegistry.sol";
 import {AssetPairRegistry} from "../../src/registry/AssetPairRegistry.sol";
 import {CollateralRegistry} from "../../src/registry/CollateralRegistry.sol";
@@ -24,7 +24,7 @@ contract VerifyL3Deployment is Script {
     function run() external {
         // Load addresses from environment (set by reading l3-testnet.json or manually)
         address governanceProxy = vm.envAddress("GOVERNANCE_ADDRESS");
-        address issuerRegistryProxy = vm.envAddress("ISSUER_REGISTRY_ADDRESS");
+        address oracleRegistryProxy = vm.envAddress("ORACLE_REGISTRY_ADDRESS");
         address feeRegistryProxy = vm.envAddress("FEE_REGISTRY_ADDRESS");
         address assetPairRegistryAddr = vm.envAddress("ASSET_PAIR_REGISTRY_ADDRESS");
         address collateralRegistryAddr = vm.envAddress("COLLATERAL_REGISTRY_ADDRESS");
@@ -49,15 +49,15 @@ contract VerifyL3Deployment is Script {
             _checkHasCode("proxy has code", governanceProxy);
         }
 
-        // ============ IssuerRegistry ============
-        console2.log("--- IssuerRegistry ---");
+        // ============ OracleRegistry ============
+        console2.log("--- OracleRegistry ---");
         {
-            IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+            OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
             _check("governance matches", address(reg.governance()) == governanceProxy);
-            _check("active issuers >= 3", reg.activeIssuerCount() >= 3);
+            _check("active oracles >= 3", reg.activeOracleCount() >= 3);
             bytes memory aggKey = reg.getAggregatedPubkey();
             _check("aggregated pubkey is 64 bytes", aggKey.length == 64);
-            _checkHasCode("proxy has code", issuerRegistryProxy);
+            _checkHasCode("proxy has code", oracleRegistryProxy);
         }
 
         // ============ FeeRegistry ============
@@ -88,7 +88,7 @@ contract VerifyL3Deployment is Script {
         console2.log("--- BLSCustody ---");
         {
             BLSCustody custody = BLSCustody(blsCustodyProxy);
-            _check("issuerRegistry matches", address(custody.issuerRegistry()) == issuerRegistryProxy);
+            _check("oracleRegistry matches", address(custody.oracleRegistry()) == oracleRegistryProxy);
             _checkHasCode("proxy has code", blsCustodyProxy);
         }
 
@@ -96,7 +96,7 @@ contract VerifyL3Deployment is Script {
         console2.log("--- L3BridgeCustody ---");
         {
             L3BridgeCustody custody = L3BridgeCustody(l3BridgeCustodyProxy);
-            _check("issuerRegistry matches", address(custody.issuerRegistry()) == issuerRegistryProxy);
+            _check("oracleRegistry matches", address(custody.oracleRegistry()) == oracleRegistryProxy);
             _check("usdc matches", address(custody.usdc()) == usdc);
             _checkHasCode("proxy has code", l3BridgeCustodyProxy);
         }
@@ -117,7 +117,7 @@ contract VerifyL3Deployment is Script {
         bytes32 implSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
 
         _checkProxySlot("Governance proxy", governanceProxy, implSlot);
-        _checkProxySlot("IssuerRegistry proxy", issuerRegistryProxy, implSlot);
+        _checkProxySlot("OracleRegistry proxy", oracleRegistryProxy, implSlot);
         _checkProxySlot("FeeRegistry proxy", feeRegistryProxy, implSlot);
         _checkProxySlot("BLSCustody proxy", blsCustodyProxy, implSlot);
         _checkProxySlot("L3BridgeCustody proxy", l3BridgeCustodyProxy, implSlot);

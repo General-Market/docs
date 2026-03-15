@@ -1,6 +1,6 @@
 //! TLS configuration for P2P transport
 //!
-//! Provides mutual TLS authentication between issuer nodes using
+//! Provides mutual TLS authentication between oracle nodes using
 //! rustls with certificate-based authentication.
 
 use std::fs::File;
@@ -136,7 +136,7 @@ impl TlsConfig {
             info!("TLS handshake complete (server)");
             Ok(P2PStream::Tls { inner: tls })
         } else {
-            let tls = self.connect_tls(stream, "issuer.index.local").await?;
+            let tls = self.connect_tls(stream, "oracle.index.local").await?;
             info!("TLS handshake complete (client)");
             Ok(P2PStream::Tls { inner: tls })
         }

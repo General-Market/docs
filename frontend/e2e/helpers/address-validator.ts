@@ -68,7 +68,7 @@ async function rpcChainId(rpcUrl: string): Promise<number> {
 
 // ── Core L3 contracts that MUST have code ──
 const CORE_L3_CONTRACTS = [
-  'Index', 'IssuerRegistry', 'Vision', 'L3_WUSDC',
+  'Index', 'OracleRegistry', 'Vision', 'L3_WUSDC',
   'CollateralRegistry', 'L3BridgeProxy',
 ] as const
 
@@ -79,7 +79,7 @@ const OPTIONAL_L3_CONTRACTS = [
 
 // Settlement-chain contracts (checked against Settlement RPC)
 const SETTLEMENT_CONTRACTS = [
-  'SettlementBridgeCustody', 'SettlementIssuerRegistry',
+  'SettlementBridgeCustody', 'SettlementOracleRegistry',
   'BridgeProxy', 'BridgedItpFactory',
 ] as const
 

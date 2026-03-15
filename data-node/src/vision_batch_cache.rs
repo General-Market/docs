@@ -33,7 +33,7 @@ struct BatchConfigResponse {
 }
 
 pub struct VisionBatchCache {
-    issuer_url: String,
+    oracle_url: String,
     data_node_url: String,
     cache: RwLock<HashMap<u64, BatchMarketInfo>>,
     last_refresh: RwLock<Option<chrono::DateTime<chrono::Utc>>>,
@@ -41,9 +41,9 @@ pub struct VisionBatchCache {
 }
 
 impl VisionBatchCache {
-    pub fn new(issuer_url: String, data_node_url: String) -> Self {
+    pub fn new(oracle_url: String, data_node_url: String) -> Self {
         Self {
-            issuer_url,
+            oracle_url,
             data_node_url,
             cache: RwLock::new(HashMap::new()),
             last_refresh: RwLock::new(None),
@@ -69,19 +69,19 @@ impl VisionBatchCache {
             }
         }
 
-        // Refresh from issuer
+        // Refresh from oracle
         self.refresh().await?;
 
         let cache = self.cache.read().await;
         cache
             .get(&batch_id)
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("batch {} not found on issuer", batch_id))
+            .ok_or_else(|| anyhow::anyhow!("batch {} not found on oracle", batch_id))
     }
 
-    /// Refresh all batches from issuer
+    /// Refresh all batches from oracle
     async fn refresh(&self) -> Result<()> {
-        let url = format!("{}/vision/batches", self.issuer_url);
+        let url = format!("{}/vision/batches", self.oracle_url);
         let resp: BatchesResponse = self.client.get(&url).send().await?.json().await?;
 
         let mut new_cache = HashMap::new();

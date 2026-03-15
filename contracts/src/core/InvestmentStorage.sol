@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import "../libraries/TypesLib.sol";
 import "../interfaces/IGovernance.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../interfaces/IFeeRegistry.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -59,8 +59,8 @@ abstract contract InvestmentStorage {
     /// @notice Tracks which cycles have been processed (replay protection)
     mapping(uint256 => bool) public cycleProcessed;
 
-    /// @notice Reference to IssuerRegistry for BLS signature verification
-    IIssuerRegistry public issuerRegistry;
+    /// @notice Reference to OracleRegistry for BLS signature verification
+    IOracleRegistry public oracleRegistry;
 
     /// @notice ITP vault addresses by ITP ID (for minting/burning tokens)
     mapping(bytes32 => address) public itpVaults;
@@ -88,8 +88,8 @@ abstract contract InvestmentStorage {
 
     // ============ CYCLE TRACKING (Story 7.14) ============
 
-    /// @notice Last processed cycle number (for issuer auto-discovery on restart)
-    /// @dev Enables issuers to query next available cycle without manual configuration
+    /// @notice Last processed cycle number (for oracle auto-discovery on restart)
+    /// @dev Enables oracles to query next available cycle without manual configuration
     uint256 public lastProcessedCycleNumber;
 
     // ============ PRODUCTION HARDENING (Story 7.16) ============
@@ -167,7 +167,7 @@ abstract contract InvestmentStorage {
     ///        orders(0), nextOrderId(1), governance(2), usdc(3), assetPrices(4),
     ///        _itps(5), _itpAssets(6), _itpWeights(7), _itpInventory(8),
     ///        _itpExists(9), _itpCount(10), _allItpIds(11), cycleProcessed(12),
-    ///        issuerRegistry(13), itpVaults(14), _vault2Id(15), feeRegistry(16),
+    ///        oracleRegistry(13), itpVaults(14), _vault2Id(15), feeRegistry(16),
     ///        _pendingRebalances(17), _registeredAssetCount(18),
     ///        _userShares(19), lastProcessedCycleNumber(20),
     ///        assetPriceTimestamps(21), minBuyAmount(22), pendingOrderCount(23),

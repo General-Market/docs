@@ -85,7 +85,7 @@ impl PendingLock {
     }
 
     /// Check if this lock can be reversed (after 1 hour timeout)
-    /// Requires 15/20 issuer threshold for reversal
+    /// Requires 15/20 oracle threshold for reversal
     pub fn can_reverse(&self, current_timestamp: U256) -> bool {
         const BRIDGE_TIMEOUT_SECONDS: u64 = 3600; // 1 hour
         self.is_pending()
@@ -131,8 +131,8 @@ pub struct ReleaseProof {
 pub mod bridge_constants {
     /// Bridge timeout in seconds (1 hour)
     pub const TIMEOUT_SECONDS: u64 = 3600;
-    /// Threshold for bridge reversal (15/20 issuers)
+    /// Threshold for bridge reversal (15/20 oracles)
     pub const REVERSAL_THRESHOLD: u8 = 15;
-    /// Total issuers for threshold calculation
-    pub const TOTAL_ISSUERS: u8 = 20;
+    /// Total oracles for threshold calculation
+    pub const TOTAL_ORACLES: u8 = 20;
 }

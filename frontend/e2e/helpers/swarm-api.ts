@@ -230,7 +230,7 @@ export async function checkDataNodeHealth(): Promise<boolean> {
   }
 }
 
-export function checkIssuerHealthViaSSH(port: number): boolean {
+export function checkOracleHealthViaSSH(port: number): boolean {
   try {
     sshExec(`curl -sf http://localhost:${port}/health`, 5_000);
     return true;

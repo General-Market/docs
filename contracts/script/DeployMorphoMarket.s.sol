@@ -56,7 +56,7 @@ contract DeployMorphoMarket is Script {
         console.log("AdaptiveIRM:", irmAddr);
         console.log("SettlementUSDC:", settlementUSDC);
         console.log("ITP Vault (collateral):", itpVault);
-        console.log("MirrorIssuerRegistry:", mirrorRegistry);
+        console.log("MirrorOracleRegistry:", mirrorRegistry);
 
         Morpho morpho = Morpho(morphoAddr);
 
@@ -65,7 +65,7 @@ contract DeployMorphoMarket is Script {
         // 1. Deploy ITPNAVOracle (3-param constructor: mirrorRegistry, itpAddress, initialPrice)
         // Constructor sets currentPrice and lastUpdated, so price() works immediately.
         // BLS-signed updatePrice() is tested in MorphoBorrowLend.t.sol; in production,
-        // the issuer network pushes the first real BLS-signed update after deployment.
+        // the oracle network pushes the first real BLS-signed update after deployment.
         ITPNAVOracle oracle = new ITPNAVOracle(mirrorRegistry, itpVault, INITIAL_ORACLE_PRICE);
         console.log("ITPNAVOracle deployed:", address(oracle));
         console.log("  Initial price:", INITIAL_ORACLE_PRICE, "(100 USDC per ITP, 24 decimal precision)");

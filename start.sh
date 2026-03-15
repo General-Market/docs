@@ -2,7 +2,7 @@
 # start.sh - Launch full Index L3 local development environment
 #
 # Deploys ALL contracts (core + 100-asset ITP + Bitget tokens + Morpho),
-# generates symbol map, syncs frontend addresses, and starts issuers + AP
+# generates symbol map, syncs frontend addresses, and starts oracles + AP
 # with real Bitget price proxy enabled.
 
 set -e
@@ -16,7 +16,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # Configuration (basic — chain/RPC set after system.env to avoid overwrite)
-ISSUER_COUNT=${ISSUER_COUNT:-3}
+ORACLE_COUNT=${ORACLE_COUNT:-3}
 SKIP_DEPLOY=${SKIP_DEPLOY:-false}
 NO_TAIL=${NO_TAIL:-false}
 DEPLOYER_KEY=${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
@@ -59,10 +59,10 @@ SETTLEMENT_RPC_URL="http://localhost:8546"
 
 # Unset production contract addresses from system.env — local dev reads from deployment file
 # (env vars have higher priority than --deployment-file, so stale prod addresses break local dev)
-unset ISSUER_INDEX_ADDRESS ISSUER_GOVERNANCE_ADDRESS ISSUER_ISSUER_REGISTRY_ADDRESS
-unset ISSUER_COLLATERAL_REGISTRY_ADDRESS ISSUER_BLS_CUSTODY_ADDRESS ISSUER_L3_BRIDGE_CUSTODY_ADDRESS
-unset ISSUER_BRIDGE_PROXY_ADDRESS ISSUER_BITGET_VAULT ISSUER_SETTLEMENT_CUSTODY
-unset ISSUER_RPC_URL ISSUER_SETTLEMENT_RPC_URL ISSUER_SETTLEMENT_CHAIN_ID ISSUER_LOG_LEVEL
+unset ORACLE_INDEX_ADDRESS ORACLE_GOVERNANCE_ADDRESS ORACLE_ORACLE_REGISTRY_ADDRESS
+unset ORACLE_COLLATERAL_REGISTRY_ADDRESS ORACLE_BLS_CUSTODY_ADDRESS ORACLE_L3_BRIDGE_CUSTODY_ADDRESS
+unset ORACLE_BRIDGE_PROXY_ADDRESS ORACLE_BITGET_VAULT ORACLE_SETTLEMENT_CUSTODY
+unset ORACLE_RPC_URL ORACLE_SETTLEMENT_RPC_URL ORACLE_SETTLEMENT_CHAIN_ID ORACLE_LOG_LEVEL
 
 # Add Foundry to PATH if not already available
 if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
@@ -86,7 +86,7 @@ print_help() {
     echo "Launches the full Index L3 local dev environment with ALL contracts."
     echo ""
     echo "Options:"
-    echo "  --issuers N     Number of issuer nodes (default: 3)"
+    echo "  --oracles N     Number of oracle nodes (default: 3)"
     echo "  --skip-deploy   Skip ALL contract deployment (use existing chain)"
     echo "  --no-tail       Don't tail logs after startup"
     echo "  --stress        Stress-test log profile (warn level, consensus/cycle at info)"
@@ -100,7 +100,7 @@ print_help() {
     echo "  4. All Bitget token pairs (~627 tokens from live Bitget API)"
     echo "  5. Morpho Blue lending (Morpho, MetaMorpho vault, Oracle, IRM)"
     echo "  6. Frontend addresses synced automatically"
-    echo "  7. Issuers with bitget-vault + real price verification"
+    echo "  7. Oracles with bitget-vault + real price verification"
     echo "  8. AP with real Bitget price proxy (684 live pairs)"
     echo ""
     echo "Environment Variables:"
@@ -109,7 +109,7 @@ print_help() {
     echo "    Defaults to dummy values (public ticker endpoint only)."
     echo ""
     echo "  BITGET_READONLY_API_KEY, BITGET_READONLY_API_SECRET, BITGET_READONLY_PASSPHRASE"
-    echo "    Read-only credentials for issuer price verification."
+    echo "    Read-only credentials for oracle price verification."
     echo "    Defaults to dummy values."
 }
 
@@ -120,18 +120,18 @@ LOG_LEVEL=${LOG_LEVEL:-info}
 while [[ $# -gt 0 ]]; do
     case $1 in
         --help|-h) print_help; exit 0;;
-        --issuers) ISSUER_COUNT="$2"; shift 2;;
+        --oracles) ORACLE_COUNT="$2"; shift 2;;
         --skip-deploy) SKIP_DEPLOY=true; shift;;
         --no-tail) NO_TAIL=true; shift;;
         --no-test) NO_TEST=true; shift;;
-        --stress) LOG_LEVEL=warn; export RUST_LOG="warn,issuer::consensus=info,issuer::cycle=info"; shift;;
+        --stress) LOG_LEVEL=warn; export RUST_LOG="warn,oracle::consensus=info,oracle::cycle=info"; shift;;
         --vision) VISION_ENABLED=true; shift;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1;;
     esac
 done
 
-if ! [[ "$ISSUER_COUNT" =~ ^[0-9]+$ ]] || [ "$ISSUER_COUNT" -lt 1 ] || [ "$ISSUER_COUNT" -gt 20 ]; then
-    echo -e "${RED}Error: --issuers must be 1-20${NC}"; exit 1
+if ! [[ "$ORACLE_COUNT" =~ ^[0-9]+$ ]] || [ "$ORACLE_COUNT" -lt 1 ] || [ "$ORACLE_COUNT" -gt 20 ]; then
+    echo -e "${RED}Error: --oracles must be 1-20${NC}"; exit 1
 fi
 
 VISION_ENABLED=${VISION_ENABLED:-true}
@@ -139,7 +139,7 @@ VISION_ENABLED=${VISION_ENABLED:-true}
 print_banner
 
 echo -e "${YELLOW}Configuration:${NC}"
-echo "  Issuers: $ISSUER_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE | Vision: $VISION_ENABLED"
+echo "  Oracles: $ORACLE_COUNT | Skip deploy: $SKIP_DEPLOY | Tail logs: $([[ "$NO_TAIL" == "true" ]] && echo "no" || echo "yes") | Log level: $LOG_LEVEL | Exchange: $EXCHANGE_MODE | Vision: $VISION_ENABLED"
 echo ""
 
 # ============ Prerequisites ============
@@ -151,9 +151,9 @@ for cmd in anvil forge python3 curl; do
     fi
 done
 
-if [ ! -f "target/release/issuer" ] || [ ! -f "target/release/ap" ] || [ ! -f "target/release/data-node" ]; then
+if [ ! -f "target/release/oracle" ] || [ ! -f "target/release/ap" ] || [ ! -f "target/release/data-node" ]; then
     echo -e "${YELLOW}Building Rust binaries...${NC}"
-    cargo build --release -p issuer -p ap -p data-node
+    cargo build --release -p oracle -p ap -p data-node
 fi
 
 # Find pg_isready (may not be in PATH on macOS with Homebrew)
@@ -332,7 +332,7 @@ else
     echo -e "  ${GREEN}L3 core contracts deployed${NC}"
 
     # Save L3 deployment before Settlement deploy overwrites e2e-full-system.json
-    # (Settlement deploy sets chainId=42161, but AP/issuers need L3 chainId=111222333)
+    # (Settlement deploy sets chainId=42161, but AP/oracles need L3 chainId=111222333)
     [ -f ../deployments/e2e-full-system.json ] && cp ../deployments/e2e-full-system.json ../deployments/e2e-full-system-l3.json
 
     # 2b: Deploy to Settlement (same deployer, fresh Anvil → identical addresses)
@@ -345,7 +345,7 @@ else
     echo -e "  ${GREEN}Settlement core contracts deployed (mirror)${NC}"
     cd ..
 
-    # Copy the L3 deployment to active (AP/issuers expect L3 chain ID 111222333).
+    # Copy the L3 deployment to active (AP/oracles expect L3 chain ID 111222333).
     # The Settlement deploy overwrites e2e-full-system.json with chainId=42161, so we
     # use the L3 version saved before Settlement deploy (addresses are identical).
     L3_DEPLOY="deployments/e2e-full-system-l3.json"
@@ -747,11 +747,11 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
         echo -e "${YELLOW}  Warning: ITP_Vault not found in deployment, skipping Morpho${NC}"
     else
         # Phase 1: Deploy Morpho core on L3 (Morpho Blue + IRM + Oracle + MetaMorpho vault)
-        # Oracle uses the MAIN IssuerRegistry (not a separate mirror) to avoid nonce desync
-        MAIN_REGISTRY=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['IssuerRegistry'])" 2>/dev/null || echo "")
+        # Oracle uses the MAIN OracleRegistry (not a separate mirror) to avoid nonce desync
+        MAIN_REGISTRY=$(python3 -c "import json; print(json.load(open('../deployments/active-deployment.json'))['contracts']['OracleRegistry'])" 2>/dev/null || echo "")
         ITP_VAULT=$VAULT_TOKEN \
         SETTLEMENT_USDC=$L3_WUSDC_ADDR \
-        ISSUER_REGISTRY=$MAIN_REGISTRY \
+        ORACLE_REGISTRY=$MAIN_REGISTRY \
         forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
             --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-morpho-phase1.log 2>&1
 
@@ -804,12 +804,12 @@ print(f'  Regenerated frontend/public/deployed-assets.json with {len(assets)} un
     if [ "$VISION_ENABLED" = true ]; then
     echo -e "${BLUE}[6/$TOTAL_STEPS] Deploying Vision contract on L3...${NC}"
 
-    ISSUER_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['IssuerRegistry'])")
+    ORACLE_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['OracleRegistry'])")
     L3_WUSDC_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['L3_WUSDC'])")
 
     cd contracts
     set +e
-    ISSUER_REGISTRY=$ISSUER_REG_ADDR \
+    ORACLE_REGISTRY=$ORACLE_REG_ADDR \
     USDC_ADDRESS=$L3_WUSDC_ADDR \
     forge script script/DeployVision.s.sol:DeployVision \
         --broadcast --slow --rpc-url $RPC_URL > ../logs/deploy-vision.log 2>&1
@@ -827,11 +827,11 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
 "
         echo -e "  ${GREEN}Vision addresses merged into active-deployment.json${NC}"
 
-        # Run Vision database migrations (issuer chain listener needs these tables)
+        # Run Vision database migrations (oracle chain listener needs these tables)
         if $PG_ISREADY -q 2>/dev/null; then
-            $PSQL -d index_prices -f ../issuer/migrations/001_create_vision_tables.sql > /dev/null 2>&1 || true
-            $PSQL -d index_prices -f ../issuer/migrations/002_create_vision_deposit_tables.sql > /dev/null 2>&1 || true
-            $PSQL -d index_prices -f ../issuer/migrations/003_create_vision_balance_proofs.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../oracle/migrations/001_create_vision_tables.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../oracle/migrations/002_create_vision_deposit_tables.sql > /dev/null 2>&1 || true
+            $PSQL -d index_prices -f ../oracle/migrations/003_create_vision_balance_proofs.sql > /dev/null 2>&1 || true
             # Reset chain listener bookmark (Anvil restarts from block 0 each session)
             $PSQL -d index_prices -c "UPDATE vision_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
             $PSQL -d index_prices -c "TRUNCATE vision_batches, vision_positions, vision_tick_results;" > /dev/null 2>&1 || true
@@ -926,7 +926,7 @@ echo -e "  ${GREEN}Background block miner started (1s interval, PID: $MINER_PID)
 
 # ============ STEP 8: Data-node ============
 # Data-node serves a REST API on port 8200 for asset prices, ITP NAV, and chart data.
-# Requires PostgreSQL. If unavailable, issuers fall back to Bitget direct price feeds.
+# Requires PostgreSQL. If unavailable, oracles fall back to Bitget direct price feeds.
 echo -e "${BLUE}[8/$TOTAL_STEPS] Starting data-node service...${NC}"
 
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
@@ -941,7 +941,7 @@ fi
 if [ "$VPS_DN_RUNNING" = true ]; then
     echo -e "  ${YELLOW}VPS data-node is running — skipping local (shared API keys)${NC}"
     echo -e "  ${YELLOW}Stop VPS first: ./deploy.sh --stop${NC}"
-    # Still set DATA_NODE_URL to VPS for issuers/AP to use
+    # Still set DATA_NODE_URL to VPS for oracles/AP to use
     export DATA_NODE_URL="http://142.132.164.24:8200"
     DATA_NODE_RUNNING=true
 elif ! $PG_ISREADY -q 2>/dev/null; then
@@ -1107,8 +1107,8 @@ set +e  # Don't exit on E2E test failures
     # Extract ITP ID for service readiness check
     ITP_ID=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['itpId'])")
 
-    # Wait for issuers + data-node to initialize (E2E buy test needs live NAV)
-    echo -e "  Waiting for issuers + data-node to initialize..."
+    # Wait for oracles + data-node to initialize (E2E buy test needs live NAV)
+    echo -e "  Waiting for oracles + data-node to initialize..."
     NAV_READY=false
     for attempt in $(seq 1 90); do
         NAV_RESP=$(curl -sf "http://localhost:8200/itp-price?itp_id=$ITP_ID" 2>/dev/null || echo "")
@@ -1286,12 +1286,12 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
         echo -e "  Waiting for tick 0 resolution..."
         TICK0_RESOLVED=false
         for attempt in $(seq 1 30); do
-            # Check issuer log for tick resolution
-            if grep -q "Tick resolved.*tick_id=0" logs/issuer-1.log 2>/dev/null; then
+            # Check oracle log for tick resolution
+            if grep -q "Tick resolved.*tick_id=0" logs/oracle-1.log 2>/dev/null; then
                 TICK0_RESOLVED=true
                 echo -e "  ${GREEN}Tick 0 resolved! (${attempt}s)${NC}"
                 # Show the resolution details
-                grep "Player balance update.*tick_id=0" logs/issuer-1.log 2>/dev/null | tail -5
+                grep "Player balance update.*tick_id=0" logs/oracle-1.log 2>/dev/null | tail -5
                 break
             fi
             sleep 1
@@ -1299,8 +1299,8 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
 
         if [ "$TICK0_RESOLVED" != true ]; then
             echo -e "  ${YELLOW}Tick 0 not resolved after 30s${NC}"
-            echo -e "  ${YELLOW}Issuer 1 Vision logs:${NC}"
-            grep -i "vision\|tick\|due\|market.*price" logs/issuer-1.log 2>/dev/null | tail -20
+            echo -e "  ${YELLOW}Oracle 1 Vision logs:${NC}"
+            grep -i "vision\|tick\|due\|market.*price" logs/oracle-1.log 2>/dev/null | tail -20
         fi
 
         # Fast-forward time for tick 1
@@ -1336,10 +1336,10 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
             echo -e "  Waiting for tick 1 resolution..."
             TICK1_RESOLVED=false
             for attempt in $(seq 1 30); do
-                if grep -q "Tick resolved.*tick_id=1" logs/issuer-1.log 2>/dev/null; then
+                if grep -q "Tick resolved.*tick_id=1" logs/oracle-1.log 2>/dev/null; then
                     TICK1_RESOLVED=true
                     echo -e "  ${GREEN}Tick 1 resolved! (${attempt}s)${NC}"
-                    grep "Player balance update.*tick_id=1" logs/issuer-1.log 2>/dev/null | tail -5
+                    grep "Player balance update.*tick_id=1" logs/oracle-1.log 2>/dev/null | tail -5
                     break
                 fi
                 sleep 1
@@ -1347,7 +1347,7 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
 
             if [ "$TICK1_RESOLVED" != true ]; then
                 echo -e "  ${YELLOW}Tick 1 not resolved after 30s${NC}"
-                grep -i "vision\|tick\|due\|market.*price" logs/issuer-1.log 2>/dev/null | tail -20
+                grep -i "vision\|tick\|due\|market.*price" logs/oracle-1.log 2>/dev/null | tail -20
             fi
         fi
 
@@ -1357,12 +1357,12 @@ elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA
         python3 -c "
 import re, sys
 
-log_file = 'logs/issuer-1.log'
+log_file = 'logs/oracle-1.log'
 try:
     with open(log_file) as f:
         lines = f.readlines()
 except FileNotFoundError:
-    print('  Could not read issuer log')
+    print('  Could not read oracle log')
     sys.exit(0)
 
 # Parse balance updates
@@ -1409,7 +1409,7 @@ else
     echo -e "  AP: ${RED}not ready${NC} (status: $AP_STATUS, check logs/ap.log)"
 fi
 
-# Note: Issuers run on VPS only (via Docker Compose), not locally
+# Note: Oracles run on VPS only (via Docker Compose), not locally
 
 # Contract summary
 echo ""
@@ -1435,7 +1435,7 @@ echo ""
 echo -e "  ${BLUE}L3 Anvil:${NC}  http://localhost:8545 (chain $CHAIN_ID)"
 echo -e "  ${BLUE}Settlement Anvil:${NC} http://localhost:8546 (chain $SETTLEMENT_CHAIN_ID)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
-echo -e "  ${BLUE}Issuers:${NC}  VPS only (not started locally)"
+echo -e "  ${BLUE}Oracles:${NC}  VPS only (not started locally)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
 echo -e "  ${BLUE}Docs:${NC}      http://localhost:3333 (Mintlify)"
 echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"

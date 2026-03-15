@@ -12,11 +12,11 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use common::mocks::MockChainBuilder;
 use common::traits::{ChainReader, ChainWriter, ItpInventoryState};
 use common::types::ITPCore;
-use issuer::delisting_watchdog::{
+use oracle::delisting_watchdog::{
     build_unsafe_basecoin_set, compute_equal_weights, compute_removal_indices_descending,
     encode_request_rebalance, extract_base_coin, DelistingWatchdog, UnsafeListing,
 };
-use issuer::SymbolMap;
+use oracle::SymbolMap;
 
 /// Helper: build a symbol map with test addresses.
 fn test_symbol_map() -> SymbolMap {

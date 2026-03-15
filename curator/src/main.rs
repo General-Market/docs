@@ -1,7 +1,7 @@
 //! Curator service binary
 //!
 //! Supports four operational modes:
-//! - **Oracle Collector Mode** (default): Collects BLS-signed NAV prices from issuers
+//! - **Oracle Collector Mode** (default): Collects BLS-signed NAV prices from oracles
 //! - **Allocation Bot Mode** (--allocation-mode): Rebalances vault supply across markets
 //! - **Health Monitor Mode** (--health-monitor-mode): Monitors Morpho protocol health
 //! - **Unified Mode** (--unified-mode): Runs all tasks concurrently in a single process
@@ -49,11 +49,11 @@ async fn run_collection_round(
     collector: &NavCollector,
     pusher: &OraclePusher,
     itp_address: Address,
-    total_issuers: usize,
+    total_oracles: usize,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let collection = collector.collect_all(itp_address).await?;
 
-    let consensus = NavCollector::validate_consensus(&collection.responses, total_issuers)?;
+    let consensus = NavCollector::validate_consensus(&collection.responses, total_oracles)?;
 
     let (agg_sig, bitmask) = NavCollector::aggregate_nav_signatures(&collection.responses)?;
 
@@ -93,7 +93,7 @@ async fn run_collector_loop(
     config: CuratorConfig,
     shutdown: Arc<AtomicBool>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let collector = NavCollector::new(config.issuer_urls.clone());
+    let collector = NavCollector::new(config.oracle_urls.clone());
     let mut pusher = OraclePusher::new(
         &config.rpc_url,
         &config.private_key,
@@ -106,10 +106,10 @@ async fn run_collector_loop(
         info!(url = %url, "Collector using data-node for lastCycleNumber reads");
     }
 
-    let total_issuers = config.issuer_urls.len();
+    let total_oracles = config.oracle_urls.len();
 
     info!(
-        issuer_count = total_issuers,
+        oracle_count = total_oracles,
         oracle = ?config.oracle_address,
         itp = ?config.itp_address,
         interval_secs = config.update_interval.as_secs(),
@@ -123,7 +123,7 @@ async fn run_collector_loop(
         }
 
         if let Err(e) =
-            run_collection_round(&collector, &pusher, config.itp_address, total_issuers).await
+            run_collection_round(&collector, &pusher, config.itp_address, total_oracles).await
         {
             warn!(error = %e, "Collection round failed, will retry next interval");
         }

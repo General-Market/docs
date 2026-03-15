@@ -4,7 +4,7 @@
 
 **Goal:** Replace nohup/pgrep process management with per-service Docker Compose for all testnet services.
 
-**Architecture:** Each service (sonic-proxy, data-node, issuer, curator, ap) gets its own Dockerfile + docker-compose.yml under `docker/testnet/<service>/`. Thin runtime images copy pre-built binaries — no cargo build inside Docker. `testnet.sh` becomes a thin wrapper calling `docker compose` commands via SSH. All containers use `network_mode: host` and run as non-root.
+**Architecture:** Each service (sonic-proxy, data-node, oracle, curator, ap) gets its own Dockerfile + docker-compose.yml under `docker/testnet/<service>/`. Thin runtime images copy pre-built binaries — no cargo build inside Docker. `testnet.sh` becomes a thin wrapper calling `docker compose` commands via SSH. All containers use `network_mode: host` and run as non-root.
 
 **Tech Stack:** Docker, Docker Compose, Bash, debian:bookworm-slim, python:3.11-slim
 
@@ -17,25 +17,25 @@
 - Non-root user in all Dockerfiles
 - `restart: "no"` (services started via `testnet.sh`, not auto-restart with stale args)
 - No `2>/dev/null` — errors are visible, exit codes checked
-- Issuer stagger preserved (sequential start with 5s sleep)
+- Oracle stagger preserved (sequential start with 5s sleep)
 - Old bare processes killed before first Docker deploy (mandatory)
 - `DOCKER_BUILDKIT=1` for reliable cache invalidation on binary changes
-- WAL cleanup only after issuers are stopped
+- WAL cleanup only after oracles are stopped
 
 **Security review fixes applied (v3 — round 2 audit):**
 - Curator private key moved from CLI `--private-key` arg to mounted key file (was visible in `docker inspect` and `/proc`)
 - AP private key moved from `environment:` to mounted key file (was visible in `docker inspect`)
-- `/tmp/issuer-key-*.txt` cleanup added to `cmd_stop()`
+- `/tmp/oracle-key-*.txt` cleanup added to `cmd_stop()`
 - Override YAML cleanup on script exit via `trap`; stale overrides cleaned at start of each `_start_*_docker()`
 - `.*-override.yml` added to `.gitignore` (prevents accidental commit of local temp files with secrets)
-- Issuer startup verification: all 3 must be running or script aborts
+- Oracle startup verification: all 3 must be running or script aborts
 - PostgreSQL: containers use TCP `localhost:5432` (not Unix socket) to avoid UID/peer-auth mismatch
 - Known risk documented: `network_mode: host` exposes all ports (firewall rules are VPS-level concern)
 
 **Security review fixes applied (v4 — round 3 audit):**
 - `env_file:` is NOT a secret-hiding mechanism (values are baked into `docker inspect` same as `environment:`). All secrets now passed via mounted key files read by binaries at startup (`--private-key-file`, `*_KEY_PATH`) — never stored in container config.
 - `vps1_compose`/`vps2_compose` simplified: no `printf '%q'` (all args are script-controlled). All call sites pass separate arguments (`"up" "-d" "--build"`, not `"up -d --build"`).
-- Prerequisite Task 0: add `--private-key-file` to curator binary + `AP_PRIVATE_KEY_PATH` to AP binary (matching issuer's pattern)
+- Prerequisite Task 0: add `--private-key-file` to curator binary + `AP_PRIVATE_KEY_PATH` to AP binary (matching oracle's pattern)
 - `trap` extended to clean remote key files on script exit (not just local overrides)
 
 ---
@@ -48,8 +48,8 @@
 - `docker/testnet/sonic-proxy/docker-compose.yml`
 - `docker/testnet/data-node/Dockerfile`
 - `docker/testnet/data-node/docker-compose.yml`
-- `docker/testnet/issuer/Dockerfile`
-- `docker/testnet/issuer/docker-compose.yml`
+- `docker/testnet/oracle/Dockerfile`
+- `docker/testnet/oracle/docker-compose.yml`
 - `docker/testnet/curator/Dockerfile`
 - `docker/testnet/curator/docker-compose.yml`
 - `docker/testnet/ap/Dockerfile`
@@ -69,7 +69,7 @@
 
 ### Task 0: Add `--private-key-file` to curator + AP binaries
 
-Before Docker migration, the curator and AP binaries need file-based key reading (matching issuer's `ISSUER_PRIVATE_KEY_PATH` pattern). Without this, keys must be passed as CLI args or env vars, both visible in `docker inspect`.
+Before Docker migration, the curator and AP binaries need file-based key reading (matching oracle's `ORACLE_PRIVATE_KEY_PATH` pattern). Without this, keys must be passed as CLI args or env vars, both visible in `docker inspect`.
 
 **Why:** Docker's `environment:` AND `env_file:` both bake values into container metadata (`docker inspect .Config.Env`). The ONLY way to hide secrets from `docker inspect` is to read them from mounted files at runtime inside the binary.
 
@@ -78,11 +78,11 @@ Before Docker migration, the curator and AP binaries need file-based key reading
 - Modify: `curator/src/main.rs` — read key from file if `--private-key-file` provided
 - Modify: `ap/src/config.rs` — add `AP_PRIVATE_KEY_PATH` env var support
 - Modify: `ap/src/main.rs` — read key from file path if `AP_PRIVATE_KEY_PATH` set
-- Modify: `issuer/src/config.rs` — add `ISSUER_SETTLEMENT_PRIVATE_KEY_PATH` env var support (if not already present)
+- Modify: `oracle/src/config.rs` — add `ORACLE_SETTLEMENT_PRIVATE_KEY_PATH` env var support (if not already present)
 
 - [ ] **Step 1: Add `--private-key-file` to curator config**
 
-Pattern from issuer's `effective_private_key()`:
+Pattern from oracle's `effective_private_key()`:
 ```rust
 // curator/src/config.rs
 #[arg(long, conflicts_with = "private_key")]
@@ -142,7 +142,7 @@ This is critical — without it, `docker build` sends the entire repo (including
 ```
 # .dockerignore — Only allow binaries and proxy script into Docker context
 *
-!target/release/issuer
+!target/release/oracle
 !target/release/data-node
 !target/release/ap
 !target/release/curator
@@ -272,45 +272,45 @@ git commit -m "feat(docker): add data-node Dockerfile + compose"
 
 ---
 
-### Task 3: Issuer Docker (3 nodes)
+### Task 3: Oracle Docker (3 nodes)
 
 **Files:**
-- Create: `docker/testnet/issuer/Dockerfile`
-- Create: `docker/testnet/issuer/docker-compose.yml`
+- Create: `docker/testnet/oracle/Dockerfile`
+- Create: `docker/testnet/oracle/docker-compose.yml`
 
 - [ ] **Step 1: Create Dockerfile**
 
 ```dockerfile
-# docker/testnet/issuer/Dockerfile
+# docker/testnet/oracle/Dockerfile
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates libssl3 libpq5 curl && rm -rf /var/lib/apt/lists/*
 RUN useradd -r -s /bin/false app && mkdir -p /app/logs && chown -R app:app /app
-COPY target/release/issuer /usr/local/bin/
+COPY target/release/oracle /usr/local/bin/
 USER app
 WORKDIR /app
-ENTRYPOINT ["issuer"]
+ENTRYPOINT ["oracle"]
 ```
 
 - [ ] **Step 2: Create docker-compose.yml**
 
 The base compose file has NO secrets. All dynamic values (keys, from-block, vision args) come from the override YAML generated by `testnet.sh`. The `.env` file on VPS provides the settlement key.
 
-Issuers access PostgreSQL via TCP `localhost:5432` (network_mode: host makes this work). No Unix socket mount needed.
+Oracles access PostgreSQL via TCP `localhost:5432` (network_mode: host makes this work). No Unix socket mount needed.
 
 ```yaml
-# docker/testnet/issuer/docker-compose.yml
+# docker/testnet/oracle/docker-compose.yml
 #
 # testnet.sh generates docker-compose.override.yml with:
-# - Full command per issuer (--from-block, --vision-*, --bridge-proxy)
+# - Full command per oracle (--from-block, --vision-*, --bridge-proxy)
 # - Volumes (key files, deployment JSONs, WAL dir)
-# - env_file pointing to issuer secrets
+# - env_file pointing to oracle secrets
 #
 # This base file defines build + network + logging only.
 
-x-issuer-base: &issuer-base
+x-oracle-base: &oracle-base
   build:
     context: ../../..
-    dockerfile: docker/testnet/issuer/Dockerfile
+    dockerfile: docker/testnet/oracle/Dockerfile
   network_mode: host
   restart: "no"
   logging:
@@ -320,9 +320,9 @@ x-issuer-base: &issuer-base
       max-file: "3"
 
 services:
-  issuer-1:
-    <<: *issuer-base
-    container_name: testnet-issuer-1
+  oracle-1:
+    <<: *oracle-base
+    container_name: testnet-oracle-1
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:10001/health"]
       interval: 30s
@@ -330,9 +330,9 @@ services:
       retries: 3
       start_period: 15s
 
-  issuer-2:
-    <<: *issuer-base
-    container_name: testnet-issuer-2
+  oracle-2:
+    <<: *oracle-base
+    container_name: testnet-oracle-2
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:10002/health"]
       interval: 30s
@@ -340,9 +340,9 @@ services:
       retries: 3
       start_period: 15s
 
-  issuer-3:
-    <<: *issuer-base
-    container_name: testnet-issuer-3
+  oracle-3:
+    <<: *oracle-base
+    container_name: testnet-oracle-3
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:10003/health"]
       interval: 30s
@@ -354,8 +354,8 @@ services:
 - [ ] **Step 3: Commit**
 
 ```bash
-git add docker/testnet/issuer/
-git commit -m "feat(docker): add issuer Dockerfile + compose (3 nodes)"
+git add docker/testnet/oracle/
+git commit -m "feat(docker): add oracle Dockerfile + compose (3 nodes)"
 ```
 
 ---
@@ -485,12 +485,12 @@ Replace all process management with `docker compose`. Key security fixes vs v1 p
 - Exit code checks after `docker compose up`
 - Secrets via env files (not baked into YAML), cleaned up after deploy
 - Override YAMLs deleted from VPS after `docker compose up` succeeds
-- `ISSUER_KEYS` array defined as global
+- `ORACLE_KEYS` array defined as global
 - Data-node override YAML generated properly (with `--index-address`)
-- Issuer stagger preserved (sequential `docker compose up issuer-N` with 5s sleep)
+- Oracle stagger preserved (sequential `docker compose up oracle-N` with 5s sleep)
 - `DOCKER_BUILDKIT=1` set for reliable layer cache invalidation
 - Old bare processes killed before Docker containers started
-- WAL cleanup only after issuer containers stopped
+- WAL cleanup only after oracle containers stopped
 
 - [ ] **Step 1: Rewrite testnet.sh**
 
@@ -499,7 +499,7 @@ The full rewritten script. Key functions:
 **Global additions** (near existing key definitions):
 
 ```bash
-ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
+ORACLE_KEYS=("$ORACLE_1_KEY" "$ORACLE_2_KEY" "$ORACLE_3_KEY")
 ```
 
 **New helpers:**
@@ -507,9 +507,9 @@ ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
 ```bash
 # Cleanup trap: remove local override YAMLs + remote key files on exit (prevents secrets on disk)
 _cleanup() {
-    rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.issuer-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
+    rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.oracle-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
     # Also clean remote key files if script exits early (SSH failures are non-fatal here)
-    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
+    vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
     vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
 }
 trap _cleanup EXIT
@@ -562,7 +562,7 @@ _sync_config_files() {
 # Kill any old bare-metal processes to prevent port conflicts
 _kill_old_processes() {
     echo -e "  Cleaning up old bare processes..."
-    vps_be_ssh "pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f sonic-rpc-proxy 2>/dev/null; true"
+    vps_be_ssh "pkill -9 -x oracle 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f sonic-rpc-proxy 2>/dev/null; true"
     vps_chain_ssh "pkill -9 -x ap 2>/dev/null; true"
     sleep 2
 }
@@ -590,9 +590,9 @@ cmd_start() {
 
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
     for i in 1 2 3; do
-        vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 600 /tmp/issuer-key-$i.txt"
+        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 600 /tmp/oracle-key-$i.txt"
     done
-    # Settlement key shared by all issuers (same deployer key)
+    # Settlement key shared by all oracles (same deployer key)
     vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 600 /tmp/settlement-key.txt"
     echo -e "  ${GREEN}Files synced${NC}"
 
@@ -609,10 +609,10 @@ cmd_start() {
     _start_data_node_docker
     echo -e "  ${GREEN}data-node started${NC}"
 
-    # Start issuers (staggered)
-    echo -e "${BLUE}[5/6] Starting issuers...${NC}"
-    _start_issuers_docker
-    echo -e "  ${GREEN}issuers started${NC}"
+    # Start oracles (staggered)
+    echo -e "${BLUE}[5/6] Starting oracles...${NC}"
+    _start_oracles_docker
+    echo -e "  ${GREEN}oracles started${NC}"
 
     # Start curator
     _start_curator_docker
@@ -678,30 +678,30 @@ YEOF
 }
 ```
 
-**`_start_issuers_docker()`:**
+**`_start_oracles_docker()`:**
 
 Uses YAML list format for `command:` (not `>` folded scalar) to avoid YAML injection. Each argument is a separate list item — safe from special characters.
 
 ```bash
-_start_issuers_docker() {
+_start_oracles_docker() {
     # Clean up any stale override from previous failed run
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
 
     # Stop existing + clean WAL (safe — no race condition)
-    vps1_compose issuer down || true
+    vps1_compose oracle down || true
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
     # Dynamic args
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-    echo -e "  L3 block: $L3_FROM_BLOCK (issuers start from here)"
+    echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here)"
 
     VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
     VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
 
-    # Build per-issuer command as YAML list (safe from injection)
-    _issuer_command_yaml() {
+    # Build per-oracle command as YAML list (safe from injection)
+    _oracle_command_yaml() {
         local NODE_ID=$1 PORT=$2 BLS_IDX=$3 PEERS=$4
         cat <<CMD
       - "--node-id"
@@ -720,7 +720,7 @@ _start_issuers_docker() {
       - "--test-key-seeds"
       - "--bls-key-seed-index"
       - "$BLS_IDX"
-      - "--num-issuers"
+      - "--num-oracles"
       - "3"
       - "--signature-threshold"
       - "2"
@@ -769,97 +769,97 @@ CMD
 
     # No env_file: (env_file values are baked into docker inspect, same as environment:).
     # All secrets via mounted key files. Only non-secret config in environment:.
-    local OVERRIDE="$SCRIPT_DIR/.issuer-override.yml"
+    local OVERRIDE="$SCRIPT_DIR/.oracle-override.yml"
     cat > "$OVERRIDE" <<YEOF
 services:
-  issuer-1:
+  oracle-1:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-1.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-1.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
+$(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-1.txt:/tmp/issuer-key-1.txt:ro
+      - /tmp/oracle-key-1.txt:/tmp/oracle-key-1.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
-  issuer-2:
+  oracle-2:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-2.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-2.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
+$(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-2.txt:/tmp/issuer-key-2.txt:ro
+      - /tmp/oracle-key-2.txt:/tmp/oracle-key-2.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
-  issuer-3:
+  oracle-3:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-3.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-3.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
+$(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-3.txt:/tmp/issuer-key-3.txt:ro
+      - /tmp/oracle-key-3.txt:/tmp/oracle-key-3.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 YEOF
 
     rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
-        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
     rm -f "$OVERRIDE"
 
     # Build image once
-    vps1_compose issuer build
+    vps1_compose oracle build
 
-    # Start issuers sequentially with 5s stagger (P2P needs peers listening)
+    # Start oracles sequentially with 5s stagger (P2P needs peers listening)
     for i in 1 2 3; do
-        echo -e "  Issuer $i starting on port $((9000 + i))..."
-        if ! vps1_compose issuer up -d issuer-$i; then
-            echo -e "  ${RED}issuer-$i failed to start${NC}"
+        echo -e "  Oracle $i starting on port $((9000 + i))..."
+        if ! vps1_compose oracle up -d oracle-$i; then
+            echo -e "  ${RED}oracle-$i failed to start${NC}"
         fi
         [ $i -lt 3 ] && sleep 5
     done
 
     # Clean up override on VPS
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
 
-    # Verify all 3 issuers are running (BLS threshold is 2/3 — all must be up)
+    # Verify all 3 oracles are running (BLS threshold is 2/3 — all must be up)
     sleep 3
     local all_ok=true
     for i in 1 2 3; do
-        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i"; then
-            echo -e "  ${RED}FATAL: issuer-$i not running after start${NC}"
+        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i"; then
+            echo -e "  ${RED}FATAL: oracle-$i not running after start${NC}"
             all_ok=false
         fi
     done
     if [ "$all_ok" = false ]; then
-        echo -e "  ${RED}Not all issuers started — consensus impossible. Stopping all.${NC}"
+        echo -e "  ${RED}Not all oracles started — consensus impossible. Stopping all.${NC}"
         cmd_stop
         exit 1
     fi
@@ -878,16 +878,16 @@ _start_curator_docker() {
     MARKET_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
     ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
     ITP_ADDR=$(read_deployment_addr "BridgedITP")
-    REGISTRY_ADDR=$(read_deployment_addr "IssuerRegistry")
+    REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
 
     if [ -z "$MORPHO_ADDR" ] || [ -z "$VAULT_ADDR" ]; then
         echo -e "  ${YELLOW}Curator skipped — no Morpho deployment${NC}"
         return
     fi
 
-    ISSUER_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
+    ORACLE_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
-    # Write curator key file on VPS (same pattern as issuer keys — NOT in CLI args or environment)
+    # Write curator key file on VPS (same pattern as oracle keys — NOT in CLI args or environment)
     vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 600 /tmp/curator-key.txt"
 
     # Use YAML list format (safe from injection)
@@ -914,8 +914,8 @@ services:
       - "$ORACLE_ADDR"
       - "--itp-address"
       - "$ITP_ADDR"
-      - "--issuer-urls"
-      - "$ISSUER_URLS"
+      - "--oracle-urls"
+      - "$ORACLE_URLS"
       - "--l3-rpc-url"
       - "$RPC_URL"
       - "--mirror-registry-address"
@@ -1021,11 +1021,11 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
-    for svc in curator issuer data-node sonic-proxy; do
+    for svc in curator oracle data-node sonic-proxy; do
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
-    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt"
+    vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt"
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/*/docker-compose.override.yml"
     echo -e "  ${GREEN}VPS 1 stopped + keys cleaned${NC}"
 
@@ -1051,7 +1051,7 @@ cmd_status() {
         check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "$svc" "$svc" || true
     done
     for i in 1 2 3; do
-        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i" || true
+        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i" || true
     done
     check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "curator" "curator" || true
 
@@ -1100,20 +1100,20 @@ cmd_logs() {
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/sonic-proxy && docker compose logs -f" ;;
         data-node)
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" ;;
-        issuer-1|issuer-2|issuer-3)
-            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f $service" ;;
+        oracle-1|oracle-2|oracle-3)
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/oracle && docker compose logs -f $service" ;;
         curator)
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/curator && docker compose logs -f" ;;
         ap)
             ssh "$VPS_CHAIN_HOST" "cd $VPS_CHAIN_DIR/docker/testnet/ap && docker compose logs -f" ;;
         all)
-            echo -e "${CYAN}Tailing issuer-1 + data-node...${NC}"
-            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f issuer-1" &
+            echo -e "${CYAN}Tailing oracle-1 + data-node...${NC}"
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/oracle && docker compose logs -f oracle-1" &
             PID1=$!
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" &
             PID2=$!
             trap "kill $PID1 $PID2 2>/dev/null" INT; wait ;;
-        *) echo "Available: sonic-proxy, data-node, issuer-1..3, curator, ap, all"; exit 1 ;;
+        *) echo "Available: sonic-proxy, data-node, oracle-1..3, curator, ap, all"; exit 1 ;;
     esac
 }
 ```
@@ -1131,7 +1131,7 @@ cmd_update() {
     vps_chain_ssh "cd $VPS_CHAIN_DIR && git pull origin main 2>&1 | tail -5"
 
     echo -e "${BLUE}[3/4] Building on VPS 1...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5"
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p oracle -p curator 2>&1 | tail -5"
     echo -e "${BLUE}[4/4] Building on VPS 2...${NC}"
     vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5"
 
@@ -1159,7 +1159,7 @@ fi
 - `_remote_start()` function
 - `check_service()` function
 - All `pgrep`/`pkill` code in old `_start_*` and `cmd_stop`
-- Old `_start_sonic_proxy`, `_start_data_node`, `_start_issuers`, `_start_ap`, `_start_curator`
+- Old `_start_sonic_proxy`, `_start_data_node`, `_start_oracles`, `_start_ap`, `_start_curator`
 
 - [ ] **Step 2: Verify syntax**
 
@@ -1241,7 +1241,7 @@ ssh index-maker/prod/postgres "cd /home/max/index && git stash && git pull origi
 - [ ] **Step 3: Kill old bare-metal processes (mandatory)**
 
 ```bash
-ssh index-maker/prod/be "pkill -9 -x issuer; pkill -9 -x data-node; pkill -9 -x curator; pkill -9 -f sonic-rpc-proxy; true"
+ssh index-maker/prod/be "pkill -9 -x oracle; pkill -9 -x data-node; pkill -9 -x curator; pkill -9 -f sonic-rpc-proxy; true"
 ssh index-maker/prod/postgres "pkill -9 -x ap; true"
 sleep 3
 # Verify ports are free
@@ -1268,8 +1268,8 @@ Expected: all services show "Up".
 curl -s http://116.203.156.98/data-node/chain/settlement/confirmed-block
 # Expected: {"confirmed_block": <non-zero>}
 
-# Issuer health (consensus + P2P)
-curl -s http://116.203.156.98/issuer1/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'peers={d[\"connected_peers\"]} leader={d[\"is_leader\"]}')"
+# Oracle health (consensus + P2P)
+curl -s http://116.203.156.98/oracle1/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'peers={d[\"connected_peers\"]} leader={d[\"is_leader\"]}')"
 # Expected: peers=2 leader=True/False
 
 # AP health

@@ -6,7 +6,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 // Upgradeable contracts (UUPS proxy pattern)
 import {Governance} from "../../src/Governance.sol";
-import {IssuerRegistry} from "../../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
 import {FeeRegistry} from "../../src/registry/FeeRegistry.sol";
 import {BLSCustody} from "../../src/core/BLSCustody.sol";
 import {L3BridgeCustody} from "../../src/custody/L3BridgeCustody.sol";
@@ -30,7 +30,7 @@ contract DeployL3 is DeployBLSHelper {
 
     // Proxies (upgradeable)
     address public governanceProxy;
-    address public issuerRegistryProxy;
+    address public oracleRegistryProxy;
     address public feeRegistryProxy;
     address public blsCustodyProxy;
     address public l3BridgeCustodyProxy;
@@ -38,7 +38,7 @@ contract DeployL3 is DeployBLSHelper {
 
     // Implementations (upgradeable)
     address public governanceImpl;
-    address public issuerRegistryImpl;
+    address public oracleRegistryImpl;
     address public feeRegistryImpl;
     address public blsCustodyImpl;
     address public l3BridgeCustodyImpl;
@@ -83,7 +83,7 @@ contract DeployL3 is DeployBLSHelper {
         console2.log("--- Phase 2: Registries ---");
         _deployRegistries(admin);
 
-        // ============ PHASE 3: Custody (depends on IssuerRegistry) ============
+        // ============ PHASE 3: Custody (depends on OracleRegistry) ============
         console2.log("--- Phase 3: Custody ---");
         _deployCustody(usdc);
 
@@ -99,13 +99,13 @@ contract DeployL3 is DeployBLSHelper {
         console2.log("--- Phase 6: Post-deploy wiring ---");
         _wireIndexRegistries();
 
-        // Issuer registration is optional - skip if SKIP_ISSUER_REGISTRATION is set
-        bool skipIssuers = vm.envOr("SKIP_ISSUER_REGISTRATION", false);
-        if (!skipIssuers) {
-            _registerTestIssuers();
+        // Oracle registration is optional - skip if SKIP_ORACLE_REGISTRATION is set
+        bool skipOracles = vm.envOr("SKIP_ORACLE_REGISTRATION", false);
+        if (!skipOracles) {
+            _registerTestOracles();
         } else {
-            console2.log("  Skipping issuer registration (SKIP_ISSUER_REGISTRATION=true)");
-            console2.log("  Register issuers manually with correct G2 BLS pubkeys");
+            console2.log("  Skipping oracle registration (SKIP_ORACLE_REGISTRATION=true)");
+            console2.log("  Register oracles manually with correct G2 BLS pubkeys");
         }
 
         vm.stopBroadcast();
@@ -135,20 +135,20 @@ contract DeployL3 is DeployBLSHelper {
     // ============ PHASE 2 ============
 
     function _deployRegistries(address admin) internal {
-        // IssuerRegistry (UUPS, depends on Governance)
+        // OracleRegistry (UUPS, depends on Governance)
         {
-            IssuerRegistry impl = new IssuerRegistry();
-            issuerRegistryImpl = address(impl);
+            OracleRegistry impl = new OracleRegistry();
+            oracleRegistryImpl = address(impl);
 
-            bytes memory initData = abi.encodeWithSelector(IssuerRegistry.initialize.selector, governanceProxy);
-            ERC1967Proxy proxy = new ERC1967Proxy(issuerRegistryImpl, initData);
-            issuerRegistryProxy = address(proxy);
+            bytes memory initData = abi.encodeWithSelector(OracleRegistry.initialize.selector, governanceProxy);
+            ERC1967Proxy proxy = new ERC1967Proxy(oracleRegistryImpl, initData);
+            oracleRegistryProxy = address(proxy);
 
-            IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
-            require(address(reg.governance()) == governanceProxy, "IssuerRegistry: governance mismatch");
-            require(reg.activeIssuerCount() == 0, "IssuerRegistry: active count should be 0");
-            console2.log("  IssuerRegistry impl:", issuerRegistryImpl);
-            console2.log("  IssuerRegistry proxy:", issuerRegistryProxy);
+            OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
+            require(address(reg.governance()) == governanceProxy, "OracleRegistry: governance mismatch");
+            require(reg.activeOracleCount() == 0, "OracleRegistry: active count should be 0");
+            console2.log("  OracleRegistry impl:", oracleRegistryImpl);
+            console2.log("  OracleRegistry proxy:", oracleRegistryProxy);
         }
 
         // FeeRegistry (UUPS, admin-based)
@@ -168,7 +168,7 @@ contract DeployL3 is DeployBLSHelper {
 
         // AssetPairRegistry (non-upgradeable, constructor)
         {
-            AssetPairRegistry apr = new AssetPairRegistry(admin, issuerRegistryProxy);
+            AssetPairRegistry apr = new AssetPairRegistry(admin, oracleRegistryProxy);
             assetPairRegistryAddr = address(apr);
 
             require(apr.admin() == admin, "AssetPairRegistry: admin mismatch");
@@ -177,7 +177,7 @@ contract DeployL3 is DeployBLSHelper {
 
         // CollateralRegistry (non-upgradeable, constructor)
         {
-            CollateralRegistry cr = new CollateralRegistry(admin, issuerRegistryProxy);
+            CollateralRegistry cr = new CollateralRegistry(admin, oracleRegistryProxy);
             collateralRegistryAddr = address(cr);
 
             require(cr.admin() == admin, "CollateralRegistry: admin mismatch");
@@ -193,12 +193,12 @@ contract DeployL3 is DeployBLSHelper {
             BLSCustody impl = new BLSCustody();
             blsCustodyImpl = address(impl);
 
-            bytes memory initData = abi.encodeWithSelector(BLSCustody.initialize.selector, issuerRegistryProxy);
+            bytes memory initData = abi.encodeWithSelector(BLSCustody.initialize.selector, oracleRegistryProxy);
             ERC1967Proxy proxy = new ERC1967Proxy(blsCustodyImpl, initData);
             blsCustodyProxy = address(proxy);
 
             BLSCustody custody = BLSCustody(blsCustodyProxy);
-            require(address(custody.issuerRegistry()) == issuerRegistryProxy, "BLSCustody: issuerRegistry mismatch");
+            require(address(custody.oracleRegistry()) == oracleRegistryProxy, "BLSCustody: oracleRegistry mismatch");
             console2.log("  BLSCustody impl:", blsCustodyImpl);
             console2.log("  BLSCustody proxy:", blsCustodyProxy);
         }
@@ -209,14 +209,14 @@ contract DeployL3 is DeployBLSHelper {
             l3BridgeCustodyImpl = address(impl);
 
             bytes memory initData = abi.encodeWithSelector(
-                L3BridgeCustody.initialize.selector, issuerRegistryProxy, usdc
+                L3BridgeCustody.initialize.selector, oracleRegistryProxy, usdc
             );
             ERC1967Proxy proxy = new ERC1967Proxy(l3BridgeCustodyImpl, initData);
             l3BridgeCustodyProxy = address(proxy);
 
             L3BridgeCustody custody = L3BridgeCustody(l3BridgeCustodyProxy);
             require(
-                address(custody.issuerRegistry()) == issuerRegistryProxy, "L3BridgeCustody: issuerRegistry mismatch"
+                address(custody.oracleRegistry()) == oracleRegistryProxy, "L3BridgeCustody: oracleRegistry mismatch"
             );
             require(address(custody.usdc()) == usdc, "L3BridgeCustody: usdc mismatch");
             console2.log("  L3BridgeCustody impl:", l3BridgeCustodyImpl);
@@ -246,74 +246,74 @@ contract DeployL3 is DeployBLSHelper {
     function _wireIndexRegistries() internal {
         Investment idx = Investment(indexProxy);
 
-        // Wire IssuerRegistry into Investment (one-time setter)
-        idx.setIssuerRegistry(issuerRegistryProxy);
-        console2.log("  Investment.setIssuerRegistry:", issuerRegistryProxy);
+        // Wire OracleRegistry into Investment (one-time setter)
+        idx.setOracleRegistry(oracleRegistryProxy);
+        console2.log("  Investment.setOracleRegistry:", oracleRegistryProxy);
 
         // Wire FeeRegistry into Investment
         idx.setFeeRegistry(feeRegistryProxy);
         console2.log("  Investment.setFeeRegistry:", feeRegistryProxy);
     }
 
-    function _registerTestIssuers() internal {
-        // Skip issuer registration when SKIP_ISSUER_REGISTRATION=true
-        // This allows local-e2e-deploy.sh to register issuers with correct BLS keys
-        bool skipRegistration = vm.envOr("SKIP_ISSUER_REGISTRATION", false);
+    function _registerTestOracles() internal {
+        // Skip oracle registration when SKIP_ORACLE_REGISTRATION=true
+        // This allows local-e2e-deploy.sh to register oracles with correct BLS keys
+        bool skipRegistration = vm.envOr("SKIP_ORACLE_REGISTRATION", false);
         if (skipRegistration) {
-            console2.log("  Skipping issuer registration (SKIP_ISSUER_REGISTRATION=true)");
+            console2.log("  Skipping oracle registration (SKIP_ORACLE_REGISTRATION=true)");
             return;
         }
 
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
 
-        // Issuer addresses from index-system.env
+        // Oracle addresses from index-system.env
         // These match the addresses derived from the private keys
-        address issuer1Addr = vm.envOr("ISSUER_1_ADDRESS", address(0xC0D3C9E530ca6d71469bB678E6592274154D9caD));
-        address issuer2Addr = vm.envOr("ISSUER_2_ADDRESS", address(0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4));
-        address issuer3Addr = vm.envOr("ISSUER_3_ADDRESS", address(0xC0D3C8DFd3445fd2e4dfED9D11b5B7032B3BD1ac));
+        address oracle1Addr = vm.envOr("ORACLE_1_ADDRESS", address(0xC0D3C9E530ca6d71469bB678E6592274154D9caD));
+        address oracle2Addr = vm.envOr("ORACLE_2_ADDRESS", address(0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4));
+        address oracle3Addr = vm.envOr("ORACLE_3_ADDRESS", address(0xC0D3C8DFd3445fd2e4dfED9D11b5B7032B3BD1ac));
 
         // Real BLS G2 pubkeys from deterministic seeds via FFI (matching node-id 0,1,2)
-        // PoP signatures prove each issuer controls the corresponding BLS private key
+        // PoP signatures prove each oracle controls the corresponding BLS private key
 
-        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
+        // Must snapshot (setAggregatedPubkey) after EACH addOracle due to PendingSnapshot constraint
 
-        // Issuer 1 (node-id 0)
+        // Oracle 1 (node-id 0)
         {
             bytes memory pubkey = blsPubkey(0);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1Addr, pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle1Addr, pubkey));
             bytes memory popSig = blsSign("0", popMsg);
-            uint256 id = reg.addIssuer(issuer1Addr, bytes32("issuer1.index.network"), pubkey, popSig);
+            uint256 id = reg.addOracle(oracle1Addr, bytes32("oracle1.index.network"), pubkey, popSig);
             reg.setAggregatedPubkey(blsPubkey(0), 1);
-            console2.log("  Issuer 1 registered, id:", id);
-            console2.log("    Address:", issuer1Addr);
+            console2.log("  Oracle 1 registered, id:", id);
+            console2.log("    Address:", oracle1Addr);
         }
 
-        // Issuer 2 (node-id 1)
+        // Oracle 2 (node-id 1)
         {
             bytes memory pubkey = blsPubkey(1);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer2Addr, pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle2Addr, pubkey));
             bytes memory popSig = blsSign("1", popMsg);
-            uint256 id = reg.addIssuer(issuer2Addr, bytes32("issuer2.index.network"), pubkey, popSig);
+            uint256 id = reg.addOracle(oracle2Addr, bytes32("oracle2.index.network"), pubkey, popSig);
             reg.setAggregatedPubkey(blsAggPubkey("0,1"), 2);
-            console2.log("  Issuer 2 registered, id:", id);
-            console2.log("    Address:", issuer2Addr);
+            console2.log("  Oracle 2 registered, id:", id);
+            console2.log("    Address:", oracle2Addr);
         }
 
-        // Issuer 3 (node-id 2)
+        // Oracle 3 (node-id 2)
         {
             bytes memory pubkey = blsPubkey(2);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer3Addr, pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle3Addr, pubkey));
             bytes memory popSig = blsSign("2", popMsg);
-            uint256 id = reg.addIssuer(issuer3Addr, bytes32("issuer3.index.network"), pubkey, popSig);
+            uint256 id = reg.addOracle(oracle3Addr, bytes32("oracle3.index.network"), pubkey, popSig);
             reg.setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
-            console2.log("  Issuer 3 registered, id:", id);
-            console2.log("    Address:", issuer3Addr);
+            console2.log("  Oracle 3 registered, id:", id);
+            console2.log("    Address:", oracle3Addr);
         }
 
         // Verify registration
-        require(reg.activeIssuerCount() == 3, "IssuerRegistry: expected 3 active issuers");
-        console2.log("  Active issuers:", reg.activeIssuerCount());
-        console2.log("  Aggregated pubkey set (snapshot after each addIssuer)");
+        require(reg.activeOracleCount() == 3, "OracleRegistry: expected 3 active oracles");
+        console2.log("  Active oracles:", reg.activeOracleCount());
+        console2.log("  Aggregated pubkey set (snapshot after each addOracle)");
     }
 
     // ============ JSON OUTPUT ============
@@ -336,8 +336,8 @@ contract DeployL3 is DeployBLSHelper {
         );
 
         string memory part2 = string.concat(
-            '    "IssuerRegistry": "', vm.toString(issuerRegistryProxy), '",\n',
-            '    "IssuerRegistryImpl": "', vm.toString(issuerRegistryImpl), '",\n',
+            '    "OracleRegistry": "', vm.toString(oracleRegistryProxy), '",\n',
+            '    "OracleRegistryImpl": "', vm.toString(oracleRegistryImpl), '",\n',
             '    "FeeRegistry": "', vm.toString(feeRegistryProxy), '",\n',
             '    "FeeRegistryImpl": "', vm.toString(feeRegistryImpl), '",\n',
             '    "AssetPairRegistry": "', vm.toString(assetPairRegistryAddr), '",\n',

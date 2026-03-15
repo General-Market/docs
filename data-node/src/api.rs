@@ -256,7 +256,7 @@ pub struct AppState {
     pub vision_batch_cache: Arc<crate::vision_batch_cache::VisionBatchCache>,
     /// Shared HMAC secret for authenticating snapshot responses (IS-7)
     pub snapshot_hmac_secret: Option<String>,
-    /// Chain event broadcast channel for backend SSE consumers (issuers, AP)
+    /// Chain event broadcast channel for backend SSE consumers (oracles, AP)
     pub chain_event_tx: tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>,
     /// Source display registry loaded from sources-display.json
     pub source_registry: crate::source_registry::SourceRegistry,
@@ -411,14 +411,14 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/sse/system-status", get(sse_system_status))
         .route("/sse/stream", get(sse_stream))
         .route("/sse/chain-events", get(sse_chain_events))
-        // Chain state endpoints for issuers/AP
+        // Chain state endpoints for oracles/AP
         .route("/chain/l3/pending-orders", get(chain_l3_pending_orders))
         .route("/chain/l3/batched-orders", get(chain_l3_batched_orders))
-        .route("/chain/l3/issuer-registry", get(chain_l3_issuer_registry))
+        .route("/chain/l3/oracle-registry", get(chain_l3_oracle_registry))
         .route("/chain/l3/last-cycle", get(chain_l3_last_cycle))
         .route("/chain/l3/next-order-id", get(chain_l3_next_order_id))
         .route("/chain/l3/pending-rebalances", get(chain_l3_pending_rebalances))
-        .route("/chain/l3/active-issuer-count", get(chain_l3_active_issuer_count))
+        .route("/chain/l3/active-oracle-count", get(chain_l3_active_oracle_count))
         .route("/chain/l3/aggregated-pubkey", get(chain_l3_aggregated_pubkey))
         .route("/chain/l3/consensus-paused", get(chain_l3_consensus_paused))
         .route("/chain/l3/registry-nonce", get(chain_l3_registry_nonce))
@@ -2462,8 +2462,8 @@ abigen!(
 );
 
 abigen!(
-    IssuerRegistryReader,
-    r#"[{"type":"function","name":"getIssuers","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"ip","type":"bytes32"},{"name":"blsPubkey","type":"bytes"},{"name":"status","type":"uint8"},{"name":"registeredAt","type":"uint256"}]}],"stateMutability":"view"},{"type":"function","name":"activeIssuerCount","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#
+    OracleRegistryReader,
+    r#"[{"type":"function","name":"getOracles","inputs":[],"outputs":[{"name":"","type":"tuple[]","components":[{"name":"addr","type":"address"},{"name":"ip","type":"bytes32"},{"name":"blsPubkey","type":"bytes"},{"name":"status","type":"uint8"},{"name":"registeredAt","type":"uint256"}]}],"stateMutability":"view"},{"type":"function","name":"activeOracleCount","inputs":[],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#
 );
 
 abigen!(
@@ -5066,7 +5066,7 @@ async fn batches_recommended(
 }
 
 /// GET /batches/config/:hash — fetch full batch config by keccak256 hash.
-/// Used by issuers/resolver to get the full market list for a committed hash.
+/// Used by oracles/resolver to get the full market list for a committed hash.
 async fn batch_config_by_hash(
     State(state): State<Arc<AppState>>,
     axum::extract::Path(hash): axum::extract::Path<String>,
@@ -5197,7 +5197,7 @@ struct SignedBatchPayload {
     lock_offset_secs: u64,
 }
 
-/// POST /batches/signed — issuer pushes signed config after BLS consensus.
+/// POST /batches/signed — oracle pushes signed config after BLS consensus.
 /// Requires Bearer token auth (with x-admin-token fallback).
 async fn store_signed_batch(
     State(state): State<Arc<AppState>>,
@@ -5231,7 +5231,7 @@ async fn store_signed_batch(
 
     // DN-5: BLS signature verification against on-chain aggregated pubkey.
     // Rejects any payload whose BLS signature doesn't verify against the
-    // aggregated pubkey fetched from IssuerRegistry.  If the pubkey is not yet
+    // aggregated pubkey fetched from OracleRegistry.  If the pubkey is not yet
     // populated, the request is hard-rejected — the system must not accept
     // unsigned batches during any bootstrap window.
     {
@@ -5387,7 +5387,7 @@ struct SettlementRecord {
     change_pct: f64,
 }
 
-/// POST /batches/settlement — issuers record settlement results for threshold feedback.
+/// POST /batches/settlement — oracles record settlement results for threshold feedback.
 /// Requires Bearer token auth (with x-admin-token fallback).
 async fn record_batch_settlement(
     State(state): State<Arc<AppState>>,
@@ -5617,7 +5617,7 @@ pub fn extract_client_ip(headers: &HeaderMap) -> Option<IpAddr> {
 // ---- SSE /sse/system-status ----
 
 /// Streams system status snapshots every 5 seconds.
-/// Each event is a JSON object with issuers, orders, fill times, and vault data.
+/// Each event is a JSON object with oracles, orders, fill times, and vault data.
 async fn sse_system_status(
     State(state): State<Arc<AppState>>,
     headers: HeaderMap,
@@ -5648,21 +5648,21 @@ async fn sse_system_status(
 #[derive(Serialize)]
 struct SystemSnapshot {
     is_healthy: bool,
-    active_issuers: u64,
-    total_issuers: u64,
+    active_oracles: u64,
+    total_oracles: u64,
     total_orders: u64,
     last_cycle_number: u64,
     pending_orders: u64,
     l3_block_number: u64,
     avg_fill_time_seconds: f64,
-    nodes: Vec<IssuerNodeInfo>,
+    nodes: Vec<OracleNodeInfo>,
     recent_orders: Vec<RecentOrderInfo>,
     vault_assets: Vec<VaultAssetInfo>,
     vault_usd_total: f64,
 }
 
 #[derive(Serialize)]
-struct IssuerNodeInfo {
+struct OracleNodeInfo {
     id: u64,
     addr: String,
     ip: String,
@@ -5772,7 +5772,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     let cache = &state.chain_cache;
 
     // Read all data from ChainCache (populated by background pollers — zero RPC calls)
-    let active_issuers = cache.active_issuer_count.load(std::sync::atomic::Ordering::Relaxed);
+    let active_oracles = cache.active_oracle_count.load(std::sync::atomic::Ordering::Relaxed);
     let last_cycle_number = cache.last_cycle.load(std::sync::atomic::Ordering::Relaxed);
     let next_order_id = cache.next_order_id.load(std::sync::atomic::Ordering::Relaxed);
     let total_orders = if next_order_id > 0 { next_order_id - 1 } else { 0 };
@@ -5782,9 +5782,9 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     let l3_block_number = state.l3_provider.get_block_number().await
         .map(|v| v.as_u64()).unwrap_or(0);
 
-    // Issuer nodes from cached registry
-    let registry = cache.issuer_registry.read().await;
-    let total_issuers = registry.len() as u64;
+    // Oracle nodes from cached registry
+    let registry = cache.oracle_registry.read().await;
+    let total_oracles = registry.len() as u64;
     // Use earliest order timestamp from DB as a proxy for registration time
     let registered_at_unix = match sqlx::query_as::<_, (Option<i64>,)>(
         "SELECT EXTRACT(EPOCH FROM MIN(order_timestamp))::bigint FROM trades"
@@ -5792,13 +5792,13 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         Ok(Some((Some(ts),))) if ts > 0 => ts as u64,
         _ => 0,
     };
-    let nodes: Vec<IssuerNodeInfo> = registry.iter().enumerate().map(|(idx, iss)| {
-        IssuerNodeInfo {
+    let nodes: Vec<OracleNodeInfo> = registry.iter().enumerate().map(|(idx, iss)| {
+        OracleNodeInfo {
             id: (idx + 1) as u64,
             addr: iss.address.clone(),
             ip: iss.endpoint.clone(),
             bls_pubkey_short: truncate_hex(&iss.bls_pubkey, 10, 4),
-            status: 1, // all cached issuers are registered
+            status: 1, // all cached oracles are registered
             registered_at: registered_at_unix,
         }
     }).collect();
@@ -5868,7 +5868,7 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
         _ => 0.0,
     };
 
-    let is_healthy = active_issuers > 0 && last_cycle_number > 0;
+    let is_healthy = active_oracles > 0 && last_cycle_number > 0;
 
     // Fetch vault asset balances from settlement chain (with 60s timeout)
     let vault_result = tokio::time::timeout(
@@ -5885,8 +5885,8 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     SystemSnapshot {
         is_healthy,
-        active_issuers,
-        total_issuers,
+        active_oracles,
+        total_oracles,
         total_orders,
         last_cycle_number,
         pending_orders,
@@ -5962,8 +5962,8 @@ async fn build_vault_snapshot(state: &AppState, settlement: &Arc<Provider<Http>>
 fn empty_snapshot() -> SystemSnapshot {
     SystemSnapshot {
         is_healthy: false,
-        active_issuers: 0,
-        total_issuers: 0,
+        active_oracles: 0,
+        total_oracles: 0,
         total_orders: 0,
         last_cycle_number: 0,
         pending_orders: 0,
@@ -6762,10 +6762,10 @@ async fn chain_l3_batched_orders(
     Json(data.clone())
 }
 
-async fn chain_l3_issuer_registry(
+async fn chain_l3_oracle_registry(
     State(state): State<Arc<AppState>>,
-) -> Json<Vec<crate::chain_cache::CachedIssuer>> {
-    let data = state.chain_cache.issuer_registry.read().await;
+) -> Json<Vec<crate::chain_cache::CachedOracle>> {
+    let data = state.chain_cache.oracle_registry.read().await;
     Json(data.clone())
 }
 
@@ -6796,14 +6796,14 @@ async fn chain_l3_pending_rebalances(
     Json(data.clone())
 }
 
-async fn chain_l3_active_issuer_count(
+async fn chain_l3_active_oracle_count(
     State(state): State<Arc<AppState>>,
 ) -> Json<serde_json::Value> {
     let count = state
         .chain_cache
-        .active_issuer_count
+        .active_oracle_count
         .load(std::sync::atomic::Ordering::Relaxed);
-    Json(serde_json::json!({ "active_issuer_count": count }))
+    Json(serde_json::json!({ "active_oracle_count": count }))
 }
 
 async fn chain_l3_aggregated_pubkey(
@@ -6823,7 +6823,7 @@ async fn chain_l3_consensus_paused(
     Json(serde_json::json!({ "paused": paused }))
 }
 
-// lastSnapshotNonce on IssuerRegistry
+// lastSnapshotNonce on OracleRegistry
 abigen!(
     RegistryNonceReader,
     r#"[
@@ -6834,13 +6834,13 @@ abigen!(
 async fn chain_l3_registry_nonce(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    let registry_addr_str = state.deployment["contracts"]["IssuerRegistry"]
+    let registry_addr_str = state.deployment["contracts"]["OracleRegistry"]
         .as_str()
         .ok_or_else(|| {
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "IssuerRegistry address not in deployment".into() }))
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "OracleRegistry address not in deployment".into() }))
         })?;
     let registry_addr: Address = registry_addr_str.parse().map_err(|_| {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "invalid IssuerRegistry address".into() }))
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: "invalid OracleRegistry address".into() }))
     })?;
 
     let contract = RegistryNonceReader::new(registry_addr, state.l3_provider.clone());

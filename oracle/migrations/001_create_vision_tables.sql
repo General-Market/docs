@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS vision_positions CASCADE;
 DROP TABLE IF EXISTS vision_batches CASCADE;
 DROP TABLE IF EXISTS vision_kv_store CASCADE;
 
--- Vision batch state (indexed from Vision.sol events by the issuer's chain listener)
+-- Vision batch state (indexed from Vision.sol events by the oracle's chain listener)
 CREATE TABLE IF NOT EXISTS vision_batches (
     id BIGINT PRIMARY KEY,
     creator TEXT NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS vision_kv_store (
     value TEXT NOT NULL
 );
 
--- Tick resolution results (written by chain listener after issuer BLS consensus)
+-- Tick resolution results (written by chain listener after oracle BLS consensus)
 CREATE TABLE IF NOT EXISTS vision_tick_results (
     batch_id BIGINT NOT NULL REFERENCES vision_batches(id),
     tick_id BIGINT NOT NULL,

@@ -1,6 +1,6 @@
-//! State reconstruction for Index L3 Issuer
+//! State reconstruction for Index L3 Oracle
 //!
-//! Implements stateless issuer node pattern (NFR19) by reconstructing all state
+//! Implements stateless oracle node pattern (NFR19) by reconstructing all state
 //! from on-chain data on startup.
 
 use std::collections::HashMap;
@@ -14,7 +14,7 @@ use tracing::{debug, info, warn};
 use common::error::Error;
 use common::types::{LimitOrder, OrderStatus};
 
-use super::types::{chains, Checkpoint, ITPState, IssuerState};
+use super::types::{chains, Checkpoint, ITPState, OracleState};
 
 /// Configuration for state reconstruction
 #[derive(Debug, Clone)]
@@ -99,9 +99,9 @@ pub struct ReconstructionStats {
     pub current_cycle: U256,
 }
 
-/// State reconstructor for issuer node
+/// State reconstructor for oracle node
 ///
-/// Reconstructs issuer state from on-chain data using contract reads.
+/// Reconstructs oracle state from on-chain data using contract reads.
 /// Follows the algorithm in architecture Appendix D.
 pub struct StateReconstructor<M: Middleware> {
     provider: Arc<M>,
@@ -145,8 +145,8 @@ where
     /// Reconstruct state from chain data
     ///
     /// This is the main entry point for state reconstruction.
-    /// Returns the reconstructed IssuerState and statistics.
-    pub async fn reconstruct_state(&self) -> Result<(IssuerState, ReconstructionStats), Error> {
+    /// Returns the reconstructed OracleState and statistics.
+    pub async fn reconstruct_state(&self) -> Result<(OracleState, ReconstructionStats), Error> {
         let start = Instant::now();
         let mut stats = ReconstructionStats::default();
 
@@ -155,7 +155,7 @@ where
             "Starting state reconstruction from Index contract"
         );
 
-        let mut state = IssuerState::new();
+        let mut state = OracleState::new();
         let contract = self.index_contract();
 
         // Step 1: Read cycle and order metadata
@@ -589,7 +589,7 @@ mod tests {
 
     #[test]
     fn test_checkpoint_save_load_roundtrip() {
-        let state = IssuerState::default();
+        let state = OracleState::default();
         let checkpoint = Checkpoint::new(state, 100, [1u8; 32]);
 
         let temp_dir = std::env::temp_dir();

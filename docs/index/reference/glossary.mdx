@@ -15,7 +15,7 @@ An entity registered with the protocol that executes trades on centralized excha
 
 ### Balance Proof
 
-A BLS-signed message from the issuer network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds from Vision. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance.
+A BLS-signed message from the oracle network that attests to a player's current USDC balance in a Vision batch. Balance proofs are required to claim rewards or withdraw funds from Vision. The player submits the proof on-chain, and the Vision contract verifies the BLS signature before updating the player's balance.
 
 ### Batch (Vision)
 
@@ -23,11 +23,11 @@ A group of markets in Vision that share a common pool, tick duration, and resolu
 
 ### Bitmap
 
-A packed binary representation of a player's bets across all markets in a Vision batch. Each market gets exactly 1 bit: 1 = UP (price increases), 0 = DOWN (price decreases). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to issuer nodes.
+A packed binary representation of a player's bets across all markets in a Vision batch. Each market gets exactly 1 bit: 1 = UP (price increases), 0 = DOWN (price decreases). Bitmaps use big-endian bit ordering. The bitmap is committed on-chain as a `keccak256` hash (sealed commitment) and later revealed to oracle nodes.
 
 ### Bot Registry
 
-An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Bot registration is free — no collateral is required. Registered bots are discoverable by issuer nodes via `getAllActiveBots()`.
+An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Bot registration is free — no collateral is required. Registered bots are discoverable by oracle nodes via `getAllActiveBots()`.
 
 ### AUM (Assets Under Management)
 
@@ -39,7 +39,7 @@ The rule that no ITP shares may be minted without confirmed backing. Every minte
 
 ### BLS (Boneh-Lynn-Shacham)
 
-A cryptographic signature scheme that enables efficient signature aggregation. Multiple issuer signatures can be combined into a single aggregated signature, which is verified on-chain against the aggregated public key stored in `IssuerRegistry`. This provides consensus without the gas cost of verifying each signature individually.
+A cryptographic signature scheme that enables efficient signature aggregation. Multiple oracle signatures can be combined into a single aggregated signature, which is verified on-chain against the aggregated public key stored in `OracleRegistry`. This provides consensus without the gas cost of verifying each signature individually.
 
 ### BN254
 
@@ -59,11 +59,11 @@ USDC tokens that are escrowed by the protocol during the order lifecycle. When a
 
 ### Curator
 
-A service that collects BLS-signed NAV updates from the issuer network, manages Morpho vault allocation across ITP lending markets, and monitors health factors for liquidation risk. The curator submits aggregated NAV to the `ITPNAVOracle` on the Settlement chain and adjusts Morpho supply caps based on current market conditions.
+A service that collects BLS-signed NAV updates from the oracle network, manages Morpho vault allocation across ITP lending markets, and monitors health factors for liquidation risk. The curator submits aggregated NAV to the `ITPNAVOracle` on the Settlement chain and adjusts Morpho supply caps based on current market conditions.
 
 ### Data Node
 
-A Rust service that aggregates 98+ external data sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) and serves a unified market data API. The data node provides real-time and historical prices used by issuers for Vision tick resolution and ITP NAV calculation. Source code lives in `data-node/`.
+A Rust service that aggregates 98+ external data sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) and serves a unified market data API. The data node provides real-time and historical prices used by oracles for Vision tick resolution and ITP NAV calculation. Source code lives in `data-node/`.
 
 ### ERC-4626
 
@@ -71,15 +71,15 @@ A tokenized vault standard used for ITP share tokens. Each ITP's share token imp
 
 ### Explorer
 
-A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays issuer uptime, BLS signing rates, data source freshness, Vision batch activity, and ITP order pipeline status. Accessible from the main navigation.
+A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays oracle uptime, BLS signing rates, data source freshness, Vision batch activity, and ITP order pipeline status. Accessible from the main navigation.
 
 ### Health Factor
 
 A ratio representing the safety of a lending position, calculated as the value of deposited collateral divided by the outstanding debt. A health factor above 1.0 means the position is solvent. When it drops below 1.0, the position becomes eligible for liquidation.
 
-### Issuer
+### Oracle
 
-A consensus node in the General Market network that batches pending orders, produces BLS signatures, and submits confirmed batches on-chain. Multiple issuers form the consensus layer. Their BLS public keys are registered in `IssuerRegistry`, and a quorum of signatures is required to confirm any batch.
+A consensus node in the General Market network that batches pending orders, produces BLS signatures, and submits confirmed batches on-chain. Multiple oracles form the consensus layer. Their BLS public keys are registered in `OracleRegistry`, and a quorum of signatures is required to confirm any batch.
 
 ### ITP (Index Tracking Product)
 
@@ -87,7 +87,7 @@ A tokenized basket of up to 100 crypto assets, conceptually similar to an ETF. E
 
 ### ITPNAVOracle
 
-An on-chain oracle on the Settlement chain that receives BLS-signed NAV updates from the curator. Morpho markets reference the `ITPNAVOracle` to price ITP collateral for lending. The oracle enforces BLS signature verification via `MirrorIssuerRegistry` before accepting any NAV update.
+An on-chain oracle on the Settlement chain that receives BLS-signed NAV updates from the curator. Morpho markets reference the `ITPNAVOracle` to price ITP collateral for lending. The oracle enforces BLS signature verification via `MirrorOracleRegistry` before accepting any NAV update.
 
 ### L3 (Layer 3)
 
@@ -105,9 +105,9 @@ The forced sale of collateral when a lending position's health factor drops belo
 
 A DeFi lending protocol integrated with General Market that enables users to borrow USDC against their ITP shares as collateral. Morpho markets are created for each ITP, allowing holders to leverage their positions or access liquidity without selling.
 
-### MirrorIssuerRegistry
+### MirrorOracleRegistry
 
-A Settlement-side copy of the issuer BLS public keys from the L3 `IssuerRegistry`. The `MirrorIssuerRegistry` enables BLS signature verification on the Settlement chain without cross-chain calls. The curator and `ITPNAVOracle` reference it to validate that NAV updates carry a valid quorum of issuer signatures.
+A Settlement-side copy of the oracle BLS public keys from the L3 `OracleRegistry`. The `MirrorOracleRegistry` enables BLS signature verification on the Settlement chain without cross-chain calls. The curator and `ITPNAVOracle` reference it to validate that NAV updates carry a valid quorum of oracle signatures.
 
 ### NAV (Net Asset Value)
 
@@ -139,11 +139,11 @@ This changes the portfolio composition without affecting the share price at the 
 
 ### Sealed Commitment
 
-A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to issuer nodes, who verify the hash matches the on-chain commitment.
+A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to oracle nodes, who verify the hash matches the on-chain commitment.
 
 ### Settlement Chain
 
-The Arbitrum chain (Chain ID: `14601`) used for bridge custody and Morpho lending. Settlement hosts the `SettlementBridgeCustody`, `ITPNAVOracle`, `MirrorIssuerRegistry`, Morpho markets, and Bridged ITP tokens. USDC on Settlement uses the standard 6 decimals.
+The Arbitrum chain (Chain ID: `14601`) used for bridge custody and Morpho lending. Settlement hosts the `SettlementBridgeCustody`, `ITPNAVOracle`, `MirrorOracleRegistry`, Morpho markets, and Bridged ITP tokens. USDC on Settlement uses the standard 6 decimals.
 
 ### SettlementBridgeCustody
 
@@ -159,7 +159,7 @@ USD Coin, the primary collateral and settlement token in the protocol. USDC uses
 
 ### Tick
 
-A single resolution interval within a Vision batch. At the end of each tick, issuer nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 5 minutes to 1 day and are immutable once the batch is created.
+A single resolution interval within a Vision batch. At the end of each tick, oracle nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 5 minutes to 1 day and are immutable once the batch is created.
 
 ### UUPS (Universal Upgradeable Proxy Standard)
 

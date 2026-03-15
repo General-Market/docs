@@ -15,7 +15,7 @@ interface IMockERC20 {
 /// @notice On-chain mock of a CEX vault for E2E testing with mint/burn settlement
 /// @dev Story 7.18: Mints buyToken to caller, burns sellToken after receiving it.
 /// @dev Vault balance stays at zero — AP's ERC20 balanceOf is the source of truth.
-/// @dev Used for FR13 compliance: issuers verify fills via read-only getFill() call
+/// @dev Used for FR13 compliance: oracles verify fills via read-only getFill() call
 contract MockBitgetVault is Initializable {
     using SafeERC20 for IERC20;
 
@@ -498,7 +498,7 @@ contract MockBitgetVault is Initializable {
 
     // ============ VIEW FUNCTIONS ============
 
-    /// @notice Get fill data for a specific trade (FR13: read-only issuer verification)
+    /// @notice Get fill data for a specific trade (FR13: read-only oracle verification)
     /// @param tradeId The trade identifier to query
     /// @return trade The trade record
     function getFill(uint256 tradeId) external view returns (Trade memory trade) {

@@ -4,7 +4,7 @@
 
 ## Executive Summary
 
-Index L3 is a blockchain-based platform for creating and managing Index Token Products (ITPs) - basket tokens representing weighted portfolios of underlying assets. The system enables decentralized order batching, BLS consensus among issuer nodes, and trade execution via Authorized Participants (APs) on centralized exchanges.
+Index L3 is a blockchain-based platform for creating and managing Index Token Products (ITPs) - basket tokens representing weighted portfolios of underlying assets. The system enables decentralized order batching, BLS consensus among oracle nodes, and trade execution via Authorized Participants (APs) on centralized exchanges.
 
 **Project Type:** Monorepo (Rust workspace + Solidity contracts)
 **Primary Languages:** Rust (68,000+ LOC), Solidity (7,300+ LOC)
@@ -20,7 +20,7 @@ Index L3 is a blockchain-based platform for creating and managing Index Token Pr
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │   ┌──────────────┐    P2P/TCP     ┌──────────────┐                      │
-│   │  Issuer 1    │◄──────────────►│  Issuer 2    │                      │
+│   │  Oracle 1    │◄──────────────►│  Oracle 2    │                      │
 │   │  (Consensus) │                │  (Consensus) │                      │
 │   └──────┬───────┘                └──────┬───────┘                      │
 │          │                               │                               │
@@ -51,7 +51,7 @@ Index L3 is a blockchain-based platform for creating and managing Index Token Pr
 
 ## Component Overview
 
-### 1. Issuer Node (`/issuer`)
+### 1. Oracle Node (`/oracle`)
 
 **Purpose:** Consensus participant that batches orders, coordinates BLS signing, and submits transactions.
 
@@ -131,7 +131,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 **Registries:**
 | Contract | Description |
 |----------|-------------|
-| `IssuerRegistry.sol` | Issuer BLS keys, aggregated pubkey, key rotation |
+| `OracleRegistry.sol` | Oracle BLS keys, aggregated pubkey, key rotation |
 | `CollateralRegistry.sol` | Whitelisted collateral tokens (USDC, USDT, etc.) |
 | `AssetPairRegistry.sol` | Trading pairs configuration |
 | `FeeRegistry.sol` | Fee tiers and ITP deployer fee claiming |
@@ -163,7 +163,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 
 ### BLS Consensus
 - **Curve:** BN254 (compatible with EVM precompiles)
-- **Threshold:** `ceil(2n/3)` for `n` issuers (e.g., 2/3 for 3 nodes, 14/20 for production)
+- **Threshold:** `ceil(2n/3)` for `n` oracles (e.g., 2/3 for 3 nodes, 14/20 for production)
 - **Message Format:** `keccak256(chainId, contractAddress, cycleNumber, orderIds)`
 
 ### Cycle Timing
@@ -173,12 +173,12 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 ### Order Flow
 1. User calls `submitOrder()` with USDC escrow
 2. Order enters PENDING status
-3. Issuers batch orders via consensus → BATCHED
+3. Oracles batch orders via consensus → BATCHED
 4. AP executes on exchange, reports fills → FILLED
 5. ITP tokens minted to user
 
 ### Security Model
-- **FR13:** Issuers cannot communicate directly with AP (read on-chain fill data only)
+- **FR13:** Oracles cannot communicate directly with AP (read on-chain fill data only)
 - **Limit Enforcement:** 0.1% price tolerance per fill
 - **Timeout:** 60-second order timeout with 3 retries
 
@@ -189,7 +189,7 @@ TradeRequest → place_order → poll_fills → validate_price → report_fills
 ```bash
 # Prerequisites: Rust 1.83+, Foundry
 
-# Start local environment (Anvil + deploy + 3 issuers + AP)
+# Start local environment (Anvil + deploy + 3 oracles + AP)
 ./start.sh
 
 # Or with Docker
@@ -204,7 +204,7 @@ cd contracts && forge test
 | Service | Port |
 |---------|------|
 | Anvil (L3 RPC) | 8545 |
-| Issuer 1-N | 9001-900N |
+| Oracle 1-N | 9001-900N |
 | AP | 9100 |
 | Prometheus | 9090 |
 | Grafana | 3000 |
@@ -215,7 +215,7 @@ cd contracts && forge test
 
 | Part | Files | Lines of Code |
 |------|-------|---------------|
-| issuer | 50 | ~25,000 |
+| oracle | 50 | ~25,000 |
 | ap | 45 | ~20,000 |
 | common | 50 | ~22,000 |
 | contracts | 28 | ~7,300 |

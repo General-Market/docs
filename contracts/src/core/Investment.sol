@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import "../interfaces/IInvestment.sol";
 import "../interfaces/IGovernance.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
@@ -71,17 +71,17 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         nextOrderId = 1; // Start from 1, 0 reserved for "no order"
     }
 
-    /// @notice Set the IssuerRegistry address (admin only, one-time setup)
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
-    function setIssuerRegistry(address issuerRegistry_) external {
+    /// @notice Set the OracleRegistry address (admin only, one-time setup)
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
+    function setOracleRegistry(address oracleRegistry_) external {
         if (msg.sender != governance.admin()) {
             revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
-        if (address(issuerRegistry) != address(0)) {
+        if (address(oracleRegistry) != address(0)) {
             revert ErrorsLib.E062_AlreadyInitialized();
         }
-        issuerRegistry = IIssuerRegistry(issuerRegistry_);
-        __BLSVerifier_init(issuerRegistry_);
+        oracleRegistry = IOracleRegistry(oracleRegistry_);
+        __BLSVerifier_init(oracleRegistry_);
     }
 
     /// @notice Set the ITP vault address for an ITP (admin only)
@@ -146,14 +146,14 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         uint256 slippageTier,
         uint256 deadline
     ) external nonReentrant returns (uint256 orderId) {
-        // Only registered active issuers can submit on behalf of users
-        if (address(issuerRegistry) == address(0) || !issuerRegistry.isActiveIssuer(msg.sender)) {
-            revert ErrorsLib.E097_NotActiveIssuer(msg.sender);
+        // Only registered active oracles can submit on behalf of users
+        if (address(oracleRegistry) == address(0) || !oracleRegistry.isActiveOracle(msg.sender)) {
+            revert ErrorsLib.E097_NotActiveOracle(msg.sender);
         }
         if (beneficiary == address(0)) {
             revert ErrorsLib.E098_ZeroBeneficiary();
         }
-        // payer = msg.sender (issuer holds bridged funds), user = beneficiary (shares go to user)
+        // payer = msg.sender (oracle holds bridged funds), user = beneficiary (shares go to user)
         return _createOrder(beneficiary, msg.sender, itpId, side, amount, limitPrice, slippageTier, deadline);
     }
 
@@ -286,7 +286,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), cycleNumber, orderIds));
 
         // Verify BLS signature against aggregated public key
-        // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
+        // SECURITY: oracleRegistry MUST be set in production. Empty pubkey only allowed for testing.
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Process each order: validate and mark as BATCHED
@@ -325,7 +325,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         // Mark cycle as processed
         cycleProcessed[cycleNumber] = true;
 
-        // Track last processed cycle for issuer auto-discovery
+        // Track last processed cycle for oracle auto-discovery
         if (cycleNumber > lastProcessedCycleNumber) {
             lastProcessedCycleNumber = cycleNumber;
         }
@@ -334,13 +334,13 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         emit EventsLib.BatchConfirmed(cycleNumber, orderIds, blsSignature);
     }
 
-    /// @notice Emit per-asset trade instructions after issuer decomposition and cross-ITP netting
+    /// @notice Emit per-asset trade instructions after oracle decomposition and cross-ITP netting
     /// @dev No state changes — BLS-authenticated event emission only.
-    ///      Issuers decompose ITP orders into per-asset amounts, net same assets across all ITPs,
+    ///      Oracles decompose ITP orders into per-asset amounts, net same assets across all ITPs,
     ///      then call this to emit AssetTradeRequest events for the AP.
     /// @param cycleNumber The cycle for which trades were decomposed
     /// @param trades Array of netted per-asset trades
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function emitAssetTrades(
         uint256 cycleNumber,
         TypesLib.AssetTrade[] calldata trades,
@@ -374,7 +374,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), cycleNumber, fills));
 
         // Verify BLS signature against aggregated public key
-        // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
+        // SECURITY: oracleRegistry MUST be set in production. Empty pubkey only allowed for testing.
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Process each fill
@@ -615,7 +615,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "refund", orderId));
 
         // Verify BLS signature
-        // SECURITY: issuerRegistry MUST be set in production. Empty pubkey only allowed for testing.
+        // SECURITY: oracleRegistry MUST be set in production. Empty pubkey only allowed for testing.
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Mark order as expired
@@ -771,7 +771,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     // ============ REBALANCE FUNCTIONS (V2 - Asset Changes) ============
 
     /// @notice Permissionless rebalance request — emits event only, no state change
-    /// @dev Anyone can call. Issuers detect the event, verify, and execute via BLS consensus.
+    /// @dev Anyone can call. Oracles detect the event, verify, and execute via BLS consensus.
     /// @param itpId The ITP to rebalance
     /// @param removeIndices Indices of assets to remove (sorted descending)
     /// @param addAssets Addresses of assets to add
@@ -795,7 +795,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @param newWeights Weights for the final asset list
     /// @param prices Prices for the final asset list (for inventory computation)
     /// @param quoteTokens Quote tokens per asset (address(0) = default USDC)
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function rebalance(
         bytes32 itpId,
         uint256[] calldata removeIndices,
@@ -846,10 +846,10 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
 
     // ============ ITP NAV FUNCTIONS ============
 
-    /// @notice Set ITP NAV via BLS-verified push from issuers
+    /// @notice Set ITP NAV via BLS-verified push from oracles
     /// @param itpId The ITP identifier
     /// @param nav The NAV value (18 decimals)
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "setItpNav", itpId, nav));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
@@ -1055,7 +1055,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @notice Cancel stale pending orders via BLS consensus
     /// @dev Verifies BLS signature, sets orders to EXPIRED, decrements pendingOrderCount, refunds USDC
     /// @param orderIds Array of order IDs to cancel
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function cancelStalePendingOrders(uint256[] calldata orderIds, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         bytes32 message = keccak256(abi.encode(block.chainid, address(this), "cancelStale", orderIds));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
@@ -1104,7 +1104,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     /// @dev Anyone can call, but only for BATCHED orders past BATCHED_TIMEOUT.
     ///      Requires BLS signature for authorization.
     /// @param orderId The order to refund
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function refundTimedOutBatchedOrder(uint256 orderId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         TypesLib.LimitOrder storage order = orders[orderId];
 

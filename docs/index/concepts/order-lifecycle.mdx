@@ -19,10 +19,10 @@ Ten steps between your USDC and your tokens. Each one can fail. None of them do,
     `submitOrder(itpId, amount, BUY)`. Your USDC moves to the contract and is **escrowed**. It is no longer yours. It is not yet theirs. It belongs to the protocol.
   </Step>
   <Step title="Order is PENDING">
-    Your order enters `PENDING`. It sits on-chain, visible to the issuer nodes. It will stay there for about one second. In that second, three machines decide whether to trust each other. This is consensus.
+    Your order enters `PENDING`. It sits on-chain, visible to the oracle nodes. It will stay there for about one second. In that second, three machines decide whether to trust each other. This is consensus.
   </Step>
   <Step title="COLLECT Phase">
-    The issuer nodes detect pending orders during **COLLECT** (200ms). All orders are gathered into a candidate batch. The clock is already running.
+    The oracle nodes detect pending orders during **COLLECT** (200ms). All orders are gathered into a candidate batch. The clock is already running.
   </Step>
   <Step title="PROPOSE Phase">
     The cycle's **leader** (round-robin election) proposes a batch. Order IDs, batch hash. A proposal is an opinion backed by cryptography.
@@ -31,7 +31,7 @@ Ten steps between your USDC and your tokens. Each one can fail. None of them do,
     Peer nodes **validate** the batch — checking order data, prices, consistency. Each signs the batch hash with its BLS private key. Agreement is not given. It is earned.
   </Step>
   <Step title="Signature Aggregation">
-    The leader collects signatures. Once `ceil(2n/3)` of registered issuers have signed, the signatures collapse into a single compact proof. Many voices, one signature.
+    The leader collects signatures. Once `ceil(2n/3)` of registered oracles have signed, the signatures collapse into a single compact proof. Many voices, one signature.
   </Step>
   <Step title="Batch Confirmation">
     `confirmBatch()` is called on-chain with the aggregated BLS signature. The contract verifies it against the registered public key. Orders move to `BATCHED`. The consensus is now permanent.
@@ -65,7 +65,7 @@ Selling is the buy flow in reverse. The same consensus, the same execution, the 
 
 ## Cycle Timing
 
-One second. Five phases. The issuer nodes run this cycle continuously, without pause, without weekends. The machines do not tire. That is their advantage over you.
+One second. Five phases. The oracle nodes run this cycle continuously, without pause, without weekends. The machines do not tire. That is their advantage over you.
 
 ```mermaid
 gantt
@@ -82,9 +82,9 @@ gantt
 
 | Phase | Duration | What Happens |
 |-------|----------|--------------|
-| **COLLECT** | 200ms | Issuer nodes scan for new pending orders on-chain |
+| **COLLECT** | 200ms | Oracle nodes scan for new pending orders on-chain |
 | **PROPOSE** | 200ms | Leader proposes a batch of collected orders |
-| **SIGN_SUBMIT** | 200ms | Peer issuer nodes validate and BLS-sign the batch; leader aggregates and submits |
+| **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate and BLS-sign the batch; leader aggregates and submits |
 | **CONFIRM** | 200ms | Batch confirmation transaction is processed on-chain |
 | **REBALANCE** | 200ms | Any pending rebalance operations are executed |
 
@@ -119,7 +119,7 @@ What stands between your money and catastrophe.
 
 ### BLS Consensus
 
-Every batch requires a supermajority: `ceil(2n/3)` of registered issuers. Three nodes, at least two must sign. Twenty nodes, at least fourteen. The math is simple. The discipline is not.
+Every batch requires a supermajority: `ceil(2n/3)` of registered oracles. Three nodes, at least two must sign. Twenty nodes, at least fourteen. The math is simple. The discipline is not.
 
 <Warning>
 BLS verification is **never bypassed**. Not in production. Not in testing. Not in local development. There is no test mode. There is no override. This is the one rule the protocol will not negotiate.
@@ -145,9 +145,9 @@ Sixty seconds. If the world has not responded by then, the order enters timeout.
 Timeouts are rare. They exist for the moments when exchanges go dark or networks congest. The safety net you never think about until the floor disappears.
 </Note>
 
-### Issuer-AP Separation
+### Oracle-AP Separation
 
-Issuer nodes and the Authorized Participant cannot speak to each other. The issuers read on-chain fill data and nothing more. This separation exists because the consensus layer and the execution layer must not collude. Systems fail when the watchers and the doers become friends.
+Oracle nodes and the Authorized Participant cannot speak to each other. The oracles read on-chain fill data and nothing more. This separation exists because the consensus layer and the execution layer must not collude. Systems fail when the watchers and the doers become friends.
 
 ## Netting
 

@@ -1,7 +1,7 @@
 //! Arbitration event listener
 //!
 //! Polls CollateralVault for `ArbitrationRequested` events.
-//! Uses ethers Provider (same pattern as issuer's chain reader).
+//! Uses ethers Provider (same pattern as oracle's chain reader).
 
 use ethers::providers::{Http, Middleware, Provider};
 use ethers::types::{Address, Filter, H256, U256, U64};

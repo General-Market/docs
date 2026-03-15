@@ -5,7 +5,7 @@
 
 use super::{BootstrapError, BootstrapParams, PriceComponents};
 use crate::{
-    BackendPriceFetcher, BitgetPriceFetcher, DexPriceSource, DexPriceSourceConfig, IssuerConfig,
+    BackendPriceFetcher, BitgetPriceFetcher, DexPriceSource, DexPriceSourceConfig, OracleConfig,
     PriceFetcher, PriceValidator, SymbolMap,
 };
 use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
@@ -17,13 +17,13 @@ use tracing::{error, info, warn};
 
 /// Builder for price-related components
 pub struct PriceBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     params: &'a BootstrapParams,
     node_id: u32,
 }
 
 impl<'a> PriceBuilder<'a> {
-    pub fn new(config: &'a IssuerConfig, params: &'a BootstrapParams, node_id: u32) -> Self {
+    pub fn new(config: &'a OracleConfig, params: &'a BootstrapParams, node_id: u32) -> Self {
         Self { config, params, node_id }
     }
 

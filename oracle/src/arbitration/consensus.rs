@@ -1,7 +1,7 @@
 //! Arbitration consensus hash builders
 //!
 //! Builds message hashes for BLS signing during arbitration consensus.
-//! Follows same pattern as `issuer/src/bridge/types.rs` hash builders
+//! Follows same pattern as `oracle/src/bridge/types.rs` hash builders
 //! (e.g. `build_rebalance_hash`) — using `ethers::abi::encode` with `Token` types
 //! so that the resulting hash matches Solidity's `keccak256(abi.encode(...))`.
 

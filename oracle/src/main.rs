@@ -1,19 +1,19 @@
-//! Issuer node binary for Index L3
+//! Oracle node binary for Index L3
 //!
-//! Runs an issuer node that participates in order batching, consensus, and execution.
+//! Runs an oracle node that participates in order batching, consensus, and execution.
 
 use clap::Parser;
-use issuer::bootstrap::{BootstrapParams, IssuerBootstrap, IssuerComponents, IssuerMetrics};
-use issuer::bridge::Fill;
-use issuer::p2p::TcpP2PTransport;
-use issuer::{
+use oracle::bootstrap::{BootstrapParams, OracleBootstrap, OracleComponents, OracleMetrics};
+use oracle::bridge::Fill;
+use oracle::p2p::TcpP2PTransport;
+use oracle::{
     handle_nav_sign_request, BackendNavCalculator, ConfigBuilder,
     NavCalculator, NavSignHandler, PriceFetcher,
     RegistrySyncCache, RegistrySyncConfig, RegistrySyncHandler, StubItpRegistryReader,
     MIN_CYCLE_DURATION_MS,
 };
-use issuer::arbitration::{self, ArbitrationSubsystem};
-use issuer::arbitration::types::ArbitrationConfig;
+use oracle::arbitration::{self, ArbitrationSubsystem};
+use oracle::arbitration::types::ArbitrationConfig;
 use common::types::P2PMessage;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -24,27 +24,27 @@ use tokio::signal;
 use tracing::{debug, info, warn, error};
 use chrono::Utc;
 
-/// Index L3 Issuer Node
+/// Index L3 Oracle Node
 ///
 /// Participates in order batching, BLS consensus, and trade execution.
 ///
 /// Configuration priority: CLI args > Environment variables > Config file > Defaults
 #[derive(Parser, Debug)]
-#[command(name = "issuer")]
+#[command(name = "oracle")]
 #[command(author = "Index Team")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
-#[command(about = "Index L3 Issuer Node - participates in consensus and order execution")]
+#[command(about = "Index L3 Oracle Node - participates in consensus and order execution")]
 #[command(long_about = None)]
 struct Args {
-    /// Issuer node ID (1-20). Can also be set via ISSUER_NODE_ID env var or config file.
+    /// Oracle node ID (1-20). Can also be set via ORACLE_NODE_ID env var or config file.
     #[arg(long)]
     node_id: Option<u32>,
 
-    /// P2P listen port (default: 9000 + node_id). Can also be set via ISSUER_PORT env var.
+    /// P2P listen port (default: 9000 + node_id). Can also be set via ORACLE_PORT env var.
     #[arg(long)]
     port: Option<u16>,
 
-    /// Chain RPC endpoint. Can also be set via ISSUER_RPC_URL env var.
+    /// Chain RPC endpoint. Can also be set via ORACLE_RPC_URL env var.
     #[arg(long)]
     rpc: Option<String>,
 
@@ -52,24 +52,24 @@ struct Args {
     #[arg(long)]
     config: Option<PathBuf>,
 
-    /// Log level (trace, debug, info, warn, error). Can also be set via ISSUER_LOG_LEVEL env var.
+    /// Log level (trace, debug, info, warn, error). Can also be set via ORACLE_LOG_LEVEL env var.
     #[arg(long)]
     log_level: Option<String>,
 
-    /// Log output directory. Can also be set via ISSUER_LOG_DIR env var.
+    /// Log output directory. Can also be set via ORACLE_LOG_DIR env var.
     #[arg(long)]
     log_dir: Option<PathBuf>,
 
-    /// Output logs as JSON. Can also be set via ISSUER_JSON_LOGS env var.
+    /// Output logs as JSON. Can also be set via ORACLE_JSON_LOGS env var.
     #[arg(long)]
     json_logs: bool,
 
-    /// Path to BLS key file. Can also be set via ISSUER_BLS_KEY_PATH env var.
+    /// Path to BLS key file. Can also be set via ORACLE_BLS_KEY_PATH env var.
     #[arg(long)]
     bls_key_path: Option<PathBuf>,
 
     /// Peer addresses to connect to (can be specified multiple times).
-    /// Format: "ip:port". Can also be set via ISSUER_PEERS env var (comma-separated).
+    /// Format: "ip:port". Can also be set via ORACLE_PEERS env var (comma-separated).
     #[arg(long = "peer", value_name = "ADDRESS")]
     peers: Vec<String>,
 
@@ -84,7 +84,7 @@ struct Args {
     min_cycle_gap_ms: u64,
 
     /// BLS sign timeout for consensus rounds in milliseconds (default: 500).
-    /// All issuers are co-located on the same VPS (~1ms P2P latency), so 500ms is generous.
+    /// All oracles are co-located on the same VPS (~1ms P2P latency), so 500ms is generous.
     #[arg(long, default_value = "500")]
     sign_timeout_ms: u64,
 
@@ -137,23 +137,23 @@ struct Args {
     #[arg(long)]
     skip_reconstruction: bool,
 
-    /// Signature threshold for BLS consensus (default: auto-calculate from issuer count).
+    /// Signature threshold for BLS consensus (default: auto-calculate from oracle count).
     #[arg(long)]
     signature_threshold: Option<usize>,
 
-    /// Number of issuers in the network (default: 3).
+    /// Number of oracles in the network (default: 3).
     #[arg(long, default_value = "3")]
-    num_issuers: u8,
+    num_oracles: u8,
 
     /// Generate deterministic BLS key from seed [N, 0x42, 0, ...] (for testing).
     #[arg(long)]
     bls_key_seed_index: Option<u8>,
 
-    /// Override the on-chain issuer ID used in signerBitmap (for testing).
+    /// Override the on-chain oracle ID used in signerBitmap (for testing).
     #[arg(long)]
-    on_chain_issuer_id: Option<u8>,
+    on_chain_oracle_id: Option<u8>,
 
-    /// Build InMemoryKeyRegistry from deterministic seeds for all num_issuers nodes.
+    /// Build InMemoryKeyRegistry from deterministic seeds for all num_oracles nodes.
     #[arg(long)]
     test_key_seeds: bool,
 
@@ -177,13 +177,13 @@ struct Args {
     #[arg(long)]
     chain_id: Option<u64>,
 
-    /// IssuerCustody L3 contract address (Story 7.7).
+    /// OracleCustody L3 contract address (Story 7.7).
     #[arg(long)]
-    issuer_custody_l3: Option<String>,
+    oracle_custody_l3: Option<String>,
 
-    /// IssuerCustody Settlement contract address (Story 7.7).
+    /// OracleCustody Settlement contract address (Story 7.7).
     #[arg(long)]
-    issuer_custody_settlement: Option<String>,
+    oracle_custody_settlement: Option<String>,
 
     /// SettlementBridgeCustody contract address (Story 7.8).
     #[arg(long)]
@@ -207,14 +207,14 @@ struct Args {
     ntp_server: String,
 
     /// Enable the registry sync endpoint (GET /api/registry-sync).
-    /// When enabled, the issuer watches for RegistryStateChanged events from L3 IssuerRegistry
-    /// and serves BLS-signed registry state proofs for MirrorIssuerRegistry sync on Settlement.
+    /// When enabled, the oracle watches for RegistryStateChanged events from L3 OracleRegistry
+    /// and serves BLS-signed registry state proofs for MirrorOracleRegistry sync on Settlement.
     /// (Story 8.4, Task 7.1)
     #[arg(long)]
     registry_sync: bool,
 
     /// MockUSDT token contract address for USDT-pair fill verification (Story 7.18).
-    /// When set, issuer fill verification accepts this address as a valid USDT token.
+    /// When set, oracle fill verification accepts this address as a valid USDT token.
     #[arg(long)]
     mock_usdt: Option<String>,
 
@@ -327,47 +327,47 @@ struct Args {
     #[arg(long)]
     skip_wal_replay: bool,
 
-    /// MirrorIssuerRegistry contract address on Settlement (Step 12).
-    /// When set, the issuer actively syncs L3 registry state to the mirror on Settlement.
+    /// MirrorOracleRegistry contract address on Settlement (Step 12).
+    /// When set, the oracle actively syncs L3 registry state to the mirror on Settlement.
     #[arg(long)]
     mirror_registry: Option<String>,
 }
 
-fn setup_logging(config: &issuer::IssuerConfig) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_logging(config: &oracle::OracleConfig) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = config.node_id.unwrap_or(0);
     let log_config = common::logging::LogConfig {
         level: config.effective_log_level(),
         dir: config.effective_log_dir(),
         json_enabled: config.effective_json_logs(),
-        component_name: format!("issuer-{}", node_id),
+        component_name: format!("oracle-{}", node_id),
         node_id: config.node_id,
     };
     common::logging::init_logging(&log_config)
 }
 
-/// Type alias for the NAV sign handler used in the issuer node
-type IssuerNavSignHandler = NavSignHandler<Box<dyn NavCalculator>, StubItpRegistryReader>;
+/// Type alias for the NAV sign handler used in the oracle node
+type OracleNavSignHandler = NavSignHandler<Box<dyn NavCalculator>, StubItpRegistryReader>;
 
-/// Shared state for the issuer HTTP API (health, nav-sign, registry-sync, ready).
-/// All issuer endpoints and optional Vision endpoints share one axum server.
-struct IssuerApiState {
+/// Shared state for the oracle HTTP API (health, nav-sign, registry-sync, ready).
+/// All oracle endpoints and optional Vision endpoints share one axum server.
+struct OracleApiState {
     node_id: u32,
     p2p_transport: Option<Arc<TcpP2PTransport>>,
-    metrics: Arc<IssuerMetrics>,
-    p2p_metrics: Arc<issuer::p2p::P2PMetrics>,
+    metrics: Arc<OracleMetrics>,
+    p2p_metrics: Arc<oracle::p2p::P2PMetrics>,
     registry_sync_cache: Option<RegistrySyncCache>,
-    nav_sign_handler: Option<Arc<IssuerNavSignHandler>>,
-    /// Number of issuers in the network (for threshold computation)
-    num_issuers: u8,
+    nav_sign_handler: Option<Arc<OracleNavSignHandler>>,
+    /// Number of oracles in the network (for threshold computation)
+    num_oracles: u8,
     /// Whether this node has a BLS keypair loaded
     bls_keypair_loaded: bool,
     /// Epoch-millis timestamp of last successful RPC call (updated by consensus loop)
     last_rpc_success_ms: Arc<std::sync::atomic::AtomicU64>,
 }
 
-/// GET /health — issuer health check with metrics
+/// GET /health — oracle health check with metrics
 async fn axum_health_handler(
-    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+    axum::extract::State(state): axum::extract::State<Arc<OracleApiState>>,
 ) -> axum::response::Response {
     use axum::http::{header, StatusCode};
     use axum::response::IntoResponse;
@@ -454,12 +454,12 @@ async fn axum_health_handler(
 /// Does NOT check consensusPaused — that is intentional to avoid deadlocking
 /// the deployment ceremony (step 7 waits for /ready, step 8 unpauses).
 async fn axum_ready_handler(
-    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+    axum::extract::State(state): axum::extract::State<Arc<OracleApiState>>,
 ) -> axum::response::Response {
     use axum::http::{header, StatusCode};
     use axum::response::IntoResponse;
 
-    let threshold = issuer::consensus::aggregator::compute_threshold(state.num_issuers as usize);
+    let threshold = oracle::consensus::aggregator::compute_threshold(state.num_oracles as usize);
     let required_peers = if threshold > 0 { threshold - 1 } else { 0 };
 
     // Check 1: peer count
@@ -492,7 +492,7 @@ async fn axum_ready_handler(
             (false, false)
         }
     } else {
-        // Registry sync not enabled — pass the check (single-issuer or not configured)
+        // Registry sync not enabled — pass the check (single-oracle or not configured)
         (true, true)
     };
 
@@ -526,7 +526,7 @@ async fn axum_ready_handler(
 
 /// GET /api/nav-sign — BLS-signed NAV price for an ITP
 async fn axum_nav_sign_handler(
-    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+    axum::extract::State(state): axum::extract::State<Arc<OracleApiState>>,
     axum::extract::RawQuery(query): axum::extract::RawQuery,
 ) -> axum::response::Response {
     use axum::http::{header, StatusCode};
@@ -548,7 +548,7 @@ async fn axum_nav_sign_handler(
 
 /// GET /api/registry-sync — registry sync state
 async fn axum_registry_sync_handler(
-    axum::extract::State(state): axum::extract::State<Arc<IssuerApiState>>,
+    axum::extract::State(state): axum::extract::State<Arc<OracleApiState>>,
 ) -> axum::response::Response {
     use axum::http::{header, StatusCode};
     use axum::response::IntoResponse;
@@ -576,13 +576,13 @@ async fn axum_registry_sync_handler(
 
 /// GET / — alias for health check
 async fn axum_root_health_handler(
-    state: axum::extract::State<Arc<IssuerApiState>>,
+    state: axum::extract::State<Arc<OracleApiState>>,
 ) -> axum::response::Response {
     axum_health_handler(state).await
 }
 
-/// Build the core issuer API router (health, ready, nav-sign, registry-sync).
-fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
+/// Build the core oracle API router (health, ready, nav-sign, registry-sync).
+fn oracle_api_routes(state: Arc<OracleApiState>) -> axum::Router {
     axum::Router::new()
         .route("/health", axum::routing::get(axum_health_handler))
         .route("/ready", axum::routing::get(axum_ready_handler))
@@ -592,7 +592,7 @@ fn issuer_api_routes(state: Arc<IssuerApiState>) -> axum::Router {
         .with_state(state)
 }
 
-async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, issuer_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<issuer::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<issuer::vision::pending_ops::PendingOpsQueue>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, oracle_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<oracle::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<oracle::vision::pending_ops::PendingOpsQueue>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -600,7 +600,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let listener = TcpListener::bind(format!("0.0.0.0:{}", components.p2p.health_port)).await?;
     info!(node_id, health_port = components.p2p.health_port, "HTTP API listening");
 
-    info!(node_id, "Issuer node initialized, entering main loop");
+    info!(node_id, "Oracle node initialized, entering main loop");
 
     // Create work signal channel for demand-driven cycling
     let (work_tx, work_rx) = tokio::sync::mpsc::channel::<bool>(1);
@@ -610,7 +610,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let cycle_state_rx = components.consensus.cycle_manager.subscribe();
 
     // Create P2P metrics early so the router can increment counters
-    let p2p_metrics = Arc::new(issuer::p2p::P2PMetrics::default());
+    let p2p_metrics = Arc::new(oracle::p2p::P2PMetrics::default());
 
     // Attach metrics to transport for outbound message counting
     if let Some(ref transport) = components.p2p.transport {
@@ -656,7 +656,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Shared readiness state for /ready endpoint
     let last_rpc_success_ms = Arc::new(std::sync::atomic::AtomicU64::new(0));
     let last_rpc_success_ms_for_task = last_rpc_success_ms.clone();
-    let num_issuers = components.consensus.config.num_issuers;
+    let num_oracles = components.consensus.config.num_oracles;
     let bls_keypair_loaded = components.consensus.keys.bls_keypair.is_some();
 
     // Spawn consensus coordination task
@@ -674,7 +674,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Initialize BLSCustody nonce from on-chain state on startup
     if let Some(ref orchestrator) = bridge_orchestrator_for_task {
         let orch = orchestrator.read().await;
-        let custody_addr = orch.config().issuer_custody_l3;
+        let custody_addr = orch.config().oracle_custody_l3;
         drop(orch);
         if !custody_addr.is_zero() {
             let l3_rpc = components.chain.rpc_url.clone();
@@ -697,13 +697,13 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     }
 
     // Initialize registry nonce from mirror's lastSnapshotNonce on startup.
-    // Initialize L3 registry nonce from on-chain IssuerRegistry.lastSnapshotNonce.
+    // Initialize L3 registry nonce from on-chain OracleRegistry.lastSnapshotNonce.
     // L3 BLS operations (submitBatch, confirmBatch, setItpNav, etc.) use this as referenceNonce.
     if let Some(ref protocol) = consensus_protocol_for_task {
         match consensus_chain_reader.get_registry_nonce().await {
             Ok(l3_nonce) if l3_nonce > 0 => {
                 protocol.set_registry_nonce(l3_nonce);
-                info!(l3_nonce, "Startup: initialized L3 registry nonce from IssuerRegistry.lastSnapshotNonce");
+                info!(l3_nonce, "Startup: initialized L3 registry nonce from OracleRegistry.lastSnapshotNonce");
             }
             Ok(_) => info!("Startup: L3 lastSnapshotNonce is 0, L3 registry nonce stays at default"),
             Err(e) => warn!(error = %e, "Startup: failed to read L3 registry nonce"),
@@ -743,7 +743,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let settlement_chain_id_for_task = settlement_chain_id;
     let l3_chain_id_for_task = components.target_chain_id;
     let mirror_registry_for_task = mirror_registry_address;
-    let issuer_registry_for_sync_task = issuer_registry_address_for_sync;
+    let oracle_registry_for_sync_task = oracle_registry_address_for_sync;
     let work_tx_for_task = work_tx;
 
     // Use the shared PendingOpsQueue passed into run_main_loop from main()
@@ -768,7 +768,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
         vision_config.as_ref().map(|c| c.settlement_chain_id).unwrap_or(421_614u64);
 
     // Build quote_tokens map: asset address → quote token address (USDC or USDT)
-    // Issuer determines which quote token each asset trades against based on Bitget pair suffix
+    // Oracle determines which quote token each asset trades against based on Bitget pair suffix
     let quote_tokens_for_task: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>> = {
         if let Some(usdt_addr) = mock_usdt_addr {
             let mut qt_map = std::collections::HashMap::new();
@@ -1000,7 +1000,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let fs = itp_first_seen.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
@@ -1032,7 +1032,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let qt = quote_tokens_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             let cursor = settlement_buy_cursor.clone();
                             let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
                             let sbo = startup_buy_orders.clone();
@@ -1071,7 +1071,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let qt = quote_tokens_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
@@ -1100,7 +1100,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let iid = itp_id_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             tokio::spawn(async move {
                                 let bridge_proxy = orch.read().await.config().bridge_proxy;
                                 match ar.get_pending_mints(bridge_proxy).await {
@@ -1182,7 +1182,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let qt = quote_tokens_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             let cursor = settlement_sell_cursor.clone();
                             let sso = startup_sell_orders.clone();
                             tokio::spawn(async move {
@@ -1217,7 +1217,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let qt = quote_tokens_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             let met = consensus_metrics.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
@@ -1251,7 +1251,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                             let qt = quote_tokens_for_task.clone();
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
-                            let nu = consensus_config.num_issuers;
+                            let nu = consensus_config.num_oracles;
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
@@ -1276,7 +1276,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     if is_sync_leader && (first_sync || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
-                                if let (Some(mirror_addr), Some(_issuer_reg_addr)) = (mirror_registry_for_task, issuer_registry_for_sync_task) {
+                                if let (Some(mirror_addr), Some(_oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
                                     mirror_sync_first.store(false, Ordering::Release);
                                     let settlement_cid = settlement_chain_id_for_task.unwrap_or(42161);
                                     mirror_sync_active.store(true, Ordering::Release);
@@ -1378,14 +1378,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                     "Resetting stale order"
                                                 );
                                                 if matches!(status,
-                                                    issuer::bridge::BridgeOrderStatus::SellPending |
-                                                    issuer::bridge::BridgeOrderStatus::SellBurnPending |
-                                                    issuer::bridge::BridgeOrderStatus::SellBurned |
-                                                    issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
-                                                    issuer::bridge::BridgeOrderStatus::SellFilled
+                                                    oracle::bridge::BridgeOrderStatus::SellPending |
+                                                    oracle::bridge::BridgeOrderStatus::SellBurnPending |
+                                                    oracle::bridge::BridgeOrderStatus::SellBurned |
+                                                    oracle::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
+                                                    oracle::bridge::BridgeOrderStatus::SellFilled
                                                 ) {
                                                     // Task 4: Status-aware reset for burn states
-                                                    if matches!(status, issuer::bridge::BridgeOrderStatus::SellBurnPending) {
+                                                    if matches!(status, oracle::bridge::BridgeOrderStatus::SellBurnPending) {
                                                         // Check on-chain state to resolve ambiguous SellBurnPending
                                                         if let Some(ref settlement_reader) = settlement_reader_for_task {
                                                             let on_chain_burned = settlement_reader
@@ -1394,19 +1394,19 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                                 .unwrap_or(false);
                                                             if on_chain_burned {
                                                                 warn!(order_id = %order_id, "Stale SellBurnPending but burn confirmed on-chain — advancing to SellBurned");
-                                                                orch.set_sell_order_status(*order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                                                orch.set_sell_order_status(*order_id, oracle::BridgeOrderStatus::SellBurned).await;
                                                             } else {
                                                                 warn!(order_id = %order_id, "Stale SellBurnPending and burn NOT on-chain — resetting to SellPending");
-                                                                orch.set_sell_order_status(*order_id, issuer::BridgeOrderStatus::SellPending).await;
+                                                                orch.set_sell_order_status(*order_id, oracle::BridgeOrderStatus::SellPending).await;
                                                             }
                                                         }
-                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellBurned) {
+                                                    } else if matches!(status, oracle::bridge::BridgeOrderStatus::SellBurned) {
                                                         // Don't reset — keep at SellBurned, Phase A sub-step 3 retries L3 submit
                                                         warn!(order_id = %order_id, "Stale SellBurned order — retrying L3 submit only");
-                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3) {
+                                                    } else if matches!(status, oracle::bridge::BridgeOrderStatus::SellSubmittedOnL3) {
                                                         // Don't reset — L3 order exists, Phase B retries fill confirmation
                                                         warn!(order_id = %order_id, "Stale SellSubmittedOnL3 order — retrying fills only");
-                                                    } else if matches!(status, issuer::bridge::BridgeOrderStatus::SellFilled) {
+                                                    } else if matches!(status, oracle::bridge::BridgeOrderStatus::SellFilled) {
                                                         // Don't reset — fills confirmed, Phase C retries completeSellOrder
                                                         warn!(order_id = %order_id, "Stale SellFilled order — retrying complete only");
                                                     } else {
@@ -1421,8 +1421,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                                                     orch.reset_stale_order(order_id).await;
                                                     // Clear from seen_orders dedup so event scan re-discovers it
                                                     if matches!(status,
-                                                        issuer::bridge::BridgeOrderStatus::Pending |
-                                                        issuer::bridge::BridgeOrderStatus::BridgedToL3
+                                                        oracle::bridge::BridgeOrderStatus::Pending |
+                                                        oracle::bridge::BridgeOrderStatus::BridgedToL3
                                                     ) {
                                                         if let Some(ref settlement_reader) = settlement_reader_for_task {
                                                             let chain_id = settlement_reader.chain_id();
@@ -1462,7 +1462,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                     // in-flight orders. Active task flags (l3_active, buy_active, etc.)
                     // must NOT trigger WorkDriven — they cause a feedback loop where
                     // running tasks → work signal → cycle advance → re-check → still running
-                    // → work signal → ... causing rapid cycle divergence across issuers
+                    // → work signal → ... causing rapid cycle divergence across oracles
                     // and 0-signature consensus failures.
                     let has_bridge_work = if let Some(ref orch) = bridge_orchestrator_for_task {
                         match orch.try_read() {
@@ -1487,7 +1487,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 
     // Create NAV sign handler (Story 8.3) if API is enabled and BLS keypair is available
     // Uses StubItpRegistryReader for now - in production, wire up EthersItpRegistryReader
-    let nav_sign_handler: Option<Arc<IssuerNavSignHandler>> =
+    let nav_sign_handler: Option<Arc<OracleNavSignHandler>> =
         if api_enabled && components.consensus.keys.bls_keypair.is_some() {
             let url = data_node_url.as_ref().unwrap_or_else(|| {
                 panic!("--data-node-url is required when NAV API is enabled (--api-enabled=true)")
@@ -1499,7 +1499,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
                 nav_calculator,
                 StubItpRegistryReader::new(),
                 components.consensus.keys.bls_keypair.clone(),
-                components.consensus.keys.issuer_registry_index,
+                components.consensus.keys.oracle_registry_index,
                 components.consensus.cycle_manager.get_current_cycle(),
             );
             info!(node_id, api_enabled, "NAV sign API handler initialized");
@@ -1540,18 +1540,18 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     };
 
     // Build unified HTTP API server (health + ready + nav-sign + registry-sync + optional Vision)
-    let issuer_state = Arc::new(IssuerApiState {
+    let oracle_state = Arc::new(OracleApiState {
         node_id,
         p2p_transport: components.p2p.transport.clone(),
         metrics: components.consensus.metrics.clone(),
         p2p_metrics: p2p_metrics.clone(),
         registry_sync_cache: components.registry_sync_cache.clone(),
         nav_sign_handler: nav_sign_handler.clone(),
-        num_issuers,
+        num_oracles,
         bls_keypair_loaded,
         last_rpc_success_ms: last_rpc_success_ms.clone(),
     });
-    let mut api_router = issuer_api_routes(issuer_state);
+    let mut api_router = oracle_api_routes(oracle_state);
     if let Some(vision) = vision_router {
         api_router = api_router.merge(vision);
         info!(node_id, "Vision API routes merged into health port");
@@ -1565,7 +1565,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     // Start delisting watchdog (daily background task)
     if let (Some(ref dn_url), Some(ref writer)) = (&data_node_url, &components.chain.writer) {
         let index_address = writer.config().contracts.index;
-        let watchdog = Arc::new(issuer::delisting_watchdog::DelistingWatchdog::new(
+        let watchdog = Arc::new(oracle::delisting_watchdog::DelistingWatchdog::new(
             dn_url.clone(),
             components.chain.reader.clone(),
             writer.clone() as Arc<dyn common::traits::ChainWriter>,
@@ -1573,14 +1573,14 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
             index_address,
         ));
         let wd_leader = Arc::new(tokio::sync::RwLock::new(
-            issuer::LeaderElector::new(
+            oracle::LeaderElector::new(
                 components.consensus.keys.node_index,
-                components.consensus.config.num_issuers,
+                components.consensus.config.num_oracles,
             ),
         ));
         let wd_shutdown = shutdown.clone();
         tokio::spawn(async move {
-            issuer::delisting_watchdog::run_daily(
+            oracle::delisting_watchdog::run_daily(
                 watchdog,
                 wd_leader,
                 std::time::Duration::from_secs(86400),
@@ -1629,7 +1629,7 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
     let _ = consensus_handle.await;
     let _ = health_handle.await;
 
-    info!(node_id, "Issuer node shutting down gracefully");
+    info!(node_id, "Oracle node shutting down gracefully");
     Ok(())
 }
 
@@ -1637,8 +1637,8 @@ async fn run_main_loop(mut components: IssuerComponents, api_enabled: bool, data
 /// Same pattern as every other task: detect work, propose, settle.
 /// Returns `true` on consensus success, `false` on failure/timeout.
 async fn run_price_update<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    price_fetcher: Arc<dyn issuer::PriceFetcher>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    price_fetcher: Arc<dyn oracle::PriceFetcher>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     l3_writer: Option<Arc<dyn common::traits::ChainWriter>>,
     oracle_address: Option<ethers::types::Address>,
@@ -1646,14 +1646,14 @@ async fn run_price_update<P, W, K, PF>(
     chain_id: Option<u64>,
     known_assets: Vec<ethers::types::Address>,
     current_cycle: u64,
-    metrics: Arc<issuer::bootstrap::IssuerMetrics>,
+    metrics: Arc<oracle::bootstrap::OracleMetrics>,
     rpc_timestamp: Arc<std::sync::atomic::AtomicU64>,
     nav_fallback: ethers::types::U256,
 ) -> bool where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     // 1. Fetch prices — map each returned price to its index in known_assets
     //    so followers can look up the correct address via known_assets[index].
@@ -1704,7 +1704,7 @@ async fn run_price_update<P, W, K, PF>(
 
     // 3. Log result and return success/failure
     match result {
-        issuer::ConsensusResult::Success { signer_count, cycle_number, .. } => {
+        oracle::ConsensusResult::Success { signer_count, cycle_number, .. } => {
             info!(cycle = cycle_number, signer_count, elapsed_ms, "Price update completed");
             metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
@@ -1713,23 +1713,23 @@ async fn run_price_update<P, W, K, PF>(
             );
             true
         }
-        issuer::ConsensusResult::Failed { ref reason, cycle_number } => {
+        oracle::ConsensusResult::Failed { ref reason, cycle_number } => {
             warn!(cycle = cycle_number, reason, elapsed_ms, "Price update failed");
             metrics.record_consensus_result(false, 0, elapsed_ms);
             false
         }
-        issuer::ConsensusResult::Timeout { ref phase, cycle_number } => {
+        oracle::ConsensusResult::Timeout { ref phase, cycle_number } => {
             warn!(cycle = cycle_number, phase = %phase, elapsed_ms, "Price update timed out");
             metrics.record_consensus_result(false, 0, elapsed_ms);
             false
         }
-        issuer::ConsensusResult::EmergencyPause { cycle_number } => {
+        oracle::ConsensusResult::EmergencyPause { cycle_number } => {
             warn!(cycle = cycle_number, elapsed_ms, "Price update triggered pause (will retry next cycle)");
             metrics.record_consensus_result(false, 0, elapsed_ms);
             false
         }
-        issuer::ConsensusResult::ItpCreated { .. } => { true } // won't happen for price cycle
-        issuer::ConsensusResult::PriceAgreed { ref aggregated_signature, signer_count, signers_bitmask, cycle_number } => {
+        oracle::ConsensusResult::ItpCreated { .. } => { true } // won't happen for price cycle
+        oracle::ConsensusResult::PriceAgreed { ref aggregated_signature, signer_count, signers_bitmask, cycle_number } => {
             info!(cycle = cycle_number, signer_count, elapsed_ms, "Price consensus agreed");
             metrics.record_consensus_result(true, signer_count, elapsed_ms);
             rpc_timestamp.store(
@@ -1741,7 +1741,7 @@ async fn run_price_update<P, W, K, PF>(
             if let (Some(ref writer), Some(oracle_addr), Some(morpho_price)) = (&l3_writer, oracle_address, morpho_nav) {
                 if signer_count > 0 {
                     let ref_nonce = protocol.registry_nonce();
-                    let calldata = issuer::build_update_price_calldata(
+                    let calldata = oracle::build_update_price_calldata(
                         morpho_price,
                         timestamp,
                         cycle_number,
@@ -1762,20 +1762,20 @@ async fn run_price_update<P, W, K, PF>(
 }
 
 async fn run_itp_creation_phase<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<dyn issuer::SettlementReader>,
-    settlement_writer: Arc<issuer::SettlementChainWriter>,
-    l3_writer: Option<Arc<issuer::EthersChainWriter>>,
-    itp_config: issuer::ItpCreationConfig,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    settlement_reader: Arc<dyn oracle::SettlementReader>,
+    settlement_writer: Arc<oracle::SettlementChainWriter>,
+    l3_writer: Option<Arc<oracle::EthersChainWriter>>,
+    itp_config: oracle::ItpCreationConfig,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     first_seen: Arc<tokio::sync::Mutex<std::collections::HashMap<ethers::types::U256, std::time::Instant>>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     /// Max age before skipping a stale ITP creation request (1 hour)
     const MAX_REQUEST_AGE: std::time::Duration = std::time::Duration::from_secs(3600);
@@ -1785,7 +1785,7 @@ async fn run_itp_creation_phase<P, W, K, PF>(
             if !pending_requests.is_empty() {
                 info!(cycle = current_cycle, count = pending_requests.len(), "Found pending ITP creation requests");
 
-                let am_leader = calculate_bridge_leader(current_cycle, num_issuers, node_index);
+                let am_leader = calculate_bridge_leader(current_cycle, num_oracles, node_index);
 
                 for request in pending_requests {
                     // Track first-seen time for staleness detection
@@ -1869,14 +1869,14 @@ async fn run_itp_creation_phase<P, W, K, PF>(
 }
 
 async fn run_cross_chain_processing<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<dyn issuer::SettlementReader>,
-    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    settlement_writer: Arc<issuer::SettlementChainWriter>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    settlement_reader: Arc<dyn oracle::SettlementReader>,
+    orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
+    settlement_writer: Arc<oracle::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     data_node_url_for_task: Option<String>,
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
@@ -1887,8 +1887,8 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
@@ -1901,7 +1901,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     }
 
     // Use cursor for incremental scanning (fallback: 200 blocks back on first run ~3 min on Sonic).
-    // Kept short to avoid re-processing stale bridge orders from previous issuer sessions.
+    // Kept short to avoid re-processing stale bridge orders from previous oracle sessions.
     let cursor_val = block_cursor.load(Ordering::Relaxed);
     let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
     // Log every 60th scan to avoid spamming (scans every ~5s)
@@ -1968,7 +1968,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         orch_write.set_order_amount(order.order_id, order.amount).await;
                         orch_write.set_order_limit_price(order.order_id, order.limit_price, 0).await; // 0 = BUY
                         orch_write.set_order_itp_id(order.order_id, order.itp_id).await;
-                        orch_write.set_order_status(order.order_id, issuer::BridgeOrderStatus::Pending).await;
+                        orch_write.set_order_status(order.order_id, oracle::BridgeOrderStatus::Pending).await;
                     }
                 }
 
@@ -1979,7 +1979,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                 // When multiple bridge proposals are in-flight simultaneously, leaders
                 // time out because followers are also busy being leaders for other orders.
                 for order in new_orders {
-                    let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_issuers, node_index);
+                    let am_leader = calculate_bridge_leader(order.order_id.as_u64(), num_oracles, node_index);
                     info!(order_id = %order.order_id, itp_id = ?order.itp_id, user = ?order.user, amount = %order.amount, am_leader, "Processing cross-chain order");
 
                     {
@@ -1999,7 +1999,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         let orch_w = orch.write().await;
                                         // Don't set SubmittedOnL3 — let P2P handlers manage status
                                         orch_w.set_order_amount(order.order_id, order.amount).await;
-                                        orch_w.store_order_mapping(issuer::bridge::OrderMapping {
+                                        orch_w.store_order_mapping(oracle::bridge::OrderMapping {
                                             settlement_order_id: order.order_id,
                                             l3_order_id: order.order_id, // placeholder — leader knows actual L3 ID
                                             original_user: order.user,
@@ -2024,10 +2024,10 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                                         ar.mark_order_processed(cid, order.order_id).await;
                                         {
                                             let orch_w = orch.write().await;
-                                            orch_w.set_order_status(order.order_id, issuer::BridgeOrderStatus::SubmittedOnL3).await;
+                                            orch_w.set_order_status(order.order_id, oracle::BridgeOrderStatus::SubmittedOnL3).await;
                                             orch_w.set_order_amount(order.order_id, order.amount).await;
                                             let l3_id = submit_result.l3_order_id.unwrap_or(order.order_id);
-                                            orch_w.store_order_mapping(issuer::bridge::OrderMapping {
+                                            orch_w.store_order_mapping(oracle::bridge::OrderMapping {
                                                 settlement_order_id: order.order_id,
                                                 l3_order_id: l3_id,
                                                 original_user: order.user,
@@ -2067,7 +2067,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         chain_reader.clone(),
                         current_cycle,
                         node_index,
-                        num_issuers,
+                        num_oracles,
                         data_node_url_for_task.clone(),
                         itp_id_for_task.clone(),
                         local_nav_fallback,
@@ -2100,14 +2100,14 @@ async fn run_cross_chain_processing<P, W, K, PF>(
 /// Recovery path: spawned on settlement_poll_due for orders stuck at SubmittedOnL3
 ///   `target_orders = None` — process all SubmittedOnL3 orders.
 async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    _settlement_reader: Arc<dyn issuer::SettlementReader>,
-    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    settlement_writer: Arc<issuer::SettlementChainWriter>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    _settlement_reader: Arc<dyn oracle::SettlementReader>,
+    orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
+    settlement_writer: Arc<oracle::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     _data_node_url_for_task: Option<String>,
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
@@ -2116,8 +2116,8 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     // Process batch for SubmittedOnL3 orders
     let submitted_orders = if let Some(ref targets) = target_orders {
@@ -2153,7 +2153,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 
         // Use order-based leader election (same node as submit leader, which has the settlement→L3 mapping)
         let batch_key = submitted_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
-        let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
+        let batch_am_leader = calculate_bridge_leader(batch_key, num_oracles, node_index);
         info!(cycle = current_cycle, order_count = submitted_orders.len(), batch_am_leader, "Processing batch for SubmittedOnL3 orders");
 
         // Fetch NAV per unique ITP (multi-ITP support)
@@ -2217,7 +2217,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
             {
                 let orch = orchestrator.write().await;
                 for oid in &submitted_orders {
-                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Batched).await;
+                    orch.set_order_status(*oid, oracle::BridgeOrderStatus::Batched).await;
                 }
             }
 
@@ -2529,14 +2529,14 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
 /// Phase B: Batch/trades/fills (reuse existing consensus phases)
 /// Phase C: Complete sell on Settlement (consensus) — completeSellOrder()
 async fn run_cross_chain_sell_processing<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    settlement_reader: Arc<dyn issuer::SettlementReader>,
-    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
-    settlement_writer: Arc<issuer::SettlementChainWriter>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    settlement_reader: Arc<dyn oracle::SettlementReader>,
+    orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
+    settlement_writer: Arc<oracle::SettlementChainWriter>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     _data_node_url_for_task: Option<String>,
     itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
@@ -2546,8 +2546,8 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     let confirmed_block = match settlement_reader.get_confirmed_block().await {
         Ok(block) => block,
@@ -2557,7 +2557,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     if confirmed_block == 0 { info!(cycle = current_cycle, "Sell: confirmed_block=0, skipping"); return; }
 
     // Use cursor for incremental scanning (fallback: 200 blocks back on first run ~3 min on Sonic).
-    // Kept short to avoid re-processing stale bridge orders from previous issuer sessions.
+    // Kept short to avoid re-processing stale bridge orders from previous oracle sessions.
     let cursor_val = block_cursor.load(Ordering::Relaxed);
     let from_block = if cursor_val > 0 { cursor_val } else { confirmed_block.saturating_sub(200) };
 
@@ -2608,7 +2608,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 {
                     let orch_write = orchestrator.write().await;
                     for sell_order in &new_sell_orders {
-                        orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
+                        orch_write.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellPending).await;
                         orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await;
                         orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
                         // Task 2: store limit price from settlement event
@@ -2623,7 +2623,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                 // Task 4: Phase A sub-step 1 — burn BridgedITP on Settlement (non-blocking)
                 // Process SellPending orders: run burn consensus, submit burn tx, advance to SellBurnPending
                 for sell_order in new_sell_orders {
-                    let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_issuers, node_index);
+                    let am_leader = calculate_bridge_leader(sell_order.order_id.as_u64(), num_oracles, node_index);
                     info!(
                         order_id = %sell_order.order_id,
                         itp_id = ?sell_order.itp_id,
@@ -2647,7 +2647,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                         info!(order_id = %sell_order.order_id, ?tx_hash, "burnSellOrderShares tx submitted (non-blocking)");
                                         let orch = orchestrator.write().await;
                                         orch.set_sell_burn_tx_hash(sell_order.order_id, tx_hash).await;
-                                        orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurnPending).await;
+                                        orch.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellBurnPending).await;
                                     }
                                     Err(e) => {
                                         // Check on-chain state instead of string matching
@@ -2658,7 +2658,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                         if on_chain_burned {
                                             info!(order_id = %sell_order.order_id, "burnSellOrderShares already confirmed on-chain — marking SellBurned");
                                             let orch = orchestrator.write().await;
-                                            orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                            orch.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellBurned).await;
                                         } else {
                                             warn!(order_id = %sell_order.order_id, error = %e, "burn tx failed — stays SellPending for retry");
                                         }
@@ -2669,7 +2669,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 // Advance directly to SellBurned; the L3 submit phase also requires consensus.
                                 info!(order_id = %sell_order.order_id, "Burn consensus succeeded — follower advancing to SellBurned");
                                 let orch = orchestrator.write().await;
-                                orch.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                                orch.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellBurned).await;
                             }
                         }
                         Err(e) => warn!(order_id = %sell_order.order_id, error = %e, "Burn consensus failed — stays SellPending"),
@@ -2687,12 +2687,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         let pending_sell_orders: Vec<ethers::types::U256> = {
             let o = orchestrator.read().await;
             o.sell_order_status_snapshot().await.iter()
-                .filter(|(_, s)| matches!(s, issuer::BridgeOrderStatus::SellPending))
+                .filter(|(_, s)| matches!(s, oracle::BridgeOrderStatus::SellPending))
                 .map(|(id, _)| *id)
                 .collect()
         };
         for order_id in pending_sell_orders {
-            let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+            let am_leader = calculate_bridge_leader(order_id.as_u64(), num_oracles, node_index);
             info!(order_id = %order_id, am_leader, "Retrying burn consensus for SellPending order");
             match protocol.run_burn_sell_order_phase(order_id, am_leader).await {
                 Ok(burn_result) => {
@@ -2707,7 +2707,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 info!(order_id = %order_id, ?tx_hash, "burnSellOrderShares tx submitted (retry)");
                                 let orch = orchestrator.write().await;
                                 orch.set_sell_burn_tx_hash(order_id, tx_hash).await;
-                                orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurnPending).await;
+                                orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellBurnPending).await;
                             }
                             Err(e) => {
                                 warn!(order_id = %order_id, error = %e, "burn tx failed on retry — stays SellPending");
@@ -2718,7 +2718,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         // Follower: trust consensus — advance to SellBurned
                         info!(order_id = %order_id, "Burn consensus succeeded on retry — follower advancing to SellBurned");
                         let orch = orchestrator.write().await;
-                        orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                        orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellBurned).await;
                     }
                 }
                 Err(e) => warn!(order_id = %order_id, error = %e, "Burn consensus retry failed — stays SellPending"),
@@ -2732,7 +2732,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         o.get_burn_pending_sell_orders().await
     };
     for order_id in burn_pending_orders {
-        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_oracles, node_index);
         if am_leader {
             // Leader: check receipt for stored tx_hash
             // Extract read into separate binding to ensure RwLockReadGuard drops before write
@@ -2747,14 +2747,14 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         if success {
                             info!(order_id = %order_id, ?tx_hash, "burnSellOrderShares CONFIRMED on-chain");
                             let orch = orchestrator.write().await;
-                            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+                            orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellBurned).await;
                             orch.clear_sell_burn_tx_hash(&order_id).await;
                             drop(orch);
                             info!(order_id = %order_id, "Status set to SellBurned, proceeding to sub-step 3");
                         } else {
                             warn!(order_id = %order_id, ?tx_hash, "burnSellOrderShares REVERTED — resetting to SellPending");
                             let orch = orchestrator.write().await;
-                            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellPending).await;
+                            orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellPending).await;
                             orch.clear_sell_burn_tx_hash(&order_id).await;
                         }
                     }
@@ -2769,7 +2769,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             // Trust that the leader's burn tx will confirm and advance to SellBurned.
             info!(order_id = %order_id, "Follower at SellBurnPending — advancing to SellBurned (consensus already passed)");
             let orch = orchestrator.write().await;
-            orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellBurned).await;
+            orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellBurned).await;
         }
     }
 
@@ -2780,7 +2780,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     };
     info!(cycle = current_cycle, burned_count = burned_sell_orders.len(), "Phase A sub-step 3: checking SellBurned orders");
     for order_id in burned_sell_orders {
-        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_oracles, node_index);
         // Read all cached fields from orchestrator (stored when event was first detected)
         let (itp_id, amount, user, bridged_itp_address) = {
             let orch_r = orchestrator.read().await;
@@ -2820,7 +2820,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
             Ok(submit_result) => {
                 info!(order_id = %order_id, signer_count = submit_result.signature_count, "Submit sell order consensus completed");
                 let orch_write = orchestrator.write().await;
-                orch_write.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellSubmittedOnL3).await;
+                orch_write.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellSubmittedOnL3).await;
             }
             Err(e) => {
                 warn!(order_id = %order_id, error = %e, am_leader, "Submit sell order consensus failed — will retry");
@@ -2836,7 +2836,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 
     if !submitted_sell_orders.is_empty() {
         let batch_key = submitted_sell_orders.first().map(|id| id.as_u64()).unwrap_or(current_cycle);
-        let batch_am_leader = calculate_bridge_leader(batch_key, num_issuers, node_index);
+        let batch_am_leader = calculate_bridge_leader(batch_key, num_oracles, node_index);
         info!(cycle = current_cycle, order_count = submitted_sell_orders.len(), batch_am_leader, "Processing batch for SellSubmittedOnL3 orders");
 
         // Resolve settlement sell IDs → L3 order IDs
@@ -2968,7 +2968,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                             .collect();
                         let orch = orchestrator.write().await;
                         for oid in &filled_settlement_ids {
-                            orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
+                            orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::SellFilled).await;
                         }
                     }
                     Err(e) => {
@@ -2987,7 +2987,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
                                 .collect();
                             for oid in &filled_settlement_ids {
-                                orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
+                                orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::SellFilled).await;
                             }
                         } else {
                             warn!(cycle = current_cycle, error = %e, "Sell fills confirmation failed");
@@ -2997,7 +2997,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
                                 .collect();
                             for oid in &filled_settlement_ids {
-                                orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                                orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                             }
                             drop(orch);
                         }
@@ -3052,7 +3052,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                 .collect();
                             let orch = orchestrator.write().await;
                             for oid in &filled_settlement_ids {
-                                orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
+                                orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::SellFilled).await;
                             }
                         }
                         Err(e) => {
@@ -3070,7 +3070,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                     .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
                                     .collect();
                                 for oid in &filled_settlement_ids {
-                                    orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::SellFilled).await;
+                                    orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::SellFilled).await;
                                 }
                             } else {
                                 warn!(cycle = current_cycle, error = %e, "Sell fills also failed after E021");
@@ -3079,7 +3079,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                                     .map(|f| fill_to_settlement.get(&f.order_id).copied().unwrap_or(f.order_id))
                                     .collect();
                                 for oid in &filled_settlement_ids {
-                                    orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                                    orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                                 }
                                 drop(orch);
                             }
@@ -3089,7 +3089,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     warn!(cycle = current_cycle, error = %e, "Sell batch confirmation failed");
                     let orch = orchestrator.write().await;
                     for oid in &submitted_sell_orders {
-                        orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                        orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                     }
                     drop(orch);
                 }
@@ -3102,13 +3102,13 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
         let o = orchestrator.read().await;
         let snapshot = o.sell_order_status_snapshot().await;
         snapshot.iter()
-            .filter(|(_, status)| **status == issuer::BridgeOrderStatus::SellFilled)
+            .filter(|(_, status)| **status == oracle::BridgeOrderStatus::SellFilled)
             .map(|(order_id, _)| *order_id)
             .collect()
     };
 
     for order_id in filled_sell_orders {
-        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_issuers, node_index);
+        let am_leader = calculate_bridge_leader(order_id.as_u64(), num_oracles, node_index);
 
         // Task 3/12: Use STORED fill price (not fresh NAV) for proceeds — prevents NAV drift
         let usdc_proceeds = {
@@ -3220,7 +3220,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                     // Do NOT call mark_sell_order_processed — keep fill data
                     // intact so we can still verify proceeds if leader retries.
                     let orch = orchestrator.write().await;
-                    orch.set_sell_order_status(order_id, issuer::BridgeOrderStatus::SellCompleted).await;
+                    orch.set_sell_order_status(order_id, oracle::BridgeOrderStatus::SellCompleted).await;
                 }
             }
             Err(e) => {
@@ -3243,20 +3243,20 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
 /// Scans L3 for RebalanceRequested events via chain_reader and runs a single
 /// consensus phase per ITP, calling `rebalance()` on-chain (matches contract).
 async fn run_rebalance_processing<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     price_fetcher: Arc<dyn PriceFetcher>,
-    _symbol_map: issuer::SymbolMap,
+    _symbol_map: oracle::SymbolMap,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     debug!(cycle = current_cycle, "Rebalance processing: starting scan");
     // 1. Query pending rebalances from L3
@@ -3347,7 +3347,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
     let rebalance_cycle = current_cycle + 1_000_000_000;
 
     // 5. Leader election
-    let am_leader = calculate_bridge_leader(rebalance_cycle, num_issuers, node_index);
+    let am_leader = calculate_bridge_leader(rebalance_cycle, num_oracles, node_index);
 
     if current_cycle % 60 == 0 {
         info!(
@@ -3518,7 +3518,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                     // Extract nav BLS signature AND signer bitmap from NAV consensus result.
                     // The signer bitmap must match the NAV signature — using the rebalance
                     // bitmap instead causes BLSVerifier__InvalidSignature because different
-                    // issuers may have signed each phase.
+                    // oracles may have signed each phase.
                     let (nav_sig, nav_signer_bitmap) = match &nav_result {
                         Ok(result) if !result.aggregated_signature.0.is_empty() => {
                             (result.aggregated_signature.0.clone(), result.signer_bitmap)
@@ -3606,23 +3606,23 @@ fn fill_price_respects_limit(
 /// confirmFills via BLS consensus for any pending orders not already tracked by
 /// the BridgeOrchestrator.
 async fn run_l3_native_order_processing<P, W, K, PF>(
-    protocol: Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
-    orchestrator: Arc<tokio::sync::RwLock<issuer::BridgeOrchestrator>>,
+    protocol: Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
+    orchestrator: Arc<tokio::sync::RwLock<oracle::BridgeOrchestrator>>,
     chain_reader: Arc<dyn common::traits::ChainReader>,
     current_cycle: u64,
     node_index: u8,
-    num_issuers: u8,
+    num_oracles: u8,
     first_seen_orders: Arc<tokio::sync::Mutex<HashMap<u64, std::time::Instant>>>,
     _data_node_url_for_task: Option<String>,
     _itp_id_for_task: String,
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
-    metrics: Arc<IssuerMetrics>,
+    metrics: Arc<OracleMetrics>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     // Note: The old has_unmapped_bridge_orders() guard was removed because:
     // 1. Bridge orders in Pending/BridgedToL3 state don't have L3 counterparts on-chain yet,
@@ -3663,7 +3663,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     };
 
     if !l3_native_orders.is_empty() {
-    // 3. Leader assignment: cycle derived from max order ID (deterministic across issuers).
+    // 3. Leader assignment: cycle derived from max order ID (deterministic across oracles).
     // Using max ensures that when NEW orders arrive, the cycle number changes, avoiding
     // collision with previously-confirmed (or reverted) cycles from stale order sets.
     let max_order_id = l3_native_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
@@ -3674,7 +3674,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     // agree on the same attempt value despite drift, while still providing failover
     // rotation every ~500 cycles (~8 minutes).
     let attempt = current_cycle / 500;
-    let am_leader = calculate_bridge_leader_with_failover(l3_cycle, num_issuers, node_index, attempt);
+    let am_leader = calculate_bridge_leader_with_failover(l3_cycle, num_oracles, node_index, attempt);
 
     info!(
         cycle = current_cycle, l3_cycle, attempt, am_leader,
@@ -3725,7 +3725,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             // Note: Do NOT set order_status here — L3-native order IDs can collide
             // with Settlement order IDs in the orchestrator's status map.
 
-            // 6b. Emit per-asset trades (issuer decomposition + cross-ITP netting)
+            // 6b. Emit per-asset trades (oracle decomposition + cross-ITP netting)
             let asset_trade_orders: Vec<(ethers::types::H256, u8, ethers::types::U256)> = l3_native_orders.iter()
                 .map(|o| (o.itp_id, o.side as u8, o.amount))
                 .collect();
@@ -3778,7 +3778,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                         // Clean up orchestrator tracking
                         let orch = orchestrator.write().await;
                         for oid in &order_ids {
-                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                            orch.set_order_status(*oid, oracle::BridgeOrderStatus::Filled).await;
                         }
                         drop(orch);
                         first_seen_orders.lock().await.remove(&l3_cycle);
@@ -3791,7 +3791,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                     warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native fills confirmation failed");
                     let orch = orchestrator.write().await;
                     for oid in &order_ids {
-                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                        orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                     }
                     drop(orch);
                 }
@@ -3824,7 +3824,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                             metrics.record_orders_processed(order_ids.len() as u64);
                             let orch = orchestrator.write().await;
                             for oid in &order_ids {
-                                orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                                orch.set_order_status(*oid, oracle::BridgeOrderStatus::Filled).await;
                             }
                             drop(orch);
                             first_seen_orders.lock().await.remove(&l3_cycle);
@@ -3848,7 +3848,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                         }
                         let orch = orchestrator.write().await;
                         for oid in &order_ids {
-                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                            orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                         }
                         drop(orch);
                     }
@@ -3857,7 +3857,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native batch confirmation failed");
                 let orch = orchestrator.write().await;
                 for oid in &order_ids {
-                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                    orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                 }
                 drop(orch);
             }
@@ -3893,12 +3893,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         return;
     }
 
-    // Leader assignment for fills: cycle derived from max order ID (deterministic across issuers)
+    // Leader assignment for fills: cycle derived from max order ID (deterministic across oracles)
     let max_batched_id = l3_batched_orders.iter().map(|o| o.id.as_u64()).max().unwrap();
     let fills_cycle = max_batched_id + 500_000_001;
 
     let attempt = current_cycle / 500;
-    let fills_am_leader = calculate_bridge_leader_with_failover(fills_cycle, num_issuers, node_index, attempt);
+    let fills_am_leader = calculate_bridge_leader_with_failover(fills_cycle, num_oracles, node_index, attempt);
 
     info!(
         cycle = current_cycle, fills_cycle, attempt, fills_am_leader,
@@ -3966,7 +3966,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                 metrics.record_orders_processed(batched_order_ids.len() as u64);
                 let orch = orchestrator.write().await;
                 for oid in &batched_order_ids {
-                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Filled).await;
+                    orch.set_order_status(*oid, oracle::BridgeOrderStatus::Filled).await;
                 }
                 drop(orch);
                 first_seen_orders.lock().await.remove(&fills_cycle);
@@ -4027,12 +4027,12 @@ async fn compute_nav(
 
 async fn run_mock_consensus(
     chain_reader: &Arc<dyn common::traits::ChainReader>,
-    chain_writer: &Option<Arc<issuer::EthersChainWriter>>,
+    chain_writer: &Option<Arc<oracle::EthersChainWriter>>,
     has_bls_keypair: bool,
     current_cycle: u64,
-    metrics: &Arc<IssuerMetrics>,
+    metrics: &Arc<OracleMetrics>,
     start_time: std::time::Instant,
-    settlement_reader: &Option<Arc<dyn issuer::SettlementReader>>,
+    settlement_reader: &Option<Arc<dyn oracle::SettlementReader>>,
 ) {
     let prices_result = chain_reader.get_prices().await;
     let orders_result = chain_reader.get_pending_orders().await;
@@ -4073,8 +4073,8 @@ async fn run_mock_consensus(
 /// Deterministic leader election for bridge operations.
 /// Uses cycle number (identical on all nodes) instead of last_signature
 /// (which may differ between nodes before consensus completes).
-fn calculate_bridge_leader(cycle: u64, num_issuers: u8, node_index: u8) -> bool {
-    let leader_idx = (cycle % num_issuers as u64) as u8;
+fn calculate_bridge_leader(cycle: u64, num_oracles: u8, node_index: u8) -> bool {
+    let leader_idx = (cycle % num_oracles as u64) as u8;
     node_index == leader_idx
 }
 
@@ -4085,9 +4085,9 @@ const LEADER_TIMEOUT_SECS: u64 = 5;
 /// Deterministic leader election with infinite failover rotation.
 /// `attempt` shifts the leader index: 0→primary, 1→next, 2→next, wrapping forever.
 fn calculate_bridge_leader_with_failover(
-    cycle: u64, num_issuers: u8, node_index: u8, attempt: u64,
+    cycle: u64, num_oracles: u8, node_index: u8, attempt: u64,
 ) -> bool {
-    let leader_idx = ((cycle + attempt) % num_issuers as u64) as u8;
+    let leader_idx = ((cycle + attempt) % num_oracles as u64) as u8;
     node_index == leader_idx
 }
 
@@ -4097,8 +4097,8 @@ fn calculate_bridge_leader_with_failover(
 /// and submits the sync transaction to Settlement.
 async fn mirror_sync_task<P, W, K, PF>(
     chain_reader: &Arc<dyn common::traits::ChainReader>,
-    settlement_writer: &Arc<issuer::SettlementChainWriter>,
-    protocol: &Arc<issuer::ConsensusProtocol<P, W, K, PF>>,
+    settlement_writer: &Arc<oracle::SettlementChainWriter>,
+    protocol: &Arc<oracle::ConsensusProtocol<P, W, K, PF>>,
     mirror_addr: ethers::types::Address,
     settlement_chain_id: u64,
     cycle: u64,
@@ -4106,8 +4106,8 @@ async fn mirror_sync_task<P, W, K, PF>(
 where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
-    K: issuer::KeyRegistry + Send + Sync + 'static,
-    PF: issuer::PriceFetcher + Send + Sync + 'static,
+    K: oracle::KeyRegistry + Send + Sync + 'static,
+    PF: oracle::PriceFetcher + Send + Sync + 'static,
 {
     use ethers::types::U256;
 
@@ -4133,55 +4133,55 @@ where
     let sync_nonce = std::cmp::max(l3_nonce, mirror_nonce) + 1;
     info!(cycle, l3_nonce, mirror_nonce, sync_nonce, "Mirror registry sync: refreshing snapshot");
 
-    // Step 4: Read active issuers — try L3 chain reader first, fall back to mirror registry
-    let issuers = match chain_reader.get_issuer_registry().await {
+    // Step 4: Read active oracles — try L3 chain reader first, fall back to mirror registry
+    let oracles = match chain_reader.get_oracle_registry().await {
         Ok(list) => list,
         Err(e) => {
-            warn!(cycle, error = %e, "L3 chain reader failed for issuer registry, falling back to mirror");
+            warn!(cycle, error = %e, "L3 chain reader failed for oracle registry, falling back to mirror");
             Vec::new()
         }
     };
 
-    let active_issuers: Vec<_> = issuers.iter().filter(|i| i.is_active()).collect();
+    let active_oracles: Vec<_> = oracles.iter().filter(|i| i.is_active()).collect();
 
-    let (issuer_pubkeys, issuer_ids, mut active_bitmask, mut active_count, mut threshold);
-    if !active_issuers.is_empty() {
+    let (oracle_pubkeys, oracle_ids, mut active_bitmask, mut active_count, mut threshold);
+    if !active_oracles.is_empty() {
         // Use L3 registry data
         let mut bitmask = U256::zero();
-        for issuer in &active_issuers {
-            bitmask = bitmask | (U256::one() << issuer.id as usize);
+        for oracle in &active_oracles {
+            bitmask = bitmask | (U256::one() << oracle.id as usize);
         }
         active_bitmask = bitmask;
-        active_count = active_issuers.len() as u64;
-        threshold = issuer::registry_sync::compute_threshold(active_count);
-        let mut sorted: Vec<_> = active_issuers.iter().collect();
+        active_count = active_oracles.len() as u64;
+        threshold = oracle::registry_sync::compute_threshold(active_count);
+        let mut sorted: Vec<_> = active_oracles.iter().collect();
         sorted.sort_by_key(|i| i.id);
-        issuer_pubkeys = sorted.iter().map(|i| i.bls_pubkey.to_vec()).collect();
-        issuer_ids = sorted.iter().map(|i| i.id).collect();
+        oracle_pubkeys = sorted.iter().map(|i| i.bls_pubkey.to_vec()).collect();
+        oracle_ids = sorted.iter().map(|i| i.id).collect();
     } else {
         // Fallback: read current state from mirror registry itself.
         // NOTE: Use correct selectors:
-        //   activeIssuerCount() — explicit getter in deployed implementation
+        //   activeOracleCount() — explicit getter in deployed implementation
         //   activeBitmask() — auto-generated from `uint256 public activeBitmask`
         //   threshold is computed from activeCount (no getter deployed)
-        let ac_sel = &ethers::utils::keccak256(b"activeIssuerCount()")[..4];
+        let ac_sel = &ethers::utils::keccak256(b"activeOracleCount()")[..4];
         let ab_sel = &ethers::utils::keccak256(b"activeBitmask()")[..4];
 
         let ac_bytes = settlement_writer.static_call(mirror_addr, ac_sel.to_vec()).await
-            .map_err(|e| format!("Failed to read mirror activeIssuerCount: {}", e))?;
+            .map_err(|e| format!("Failed to read mirror activeOracleCount: {}", e))?;
         let ab_bytes = settlement_writer.static_call(mirror_addr, ab_sel.to_vec()).await
             .map_err(|e| format!("Failed to read mirror activeBitmask: {}", e))?;
 
         active_count = if ac_bytes.len() >= 32 { U256::from_big_endian(&ac_bytes[..32]).as_u64() } else { 0 };
         active_bitmask = if ab_bytes.len() >= 32 { U256::from_big_endian(&ab_bytes[..32]) } else { U256::zero() };
-        threshold = issuer::registry_sync::compute_threshold(active_count);
+        threshold = oracle::registry_sync::compute_threshold(active_count);
 
         if active_count == 0 {
-            return Err("No active issuers on L3 or mirror".into());
+            return Err("No active oracles on L3 or mirror".into());
         }
 
-        // Read individual pubkeys via batch call: getIssuerPubkeys(uint256[])
-        // The deployed mirror only has the batch getter, not singular getIssuerPubkey(uint256)
+        // Read individual pubkeys via batch call: getOraclePubkeys(uint256[])
+        // The deployed mirror only has the batch getter, not singular getOraclePubkey(uint256)
         let mut id_list = Vec::new();
         for bit in 0..256u32 {
             if active_bitmask.bit(bit as usize) {
@@ -4189,21 +4189,21 @@ where
             }
         }
 
-        // ABI-encode: getIssuerPubkeys(uint256[])
+        // ABI-encode: getOraclePubkeys(uint256[])
         let tokens = vec![ethers::abi::Token::Array(
             id_list.iter().map(|&id| ethers::abi::Token::Uint(U256::from(id))).collect()
         )];
-        let mut calldata = ethers::utils::keccak256(b"getIssuerPubkeys(uint256[])")[..4].to_vec();
+        let mut calldata = ethers::utils::keccak256(b"getOraclePubkeys(uint256[])")[..4].to_vec();
         calldata.extend_from_slice(&ethers::abi::encode(&tokens));
 
         let result_bytes = settlement_writer.static_call(mirror_addr, calldata).await
-            .map_err(|e| format!("Failed to read mirror getIssuerPubkeys: {}", e))?;
+            .map_err(|e| format!("Failed to read mirror getOraclePubkeys: {}", e))?;
 
         // Decode ABI response: bytes[] — outer offset + array length + per-element offsets + data
         let decoded = ethers::abi::decode(
             &[ethers::abi::ParamType::Array(Box::new(ethers::abi::ParamType::Bytes))],
             &result_bytes,
-        ).map_err(|e| format!("Failed to decode getIssuerPubkeys response: {}", e))?;
+        ).map_err(|e| format!("Failed to decode getOraclePubkeys response: {}", e))?;
 
         let mut ids = Vec::new();
         let mut pubkeys = Vec::new();
@@ -4223,13 +4223,13 @@ where
         if pubkeys.is_empty() {
             // Third fallback: construct from deterministic BLS seed indices.
             // When both L3 data-node and mirror are empty (fresh mirror deploy),
-            // derive pubkeys from the same seeds used by bls-tool and issuer bootstrap.
-            let num_issuers = protocol.num_issuers();
-            if num_issuers == 0 {
-                return Err("Failed to read any issuer pubkeys from mirror or local config".into());
+            // derive pubkeys from the same seeds used by bls-tool and oracle bootstrap.
+            let num_oracles = protocol.num_oracles();
+            if num_oracles == 0 {
+                return Err("Failed to read any oracle pubkeys from mirror or local config".into());
             }
-            info!(cycle, num_issuers, "Deriving issuer pubkeys from deterministic seeds (L3 and mirror both empty)");
-            for seed_idx in 0..num_issuers {
+            info!(cycle, num_oracles, "Deriving oracle pubkeys from deterministic seeds (L3 and mirror both empty)");
+            for seed_idx in 0..num_oracles {
                 let seed = vec![seed_idx; 32];
                 let kp = common::bls::BLSKeyPair::from_seed(&seed)
                     .map_err(|e| format!("Failed to derive keypair from seed {}: {}", seed_idx, e))?;
@@ -4243,18 +4243,18 @@ where
             }
             active_bitmask = bitmask;
             active_count = ids.len() as u64;
-            threshold = issuer::registry_sync::compute_threshold(active_count);
+            threshold = oracle::registry_sync::compute_threshold(active_count);
         }
-        issuer_pubkeys = pubkeys;
-        issuer_ids = ids;
-        info!(cycle, count = issuer_ids.len(), "Read issuer data from mirror registry or local config (L3 returned empty)");
+        oracle_pubkeys = pubkeys;
+        oracle_ids = ids;
+        info!(cycle, count = oracle_ids.len(), "Read oracle data from mirror registry or local config (L3 returned empty)");
     }
 
     // reference_nonce = the L3 lastSnapshotNonce (for BLS verification via historical snapshot)
     let reference_nonce = protocol.registry_nonce();
 
     // For the TOFU first sync (mirror_nonce == 0), the contract verifies against
-    // the full aggregated pubkey, so ALL issuers must sign. For subsequent syncs,
+    // the full aggregated pubkey, so ALL oracles must sign. For subsequent syncs,
     // the contract uses multi-pairing with threshold verification.
     let min_signatures = if mirror_nonce == 0 {
         active_count as usize
@@ -4266,8 +4266,8 @@ where
     // Step 5: Run BLS consensus — returns calldata if threshold reached
     let calldata = protocol.run_mirror_sync_consensus(
         sync_nonce,
-        issuer_pubkeys,
-        issuer_ids,
+        oracle_pubkeys,
+        oracle_ids,
         active_bitmask,
         active_count,
         threshold,
@@ -4368,8 +4368,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             args.peers,
         )
         .with_bitget_vault(args.bitget_vault.clone())
-        .with_issuer_custody_l3(args.issuer_custody_l3.clone())
-        .with_issuer_custody_settlement(args.issuer_custody_settlement.clone())
+        .with_oracle_custody_l3(args.oracle_custody_l3.clone())
+        .with_oracle_custody_settlement(args.oracle_custody_settlement.clone())
         .with_settlement_custody(args.settlement_custody.clone())
         .with_mock_usdt(args.mock_usdt.clone())
         .with_registry_sync(args.registry_sync)
@@ -4384,7 +4384,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_nav_oracle(args.nav_oracle.clone(), args.itp_token.clone())
         .with_mirror_registry(args.mirror_registry.clone())
         .with_vision(if args.vision_enabled {
-            let mut vision_cfg = issuer::vision::config::VisionConfig {
+            let mut vision_cfg = oracle::vision::config::VisionConfig {
                 enabled: true,
                 ..Default::default()
             };
@@ -4415,23 +4415,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Cross-chain deposit config — CLI args first, then env var fallbacks
             if let Some(ref url) = args.vision_settlement_rpc_url {
                 vision_cfg.settlement_rpc_url = url.clone();
-            } else if let Ok(url) = std::env::var("ISSUER_SETTLEMENT_RPC_URL") {
+            } else if let Ok(url) = std::env::var("ORACLE_SETTLEMENT_RPC_URL") {
                 vision_cfg.settlement_rpc_url = url;
             }
             if let Some(ref addr) = args.vision_settlement_bridge_custody {
                 vision_cfg.settlement_bridge_custody_address = addr.clone();
-            } else if let Ok(addr) = std::env::var("ISSUER_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS") {
+            } else if let Ok(addr) = std::env::var("ORACLE_VISION_SETTLEMENT_BRIDGE_CUSTODY_ADDRESS") {
                 vision_cfg.settlement_bridge_custody_address = addr;
-            } else if let Ok(addr) = std::env::var("ISSUER_SETTLEMENT_CUSTODY") {
+            } else if let Ok(addr) = std::env::var("ORACLE_SETTLEMENT_CUSTODY") {
                 vision_cfg.settlement_bridge_custody_address = addr;
             }
             if let Some(chain_id) = args.vision_settlement_chain_id {
                 vision_cfg.settlement_chain_id = chain_id;
-            } else if let Ok(chain_id) = std::env::var("ISSUER_SETTLEMENT_CHAIN_ID").and_then(|s| s.parse::<u64>().map_err(|_| std::env::VarError::NotPresent)) {
+            } else if let Ok(chain_id) = std::env::var("ORACLE_SETTLEMENT_CHAIN_ID").and_then(|s| s.parse::<u64>().map_err(|_| std::env::VarError::NotPresent)) {
                 vision_cfg.settlement_chain_id = chain_id;
             }
             // BLS proof generation config
-            vision_cfg.num_issuers = args.num_issuers as usize;
+            vision_cfg.num_oracles = args.num_oracles as usize;
             // node_id is 1-indexed (u32), node_index is 0-indexed (u8)
             vision_cfg.node_index = args.node_id.map(|id| (id.saturating_sub(1)) as u8).unwrap_or(0);
             Some(vision_cfg)
@@ -4445,7 +4445,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node_id = match config.node_id {
         Some(id) => id,
         None => {
-            eprintln!("Error: node-id is required. Set via --node-id, ISSUER_NODE_ID env var, or config file.");
+            eprintln!("Error: node-id is required. Set via --node-id, ORACLE_NODE_ID env var, or config file.");
             std::process::exit(1);
         }
     };
@@ -4460,16 +4460,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    if args.num_issuers == 0 || args.num_issuers > 20 {
-        eprintln!("Error: --num-issuers must be between 1 and 20 (got {})", args.num_issuers);
+    if args.num_oracles == 0 || args.num_oracles > 20 {
+        eprintln!("Error: --num-oracles must be between 1 and 20 (got {})", args.num_oracles);
         std::process::exit(1);
     }
 
-    // --- Mandatory registry-sync for multi-issuer deployments ---
-    // Without registry-sync, issuers cannot detect join/leave events and will
+    // --- Mandatory registry-sync for multi-oracle deployments ---
+    // Without registry-sync, oracles cannot detect join/leave events and will
     // desync their key registries, causing BLS aggregation failures.
-    if args.num_issuers > 1 && !args.registry_sync {
-        error!("ERROR: --registry-sync required for multi-issuer deployments (num_issuers={}). Refusing to start.", args.num_issuers);
+    if args.num_oracles > 1 && !args.registry_sync {
+        error!("ERROR: --registry-sync required for multi-oracle deployments (num_oracles={}). Refusing to start.", args.num_oracles);
         std::process::exit(1);
     }
 
@@ -4485,15 +4485,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // --test-key-seeds implies non-production (testnet), so relax HTTP check
     let is_non_production = args.mock || args.test_key_seeds;
     if let Some(ref url) = args.data_node_url {
-        issuer::config::validate_data_node_url(url, is_non_production)
+        oracle::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
     if let Some(ref url) = args.vision_data_node_url {
-        issuer::config::validate_data_node_url(url, is_non_production)
+        oracle::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
     if let Some(ref url) = args.arbitration_data_node_url {
-        issuer::config::validate_data_node_url(url, is_non_production)
+        oracle::config::validate_data_node_url(url, is_non_production)
             .unwrap_or_else(|e| panic!("FATAL: {}", e));
     }
 
@@ -4534,10 +4534,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from_block: args.from_block,
         checkpoint_path: args.checkpoint_path,
         cycle_duration_ms: args.cycle_duration_ms,
-        num_issuers: args.num_issuers,
+        num_oracles: args.num_oracles,
         signature_threshold_override: args.signature_threshold,
         bls_key_seed_index: args.bls_key_seed_index,
-        on_chain_issuer_id: args.on_chain_issuer_id,
+        on_chain_oracle_id: args.on_chain_oracle_id,
         test_key_seeds: args.test_key_seeds,
         key_registry_offset: args.key_registry_offset,
         bridge_proxy: args.bridge_proxy,
@@ -4562,7 +4562,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.signature_threshold.is_some() {
         warn!(
             "DEPRECATED: --signature-threshold is deprecated and will be removed in a future release. \
-             Threshold is now auto-computed from on-chain activeIssuerCount using BFT 2/3+1 formula. \
+             Threshold is now auto-computed from on-chain activeOracleCount using BFT 2/3+1 formula. \
              The override is still honoured for this run, but please remove it from your launch config."
         );
     }
@@ -4574,21 +4574,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Save registry sync config before config is consumed (Story 8.4, Task 7.3)
     let registry_sync_enabled = config.effective_registry_sync_enabled();
     let registry_sync_poll_interval_ms = config.effective_registry_sync_poll_interval_ms();
-    let issuer_registry_address_str = config.issuer_registry_address.clone();
+    let oracle_registry_address_str = config.oracle_registry_address.clone();
 
     // Save mock USDT address before config is consumed
     let mock_usdt_addr = config.effective_mock_usdt();
 
     // Save arbitration config before config is consumed
-    let arb_config = ArbitrationConfig::from_issuer_config(&config);
+    let arb_config = ArbitrationConfig::from_oracle_config(&config);
 
     // Save Vision config before config is consumed
     let vision_config = config.vision.clone();
 
     // Shared PendingOpsQueue: deposit watcher (in main) enqueues ops,
     // vision ops consensus task (in run_main_loop) drains and submits them.
-    let vision_ops_queue: Arc<issuer::vision::pending_ops::PendingOpsQueue> =
-        Arc::new(issuer::vision::pending_ops::PendingOpsQueue::new());
+    let vision_ops_queue: Arc<oracle::vision::pending_ops::PendingOpsQueue> =
+        Arc::new(oracle::vision::pending_ops::PendingOpsQueue::new());
 
     // Parse oracle + mirror configs before config is consumed by bootstrap
     let nav_oracle_address: Option<ethers::types::Address> = config.nav_oracle_address.as_ref().and_then(|s| s.parse().ok());
@@ -4598,9 +4598,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(addr) = mirror_registry_address {
         info!(?addr, "Mirror registry sync enabled");
     }
-    let issuer_registry_for_sync: Option<ethers::types::Address> = config.issuer_registry_address.as_ref().and_then(|s| s.parse().ok());
+    let oracle_registry_for_sync: Option<ethers::types::Address> = config.oracle_registry_address.as_ref().and_then(|s| s.parse().ok());
 
-    let bootstrap = IssuerBootstrap::new(config, params);
+    let bootstrap = OracleBootstrap::new(config, params);
     let mut components = bootstrap.build(shutdown).await.map_err(|e| {
         error!(code = "E008", error = %e, "Bootstrap failed");
         e
@@ -4616,7 +4616,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize NTP time synchronization and wire into CycleManager
     let _ntp_handle = if !args.ntp_server.is_empty() {
-        let ntp_sync = issuer::cycle::NtpSync::new(&args.ntp_server, config_ntp_tolerance, 60);
+        let ntp_sync = oracle::cycle::NtpSync::new(&args.ntp_server, config_ntp_tolerance, 60);
         let ntp_state = ntp_sync.state();
         ntp_sync.initial_sync();
         components.consensus.cycle_manager.set_ntp_state(ntp_state);
@@ -4634,14 +4634,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &components.registry_sync_cache,
             &components.consensus.keys.bls_keypair,
         ) {
-            // Parse IssuerRegistry address
-            let issuer_registry_address = issuer_registry_address_str
+            // Parse OracleRegistry address
+            let oracle_registry_address = oracle_registry_address_str
                 .as_ref()
                 .and_then(|addr| addr.parse::<ethers::types::Address>().ok())
                 .unwrap_or_else(ethers::types::Address::zero);
 
-            if issuer_registry_address == ethers::types::Address::zero() {
-                warn!(node_id, "Registry sync enabled but IssuerRegistry address not configured, skipping handler");
+            if oracle_registry_address == ethers::types::Address::zero() {
+                warn!(node_id, "Registry sync enabled but OracleRegistry address not configured, skipping handler");
                 None
             } else {
                 // Create provider from L3 RPC URL
@@ -4652,13 +4652,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
 
                 let sync_config = RegistrySyncConfig {
-                    issuer_registry_address,
+                    oracle_registry_address,
                     poll_interval_ms: registry_sync_poll_interval_ms,
                     max_block_range: 1000,
                     initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
                 };
 
-                // TODO: wire mirror_address from config (L2 MirrorIssuerRegistry contract address)
+                // TODO: wire mirror_address from config (L2 MirrorOracleRegistry contract address)
                 let mirror_address = ethers::types::Address::zero();
 
                 let mut handler = RegistrySyncHandler::new(
@@ -4667,13 +4667,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     components.chain.reader.clone(),
                     bls_keypair.clone(),
                     components.consensus.keys.node_index,
-                    components.consensus.keys.issuer_registry_index as u64,
+                    components.consensus.keys.oracle_registry_index as u64,
                     cache.clone(),
                     components.target_chain_id,
                     mirror_address,
                 );
 
-                // Wire key registry for runtime updates on issuer join/leave
+                // Wire key registry for runtime updates on oracle join/leave
                 if let Some(ref kr) = components.consensus.keys.key_registry {
                     handler = handler.with_key_registry(kr.clone());
                 }
@@ -4690,7 +4690,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 info!(
                     node_id,
-                    issuer_registry = ?issuer_registry_address,
+                    oracle_registry = ?oracle_registry_address,
                     poll_interval_ms = registry_sync_poll_interval_ms,
                     "RegistrySyncHandler started"
                 );
@@ -4756,9 +4756,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ref vision_cfg) = vision_config {
         if vision_cfg.enabled {
             // Initialize Vision components
-            let bitmap_store = Arc::new(issuer::vision::bitmap_store::BitmapStore::new());
-            let scheduler = Arc::new(issuer::vision::tick_scheduler::TickScheduler::new());
-            let resolver = Arc::new(issuer::vision::resolver::TickResolver::new(
+            let bitmap_store = Arc::new(oracle::vision::bitmap_store::BitmapStore::new());
+            let scheduler = Arc::new(oracle::vision::tick_scheduler::TickScheduler::new());
+            let resolver = Arc::new(oracle::vision::resolver::TickResolver::new(
                 bitmap_store.clone(),
                 vision_cfg.clone(),
             ));
@@ -4770,7 +4770,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let engine_shutdown = components.shutdown.clone();
             let engine_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
             tokio::spawn(async move {
-                issuer::vision::engine::run(
+                oracle::vision::engine::run(
                     engine_scheduler,
                     engine_resolver,
                     engine_config,
@@ -4807,7 +4807,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         ethers::providers::Provider::<ethers::providers::Http>::try_from(&vision_rpc_url)
                             .expect("valid Vision RPC URL for chain listener")
                     );
-                    let chain_listener = issuer::vision::chain_listener::ChainListener::new(
+                    let chain_listener = oracle::vision::chain_listener::ChainListener::new(
                         cl_provider,
                         vision_address,
                         scheduler.clone(),
@@ -4844,7 +4844,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             components.chain.writer.clone().map(|w| w as Arc<dyn common::traits::ChainWriter>);
 
                         // PendingOpsQueue: deposit watcher enqueues, consensus task drains
-                        let deposit_watcher = issuer::vision::deposit_watcher::VisionDepositWatcher::new(
+                        let deposit_watcher = oracle::vision::deposit_watcher::VisionDepositWatcher::new(
                             dw_settlement_provider,
                             dw_l3_provider,
                             vision_address,
@@ -4874,7 +4874,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 ethers::providers::Provider::<ethers::providers::Http>::try_from(&settlement_rpc_url)
                                     .expect("valid Settlement RPC for VisionConsensusConfig"),
                             );
-                            protocol.set_vision_consensus_config(issuer::VisionConsensusConfig {
+                            protocol.set_vision_consensus_config(oracle::VisionConsensusConfig {
                                 l3_provider: vcc_l3_provider,
                                 settlement_provider: vcc_settlement_provider,
                                 vision_address,
@@ -4890,14 +4890,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let orch_data_node_url = vision_cfg.data_node_url.clone();
                     let orch_admin_token = vision_cfg.data_node_token.clone().unwrap_or_default();
                     tokio::spawn(async move {
-                        let mut orchestrator = issuer::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
+                        let mut orchestrator = oracle::vision::batch_config_orchestrator::BatchConfigOrchestrator::new(
                             orch_data_node_url,
                             orch_admin_token,
                         );
                         orchestrator.run().await;
                     });
 
-                    let vision_state = Arc::new(issuer::vision::api::VisionState {
+                    let vision_state = Arc::new(oracle::vision::api::VisionState {
                         pool,
                         scheduler: scheduler.clone(),
                         bitmap_store: bitmap_store.clone(),
@@ -4906,7 +4906,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     });
 
                     // Build the Vision router (merged into health port in run_main_loop)
-                    vision_api_router = Some(issuer::vision::api::routes(vision_state));
+                    vision_api_router = Some(oracle::vision::api::routes(vision_state));
 
                     info!(
                         node_id,
@@ -4935,7 +4935,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !args.skip_wal_replay {
         if let Some(ref wal_path) = args.wal_path {
             if let Some(ref protocol) = components.consensus.protocol {
-                match issuer::p2p::wal::ConsensusWAL::open(wal_path, issuer::p2p::wal::WalSyncMode::None) {
+                match oracle::p2p::wal::ConsensusWAL::open(wal_path, oracle::p2p::wal::WalSyncMode::None) {
                     Ok(wal) => {
                         let current_cycle = components.consensus.cycle_manager.get_current_cycle();
                         match wal.read_cycle(current_cycle) {
@@ -4979,8 +4979,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, issuer_registry_for_sync, vision_config, vision_ops_queue).await {
-        error!(code = "E008", error = %e, "Issuer node error");
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, oracle_registry_for_sync, vision_config, vision_ops_queue).await {
+        error!(code = "E008", error = %e, "Oracle node error");
         std::process::exit(1);
     }
 

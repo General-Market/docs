@@ -383,7 +383,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
       // Testnet: verify oracle has been updated recently (not stale)
       test.setTimeout(30_000);
 
-      // Pre-check: if collateral token is missing, oracle won't be updated by issuers
+      // Pre-check: if collateral token is missing, oracle won't be updated by oracles
       const collateralCode = await l3RpcCall('eth_getCode', [COLLATERAL_TOKEN, 'latest']);
       const morphoFunctional = collateralCode && collateralCode !== '0x';
 
@@ -403,10 +403,10 @@ test.describe('Morpho Oracle & Health Factor', () => {
       console.log(`Oracle last updated: ${lastUpdated}, current: ${currentTimestamp}, staleness: ${staleness}s`);
 
       if (morphoFunctional) {
-        // Oracle is updated when issuers submit setItpNav during rebalance.
-        // On testnet, rebalances are infrequent — issuers may idle for days
+        // Oracle is updated when oracles submit setItpNav during rebalance.
+        // On testnet, rebalances are infrequent — oracles may idle for days
         // without triggering NAV push. Use 7-day window for testnet.
-        // TODO: Add periodic NAV heartbeat in issuers so oracle stays fresh
+        // TODO: Add periodic NAV heartbeat in oracles so oracle stays fresh
         // independently of rebalance cycles.
         expect(staleness, 'Oracle should not be stale for more than 7 days').toBeLessThan(7 * 24 * 3600);
       } else {

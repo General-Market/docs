@@ -1,4 +1,4 @@
-//! Price fetcher trait for Index L3 Issuer
+//! Price fetcher trait for Index L3 Oracle
 //!
 //! Provides the `PriceFetcher` trait definition.
 //!

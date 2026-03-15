@@ -11,9 +11,9 @@ import {IOracle} from "@morpho-blue/interfaces/IOracle.sol";
 /// @notice BLS-verified ITP NAV oracle for Morpho Blue markets
 /// @dev One oracle instance per ITP. Fully permissionless — security comes from BLS verification.
 ///      Anyone can push a price update as long as it carries a valid BLS signature
-///      from the issuer network. Uses BLSVerifier (multi-pairing, 2/3 threshold, snapshot-based)
+///      from the oracle network. Uses BLSVerifier (multi-pairing, 2/3 threshold, snapshot-based)
 ///      — the SAME verification path as BridgeProxy, SettlementBridgeCustody, and Investment.
-///      The registry is MirrorIssuerRegistry (which implements IIssuerRegistry).
+///      The registry is MirrorOracleRegistry (which implements IOracleRegistry).
 /// @custom:security-contact security@indexprotocol.com
 contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     // ============ CONSTANTS ============
@@ -31,7 +31,7 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     uint256 public constant MAX_DEVIATION_BPS = 1000;
 
     /// @notice Maximum cycle gap — unused, kept for ABI compatibility.
-    /// Cycle-gap enforcement removed: issuer cycle numbers are wall-clock-based
+    /// Cycle-gap enforcement removed: oracle cycle numbers are wall-clock-based
     /// (unix_ms / cycle_duration_ms), producing large gaps after restarts.
     /// BLS verification + price deviation check provide the real safety.
     uint256 public constant MAX_CYCLE_GAP = type(uint256).max;
@@ -55,18 +55,18 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     // ============ CONSTRUCTOR ============
 
     /// @notice Deploy a new ITPNAVOracle for a specific ITP
-    /// @param _issuerRegistry Address of the MirrorIssuerRegistry (implements IIssuerRegistry)
+    /// @param _oracleRegistry Address of the MirrorOracleRegistry (implements IOracleRegistry)
     /// @param _itpAddress Address of the ITP token this oracle prices
     /// @param _initialPrice Initial price to bootstrap the oracle (Morpho-scaled, see PRICE_DECIMALS)
     constructor(
-        address _issuerRegistry,
+        address _oracleRegistry,
         address _itpAddress,
         uint256 _initialPrice
     ) {
         if (_initialPrice == 0) {
             revert ErrorsLib.E095_InvalidOraclePrice();
         }
-        __BLSVerifier_init(_issuerRegistry);
+        __BLSVerifier_init(_oracleRegistry);
         itpAddress = _itpAddress;
         currentPrice = _initialPrice;
         lastUpdated = block.timestamp;
@@ -114,7 +114,7 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
         // Multi-pairing, 2/3 threshold, snapshot-based
         _verifyBLS(messageHash, blsSignature, referenceNonce, signersBitmask);
 
-        // Update state — use block.timestamp for staleness (not issuer timestamp)
+        // Update state — use block.timestamp for staleness (not oracle timestamp)
         currentPrice = newPrice;
         lastUpdated = block.timestamp;
         lastCycleNumber = cycleNumber;

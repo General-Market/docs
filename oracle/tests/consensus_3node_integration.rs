@@ -13,13 +13,13 @@ use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::mocks::{MockChain, MockChainBuilder, MockP2PNetworkBuilder};
 use common::traits::{BLSSigner, P2PTransport};
 use common::types::{BLSSignature, Fill, LimitOrder, OrderStatus, PeerId, Side};
-use issuer::consensus::aggregator::calculate_threshold;
-use issuer::{
+use oracle::consensus::aggregator::calculate_threshold;
+use oracle::{
     ConsensusConfig, ConsensusProtocol, ConsensusResult, ConsensusTimeouts,
     InMemoryKeyRegistry, MockPriceFetcher, MockPriceFetcherBuilder,
 };
 use common::mocks::MockP2P;
-use issuer::leader::elect_leader;
+use oracle::leader::elect_leader;
 
 /// Fast timeouts for tests: 100ms per phase, 1ms polling
 fn test_timeouts() -> ConsensusTimeouts {
@@ -116,8 +116,8 @@ async fn spawn_node_with_router<P, C, K, F>(
 where
     P: P2PTransport + 'static,
     C: common::traits::ChainWriter + 'static,
-    K: issuer::KeyRegistry + 'static,
-    F: issuer::PriceFetcher + 'static,
+    K: oracle::KeyRegistry + 'static,
+    F: oracle::PriceFetcher + 'static,
 {
     let protocol_clone = protocol.clone();
     let last_sig = last_signature.clone();
@@ -405,7 +405,7 @@ async fn test_threshold_calculation_3_nodes() {
     assert_eq!(threshold, 2, "3-node threshold should be 2");
 
     // Verify aggregator works with this threshold
-    let mut aggregator = issuer::SignatureAggregator::with_threshold(threshold);
+    let mut aggregator = oracle::SignatureAggregator::with_threshold(threshold);
     let keypair = BLSKeyPair::generate();
     let signer = Bn254BLSSigner::new();
     let message = b"test batch";
@@ -420,7 +420,7 @@ async fn test_threshold_calculation_3_nodes() {
     let status = aggregator.add_signature(peer1, 0, sig1).unwrap();
     assert!(matches!(
         status,
-        issuer::AggregationStatus::Collecting {
+        oracle::AggregationStatus::Collecting {
             count: 1,
             required: 2
         }
@@ -436,7 +436,7 @@ async fn test_threshold_calculation_3_nodes() {
     let status = aggregator.add_signature(peer2, 1, sig2).unwrap();
     assert!(matches!(
         status,
-        issuer::AggregationStatus::ThresholdReached {
+        oracle::AggregationStatus::ThresholdReached {
             signer_count: 2,
             ..
         }
@@ -767,7 +767,7 @@ async fn test_key_registry_3_nodes() {
     assert_eq!(key_registry.peer_count(), 3);
 
     for (peer_id, keypair) in &keypairs {
-        use issuer::KeyRegistry;
+        use oracle::KeyRegistry;
         assert!(key_registry.is_registered(peer_id));
         let pubkey = key_registry.get_public_key(peer_id).unwrap();
         assert_eq!(pubkey.0, keypair.public_key().0);
@@ -779,7 +779,7 @@ async fn test_key_registry_3_nodes() {
         p[0] = 99;
         p
     };
-    use issuer::KeyRegistry;
+    use oracle::KeyRegistry;
     assert!(!key_registry.is_registered(&unknown_peer));
 }
 

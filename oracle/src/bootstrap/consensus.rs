@@ -2,13 +2,13 @@
 
 use super::{
     BootstrapError, BootstrapParams, ChainComponents, ConsensusComponents, ConsensusKeyComponents,
-    IssuerMetrics, P2PComponents, PriceComponents,
+    OracleMetrics, P2PComponents, PriceComponents,
 };
 use crate::p2p::TcpP2PTransport;
 use crate::{
     BridgeConfig, BridgeOrchestrator, ConsensusConfig, ConsensusProtocol,
     ConsensusTimeouts, ContractAddresses, CycleConfig, CycleLeaderState, CycleManager,
-    EthersChainWriter, InMemoryKeyRegistry, IssuerConfig, ItpCreationConfig,
+    EthersChainWriter, InMemoryKeyRegistry, OracleConfig, ItpCreationConfig,
     LeaderElector, PriceFetcher,
 };
 use common::adapters::BitgetVaultReader;
@@ -23,7 +23,7 @@ use super::types::generate_peer_id;
 
 /// Builder for consensus-related components
 pub struct ConsensusBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     params: &'a BootstrapParams,
     node_id: u32,
     contract_addresses: &'a ContractAddresses,
@@ -32,7 +32,7 @@ pub struct ConsensusBuilder<'a> {
 
 impl<'a> ConsensusBuilder<'a> {
     pub fn new(
-        config: &'a IssuerConfig,
+        config: &'a OracleConfig,
         params: &'a BootstrapParams,
         node_id: u32,
         contract_addresses: &'a ContractAddresses,
@@ -57,11 +57,11 @@ impl<'a> ConsensusBuilder<'a> {
 
         // Derive indices: try chain-based derivation using BLS pubkey matching,
         // fall back to CLI args if chain query fails or no BLS key available
-        let (issuer_registry_index, node_index) = match self.derive_indices_from_chain(&bls_keypair).await {
+        let (oracle_registry_index, node_index) = match self.derive_indices_from_chain(&bls_keypair).await {
             Ok((reg_idx, dense_idx)) => {
                 info!(
                     self.node_id,
-                    issuer_registry_index = reg_idx,
+                    oracle_registry_index = reg_idx,
                     node_index = dense_idx,
                     "Derived indices from on-chain registry"
                 );
@@ -69,7 +69,7 @@ impl<'a> ConsensusBuilder<'a> {
             }
             Err(e) => {
                 let fallback_node_index = (self.node_id - 1) as u8;
-                let fallback_registry_index = self.params.on_chain_issuer_id.unwrap_or(fallback_node_index);
+                let fallback_registry_index = self.params.on_chain_oracle_id.unwrap_or(fallback_node_index);
                 warn!(
                     self.node_id,
                     error = %e,
@@ -81,48 +81,48 @@ impl<'a> ConsensusBuilder<'a> {
             }
         };
 
-        // Generate peer_id from the resolved issuer_registry_index
-        let peer_id = generate_peer_id(issuer_registry_index as u32);
+        // Generate peer_id from the resolved oracle_registry_index
+        let peer_id = generate_peer_id(oracle_registry_index as u32);
 
         Ok(ConsensusKeyComponents {
             bls_keypair,
             key_registry,
             peer_id,
             node_index,
-            issuer_registry_index,
+            oracle_registry_index,
         })
     }
 
-    /// Derive issuer_registry_index and node_index from on-chain registry by matching BLS pubkey.
+    /// Derive oracle_registry_index and node_index from on-chain registry by matching BLS pubkey.
     ///
-    /// - `issuer_registry_index`: The on-chain issuer ID (used in signerBitmap)
-    /// - `node_index`: Dense index = count of active issuers with ID < ours (used for leader election)
+    /// - `oracle_registry_index`: The on-chain oracle ID (used in signerBitmap)
+    /// - `node_index`: Dense index = count of active oracles with ID < ours (used for leader election)
     async fn derive_indices_from_chain(&self, bls_keypair: &Option<common::bls::BLSKeyPair>) -> Result<(u8, u8), BootstrapError> {
         let keypair = bls_keypair.as_ref()
             .ok_or_else(|| BootstrapError::Config("Cannot derive chain indices: no BLS keypair available".to_string()))?;
 
         let my_bls_pubkey_bytes = keypair.public_key_bytes();
 
-        let issuers = self.chain_reader.get_issuer_registry().await
-            .map_err(|e| BootstrapError::Config(format!("Failed to query issuer registry for index derivation: {e}")))?;
+        let oracles = self.chain_reader.get_oracle_registry().await
+            .map_err(|e| BootstrapError::Config(format!("Failed to query oracle registry for index derivation: {e}")))?;
 
         // Find our on-chain record by matching BLS pubkey
-        let my_issuer = issuers.iter()
+        let my_oracle = oracles.iter()
             .find(|i| {
                 i.status == ethers::types::U256::one() && i.bls_pubkey.as_ref() == my_bls_pubkey_bytes.as_slice()
             })
             .ok_or_else(|| BootstrapError::Config(
-                "This node's BLS pubkey not found among active issuers in on-chain registry".to_string()
+                "This node's BLS pubkey not found among active oracles in on-chain registry".to_string()
             ))?;
 
-        let issuer_registry_index = my_issuer.id as u8;
+        let oracle_registry_index = my_oracle.id as u8;
 
-        // Dense index = count of active issuers with ID strictly less than ours
-        let node_index = issuers.iter()
-            .filter(|i| i.status == ethers::types::U256::one() && i.id < my_issuer.id)
+        // Dense index = count of active oracles with ID strictly less than ours
+        let node_index = oracles.iter()
+            .filter(|i| i.status == ethers::types::U256::one() && i.id < my_oracle.id)
             .count() as u8;
 
-        Ok((issuer_registry_index, node_index))
+        Ok((oracle_registry_index, node_index))
     }
 
     /// Build the full consensus protocol (needs keys, P2P, chain, price components)
@@ -134,18 +134,18 @@ impl<'a> ConsensusBuilder<'a> {
         price: &PriceComponents,
         target_chain_id: u64,
     ) -> Result<ConsensusComponents, BootstrapError> {
-        // Calculate signature threshold — prefer on-chain activeIssuerCount, fall back to CLI --num-issuers
-        let on_chain_active = match self.chain_reader.get_active_issuer_count().await {
+        // Calculate signature threshold — prefer on-chain activeOracleCount, fall back to CLI --num-oracles
+        let on_chain_active = match self.chain_reader.get_active_oracle_count().await {
             Ok(count) => {
-                info!(self.node_id, on_chain_active_count = count, "Using on-chain activeIssuerCount for threshold");
+                info!(self.node_id, on_chain_active_count = count, "Using on-chain activeOracleCount for threshold");
                 count as usize
             }
             Err(e) => {
                 warn!(self.node_id, error = %e,
-                    "Failed to query on-chain activeIssuerCount, falling back to --num-issuers CLI arg ({})",
-                    self.params.num_issuers
+                    "Failed to query on-chain activeOracleCount, falling back to --num-oracles CLI arg ({})",
+                    self.params.num_oracles
                 );
-                self.params.num_issuers as usize
+                self.params.num_oracles as usize
             }
         };
         let sig_threshold = self.params.signature_threshold_override.unwrap_or_else(|| {
@@ -174,23 +174,23 @@ impl<'a> ConsensusBuilder<'a> {
         timeouts.assert_fits_in_cycle(self.params.cycle_duration_ms);
 
         // Build ConsensusConfig
-        let consensus_config = ConsensusConfig::new(keys.peer_id, self.params.num_issuers, keys.node_index)
+        let consensus_config = ConsensusConfig::new(keys.peer_id, self.params.num_oracles, keys.node_index)
             .with_timeouts(timeouts)
-            .with_issuer_registry_index(keys.issuer_registry_index)
+            .with_oracle_registry_index(keys.oracle_registry_index)
             .with_signature_threshold(sig_threshold);
 
         info!(
             self.node_id,
-            num_issuers = self.params.num_issuers,
+            num_oracles = self.params.num_oracles,
             node_index = keys.node_index,
-            issuer_registry_index = keys.issuer_registry_index,
+            oracle_registry_index = keys.oracle_registry_index,
             signature_threshold = consensus_config.signature_threshold,
             "ConsensusConfig created"
         );
 
         // Build CycleManager
         let cycle_config = CycleConfig::with_duration_ms(self.params.cycle_duration_ms)
-            .with_issuer_id(self.node_id)
+            .with_oracle_id(self.node_id)
             .with_min_cycle_gap_ms(self.params.min_cycle_gap_ms);
         let cycle_manager = if let Some(starting_cycle) = self.params.start_cycle {
             // Explicit --start-cycle: use interval-based timing (legacy mode)
@@ -230,9 +230,9 @@ impl<'a> ConsensusBuilder<'a> {
         );
 
         // Build metrics and leader state
-        let metrics = Arc::new(IssuerMetrics::new());
-        let leader_elector = LeaderElector::new(keys.node_index, self.params.num_issuers);
-        let leader_state = CycleLeaderState::genesis_with_issuers(self.params.num_issuers);
+        let metrics = Arc::new(OracleMetrics::new());
+        let leader_elector = LeaderElector::new(keys.node_index, self.params.num_oracles);
+        let leader_state = CycleLeaderState::genesis_with_oracles(self.params.num_oracles);
 
         // Record initial election
         let genesis_leader = leader_state.get_current_leader();
@@ -332,14 +332,14 @@ impl<'a> ConsensusBuilder<'a> {
         let pub_key = keypair.public_key();
         info!(self.node_id, pub_key_len = pub_key.0.len(), "BLS public key derived");
 
-        // Query IssuerRegistry for aggregated pubkey (informational)
-        if self.contract_addresses.issuer_registry != ethers::types::Address::zero() {
+        // Query OracleRegistry for aggregated pubkey (informational)
+        if self.contract_addresses.oracle_registry != ethers::types::Address::zero() {
             let rpc_url = self.config.effective_rpc_url();
             if let Ok(provider) = ethers::providers::Provider::<ethers::providers::Http>::try_from(&rpc_url) {
                 let agg_pk_selector = ethers::utils::keccak256("getAggregatedPubkey()");
                 let call_data = ethers::types::Bytes::from(agg_pk_selector[..4].to_vec());
                 let tx = ethers::types::TransactionRequest::new()
-                    .to(self.contract_addresses.issuer_registry)
+                    .to(self.contract_addresses.oracle_registry)
                     .data(call_data);
 
                 match provider.call(&tx.into(), None).await {
@@ -356,26 +356,26 @@ impl<'a> ConsensusBuilder<'a> {
 
     async fn build_key_registry(&self) -> Option<Arc<InMemoryKeyRegistry>> {
         // 1. Try chain-based bootstrap (production path)
-        if let Ok(issuers) = self.chain_reader.get_issuer_registry().await {
-            let active_issuers: Vec<_> = issuers
+        if let Ok(oracles) = self.chain_reader.get_oracle_registry().await {
+            let active_oracles: Vec<_> = oracles
                 .iter()
                 .filter(|i| i.status == ethers::types::U256::one())
                 .collect();
 
-            if !active_issuers.is_empty() {
+            if !active_oracles.is_empty() {
                 let registry = InMemoryKeyRegistry::new();
                 let mut registered = 0usize;
 
-                for issuer in &active_issuers {
-                    let peer_id = generate_peer_id(issuer.id as u32);
-                    let pubkey_bytes: &[u8] = issuer.bls_pubkey.as_ref();
+                for oracle in &active_oracles {
+                    let peer_id = generate_peer_id(oracle.id as u32);
+                    let pubkey_bytes: &[u8] = oracle.bls_pubkey.as_ref();
 
                     if pubkey_bytes.len() != BLSKeyPair::PUBLIC_KEY_SIZE {
                         warn!(
-                            issuer_id = issuer.id,
+                            oracle_id = oracle.id,
                             pubkey_len = pubkey_bytes.len(),
                             expected = BLSKeyPair::PUBLIC_KEY_SIZE,
-                            "Skipping issuer: BLS pubkey wrong length"
+                            "Skipping oracle: BLS pubkey wrong length"
                         );
                         continue;
                     }
@@ -383,9 +383,9 @@ impl<'a> ConsensusBuilder<'a> {
                     // Validate the G2 point is on-curve before registering
                     if let Err(e) = common::bls::keypair::deserialize_g2_point(pubkey_bytes) {
                         warn!(
-                            issuer_id = issuer.id,
+                            oracle_id = oracle.id,
                             error = %e,
-                            "Skipping issuer: BLS pubkey is not a valid G2 point"
+                            "Skipping oracle: BLS pubkey is not a valid G2 point"
                         );
                         continue;
                     }
@@ -393,9 +393,9 @@ impl<'a> ConsensusBuilder<'a> {
                     let pubkey = common::types::BLSPublicKey(pubkey_bytes.to_vec());
                     if let Err(e) = registry.register(peer_id, pubkey) {
                         warn!(
-                            issuer_id = issuer.id,
+                            oracle_id = oracle.id,
                             error = %e,
-                            "Failed to register BLS pubkey for issuer"
+                            "Failed to register BLS pubkey for oracle"
                         );
                     } else {
                         registered += 1;
@@ -413,20 +413,20 @@ impl<'a> ConsensusBuilder<'a> {
 
                     info!(
                         peer_count = registered,
-                        active_issuers = active_issuers.len(),
-                        "InMemoryKeyRegistry built from on-chain issuer registry"
+                        active_oracles = active_oracles.len(),
+                        "InMemoryKeyRegistry built from on-chain oracle registry"
                     );
                     return Some(Arc::new(registry));
                 }
 
-                warn!("On-chain registry had active issuers but none had valid BLS pubkeys");
+                warn!("On-chain registry had active oracles but none had valid BLS pubkeys");
             }
         }
 
         // 2. Fallback: deterministic test seeds (local dev / E2E)
         if self.params.test_key_seeds {
             let (registry, keypairs) = InMemoryKeyRegistry::generate_test_registry_with_offset(
-                self.params.num_issuers as usize,
+                self.params.num_oracles as usize,
                 self.params.key_registry_offset as usize,
             );
 
@@ -492,12 +492,12 @@ impl<'a> ConsensusBuilder<'a> {
     ) -> Option<Arc<RwLock<BridgeOrchestrator>>> {
         if chain.settlement_reader.is_none() {
             warn!(code = "BRIDGE-001", self.node_id,
-                  "BridgeOrchestrator DISABLED: no SettlementChainReader (check ISSUER_SETTLEMENT_RPC_URL)");
+                  "BridgeOrchestrator DISABLED: no SettlementChainReader (check ORACLE_SETTLEMENT_RPC_URL)");
             return None;
         }
         if chain.writer.is_none() {
             warn!(code = "BRIDGE-002", self.node_id,
-                  "BridgeOrchestrator DISABLED: no L3 ChainWriter (check ISSUER_PRIVATE_KEY)");
+                  "BridgeOrchestrator DISABLED: no L3 ChainWriter (check ORACLE_PRIVATE_KEY)");
             return None;
         }
         if keys.bls_keypair.is_none() {
@@ -510,7 +510,7 @@ impl<'a> ConsensusBuilder<'a> {
         let bls_keypair = keys.bls_keypair.as_ref().unwrap();
 
         let bridge_config = BridgeConfig {
-            issuer_custody_l3: self.config.effective_issuer_custody_l3().unwrap_or_default(),
+            oracle_custody_l3: self.config.effective_oracle_custody_l3().unwrap_or_default(),
             l3_usdc_address: self.config.effective_l3_usdc().unwrap_or_default(),
             settlement_custody_address: self.config.effective_settlement_custody().unwrap_or_default(),
             settlement_chain_id: match self.config.effective_settlement_chain_id() {
@@ -528,7 +528,7 @@ impl<'a> ConsensusBuilder<'a> {
             min_signatures: sig_threshold,
             proposal_timeout_ms: self.params.sign_timeout_ms,
             sign_timeout_ms: self.params.sign_timeout_ms,
-            issuer_custody_settlement: self.config.effective_issuer_custody_settlement().unwrap_or_default(),
+            oracle_custody_settlement: self.config.effective_oracle_custody_settlement().unwrap_or_default(),
             settlement_usdc_address: self.config.effective_settlement_usdc().unwrap_or_default(),
             bitget_vault: self.config.effective_bitget_vault()
                 .map(ethers::types::Address::from)
@@ -552,9 +552,9 @@ impl<'a> ConsensusBuilder<'a> {
             warn!(code = "BRIDGE-004", self.node_id,
                   "BridgeConfig.index_address is zero — bridge orchestrator may not function correctly");
         }
-        if bridge_config.issuer_custody_l3 == ethers::types::Address::zero() {
+        if bridge_config.oracle_custody_l3 == ethers::types::Address::zero() {
             warn!(code = "BRIDGE-005", self.node_id,
-                  "BridgeConfig.issuer_custody_l3 is zero address");
+                  "BridgeConfig.oracle_custody_l3 is zero address");
         }
         if bridge_config.l3_usdc_address == ethers::types::Address::zero() {
             warn!(code = "BRIDGE-006", self.node_id,
@@ -569,7 +569,7 @@ impl<'a> ConsensusBuilder<'a> {
             self.node_id,
             node_index = keys.node_index,
             settlement_custody = ?self.config.effective_settlement_custody(),
-            issuer_custody_l3 = ?self.config.effective_issuer_custody_l3(),
+            oracle_custody_l3 = ?self.config.effective_oracle_custody_l3(),
             bridge_proxy = ?bridge_config.bridge_proxy,
             settlement_chain_id = bridge_config.settlement_chain_id,
             min_signatures = sig_threshold,

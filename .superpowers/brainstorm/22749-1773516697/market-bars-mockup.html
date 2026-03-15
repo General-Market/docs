@@ -1,0 +1,156 @@
+<h2>Per-Market Win/Loss Bars</h2>
+<p class="subtitle">Each market gets its own horizontal bar — green cell = won that tick, red = lost. Grouped by batch.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Vision Tab — Batch History with Market Bars</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 13px; color: #1a1a1a;">
+
+    <!-- Header -->
+    <div style="padding: 20px 24px; border-bottom: 1px solid #e5e5e5;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1a1a1a, #666); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 18px;">M</div>
+        <div>
+          <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em;">0xABC...1234</div>
+          <div style="font-size: 11px; color: #999; margin-top: 2px;">Joined Mar 2026 · Last active 2h ago</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 32px;">
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">P&L</span><span style="font-weight: 700; color: #16a34a; font-size: 16px; font-family: monospace;">+$1,247.80</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">ROI</span><span style="font-weight: 700; color: #16a34a; font-size: 16px; font-family: monospace;">+24.3%</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Win Rate</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">62.1%</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Volume</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">$5,130</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Batches</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">47</span></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; border-bottom: 1px solid #e5e5e5;">
+      <div style="padding: 12px 24px; font-weight: 700; font-size: 13px; border-bottom: 3px solid #1a1a1a;">Vision</div>
+      <div style="padding: 12px 24px; font-weight: 600; font-size: 13px; color: #999; border-bottom: 3px solid transparent;">Index</div>
+    </div>
+
+    <!-- Batch #1 — Crypto -->
+    <div style="padding: 20px 24px 0;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; font-weight: 800;">Crypto #4</span>
+          <span style="font-size: 10px; font-weight: 600; background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 3px;">ACTIVE</span>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 11px; color: #999;">
+          <span>142 ticks</span>
+          <span>Deposited: <span style="font-family:monospace;color:#1a1a1a;">$200</span></span>
+          <span>Balance: <span style="font-family:monospace;color:#1a1a1a;">$245.80</span></span>
+          <span>P&L: <span style="font-family:monospace;color:#16a34a;font-weight:700;">+$45.80</span></span>
+        </div>
+      </div>
+
+      <!-- Market bars -->
+      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+        <script>
+          function makeBar(container, label, winRate, count) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+            const lbl = document.createElement('div');
+            lbl.style.cssText = 'width:56px;font-size:11px;font-weight:600;text-align:right;flex-shrink:0;';
+            lbl.textContent = label;
+            row.appendChild(lbl);
+
+            const bar = document.createElement('div');
+            bar.style.cssText = 'display:flex;gap:1px;flex:1;';
+            for (let i = 0; i < count; i++) {
+              const cell = document.createElement('div');
+              const won = Math.random() < winRate;
+              cell.style.cssText = `height:14px;flex:1;border-radius:1px;background:${won ? '#22c55e' : '#ef4444'};opacity:${0.5 + Math.random() * 0.5};`;
+              cell.title = `Tick ${i+1}: ${won ? 'Won' : 'Lost'}`;
+              bar.appendChild(cell);
+            }
+            row.appendChild(bar);
+
+            const pct = document.createElement('div');
+            pct.style.cssText = `width:40px;font-size:10px;font-family:monospace;font-weight:700;text-align:right;flex-shrink:0;color:${winRate >= 0.5 ? '#16a34a' : '#dc2626'};`;
+            pct.textContent = `${Math.round(winRate * 100)}%`;
+            row.appendChild(pct);
+
+            container.appendChild(row);
+          }
+        </script>
+        <div id="crypto-bars">
+          <script>
+            const cb = document.getElementById('crypto-bars');
+            makeBar(cb, 'BTC', 0.72, 50);
+            makeBar(cb, 'ETH', 0.65, 50);
+            makeBar(cb, 'SOL', 0.58, 50);
+            makeBar(cb, 'AVAX', 0.51, 50);
+            makeBar(cb, 'DOGE', 0.44, 50);
+            makeBar(cb, 'ADA', 0.61, 50);
+            makeBar(cb, 'LINK', 0.68, 50);
+            makeBar(cb, 'DOT', 0.53, 50);
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Batch #2 — Stocks -->
+    <div style="padding: 0 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; font-weight: 800;">Stocks #2</span>
+          <span style="font-size: 10px; font-weight: 600; background: #dcfce7; color: #16a34a; padding: 2px 8px; border-radius: 3px;">ACTIVE</span>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 11px; color: #999;">
+          <span>67 ticks</span>
+          <span>Deposited: <span style="font-family:monospace;color:#1a1a1a;">$200</span></span>
+          <span>Balance: <span style="font-family:monospace;color:#1a1a1a;">$180.20</span></span>
+          <span>P&L: <span style="font-family:monospace;color:#dc2626;font-weight:700;">-$19.80</span></span>
+        </div>
+      </div>
+      <div id="stock-bars" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+        <script>
+          const sb = document.getElementById('stock-bars');
+          makeBar(sb, 'AAPL', 0.55, 35);
+          makeBar(sb, 'MSFT', 0.62, 35);
+          makeBar(sb, 'TSLA', 0.38, 35);
+          makeBar(sb, 'NVDA', 0.71, 35);
+          makeBar(sb, 'AMZN', 0.48, 35);
+          makeBar(sb, 'GOOG', 0.52, 35);
+        </script>
+      </div>
+    </div>
+
+    <!-- Batch #3 — Exited -->
+    <div style="padding: 0 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; font-weight: 800;">Transit #1</span>
+          <span style="font-size: 10px; font-weight: 600; background: #f0f0f0; color: #999; padding: 2px 8px; border-radius: 3px;">EXITED</span>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 11px; color: #999;">
+          <span>85 ticks</span>
+          <span>Deposited: <span style="font-family:monospace;color:#1a1a1a;">$50</span></span>
+          <span>Final: <span style="font-family:monospace;color:#1a1a1a;">$32</span></span>
+          <span>P&L: <span style="font-family:monospace;color:#dc2626;font-weight:700;">-$18</span></span>
+        </div>
+      </div>
+      <div id="transit-bars" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0f0f0;">
+        <script>
+          const tb = document.getElementById('transit-bars');
+          makeBar(tb, 'TFL', 0.42, 40);
+          makeBar(tb, 'RATP', 0.39, 40);
+          makeBar(tb, 'MTA', 0.45, 40);
+          makeBar(tb, 'DB', 0.36, 40);
+        </script>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="padding: 0 24px 24px;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #999;">
+        <div style="width:14px;height:14px;border-radius:1px;background:#22c55e;"></div><span>Won tick</span>
+        <div style="width:14px;height:14px;border-radius:1px;background:#ef4444;margin-left:8px;"></div><span>Lost tick</span>
+        <span style="margin-left:12px;">Each cell = 1 tick · Read left to right (oldest → newest) · % = win rate on that market</span>
+      </div>
+    </div>
+
+  </div>
+</div>

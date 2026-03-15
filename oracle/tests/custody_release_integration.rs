@@ -20,11 +20,11 @@ use common::mocks::MockChainBuilder;
 use common::traits::BLSSigner;
 use common::types::PeerId;
 
-use issuer::bridge::{
+use oracle::bridge::{
     build_release_to_vault_hash, BridgeConfig, BridgeError, BridgeOrchestrator,
     BridgeOrderStatus, CrossChainOrderReader,
 };
-use issuer::chain::CrossChainOrderData;
+use oracle::chain::CrossChainOrderData;
 
 // ============================================================================
 // Test Helpers
@@ -79,7 +79,7 @@ fn test_bls_keypair(seed: u64) -> BLSKeyPair {
 
 fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11; 20]),
+        oracle_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
         settlement_custody_address: Address::from([0x33; 20]),
         settlement_chain_id: 42161,
@@ -88,7 +88,7 @@ fn test_bridge_config() -> BridgeConfig {
         min_signatures: 2, // 2-of-3 threshold
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
-        issuer_custody_settlement: Address::from([0x55; 20]),
+        oracle_custody_settlement: Address::from([0x55; 20]),
         settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: MockBitgetVault address
         bitget_vault: Address::from([0x77; 20]),
@@ -245,7 +245,7 @@ async fn test_leader_creates_release_to_vault_proposal() {
     // Verify message hash matches recomputed
     let expected_hash = build_release_to_vault_hash(
         config.settlement_chain_id,
-        config.issuer_custody_settlement,
+        config.oracle_custody_settlement,
         cycle_number,
         &order_ids,
         amount1 + amount2,

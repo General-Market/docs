@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-12
 **Status**: Approved (Rev 4 — passed 3/3 security reviewers with zero CRITICAL/HIGH)
-**Scope**: `issuer/src/vision/deposit_watcher.rs`, `issuer/src/main.rs`, `issuer/src/consensus/protocol.rs`, `issuer/src/consensus/keys.rs`, `testnet.sh`, `contracts/src/custody/SettlementBridgeCustody.sol`, `contracts/src/vision/Vision.sol`
+**Scope**: `oracle/src/vision/deposit_watcher.rs`, `oracle/src/main.rs`, `oracle/src/consensus/protocol.rs`, `oracle/src/consensus/keys.rs`, `testnet.sh`, `contracts/src/custody/SettlementBridgeCustody.sol`, `contracts/src/vision/Vision.sol`
 
 ## Problem Statement
 
@@ -10,22 +10,22 @@ The `VisionDepositWatcher` has three critical bugs preventing all deposit/refund
 
 ### Bug 1: Single-Signer BLS (BelowThreshold revert)
 
-`deposit_watcher.rs:712` signs with a single issuer:
+`deposit_watcher.rs:712` signs with a single oracle:
 ```rust
 let signer_bitmap = U256::one() << self.node_index;
 ```
 
-The on-chain `BLSVerifier._verifyBLS()` requires `ceil(2n/3)` signers. With 3 issuers, 2 are needed. Single-signer always reverts with `BLSVerifier__BelowThreshold` (selector `0x2cfbe550`).
+The on-chain `BLSVerifier._verifyBLS()` requires `ceil(2n/3)` signers. With 3 oracles, 2 are needed. Single-signer always reverts with `BLSVerifier__BelowThreshold` (selector `0x2cfbe550`).
 
 **Affected operations**: `creditBalance` (L3), `completeVisionDeposit` (Settlement), `refundVisionDeposit` (Settlement), `completeVisionWithdraw` (Settlement).
 
 ### Bug 2: Settlement RPC Points to Wrong Chain
 
-The deposit watcher reads `lastSnapshotNonce()` from the L3 IssuerRegistry address (`0xEd89...`) via the settlement provider, which connects to Sonic (chain 14601, `http://127.0.0.1:8547`). The IssuerRegistry doesn't exist on Sonic, so the RPC call returns empty bytes (< 32), triggering `"Invalid response from lastSnapshotNonce"`.
+The deposit watcher reads `lastSnapshotNonce()` from the L3 OracleRegistry address (`0xEd89...`) via the settlement provider, which connects to Sonic (chain 14601, `http://127.0.0.1:8547`). The OracleRegistry doesn't exist on Sonic, so the RPC call returns empty bytes (< 32), triggering `"Invalid response from lastSnapshotNonce"`.
 
-**Root cause**: `config.rs:409` defaults `settlement_rpc_url` from `ISSUER_SETTLEMENT_RPC_URL`, but `main.rs:4694` passes the L3 IssuerRegistry address as both `l3_registry_address` and `settlement_registry_address`. The address is correct for L3 but not for Sonic.
+**Root cause**: `config.rs:409` defaults `settlement_rpc_url` from `ORACLE_SETTLEMENT_RPC_URL`, but `main.rs:4694` passes the L3 OracleRegistry address as both `l3_registry_address` and `settlement_registry_address`. The address is correct for L3 but not for Sonic.
 
-**Fix**: The settlement registry address should be the `MirrorIssuerRegistry` on Sonic (`ISSUER_MIRROR_REGISTRY_ADDRESS=0x42FA8F399b2D4B078D1265370AB4e2B09CC8c952`), which IS deployed on the settlement chain. The deposit watcher constructor already accepts separate addresses — `main.rs:4694` just needs to pass the mirror registry address for settlement instead of reusing the L3 address.
+**Fix**: The settlement registry address should be the `MirrorOracleRegistry` on Sonic (`ORACLE_MIRROR_REGISTRY_ADDRESS=0x42FA8F399b2D4B078D1265370AB4e2B09CC8c952`), which IS deployed on the settlement chain. The deposit watcher constructor already accepts separate addresses — `main.rs:4694` just needs to pass the mirror registry address for settlement instead of reusing the L3 address.
 
 ### Bug 3: Cascading Failures
 
@@ -44,7 +44,7 @@ Vision deposit ops follow the same pattern as bridge consensus phases: an indepe
 ```
 ┌─────────────────────┐     enqueue()      ┌──────────────────────┐
 │  VisionDepositWatcher│───────────────────>│   PendingOpsQueue    │
-│  (per-issuer task)   │<──────────────────│   (Arc<Mutex<...>>)  │
+│  (per-oracle task)   │<──────────────────│   (Arc<Mutex<...>>)  │
 │                      │   poll_result()    │                      │
 └─────────────────────┘                    └──────────┬───────────┘
                                                       │ drain (spawned task)
@@ -78,7 +78,7 @@ Vision deposit ops follow the same pattern as bridge consensus phases: an indepe
 
 ### Component 1: PendingOpsQueue (new file)
 
-**File**: `issuer/src/vision/pending_ops.rs`
+**File**: `oracle/src/vision/pending_ops.rs`
 
 A thread-safe queue shared between the deposit watcher and the consensus cycle.
 
@@ -147,11 +147,11 @@ pub struct PendingOpsQueue {
 
 **TTL**: Results older than 60 seconds are automatically pruned on `poll_result()`. InProgress ops older than 600 seconds are pruned back to allow re-enqueue. The 600s TTL accounts for worst-case batch processing: 5 ops × (5s sign timeout + ~30s tx receipt + ~30s RPC delays + buffer). The TTL is per-op from when that specific op transitions to `InProgress` (not from drain time). The deposit watcher must handle missing results gracefully (re-enqueue on next loop). This prevents unbounded growth if results are never consumed (e.g., after crash).
 
-**Multi-node dedup**: All 3 issuers independently detect the same deposit and enqueue the same ops locally. Only the leader drains the queue and drives consensus. After the leader submits successfully on-chain, follower deposit watchers detect the state change via their existing on-chain checks (`is_deposit_processed_on_l3()`, etc.) and advance their state machines in the next polling loop. The `OpResult` is only written to the leader's local queue.
+**Multi-node dedup**: All 3 oracles independently detect the same deposit and enqueue the same ops locally. Only the leader drains the queue and drives consensus. After the leader submits successfully on-chain, follower deposit watchers detect the state change via their existing on-chain checks (`is_deposit_processed_on_l3()`, etc.) and advance their state machines in the next polling loop. The `OpResult` is only written to the leader's local queue.
 
 ### Component 2: Consensus Protocol Extension
 
-**File**: `issuer/src/consensus/protocol.rs`, `issuer/src/consensus/messages.rs`
+**File**: `oracle/src/consensus/protocol.rs`, `oracle/src/consensus/messages.rs`
 
 Follow the established bridge consensus pattern: one proposal/sign message pair per operation type. Use `bridge_proposal_handler!` / `bridge_sign_handler!` macros from `handler_macros.rs` where applicable.
 
@@ -181,7 +181,7 @@ VisionCompleteWithdrawSign { cycle: u64, withdraw_id: u64, signature: Vec<u8>, s
 
 **Note**: Operations are processed one at a time (not batched). This matches the existing codebase pattern where every bridge consensus phase signs exactly one operation. Given deposits are rare events, the simplicity is worth the extra round-trips.
 
-**signer_index derivation**: The leader MUST derive `signer_index` from `extract_issuer_id(&from)` (the authenticated P2P peer identity), NOT from the self-reported `signer_index` field in the Sign message. The self-reported field is informational only. This follows the pattern used in `handle_itp_creation_sign()` (protocol.rs:3771). **Do NOT use the `bridge_sign_handler!` macro** for vision sign handlers — the macro passes through `signer_index` without validation. Write custom handlers that derive the index from peer identity. This prevents:
+**signer_index derivation**: The leader MUST derive `signer_index` from `extract_oracle_id(&from)` (the authenticated P2P peer identity), NOT from the self-reported `signer_index` field in the Sign message. The self-reported field is informational only. This follows the pattern used in `handle_itp_creation_sign()` (protocol.rs:3771). **Do NOT use the `bridge_sign_handler!` macro** for vision sign handlers — the macro passes through `signer_index` without validation. Write custom handlers that derive the index from peer identity. This prevents:
 - Griefing: a follower claiming to be a different signer, causing the aggregated bitmask to be wrong
 - DoS: a follower overwriting another follower's real signature in the aggregator
 
@@ -195,7 +195,7 @@ This is an independent `tokio::spawn` task, guarded by a `vision_ops_active: Arc
 
 1. `drain_pending(5)` from `PendingOpsQueue` (max 5 ops per invocation)
 2. If empty, return
-3. **Pre-flight**: Check `MirrorIssuerRegistry` is synced — call `mirrorRegistry.lastSnapshotNonce()` and compare with `l3Registry.lastSnapshotNonce()`. If nonces mismatch, log error, write `OpResult::Failed` for all drained ops, return. Nonce comparison is more precise than `totalRegistered()` count comparison because it detects key rotations where the count stays the same but keys change. Also verify `totalRegistered >= 3` (minimum deployment size) to prevent degenerate single-signer thresholds.
+3. **Pre-flight**: Check `MirrorOracleRegistry` is synced — call `mirrorRegistry.lastSnapshotNonce()` and compare with `l3Registry.lastSnapshotNonce()`. If nonces mismatch, log error, write `OpResult::Failed` for all drained ops, return. Nonce comparison is more precise than `totalRegistered()` count comparison because it detects key rotations where the count stays the same but keys change. Also verify `totalRegistered >= 3` (minimum deployment size) to prevent degenerate single-signer thresholds.
 4. For each op (sequentially, respecting deposit state ordering):
    a. **Leader dedup check**: Before signing, verify the op hasn't already been executed on-chain (e.g., call `depositProcessed[orderId]` for CreditBalance). If already processed, write `OpResult::Permanent { reason: "AlreadyProcessed" }` and skip.
    b. Sign the `message_hash` with own BLS keypair
@@ -248,7 +248,7 @@ Followers MUST independently verify each operation before signing. **All checks 
   1. MANDATORY: Verify `message_hash == keccak256(abi.encode(chainId, custodyAddress, "refundVisionDeposit", orderId))`.
   2. MANDATORY: Verify deposit exists on settlement — `SettlementBridgeCustody.visionDeposits(orderId).amount > 0`.
   3. MANDATORY: Verify `depositProcessed[orderId]` is false on L3 — **if the deposit was already credited, refunding would be a double-spend** (user keeps L3 balance AND gets USDC back).
-  4. MANDATORY: Verify deposit age exceeds refund timeout — `block.timestamp - deposit.timestamp > REFUND_TIMEOUT`. `REFUND_TIMEOUT` MUST be a compile-time constant (e.g., `const REFUND_TIMEOUT: u64 = 7200;`), NOT a per-node runtime config value. All issuers must agree on the same timeout; a per-node config violates consensus safety (a compromised operator could set it to 0). This prevents premature refunds while credit consensus is still in progress.
+  4. MANDATORY: Verify deposit age exceeds refund timeout — `block.timestamp - deposit.timestamp > REFUND_TIMEOUT`. `REFUND_TIMEOUT` MUST be a compile-time constant (e.g., `const REFUND_TIMEOUT: u64 = 7200;`), NOT a per-node runtime config value. All oracles must agree on the same timeout; a per-node config violates consensus safety (a compromised operator could set it to 0). This prevents premature refunds while credit consensus is still in progress.
 
 - **CompleteWithdraw**:
   1. MANDATORY: Verify `message_hash == keccak256(abi.encode(chainId, custodyAddress, "completeVisionWithdraw", withdrawId, user, amount))`.
@@ -256,11 +256,11 @@ Followers MUST independently verify each operation before signing. **All checks 
 
 **Identity binding**: The `chain_id`, `vision_address`, and `custody_address` used for hash verification come from the follower's own config, not the proposal — this prevents a malicious leader from forging operations.
 
-**signer_index validation**: The leader MUST validate `signer_index` in received Sign messages against the authenticated peer identity (from the P2P layer's peer ID → issuer index mapping). A Sign message claiming `signer_index=2` from a peer known to be issuer 0 MUST be rejected. This prevents signature attribution spoofing.
+**signer_index validation**: The leader MUST validate `signer_index` in received Sign messages against the authenticated peer identity (from the P2P layer's peer ID → oracle index mapping). A Sign message claiming `signer_index=2` from a peer known to be oracle 0 MUST be rejected. This prevents signature attribution spoofing.
 
 ### Component 3: Deposit Watcher Changes
 
-**File**: `issuer/src/vision/deposit_watcher.rs`
+**File**: `oracle/src/vision/deposit_watcher.rs`
 
 **Remove**: `bls_keypair`, `bls_signer`, `node_index`, `l3_chain_writer`, `settlement_chain_writer`, `l3_registry_address`, `settlement_registry_address` fields. The deposit watcher no longer signs, reads nonces, or submits transactions.
 
@@ -291,13 +291,13 @@ Followers MUST independently verify each operation before signing. **All checks 
 
 ### Component 4: Settlement Registry Fix
 
-**File**: `issuer/src/main.rs` (lines 4680-4694)
+**File**: `oracle/src/main.rs` (lines 4680-4694)
 
 Change the deposit watcher initialization to use the correct settlement registry:
 
 ```rust
 // L3 registry for L3 operations (creditBalance)
-let dw_l3_registry: Address = issuer_registry_address_str
+let dw_l3_registry: Address = oracle_registry_address_str
     .as_ref()
     .and_then(|addr| addr.parse().ok())
     .unwrap_or(Address::zero());
@@ -308,8 +308,8 @@ let dw_settlement_registry: Address = mirror_registry_address
 ```
 
 **Note**: With the Approach C design, the deposit watcher no longer reads `lastSnapshotNonce` directly — the consensus protocol does. But the consensus protocol's `_verifyBLS` call still needs the correct `referenceNonce`. The leader should read it from the appropriate chain:
-- L3 ops: read from L3 IssuerRegistry via `consensus_chain_reader`
-- Settlement ops: read from MirrorIssuerRegistry via settlement provider
+- L3 ops: read from L3 OracleRegistry via `consensus_chain_reader`
+- Settlement ops: read from MirrorOracleRegistry via settlement provider
 
 The existing `ConsensusKeys.registry_nonce()` and `settlement_registry_nonce()` already track these separately.
 
@@ -317,7 +317,7 @@ The existing `ConsensusKeys.registry_nonce()` and `settlement_registry_nonce()` 
 
 **File**: `testnet.sh`
 
-Add `--vision-settlement-rpc-url` to issuer command generation. Currently only `--vision-settlement-bridge-custody` is passed. Add:
+Add `--vision-settlement-rpc-url` to oracle command generation. Currently only `--vision-settlement-bridge-custody` is passed. Add:
 
 ```yaml
 - "--vision-settlement-rpc-url"
@@ -335,7 +335,7 @@ This ensures the Vision deposit watcher's settlement provider connects to the co
 
 ### Component 6: Nonce Monotonicity Guards
 
-**File**: `issuer/src/consensus/keys.rs`
+**File**: `oracle/src/consensus/keys.rs`
 
 **Critical**: `InMemoryKeyRegistry` has TWO implementations of each nonce setter — an inherent method and a `KeyRegistry` trait impl. Callers using `dyn KeyRegistry` or `impl KeyRegistry` dispatch to the TRAIT impl, which bypasses any guard in the inherent method. **Both implementations must have the monotonicity guard.**
 
@@ -366,7 +366,7 @@ This prevents a race where a stale RPC response overwrites a newer nonce, which 
 
 ### Component 7: Chain ID Configuration
 
-**File**: `issuer/src/vision/deposit_watcher.rs`
+**File**: `oracle/src/vision/deposit_watcher.rs`
 
 Replace the hardcoded L3 chain ID `111_222_333` with a config value:
 
@@ -378,7 +378,7 @@ let chain_id = 111_222_333u64;
 let chain_id = self.config.l3_chain_id;  // from CLI flag / env var
 ```
 
-The chain ID is used in `message_hash` computation. A hardcoded value would break if the chain ID ever changes (e.g., mainnet deployment). Read from the same config source as the rest of the issuer.
+The chain ID is used in `message_hash` computation. A hardcoded value would break if the chain ID ever changes (e.g., mainnet deployment). Read from the same config source as the rest of the oracle.
 
 ### Error Handling
 
@@ -407,7 +407,7 @@ The chain ID is used in `message_hash` computation. A hardcoded value would brea
 **Pre-deploy check**: Verify actual DB state for orders 26/27. The current code optimistically advances to `CreditedOnL3` before confirming the tx receipt (lines 511-520). If the DB shows `CreditedOnL3` but `depositProcessed[orderId]` is false on L3, reset the DB state to `Pending` before restarting.
 
 After deploying the fix:
-1. Issuers restart, deposit watcher reloads pending deposits from DB
+1. Oracles restart, deposit watcher reloads pending deposits from DB
 2. Orders 26 & 27 should be in `Pending` state (verified/reset above)
 3. Deposit watcher enqueues `CreditBalance` for both
 4. Vision ops task picks them up, collects 2/3 signatures, submits
@@ -417,26 +417,26 @@ After deploying the fix:
 
 ### What This Doesn't Change
 
-- Vision tick consensus (`engine.rs`) — already has its own multi-issuer flow via `TickConsensus`
+- Vision tick consensus (`engine.rs`) — already has its own multi-oracle flow via `TickConsensus`
 - Price consensus — untouched
 - ITP/bridge consensus — untouched
 
 ### Component 8: Balance Proof Aggregation (claimRewards / withdraw from batch)
 
-**Problem**: Balance proofs are single-signer (`engine.rs:511`: `U256::one() << config.node_index`). Each issuer independently signs WITHDRAW message hashes after tick resolution and stores them in its own `vision_balance_proofs` DB table. The player fetches from one issuer's API and submits on-chain, where `_verifyBLS` requires 2/3 threshold → `BelowThreshold` revert.
+**Problem**: Balance proofs are single-signer (`engine.rs:511`: `U256::one() << config.node_index`). Each oracle independently signs WITHDRAW message hashes after tick resolution and stores them in its own `vision_balance_proofs` DB table. The player fetches from one oracle's API and submits on-chain, where `_verifyBLS` requires 2/3 threshold → `BelowThreshold` revert.
 
 **Affected functions**: `Vision.claimRewards()` and `Vision.withdraw()` — both are player-submitted transactions that include a BLS-signed balance proof.
 
-**Key insight**: Tick consensus (`tick_consensus.rs`) already guarantees all issuers agree on the same player balances for each tick. After tick consensus succeeds, every issuer has identical `player_balances`. The per-player WITHDRAW message hashes are deterministic from these agreed-upon balances. **No additional consensus round is needed** — just a P2P signature exchange.
+**Key insight**: Tick consensus (`tick_consensus.rs`) already guarantees all oracles agree on the same player balances for each tick. After tick consensus succeeds, every oracle has identical `player_balances`. The per-player WITHDRAW message hashes are deterministic from these agreed-upon balances. **No additional consensus round is needed** — just a P2P signature exchange.
 
 #### Flow (post-tick-resolution)
 
 1. **After tick consensus succeeds** (threshold signatures collected for tick result):
-   - Each issuer computes all per-player WITHDRAW message hashes (same as today in `generate_and_store_balance_proofs`)
-   - Each issuer signs all hashes with its own BLS keypair (same as today)
+   - Each oracle computes all per-player WITHDRAW message hashes (same as today in `generate_and_store_balance_proofs`)
+   - Each oracle signs all hashes with its own BLS keypair (same as today)
 
 2. **P2P signature broadcast** (NEW):
-   - Each issuer broadcasts a `VisionBalanceProofsBatch` P2P message:
+   - Each oracle broadcasts a `VisionBalanceProofsBatch` P2P message:
      ```rust
      VisionBalanceProofsBatch {
          batch_id: u64,
@@ -449,13 +449,13 @@ After deploying the fix:
    - This is a fire-and-forget broadcast (not a proposal/sign pair). No leader needed.
 
 3. **Signature collection** (NEW):
-   - Each issuer receives `VisionBalanceProofsBatch` from peers
-   - Validate: `signer_index` derived from `extract_issuer_id(&from)` (same peer identity rule)
+   - Each oracle receives `VisionBalanceProofsBatch` from peers
+   - Validate: `signer_index` derived from `extract_oracle_id(&from)` (same peer identity rule)
    - For each player proof: verify the BLS signature against the expected message hash (recomputed from own agreed-upon balances). Reject individual proofs that don't verify.
    - Store peer signatures in memory, keyed by `(batch_id, player)`
 
 4. **Aggregation + DB storage** (NEW):
-   - After collecting signatures from 2+ issuers (including self), aggregate per-player:
+   - After collecting signatures from 2+ oracles (including self), aggregate per-player:
      - Aggregate BLS signatures using `Bn254BLSSigner.aggregate_signatures()`
      - Compute combined `signer_bitmap` (OR of individual bitmaps)
    - Upsert to `vision_balance_proofs` with the aggregated `bls_sig` and `signer_bitmap`
@@ -471,31 +471,31 @@ After deploying the fix:
 Balance proof aggregation doesn't need leader-driven consensus because:
 - **Balances are already agreed** — tick consensus guarantees identical inputs
 - **Message hashes are deterministic** — computed from agreed balances + chain constants
-- **No on-chain submission** — the player submits the tx, not the issuer
-- **Partial aggregation is safe** — if only 2/3 issuers exchange signatures, the proof still passes threshold. Missing one issuer's signature just means the bitmap has 2 bits instead of 3.
+- **No on-chain submission** — the player submits the tx, not the oracle
+- **Partial aggregation is safe** — if only 2/3 oracles exchange signatures, the proof still passes threshold. Missing one oracle's signature just means the bitmap has 2 bits instead of 3.
 
 #### Files Changed
 
 | File | Change |
 |------|--------|
-| `issuer/src/vision/engine.rs` | After tick consensus, broadcast `VisionBalanceProofsBatch` instead of storing single-signer proofs immediately |
-| `issuer/src/vision/engine.rs` | Add handler for receiving peer balance proof batches, aggregate signatures |
-| `issuer/src/consensus/messages.rs` | Add `VisionBalanceProofsBatch` message type |
-| `issuer/src/vision/engine.rs` | `generate_and_store_balance_proofs` → `sign_balance_proofs` (returns sigs without storing) + `aggregate_and_store_balance_proofs` (stores after aggregation) |
+| `oracle/src/vision/engine.rs` | After tick consensus, broadcast `VisionBalanceProofsBatch` instead of storing single-signer proofs immediately |
+| `oracle/src/vision/engine.rs` | Add handler for receiving peer balance proof batches, aggregate signatures |
+| `oracle/src/consensus/messages.rs` | Add `VisionBalanceProofsBatch` message type |
+| `oracle/src/vision/engine.rs` | `generate_and_store_balance_proofs` → `sign_balance_proofs` (returns sigs without storing) + `aggregate_and_store_balance_proofs` (stores after aggregation) |
 
 #### Timing
 
-Balance proof aggregation happens at tick end, which is infrequent (every 60-3600 seconds depending on batch tick duration). The P2P overhead is minimal: one broadcast per issuer per tick, containing a Vec of (address, U256, signature) tuples. For a batch with 100 players, each broadcast is ~15KB.
+Balance proof aggregation happens at tick end, which is infrequent (every 60-3600 seconds depending on batch tick duration). The P2P overhead is minimal: one broadcast per oracle per tick, containing a Vec of (address, U256, signature) tuples. For a batch with 100 players, each broadcast is ~15KB.
 
 ## Testing
 
 1. **Unit test**: `PendingOpsQueue` enqueue/drain/dedup/result lifecycle
-2. **Integration test**: Mock 3-issuer consensus with deposit op → verify aggregated signature meets threshold
+2. **Integration test**: Mock 3-oracle consensus with deposit op → verify aggregated signature meets threshold
 3. **E2E**: Deposit flow on testnet — deposit USDC on settlement, verify `creditBalance` succeeds with 2/3 BLS sig, verify `completeVisionDeposit` succeeds
 
 ## Immediate Fix (deploy independently)
 
-`testnet.sh`: Add `--vision-settlement-rpc-url` to issuer config. This fixes Bug 2 immediately and stops the `Invalid response from lastSnapshotNonce` infinite retry loops, even though Bug 1 (BelowThreshold) still prevents actual success.
+`testnet.sh`: Add `--vision-settlement-rpc-url` to oracle config. This fixes Bug 2 immediately and stops the `Invalid response from lastSnapshotNonce` infinite retry loops, even though Bug 1 (BelowThreshold) still prevents actual success.
 
 ## Security Invariants
 
@@ -505,10 +505,10 @@ These are the hard security invariants that MUST hold. Implementation MUST NOT w
 2. **No credit+refund double-spend**: `RefundDeposit` followers MUST verify `depositProcessed[orderId] == false` on L3 before signing. If the deposit was already credited, refunding it would give the user both L3 balance AND USDC back. On-chain refund timeout provides defense-in-depth (see Required Contract Changes).
 3. **No optimistic state advance**: The deposit watcher MUST verify on-chain state (not just tx receipt) before advancing its state machine. `depositProcessed[orderId]` on L3 is the source of truth for CreditBalance success.
 4. **No stale nonce rollback**: Both L3 and settlement nonce setters MUST enforce monotonicity — never overwrite a higher nonce with a lower one.
-5. **Peer identity derivation**: `signer_index` MUST be derived from `extract_issuer_id(&from)` (authenticated P2P peer identity). Never trust the self-reported field. Do NOT use `bridge_sign_handler!` macro (it doesn't validate).
+5. **Peer identity derivation**: `signer_index` MUST be derived from `extract_oracle_id(&from)` (authenticated P2P peer identity). Never trust the self-reported field. Do NOT use `bridge_sign_handler!` macro (it doesn't validate).
 6. **BLS threshold**: All vision ops go through 2/3 consensus. No single-signer bypass paths, no test modes, no admin overrides. Minimum `totalRegistered >= 3`.
 7. **Permanent revert classification**: On-chain idempotency reverts — `AlreadyProcessed`, `DepositAlreadyProcessed`, `E131_VisionDepositNotFound`, `E132_VisionWithdrawAlreadyProcessed` — MUST all be classified as `OpResult::Permanent`. Infinite retry on these wastes resources and blocks the queue.
-8. **MirrorRegistry sync**: The leader MUST verify `MirrorIssuerRegistry.lastSnapshotNonce()` matches L3 before submitting settlement ops.
+8. **MirrorRegistry sync**: The leader MUST verify `MirrorOracleRegistry.lastSnapshotNonce()` matches L3 before submitting settlement ops.
 9. **Per-operation aggregator**: Each vision op MUST use a fresh `SignatureAggregator`, not the shared protocol-level one. Cross-operation signature confusion is a real risk with sequential processing.
 10. **Sign message correlation**: Sign messages MUST include `order_id`/`withdraw_id`. The leader MUST discard responses whose ID doesn't match the current operation.
 11. **REFUND_TIMEOUT is a constant**: The refund timeout MUST be a compile-time constant, identical across all nodes. Per-node runtime config violates consensus safety.
@@ -516,19 +516,19 @@ These are the hard security invariants that MUST hold. Implementation MUST NOT w
 
 ## Deployment Order
 
-**The contract changes below are HARD PREREQUISITES.** They MUST be deployed and verified on-chain BEFORE the issuer fix goes live. Deploying the issuer fix without the contract changes opens fund-theft attack vectors:
+**The contract changes below are HARD PREREQUISITES.** They MUST be deployed and verified on-chain BEFORE the oracle fix goes live. Deploying the oracle fix without the contract changes opens fund-theft attack vectors:
 
 1. Deploy `Vision.sol` upgrade (add `withdrawRequests` mapping) → verify on-chain
 2. Deploy `SettlementBridgeCustody.sol` upgrade (add `REFUND_TIMEOUT`, `depositCompleted`) → verify on-chain
-3. Deploy issuer fix → restart issuers
+3. Deploy oracle fix → restart oracles
 
-**Fail-closed behavior**: The issuer follower validation code MUST call the new contract functions (`withdrawRequests()`, `depositCompleted()`). If the RPC returns an error (including "function not found" because the contract hasn't been upgraded yet), the follower MUST refuse to sign. This is fail-closed by default — a missing function is treated as a validation failure, never as "skip the check."
+**Fail-closed behavior**: The oracle follower validation code MUST call the new contract functions (`withdrawRequests()`, `depositCompleted()`). If the RPC returns an error (including "function not found" because the contract hasn't been upgraded yet), the follower MUST refuse to sign. This is fail-closed by default — a missing function is treated as a validation failure, never as "skip the check."
 
-**No partial deployment**: The issuer code MUST NOT selectively enable operation types. All 4 operation types (CreditBalance, CompleteDeposit, RefundDeposit, CompleteWithdraw) go through consensus together. The contract changes must all be live before any of them are enabled.
+**No partial deployment**: The oracle code MUST NOT selectively enable operation types. All 4 operation types (CreditBalance, CompleteDeposit, RefundDeposit, CompleteWithdraw) go through consensus together. The contract changes must all be live before any of them are enabled.
 
 ## Required Contract Changes
 
-These contract changes are prerequisites for the issuer fix. They close security gaps that cannot be mitigated by off-chain logic alone.
+These contract changes are prerequisites for the oracle fix. They close security gaps that cannot be mitigated by off-chain logic alone.
 
 ### 1. On-chain refund timeout (`SettlementBridgeCustody`)
 
@@ -553,21 +553,21 @@ Add a `depositCompleted[orderId]` boolean mapping, set to true in `completeVisio
 
 ## Out of Scope
 
-- **`visionReserve` accounting model**: The reserve tracks gross USDC held for Vision virtual balances. `completeVisionDeposit` intentionally does not decrement it (USDC stays in custody to back the user's L3 balance). The truncation guard in `completeVisionWithdraw` (`if usdcAmount > visionReserve`) is a separate concern — it should arguably revert instead of silently truncating, but that's a contract-level design decision outside this issuer fix. A separate audit of reserve solvency under high-PnL scenarios is recommended.
+- **`visionReserve` accounting model**: The reserve tracks gross USDC held for Vision virtual balances. `completeVisionDeposit` intentionally does not decrement it (USDC stays in custody to back the user's L3 balance). The truncation guard in `completeVisionWithdraw` (`if usdcAmount > visionReserve`) is a separate concern — it should arguably revert instead of silently truncating, but that's a contract-level design decision outside this oracle fix. A separate audit of reserve solvency under high-PnL scenarios is recommended.
 
 ## Files Changed (BLS consensus fix)
 
 | File | Change |
 |------|--------|
-| `issuer/src/vision/pending_ops.rs` | **New** — PendingOpsQueue + VisionOp + OpResult + OpStatus, bounded drain, mutual exclusion, InProgress guard |
-| `issuer/src/vision/mod.rs` | Add `pub mod pending_ops;` |
-| `issuer/src/vision/deposit_watcher.rs` | Remove BLS signing fields, add queue-based submission, on-chain verification before state advance, configurable chain_id, keep gas drip |
-| `issuer/src/consensus/protocol.rs` | Add 4 consensus phase methods with per-op aggregators, signer_index derivation from peer identity (NOT macro), pre-flight MirrorRegistry nonce check, revert classification |
-| `issuer/src/consensus/messages.rs` | Add 8 new message types (4 proposal + 4 sign, sign messages include order_id for correlation) + `VisionBalanceProofsBatch` |
-| `issuer/src/consensus/handler_macros.rs` | Register new proposal handlers only (sign handlers are custom, not macro-generated) |
+| `oracle/src/vision/pending_ops.rs` | **New** — PendingOpsQueue + VisionOp + OpResult + OpStatus, bounded drain, mutual exclusion, InProgress guard |
+| `oracle/src/vision/mod.rs` | Add `pub mod pending_ops;` |
+| `oracle/src/vision/deposit_watcher.rs` | Remove BLS signing fields, add queue-based submission, on-chain verification before state advance, configurable chain_id, keep gas drip |
+| `oracle/src/consensus/protocol.rs` | Add 4 consensus phase methods with per-op aggregators, signer_index derivation from peer identity (NOT macro), pre-flight MirrorRegistry nonce check, revert classification |
+| `oracle/src/consensus/messages.rs` | Add 8 new message types (4 proposal + 4 sign, sign messages include order_id for correlation) + `VisionBalanceProofsBatch` |
+| `oracle/src/consensus/handler_macros.rs` | Register new proposal handlers only (sign handlers are custom, not macro-generated) |
 | `contracts/src/custody/SettlementBridgeCustody.sol` | Add on-chain `REFUND_TIMEOUT` check in `refundVisionDeposit`, add `depositCompleted` mapping |
 | `contracts/src/vision/Vision.sol` | Add `withdrawRequests` mapping in `withdrawToSettlement` |
-| `issuer/src/consensus/keys.rs` | Add monotonicity guard to ALL FOUR nonce setters (both inherent + trait impls, both L3 + settlement) |
-| `issuer/src/vision/engine.rs` | Balance proof aggregation: broadcast sigs via P2P, collect peer sigs, aggregate before storing |
-| `issuer/src/main.rs` | Wire PendingOpsQueue, spawn vision ops task, fix settlement registry address |
-| `testnet.sh` | Add `--vision-settlement-rpc-url` to issuer config |
+| `oracle/src/consensus/keys.rs` | Add monotonicity guard to ALL FOUR nonce setters (both inherent + trait impls, both L3 + settlement) |
+| `oracle/src/vision/engine.rs` | Balance proof aggregation: broadcast sigs via P2P, collect peer sigs, aggregate before storing |
+| `oracle/src/main.rs` | Wire PendingOpsQueue, spawn vision ops task, fix settlement registry address |
+| `testnet.sh` | Add `--vision-settlement-rpc-url` to oracle config |

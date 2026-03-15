@@ -283,7 +283,7 @@
     "name": "initialize",
     "inputs": [
       {
-        "name": "_issuerRegistry",
+        "name": "_oracleRegistry",
         "type": "address",
         "internalType": "address"
       },
@@ -322,13 +322,13 @@
   },
   {
     "type": "function",
-    "name": "issuerRegistry",
+    "name": "oracleRegistry",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "address",
-        "internalType": "contract IIssuerRegistry"
+        "internalType": "contract IOracleRegistry"
       }
     ],
     "stateMutability": "view"
@@ -553,10 +553,10 @@
   },
   {
     "type": "function",
-    "name": "setIssuerRegistry",
+    "name": "setOracleRegistry",
     "inputs": [
       {
-        "name": "_issuerRegistry",
+        "name": "_oracleRegistry",
         "type": "address",
         "internalType": "address"
       }

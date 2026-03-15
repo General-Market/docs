@@ -257,7 +257,7 @@ async function runChaosTier(
 
   const wallTime = tWall.stop().ms;
 
-  // Post-chaos: wait for issuer pipeline to settle
+  // Post-chaos: wait for oracle pipeline to settle
   log('  Waiting 30s for pipeline to settle...');
   await sleep(30_000);
 

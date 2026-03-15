@@ -1,9 +1,9 @@
-//! Leader election implementation for Index L3 Issuer Node
+//! Leader election implementation for Index L3 Oracle Node
 //!
 //! Implements deterministic leader election using the formula:
-//! `leader_index = keccak256(last_bls_signature) mod num_issuers`
+//! `leader_index = keccak256(last_bls_signature) mod num_oracles`
 //!
-//! This ensures all issuers compute the same leader from the same inputs.
+//! This ensures all oracles compute the same leader from the same inputs.
 
 use common::types::BLSSignature;
 use ethers::core::utils::keccak256;
@@ -14,34 +14,34 @@ use tracing::{debug, info};
 /// Errors that can occur during leader election
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum LeaderElectorError {
-    #[error("Number of issuers cannot be zero")]
-    ZeroIssuers,
+    #[error("Number of oracles cannot be zero")]
+    ZeroOracles,
 }
 
-/// Compute the leader index from a BLS signature and issuer count.
+/// Compute the leader index from a BLS signature and oracle count.
 ///
 /// # Formula
-/// `leader_index = keccak256(signature_bytes) mod num_issuers`
+/// `leader_index = keccak256(signature_bytes) mod num_oracles`
 ///
 /// # Arguments
 /// * `last_bls_signature` - The aggregated BLS signature from the previous cycle
-/// * `num_issuers` - Total number of active issuers in the network
+/// * `num_oracles` - Total number of active oracles in the network
 ///
 /// # Returns
-/// * `Ok(u8)` - The index of the elected leader (0 to num_issuers-1)
-/// * `Err(LeaderElectorError::ZeroIssuers)` - If num_issuers is 0
+/// * `Ok(u8)` - The index of the elected leader (0 to num_oracles-1)
+/// * `Err(LeaderElectorError::ZeroOracles)` - If num_oracles is 0
 ///
 /// # Determinism
 /// This function is deterministic: the same inputs always produce the same output.
-/// All issuers in the network will compute the same leader index.
-pub fn elect_leader(last_bls_signature: &BLSSignature, num_issuers: u8) -> Result<u8, LeaderElectorError> {
-    // Edge case: no issuers
-    if num_issuers == 0 {
-        return Err(LeaderElectorError::ZeroIssuers);
+/// All oracles in the network will compute the same leader index.
+pub fn elect_leader(last_bls_signature: &BLSSignature, num_oracles: u8) -> Result<u8, LeaderElectorError> {
+    // Edge case: no oracles
+    if num_oracles == 0 {
+        return Err(LeaderElectorError::ZeroOracles);
     }
 
-    // Edge case: single issuer always leads
-    if num_issuers == 1 {
+    // Edge case: single oracle always leads
+    if num_oracles == 1 {
         return Ok(0);
     }
 
@@ -51,12 +51,12 @@ pub fn elect_leader(last_bls_signature: &BLSSignature, num_issuers: u8) -> Resul
     // Interpret hash as big-endian U256
     let hash_value = U256::from_big_endian(&hash);
 
-    // Compute leader index: hash mod num_issuers
-    let leader_index = (hash_value % U256::from(num_issuers)).as_u64() as u8;
+    // Compute leader index: hash mod num_oracles
+    let leader_index = (hash_value % U256::from(num_oracles)).as_u64() as u8;
 
     debug!(
         signature_len = last_bls_signature.0.len(),
-        num_issuers,
+        num_oracles,
         leader_index,
         "Leader elected"
     );
@@ -66,24 +66,24 @@ pub fn elect_leader(last_bls_signature: &BLSSignature, num_issuers: u8) -> Resul
 
 /// LeaderElector maintains state for leader election within a node.
 ///
-/// Each issuer node creates one LeaderElector instance that tracks:
+/// Each oracle node creates one LeaderElector instance that tracks:
 /// - The node's own ID (to determine if this node is the leader)
-/// - The current number of active issuers
+/// - The current number of active oracles
 /// - The last computed leader index (for logging/debugging)
 ///
 /// # Membership Changes
-/// When issuers are added or removed, use the appropriate methods:
-/// - `on_issuer_added()` - Increments count, no reindexing needed
-/// - `on_issuer_removed(removed_index)` - Decrements count and reindexes if needed
+/// When oracles are added or removed, use the appropriate methods:
+/// - `on_oracle_added()` - Increments count, no reindexing needed
+/// - `on_oracle_removed(removed_index)` - Decrements count and reindexes if needed
 ///
-/// The issuer registry is responsible for calling these methods and ensuring
+/// The oracle registry is responsible for calling these methods and ensuring
 /// consistent state across all nodes.
 #[derive(Debug, Clone)]
 pub struct LeaderElector {
-    /// This node's index in the issuer set (0 to num_issuers-1)
+    /// This node's index in the oracle set (0 to num_oracles-1)
     node_id: u8,
-    /// Total number of active issuers
-    num_issuers: u8,
+    /// Total number of active oracles
+    num_oracles: u8,
     /// Last computed leader index (for debugging/observability)
     last_leader_index: Option<u8>,
 }
@@ -92,26 +92,26 @@ impl LeaderElector {
     /// Create a new LeaderElector for this node.
     ///
     /// # Arguments
-    /// * `node_id` - This node's index (0 to num_issuers-1)
-    /// * `num_issuers` - Total number of active issuers
+    /// * `node_id` - This node's index (0 to num_oracles-1)
+    /// * `num_oracles` - Total number of active oracles
     ///
     /// # Panics
-    /// Panics if node_id >= num_issuers (invalid configuration)
-    pub fn new(node_id: u8, num_issuers: u8) -> Self {
+    /// Panics if node_id >= num_oracles (invalid configuration)
+    pub fn new(node_id: u8, num_oracles: u8) -> Self {
         assert!(
-            num_issuers > 0,
-            "num_issuers must be > 0"
+            num_oracles > 0,
+            "num_oracles must be > 0"
         );
         assert!(
-            node_id < num_issuers,
-            "node_id ({}) must be < num_issuers ({})",
+            node_id < num_oracles,
+            "node_id ({}) must be < num_oracles ({})",
             node_id,
-            num_issuers
+            num_oracles
         );
 
         Self {
             node_id,
-            num_issuers,
+            num_oracles,
             last_leader_index: None,
         }
     }
@@ -127,7 +127,7 @@ impl LeaderElector {
     /// # Returns
     /// `true` if this node is the elected leader, `false` otherwise
     pub fn is_leader(&self, last_bls_signature: &BLSSignature) -> bool {
-        match elect_leader(last_bls_signature, self.num_issuers) {
+        match elect_leader(last_bls_signature, self.num_oracles) {
             Ok(leader_index) => {
                 let is_leader = leader_index == self.node_id;
                 if is_leader {
@@ -171,12 +171,12 @@ impl LeaderElector {
 
     /// Check if this node is the leader for a given cycle number.
     ///
-    /// Uses deterministic rotation: `cycle_number % num_issuers == node_id`.
+    /// Uses deterministic rotation: `cycle_number % num_oracles == node_id`.
     /// This is independent of shared state (no signature needed), ensuring
     /// all nodes always agree on the leader without needing to propagate
     /// aggregated signatures from leader to followers.
     pub fn is_leader_for_cycle(&mut self, cycle_number: u64) -> bool {
-        let leader_index = (cycle_number % self.num_issuers as u64) as u8;
+        let leader_index = (cycle_number % self.num_oracles as u64) as u8;
         self.last_leader_index = Some(leader_index);
         let is_leader = leader_index == self.node_id;
         if is_leader {
@@ -191,54 +191,54 @@ impl LeaderElector {
     /// * `last_bls_signature` - The aggregated BLS signature from the previous cycle
     ///
     /// # Returns
-    /// The index of the elected leader (0 to num_issuers-1)
+    /// The index of the elected leader (0 to num_oracles-1)
     pub fn get_leader_index(&mut self, last_bls_signature: &BLSSignature) -> Result<u8, LeaderElectorError> {
-        let leader_index = elect_leader(last_bls_signature, self.num_issuers)?;
+        let leader_index = elect_leader(last_bls_signature, self.num_oracles)?;
         self.last_leader_index = Some(leader_index);
         Ok(leader_index)
     }
 
-    /// Update the issuer count for dynamic membership changes.
+    /// Update the oracle count for dynamic membership changes.
     ///
     /// # Arguments
-    /// * `new_count` - The new number of active issuers
+    /// * `new_count` - The new number of active oracles
     ///
     /// # Note
     /// If this node's ID is now >= new_count, this represents a configuration error
-    /// (this node has been removed from the issuer set).
-    pub fn update_issuer_count(&mut self, new_count: u8) {
+    /// (this node has been removed from the oracle set).
+    pub fn update_oracle_count(&mut self, new_count: u8) {
         info!(
-            old_count = self.num_issuers,
+            old_count = self.num_oracles,
             new_count,
-            "Issuer count updated"
+            "Oracle count updated"
         );
-        self.num_issuers = new_count;
+        self.num_oracles = new_count;
     }
 
-    /// Handle an issuer being added to the network.
+    /// Handle an oracle being added to the network.
     ///
-    /// Increments the issuer count. Leader re-election happens automatically
+    /// Increments the oracle count. Leader re-election happens automatically
     /// at the next cycle boundary using the new count.
     ///
     /// # Note
     /// Membership changes take effect at the next cycle boundary.
-    pub fn on_issuer_added(&mut self) {
-        let new_count = self.num_issuers.saturating_add(1);
+    pub fn on_oracle_added(&mut self) {
+        let new_count = self.num_oracles.saturating_add(1);
         info!(
-            old_count = self.num_issuers,
+            old_count = self.num_oracles,
             new_count,
-            "Issuer added, count updated"
+            "Oracle added, count updated"
         );
-        self.num_issuers = new_count;
+        self.num_oracles = new_count;
     }
 
-    /// Handle an issuer being removed from the network.
+    /// Handle an oracle being removed from the network.
     ///
-    /// Decrements the issuer count and reindexes this node if needed.
+    /// Decrements the oracle count and reindexes this node if needed.
     /// Leader re-election happens automatically at the next cycle boundary.
     ///
     /// # Arguments
-    /// * `removed_index` - The index of the removed issuer
+    /// * `removed_index` - The index of the removed oracle
     ///
     /// # Reindexing
     /// If `removed_index < self.node_id`, this node's index shifts down by 1.
@@ -246,46 +246,46 @@ impl LeaderElector {
     ///
     /// # Note
     /// Membership changes take effect at the next cycle boundary.
-    pub fn on_issuer_removed(&mut self, removed_index: u8) {
+    pub fn on_oracle_removed(&mut self, removed_index: u8) {
         let old_node_id = self.node_id;
-        let new_count = self.num_issuers.saturating_sub(1);
+        let new_count = self.num_oracles.saturating_sub(1);
 
-        // Reindex if a lower-indexed issuer was removed
+        // Reindex if a lower-indexed oracle was removed
         if removed_index < self.node_id && self.node_id > 0 {
             self.node_id = self.node_id.saturating_sub(1);
             info!(
-                old_count = self.num_issuers,
+                old_count = self.num_oracles,
                 new_count,
                 removed_index,
                 old_node_id,
                 new_node_id = self.node_id,
-                "Issuer removed, this node reindexed"
+                "Oracle removed, this node reindexed"
             );
         } else {
             info!(
-                old_count = self.num_issuers,
+                old_count = self.num_oracles,
                 new_count,
                 removed_index,
-                "Issuer removed, count updated"
+                "Oracle removed, count updated"
             );
         }
 
-        self.num_issuers = new_count;
+        self.num_oracles = new_count;
     }
 
     /// Explicitly update this node's ID (for external registry synchronization).
     ///
     /// # Arguments
-    /// * `new_node_id` - The new node ID for this issuer
+    /// * `new_node_id` - The new node ID for this oracle
     ///
     /// # Panics
-    /// Panics if `new_node_id >= num_issuers`
+    /// Panics if `new_node_id >= num_oracles`
     pub fn update_node_id(&mut self, new_node_id: u8) {
         assert!(
-            new_node_id < self.num_issuers,
-            "new_node_id ({}) must be < num_issuers ({})",
+            new_node_id < self.num_oracles,
+            "new_node_id ({}) must be < num_oracles ({})",
             new_node_id,
-            self.num_issuers
+            self.num_oracles
         );
         info!(
             old_node_id = self.node_id,
@@ -305,9 +305,9 @@ impl LeaderElector {
         self.node_id
     }
 
-    /// Get the current issuer count.
-    pub fn num_issuers(&self) -> u8 {
-        self.num_issuers
+    /// Get the current oracle count.
+    pub fn num_oracles(&self) -> u8 {
+        self.num_oracles
     }
 }
 
@@ -323,29 +323,29 @@ pub struct CycleLeaderState {
     leader_index: u8,
     /// The signature used for election (for verification/debugging)
     last_signature: BLSSignature,
-    /// Number of issuers for election calculation
-    num_issuers: u8,
+    /// Number of oracles for election calculation
+    num_oracles: u8,
 }
 
 impl CycleLeaderState {
     /// Create initial state (genesis case).
     ///
     /// For the first cycle, use a well-known default signature (all zeros)
-    /// and leader 0. Default issuer count is 20 (production).
+    /// and leader 0. Default oracle count is 20 (production).
     pub fn genesis() -> Self {
-        Self::genesis_with_issuers(20)
+        Self::genesis_with_oracles(20)
     }
 
-    /// Create initial state with custom issuer count.
+    /// Create initial state with custom oracle count.
     ///
     /// For the first cycle, use a well-known default signature (all zeros)
     /// and leader 0.
-    pub fn genesis_with_issuers(num_issuers: u8) -> Self {
+    pub fn genesis_with_oracles(num_oracles: u8) -> Self {
         Self {
             cycle_number: 0,
             leader_index: 0,
             last_signature: BLSSignature(vec![0u8; 64]),
-            num_issuers,
+            num_oracles,
         }
     }
 
@@ -358,7 +358,7 @@ impl CycleLeaderState {
     /// # Returns
     /// The computed leader index, or error if election fails
     pub fn update_cycle(&mut self, cycle_number: u64, last_signature: BLSSignature) -> Result<u8, LeaderElectorError> {
-        let leader_index = elect_leader(&last_signature, self.num_issuers)?;
+        let leader_index = elect_leader(&last_signature, self.num_oracles)?;
         self.update_cycle_with_leader(cycle_number, last_signature, leader_index);
         Ok(leader_index)
     }
@@ -393,9 +393,9 @@ impl CycleLeaderState {
         }
     }
 
-    /// Update the issuer count for membership changes.
-    pub fn update_issuer_count(&mut self, num_issuers: u8) {
-        self.num_issuers = num_issuers;
+    /// Update the oracle count for membership changes.
+    pub fn update_oracle_count(&mut self, num_oracles: u8) {
+        self.num_oracles = num_oracles;
     }
 
     /// Get the current leader index.
@@ -413,9 +413,9 @@ impl CycleLeaderState {
         &self.last_signature
     }
 
-    /// Get the number of issuers.
-    pub fn num_issuers(&self) -> u8 {
-        self.num_issuers
+    /// Get the number of oracles.
+    pub fn num_oracles(&self) -> u8 {
+        self.num_oracles
     }
 }
 
@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn test_elect_leader_deterministic() {
-        // Same signature, same issuer count = same leader
+        // Same signature, same oracle count = same leader
         let signature = sig(&[1, 2, 3, 4, 5]);
         let result1 = elect_leader(&signature, 20).unwrap();
         let result2 = elect_leader(&signature, 20).unwrap();
@@ -446,25 +446,25 @@ mod tests {
     }
 
     #[test]
-    fn test_elect_leader_zero_issuers() {
+    fn test_elect_leader_zero_oracles() {
         let signature = sig(&[1, 2, 3]);
         let result = elect_leader(&signature, 0);
-        assert_eq!(result, Err(LeaderElectorError::ZeroIssuers));
+        assert_eq!(result, Err(LeaderElectorError::ZeroOracles));
     }
 
     #[test]
-    fn test_elect_leader_single_issuer() {
+    fn test_elect_leader_single_oracle() {
         let signature = sig(&[1, 2, 3]);
         let result = elect_leader(&signature, 1).unwrap();
-        assert_eq!(result, 0, "Single issuer is always leader");
+        assert_eq!(result, 0, "Single oracle is always leader");
     }
 
     #[test]
     fn test_elect_leader_returns_valid_index() {
         let signature = sig(&[42, 42, 42]);
-        for num_issuers in 2..=20 {
-            let result = elect_leader(&signature, num_issuers).unwrap();
-            assert!(result < num_issuers, "Leader index {} >= num_issuers {}", result, num_issuers);
+        for num_oracles in 2..=20 {
+            let result = elect_leader(&signature, num_oracles).unwrap();
+            assert!(result < num_oracles, "Leader index {} >= num_oracles {}", result, num_oracles);
         }
     }
 
@@ -493,12 +493,12 @@ mod tests {
             counts[leader] += 1;
         }
 
-        // Each issuer should get roughly 500 elections (10000/20)
+        // Each oracle should get roughly 500 elections (10000/20)
         // Allow 30% variance: 350-650
         for (idx, count) in counts.iter().enumerate() {
             assert!(
                 *count >= 350 && *count <= 650,
-                "Issuer {} got {} elections, expected ~500 (±30%)",
+                "Oracle {} got {} elections, expected ~500 (±30%)",
                 idx,
                 count
             );
@@ -511,25 +511,25 @@ mod tests {
     fn test_leader_elector_new() {
         let elector = LeaderElector::new(5, 20);
         assert_eq!(elector.node_id(), 5);
-        assert_eq!(elector.num_issuers(), 20);
+        assert_eq!(elector.num_oracles(), 20);
         assert_eq!(elector.last_leader_index(), None);
     }
 
     #[test]
-    #[should_panic(expected = "num_issuers must be > 0")]
-    fn test_leader_elector_zero_issuers_panics() {
+    #[should_panic(expected = "num_oracles must be > 0")]
+    fn test_leader_elector_zero_oracles_panics() {
         LeaderElector::new(0, 0);
     }
 
     #[test]
-    #[should_panic(expected = "node_id (5) must be < num_issuers (3)")]
+    #[should_panic(expected = "node_id (5) must be < num_oracles (3)")]
     fn test_leader_elector_invalid_node_id_panics() {
         LeaderElector::new(5, 3);
     }
 
     #[test]
     fn test_am_i_leader_true() {
-        // Find a signature that makes node 5 the leader with 20 issuers
+        // Find a signature that makes node 5 the leader with 20 oracles
         for i in 0u8..=255 {
             let signature = sig(&[i, 0, 0, 0]);
             let leader = elect_leader(&signature, 20).unwrap();
@@ -561,20 +561,20 @@ mod tests {
     }
 
     #[test]
-    fn test_update_issuer_count() {
+    fn test_update_oracle_count() {
         let mut elector = LeaderElector::new(5, 20);
-        assert_eq!(elector.num_issuers(), 20);
+        assert_eq!(elector.num_oracles(), 20);
 
-        elector.update_issuer_count(19);
-        assert_eq!(elector.num_issuers(), 19);
+        elector.update_oracle_count(19);
+        assert_eq!(elector.num_oracles(), 19);
 
-        elector.update_issuer_count(20);
-        assert_eq!(elector.num_issuers(), 20);
+        elector.update_oracle_count(20);
+        assert_eq!(elector.num_oracles(), 20);
     }
 
     #[test]
-    fn test_all_issuers_compute_same_leader() {
-        // Simulate 3 different issuer nodes computing the leader
+    fn test_all_oracles_compute_same_leader() {
+        // Simulate 3 different oracle nodes computing the leader
         let signature = sig(&[99, 88, 77, 66]);
 
         let mut elector0 = LeaderElector::new(0, 3);
@@ -590,8 +590,8 @@ mod tests {
     }
 
     #[test]
-    fn test_minimum_3_issuers() {
-        // Per architecture: minimum 3 issuers to operate
+    fn test_minimum_3_oracles() {
+        // Per architecture: minimum 3 oracles to operate
         let signature = sig(&[1, 2, 3]);
         let result = elect_leader(&signature, 3).unwrap();
         assert!(result < 3);
@@ -605,19 +605,19 @@ mod tests {
         assert_eq!(state.cycle_number(), 0);
         assert_eq!(state.get_current_leader(), 0);
         assert_eq!(state.last_signature().0.len(), 64);
-        assert_eq!(state.num_issuers(), 20);
+        assert_eq!(state.num_oracles(), 20);
     }
 
     #[test]
-    fn test_cycle_leader_state_genesis_with_issuers() {
-        let state = CycleLeaderState::genesis_with_issuers(10);
-        assert_eq!(state.num_issuers(), 10);
+    fn test_cycle_leader_state_genesis_with_oracles() {
+        let state = CycleLeaderState::genesis_with_oracles(10);
+        assert_eq!(state.num_oracles(), 10);
         assert_eq!(state.get_current_leader(), 0);
     }
 
     #[test]
     fn test_cycle_leader_state_update() {
-        let mut state = CycleLeaderState::genesis_with_issuers(20);
+        let mut state = CycleLeaderState::genesis_with_oracles(20);
         let new_sig = sig(&[5, 6, 7, 8]);
 
         // update_cycle now computes leader internally
@@ -645,45 +645,45 @@ mod tests {
     // ========== Membership change tests ==========
 
     #[test]
-    fn test_on_issuer_added() {
+    fn test_on_oracle_added() {
         let mut elector = LeaderElector::new(5, 19);
-        assert_eq!(elector.num_issuers(), 19);
+        assert_eq!(elector.num_oracles(), 19);
 
-        elector.on_issuer_added();
-        assert_eq!(elector.num_issuers(), 20);
+        elector.on_oracle_added();
+        assert_eq!(elector.num_oracles(), 20);
     }
 
     #[test]
-    fn test_on_issuer_removed() {
+    fn test_on_oracle_removed() {
         let mut elector = LeaderElector::new(5, 20);
-        assert_eq!(elector.num_issuers(), 20);
+        assert_eq!(elector.num_oracles(), 20);
 
-        // Remove issuer at higher index - no reindexing needed
-        elector.on_issuer_removed(10);
-        assert_eq!(elector.num_issuers(), 19);
+        // Remove oracle at higher index - no reindexing needed
+        elector.on_oracle_removed(10);
+        assert_eq!(elector.num_oracles(), 19);
         assert_eq!(elector.node_id(), 5); // Unchanged
     }
 
     #[test]
-    fn test_on_issuer_removed_with_reindex() {
-        // When lower-indexed issuer is removed, this node's index shifts down
+    fn test_on_oracle_removed_with_reindex() {
+        // When lower-indexed oracle is removed, this node's index shifts down
         let mut elector = LeaderElector::new(5, 20);
         assert_eq!(elector.node_id(), 5);
 
-        // Remove issuer at index 2 (lower than our index 5)
-        elector.on_issuer_removed(2);
-        assert_eq!(elector.num_issuers(), 19);
+        // Remove oracle at index 2 (lower than our index 5)
+        elector.on_oracle_removed(2);
+        assert_eq!(elector.num_oracles(), 19);
         assert_eq!(elector.node_id(), 4); // Shifted down by 1
     }
 
     #[test]
-    fn test_on_issuer_removed_same_index() {
-        // When this exact issuer is removed, index stays same but state is now invalid
+    fn test_on_oracle_removed_same_index() {
+        // When this exact oracle is removed, index stays same but state is now invalid
         // Caller is responsible for handling this case
         let mut elector = LeaderElector::new(5, 20);
 
-        elector.on_issuer_removed(5);
-        assert_eq!(elector.num_issuers(), 19);
+        elector.on_oracle_removed(5);
+        assert_eq!(elector.num_oracles(), 19);
         assert_eq!(elector.node_id(), 5); // Not shifted (removed_index not < node_id)
     }
 
@@ -697,53 +697,53 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "new_node_id (25) must be < num_issuers (20)")]
+    #[should_panic(expected = "new_node_id (25) must be < num_oracles (20)")]
     fn test_update_node_id_invalid() {
         let mut elector = LeaderElector::new(5, 20);
         elector.update_node_id(25); // Panics
     }
 
     #[test]
-    fn test_issuer_count_changes_20_to_19_to_20() {
-        // Per AC #5: Handles issuer removal (recalculates with new count)
+    fn test_oracle_count_changes_20_to_19_to_20() {
+        // Per AC #5: Handles oracle removal (recalculates with new count)
         let mut elector = LeaderElector::new(5, 20);
         let signature = sig(&[42, 42, 42, 42]);
 
-        // Get leader with 20 issuers
+        // Get leader with 20 oracles
         let leader_with_20 = elector.get_leader_index(&signature).unwrap();
         assert!(leader_with_20 < 20);
 
-        // Remove an issuer at higher index (no reindexing)
-        elector.on_issuer_removed(10);
+        // Remove an oracle at higher index (no reindexing)
+        elector.on_oracle_removed(10);
         let leader_with_19 = elector.get_leader_index(&signature).unwrap();
         assert!(leader_with_19 < 19);
 
-        // Add an issuer back
-        elector.on_issuer_added();
+        // Add an oracle back
+        elector.on_oracle_added();
         let leader_with_20_again = elector.get_leader_index(&signature).unwrap();
         assert!(leader_with_20_again < 20);
 
-        // Same issuer count should give same result
+        // Same oracle count should give same result
         assert_eq!(leader_with_20, leader_with_20_again);
     }
 
     #[test]
-    fn test_on_issuer_added_saturating() {
+    fn test_on_oracle_added_saturating() {
         // Edge case: prevent overflow at max u8
         let mut elector = LeaderElector::new(5, 254);
-        elector.on_issuer_added();
-        assert_eq!(elector.num_issuers(), 255);
-        elector.on_issuer_added();
-        assert_eq!(elector.num_issuers(), 255); // Saturates at 255
+        elector.on_oracle_added();
+        assert_eq!(elector.num_oracles(), 255);
+        elector.on_oracle_added();
+        assert_eq!(elector.num_oracles(), 255); // Saturates at 255
     }
 
     #[test]
-    fn test_on_issuer_removed_saturating() {
+    fn test_on_oracle_removed_saturating() {
         // Edge case: prevent underflow - count can go to 0
-        // Note: 0 issuers is an invalid state, but saturating_sub prevents underflow
+        // Note: 0 oracles is an invalid state, but saturating_sub prevents underflow
         let mut elector = LeaderElector::new(0, 1);
-        elector.on_issuer_removed(0);
-        assert_eq!(elector.num_issuers(), 0); // Saturates at 0
+        elector.on_oracle_removed(0);
+        assert_eq!(elector.num_oracles(), 0); // Saturates at 0
     }
 
     #[test]
@@ -787,7 +787,7 @@ mod tests {
 
         // Use real signature for leader election
         let leader = elect_leader(&signature, 20).unwrap();
-        assert!(leader < 20, "Leader index must be < num_issuers");
+        assert!(leader < 20, "Leader index must be < num_oracles");
 
         // Election is deterministic - same signature always gives same result
         let leader_again = elect_leader(&signature, 20).unwrap();
@@ -813,7 +813,7 @@ mod tests {
             leaders.insert(leader);
         }
 
-        // With 50 different signatures and 20 issuers, we should see multiple leaders
+        // With 50 different signatures and 20 oracles, we should see multiple leaders
         assert!(leaders.len() > 5, "Should see varied leaders, got only {}", leaders.len());
     }
 }

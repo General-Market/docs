@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/core/BLSCustody.sol";
-import "../src/registry/IssuerRegistry.sol";
-import {IIssuerRegistry} from "../src/interfaces/IIssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
+import {IOracleRegistry} from "../src/interfaces/IOracleRegistry.sol";
 import "../src/mocks/MockERC20.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 /// @notice Tests for BLSCustody core execution and whitelist management
 contract BLSCustodyTest is TestHelper {
     BLSCustody public custody;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
     MockERC20 public token;
 
@@ -25,12 +25,12 @@ contract BLSCustodyTest is TestHelper {
     address public targetContract;
 
     function setUp() public {
-        // Deploy real governance and issuer registry via UUPS proxy
+        // Deploy real governance and oracle registry via UUPS proxy
         governance = deployGovernance(admin);
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
-        // Register real BLS issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(issuerRegistry, admin);
+        // Register real BLS oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(oracleRegistry, admin);
 
         // Deploy mock token as a target
         token = new MockERC20("Test Token", "TEST", 18);
@@ -40,7 +40,7 @@ contract BLSCustodyTest is TestHelper {
         BLSCustody impl = new BLSCustody();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(BLSCustody.initialize, (address(issuerRegistry)))
+            abi.encodeCall(BLSCustody.initialize, (address(oracleRegistry)))
         );
         custody = BLSCustody(address(proxy));
 
@@ -52,27 +52,27 @@ contract BLSCustodyTest is TestHelper {
 
     function _signExecute(address target, bytes memory data, uint256 nonceValue) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), target, data, nonceValue));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signProposeWhitelist(address target) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "proposeWhitelist", target));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signEmergencyRemove(address target) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "emergencyRemove", target));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signProposeUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "proposeUpgrade", newImpl));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signProposeEmergencyUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "proposeEmergencyUpgrade", newImpl));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // ============ STORY 2.7: CORE EXECUTION TESTS ============
@@ -530,7 +530,7 @@ contract BLSCustodyTest is TestHelper {
         address newTarget = address(0xABC);
 
         // A valid BLS sig over the wrong message will fail real BLS verification
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
         custody.proposeWhitelist(newTarget, wrongSig, 3, 7);
     }
@@ -540,7 +540,7 @@ contract BLSCustodyTest is TestHelper {
         _whitelistTarget(targetContract);
 
         // A valid BLS sig over the wrong message will fail real BLS verification
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
         custody.emergencyRemoveWhitelist(targetContract, wrongSig, 3, 7);
     }
@@ -556,7 +556,7 @@ contract BLSCustodyTest is TestHelper {
         );
 
         // A valid BLS sig over the wrong message will fail real BLS verification
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
         custody.execute(targetContract, data, wrongSig, 0, 3, 7);
     }
@@ -567,12 +567,12 @@ contract BLSCustodyTest is TestHelper {
         // Snapshot at nonce 3 has the real aggregate pubkey, so the mock is irrelevant.
         // Signing "irrelevant" produces a valid BLS sig over the wrong message → InvalidSignature.
         vm.mockCall(
-            address(issuerRegistry),
-            abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector),
+            address(oracleRegistry),
+            abi.encodeWithSelector(IOracleRegistry.getAggregatedPubkey.selector),
             abi.encode(bytes(""))
         );
 
-        bytes memory anySig = signWithTestIssuers(keccak256("irrelevant"));
+        bytes memory anySig = signWithTestOracles(keccak256("irrelevant"));
         vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
         custody.proposeWhitelist(address(0xDEAD), anySig, 3, 7);
     }
@@ -602,7 +602,7 @@ contract BLSCustodyTest is TestHelper {
     function test_proposeUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E038_ZeroImplementation.selector));
         // Revert happens before BLS check (zero address guard), any sig works
-        custody.proposeUpgrade(address(0), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        custody.proposeUpgrade(address(0), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_proposeUpgrade_revertsOnAlreadyPending() public {
@@ -611,7 +611,7 @@ contract BLSCustodyTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E039_UpgradeAlreadyPending.selector));
         // Revert happens before BLS check (pending upgrade guard), any sig works
-        custody.proposeUpgrade(address(0xDEAD), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        custody.proposeUpgrade(address(0xDEAD), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_executeUpgrade_happyPath() public {
@@ -717,7 +717,7 @@ contract BLSCustodyTest is TestHelper {
     function test_proposeEmergencyUpgrade_revertsOnZeroAddress() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E038_ZeroImplementation.selector));
         // Revert happens before BLS check (zero address guard), any sig works
-        custody.proposeEmergencyUpgrade(address(0), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        custody.proposeEmergencyUpgrade(address(0), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_proposeEmergencyUpgrade_revertsOnAlreadyPending() public {
@@ -726,7 +726,7 @@ contract BLSCustodyTest is TestHelper {
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E039_UpgradeAlreadyPending.selector));
         // Revert happens before BLS check (pending upgrade guard), any sig works
-        custody.proposeEmergencyUpgrade(address(0xDEAD), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        custody.proposeEmergencyUpgrade(address(0xDEAD), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_executeEmergencyUpgrade_happyPath() public {
@@ -848,13 +848,13 @@ contract BLSCustodyTest is TestHelper {
     }
 
     function test_proposeUpgrade_invalidSignature_reverts() public {
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
         custody.proposeUpgrade(address(0xBEEF), wrongSig, 3, 7);
     }
 
     function test_proposeEmergencyUpgrade_invalidSignature_reverts() public {
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
         custody.proposeEmergencyUpgrade(address(0xBEEF), wrongSig, 3, 7);
     }

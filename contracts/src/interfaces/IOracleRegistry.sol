@@ -3,92 +3,92 @@ pragma solidity ^0.8.20;
 
 import "../libraries/TypesLib.sol";
 
-/// @title IIssuerRegistry - Issuer node management interface
-/// @notice Registry for issuer nodes and their BLS public keys
-/// @dev Manages issuer lifecycle, key rotation, and aggregated public key
+/// @title IOracleRegistry - Oracle node management interface
+/// @notice Registry for oracle nodes and their BLS public keys
+/// @dev Manages oracle lifecycle, key rotation, and aggregated public key
 /// @dev Message format: keccak256(abi.encode(chainid, this, functionSpecificData...))
-interface IIssuerRegistry {
-    // ============ ISSUER MANAGEMENT ============
+interface IOracleRegistry {
+    // ============ ORACLE MANAGEMENT ============
 
-    /// @notice Add a new issuer to the registry
+    /// @notice Add a new oracle to the registry
     /// @dev Only callable by admin. Requires Proof of Possession (PoP) to prove key ownership.
-    /// @param issuerAddr Issuer's Ethereum address for rewards/governance
+    /// @param oracleAddr Oracle's Ethereum address for rewards/governance
     /// @param ip IP address for P2P communication (packed as bytes32)
     /// @param blsPubkey BLS public key for signature aggregation
-    /// @param blsPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, issuerAddr, blsPubkey))
-    /// @return issuerId The assigned issuer ID
-    function addIssuer(
-        address issuerAddr,
+    /// @param blsPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, oracleAddr, blsPubkey))
+    /// @return oracleId The assigned oracle ID
+    function addOracle(
+        address oracleAddr,
         bytes32 ip,
         bytes calldata blsPubkey,
         bytes calldata blsPopSignature
-    ) external returns (uint256 issuerId);
+    ) external returns (uint256 oracleId);
 
-    /// @notice Remove an issuer from the registry
-    /// @dev Callable by admin OR by BLS vote from other issuers
-    /// @dev Message (if BLS): keccak256(abi.encode(chainid, this, "removeIssuer", issuerId))
-    /// @param issuerId The issuer to remove
-    function removeIssuer(uint256 issuerId) external;
+    /// @notice Remove an oracle from the registry
+    /// @dev Callable by admin OR by BLS vote from other oracles
+    /// @dev Message (if BLS): keccak256(abi.encode(chainid, this, "removeOracle", oracleId))
+    /// @param oracleId The oracle to remove
+    function removeOracle(uint256 oracleId) external;
 
     // ============ KEY ROTATION ============
 
-    /// @notice Request a key rotation for an issuer
+    /// @notice Request a key rotation for an oracle
     /// @dev Must be signed with the OLD key to prove ownership + PoP with NEW key
-    /// @dev Starts approval process requiring 10/19 other issuer approvals
-    /// @param issuerId The issuer requesting rotation
+    /// @dev Starts approval process requiring 10/19 other oracle approvals
+    /// @param oracleId The oracle requesting rotation
     /// @param newPubkey The new BLS public key
     /// @param signatureWithOldKey Signature with the current (old) key
-    /// @param newKeyPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, issuerAddr, newPubkey))
+    /// @param newKeyPopSignature PoP: BLS signature over keccak256(abi.encode("INDEX_BLS_POP", chainid, registry, oracleAddr, newPubkey))
     function requestKeyRotation(
-        uint256 issuerId,
+        uint256 oracleId,
         bytes calldata newPubkey,
         bytes calldata signatureWithOldKey,
         bytes calldata newKeyPopSignature
     ) external;
 
     /// @notice Approve a pending key rotation
-    /// @dev Requires approval from 10/19 other issuers
-    /// @dev Message: keccak256(abi.encode(chainid, this, "approveRotation", rotatingIssuerId, newPubkey))
-    /// @param rotatingIssuerId The issuer whose key is being rotated
-    /// @param approvingIssuerId The issuer approving the rotation
-    /// @param approverSignature Signature from the approving issuer
+    /// @dev Requires approval from 10/19 other oracles
+    /// @dev Message: keccak256(abi.encode(chainid, this, "approveRotation", rotatingOracleId, newPubkey))
+    /// @param rotatingOracleId The oracle whose key is being rotated
+    /// @param approvingOracleId The oracle approving the rotation
+    /// @param approverSignature Signature from the approving oracle
     function approveRotation(
-        uint256 rotatingIssuerId,
-        uint256 approvingIssuerId,
+        uint256 rotatingOracleId,
+        uint256 approvingOracleId,
         bytes calldata approverSignature
     ) external;
 
     /// @notice Execute a key rotation after timelock and approvals
     /// @dev Can only be called after 24h timelock AND safe period
     /// @dev Safe period = no new approvals in last 1h (prevents rushing)
-    /// @param issuerId The issuer whose key is being rotated
-    function executeRotation(uint256 issuerId) external;
+    /// @param oracleId The oracle whose key is being rotated
+    function executeRotation(uint256 oracleId) external;
 
     /// @notice Force rotation window after being stuck
     /// @dev Admin escape hatch if rotation is stuck for 48h+
     /// @dev Only callable by admin
-    /// @param issuerId The issuer whose rotation is stuck
-    function forceRotationWindow(uint256 issuerId) external;
+    /// @param oracleId The oracle whose rotation is stuck
+    function forceRotationWindow(uint256 oracleId) external;
 
     /// @notice Cancel a pending key rotation
     /// @dev Only callable by admin
-    /// @param issuerId The issuer whose rotation to cancel
-    function cancelRotation(uint256 issuerId) external;
+    /// @param oracleId The oracle whose rotation to cancel
+    function cancelRotation(uint256 oracleId) external;
 
     // ============ VIEW FUNCTIONS ============
 
-    /// @notice Get issuer details by ID
-    /// @param issuerId The issuer ID
-    /// @return issuer The issuer struct
-    function getIssuer(uint256 issuerId) external view returns (TypesLib.Issuer memory issuer);
+    /// @notice Get oracle details by ID
+    /// @param oracleId The oracle ID
+    /// @return oracle The oracle struct
+    function getOracle(uint256 oracleId) external view returns (TypesLib.Oracle memory oracle);
 
-    /// @notice Get the aggregated BLS public key of all active issuers
+    /// @notice Get the aggregated BLS public key of all active oracles
     /// @dev Used for verifying aggregated signatures
     /// @return The aggregated public key bytes
     function getAggregatedPubkey() external view returns (bytes memory);
 
     /// @notice Set the aggregated BLS G2 public key and create a registry snapshot
-    /// @dev Must be called after any addIssuer/removeIssuer/key rotation
+    /// @dev Must be called after any addOracle/removeOracle/key rotation
     /// @param pubkey The aggregated G2 public key (128 bytes)
     /// @param nonce The registry nonce this snapshot corresponds to
     function setAggregatedPubkey(bytes calldata pubkey, uint256 nonce) external;
@@ -102,41 +102,41 @@ interface IIssuerRegistry {
     /// @return snapshot The registry snapshot at that nonce
     function getSnapshotAtNonce(uint256 nonce) external view returns (TypesLib.RegistrySnapshot memory snapshot);
 
-    /// @notice Get the current active issuer bitmask (computed live)
+    /// @notice Get the current active oracle bitmask (computed live)
     /// @dev For node bootstrap before Phase 2+3 snapshots exist
-    /// @return bitmask Bitmask where bit i = issuer i is active
+    /// @return bitmask Bitmask where bit i = oracle i is active
     function getActiveBitmask() external view returns (uint256 bitmask);
 
-    /// @notice Increment missed counts for non-signing issuers
+    /// @notice Increment missed counts for non-signing oracles
     /// @dev Advisory liveness metric. DO NOT use for automated slashing or forced removal.
     ///      Restricted to authorized callers (BLSVerifier-inheriting protocol contracts).
     ///      Register callers via setAuthorizedMissedCountCaller().
-    /// @param nonSignersBitmask Bitmask of issuers that did not sign
+    /// @param nonSignersBitmask Bitmask of oracles that did not sign
     function incrementMissedCounts(uint256 nonSignersBitmask) external;
 
-    /// @notice Get all registered issuers
-    /// @return An array of all issuer structs
-    function getIssuers() external view returns (TypesLib.Issuer[] memory);
+    /// @notice Get all registered oracles
+    /// @return An array of all oracle structs
+    function getOracles() external view returns (TypesLib.Oracle[] memory);
 
-    /// @notice Check if an address is a registered active issuer
+    /// @notice Check if an address is a registered active oracle
     /// @param addr The address to check
-    /// @return True if the address belongs to an active issuer
-    function isActiveIssuer(address addr) external view returns (bool);
+    /// @return True if the address belongs to an active oracle
+    function isActiveOracle(address addr) external view returns (bool);
 
-    /// @notice Get active issuer count
-    /// @return Number of active issuers
-    function activeIssuerCount() external view returns (uint256);
+    /// @notice Get active oracle count
+    /// @return Number of active oracles
+    function activeOracleCount() external view returns (uint256);
 
     /// @notice Verify signer bitmap and return signer count
-    /// @param signerBitmap Bitmap of issuer IDs that signed (bit i = issuer i signed)
+    /// @param signerBitmap Bitmap of oracle IDs that signed (bit i = oracle i signed)
     /// @return signerCount Number of valid active signers
-    /// @return issuerIds Array of issuer IDs that signed
-    function verifySignerBitmap(uint256 signerBitmap) external view returns (uint256 signerCount, uint256[] memory issuerIds);
+    /// @return oracleIds Array of oracle IDs that signed
+    function verifySignerBitmap(uint256 signerBitmap) external view returns (uint256 signerCount, uint256[] memory oracleIds);
 
-    /// @notice Get individual BLS pubkeys for a list of issuer IDs
-    /// @param issuerIds Array of issuer IDs
+    /// @notice Get individual BLS pubkeys for a list of oracle IDs
+    /// @param oracleIds Array of oracle IDs
     /// @return pubkeys Array of BLS G2 public keys (128 bytes each)
-    function getIssuerPubkeys(uint256[] calldata issuerIds) external view returns (bytes[] memory pubkeys);
+    function getOraclePubkeys(uint256[] calldata oracleIds) external view returns (bytes[] memory pubkeys);
 
     /// @notice Decode a bitmap into an array of set bit indices
     /// @param bitmap The bitmap to decode
@@ -145,7 +145,7 @@ interface IIssuerRegistry {
 
     /// @notice Verify a BLS signature against individual signer pubkeys using multi-pairing
     /// @dev Decodes bitmap, fetches pubkeys, and does e(-sig, G2) * e(H(msg), pk[0]) * ... == 1
-    /// @param signersBitmask Bitmap of issuers that signed
+    /// @param signersBitmask Bitmap of oracles that signed
     /// @param messageHash The message hash
     /// @param blsSignature The aggregated BLS signature (64 bytes G1 point)
     /// @return True if signature is valid
@@ -156,31 +156,31 @@ interface IIssuerRegistry {
     ) external view returns (bool);
 
     /// @notice Get pending key rotation details
-    /// @param issuerId The issuer ID
+    /// @param oracleId The oracle ID
     /// @return rotation The key rotation struct (empty if none pending)
-    function getPendingRotation(uint256 issuerId) external view returns (TypesLib.KeyRotation memory rotation);
+    function getPendingRotation(uint256 oracleId) external view returns (TypesLib.KeyRotation memory rotation);
 
     /// @notice Check if a key rotation can be executed
     /// @dev Returns true if timelock passed AND required approvals received AND safe period elapsed
-    /// @param issuerId The issuer ID
+    /// @param oracleId The oracle ID
     /// @return Whether rotation can be executed
-    function canExecuteRotation(uint256 issuerId) external view returns (bool);
+    function canExecuteRotation(uint256 oracleId) external view returns (bool);
 
     // ============ REGISTRY SYNC (Story 8.1) ============
 
     /// @notice Get current registry nonce for sync tracking
-    /// @dev Incremented on every state change (add/remove issuer, key rotation)
+    /// @dev Incremented on every state change (add/remove oracle, key rotation)
     /// @return The current registry nonce
     function registryNonce() external view returns (uint256);
 
-    /// @notice Compute hash of all active issuer pubkeys for state verification
-    /// @dev Returns keccak256 of all active issuer pubkeys concatenated in ID order
+    /// @notice Compute hash of all active oracle pubkeys for state verification
+    /// @dev Returns keccak256 of all active oracle pubkeys concatenated in ID order
     /// @return The registry state hash
     function getRegistryStateHash() external view returns (bytes32);
 
     // ============ CONSTANTS ============
 
-    /// @notice Key rotation approval threshold (10/19 other issuers)
+    /// @notice Key rotation approval threshold (10/19 other oracles)
     /// @return The number of approvals required
     function ROTATION_THRESHOLD() external view returns (uint256);
 
@@ -198,21 +198,21 @@ interface IIssuerRegistry {
 
     // ============ PEER DISCOVERY (Story 7.17) ============
 
-    /// @notice Get connection details for all active issuers
-    /// @dev Used by new issuer nodes for P2P bootstrap
-    /// @return ids Array of active issuer IDs
+    /// @notice Get connection details for all active oracles
+    /// @dev Used by new oracle nodes for P2P bootstrap
+    /// @return ids Array of active oracle IDs
     /// @return ips Array of IP addresses (packed as bytes32)
     /// @return pubkeys Array of BLS public keys
-    function getActiveIssuerEndpoints()
+    function getActiveOracleEndpoints()
         external
         view
         returns (uint256[] memory ids, bytes32[] memory ips, bytes[] memory pubkeys);
 
-    /// @notice Update an issuer's IP address
-    /// @param issuerId The issuer whose IP to update
+    /// @notice Update an oracle's IP address
+    /// @param oracleId The oracle whose IP to update
     /// @param newIp The new IP address (packed as bytes32)
     /// @param blsSignature BLS signature proving ownership
-    function updateIssuerIp(uint256 issuerId, bytes32 newIp, bytes calldata blsSignature) external;
+    function updateOracleIp(uint256 oracleId, bytes32 newIp, bytes calldata blsSignature) external;
 
     // ============ CONSENSUS PAUSE ============
 
@@ -226,42 +226,42 @@ interface IIssuerRegistry {
 
     // ============ EVENTS ============
 
-    /// @notice Emitted when a new issuer is added
-    /// @param issuerId The assigned issuer ID
-    /// @param addr Issuer's Ethereum address
-    /// @param blsPubkey Issuer's BLS public key
-    event IssuerAdded(uint256 indexed issuerId, address indexed addr, bytes blsPubkey);
+    /// @notice Emitted when a new oracle is added
+    /// @param oracleId The assigned oracle ID
+    /// @param addr Oracle's Ethereum address
+    /// @param blsPubkey Oracle's BLS public key
+    event OracleAdded(uint256 indexed oracleId, address indexed addr, bytes blsPubkey);
 
-    /// @notice Emitted when an issuer is removed
-    /// @param issuerId The removed issuer's ID
-    event IssuerRemoved(uint256 indexed issuerId);
+    /// @notice Emitted when an oracle is removed
+    /// @param oracleId The removed oracle's ID
+    event OracleRemoved(uint256 indexed oracleId);
 
     /// @notice Emitted when a key rotation is requested
-    /// @param issuerId The issuer requesting rotation
+    /// @param oracleId The oracle requesting rotation
     /// @param newPubkey The proposed new BLS public key
-    event KeyRotationRequested(uint256 indexed issuerId, bytes newPubkey);
+    event KeyRotationRequested(uint256 indexed oracleId, bytes newPubkey);
 
     /// @notice Emitted when a key rotation receives an approval
-    /// @param rotatingIssuerId The issuer whose key is being rotated
-    /// @param approvingIssuerId The issuer who approved
+    /// @param rotatingOracleId The oracle whose key is being rotated
+    /// @param approvingOracleId The oracle who approved
     /// @param approvalCount Current number of approvals
     event KeyRotationApproved(
-        uint256 indexed rotatingIssuerId,
-        uint256 indexed approvingIssuerId,
+        uint256 indexed rotatingOracleId,
+        uint256 indexed approvingOracleId,
         uint256 approvalCount
     );
 
     /// @notice Emitted when a key rotation is executed
-    /// @param issuerId The issuer whose key was rotated
+    /// @param oracleId The oracle whose key was rotated
     /// @param oldPubkey The previous BLS public key
     /// @param newPubkey The new BLS public key
-    event KeyRotationExecuted(uint256 indexed issuerId, bytes oldPubkey, bytes newPubkey);
+    event KeyRotationExecuted(uint256 indexed oracleId, bytes oldPubkey, bytes newPubkey);
 
     /// @notice Emitted when admin forces a rotation window
-    /// @param issuerId The issuer whose rotation was forced
-    event RotationWindowForced(uint256 indexed issuerId);
+    /// @param oracleId The oracle whose rotation was forced
+    event RotationWindowForced(uint256 indexed oracleId);
 
     /// @notice Emitted when a key rotation is cancelled
-    /// @param issuerId The issuer whose rotation was cancelled
-    event KeyRotationCancelled(uint256 indexed issuerId);
+    /// @param oracleId The oracle whose rotation was cancelled
+    event KeyRotationCancelled(uint256 indexed oracleId);
 }

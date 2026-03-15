@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "common",
-    "issuer",
+    "oracle",
     "ap",
     "curator",
     "data-node",

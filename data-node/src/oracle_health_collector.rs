@@ -1,4 +1,4 @@
-//! Issuer health collector — polls issuer /health endpoints and stores snapshots.
+//! Oracle health collector — polls oracle /health endpoints and stores snapshots.
 //!
 //! Security requirements implemented:
 //! - C5: Shared `poll_batch_ts` assigned BEFORE the polling loop
@@ -18,8 +18,8 @@ use sqlx::PgPool;
 use std::time::Duration;
 use tracing::{error, info, warn};
 
-/// Maximum response body size from issuer /health endpoints (64 KB — actual health response is ~2 KB).
-const MAX_ISSUER_RESPONSE_BYTES: u64 = 64 * 1024;
+/// Maximum response body size from oracle /health endpoints (64 KB — actual health response is ~2 KB).
+const MAX_ORACLE_RESPONSE_BYTES: u64 = 64 * 1024;
 
 /// Minimum poll interval in seconds (M6).
 const MIN_POLL_INTERVAL_SECS: u64 = 30;
@@ -45,19 +45,19 @@ const DANGEROUS_FIELDS: &[&str] = &[
     "p2p.wal_replays", "heartbeat.kick_proposals",
 ];
 
-/// Validate issuer URLs at startup (panic on invalid URLs so misconfiguration is caught early).
-pub fn validate_issuer_urls(urls: &[String]) {
+/// Validate oracle URLs at startup (panic on invalid URLs so misconfiguration is caught early).
+pub fn validate_oracle_urls(urls: &[String]) {
     for url in urls {
         if url::Url::parse(url).is_err() {
-            panic!("Invalid issuer health URL: {url}");
+            panic!("Invalid oracle health URL: {url}");
         }
     }
 }
 
-/// Main collector loop. Polls all issuer /health endpoints on a fixed interval.
-pub async fn run_issuer_health_collector(
+/// Main collector loop. Polls all oracle /health endpoints on a fixed interval.
+pub async fn run_oracle_health_collector(
     pool: PgPool,
-    issuer_urls: Vec<String>,
+    oracle_urls: Vec<String>,
     poll_interval_secs: u64,
 ) {
     // M6: Enforce minimum poll interval
@@ -69,12 +69,12 @@ pub async fn run_issuer_health_collector(
         .redirect(reqwest::redirect::Policy::none())
         .timeout(Duration::from_secs(15))
         .build()
-        .expect("Failed to build HTTP client for issuer health collector");
+        .expect("Failed to build HTTP client for oracle health collector");
 
     info!(
-        node_count = issuer_urls.len(),
+        node_count = oracle_urls.len(),
         poll_secs = poll_interval_secs,
-        "Issuer health collector started"
+        "Oracle health collector started"
     );
 
     let mut cycle_count: u64 = 0;
@@ -87,7 +87,7 @@ pub async fn run_issuer_health_collector(
 
         // H30: Randomize polling order each cycle
         // Create rng in a block so it's dropped before any .await
-        let mut urls = issuer_urls.clone();
+        let mut urls = oracle_urls.clone();
         {
             let mut rng = rand::thread_rng();
             urls.shuffle(&mut rng);
@@ -100,11 +100,11 @@ pub async fn run_issuer_health_collector(
             match fetch_and_store(&client, &pool, url, poll_batch_ts).await {
                 Ok(node_id) => {
                     success_count += 1;
-                    tracing::debug!(node_id, url, "Issuer health snapshot stored");
+                    tracing::debug!(node_id, url, "Oracle health snapshot stored");
                 }
                 Err(e) => {
                     fail_count += 1;
-                    warn!(url, error = %e, "Failed to fetch issuer health");
+                    warn!(url, error = %e, "Failed to fetch oracle health");
                 }
             }
         }
@@ -114,7 +114,7 @@ pub async fn run_issuer_health_collector(
             ok = success_count,
             fail = fail_count,
             batch_ts = %poll_batch_ts,
-            "Issuer health poll cycle complete"
+            "Oracle health poll cycle complete"
         );
 
         // H2: Auto-prune old snapshots every PRUNE_EVERY_N_CYCLES
@@ -122,11 +122,11 @@ pub async fn run_issuer_health_collector(
             match prune_old_snapshots(&pool).await {
                 Ok(deleted) => {
                     if deleted > 0 {
-                        info!(deleted, retention_days = RETENTION_DAYS, "Pruned old issuer health snapshots");
+                        info!(deleted, retention_days = RETENTION_DAYS, "Pruned old oracle health snapshots");
                     }
                 }
                 Err(e) => {
-                    error!(error = %e, "Failed to prune old issuer health snapshots");
+                    error!(error = %e, "Failed to prune old oracle health snapshots");
                 }
             }
         }
@@ -135,7 +135,7 @@ pub async fn run_issuer_health_collector(
     }
 }
 
-/// Fetch /health from a single issuer and store the snapshot.
+/// Fetch /health from a single oracle and store the snapshot.
 /// Returns the node_id on success.
 async fn fetch_and_store(
     client: &Client,
@@ -159,7 +159,7 @@ async fn fetch_and_store(
 
     // H17: Check content-length header if present
     if let Some(content_length) = response.content_length() {
-        if content_length > MAX_ISSUER_RESPONSE_BYTES {
+        if content_length > MAX_ORACLE_RESPONSE_BYTES {
             return Err(format!(
                 "Response too large ({content_length} bytes) from {health_url}"
             ).into());
@@ -168,7 +168,7 @@ async fn fetch_and_store(
 
     // Read the body with a size limit
     let bytes = response.bytes().await?;
-    if bytes.len() as u64 > MAX_ISSUER_RESPONSE_BYTES {
+    if bytes.len() as u64 > MAX_ORACLE_RESPONSE_BYTES {
         return Err(format!(
             "Response body too large ({} bytes) from {health_url}",
             bytes.len()
@@ -205,7 +205,7 @@ async fn fetch_and_store(
     let signatures_collected = consensus.get("signatures_collected").and_then(|v| v.as_i64()).unwrap_or(0);
     let last_consensus_time_ms = consensus.get("last_time_ms").and_then(|v| v.as_i64()).unwrap_or(0);
 
-    // Extract order fields — top-level in issuer /health response
+    // Extract order fields — top-level in oracle /health response
     let orders_processed_last_60s = body.get("orders_processed_last_60s").and_then(|v| v.as_i64()).unwrap_or(0);
     let pending_order_count = body.get("pending_order_count").and_then(|v| v.as_i64()).unwrap_or(0);
     let last_cycle_duration_ms = body.get("last_cycle_duration_ms").and_then(|v| v.as_i64()).unwrap_or(0);
@@ -229,7 +229,7 @@ async fn fetch_and_store(
 
     sqlx::query(
         r#"
-        INSERT INTO issuer_health_snapshots (
+        INSERT INTO oracle_health_snapshots (
             node_id, poll_batch_ts, status,
             consensus_rounds_total, consensus_success_total, consensus_failed_total,
             signatures_collected, last_consensus_time_ms,
@@ -267,7 +267,7 @@ async fn fetch_and_store(
 /// H2: Delete snapshots older than RETENTION_DAYS.
 async fn prune_old_snapshots(pool: &PgPool) -> Result<u64, sqlx::Error> {
     let cutoff = Utc::now() - chrono::Duration::days(RETENTION_DAYS);
-    let result = sqlx::query("DELETE FROM issuer_health_snapshots WHERE poll_batch_ts < $1")
+    let result = sqlx::query("DELETE FROM oracle_health_snapshots WHERE poll_batch_ts < $1")
         .bind(cutoff)
         .execute(pool)
         .await?;

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import "../src/registry/FeeRegistry.sol";
 import "../src/interfaces/IFeeRegistry.sol";
 import "../src/libraries/TypesLib.sol";
@@ -15,7 +15,7 @@ contract FeeRegistryTest is TestHelper {
     FeeRegistry public registry;
     address public feeRegistryProxy;
     Governance governance;
-    IssuerRegistry issuerReg;
+    OracleRegistry oracleReg;
 
     address public admin = address(0x1);
     address public user = address(0x2);
@@ -51,8 +51,8 @@ contract FeeRegistryTest is TestHelper {
     function setUp() public {
         // Deploy BLS infrastructure
         governance = deployGovernance(admin);
-        issuerReg = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerReg, admin);
+        oracleReg = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleReg, admin);
 
         // Deploy implementation
         FeeRegistry implementation = new FeeRegistry();
@@ -65,9 +65,9 @@ contract FeeRegistryTest is TestHelper {
         feeRegistryProxy = address(proxy);
         registry = FeeRegistry(feeRegistryProxy);
 
-        // Set the IssuerRegistry for BLS verification
+        // Set the OracleRegistry for BLS verification
         vm.prank(admin);
-        registry.setIssuerRegistry(address(issuerReg));
+        registry.setOracleRegistry(address(oracleReg));
 
         // Authorize test contract to call FeeRegistry functions
         vm.prank(admin);
@@ -81,7 +81,7 @@ contract FeeRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode(block.chainid, feeRegistryProxy, "setFeeRate", itpId, feeRate, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signRecordFeeCharge(address _user, bytes32 itpId, uint256 feeAmount, TypesLib.FeeType feeType) internal returns (bytes memory) {
@@ -89,7 +89,7 @@ contract FeeRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode(block.chainid, feeRegistryProxy, "recordFeeCharge", _user, itpId, feeAmount, feeType, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signSetFeeSplit(uint256 splitBps) internal returns (bytes memory) {
@@ -97,7 +97,7 @@ contract FeeRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode(block.chainid, feeRegistryProxy, "setFeeSplit", splitBps, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ INITIALIZER TESTS ============

@@ -1,4 +1,4 @@
-//! Asset decomposition and cross-ITP netting for issuer-driven settlement
+//! Asset decomposition and cross-ITP netting for oracle-driven settlement
 //!
 //! Decomposes ITP-level orders into per-asset USDC amounts, then nets same
 //! assets across all ITPs in a cycle. The result is a minimal set of

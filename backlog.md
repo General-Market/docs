@@ -63,7 +63,7 @@
 ## Session: 20260313-syssec (System section data fix)
 
 - [DECISION] System section empty because build_system_snapshot only used cached pending/batched orders (never filled). Fixed to query DB trades table for last 20 orders including filled + fill_time_seconds.
-- [DECISION] registered_at was hardcoded to 0 in IssuerNodeInfo. Fixed to use MIN(order_timestamp) from trades table as a proxy for node registration time.
+- [DECISION] registered_at was hardcoded to 0 in OracleNodeInfo. Fixed to use MIN(order_timestamp) from trades table as a proxy for node registration time.
 - [DECISION] avg_fill_time_seconds was hardcoded to 0.0. Now computed from AVG of fill_timestamp - order_timestamp for last 100 filled orders.
 - [DECISION] Added 5s timeout to vault snapshot in system_snapshot_json builder. Settlement chain calls were hanging indefinitely (100 tokens * individual RPC calls to Sonic testnet). Now gracefully returns empty vault data on timeout.
 - [DECISION] Added 10s timeout wrapper around /vault-balances REST endpoint for same reason.
@@ -73,7 +73,7 @@
 ## Session: 20260313-fixall (Don't stop until fixing everything)
 
 - [DECISION] Leader election for L3-native orders: changed `current_cycle / 5` to `current_cycle / 500`. Nodes drift ~20-30 cycles apart in their local counters. With /5, drift caused leader disagreement (all nodes computed different leaders). /500 ensures all nodes agree despite drift, with failover every ~8 minutes.
-- [FAILED] First attempt: used `current_cycle / 5` with `calculate_bridge_leader_with_failover`. Deployed to VPS, all 3 issuers showed `am_leader=false` simultaneously. Root cause: 26-cycle drift → different attempt values → different leader computations.
+- [FAILED] First attempt: used `current_cycle / 5` with `calculate_bridge_leader_with_failover`. Deployed to VPS, all 3 oracles showed `am_leader=false` simultaneously. Root cause: 26-cycle drift → different attempt values → different leader computations.
 - [DECISION] VisionConsensusConfig: added `set_vision_consensus_config()` call in main.rs after VisionDepositWatcher spawn. Was defined but never called — caused all follower validation of Vision credit/refund/withdraw proposals to fail with "VisionConsensusConfig not configured".
 - [DECISION] Explorer placeholder charts: replaced all "coming soon" placeholders with real data — Vision uses /api/vision/batches, ChainGas uses health API delta calculations, ITP uses /api/itp-price live data.
 - [DECISION] Data-node was down (restart: "no" in docker-compose). Restarted manually — fixes "run simulation" which uses SSE via /dn proxy to data-node.
@@ -82,17 +82,17 @@
 
 ## Session: 20260311-e2e (E2E Testnet Fixes)
 
-- [DECISION] MirrorIssuerRegistry sync: always refresh snapshot with `max(l3, mirror)+1` nonce every 500 cycles to prevent BLSVerifier__SnapshotTooOld. Previous logic only synced on nonce mismatch, but snapshot block goes stale even with matching nonces.
-- [DECISION] Added `ISSUER_MIRROR_REGISTRY_ADDRESS` env var to testnet.sh issuer Docker override. Without it, issuers never ran mirror sync.
-- [FAILED] Ran `testnet.sh start` from background task — it produced truncated output and didn't actually restart issuers. Manual Docker commands work reliably. testnet.sh may have issues with non-interactive execution.
-- [FAILED] Docker Dockerfile for issuer copies pre-built `target/release/issuer` binary. `docker compose build` doesn't rebuild Rust — must run `cargo build --release` first.
-- [BUG] E2E test `08-settlement-bridge-buy.spec.ts` takes **11.1 minutes** — settlement bridge buy order not filled in 180s, retries with new order. Issuers not processing ITP buy orders promptly.
-- [BUG] E2E test `26-rebalance-full-cycle.spec.ts` takes **8.1 minutes** — rebalance TX confirmed but waiting for issuer consensus that never arrives. Issuers don't process `RebalanceRequested` events.
+- [DECISION] MirrorOracleRegistry sync: always refresh snapshot with `max(l3, mirror)+1` nonce every 500 cycles to prevent BLSVerifier__SnapshotTooOld. Previous logic only synced on nonce mismatch, but snapshot block goes stale even with matching nonces.
+- [DECISION] Added `ORACLE_MIRROR_REGISTRY_ADDRESS` env var to testnet.sh oracle Docker override. Without it, oracles never ran mirror sync.
+- [FAILED] Ran `testnet.sh start` from background task — it produced truncated output and didn't actually restart oracles. Manual Docker commands work reliably. testnet.sh may have issues with non-interactive execution.
+- [FAILED] Docker Dockerfile for oracle copies pre-built `target/release/oracle` binary. `docker compose build` doesn't rebuild Rust — must run `cargo build --release` first.
+- [BUG] E2E test `08-settlement-bridge-buy.spec.ts` takes **11.1 minutes** — settlement bridge buy order not filled in 180s, retries with new order. Oracles not processing ITP buy orders promptly.
+- [BUG] E2E test `26-rebalance-full-cycle.spec.ts` takes **8.1 minutes** — rebalance TX confirmed but waiting for oracle consensus that never arrives. Oracles don't process `RebalanceRequested` events.
 - [BUG] E2E test `18-multi-itp-orders.spec.ts` takes **6.1 minutes** — ITP2 buy order not filled within timeout, sell works but buy hangs.
-- [BUG] E2E test `25-vision-tick-resolution.spec.ts` takes **5.6 minutes** — tick never resolves. Issuers accept bitmaps (partially) but don't resolve ticks. `lastClaimedTick` stays at 0.
-- [BUG] E2E test `20-vision-settlement-withdraw.spec.ts` takes **5.3 minutes** — Settlement deposit virtual balance never credited by issuers.
+- [BUG] E2E test `25-vision-tick-resolution.spec.ts` takes **5.6 minutes** — tick never resolves. Oracles accept bitmaps (partially) but don't resolve ticks. `lastClaimedTick` stays at 0.
+- [BUG] E2E test `20-vision-settlement-withdraw.spec.ts` takes **5.3 minutes** — Settlement deposit virtual balance never credited by oracles.
 - [BUG] Data-node `/aum-ranking` endpoint hangs (timeout) even locally on VPS — blocks all ITP card rendering. `/health` works fine. Need data-node restart or investigation.
-- [DECISION] Switched testnet issuer URLs from SSH tunnels (localhost:10001-10003) to nginx proxy (116.203.156.98/issuer1-3) — eliminates tunnel drops during long E2E runs
+- [DECISION] Switched testnet oracle URLs from SSH tunnels (localhost:10001-10003) to nginx proxy (116.203.156.98/oracle1-3) — eliminates tunnel drops during long E2E runs
 - [DECISION] Fixed `findAvailableE2eBatch` — JSON vision-batches.json had stale batch IDs from older deployment. Now validates batch exists on-chain via `getBatchConfigHash` before returning.
 - [DECISION] Reduced tick resolution poll deadline from 300s to 240s — 300s was too close to 360s test timeout, join operations ate the 60s buffer.
 - [DECISION] BUG-001 root cause: data-node was started with `--settlement-rpc-url http://localhost:8546` (local Anvil port) instead of `http://127.0.0.1:8547` (Sonic proxy). Not a proxy bug — wrong port. Restarting data-node with correct args fixed confirmed_block=0 immediately.
@@ -102,14 +102,14 @@
 
 ## Session: 20260310-1540-e2e (E2E Reliability Fixes)
 
-- [FAILED] Rebalance E2E: issuers don't detect `RebalanceRequested` events on testnet. Root cause: issuers use `DataNodeChainReader` which doesn't forward RebalanceRequested events from L3 Index. TX confirmed (status 0x1, 1 event) but issuers never see it. Fix needed in data-node Rust code to forward RebalanceRequested events to issuer chain reader API.
-- [DECISION] P2P stagger increased from 1s to 5s in testnet.sh — 1s caused issuer-1 P2P connections to fail permanently (exponential backoff gives up before peers start listening)
+- [FAILED] Rebalance E2E: oracles don't detect `RebalanceRequested` events on testnet. Root cause: oracles use `DataNodeChainReader` which doesn't forward RebalanceRequested events from L3 Index. TX confirmed (status 0x1, 1 event) but oracles never see it. Fix needed in data-node Rust code to forward RebalanceRequested events to oracle chain reader API.
+- [DECISION] P2P stagger increased from 1s to 5s in testnet.sh — 1s caused oracle-1 P2P connections to fail permanently (exponential backoff gives up before peers start listening)
 - [DECISION] ITP2 sell test changed from Settlement bridge sell to direct L3 sell (`placeL3SellOrderDirect`) — avoids BridgedITP token requirement on testnet, bridge sell already tested for ITP1 in test 08
-- [DECISION] `rebalanceItp()` sends to L3 Index (confirmed working) — Settlement BridgeProxy path also tried but issuers don't scan Settlement for RebalanceRequested either
+- [DECISION] `rebalanceItp()` sends to L3 Index (confirmed working) — Settlement BridgeProxy path also tried but oracles don't scan Settlement for RebalanceRequested either
 - [DECISION] Added `poll_pending_rebalances_once` poller to data-node — scans L3 for RebalanceRequested events, filters out already-executed ones, populates `pending_rebalances` cache. Fixed `DataNodeChainReader.get_pending_rebalances()` which was returning empty `vec![]` stub.
 - [DECISION] `ensureWalletConnected` made resilient to click-race — button can be detached mid-click when wallet auto-connects, now catches the error and waits for address button
 - [DECISION] Portfolio "Total Value" test waits for `$\d+` (dollar+digit) instead of just `\d` — prevents false match on skeleton loading state
-- [DECISION] SSH tunnels (ports 10001-10003) required for testnet E2E — issuer HTTP API runs on VPS, `E2E_VISION_API_URL=localhost:10001` needs forwarding
+- [DECISION] SSH tunnels (ports 10001-10003) required for testnet E2E — oracle HTTP API runs on VPS, `E2E_VISION_API_URL=localhost:10001` needs forwarding
 
 ## Session: 20260308-stale-r4 (Stale Orders Plan — Round 4 Plan-Only Audit)
 
@@ -144,7 +144,7 @@
 - [FAILED] `collect_price_votes` and PriceVote storage used `self.state` but price rounds only initialize `self.price_state` — votes stored/read in wrong state object. Fixed to use `price_state`.
 - [BUG] Contract `confirmBatch` reverts with E021_OrderAlreadyBatched — `submitOrder` sets initial status that conflicts with `confirmBatch` expectations. Order 72 stuck at status 2.
 - [BUG] Contract `confirmFills` reverts with E024_InvalidOrderStatus — downstream of confirmBatch failure.
-- [BUG] Stale bridge orders after tx reverts cause WorkDriven feedback loop — orchestrator `has_in_flight_orders()` stays true, triggering rapid cycle advances that desync issuers.
+- [BUG] Stale bridge orders after tx reverts cause WorkDriven feedback loop — orchestrator `has_in_flight_orders()` stays true, triggering rapid cycle advances that desync oracles.
 
 ### Verified Consensus Performance
 - Batch consensus: **10ms** (2/3 signers)
@@ -159,7 +159,7 @@
 - [DECISION] Renamed `bridge_sign_timeout_ms` → `sign_timeout_ms` globally — applies to bridge, ITP creation, and NavOracle timeouts (300ms default for all, was 2000ms hardcoded for ITP/NavOracle)
 - [DECISION] Consensus timeouts reduced: price_proposal 50ms, price_vote 40ms, batch_proposal 50ms, batch_sign 60ms, polling 2ms — total 200ms budget (was 800ms). Price phases only used by standalone run_price_cycle.
 - [DECISION] Settlement poll reduced 500ms → 100ms for near-instant bridge order detection
-- [DECISION] Eliminated price consensus round from regular `run_cycle` (leader skips `leader_price_consensus`, follower timeout uses batch-only phases). All issuers compute same NAV from shared inventory + Bitget feed — no agreement round needed. Price round preserved in standalone `run_price_cycle` for no-order cycles.
+- [DECISION] Eliminated price consensus round from regular `run_cycle` (leader skips `leader_price_consensus`, follower timeout uses batch-only phases). All oracles compute same NAV from shared inventory + Bitget feed — no agreement round needed. Price round preserved in standalone `run_price_cycle` for no-order cycles.
 - [DECISION] Background NAV computation task (every 200ms) publishes to `tokio::sync::watch` channel. Replaced inline per-cycle NAV computation and all `fetch_nav` HTTP calls. Processing functions read cached NAV via `*nav_rx.borrow()` — sub-microsecond instead of 500ms HTTP timeout.
 - [DECISION] Removed `fetch_nav` function entirely — dead code after watch channel adoption. `data_node_url` HTTP path for NAV is no longer used.
 - [DECISION] Merged Phase 1 (detect/bridge/submit) and Phase 2 (batch/fills/mint) into single end-to-end flow. After submit completes, `run_cross_chain_processing` calls `run_cross_chain_buy_post_processing` inline instead of returning and waiting for poll-driven Phase 2.
@@ -178,14 +178,14 @@
 
 ## Session: 20260307-2200-k8v3 (Curator data-node HTTP read proxy)
 
-- [DECISION] Added optional DataNodeClient to curator for proxying L3 chain reads through data-node HTTP endpoints instead of direct RPC. Only proxies reads that data-node already caches: activeIssuerCount, aggregatedPubkey, consensusPaused, lastCycle. Morpho/vault/IRM reads stay direct RPC (DeFi-specific, not cached in data-node). registryNonce also stays RPC (not cached in data-node).
+- [DECISION] Added optional DataNodeClient to curator for proxying L3 chain reads through data-node HTTP endpoints instead of direct RPC. Only proxies reads that data-node already caches: activeOracleCount, aggregatedPubkey, consensusPaused, lastCycle. Morpho/vault/IRM reads stay direct RPC (DeFi-specific, not cached in data-node). registryNonce also stays RPC (not cached in data-node).
 - [DECISION] Fallback pattern: when data-node call fails, silently falls back to direct RPC with a warn log. This means data-node outage does not break the curator.
-- [DECISION] Health monitor uses DataNodeClient for L3 activeIssuerCount in check_mirror_sync(). Collector's OraclePusher uses it for lastCycleNumber reads. Both opt-in via existing --data-node-url CLI arg.
+- [DECISION] Health monitor uses DataNodeClient for L3 activeOracleCount in check_mirror_sync(). Collector's OraclePusher uses it for lastCycleNumber reads. Both opt-in via existing --data-node-url CLI arg.
 
 ## Session: 20260307-1845-t3s1 (Testnet dual-chain E2E — Sonic settlement)
 
-- [DECISION] Bridge buy/sell order consensus stalls on testnet: all 3 issuers report `am_leader=false` for the same orders. Root cause: leader election uses `order_id % num_issuers` but different issuers scan different Sonic block ranges at different times. The designated leader may not have the order in their current scan window when followers start consensus. Watchdog resets stale orders every ~80s but leader keeps missing the order across retries. Create ITP works because it uses `current_cycle` (not order_id) for leader election, and all issuers see the event simultaneously via the same L3 event cursor.
-- [DECISION] Sonic RPC proxy rate limit was core bottleneck (0.5s = 2 req/s). 3 issuers sharing proxy with multiple settlement RPC calls per poll cycle caused permanent queueing. Fixed: 0.05s = 20 req/s.
+- [DECISION] Bridge buy/sell order consensus stalls on testnet: all 3 oracles report `am_leader=false` for the same orders. Root cause: leader election uses `order_id % num_oracles` but different oracles scan different Sonic block ranges at different times. The designated leader may not have the order in their current scan window when followers start consensus. Watchdog resets stale orders every ~80s but leader keeps missing the order across retries. Create ITP works because it uses `current_cycle` (not order_id) for leader election, and all oracles see the event simultaneously via the same L3 event cursor.
+- [DECISION] Sonic RPC proxy rate limit was core bottleneck (0.5s = 2 req/s). 3 oracles sharing proxy with multiple settlement RPC calls per poll cycle caused permanent queueing. Fixed: 0.05s = 20 req/s.
 - [DECISION] Next.js proxy doesn't stream SSE events to browser. Fixed: added `NEXT_PUBLIC_DATA_NODE_BROWSER_URL` env var to bypass proxy for direct SSE connection.
 - [DECISION] Test 23 API routes had wrong/missing query params (written for Anvil). Fixed: added correct params and graceful handling for missing testnet data.
 - [DECISION] Test 26 rebalance NAV drift tolerance too tight (10 bps). On testnet with real price movements, drift was 51 bps. Widened to 100 bps.
@@ -212,13 +212,13 @@
 
 ## Session: 20260303-1600-q4m8 (Fix BATCHED fills leader failover + receipt polling)
 
-- [DECISION] Fixed BATCHED fills leader failover: `first_seen_orders` was removed on `Ok(signer_count=0)`, resetting `attempt=0` every cycle. Fills leader was permanently locked to node_index=2 (issuer 3) with no failover when issuer 3 didn't enter the fills code path. Fix: only clean up first_seen_orders and mark orders Filled when signer_count > 0.
+- [DECISION] Fixed BATCHED fills leader failover: `first_seen_orders` was removed on `Ok(signer_count=0)`, resetting `attempt=0` every cycle. Fills leader was permanently locked to node_index=2 (oracle 3) with no failover when oracle 3 didn't enter the fills code path. Fix: only clean up first_seen_orders and mark orders Filled when signer_count > 0.
 - [DECISION] Applied same fix to L3-native PENDING fills and E021 retry path — all three fills confirmation sites now guard cleanup on signer_count > 0.
 - [DECISION] Fixed morpho oracle test: Anvil background block miner runs on 1s interval, `eth_sendTransaction` returns before block is mined. Added receipt polling (10 attempts, 500ms delay) in l3SendTx helper.
 
 ## Session: 20260302-1800-x7k1 (Fix ITP creation sending to wrong chain)
 
-- [DECISION] Replaced `useChainWriteContract` with wagmi's native `useWriteContract` + explicit `chainId: arbChainId` in all BridgeProxy-interacting components (CreateItpSection, RebalanceModal, ItpListing). The `useChainWriteContract` hook forcefully injects `chainId: activeChainId` (L3 = 111222333) on every transaction, overriding any `chainId` passed by the caller. BridgeProxy lives on Arb (chain 421611337) and issuers only poll the Arb instance, so requests sent to L3's BridgeProxy were silently ignored.
+- [DECISION] Replaced `useChainWriteContract` with wagmi's native `useWriteContract` + explicit `chainId: arbChainId` in all BridgeProxy-interacting components (CreateItpSection, RebalanceModal, ItpListing). The `useChainWriteContract` hook forcefully injects `chainId: activeChainId` (L3 = 111222333) on every transaction, overriding any `chainId` passed by the caller. BridgeProxy lives on Arb (chain 421611337) and oracles only poll the Arb instance, so requests sent to L3's BridgeProxy were silently ignored.
 - [DECISION] Also fixed read hooks (`useDeployerName`, `useItpMetadata`) to explicitly use `chainId: arbChainId` when reading from BridgeProxy, since the data lives on Arb.
 - [DECISION] Removed `requestCreateItpDirect(TEST_ADDRESS)` workaround from e2e test `05-create-itp.spec.ts` — this bypassed the frontend and sent directly to Arb RPC, masking the bug.
 - [FAILED] Previous session's edits to CreateItpSection.tsx and RebalanceModal.tsx were partially reverted by the linter, which re-added `useChainWriteContract` imports. Fixed by consolidating wagmi imports into a single line and removing the separate `useChainWriteContract` import.
@@ -234,10 +234,10 @@
 ## Session: 20260301-2200-t32b (T-32: Vision tick BLS consensus - Part 2: Engine wiring)
 
 - [DECISION] Added `bls_keypair: Option<Arc<BLSKeyPair>>` parameter to engine::run() rather than embedding it in VisionConfig — keeps config serializable and matches the pattern used elsewhere in the codebase (arbitration, deposit_watcher) where BLS keypair is passed separately from config.
-- [DECISION] Consensus gate in engine: after tick resolution, single-issuer (num_issuers <= 1 or no keypair) applies balances directly; multi-issuer calls TickConsensus::create_proposal() and defers balance application to P2P message handler. Fallback to direct application on proposal creation failure (degraded mode).
-- [DECISION] Extracted `apply_balances()` as a public helper function from engine.rs so both the engine (single-issuer + degraded fallback) and future P2P consensus handler can share the same DB-persistence-or-in-memory logic.
-- [DECISION] Added `chain_id: u64` and `num_issuers: usize` to VisionConfig with defaults (111222333, 1) — these are needed by TickConsensus construction but were previously not in VisionConfig. Default num_issuers=1 means existing single-issuer deployments work unchanged.
-- [DECISION] The engine does NOT block waiting for consensus — create_proposal returns immediately, and the P2P message handler will collect signatures asynchronously. Reference prices and mark_resolved still happen immediately (even in multi-issuer mode) because re-resolution of the same tick is idempotent and reference prices should advance.
+- [DECISION] Consensus gate in engine: after tick resolution, single-oracle (num_oracles <= 1 or no keypair) applies balances directly; multi-oracle calls TickConsensus::create_proposal() and defers balance application to P2P message handler. Fallback to direct application on proposal creation failure (degraded mode).
+- [DECISION] Extracted `apply_balances()` as a public helper function from engine.rs so both the engine (single-oracle + degraded fallback) and future P2P consensus handler can share the same DB-persistence-or-in-memory logic.
+- [DECISION] Added `chain_id: u64` and `num_oracles: usize` to VisionConfig with defaults (111222333, 1) — these are needed by TickConsensus construction but were previously not in VisionConfig. Default num_oracles=1 means existing single-oracle deployments work unchanged.
+- [DECISION] The engine does NOT block waiting for consensus — create_proposal returns immediately, and the P2P message handler will collect signatures asynchronously. Reference prices and mark_resolved still happen immediately (even in multi-oracle mode) because re-resolution of the same tick is idempotent and reference prices should advance.
 
 ## Session: 20260301-2100-t32a (T-32: Vision tick BLS consensus - Part 1)
 
@@ -245,18 +245,18 @@
 - [DECISION] TickConsensus stores both Bn254BLSSigner (Arc) and BLSKeyPair (Arc) rather than just signer, matching the codebase convention where sign_message_hash requires a keypair reference.
 - [DECISION] compute_tick_result_hash sorts player_balances by address for determinism, uses two-layer keccak256: inner hash over sorted balances, outer hash including chain_id + vision_address + domain separator + batch_id + tick_id + inner_hash.
 - [DECISION] add_signature returns Option<Result<AggregationStatus, Error>> — Option layer for "round not found", Result layer for BLS aggregation errors, matching SignatureAggregator::add_signature's existing Result return type.
-- [DECISION] Added chain_id and num_issuers env var parsing to issuer config.rs (ISSUER_VISION_CHAIN_ID, ISSUER_VISION_NUM_ISSUERS) since VisionConfig struct already had these fields from prior T-32 work but config initialization was missing them.
+- [DECISION] Added chain_id and num_oracles env var parsing to oracle config.rs (ORACLE_VISION_CHAIN_ID, ORACLE_VISION_NUM_ORACLES) since VisionConfig struct already had these fields from prior T-32 work but config initialization was missing them.
 
 ## Session: 20260301-1600-m4q8 (Vision multiplier f64 -> integer BPS)
 
-- [DECISION] Converted Vision multiplier computation from f64 to integer BPS arithmetic for deterministic cross-issuer agreement. All multiplier values now use a 10000 BPS scale (10000 = 1.0x). Early multiplier uses u128 intermediate for overflow safety. Commitment multiplier uses linear interpolation between powers of 10 (deterministic integer log10 approximation, max ~3% error within a decade vs true log10). Effective stake computed entirely via U256 integer path.
+- [DECISION] Converted Vision multiplier computation from f64 to integer BPS arithmetic for deterministic cross-oracle agreement. All multiplier values now use a 10000 BPS scale (10000 = 1.0x). Early multiplier uses u128 intermediate for overflow safety. Commitment multiplier uses linear interpolation between powers of 10 (deterministic integer log10 approximation, max ~3% error within a decade vs true log10). Effective stake computed entirely via U256 integer path.
 - [DECISION] Changed `PlayerMultiplier` struct fields from `{early_mult: f64, commitment_mult: f64, total_mult: f64}` to `{early_mult_bps: u64, commitment_mult_bps: u64, total_mult_bps: u64}`. Only `multiplier.rs` and `types.rs` reference these fields; resolver.rs only uses `.player` and `.effective_stake`.
 - [DECISION] Updated resolver test `test_per_market_stake_matches_brief_example` to check ordering (Alice > Bob > Carol = Dave) instead of exact 4:2:1:1 ratio, because commitment multiplier (log10 of balance/stake) differs per player and exact ratios depend on the log10 approximation method.
 - [FAILED] Exact ratio assertions in resolver test — the test assumed 4:2:1:1 based on raw stakes, but commitment multipliers vary because balance/stake gives different committed tick counts per player.
 
 ## Session: 20260301-1200-r7k3 (Vision resolver f64 -> integer BPS)
 
-- [DECISION] Converted Vision resolver from f64 floating-point arithmetic to integer basis-point (BPS) arithmetic for deterministic cross-issuer agreement. Prices converted from f64 to u128 (scaled by 1e8) once at the boundary, then all percent-change computation and outcome resolution uses integer math. `compute_pct_change_bps()` returns i64 BPS, `resolve_outcome_bps()` takes i64 BPS. This eliminates platform-dependent floating-point rounding that could cause issuers to disagree on outcomes.
+- [DECISION] Converted Vision resolver from f64 floating-point arithmetic to integer basis-point (BPS) arithmetic for deterministic cross-oracle agreement. Prices converted from f64 to u128 (scaled by 1e8) once at the boundary, then all percent-change computation and outcome resolution uses integer math. `compute_pct_change_bps()` returns i64 BPS, `resolve_outcome_bps()` takes i64 BPS. This eliminates platform-dependent floating-point rounding that could cause oracles to disagree on outcomes.
 - [DECISION] Kept old `resolve_outcome()` f64 function behind `#[cfg(test)]` solely for cross-validation tests that verify integer results match f64 results for common inputs.
 - [DECISION] Changed `MarketResult.pct_change: f64` to `MarketResult.pct_change_bps: i64` in types.rs. Engine serialization updated from `changePct` to `changeBps`.
 
@@ -297,7 +297,7 @@
 
 ## Session: 20260301-1700-is1 (IS-1: Staleness check bypass fix)
 
-- [DECISION] fetched_at timestamps flow from data-node DB → snapshot JSON → issuer SnapshotData → build_market_prices. Using real data freshness instead of wall clock for staleness detection.
+- [DECISION] fetched_at timestamps flow from data-node DB → snapshot JSON → oracle SnapshotData → build_market_prices. Using real data freshness instead of wall clock for staleness detection.
 - [DECISION] SnapshotData extended from 2-tuple to 3-tuple: (values, change_pcts, fetched_at_map). Third HashMap<H256, i64> carries per-market unix timestamps.
 - [DECISION] Staleness threshold = 2x tick_duration. Markets with price data older than this are skipped (resolve as Cancelled via missing price entry). This prevents stale data from producing incorrect outcomes.
 - [DECISION] fetched_at parsing handles both ISO 8601 strings (from serde DateTime<Utc> serialization) and raw i64 unix timestamps. Falls back to 0 for old data-nodes without the field — 0 means "unknown age, don't reject".
@@ -306,7 +306,7 @@
 
 - [FAILED] E2E tests didn't catch 1e6 vs 1e18 decimal mismatch — E2E tests verify backend functionality (txs succeed, balances change) but don't check frontend display formatting (leaderboard values, error messages, TVL display)
 - [DECISION] All Vision values (balance, TVL, PnL, volume) use L3 USDC with 18 decimals. Arb USDC uses 6 decimals. Frontend must distinguish chains for formatting.
-- [DECISION] Issuer leaderboard API must divide by 1e18, not 1e6 — balances from VisionReserve are on L3
+- [DECISION] Oracle leaderboard API must divide by 1e18, not 1e6 — balances from VisionReserve are on L3
 
 ## Session: 20260301-0300-s10 (Step 10: Wire price task to oracle submission)
 
@@ -316,10 +316,10 @@
 - [DECISION] Morpho NAV scaling: multiply NAV (18 dec) by 1e18 to get 36-decimal Morpho price — same-decimal token pair convention.
 - [DECISION] Moved local_nav_fallback computation before price task spawn — was computed after spawn previously, but run_price_update now needs it as a parameter.
 
-## Session: 20260301-0200-s11 (Step 11: Replace MockMorphoOracle with MirrorIssuerRegistry + ITPNAVOracle)
+## Session: 20260301-0200-s11 (Step 11: Replace MockMorphoOracle with MirrorOracleRegistry + ITPNAVOracle)
 
 - [DECISION] Used FFI-based DeployBLSHelper (bls-tool) for BLS key generation instead of env vars — consistent with DeployFullSystemE2E pattern, no start.sh changes needed for BLS keys.
-- [DECISION] MirrorIssuerRegistry.initialize signature is (aggPubkey, threshold, activeCount, admin) — different from task description which had 7 params. Used actual contract signature.
+- [DECISION] MirrorOracleRegistry.initialize signature is (aggPubkey, threshold, activeCount, admin) — different from task description which had 7 params. Used actual contract signature.
 - [DECISION] Added TOFU bootstrap sync + initial BLS-signed price update in deploy script — oracle would be stale without initial price push, matching MorphoTestHelper pattern.
 - [DECISION] Updated start.sh MOCK_ORACLE -> ITP_NAV_ORACLE references even though task said "don't modify start.sh" — that instruction was specifically about BLS pubkey env vars, not about the oracle rename which would break Phase 2 deploy.
 
@@ -347,18 +347,18 @@
 
 ## Session: 20260228-2345-plan (Normalize Phase 2 Implementation Plan)
 
-- [DECISION] MirrorIssuerRegistry must implement IIssuerRegistry — store individual pubkeys, snapshots, verifyBLSMultiPairing. No special-cased single-pairing anywhere.
+- [DECISION] MirrorOracleRegistry must implement IOracleRegistry — store individual pubkeys, snapshots, verifyBLSMultiPairing. No special-cased single-pairing anywhere.
 - [DECISION] ITPNAVOracle inherits BLSVerifier — same _verifyBLS() code path as BridgeProxy, ArbBridgeCustody, Investment. Zero code duplication.
 - [DECISION] Hash format: `abi.encode(chainId, address(this), itpAddress, price, timestamp, cycleNumber)` — NOT encodePacked. Safer, matches existing system conventions.
 - [DECISION] Phase 2A (6 audit fixes) must complete before Phase 2B (oracle wiring). Critical: FlagGuard, dedicated price state, send_transaction nonce fix.
-- [DECISION] MirrorIssuerRegistry sync() uses TOFU for first sync (aggregated key), then multi-pairing for subsequent syncs (individual keys available).
+- [DECISION] MirrorOracleRegistry sync() uses TOFU for first sync (aggregated key), then multi-pairing for subsequent syncs (individual keys available).
 
-## Session: 20260228-2330-sec2 (Normalize-Issuer-Processing Focused Audit)
+## Session: 20260228-2330-sec2 (Normalize-Oracle-Processing Focused Audit)
 
-- [DECISION] 3 independent cynical researchers audited normalize-issuer-processing specifically (Phase 1 done + Phase 2 planned). 30 unique findings after dedup. Full report at `docs/plans/2026-02-28-normalize-audit.md`.
+- [DECISION] 3 independent cynical researchers audited normalize-oracle-processing specifically (Phase 1 done + Phase 2 planned). 30 unique findings after dedup. Full report at `docs/plans/2026-02-28-normalize-audit.md`.
 - [DECISION] CRITICAL: `self.state`/`self.aggregator` shared between `run_price_cycle` and bridge consensus. Concurrent execution corrupts round state, equivocation detection, WAL. Fix: dedicated `PriceConsensusState`.
 - [DECISION] CRITICAL: Task panic permanently disables that pipeline (AtomicBool flag stuck true). Fix: FlagGuard drop pattern.
-- [DECISION] CRITICAL: ITPNAVOracle uses single-pairing BLS (requires ALL issuers), incompatible with threshold subset signing. Phase 2 MUST NOT ship until migrated to multi-pairing.
+- [DECISION] CRITICAL: ITPNAVOracle uses single-pairing BLS (requires ALL oracles), incompatible with threshold subset signing. Phase 2 MUST NOT ship until migrated to multi-pairing.
 - [DECISION] HIGH: `run_follower_protocol` shared between price-only and batch rounds — can't distinguish them. Fix: separate `run_follower_protocol_price_only`.
 - [DECISION] HIGH: `send_transaction()` bypasses `NonceManager` — nonce collisions under concurrent load. Fix: route through `submit_tx()`.
 - [DECISION] ARCHITECTURAL: Two incompatible BLS verification models — multi-pairing (BridgeProxy/Investment) vs single-pairing (Oracle/MirrorRegistry). Must reconcile before mainnet.
@@ -369,11 +369,11 @@
 - [DECISION] CRITICAL: Task panic = permanent pipeline DoS. Fix: FlagGuard drop guard on all 6 spawn sites.
 - [DECISION] CRITICAL: `mintBridgedShares`/`burnBridgedShares` replayable (no orderId in hash). Fix: add orderId + dedup mapping.
 - [DECISION] CRITICAL: ITPNAVOracle uses aggregated key verification (incompatible with 2/3 subset signing). Fix: inherit BLSVerifier, add chainId to hash.
-- [DECISION] CRITICAL: MirrorIssuerRegistry `sync()` uses aggregated key — rogue key takeover possible. Short-term: admin-only. Long-term: multi-pairing.
+- [DECISION] CRITICAL: MirrorOracleRegistry `sync()` uses aggregated key — rogue key takeover possible. Short-term: admin-only. Long-term: multi-pairing.
 - [DECISION] HIGH: No refund for cross-chain buy orders. Fix: add `refundBuyOrder()`.
 - [DECISION] HIGH: Self-reported signer_index in bridge P2P messages. Fix: derive from transport-layer peer ID.
 
-## Session: 20260228-2100-n4r1 (Normalize Issuer Processing — Kill Central Bottleneck)
+## Session: 20260228-2100-n4r1 (Normalize Oracle Processing — Kill Central Bottleneck)
 
 - [DECISION] Split `run_cycle()` (price+batch consensus) into `run_price_cycle()` (price-only). Batch consensus removed from main loop — L3-native already handles order batching via `run_batch_confirm_phase`. Eliminates redundant double-batching.
 - [DECISION] Removed `consensus_succeeded` gating entirely. All 6 task types (ITP creation, cross-chain buy, cross-chain sell, L3-native, rebalance, stale watchdog) spawn unconditionally every cycle. Price consensus failure no longer blocks anything.
@@ -383,12 +383,12 @@
 ## Session: 20260228-1730-e2e1 (E2E Test Fixes — Vision Deposit + Create ITP)
 
 - [DECISION] Vision deposit test (10-vision): pre-fund players before recording "before" balances. `fullJoinBatch` calls `ensureUsdcBalance` which mints USDC if the player is below minimum. This minting between "before" and "after" snapshots caused a negative balance diff (-39.96e18 instead of +10e18). Fix: call `ensureUsdcBalance` explicitly before recording balances.
-- [DECISION] Create ITP test (05-create-itp): frontend sends `requestCreateItp` to L3 BridgeProxy (port 8545, chain 111222333), but issuers poll Arb BridgeProxy (port 8546, chain 421611337) for pending requests. Chain mismatch means relay never happens. Fix: after verifying frontend UI flow (success banner), create ITP directly on L3 via admin `createITP` call. Tests both frontend UX and L3 state without requiring cross-chain relay.
+- [DECISION] Create ITP test (05-create-itp): frontend sends `requestCreateItp` to L3 BridgeProxy (port 8545, chain 111222333), but oracles poll Arb BridgeProxy (port 8546, chain 421611337) for pending requests. Chain mismatch means relay never happens. Fix: after verifying frontend UI flow (success banner), create ITP directly on L3 via admin `createITP` call. Tests both frontend UX and L3 state without requiring cross-chain relay.
 - [FAILED] Initially tried to verify new ITP appears in frontend listing after direct L3 creation. Failed because data-node's SSE stream requires price feeds for the ITP's assets. Mock assets (0x1-0xA) don't have price feeds. Removed listing verification — L3 state check is sufficient.
 
 ## Session: 20260228-1630-k9p2 (BLS incrementMissedCounts Authorization Fix)
 
-- [DECISION] Added `setAuthorizedMissedCountCaller` to all deploy scripts. The `incrementMissedCounts` function on IssuerRegistry requires explicit authorization for each BLS-verifying contract (Index, BLSCustody, L3BridgeCustody, BridgeProxy, Vision). Without this, all batch confirmations revert with `Unauthorized()` after the multi-pairing migration.
+- [DECISION] Added `setAuthorizedMissedCountCaller` to all deploy scripts. The `incrementMissedCounts` function on OracleRegistry requires explicit authorization for each BLS-verifying contract (Index, BLSCustody, L3BridgeCustody, BridgeProxy, Vision). Without this, all batch confirmations revert with `Unauthorized()` after the multi-pairing migration.
 - [DECISION] Authorization added to: DeployFullSystemE2E.s.sol (Index + BLSCustody + L3BridgeCustody + BridgeProxy), DeployVision.s.sol (Vision), DeployRebalanceE2E.s.sol, DeployCrossChainE2E.s.sol.
 - [FAILED] Previous sessions assumed BLS signature verification was failing — the actual error (`0x82b42900` = `Unauthorized()`) was in `incrementMissedCounts`, called AFTER successful BLS verification. The multi-pairing BLS fix was working correctly all along.
 
@@ -396,17 +396,17 @@
 
 - [DECISION] BLS verification: replaced single aggregated-pubkey pairing with multi-pairing check (`e(-sig, G2) * e(H(msg), pk[0]) * ... == 1`). Handles any subset of signers correctly. Gas: ~147k vs ~113k for 2 signers.
 - [FAILED] Assembly-based `verifyBLSMulti` using manual `mload(0x40)` allocation — forge tests passed but E2E pairing precompile returned false. Root cause: `via_ir` optimizer conflicts with manual memory management in inline assembly. Fix: rewrote using `uint256[] memory input = new uint256[]()` with Solidity-level indexing.
-- [DECISION] Moved `decodeBitmap` and `verifyBLSMultiPairing` to external functions on IssuerRegistry instead of inline in BLSVerifier. Keeps Investment contract under EIP-170 24,576 byte limit (23,394 bytes).
-- [DECISION] Removed `issuer.status == 1` check from `getIssuerPubkeys`. BLSVerifier validates bitmask against historical snapshot's activeBitmask, so removed issuers active at snapshot time still need their pubkeys.
+- [DECISION] Moved `decodeBitmap` and `verifyBLSMultiPairing` to external functions on OracleRegistry instead of inline in BLSVerifier. Keeps Investment contract under EIP-170 24,576 byte limit (23,394 bytes).
+- [DECISION] Removed `oracle.status == 1` check from `getOraclePubkeys`. BLSVerifier validates bitmask against historical snapshot's activeBitmask, so removed oracles active at snapshot time still need their pubkeys.
 - [DECISION] Threshold formula changed from `2n/3 + 1` to `ceil(2n/3)` = `(2n + 2) / 3`. For n=3: old=3 (all must sign), new=2 (2/3 sufficient).
-- [FAILED] EigenLayer G1-pubkey approach (G1 keys + G2 sigs, on-chain G1 subtraction via ecAdd precompile 0x06). Rejected in favor of multi-pairing for speed — would require changing all key/sig formats across issuer+contract stack.
+- [FAILED] EigenLayer G1-pubkey approach (G1 keys + G2 sigs, on-chain G1 subtraction via ecAdd precompile 0x06). Rejected in favor of multi-pairing for speed — would require changing all key/sig formats across oracle+contract stack.
 - [FAILED] All batch confirmations reverted with BLSVerifier__InvalidSignature (0x10aa8d54) after multi-pairing deployment. Root cause: consensus `leader_batch_consensus` and `handle_batch_proposal_as_follower` used `sign_with_keypair(encode_batch_proposal(...))` which signs custom P2P bytes with an extra keccak256 hash. On-chain contract expects `keccak256(abi.encode(chainId, address(this), cycleNumber, orderIds))` passed to `hashToG1`. Fix: switched to `sign_message_hash(build_confirm_batch_hash(...))` which matches the Solidity verification path exactly.
 
 ## Session: 20260228-0200-k8p2 (Vision First Deposit — Solidity Implementation)
 
 - [DECISION] Vision.sol: dual-balance architecture with `realBalance` and `virtualBalance` mappings. `_debitBalance` internal helper debits virtual first, then real. Batch payouts (claimRewards/withdraw/forceWithdraw) always credit `realBalance` since batch pool holds real L3 USDC.
 - [DECISION] Vision.sol: `collectFees` credits `realBalance[feeCollector]` instead of `USDC.safeTransfer`. Fixes solvency issue when 100% of deposits are Arb-bridged (virtual) and no real USDC exists in the contract.
-- [DECISION] Vision.sol: `withdrawToArb` is a virtual debit only — no L3 USDC moves, no L3BridgeCustody involvement. Issuers detect `WithdrawToArbRequested` event and call `ArbBridgeCustody.completeVisionWithdraw` on Arb.
+- [DECISION] Vision.sol: `withdrawToArb` is a virtual debit only — no L3 USDC moves, no L3BridgeCustody involvement. Oracles detect `WithdrawToArbRequested` event and call `ArbBridgeCustody.completeVisionWithdraw` on Arb.
 - [DECISION] ArbBridgeCustody.sol: `visionReserve` tracks Vision-specific USDC separately from ITP flows. Prevents accounting confusion between ITP buy/sell custody and Vision deposit/withdraw custody.
 - [DECISION] ArbBridgeCustody.sol: `completeVisionWithdraw` sends to `user` param, not `msg.sender`. Separate from `completeBridge` which sends to `msg.sender`. `withdrawProcessed` mapping provides replay protection.
 - [DECISION] ArbBridgeCustody.sol: New storage (visionDeposits, withdrawProcessed, visionReserve) reduces `__gap` from 39 to 36 slots (3 new slots used).
@@ -415,7 +415,7 @@
 - [DECISION] IVision.sol: New custom errors `InsufficientBalance`, `AlreadyProcessed`, `ZeroAddress`, `ZeroAmount` defined in the interface (not ErrorsLib) to match existing Vision error pattern.
 - [DECISION] DeployVision.s.sol: Removed ARB_CHAIN_ID from allowed local chains — Vision deploys only on L3.
 
-## Session: 20260228-0100-v3d7 (Vision First Deposit — Issuer Implementation)
+## Session: 20260228-0100-v3d7 (Vision First Deposit — Oracle Implementation)
 
 - [DECISION] Dual-balance tracking (user_real_balances + user_virtual_balances) lives in TickScheduler as RwLock<HashMap<Address, U256>> — separate from per-batch position tracking. Keeps batch resolution unchanged.
 - [DECISION] Dual-balance uses saturating arithmetic (saturating_add/saturating_sub) everywhere — prevents panics if chain events arrive out of order during catch-up.
@@ -428,19 +428,19 @@
 - [DECISION] API endpoints use in-memory scheduler for balance reads (instant) but Postgres for deposit/withdraw order status (persistent) — fast path for balance display, reliable path for order tracking.
 - [DECISION] Database migration is a separate file (002_create_vision_deposit_tables.sql) rather than modifying 001 — allows incremental migration on existing deployments.
 
-## Session: 20260227-2330-c7x1 (Issuer Concurrency Overhaul)
+## Session: 20260227-2330-c7x1 (Oracle Concurrency Overhaul)
 
-- [DECISION] compute_threshold changed from floor(2n/3)+1 to ceil(2n/3) — for n=3, threshold drops from 3→2. Allows 2/3 fault tolerance instead of requiring all issuers.
+- [DECISION] compute_threshold changed from floor(2n/3)+1 to ceil(2n/3) — for n=3, threshold drops from 3→2. Allows 2/3 fault tolerance instead of requiring all oracles.
 - [DECISION] Both BridgeConfig and ItpCreationConfig timeouts changed from 10s→2s — P2P between local nodes is <100ms, 2s is generous.
 - [DECISION] All 5 processing phases (ITP creation, cross-chain buy, sell, L3-native, rebalance) spawned as concurrent tokio tasks instead of running sequentially — eliminates 30-50s blocking per cycle.
 - [DECISION] AtomicBool in-flight guards prevent duplicate spawns of same phase — if a phase is still running from the previous cycle, the next cycle skips it rather than stacking.
 - [DECISION] Per-order parallelism for buy/sell: each order spawned into its own tokio task within run_cross_chain_processing/run_cross_chain_sell_processing. L3-native kept sequential (processes batches collectively, not individually).
 - [DECISION] CycleManager signal checks AtomicBool flags OR orchestrator in-flight orders — ensures fast cycles continue while spawned tasks run.
 - [DECISION] registry_sync compute_threshold also updated to ceil(2n/3) — same formula everywhere for consistency.
-- [FAILED] start.sh computed its own threshold using old floor(2n/3)+1 formula and passed it via `--signature-threshold` CLI override, masking the code fix. Bridge was using min_signatures=3 instead of 2. Fixed by removing the CLI override — issuer now uses its own compute_threshold(on_chain_active).
-- [DECISION] Removed SIG_THRESHOLD computation and --signature-threshold flag from start.sh — threshold is now always computed by the issuer binary from on-chain activeIssuerCount.
-- [FAILED] BLSVerifier.sol and IssuerRegistry.sol on-chain threshold check still used old formula `activeCount * 2 / 3 + 1 = 3` for n=3 issuers — issuer submitted tx with 2 sigs (passing its own threshold) but contract reverted with BLSVerifier__BelowThreshold. Fixed by changing both to `(activeCount * 2 + 2) / 3` (ceil(2n/3) = 2 for n=3).
-- [DECISION] Threshold formula now consistent across all 3 layers: issuer Rust code, Solidity BLSVerifier, Solidity IssuerRegistry — all use ceil(2n/3).
+- [FAILED] start.sh computed its own threshold using old floor(2n/3)+1 formula and passed it via `--signature-threshold` CLI override, masking the code fix. Bridge was using min_signatures=3 instead of 2. Fixed by removing the CLI override — oracle now uses its own compute_threshold(on_chain_active).
+- [DECISION] Removed SIG_THRESHOLD computation and --signature-threshold flag from start.sh — threshold is now always computed by the oracle binary from on-chain activeOracleCount.
+- [FAILED] BLSVerifier.sol and OracleRegistry.sol on-chain threshold check still used old formula `activeCount * 2 / 3 + 1 = 3` for n=3 oracles — oracle submitted tx with 2 sigs (passing its own threshold) but contract reverted with BLSVerifier__BelowThreshold. Fixed by changing both to `(activeCount * 2 + 2) / 3` (ceil(2n/3) = 2 for n=3).
+- [DECISION] Threshold formula now consistent across all 3 layers: oracle Rust code, Solidity BLSVerifier, Solidity OracleRegistry — all use ceil(2n/3).
 
 ## Session: 20260227-2200-f4k9 (Vision P2Pool brief alignment — 3 deviation fixes)
 
@@ -456,7 +456,7 @@
 ## Session: 20260227-1400-q8m3 (Vision scalability fix — all batches resolving)
 
 - [DECISION] Populate market_prices_latest via per-source shell loop (not single DO block) — single transaction locks DB for 30+ min on 32M rows; individual commits allow progress and prevent lock starvation
-- [DECISION] Kill data-node/issuers before populating — the 50+ concurrent DISTINCT ON queries from running collectors saturated the DB pool (58 active queries, 15-30min each), blocking the population inserts
+- [DECISION] Kill data-node/oracles before populating — the 50+ concurrent DISTINCT ON queries from running collectors saturated the DB pool (58 active queries, 15-30min each), blocking the population inserts
 - [DECISION] market_prices_latest populated with 316k rows across 76 sources — data-node now reads from this table instead of expensive DISTINCT ON against 32M row market_prices table
 - [BUG] Both vision bots show positive PnL despite trading against each other in a zero-sum system. Root cause: the multiplier system (`multiplier.rs`) inflates `effective_stake` above `stake_per_tick` (observed 2× multiplier), and `saturating_sub` on loser's balance creates money. When loser hits balance=0, they can no longer lose, but the winner's inflated wins already exceeded the loser's total deposit. 10 inflated batches found: 22M pool where 20M expected, one at 26M. Total excess: 24M across 44 active batches (874M actual vs 850M expected). Fix needed: either cap effective_stake at stake_per_tick, or deduct effective_stake from balance before resolution (pre-fund model).
 
@@ -484,11 +484,11 @@
 
 ## Session: 20260226-1730-v9q1 (Full system test + vision config fix)
 
-- [DECISION] Added `#[serde(rename_all = "camelCase")]` to `BatchConfig` and `BatchMarket` in data-node batch_engine.rs — issuers expect camelCase (via `RecommendedBatch` with `#[serde(rename_all = "camelCase")]`) but data-node served snake_case.
+- [DECISION] Added `#[serde(rename_all = "camelCase")]` to `BatchConfig` and `BatchMarket` in data-node batch_engine.rs — oracles expect camelCase (via `RecommendedBatch` with `#[serde(rename_all = "camelCase")]`) but data-node served snake_case.
 - [DECISION] Fixed manual JSON construction in `batch_config_by_hash` API (signed config response + DB fallback) to use camelCase keys matching the serde-derived format.
 - [DECISION] Deploy-hash reverse lookup fallback (added in prior session) works: maps on-chain placeholder hashes back to batch engine configs with alias table (e.g., finnhub→stocks, coingecko→crypto).
 - [FAILED] Vision tick resolution for batch 1 shows all 256 markets "cancelled" — no reference prices exist for pumpfun tokens since this is the first tick. Need to handle first-tick gracefully (use snapshot prices as reference).
-- [DECISION] Node ban+rejoin test PASSED — killed issuer, heartbeat detected 120+ misses, kick votes proposed (not auto-executed), restarted issuer bootstraps from chain state in <100ms, P2P reconnects, consensus participation resumes immediately.
+- [DECISION] Node ban+rejoin test PASSED — killed oracle, heartbeat detected 120+ misses, kick votes proposed (not auto-executed), restarted oracle bootstraps from chain state in <100ms, P2P reconnects, consensus participation resumes immediately.
 - [FAILED] Batch signing consistently 2/3 (times out before 3rd signature) — pre-existing timing issue with 40ms batch signing phase. Not related to ban/rejoin.
 
 ## Session: 20260226-2300-q7b2 (Fix 4 vision/consensus bugs)
@@ -514,12 +514,12 @@
 ## Session: 20260226-1030-e2t9 (E2E test fixes + parallel vision)
 
 - [DECISION] Split Playwright config into two projects: `itp` (tests 00-06) and `vision` (tests 10-19) with `workers: 2`. Vision tests now run in parallel with ITP flow, reducing total E2E time from ~7min to ~2min.
-- [DECISION] Excluded resilience test (07) from E2E suite via testMatch patterns — it kills issuers which breaks all subsequent tests.
+- [DECISION] Excluded resilience test (07) from E2E suite via testMatch patterns — it kills oracles which breaks all subsequent tests.
 - [DECISION] Vision batches now always deployed via `DeployAllVisionBatches.s.sol` (BLS-signed) — removed stale manual `createBatch` call from start.sh that used wrong function signature.
 - [FAILED] Vision two-player join test returned `balance=7n` instead of `10000000n` — `PlayerPosition` struct in IVision.sol added `configHash` field between `bitmapHash` and `stakePerTick`, shifting all field indices. Fixed ABI + decoding in `vision-api.ts`.
 - [FAILED] Vision "page loads" test looking for `getByRole('heading', { name: /vision/i })` — no h1/h2 heading exists on the page. "SOURCES" text uses CSS `uppercase` on "Sources" — Playwright matches DOM text, not visual. Fixed to use `getByText(/Sources/i)`.
 - [FAILED] Vision `fullJoinBatch` reverted because PLAYER1 had 0 ARB_USDC — start.sh mint might fail silently. Added `ensureUsdcBalance()` to vision-api.ts that mints via deployer if needed.
-- [FAILED] Sell order #2 stuck: BLS consensus race condition — followers processed the CrossChainSellOrder event before the leader broadcast the proposal. Issuers 1&2 completed with `signer_count=0` and moved on, leader got 2/3 signatures and timed out. The sell was never submitted to L3. Root cause: followers don't wait for leader proposal before "completing" their local processing.
+- [FAILED] Sell order #2 stuck: BLS consensus race condition — followers processed the CrossChainSellOrder event before the leader broadcast the proposal. Oracles 1&2 completed with `signer_count=0` and moved on, leader got 2/3 signatures and timed out. The sell was never submitted to L3. Root cause: followers don't wait for leader proposal before "completing" their local processing.
 
 ## Session: 20260226-0015-cg4r (CoinGecko rate limit fix)
 
@@ -547,7 +547,7 @@
 
 ### ARCHITECTURE CHANGE: REACTIVE SETTLEMENT (replaces cycle-based accumulator)
 - [DECISION] Eliminated 1s consensus cycles and 5s accumulator flush. New model: event-driven propose-sign-submit. Proposer builds batch on OrderSubmitted event, broadcasts via P2P, collects BLS partial sigs, submits on threshold. Typical latency <1s.
-- [DECISION] Proposer election uses `keccak256(lastBatchHash, batchNonce) % num_issuers` — unpredictable (depends on previous tx hash) unlike old round-robin `batchNonce % num_issuers` which was deterministic and attackable.
+- [DECISION] Proposer election uses `keccak256(lastBatchHash, batchNonce) % num_oracles` — unpredictable (depends on previous tx hash) unlike old round-robin `batchNonce % num_oracles` which was deterministic and attackable.
 - [DECISION] No shared buffer eliminates the accumulator divergence/deadlock problem (audit H3). Each proposer builds fresh from on-chain PENDING state. Worst case is delay, not deadlock.
 - [DECISION] Quiescent mode: zero gas cost when no orders pending. System only runs event watcher during idle periods.
 - [DECISION] 500ms optional batching window for gas efficiency during high volume. Single-fill batches acceptable during low volume.
@@ -566,11 +566,11 @@
 
 ### OTHER AUDIT FIXES APPLIED
 - [DECISION] BLSVerifier staleness switched from `block.number` to `block.timestamp` — Arbitrum block times are elastic, block-number-based check unreliable. Added `timestamp` field to RegistrySnapshot.
-- [DECISION] Dual issuerRegistry storage risk documented — reinitializer MUST update both `issuerRegistry` (InvestmentStorage) and `_blsIssuerRegistry` (BLSVerifier).
+- [DECISION] Dual oracleRegistry storage risk documented — reinitializer MUST update both `oracleRegistry` (InvestmentStorage) and `_blsOracleRegistry` (BLSVerifier).
 
 ### REMAINING HIGH-SEVERITY ITEMS (not yet fixed in doc)
 - [DECISION] MIN_BATCH_INTERVAL should be 5s not 3s to match documented compounding math.
-- [OBSOLETE] Cross-chain order drain, ItpCustody seeding, BridgedITP deadline, IssuerRegistry history carry-forward, migrationMode flag, pre-existing failedFillEscrow — all removed. No live system to migrate from (fresh deploy).
+- [OBSOLETE] Cross-chain order drain, ItpCustody seeding, BridgedITP deadline, OracleRegistry history carry-forward, migrationMode flag, pre-existing failedFillEscrow — all removed. No live system to migrate from (fresh deploy).
 
 ## Session: 20260226-0100-s7a3 (Smart Contract Security Audit — 3 rounds + cross-validation)
 
@@ -579,7 +579,7 @@
 
 ### HIGH
 - [DECISION] H-1: ITP.sol inherits ERC20 but never overrides transfer()/transferFrom(). Investment.sol tracks _userShares separately. ERC20 transfer desyncs from _userShares → user submits SELL that passes _userShares check but reverts on vault.burn() → DOSes entire confirmFills batch. Fix: override transfer/transferFrom to revert.
-- [DECISION] H-3: BLSVerifier verifies against FULL aggregated pubkey but threshold check only requires 2/3+1 in bitmask. BLS math requires ALL keys to have signed. No non-signer key subtraction implemented. Net: 100% participation required, not 2/3+1. Single offline issuer freezes all operations. Fix: EigenLayer-style non-signer G2 subtraction.
+- [DECISION] H-3: BLSVerifier verifies against FULL aggregated pubkey but threshold check only requires 2/3+1 in bitmask. BLS math requires ALL keys to have signed. No non-signer key subtraction implemented. Net: 100% participation required, not 2/3+1. Single offline oracle freezes all operations. Fix: EigenLayer-style non-signer G2 subtraction.
 - [DECISION] H-4: ArbBridgeCustody + L3BridgeCustody lack constructor with _disableInitializers(). OZ v5 does NOT auto-disable. 6 other contracts in codebase do it correctly. Fix: add constructor.
 - [DECISION] H-6: ITPNAVOracle.updatePrice() message hash uses abi.encodePacked(itpAddress, newPrice, timestamp, cycleNumber) WITHOUT block.chainid or address(this). Only BLS function in entire codebase missing domain separation. Enables cross-chain replay → Morpho market manipulation. Fix: add chainId + address(this).
 - [DECISION] H-7: ITPNAVOracle uses BLSLib.verifyBLS() directly instead of inheriting BLSVerifier. Missing: snapshot validation, bitmask checks, threshold enforcement, liveness tracking. Fix: inherit BLSVerifier.
@@ -588,18 +588,18 @@
 
 ### MEDIUM
 - [DECISION] M-1: Investment.sol _processFill SELL branch (lines 479-484) silently skips totalSupply/totalValue decrement on underflow instead of reverting. Requires pre-existing broken state. Defensive but hides corruption.
-- [DECISION] M-2: L3BridgeCustody.reverseLock signerCount parameter not validated against popcount(signersBitmask). Gap between BLSVerifier threshold (14) and REVERSAL_THRESHOLD (15). signerCount is in BLS message so issuers must sign over it.
+- [DECISION] M-2: L3BridgeCustody.reverseLock signerCount parameter not validated against popcount(signersBitmask). Gap between BLSVerifier threshold (14) and REVERSAL_THRESHOLD (15). signerCount is in BLS message so oracles must sign over it.
 - [DECISION] M-3: rebalance/setItpNav have no per-call nonce. Replay possible within snapshot window but requires valid BLS signature. Idempotent for same params; stale NAV rollback is theoretical risk.
 
 ### FALSIFIED (investigated, dismissed with evidence)
-- [FAILED] Vision.sol withdraw() double-pay after claimRewards — falsified because finalBalance is BLS-signed by issuers who account for prior claims, not read from position.balance.
-- [FAILED] Vision.sol withdraw() double-fee — depends on above; issuers sign correct remaining balance.
+- [FAILED] Vision.sol withdraw() double-pay after claimRewards — falsified because finalBalance is BLS-signed by oracles who account for prior claims, not read from position.balance.
+- [FAILED] Vision.sol withdraw() double-fee — depends on above; oracles sign correct remaining balance.
 - [FAILED] ERC4626 inflation attack on ITP — deposit()/mint() revert unconditionally; shares only minted via Investment._processFill.
 - [FAILED] Reentrancy in BLS-gated functions — incrementMissedCounts is advisory on trusted contract; no profitable reentry path.
 
 ## Session: 20260225-2200-v3m8 (start.sh --vision + bulk batch deploy)
 
-- [DECISION] Added `--vision` flag to start.sh that skips ITP/Bitget/Morpho/AP steps, only runs Vision pipeline (deploy, bulk batch creation, data-node, issuers, frontend, E2E).
+- [DECISION] Added `--vision` flag to start.sh that skips ITP/Bitget/Morpho/AP steps, only runs Vision pipeline (deploy, bulk batch creation, data-node, oracles, frontend, E2E).
 - [DECISION] Bulk batch creation via ephemeral `VisionBulkCreate` helper contract deployed by Forge script. Loops `vision.createBatch()` for all 81 sources (79 data sources + 2 E2E test batches) in a single transaction. Total: 2 txs (deploy helper + createAll call).
 - [DECISION] Config hashes use deterministic formula: `keccak256(abi.encode(sourceId, "default_config_v1"))`. This allows any component to reconstruct the configHash from just the sourceId without needing the deployment artifact.
 - [DECISION] E2E test batches (e2e_test_1..e2e_test_5) are pre-created by the Forge script alongside real source batches. Tests use `findAvailableE2eBatch()` to find unused ones rather than trying to call `createBatch` directly (which requires BLS signatures).
@@ -618,9 +618,9 @@
 - [DECISION] Follows BridgeOrchestrator pattern: per-round SignatureCollector instances, NOT the shared SignatureAggregator. This prevents signature cross-contamination between settlement and batch config consensus.
 - [DECISION] All sources batched into single composite hash per round (not sequential per-source). 82+ sources x 200ms = 16.4s sequential is impossible. Instead: keccak256(abi.encode(sorted_config_hashes)) produces one hash, one BLS round.
 - [DECISION] New P2PMessage variants: BatchConfigProposal + BatchConfigSign. Cannot reuse settlement PriceProposal/BatchSign because they carry cycle_number which the ConsensusMessageHandler uses for routing, and the batch config orchestrator uses its own monotonic round counter.
-- [DECISION] Leader election for batch config: round % num_issuers == node_index. Same formula as settlement but keyed on the orchestrator's own round counter, so batch config leader rotates independently from settlement leader.
+- [DECISION] Leader election for batch config: round % num_oracles == node_index. Same formula as settlement but keyed on the orchestrator's own round counter, so batch config leader rotates independently from settlement leader.
 - [DECISION] Crash recovery via file-persisted state: signed config written to disk before POST to data-node. On startup, if last_posted=false, retry the POST. This covers the window between BLS aggregation and HTTP delivery.
-- [DECISION] Config replication (F9/F17): followers POST leader's config hashes to their OWN data-node after co-signing. This ensures every data-node can serve the signed config at settlement time regardless of which issuer was leader.
+- [DECISION] Config replication (F9/F17): followers POST leader's config hashes to their OWN data-node after co-signing. This ensures every data-node can serve the signed config at settlement time regardless of which oracle was leader.
 - [DECISION] Pile-up prevention: run() loop is sequential (execute_round must complete before next sleep starts). consecutive_failures counter + exponential backoff prevents thundering-herd retries.
 - [FAILED] Option A from F18 (piggyback on run_cycle): rejected because (1) blows 1s budget, (2) shared SignatureAggregator corruption, (3) ConsensusPhase::Complete terminates follower loop before any batch config phase could run, (4) frequency mismatch (configs change every 30s+, not every 1s).
 - Full design: docs/plans/batch-config-consensus-design.md
@@ -629,47 +629,47 @@
 
 - [FAILED] Equivocation detector used (peer, cycle, phase) as key. During BatchSigning phase, multiple different sign message types (BatchSign, ConfirmBatchSign, ConfirmFillsSign, etc.) are sent by the same peer. Different content hashes for different message types triggered false equivocation, double-penalizing peers and causing signing timeouts.
 - [DECISION] Added msg_variant_tag to key: (peer, cycle, phase, variant_tag). Each message type is now tracked independently within the same phase. The variant tag is a &'static str matching the P2PMessage enum variant name.
-- [DECISION] consensusPaused() backward compatibility: when the IssuerRegistry contract doesn't have the consensusPaused() function (old deployment), return Ok(false) instead of treating as RPC error. Check error string for "empty bytes"/"Invalid name"/"0x" patterns.
+- [DECISION] consensusPaused() backward compatibility: when the OracleRegistry contract doesn't have the consensusPaused() function (old deployment), return Ok(false) instead of treating as RPC error. Check error string for "empty bytes"/"Invalid name"/"0x" patterns.
 
 ## Session: 20260225-0400-e1h5 (Phase -1e: /ready health endpoint)
 
 - [DECISION] /ready endpoint added alongside /health. /health reports operational metrics; /ready is a binary readiness gate for deployment orchestration (200 = can participate, 503 = not ready).
 - [DECISION] /ready checks 4 conditions: peers >= threshold-1, BLS keypair loaded, chain reader RPC < 30s old, registry sync caught up. Intentionally does NOT check consensusPaused to avoid deadlocking the deployment ceremony where step 7 waits for /ready and step 8 unpauses.
 - [DECISION] Chain reader liveness tracked via Arc<AtomicU64> timestamp updated after successful get_pending_orders() in the consensus loop. This piggybacks on existing RPC calls rather than adding a dedicated health-check RPC call, minimizing overhead.
-- [DECISION] num_issuers and bls_keypair_loaded captured as static values at IssuerApiState construction time. num_issuers changes only via registry sync (which would restart the node), and BLS keypair is loaded once at boot.
+- [DECISION] num_oracles and bls_keypair_loaded captured as static values at OracleApiState construction time. num_oracles changes only via registry sync (which would restart the node), and BLS keypair is loaded once at boot.
 
-## Session: 20260224-2200-r7b1 (Phase -1b: Mandatory --registry-sync for multi-issuer)
+## Session: 20260224-2200-r7b1 (Phase -1b: Mandatory --registry-sync for multi-oracle)
 
-- [DECISION] Issuer refuses to start if num_issuers > 1 and --registry-sync is not set. Without registry-sync, issuers cannot detect join/leave events, causing key registry desync and BLS aggregation failures.
+- [DECISION] Oracle refuses to start if num_oracles > 1 and --registry-sync is not set. Without registry-sync, oracles cannot detect join/leave events, causing key registry desync and BLS aggregation failures.
 - [DECISION] Increased initial_scan_blocks from 10_000 to 86_400 (24h of 1s blocks). This gives 24-hour downtime tolerance for registry sync catch-up on restart, preventing missed RegistryStateChanged events after extended outages.
-- [DECISION] Also fixed `crate::consensus::aggregator::compute_threshold` to `issuer::consensus::aggregator::compute_threshold` in main.rs binary — binary crate references the lib crate as `issuer`, not `crate`.
+- [DECISION] Also fixed `crate::consensus::aggregator::compute_threshold` to `oracle::consensus::aggregator::compute_threshold` in main.rs binary — binary crate references the lib crate as `oracle`, not `crate`.
 
 ## Session: 20260225-0100-c1h7 (Phase -1c: Bootstrap from on-chain state)
 
-- [DECISION] ChainReader trait extended with get_active_issuer_count(), get_registry_nonce(), get_aggregated_pubkey() as default-erroring methods for backward compatibility with MockChain
-- [DECISION] EthersChainReader uses ethers abigen bindings (not raw keccak256+eth_call) for activeIssuerCount/registryNonce/getAggregatedPubkey since they are simple view functions with no struct returns
-- [DECISION] build_protocol() threshold computation: on-chain activeIssuerCount is preferred, CLI --num-issuers is fallback. The --signature-threshold override still takes precedence if specified (but deprecated)
-- [DECISION] derive_indices_from_chain matches BLS pubkey bytes against on-chain registry. issuer_registry_index = on-chain ID, node_index = dense index (count of active issuers with lower ID). Falls back to CLI args on failure
-- [DECISION] peer_id generation now uses the resolved issuer_registry_index (from chain or CLI fallback) instead of the raw node_id, ensuring consistency with signer bitmaps
+- [DECISION] ChainReader trait extended with get_active_oracle_count(), get_registry_nonce(), get_aggregated_pubkey() as default-erroring methods for backward compatibility with MockChain
+- [DECISION] EthersChainReader uses ethers abigen bindings (not raw keccak256+eth_call) for activeOracleCount/registryNonce/getAggregatedPubkey since they are simple view functions with no struct returns
+- [DECISION] build_protocol() threshold computation: on-chain activeOracleCount is preferred, CLI --num-oracles is fallback. The --signature-threshold override still takes precedence if specified (but deprecated)
+- [DECISION] derive_indices_from_chain matches BLS pubkey bytes against on-chain registry. oracle_registry_index = on-chain ID, node_index = dense index (count of active oracles with lower ID). Falls back to CLI args on failure
+- [DECISION] peer_id generation now uses the resolved oracle_registry_index (from chain or CLI fallback) instead of the raw node_id, ensuring consistency with signer bitmaps
 - [DECISION] --signature-threshold CLI flag deprecated with warning but still honored. Will be removed in future release since threshold is now auto-computed from on-chain state
 
 ## Session: 20260225-0100-p4c7 (Phase 0c: Fix peer_id[0] inconsistencies)
 
-- [DECISION] Added `extract_issuer_id(peer_id)` function as inverse of `generate_peer_id(node_id)`. Decodes on-chain issuer ID from peer_id bytes by reading LE u32 from bytes[0..4] and subtracting 1. This provides a single canonical way to recover the issuer ID for bitmap computation.
-- [DECISION] Fixed RegistrySyncHandler to use `generate_peer_id(issuer.id as u32)` instead of `peer_id[0] = idx as u8`. The `enumerate()` index is a dense 0-based index that diverges from on-chain IDs after any issuer removal. Using issuer.id (the on-chain ID) ensures consistency with bootstrap.
+- [DECISION] Added `extract_oracle_id(peer_id)` function as inverse of `generate_peer_id(node_id)`. Decodes on-chain oracle ID from peer_id bytes by reading LE u32 from bytes[0..4] and subtracting 1. This provides a single canonical way to recover the oracle ID for bitmap computation.
+- [DECISION] Fixed RegistrySyncHandler to use `generate_peer_id(oracle.id as u32)` instead of `peer_id[0] = idx as u8`. The `enumerate()` index is a dense 0-based index that diverges from on-chain IDs after any oracle removal. Using oracle.id (the on-chain ID) ensures consistency with bootstrap.
 - [DECISION] Fixed `generate_test_registry_with_offset` in keys.rs to use `generate_peer_id((offset + i) as u32)` instead of manual `peer_id[0] = (offset + i + 1) as u8`. Both produce the same result for small values, but using generate_peer_id is canonical and handles IDs > 255 correctly.
-- [DECISION] Removed the `indexed_peer_id[0] = issuer_registry_index` hack in ITP creation bitmap code. Previously, peer_id[0] was overwritten with the issuer index before storing in the aggregator, then read back as `peer_id[0] as u32` for bitmap. This broke key_registry lookups because the registered key used the original peer_id. Now the aggregator stores the real peer_id, and bitmap extraction uses `extract_issuer_id(peer_id)`.
+- [DECISION] Removed the `indexed_peer_id[0] = oracle_registry_index` hack in ITP creation bitmap code. Previously, peer_id[0] was overwritten with the oracle index before storing in the aggregator, then read back as `peer_id[0] as u32` for bitmap. This broke key_registry lookups because the registered key used the original peer_id. Now the aggregator stores the real peer_id, and bitmap extraction uses `extract_oracle_id(peer_id)`.
 - [DECISION] Left `peer_id[0]` usage in test-only code (state.rs, discovery.rs) unchanged. These are self-contained unit tests that create simple peer_ids as HashMap keys, not used for bitmap computation.
 
-## Session: 20260224-1730-b3k9 (Fix Issuer Config Mismatch & Resilience Test)
+## Session: 20260224-1730-b3k9 (Fix Oracle Config Mismatch & Resilience Test)
 
-- [DECISION] Aligned issuer timing config across all launch paths: `restartIssuer()` (issuer-process.ts) and `start-issuers.sh` now match `start.sh` (200/20/150ms for cycle/gap/consensus-timeout). Previously `restartIssuer()` used 2000/200/1500ms (10x slower) and `start-issuers.sh` used 5000ms cycles.
-- [DECISION] Reduced health-check polling from 2000ms to 500ms in `waitForIssuerHealthy`, `waitForConsensusWarmup`, `waitForConsensusProgress` — with 200ms cycles (5/sec), 2s polling missed too much.
-- [DECISION] Added `waitForConsensusWarmup()` after every `restartIssuer()` + `waitForIssuerHealthy()` in the resilience test — a healthy node (has peers) still needs time to reconstruct state from chain before participating in consensus.
-- [DECISION] Added missing `--deployment-file`, `--arb-custody`, `--issuer-custody-arb` flags to `start-issuers.sh` (were present in `start.sh` but not the standalone script).
-- [FAILED] Resilience test still fails after timing+warmup fixes. Root cause: restarted issuer-3 rejects ALL proposals with "Leader public key not found in registry". The `leader_id` bytes in rejections (`[250, 212, 179, ...]`) are SHA-256 hashes of peer addresses (e.g. SHA256("127.0.0.1:9002") = [250, 212, 179, 8, ...]). `parse_static_peers()` in `issuer/src/bootstrap/p2p.rs` generated SHA-256 hashes as peer_ids. These never got re-keyed because `is_temp_peer_id()` only matches `0xFE`/`0xFF` prefixes. Messages dispatched with SHA-256 `from` keys caused BLS key registry lookup failures.
+- [DECISION] Aligned oracle timing config across all launch paths: `restartOracle()` (oracle-process.ts) and `start-oracles.sh` now match `start.sh` (200/20/150ms for cycle/gap/consensus-timeout). Previously `restartOracle()` used 2000/200/1500ms (10x slower) and `start-oracles.sh` used 5000ms cycles.
+- [DECISION] Reduced health-check polling from 2000ms to 500ms in `waitForOracleHealthy`, `waitForConsensusWarmup`, `waitForConsensusProgress` — with 200ms cycles (5/sec), 2s polling missed too much.
+- [DECISION] Added `waitForConsensusWarmup()` after every `restartOracle()` + `waitForOracleHealthy()` in the resilience test — a healthy node (has peers) still needs time to reconstruct state from chain before participating in consensus.
+- [DECISION] Added missing `--deployment-file`, `--arb-custody`, `--oracle-custody-arb` flags to `start-oracles.sh` (were present in `start.sh` but not the standalone script).
+- [FAILED] Resilience test still fails after timing+warmup fixes. Root cause: restarted oracle-3 rejects ALL proposals with "Leader public key not found in registry". The `leader_id` bytes in rejections (`[250, 212, 179, ...]`) are SHA-256 hashes of peer addresses (e.g. SHA256("127.0.0.1:9002") = [250, 212, 179, 8, ...]). `parse_static_peers()` in `oracle/src/bootstrap/p2p.rs` generated SHA-256 hashes as peer_ids. These never got re-keyed because `is_temp_peer_id()` only matches `0xFE`/`0xFF` prefixes. Messages dispatched with SHA-256 `from` keys caused BLS key registry lookup failures.
 - [DECISION] Fixed `parse_static_peers()` to use `[0u8; 32]` as peer_id instead of SHA-256 hash. `connect_peers()` recognizes `[0u8; 32]` and generates proper `0xFF`-prefixed temp IDs from address, which `reader_loop` re-keys to actual peer_ids on first message. Removed unused `sha2` import.
-- [FAILED] After SHA-256 fix, restarted issuer-3 still gets 0 consensus successes despite 2 connected peers and working heartbeats. Root cause: `get_buffered_for_cycle()` and `clear_stale_messages()` in `messages.rs` are dead code — never called from `protocol.rs`. When a restarted node enters a cycle slightly late (due to state reconstruction), messages from leaders arrive as "future" (buffered) or "stale" (discarded). Buffered messages are never replayed when the node catches up to that cycle, causing systematic consensus failure.
+- [FAILED] After SHA-256 fix, restarted oracle-3 still gets 0 consensus successes despite 2 connected peers and working heartbeats. Root cause: `get_buffered_for_cycle()` and `clear_stale_messages()` in `messages.rs` are dead code — never called from `protocol.rs`. When a restarted node enters a cycle slightly late (due to state reconstruction), messages from leaders arrive as "future" (buffered) or "stale" (discarded). Buffered messages are never replayed when the node catches up to that cycle, causing systematic consensus failure.
 - [DECISION] Fixed by adding buffered message replay at the start of `run_cycle()` in `protocol.rs`. After `start_round(cycle_number)`, drains buffered messages for the current cycle via `get_buffered_for_cycle(cycle_number)` and processes them via `handle_message()`. Also calls `clear_stale_messages()` to prevent unbounded buffer growth.
 - [FAILED] Buffered message replay fixed Test A (kill 1/3) but NOT Test B (kill 2/3). Root cause: after kill+restart, nodes are on different cycle numbers (~8 cycles apart) because the consensus loop blocks for 14+ seconds on post-consensus work (ITP creation, NAV computation, cross-chain processing). With 200ms cycles, each node only processes 1 cycle per ~70 cycles. Since the offset is self-reinforcing (each cycle includes 14s of blocking work), nodes NEVER find overlapping cycles. P2P works (ITP creation achieves signer_count=2), but price consensus uses cycle-number-filtered messages that get discarded as stale/future.
 - [DECISION] Fixed by skipping heavy post-consensus work (ITP creation, NAV, cross-chain, rebalance) when consensus fails or times out. The consensus loop now iterates in ~200ms on failed cycles (vs. 14s before), allowing nodes to quickly find overlapping cycles after restart. Post-consensus work only runs after successful consensus, which is correct since those operations need valid BLS signatures anyway.
@@ -736,7 +736,7 @@
 
 ## Session: 20260224-0200-x8m3 (Security Audit — 10 Findings)
 
-- [DECISION] Fix 1 — BLSCustody: Unified 4 divergent BLS verification paths to use inherited `_verifyBLS()` from BLSVerifier. Kept `issuerRegistry` public storage (20+ deploy scripts read it) with legacy comment. Removed direct BLSLib import.
+- [DECISION] Fix 1 — BLSCustody: Unified 4 divergent BLS verification paths to use inherited `_verifyBLS()` from BLSVerifier. Kept `oracleRegistry` public storage (20+ deploy scripts read it) with legacy comment. Removed direct BLSLib import.
 - [DECISION] Fix 2 — Investment `_safeTransferOrEscrow`: Decoded return data from low-level USDC transfer call (OpenZeppelin SafeERC20 pattern). USDC returns bool — success+false was silently losing funds.
 - [DECISION] Fix 3 — Added `nonReentrant` to `confirmFills()`. Other state-changing functions already had it; this one makes external calls (vault mint, USDC transfers) without the guard.
 - [DECISION] Fix 4 — Added admin/bridge access control to `createITP()`. Was previously open to anyone. Updated 30+ test prank callers from user1 to admin.
@@ -747,7 +747,7 @@
 - [DECISION] Fix 10 — Added NatSpec to BLSCustody threshold constants documenting they're not enforced on-chain (BLS aggregation enforces implicitly off-chain).
 - [DECISION] Pre-existing test failure `test_confirmFills_sellOrder_partialFill` not caused by our changes — assertion has wrong expected value (100-50+20=70 vs correct 100-30+20=90). Left as-is.
 
-## Session: 20260224-0200-x8m3 (Issuer Audit — Task 2: I256 Overflow)
+## Session: 20260224-0200-x8m3 (Oracle Audit — Task 2: I256 Overflow)
 
 - [DECISION] Replaced all `I256::from_raw(v)` calls in netting pipeline with `I256::try_from(v)` + panic on overflow. Found 5 locations total: `asset_decompose.rs` (1), `pair.rs` (2), `usdt.rs` (2), `slippage/mod.rs` (2). Left `rebalance.rs` as-is since it already has a proper bounds check wrapper (`i256_from_u256_checked`).
 - [DECISION] Panic instead of cap/warn for overflows. Rationale: capping at I256::MAX/MIN is worse than crashing because it silently processes wrong amounts. A panic halts the cycle and is detectable. An overflow that flips buy/sell direction causes fund loss.
@@ -1116,11 +1116,11 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 23. Variance scoring (A3)
 24. Per-source sync interval tuning per the tables above
 
-## Session: 20260223-1730-r7k2 (Issuer Resilience E2E Strengthening)
+## Session: 20260223-1730-r7k2 (Oracle Resilience E2E Strengthening)
 
 - [DECISION] Resilience tests verify consensus participation (success_total) on ALL 3 nodes including reconnected ones, not just the surviving 2. Proves reconnected node re-enters the BLS consensus loop.
-- [DECISION] Fixed getIssuerHealth to parse 503 responses (alive but 0 peers) instead of returning null. Removed issuer-1 crash workaround in Test B — it was never crashing, just returning 503.
-- [FAILED] Attempted to verify real on-chain order fills (L3 totalSupply increase, BridgedITP balance increase) after reconnection. Orders placed via ArbBridgeCustody never reach issuers because data-node is down (pending_order_count stays 0). Arb event scanning depends on data-node. On-chain fill verification requires data-node running — separate concern from consensus protocol testing.
+- [DECISION] Fixed getOracleHealth to parse 503 responses (alive but 0 peers) instead of returning null. Removed oracle-1 crash workaround in Test B — it was never crashing, just returning 503.
+- [FAILED] Attempted to verify real on-chain order fills (L3 totalSupply increase, BridgedITP balance increase) after reconnection. Orders placed via ArbBridgeCustody never reach oracles because data-node is down (pending_order_count stays 0). Arb event scanning depends on data-node. On-chain fill verification requires data-node running — separate concern from consensus protocol testing.
 
 ## Session: 20260223-2100-lp3c (Landing Page Plan Cleanup)
 
@@ -1155,11 +1155,11 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260222-0300-dn2i (Restructure: Data-Node = Raw Prices Only)
 
-- [DECISION] Chain indexer moved from data-node (Task 2.5) to issuer (Task 3.9). Single unified indexer does BOTH in-memory scheduler update AND Postgres write per event. Eliminates two-indexer consistency problem.
-- [DECISION] Batch/history/backtest REST API moved from data-node (Task 2.4) to issuer (Task 3.7). Issuer has direct Postgres access for chain-indexed state.
-- [DECISION] DB migrations moved from data-node (Task 2.3c) to issuer (Task 3.1b). Same SQL, different directory.
+- [DECISION] Chain indexer moved from data-node (Task 2.5) to oracle (Task 3.9). Single unified indexer does BOTH in-memory scheduler update AND Postgres write per event. Eliminates two-indexer consistency problem.
+- [DECISION] Batch/history/backtest REST API moved from data-node (Task 2.4) to oracle (Task 3.7). Oracle has direct Postgres access for chain-indexed state.
+- [DECISION] DB migrations moved from data-node (Task 2.3c) to oracle (Task 3.1b). Same SQL, different directory.
 - [DECISION] Data-node now serves only: collectors (crypto, polymarket, twitch, HN, weather), `/p2pool/snapshot`, `/p2pool/markets/active`. No chain indexing.
-- [DECISION] Frontend batch/history hooks use ISSUER_URL, market catalog uses DATA_NODE_URL.
+- [DECISION] Frontend batch/history hooks use ORACLE_URL, market catalog uses DATA_NODE_URL.
 - [DECISION] Deleted Tasks 2.3c, 2.5, 5.3 (backtest placeholder — now real impl in Task 3.7). Added Task 3.1b.
 
 ## Session: 20260222-0100-vsn1 (Vision Snapshot Fix)
@@ -1173,9 +1173,9 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [DECISION] Fee model: 0.3% on profit only for both claimRewards and withdraw. Principal never taxed. withdraw() now takes totalDeposited param (BLS-signed) to compute profit.
 - [DECISION] Solvency invariant: all payout functions (claim, withdraw, forceWithdraw) check USDC.balanceOf(this) >= payout + accumulatedFees before transferring.
 - [DECISION] Flat outcome: separate match arm in side_matching that refunds all players. Was silently dropping via empty vec return.
-- [DECISION] Tick progression: NOT tracked on-chain. Ticks are deterministic (createdAtTick + n). Issuer attests tick ranges via BLS. Contract validates monotonic progression via lastClaimedTick.
+- [DECISION] Tick progression: NOT tracked on-chain. Ticks are deterministic (createdAtTick + n). Oracle attests tick ranges via BLS. Contract validates monotonic progression via lastClaimedTick.
 - [DECISION] Bot registry: O(1) register/deregister using _botIndex mapping (1-indexed) + swap-and-pop pattern.
-- [DECISION] Data-node chain indexer (Task 2.5) separate from issuer chain listener (Task 3.9). Data-node populates Postgres for REST API. Issuer feeds tick scheduler.
+- [DECISION] Data-node chain indexer (Task 2.5) separate from oracle chain listener (Task 3.9). Data-node populates Postgres for REST API. Oracle feeds tick scheduler.
 - [DECISION] Backtest: time-bucket price sampling instead of ORDER BY DESC + LIMIT. Momentum strategy uses previous tick's outcome (no lookahead bias).
 - [DECISION] Polymarket: shared 60s cache between fetch_assets/fetch_prices to halve rate limit usage.
 
@@ -1196,9 +1196,9 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [DECISION] H2: All 3 refund paths (cancelStalePendingOrders, refundExpiredOrder, refundTimedOutBatchedOrder) now check order.side — BUY gets USDC, SELL gets shares restored.
 - [DECISION] H5: CollateralVault.setKeeperRegistry gains owner check, one-time guard removed so owner can update.
 - [DECISION] H6: Added withdrawReversedFunds() to L3BridgeCustody — BLS-verified recovery since PendingLock has no sender field. Zeroes amount to prevent double withdrawal.
-- [DECISION] H7: removeIssuerByVote implemented using BLSLib.verifyBLS directly (no BLSVerifier inheritance needed — IssuerRegistry already stores _aggregatedPubkey).
+- [DECISION] H7: removeOracleByVote implemented using BLSLib.verifyBLS directly (no BLSVerifier inheritance needed — OracleRegistry already stores _aggregatedPubkey).
 - [DECISION] Pre-existing: Fixed BridgeProxy.sol IInvestment->IIndex rename, added quoteTokens param to Index.rebalance to match RebalanceLib signature.
-- [DECISION] H8+H9: Issuer arb RPC/chain ID return Result instead of defaulting to mainnet. Callers in bootstrap gracefully return None with warning.
+- [DECISION] H8+H9: Oracle arb RPC/chain ID return Result instead of defaulting to mainnet. Callers in bootstrap gracefully return None with warning.
 - [DECISION] H13: CrossChainOrchestratorConfig gets src_chain_id field, wired from effective_arbitrum_chain_id().
 - [DECISION] H15+H16: AP arb RPC/chain ID return Result instead of falling back to L3 values.
 - [DECISION] H18: AP index_contract zero address changed from warn to hard startup error.
@@ -1209,7 +1209,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260221-2330-s3au
 
-- [DECISION] H10: TLS now loads from config paths (ISSUER_TLS_CERT_PATH/KEY/CA) in else branch instead of silently falling through to None. Hard error if paths configured but files invalid.
+- [DECISION] H10: TLS now loads from config paths (ORACLE_TLS_CERT_PATH/KEY/CA) in else branch instead of silently falling through to None. Hard error if paths configured but files invalid.
 - [DECISION] H11: Static peer_ids now derived via SHA-256 of "ip:port" instead of zeroed [0u8;32] for all peers.
 - [DECISION] H14: subscribe_events now polls every 2s for new logs after initial historical fetch, instead of returning after one-shot.
 - [DECISION] H19: EventMonitor spawn blocks now have reconnect loop with exponential backoff (1s to 60s) instead of single-shot error exit.
@@ -1220,7 +1220,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 ## Session: 20260221-2300-c14x
 
 - [DECISION] Task 14 cleanup: deleted 4 dead files — useFillDetails.ts, useOrderStatus.ts (only imported by useFillDetails), ActiveOrdersSection.tsx (merged into PortfolioSection), useSystemStatusSSE.ts (types inlined into useSSE.tsx, function never called)
-- [DECISION] Removed 4 dead ABI exports: MOCK_BITGET_VAULT_ABI, ISSUER_REGISTRY_ABI (index-protocol-abi.ts), ITP_NAV_ORACLE_ABI, ADAPTIVE_IRM_ABI (morpho-abi.ts) — verified zero imports via grep
+- [DECISION] Removed 4 dead ABI exports: MOCK_BITGET_VAULT_ABI, ORACLE_REGISTRY_ABI (index-protocol-abi.ts), ITP_NAV_ORACLE_ABI, ADAPTIVE_IRM_ABI (morpho-abi.ts) — verified zero imports via grep
 - [DECISION] Kept chain reads in: PortfolioSection (orders tab reads nextOrderId/getOrder), BuyItpModal/SellItpModal (getBlock for deadline, write-path ABIs), ItpListing (getLogs for ItpCreated event lookup, useReadContract for nonces/counts/resolvedArbAddress), APBalanceCard (AP collateral balance), VaultDeposit (USDC balance for lending), MarketsTable (ITP token name/symbol), useItpMetadata (contract metadata), useMetaMorphoVault/useNonceCheck/useItpFees (deliberately kept with TODOs)
 
 ## Session: 20260221-2230-t13m
@@ -1263,11 +1263,11 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260221-0812-e2e4
 
-- [DECISION] Cross-chain sell flow E2E verified working. Full pipeline: sellITPFromArbitrum → escrow BridgedITP → issuers detect CrossChainSellOrderCreated → submit sell on L3 (BLS) → batch (BLS) → fills → fundSellOrder → completeSellOrder (3/3 BLS) → USDC returned to user. Minor issue: sell asset trades emission failed with E020_InvalidBLSSignature on non-leader, recovered via "Sell order already filled on-chain" fallback.
-- [DECISION] Rebalance flow E2E verified working. requestRebalance on L3 → issuers detect RebalanceRequested event → rebalance consensus (3/3 BLS) → setItpNav consensus (3/3 BLS) → rebalance() tx succeeded. Weights updated on-chain correctly (BTC 1%→1.5%, ETH 1%→0.5%).
-- [FAILED] setItpNav BLS verification fails on-chain with E020_InvalidBLSSignature. The message hash the issuers sign for setItpNav doesn't match what the contract verifies. Rebalance proceeds with stale NAV (1e18) as fallback. This causes slightly inaccurate inventory recalculation but doesn't block the flow. Needs investigation: likely a mismatch between issuer's setItpNav message hash construction and the contract's _verifyBLS domain.
-- [FAILED] Sell flow `emitAssetTrades` also fails with E020_InvalidBLSSignature (same root cause as setItpNav). AP never receives sell-specific trade instructions. Sells still complete because fills proceed regardless — but no actual Bitget trades happen for sold assets. The BLS message hash for `emitAssetTrades` differs between issuer and contract.
-- [FAILED] RebalanceLib._emitAssetTradeDeltas() hardcodes `address(0)` as quoteToken for ALL rebalance trades (lines 45, 50). This means USDT-pair assets (ATOM, ETC, 1INCH, AEVO, etc.) get routed through USDC instead of USDT. Works in mock mode but will fail on production Bitget. Fix: pass a quoteToken mapping into rebalance() or look up from a registry. The issuer's `emitAssetTrades()` path correctly passes per-asset quoteTokens — only the on-chain rebalance path is broken.
+- [DECISION] Cross-chain sell flow E2E verified working. Full pipeline: sellITPFromArbitrum → escrow BridgedITP → oracles detect CrossChainSellOrderCreated → submit sell on L3 (BLS) → batch (BLS) → fills → fundSellOrder → completeSellOrder (3/3 BLS) → USDC returned to user. Minor issue: sell asset trades emission failed with E020_InvalidBLSSignature on non-leader, recovered via "Sell order already filled on-chain" fallback.
+- [DECISION] Rebalance flow E2E verified working. requestRebalance on L3 → oracles detect RebalanceRequested event → rebalance consensus (3/3 BLS) → setItpNav consensus (3/3 BLS) → rebalance() tx succeeded. Weights updated on-chain correctly (BTC 1%→1.5%, ETH 1%→0.5%).
+- [FAILED] setItpNav BLS verification fails on-chain with E020_InvalidBLSSignature. The message hash the oracles sign for setItpNav doesn't match what the contract verifies. Rebalance proceeds with stale NAV (1e18) as fallback. This causes slightly inaccurate inventory recalculation but doesn't block the flow. Needs investigation: likely a mismatch between oracle's setItpNav message hash construction and the contract's _verifyBLS domain.
+- [FAILED] Sell flow `emitAssetTrades` also fails with E020_InvalidBLSSignature (same root cause as setItpNav). AP never receives sell-specific trade instructions. Sells still complete because fills proceed regardless — but no actual Bitget trades happen for sold assets. The BLS message hash for `emitAssetTrades` differs between oracle and contract.
+- [FAILED] RebalanceLib._emitAssetTradeDeltas() hardcodes `address(0)` as quoteToken for ALL rebalance trades (lines 45, 50). This means USDT-pair assets (ATOM, ETC, 1INCH, AEVO, etc.) get routed through USDC instead of USDT. Works in mock mode but will fail on production Bitget. Fix: pass a quoteToken mapping into rebalance() or look up from a registry. The oracle's `emitAssetTrades()` path correctly passes per-asset quoteTokens — only the on-chain rebalance path is broken.
 - [DECISION] Morpho lending flow verified E2E: deposit 10 BridgedITP collateral → borrow 500 USDC → repay (share-based, dust-free) → withdraw all collateral. Full round-trip works. 4 wei USDC lost to interest accrual. Oracle price set at 1e26 = $100/share in Morpho 36-decimal format. 77% LLTV. Market has 100K USDC liquidity.
 
 ## Session: 20260221-0745-e2e3
@@ -1279,17 +1279,17 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 ## Session: 20260221-0714-e2e2
 
 - [FAILED] `validate_submit_order_proposal` rejected follower co-signs with INFRA-007 ("Order already submitted") because my fix from e2e1 stored order mappings on ALL nodes immediately after `run_submit_order_phase` returned (signer_count=0 on followers). When the leader's submit proposal arrived 7s later, `order_mappings.contains_key()` was true → rejected. Fix: changed the contains_key check from hard reject (`Ok(false)`) to debug log that allows co-signing. On-chain dedup protects against actual double-submission.
-- [DECISION] Cross-chain buy pipeline requires leader to be the same node for all phases (bridge → submit → batch → completeBuyOrder → fills → mint). Leader election uses `calculate_bridge_leader(order_id, num_issuers, node_index)` which is deterministic per order ID. Followers return immediately from each phase (signer_count=0) and only participate via background P2P message handler.
+- [DECISION] Cross-chain buy pipeline requires leader to be the same node for all phases (bridge → submit → batch → completeBuyOrder → fills → mint). Leader election uses `calculate_bridge_leader(order_id, num_oracles, node_index)` which is deterministic per order ID. Followers return immediately from each phase (signer_count=0) and only participate via background P2P message handler.
 
 ## Session: 20260221-0700-e2e1
 
-- [DECISION] Added `ISSUER_BRIDGE_PROXY_ADDRESS` env var export in start.sh as belt-and-suspenders for BridgeConfig. Code already uses `params.bridge_proxy` (CLI arg) first, but env var was never exported as fallback.
+- [DECISION] Added `ORACLE_BRIDGE_PROXY_ADDRESS` env var export in start.sh as belt-and-suspenders for BridgeConfig. Code already uses `params.bridge_proxy` (CLI arg) first, but env var was never exported as fallback.
 - [DECISION] completeBuyOrder (ArbBridgeCustody) was passing `vec![]` (empty BLS sig) because it lacked a BLS consensus phase. Added full CompleteBuyOrderProposal/Sign P2P messages and consensus phase (7 files changed). Modeled after existing MintBridgedShares consensus.
 - [DECISION] Hash mismatch on mintBridgedShares confirmed: `cast keccak(abi.encode(... Address::zero() ...))` = `0xe4dbfcae...` matches Rust log hash exactly. Root cause: `BridgeConfig.bridge_proxy` was `Address::zero()`. The code at consensus.rs:391 already uses `params.bridge_proxy` CLI arg, but the old binary may have been stale.
 
 ## Session: 20260221-0600-bp0x
 
-- [DECISION] Root cause of E020_InvalidBLSSignature on mintBridgedShares: `BridgeConfig.bridge_proxy` was `Address::zero()` because `start.sh` passes `--bridge-proxy` as CLI arg (→ `params.bridge_proxy`), but `build_bridge_config()` in consensus.rs read from `config.effective_bridge_proxy_address()` (env var `ISSUER_BRIDGE_PROXY_ADDRESS`), which was never set. Fixed by having BridgeConfig read `params.bridge_proxy` first, then fall back to config env var. Verified with `cast keccak(abi-encode(... Address::zero() ...))` matching the issuer's logged hash.
+- [DECISION] Root cause of E020_InvalidBLSSignature on mintBridgedShares: `BridgeConfig.bridge_proxy` was `Address::zero()` because `start.sh` passes `--bridge-proxy` as CLI arg (→ `params.bridge_proxy`), but `build_bridge_config()` in consensus.rs read from `config.effective_bridge_proxy_address()` (env var `ORACLE_BRIDGE_PROXY_ADDRESS`), which was never set. Fixed by having BridgeConfig read `params.bridge_proxy` first, then fall back to config env var. Verified with `cast keccak(abi-encode(... Address::zero() ...))` matching the oracle's logged hash.
 - [DECISION] Protocol.rs follower handler for MintBridgedShares also had `Address::zero()` and `sign_with_keypair` (fixed in previous session but wasn't tested due to zero-address being the upstream root cause).
 
 ## Session: 20260221-0500-bls3
@@ -1322,7 +1322,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 - [DECISION] Fixed cross-chain buy flow: removed premature BridgeOrderStatus::Filled on followers in main.rs:1120-1123. Followers' run_bridge/run_submit return immediately (dummy signer_count=0) while actual signing is async via P2P handlers. Setting Filled caused validate_submit_order_proposal() to reject the leader's proposal when it arrived seconds later. Fix: keep status=Pending so P2P handlers can process proposals.
 - [FAILED] The Filled shortcut had comment about preventing watchdog infinite retry loops, but it was wrong — it prevented the primary consensus path from working. Watchdog stale detection will handle timeouts correctly.
-- [DECISION] Updated issuer/src/state/reconstruction.rs ABI bindings to match Investment.sol (was Index.sol). Replaced 5 nonexistent functions (currentCycle, lastProcessedOrderId, assetCount, getPrice, nextItpId, orders, getPendingRebalance) with actual contract API (lastProcessedCycleNumber, nextOrderId, getOrder, getItpCount, getITPState returning creator+totalSupply+nav+assets+weights+inventory). Reconstruction was silently failing every startup, falling back to empty state.
+- [DECISION] Updated oracle/src/state/reconstruction.rs ABI bindings to match Investment.sol (was Index.sol). Replaced 5 nonexistent functions (currentCycle, lastProcessedOrderId, assetCount, getPrice, nextItpId, orders, getPendingRebalance) with actual contract API (lastProcessedCycleNumber, nextOrderId, getOrder, getItpCount, getITPState returning creator+totalSupply+nav+assets+weights+inventory). Reconstruction was silently failing every startup, falling back to empty state.
 - [DECISION] Removed on-chain price loading step from reconstruction — assetPrices mapping was never written; prices sourced from data-node/Bitget at runtime.
 - [DECISION] Removed calculate_itp_value() helper — ITP total value now computed from NAV*totalSupply returned by getITPState, instead of summing inventory*price per asset.
 - [DECISION] Removed dead query_asset_count() from bootstrap/chain.rs — was already #[allow(dead_code)] and called nonexistent assetCount() function.
@@ -1345,7 +1345,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260220-1545-q8m3
 
-- [DECISION] Ported bilateral resolution VM from AA keeper (bilateral_resolution.rs) into issuer/src/arbitration/resolution.rs. Replaced anyhow with thiserror ResolutionError enum. Removed sqlx::PgPool / fetch_trades_by_merkle_root / TradeData / TradeRow (data-node REST replaces Postgres in Task 5). Kept ALL integer math identical: parse_threshold_to_bps, MethodType::parse, evaluate_trade, compute_outcome. Added regex = "1" to issuer Cargo.toml. Created minimal arbitration/mod.rs + wired pub mod arbitration in lib.rs so tests could run. 15 tests pass.
+- [DECISION] Ported bilateral resolution VM from AA keeper (bilateral_resolution.rs) into oracle/src/arbitration/resolution.rs. Replaced anyhow with thiserror ResolutionError enum. Removed sqlx::PgPool / fetch_trades_by_merkle_root / TradeData / TradeRow (data-node REST replaces Postgres in Task 5). Kept ALL integer math identical: parse_threshold_to_bps, MethodType::parse, evaluate_trade, compute_outcome. Added regex = "1" to oracle Cargo.toml. Created minimal arbitration/mod.rs + wired pub mod arbitration in lib.rs so tests could run. 15 tests pass.
 
 ## Session: 20260220-1500-v3k8
 
@@ -1365,7 +1365,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260220-1530-p7x4
 
-- [DECISION] Added on-chain limit price enforcement in Index.sol confirmFills (E126_FillPriceViolatesLimit). BUY: fillPrice must be <= limitPrice. SELL: fillPrice must be >= limitPrice. limitPrice=0 means no limit (any price accepted). Belt-and-suspenders defense: issuers already validate, but contract now enforces too. Added 14 comprehensive tests in LimitPriceFill.t.sol. Fixed 2 existing tests (test_confirmFills_differentFillPrice, test_confirmFills_revertsOnZeroShares) that used limitPrice=1e18 but filled at higher prices -- changed them to limitPrice=0 since they test fill mechanics, not limit enforcement.
+- [DECISION] Added on-chain limit price enforcement in Index.sol confirmFills (E126_FillPriceViolatesLimit). BUY: fillPrice must be <= limitPrice. SELL: fillPrice must be >= limitPrice. limitPrice=0 means no limit (any price accepted). Belt-and-suspenders defense: oracles already validate, but contract now enforces too. Added 14 comprehensive tests in LimitPriceFill.t.sol. Fixed 2 existing tests (test_confirmFills_differentFillPrice, test_confirmFills_revertsOnZeroShares) that used limitPrice=1e18 but filled at higher prices -- changed them to limitPrice=0 since they test fill mechanics, not limit enforcement.
 
 ## Session: 20260220-0010-k3f8
 
@@ -1373,21 +1373,21 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260219-2356-r7q1
 
-- [DECISION] BLS migration batch 4: BridgeProxy.t.sol, E2EOrderToMint.t.sol, E2ERebalanceFlow.t.sol migrated from mocked BLS precompile (vm.mockCall address(0x08)) to real BLS signatures via FFI (bls-tool). setUp now calls registerTestIssuersWithBLS instead of vm.mockCall on getAggregatedPubkey. All _confirmBatch/_confirmFills/_rebalance helpers compute real message hashes and call signWithTestIssuers.
+- [DECISION] BLS migration batch 4: BridgeProxy.t.sol, E2EOrderToMint.t.sol, E2ERebalanceFlow.t.sol migrated from mocked BLS precompile (vm.mockCall address(0x08)) to real BLS signatures via FFI (bls-tool). setUp now calls registerTestOraclesWithBLS instead of vm.mockCall on getAggregatedPubkey. All _confirmBatch/_confirmFills/_rebalance helpers compute real message hashes and call signWithTestOracles.
 - [DECISION] BLS migration batch 4: E020_InvalidBLSSignature used instead of E071_InvalidBLSSignature in BridgeProxy tests — BLSVerifier._verifyBLS reverts with E020; E071 is defined but unused in source.
-- [DECISION] BLS migration batch 4: test_completeCreateItp_revertsWithWrongPubkeyLength uses issuerRegistry.setAggregatedPubkey(new bytes(64)) to temporarily inject a wrong-length pubkey, then restores the real 128-byte pubkey via blsAggPubkey("0,1,2").
+- [DECISION] BLS migration batch 4: test_completeCreateItp_revertsWithWrongPubkeyLength uses oracleRegistry.setAggregatedPubkey(new bytes(64)) to temporarily inject a wrong-length pubkey, then restores the real 128-byte pubkey via blsAggPubkey("0,1,2").
 - [DECISION] BLS migration batch 4: E2ERebalanceFlow._seedITP helper uses _confirmBatch/_confirmFills helpers that compute real BLS, allowing setUp to work without any mocks.
 
 ## Session: 20260219-2345-m9p3
 
 - [DECISION] BLS migration batch 3: CollateralRegistry.t.sol auto-migrated by linter after initial Write triggered file change. Switched from Test to TestHelper, uses _signRecordCollateralMove reading nonce from contract.
-- [DECISION] BLS migration batch 3: DeployBLSCustody.t.sol and DeployBLSCustodyArbitrum.t.sol migrated from mockRegistry.setAggregatedPubkey(new bytes(128)) + vm.mockCall(address(0x08)) to registerTestIssuersWithBLS + real BLS signatures for proposeWhitelist calls.
+- [DECISION] BLS migration batch 3: DeployBLSCustody.t.sol and DeployBLSCustodyArbitrum.t.sol migrated from mockRegistry.setAggregatedPubkey(new bytes(128)) + vm.mockCall(address(0x08)) to registerTestOraclesWithBLS + real BLS signatures for proposeWhitelist calls.
 
 ## Session: 20260219-2330-k4w8
 
 - [DECISION] BLS migration: All 7 core test files migrated from mocked BLS precompile (vm.mockCall on address(0x08)) to real BLS signatures via FFI (bls-tool). Files: BLSCustody.t.sol, QuantityBasedPricing.t.sol, L3BridgeCustody.t.sol, IndexProductionHardening.t.sol, IndexOrderSubmission.t.sol, IndexBatchFillConfirmation.t.sol, Index.t.sol.
-- [DECISION] BLS migration: All 5 Morpho test files migrated from mocked BLS precompile (vm.mockCall on address(0x08)) to real BLS signatures via FFI (bls-tool). Files: MorphoTestHelper.sol, ITPNAVOracle.t.sol, MorphoBorrowLend.t.sol, MorphoPermissionlessLiquidation.t.sol, MirrorIssuerRegistry.t.sol.
-- [DECISION] For "invalid BLS" test cases, use signWithTestIssuers(keccak256("wrong")) (sign a wrong message hash) instead of mocking the precompile to return 0. This exercises real BLS verification failure paths.
+- [DECISION] BLS migration: All 5 Morpho test files migrated from mocked BLS precompile (vm.mockCall on address(0x08)) to real BLS signatures via FFI (bls-tool). Files: MorphoTestHelper.sol, ITPNAVOracle.t.sol, MorphoBorrowLend.t.sol, MorphoPermissionlessLiquidation.t.sol, MirrorOracleRegistry.t.sol.
+- [DECISION] For "invalid BLS" test cases, use signWithTestOracles(keccak256("wrong")) (sign a wrong message hash) instead of mocking the precompile to return 0. This exercises real BLS verification failure paths.
 - [DECISION] For stale cycle / validation-order tests that return BEFORE BLS check, use dummy new bytes(64) signatures since the function never reaches BLS verification.
 - [DECISION] Mirror registry syncs in tests use blsAggPubkey("0,1,2") (same agg key) so subsequent operations can still sign with the same test key set. Exception: test_updatePrice_afterRegistrySync_usesNewPubkey transitions to seeds 1,2,3 and signs the second oracle update with blsSign("1,2,3", ...).
 - [FAILED] Edit tool changes were reverted by linter/formatter for 4 of 5 files. Write tool (full file overwrite) was required to persist changes.
@@ -1405,12 +1405,12 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260219-2100-q8m4
 
-- [DECISION] BLS unification via BLSVerifier abstract contract (EigenLayer BLSSignatureChecker pattern). Single `_verifyBLS(messageHash, sig)` reads aggregated pubkey from IssuerRegistry. All 11 BLS-using contracts inherit it. Eliminates 6 different inline verification patterns.
-- [DECISION] BLSVerifier adds its own `_blsIssuerRegistry` private slot. For UUPS contracts that already have `issuerRegistry`, both slots point to the same address - BLSVerifier's `_verifyBLS` uses its own private slot, existing code keeps using `issuerRegistry` for non-BLS purposes (isActiveIssuer, etc).
+- [DECISION] BLS unification via BLSVerifier abstract contract (EigenLayer BLSSignatureChecker pattern). Single `_verifyBLS(messageHash, sig)` reads aggregated pubkey from OracleRegistry. All 11 BLS-using contracts inherit it. Eliminates 6 different inline verification patterns.
+- [DECISION] BLSVerifier adds its own `_blsOracleRegistry` private slot. For UUPS contracts that already have `oracleRegistry`, both slots point to the same address - BLSVerifier's `_verifyBLS` uses its own private slot, existing code keeps using `oracleRegistry` for non-BLS purposes (isActiveOracle, etc).
 - [DECISION] No backward compatibility concern - breaking interface changes (removing aggregatedPubkey/signerBitmap params from BridgeProxy) are acceptable per project policy.
-- [DECISION] BridgeProxy.completeCreateItp and rebalance: remove signerBitmap + aggregatedPubkey params entirely. Threshold enforcement happens at consensus/issuer level, not contract level.
-- [DECISION] FeeRegistry/AssetPairRegistry/CollateralRegistry: remove local aggregatedPubkey storage + setAggregatedPubkey(). Read from IssuerRegistry via BLSVerifier instead.
-- [DECISION] Rust issuer arbitrum_writer.rs: Updated ABI encoding to match new BridgeProxy signatures. completeCreateItp(uint256,bytes32,bytes) and completeRebalance(uint256,bytes) — removed signer_bitmap and aggregated_pubkey from all function signatures and call sites. Selector auto-computed by ethers-rs from ABI definition.
+- [DECISION] BridgeProxy.completeCreateItp and rebalance: remove signerBitmap + aggregatedPubkey params entirely. Threshold enforcement happens at consensus/oracle level, not contract level.
+- [DECISION] FeeRegistry/AssetPairRegistry/CollateralRegistry: remove local aggregatedPubkey storage + setAggregatedPubkey(). Read from OracleRegistry via BLSVerifier instead.
+- [DECISION] Rust oracle arbitrum_writer.rs: Updated ABI encoding to match new BridgeProxy signatures. completeCreateItp(uint256,bytes32,bytes) and completeRebalance(uint256,bytes) — removed signer_bitmap and aggregated_pubkey from all function signatures and call sites. Selector auto-computed by ethers-rs from ABI definition.
 
 ## Session: 20260219-1530-b2x7
 
@@ -1451,7 +1451,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 - [DECISION] Deploy scripts: replaced `adminBatchWhitelistAssets()` and `adminBatchActivatePairs()` (removed from AssetPairRegistry) with proper propose/warp/activate flow. Uses `vm.mockCall(address(0x08), ...)` to mock BN254 pairing precompile during deployment since scripts run against local anvil.
 - [DECISION] AssetPairRegistry constructor: removed `testMode` parameter across all deploy scripts and tests. Constructor now takes only `(address _admin)`.
-- [DECISION] IssuerRegistry tests: replaced `setTestMode()` calls (removed from contract) with `vm.mockCall(address(0x08), ...)` for BN254 precompile mocking. Tests that verify BLS rejection use `vm.clearMockedCalls()` to disable the mock temporarily.
+- [DECISION] OracleRegistry tests: replaced `setTestMode()` calls (removed from contract) with `vm.mockCall(address(0x08), ...)` for BN254 precompile mocking. Tests that verify BLS rejection use `vm.clearMockedCalls()` to disable the mock temporarily.
 - [DECISION] AssetPairRegistry tests: removed all adminBatch test functions (10+ tests) since these functions no longer exist. setUp now mocks BN254 precompile and sets a non-empty aggregated pubkey so BLS-verified operations work with mock signatures.
 
 ## Session: 20260218-fix-bls-signing
@@ -1461,9 +1461,9 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260218-2345-w8r3
 
-- [DECISION] Delisting watchdog: data-node as single source of truth for listing status. Issuer queries `/listings/unsafe` endpoint, doesn't call Bitget directly.
+- [DECISION] Delisting watchdog: data-node as single source of truth for listing status. Oracle queries `/listings/unsafe` endpoint, doesn't call Bitget directly.
 - [DECISION] Delisting watchdog: equal weights (1/N) redistribution after asset removal — simplest fair approach. `1e18 / remaining_count` with remainder on last.
-- [DECISION] Delisting watchdog: leader-only execution via cycle-based `LeaderElector` to prevent duplicate `requestRebalance` calls from multiple issuers.
+- [DECISION] Delisting watchdog: leader-only execution via cycle-based `LeaderElector` to prevent duplicate `requestRebalance` calls from multiple oracles.
 - [DECISION] Listing sync diff detection: `compute_disappeared()` extracted as pure function comparing DB snapshot vs API response. Symbols missing from API get `delisted_gone` status.
 - [DECISION] `requestRebalance()` is permissionless on Index.sol (line 699-707), so watchdog can call it directly. Existing consensus pipeline verifies and executes.
 - [DECISION] Watchdog uses `static_call` for `getItpCount()` — MockChain doesn't implement this, so integration tests validate error handling path instead.
@@ -1535,10 +1535,10 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260218-1200-b7q4
 
-- [DECISION] IssuerRegistry gets `bytes _aggregatedPubkey` storage + setter after `_registryNonce`, gap shrinks 35→34 — follows same pattern as FeeRegistry/AssetPairRegistry/CollateralRegistry which already have this
-- [DECISION] Aggregated pubkey hardcoded in DeployFullSystemE2E.s.sol after issuer registration — makes start.sh E2E fully BLS-enabled without extra steps
-- [DECISION] bls-tool binary reads from on-chain IssuerRegistry, not config files — single source of truth for production/testnet
-- [DECISION] RegistrySyncHandler extended with optional key_registry + config_update cell — runtime auto-update on issuer join/leave without restart
+- [DECISION] OracleRegistry gets `bytes _aggregatedPubkey` storage + setter after `_registryNonce`, gap shrinks 35→34 — follows same pattern as FeeRegistry/AssetPairRegistry/CollateralRegistry which already have this
+- [DECISION] Aggregated pubkey hardcoded in DeployFullSystemE2E.s.sol after oracle registration — makes start.sh E2E fully BLS-enabled without extra steps
+- [DECISION] bls-tool binary reads from on-chain OracleRegistry, not config files — single source of truth for production/testnet
+- [DECISION] RegistrySyncHandler extended with optional key_registry + config_update cell — runtime auto-update on oracle join/leave without restart
 
 ## Session: 20260218-0100-f9k3
 
@@ -1580,8 +1580,8 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 ## Session: 20260217-2345-s7r3
 
 - [DECISION] RollingFileAppender: switched from `::new()` to builder API with `max_log_files(5)` — prevents unbounded log file accumulation (previously never deleted old daily files)
-- [DECISION] start.sh stdout redirect to /dev/null for issuer+AP — tracing file layer already writes structured JSON to logs/, stdout capture was redundant (doubled log size: 15GB+)
-- [DECISION] start.sh --stress flag: sets LOG_LEVEL=warn + RUST_LOG="warn,issuer::consensus=info,issuer::cycle=info" — silences chain::reader (99.9% of log volume) while keeping consensus/cycle visible
+- [DECISION] start.sh stdout redirect to /dev/null for oracle+AP — tracing file layer already writes structured JSON to logs/, stdout capture was redundant (doubled log size: 15GB+)
+- [DECISION] start.sh --stress flag: sets LOG_LEVEL=warn + RUST_LOG="warn,oracle::consensus=info,oracle::cycle=info" — silences chain::reader (99.9% of log volume) while keeping consensus/cycle visible
 - [DECISION] Phase 2 nonce tracking: track actual submitted nonces in array instead of assuming sequential success — if send #5 fails but #6 succeeds, completion check was wrong
 - [DECISION] Phase 1 Tier E reduced from 500 to 250 assets — 500 needs ~100M gas (block limit 30M), 250 is extreme but achievable
 - [DECISION] Stress test reports now write to scripts/stress-test/reports/ — previously polluted project root with 10+ intermediate debug files
@@ -1656,7 +1656,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [DECISION] Missing asset price threshold (>10%) rejects entire ITP order — partial decomposition gives wrong allocation (100% ETH instead of 50/50 BTC/ETH)
 - [DECISION] confirmFills uses low-level call per fill with escrow fallback — one blacklisted USDC address was reverting entire batch of 1000 fills
 - [DECISION] cancelStalePendingOrders function added — zombie orders inflate pendingOrderCount causing premature E083_QueueFull
-- [DECISION] BATCHED orders get timeout (300s) with auto-refund — issuer crash leaves BATCHED orders stuck forever
+- [DECISION] BATCHED orders get timeout (300s) with auto-refund — oracle crash leaves BATCHED orders stuck forever
 - [DECISION] confirmFills accepts PENDING orders (not just BATCHED) — late fills rejected with E024 when confirmBatch was skipped
 - [DECISION] Netting pipeline wrapped in Result with sum invariant — no mid-pipeline rollback causes partial consumption
 - [DECISION] CLI flags wired through BootstrapParams to actual configs — --max-gas-limit→GasConfig, --consensus-timeout-ms→ConsensusTimeouts, --receipt-timeout-secs declared
@@ -1708,7 +1708,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260215-1400-r8m3
 
-- [DECISION] Index.sol only on L3 — removed all indexContract calls from BridgeProxy.sol. BridgeProxy.completeCreateItp() was calling indexContract.createITP() as a same-chain Solidity call (creating ITP on Arb's copy of Index, not L3's). Now: issuer creates ITP on L3 first via chain_writer.create_itp(), gets itpId, then passes it to BridgeProxy.completeCreateItp(nonce, orbitItpId, ...) on Arb which just stores mappings + deploys BridgedITP ERC20. Also removed indexContract.rebalance() and indexContract.transferCreator() calls — issuer relays these to L3 separately.
+- [DECISION] Index.sol only on L3 — removed all indexContract calls from BridgeProxy.sol. BridgeProxy.completeCreateItp() was calling indexContract.createITP() as a same-chain Solidity call (creating ITP on Arb's copy of Index, not L3's). Now: oracle creates ITP on L3 first via chain_writer.create_itp(), gets itpId, then passes it to BridgeProxy.completeCreateItp(nonce, orbitItpId, ...) on Arb which just stores mappings + deploys BridgedITP ERC20. Also removed indexContract.rebalance() and indexContract.transferCreator() calls — oracle relays these to L3 separately.
 - [DECISION] Added `prices` field to ItpCreationRequest struct — BridgeProxy stores prices in the pending request but the Rust parser was ignoring them (prefixed with `_`). Now parsed and passed to L3 create_itp call.
 
 ## Session: 20260214-2200-k3v8
@@ -1734,8 +1734,8 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [DECISION] Rebalance E2E helper uses viem encodeFunctionData/decodeFunctionResult for clean ABI encoding instead of manual hex — follows existing mintBridgedItp pattern but avoids hand-encoding complex dynamic arrays
 - [DECISION] RebalanceModal sends rebalance tx via raw L3 RPC (eth_sendTransaction from impersonated user) instead of wagmi writeContract — frontend wagmi is connected to Arbitrum (42161), rebalance must execute on L3 (111222333)
 - [DECISION] E2E rebalance step shifts only 0.5% weight (5e15) between first two assets — small enough to not significantly impact NAV or health factor during active lending position
-- [DECISION] Added requestRebalance() to BridgeProxy contract (was only on L3 Index) — enables 2-step bridge flow: user calls BridgeProxy.requestRebalance on Arb (event), then issuers execute Index.rebalance on L3 with BLS bypass in dev
-- [DECISION] RebalanceModal uses wagmi writeContract for Step 1 (BridgeProxy.requestRebalance on Arb) then raw L3 RPC for Step 2 (Index.rebalance simulating issuer consensus) — matches buy/sell bridge pattern
+- [DECISION] Added requestRebalance() to BridgeProxy contract (was only on L3 Index) — enables 2-step bridge flow: user calls BridgeProxy.requestRebalance on Arb (event), then oracles execute Index.rebalance on L3 with BLS bypass in dev
+- [DECISION] RebalanceModal uses wagmi writeContract for Step 1 (BridgeProxy.requestRebalance on Arb) then raw L3 RPC for Step 2 (Index.rebalance simulating oracle consensus) — matches buy/sell bridge pattern
 
 ## Session: 20260214-1500-fx3b
 
@@ -1779,7 +1779,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260214-2100-b7k3
 
-- [DECISION] AP uses real Bitget bid/ask from /fast-prices for trade amounts instead of flat vault spread — BUY uses ask price, SELL uses bid price, with fallback to issuer price if unavailable
+- [DECISION] AP uses real Bitget bid/ask from /fast-prices for trade amounts instead of flat vault spread — BUY uses ask price, SELL uses bid price, with fallback to oracle price if unavailable
 - [DECISION] Vault spreadBps set to 0 since spread is now baked into AP trade amounts via real bid/ask — vault fee (10 bps) remains separate
 - [DECISION] Cost of Acquisition display reads metrics from smoke-metrics.json + creation-spreads.json — decoupled from trade log Python to avoid one giant block
 
@@ -1876,9 +1876,9 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Faster Smoke Test, Fix Fee Display, Add Bid-Ask Spread
 
-[DECISION] Reduce cycle-duration-ms 5000→3000 (not 2000 — Bitget price fetch takes 2-3s per cycle, 2s cycles cause issuer desync), block miner 2s→1s, poll 2s→1s, LEADER_TIMEOUT_SECS 15→5, init sleep 5→2
+[DECISION] Reduce cycle-duration-ms 5000→3000 (not 2000 — Bitget price fetch takes 2-3s per cycle, 2s cycles cause oracle desync), block miner 2s→1s, poll 2s→1s, LEADER_TIMEOUT_SECS 15→5, init sleep 5→2
 
-[FAILED] cycle-duration-ms 2000 — issuers desynchronize because Bitget price fetch (2-3s for 684 assets) exceeds the cycle duration, causing consensus failures on confirmFills step. 3000ms gives enough headroom.
+[FAILED] cycle-duration-ms 2000 — oracles desynchronize because Bitget price fetch (2-3s for 684 assets) exceeds the cycle duration, causing consensus failures on confirmFills step. 3000ms gives enough headroom.
 
 [DECISION] Forge cache: stop clearing on every run, only clear when contracts/src or contracts/script changed via git diff — saves ~10-20s on recompilation
 
@@ -1896,19 +1896,19 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 [DECISION] Fix decimal mismatch root cause in MockBitgetVault.executeTrade() — added stablecoin decimal conversion at burn/mint boundary (matching swapStable pattern). Trade struct stays 18-dec for fill verification consistency. For 18-dec tokens (USDT, mock assets), 10^(18-18)=1 → no-op.
 
-[DECISION] Reverted AP from "always USDT" workaround back to issuer-directed quoteToken. USDC pairs (quoteToken=0x0) now route directly through USDC with decimal conversion in vault. USDT pairs still swap USDC→USDT first.
+[DECISION] Reverted AP from "always USDT" workaround back to oracle-directed quoteToken. USDC pairs (quoteToken=0x0) now route directly through USDC with decimal conversion in vault. USDT pairs still swap USDC→USDT first.
 
 [DECISION] Added ITP SHARE ECONOMICS section to trade log — entry/exit price per share, fee drag, round-trip bps. Uses existing $L3_SHARES and $SELL_AMOUNT shell vars.
 
-[FAILED] Previous approach forced ALL vault trades through USDT to avoid 6-dec USDC burn mismatch. This masked the real bug and ignored issuer per-pair quoteToken directives.
+[FAILED] Previous approach forced ALL vault trades through USDT to avoid 6-dec USDC burn mismatch. This masked the real bug and ignored oracle per-pair quoteToken directives.
 
 ## Session: 20260213-1500-u9w3
 
 ### USDC↔USDT Pair Switching + Trade Log
 
-[FAILED] First attempt put USDT detection in AP (AP reads symbol map to determine pairs). User corrected: "AP follows issuer orders — AP does NOT detect trading pairs." Reverted all AP-side detection.
+[FAILED] First attempt put USDT detection in AP (AP reads symbol map to determine pairs). User corrected: "AP follows oracle orders — AP does NOT detect trading pairs." Reverted all AP-side detection.
 
-[DECISION] Added `quoteToken` field to `AssetTrade` struct (TypesLib.sol) and `AssetTradeRequest` event (EventsLib.sol). Cross-stack change: Solidity → Issuer Rust (bridge types, decomposition, consensus, P2P) → Common crate (ChainEvent, RpcChainReader) → AP Rust (event parsing, trade execution). Issuer determines quote token from symbol_map suffix; address(0) = default USDC. AP reads quoteToken from on-chain event.
+[DECISION] Added `quoteToken` field to `AssetTrade` struct (TypesLib.sol) and `AssetTradeRequest` event (EventsLib.sol). Cross-stack change: Solidity → Oracle Rust (bridge types, decomposition, consensus, P2P) → Common crate (ChainEvent, RpcChainReader) → AP Rust (event parsing, trade execution). Oracle determines quote token from symbol_map suffix; address(0) = default USDC. AP reads quoteToken from on-chain event.
 
 [DECISION] AP pre-trade swap: BUY with USDT pair → swapStable(USDC→USDT) before executeTrade. Post-trade swap: SELL with USDT pair → swapStable(USDT→USDC) after executeTrade. Only when event quoteToken is non-zero and different from AP's configured quote (USDC).
 
@@ -1928,24 +1928,24 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 [FAILED] executeTrade with ARB_USDC (6-dec) as sellToken — vault burns 18-dec usdc_amount from 6-dec USDC token. The 18-dec amount (e.g., 5e17) exceeds the 6-dec token's total supply. Result: ERC20InsufficientBalance for 75/77 trades. Only 2 USDT-pair trades succeeded (18-dec USDT matches 18-dec amounts).
 
-[DECISION] Always route vault trades through USDT (18-dec) when mock_usdt configured — AP now forces effective_quote=USDT for all trades regardless of issuer's quoteToken. BUY: swapStable(USDC→USDT) then executeTrade(USDT, asset). SELL: executeTrade(asset, USDT) then swapStable(USDT→USDC). swapStable handles 6→18 decimal conversion.
+[DECISION] Always route vault trades through USDT (18-dec) when mock_usdt configured — AP now forces effective_quote=USDT for all trades regardless of oracle's quoteToken. BUY: swapStable(USDC→USDT) then executeTrade(USDT, asset). SELL: executeTrade(asset, USDT) then swapStable(USDT→USDC). swapStable handles 6→18 decimal conversion.
 
 ## Session: 20260213-0430-m8p2
 
 ### Symbol Map Off-By-One: NAV $112K Instead of $1
 
 - [FAILED] `start.sh` step 4 used `if key not in sm` when merging ITP on-chain addresses into symbol-map.json — this SKIPPED 99/100 addresses that already existed from the Bitget token deploy (step 2). The Bitget deploy assigns pairs with a different index offset (shifted by 1), so BTC's address mapped to ETHUSDC, ETH's to SOLUSDC, etc. Result: NAV = $112,498 (cheap-token quantities × expensive-token prices). Fix: always overwrite symbol-map entries for ITP assets.
-- [DECISION] DATA_NODE_URL made conditional on `pg_isready` — without PostgreSQL, data-node can't start; issuers now correctly fall back to BitgetPriceFetcher instead of failing on BackendPriceFetcher.
+- [DECISION] DATA_NODE_URL made conditional on `pg_isready` — without PostgreSQL, data-node can't start; oracles now correctly fall back to BitgetPriceFetcher instead of failing on BackendPriceFetcher.
 - [DECISION] Added `--slow` flag to all 6 `forge script` calls — Foundry broadcast opens many concurrent TCP connections to Anvil, causing deadlock at 0% CPU with 0 receipts. `--slow` forces sequential tx sending.
-- [FAILED] Sell price exactly $1.000000 after rebalance — `RebalanceLib.rebalance()` reads `_itpNavs[itpId]` (line 55) which is stuck at 1e18 from `createITP`, never updated by issuers. Rebalance computes `qty[i] = (weight[i] * 1e18) / price[i]`, resetting NAV to exactly $1.00. Fix: issuer now calls `setItpNav()` with the real NAV (computed from on-chain inventory + live Bitget prices) before executing `rebalance()` on-chain. Added `computed_nav` param to `execute_rebalance`, with `setItpNav` calldata sent before the rebalance calldata. Verified: Buy=$1.004174, Sell=$1.004444 (real Bitget data, no longer $1.000000).
+- [FAILED] Sell price exactly $1.000000 after rebalance — `RebalanceLib.rebalance()` reads `_itpNavs[itpId]` (line 55) which is stuck at 1e18 from `createITP`, never updated by oracles. Rebalance computes `qty[i] = (weight[i] * 1e18) / price[i]`, resetting NAV to exactly $1.00. Fix: oracle now calls `setItpNav()` with the real NAV (computed from on-chain inventory + live Bitget prices) before executing `rebalance()` on-chain. Added `computed_nav` param to `execute_rebalance`, with `setItpNav` calldata sent before the rebalance calldata. Verified: Buy=$1.004174, Sell=$1.004444 (real Bitget data, no longer $1.000000).
 - [FAILED] `start.sh` "On-chain NAV" display read `words[1]` (totalSupply) instead of `words[2]` (nav) from `getITPState`. The ABI return layout is `(address, uint256 totalSupply, uint256 nav, ...)`, so word[1]=totalSupply, word[2]=nav. Fixed: changed to `words[2]`.
 
 ## Session: 20260213-0200-q9k7
 
-### Buy/Sell NAV Falls Back to $1 — DATA_NODE_URL Not Passed to Issuers
+### Buy/Sell NAV Falls Back to $1 — DATA_NODE_URL Not Passed to Oracles
 
-- [DECISION] Always pass `DATA_NODE_URL=http://localhost:8200` to issuer env — issuers launch in step 7 (before data-node in step 8), so `DATA_NODE_RUNNING` was never true at issuer launch time. Without the env var, `fetch_nav()` returns $1 fallback for all buy/sell fills. Fix: unconditionally set the env var; issuers retry every cycle until data-node is up.
-- [DECISION] Add data-node readiness check before smoke test — wait up to 30s for `/itp-price` endpoint to return non-zero NAV before sending buy order, with 5s grace period for issuers to pick up the NAV source.
+- [DECISION] Always pass `DATA_NODE_URL=http://localhost:8200` to oracle env — oracles launch in step 7 (before data-node in step 8), so `DATA_NODE_RUNNING` was never true at oracle launch time. Without the env var, `fetch_nav()` returns $1 fallback for all buy/sell fills. Fix: unconditionally set the env var; oracles retry every cycle until data-node is up.
+- [DECISION] Add data-node readiness check before smoke test — wait up to 30s for `/itp-price` endpoint to return non-zero NAV before sending buy order, with 5s grace period for oracles to pick up the NAV source.
 - [DECISION] Add buy/sell price reporting to smoke test — compute price per share from USDC/shares at fill time, display on-chain NAV for comparison. Buy uses 6-decimal ARB_USDC, sell uses 18-decimal L3_WUSDC.
 - [FAILED] Previous session decoded ITP state struct incorrectly (swapped totalSupply/NAV fields) — getITPState returns `(address creator, uint256 totalSupply, uint256 nav, ...)`, not `(itpId, nav, totalSupply, ...)`. Corrected: NAV=1e18 ($1), totalSupply=50e18 (50 shares).
 
@@ -1953,17 +1953,17 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Fills Cycle Deadlock Fix
 
-- [DECISION] Removed `/100 * 100` batch-rounding from fills_cycle and batch_cycle computation in `issuer/src/main.rs` — the rounding grouped all orders 0-99 into the same cycle (500_000_001), causing the orchestrator's `confirmed_fills` dedup map to permanently block subsequent fill batches after the first one succeeded. Changed to `min_order_id + 500_000_001` (fills) / `min_order_id + 500_000_000` (batch). Still tx-ID-based (as designed), still deterministic across all issuers (same on-chain BATCHED orders = same min), but now unique per distinct fill batch. Contract has no cycle-based dedup (only checks order status = BATCHED), so the in-memory dedup was the sole source of the deadlock.
+- [DECISION] Removed `/100 * 100` batch-rounding from fills_cycle and batch_cycle computation in `oracle/src/main.rs` — the rounding grouped all orders 0-99 into the same cycle (500_000_001), causing the orchestrator's `confirmed_fills` dedup map to permanently block subsequent fill batches after the first one succeeded. Changed to `min_order_id + 500_000_001` (fills) / `min_order_id + 500_000_000` (batch). Still tx-ID-based (as designed), still deterministic across all oracles (same on-chain BATCHED orders = same min), but now unique per distinct fill batch. Contract has no cycle-based dedup (only checks order status = BATCHED), so the in-memory dedup was the sole source of the deadlock.
 - [FAILED] Attempted wall-clock-based `current_cycle` for fills — user corrected: "cycle was made to run on id of tx, not on wall clock". Reverted.
 - [FAILED] Added $1 fallback for rebalance prices when price_fetcher fails — user rejected: "you should not have fake data, everything should stall if there is no proper price data". Reverted.
 - [DECISION] Made `BitgetPriceFetcher::fetch_prices` tolerant of individual asset failures — was using `?` operator which failed entire batch of 100 on first error. Now collects partial results and warns on failures. Callers check if all required prices are present and stall (retry next cycle) if not.
 - [DECISION] Rebalance stalls on missing prices instead of skipping (mark_rebalance_completed) — if any current or added asset lacks a price, the ITP rebalance is NOT marked complete; it retries on the next cycle when prices may be available.
 - [DECISION] Fixed Bitget credential priority: `${BITGET_PUB:-${BITGET_READONLY_API_KEY}}` — global.env real credentials (BITGET_PUB/PK/PASS) now override dummy defaults. Previous pattern `${BITGET_READONLY_API_KEY:-$BITGET_PUB}` never triggered because dummy was non-empty.
 - [DECISION] Only set `DATA_NODE_URL` when data-node backend is running — empty string `DATA_NODE_URL=""` tricked bootstrap into choosing BackendPriceFetcher with empty URL, causing all price fetches to fail silently.
-- [FAILED] Issuers used 6-entry `default_arbitrum()` symbol map instead of 684-entry `data/symbol-map.json` — start.sh never passed `--symbol-map-file` to issuer launch. All 100 ITP assets got `PriceNotAvailable`. Fixed by adding `--symbol-map-file` to issuer args.
+- [FAILED] Oracles used 6-entry `default_arbitrum()` symbol map instead of 684-entry `data/symbol-map.json` — start.sh never passed `--symbol-map-file` to oracle launch. All 100 ITP assets got `PriceNotAvailable`. Fixed by adding `--symbol-map-file` to oracle args.
 - [DECISION] Added bulk ticker cache to BitgetPriceFetcher — `get_all_tickers()` fetches all ~800 pairs in 1 HTTP call (vs 684 sequential calls = 4 min). 30s TTL cache. Consensus price fetch populates the cache, rebalance uses cached prices. Dropped from ~4 min to <1s per consensus cycle.
 - [FAILED] Step 4 (Bitget token deploy) overwrites `data/symbol-map.json` created by step 3 (ITP deploy). ITP's 100th token address was lost from the map, causing rebalance to stall with `price_count=99`. Fixed by merging ITP tokens back into symbol map after step 4.
-- [DECISION] Added `--issuer-custody-arb $BLS_CUSTODY` to issuer args in start.sh — fixes L3→Arb bridge `ERC20InvalidReceiver(address(0))` error caused by default zero address.
+- [DECISION] Added `--oracle-custody-arb $BLS_CUSTODY` to oracle args in start.sh — fixes L3→Arb bridge `ERC20InvalidReceiver(address(0))` error caused by default zero address.
 - [DECISION] Restructured start.sh smoke test as full E2E: buy(bridge) → rebalance → sell(L3 direct) → sell(bridge escrow). Each step has pass/fail reporting.
 
 ## Session: 20260212-1345-d2ch
@@ -1980,14 +1980,14 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Cross-Chain Sell from Arbitrum (Contract Changes)
 
-- [DECISION] Reuse shared `crossChainOrderId` counter for sell orders — keeps buy and sell order IDs globally unique, avoiding collisions when issuers process both order types
+- [DECISION] Reuse shared `crossChainOrderId` counter for sell orders — keeps buy and sell order IDs globally unique, avoiding collisions when oracles process both order types
 - [DECISION] Store `bridgedItpAddress` in CrossChainSellOrder struct — avoids re-querying BridgeProxy at completion/refund time, and the BridgedITP address is immutable per ITP
 - [DECISION] `bridgeProxy` storage typed as `IBridgeProxy` (not `address`) — enables direct `.getBridgedItp()` calls without casting; auto-generated getter satisfies the `returns (address)` interface declaration via ABI equivalence
 - [DECISION] CEI pattern in completeSellOrder/refundSellOrder — delete order from storage before external token transfers to prevent reentrancy
 - [DECISION] Storage gap reduced from 41 to 39 — 2 new slots (bridgeProxy + crossChainSellOrders mapping)
 - [DECISION] `setBridgeProxy` requires BLS signature but is not in interface — it's an admin/setup function, not part of the cross-chain sell user flow
 
-### Cross-Chain Sell from Arbitrum (Issuer Rust Implementation)
+### Cross-Chain Sell from Arbitrum (Oracle Rust Implementation)
 
 - [DECISION] Separate `seen_sell_orders` and `retry_sell_counts` maps in ArbitrumChainReader — keeps buy/sell deduplication independent; a sell retry reset does not affect buy order tracking
 - [DECISION] No deadline check for sell orders in `get_confirmed_cross_chain_sell_orders` — sell escrow is permanent until completeSellOrder/refundSellOrder is called, unlike buy orders which expire
@@ -2000,12 +2000,12 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Dual-Chain Time Sync + Bridge Smoke Test
 
-- [FAILED] Cross-chain buy via bridge with single-chain time warp — Morpho's `evm_increaseTime 86401` only advanced Arb Anvil; L3 stayed at real time; issuer's `submitOrderFor` on L3 rejected deadline as >24h in the future (E012_InvalidDeadline: 91826s > 86400s max)
+- [FAILED] Cross-chain buy via bridge with single-chain time warp — Morpho's `evm_increaseTime 86401` only advanced Arb Anvil; L3 stayed at real time; oracle's `submitOrderFor` on L3 rejected deadline as >24h in the future (E012_InvalidDeadline: 91826s > 86400s max)
 - [DECISION] Advance BOTH Anvil chains by 86401 seconds in Morpho step — keeps block.timestamp in sync across L3 and Arb; cross-chain deadline validation now works
 - [FAILED] `--block-time 2` on Anvil startup — slowed Bitget token deployment from ~30s to ~20min because each tx waits for next 2s block; needed automine for batch deploys
 - [FAILED] `evm_setIntervalMining(2000)` — disabled automine in Anvil, causing `cast send` to hang/fail because txs sat in mempool instead of being mined immediately; approve tx never mined before buy gas estimation
-- [DECISION] Background block miner loop (`while true; cast rpc evm_mine; sleep 2; done &`) — keeps automine on (instant tx mining) while creating empty blocks every 2s for issuer event detection; PID tracked in .pids for clean shutdown
-- [DECISION] Bridge smoke test (Step 10) in start.sh — buy + sell via ArbBridgeCustody with 90s timeout; uses deployer account (has ETH + can mint USDC); validates full cross-chain flow (buy→issuer consensus→L3 fill→bridge back→sell→L3 sell→USDC return)
+- [DECISION] Background block miner loop (`while true; cast rpc evm_mine; sleep 2; done &`) — keeps automine on (instant tx mining) while creating empty blocks every 2s for oracle event detection; PID tracked in .pids for clean shutdown
+- [DECISION] Bridge smoke test (Step 10) in start.sh — buy + sell via ArbBridgeCustody with 90s timeout; uses deployer account (has ETH + can mint USDC); validates full cross-chain flow (buy→oracle consensus→L3 fill→bridge back→sell→L3 sell→USDC return)
 
 ## Session: 20260212-1500-k4m9
 
@@ -2022,7 +2022,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### ITP Chart — $1.00 Start + Timestamp Preservation
 
-- [DECISION] Seed nav-series with implied creation prices (weight/qty) for the creation tick — gives exactly $1.00 by mathematical identity: NAV = sum(qty * (weight/qty)) / 1e18 = sum(weight) / 1e18 = 1.0. DB prices differ from creation prices by 1.2% avg (up to 30% for WARDUSDT) due to timing gap between issuer price fetch and collector price fetch
+- [DECISION] Seed nav-series with implied creation prices (weight/qty) for the creation tick — gives exactly $1.00 by mathematical identity: NAV = sum(qty * (weight/qty)) / 1e18 = sum(weight) / 1e18 = 1.0. DB prices differ from creation prices by 1.2% avg (up to 30% for WARDUSDT) due to timing gap between oracle price fetch and collector price fetch
 - [DECISION] Overlay DB prices AFTER creation tick, BEFORE fetch group loop — ensures subsequent candles use market-aligned prices and stale symbols (ARTXUSDT, WARDUSDT) stay aligned with card/itp-price endpoint
 - [DECISION] Skip re-storing init snapshots on collector restart (`has_init_snapshot` check) — every restart was creating a NEW init with valid_from=now(), causing 6 duplicate snapshots and moving effective_from forward, hiding chart history
 - [DECISION] Changed `query_creation_snapshot` to ORDER BY valid_from ASC — get the ORIGINAL creation time, not the latest restart
@@ -2046,7 +2046,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Frontend → Price-History Backend + Backend Caching
 
-- [DECISION] Add in-memory TTL cache (5s) to data-node backend for `/latest-prices` and `/itp-price` endpoints — all consumers (issuers, AP, frontend) hammer the same backend every 1.5-3s, but collector only writes to DB every 30s. Cache key: sorted symbols or itp_id.
+- [DECISION] Add in-memory TTL cache (5s) to data-node backend for `/latest-prices` and `/itp-price` endpoints — all consumers (oracles, AP, frontend) hammer the same backend every 1.5-3s, but collector only writes to DB every 30s. Cache key: sorted symbols or itp_id.
 - [DECISION] Add `/prices-by-address` endpoint to data-node backend — frontend needs prices keyed by contract address, not Bitget symbol. Backend does address→symbol translation internally using its symbol_map, returns wei-scale (18 decimal) prices.
 - [DECISION] Switch `useItpNav.ts` from AP `/nav?itpId=X` to data-node `/itp-price?itp_id=X` — direct backend access, no AP middleman. Response field mapping: `nav_usd` → `nav_display` (parseFloat), `priced_count` → `assets_priced`, `total_count` → `assets_total`.
 - [DECISION] Switch `useApBalances.ts` from AP `/prices?addresses=X` to data-node `/prices-by-address?addresses=X` — same response shape (address→{price}) so minimal frontend changes needed.
@@ -2054,7 +2054,7 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ## Session: 20260211-2100-b5k1
 
-### Reroute ALL Issuer Price Paths to Price-History Backend
+### Reroute ALL Oracle Price Paths to Price-History Backend
 
 - [DECISION] Create `BackendPriceFetcher` implementing `PriceFetcher` trait — fetches from data-node backend `/latest-prices?symbols=X,Y,Z` instead of Bitget API directly. Uses SymbolMap to translate addresses to symbols.
 - [DECISION] Change `PriceComponents.fetcher` from concrete `BitgetPriceFetcher<BitgetReadOnlyClientImpl>` to `Arc<dyn PriceFetcher>` — allows runtime polymorphism between BackendPriceFetcher and BitgetPriceFetcher without infecting all generic type params.
@@ -2072,15 +2072,15 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 - [DECISION] Guard zero NAV in `fetch_nav_from_ap()` — treat AP returning `nav=0` same as unreachable, use $1 fallback. Root cause: AP cache empty on startup returns 0, fills get `fill_price=0`, followers reject.
 - [DECISION] Belt-and-suspenders zero NAV guard at fills construction site — even if `fetch_nav_from_ap()` somehow returns 0, force $1 fallback before building Fill structs.
 - [DECISION] Remove direct Bitget price fetching from AP entirely — AP should only use data-node backend for prices. Deleted `price_fetcher.rs` module, `--real-bitget-prices` CLI flag, `real_bitget_prices` config field, background price refresh task, inline NAV computation in `/nav` endpoint.
-- [DECISION] `/prices` and `/nav` endpoints now delegate to data-node backend — no local price cache or Bitget API calls in AP. Without `--data-node-url`, endpoints return error JSON (issuer fallback handles this).
+- [DECISION] `/prices` and `/nav` endpoints now delegate to data-node backend — no local price cache or Bitget API calls in AP. Without `--data-node-url`, endpoints return error JSON (oracle fallback handles this).
 - [DECISION] `AssetTradeRequest` vault price setting now fetches from data-node backend instead of direct Bitget — if data-node unavailable, skip price setting (vault works with existing/mock prices).
-- [FAILED] Relying on AP price cache for fills confirmation — cache empty on fresh AP startup → NAV=0 → fills rejected by followers. Fix: issuer-side zero guard + remove AP cache dependency.
+- [FAILED] Relying on AP price cache for fills confirmation — cache empty on fresh AP startup → NAV=0 → fills rejected by followers. Fix: oracle-side zero guard + remove AP cache dependency.
 
 ## Session: 20260211-1430-f7k9
 
 ### Fix E2E 100-Asset Test — AP Port Conflict
 
-- [DECISION] Kill issuers+AP at Step 0 (before Anvil) with SIGKILL — orphaned processes from previous runs hold port 9100, causing AP startup failure
+- [DECISION] Kill oracles+AP at Step 0 (before Anvil) with SIGKILL — orphaned processes from previous runs hold port 9100, causing AP startup failure
 - [DECISION] Use SIGKILL (-9) instead of SIGTERM at Step 5 — 1s sleep after SIGTERM wasn't enough for graceful shutdown to release port
 - [DECISION] Add SO_REUSEADDR to AP TCP listener via TcpSocket — prevents EADDRINUSE when socket is in TIME_WAIT state after prior crash
 - [DECISION] Add port-wait loop (lsof :9100) after kills — ensures port is actually free before AP restart, not just a fixed sleep
@@ -2118,9 +2118,9 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Deterministic Leader Election with Failover + Batch-of-100 Rotation
 
-- [DECISION] Batch-of-100 leader rotation: `batch_base = (min_order_id / 100) * 100`, `l3_cycle = batch_base + 500M` - same leader handles full batch of 100 orders, natural rotation every 100 orders via `batch_base % num_issuers`
-- [DECISION] Infinite failover rotation: `attempt = elapsed_secs / 15`, `leader = (cycle + attempt) % num_issuers` - if leader stalls, next node takes over after 15s, wraps around forever (0→1→2→0→1→...)
-- [DECISION] No attempt cap - rotation cycles infinitely through all issuers. Contract safety: late submissions from recovered stalled leaders revert harmlessly (E019_CycleAlreadyProcessed or E024_InvalidOrderStatus)
+- [DECISION] Batch-of-100 leader rotation: `batch_base = (min_order_id / 100) * 100`, `l3_cycle = batch_base + 500M` - same leader handles full batch of 100 orders, natural rotation every 100 orders via `batch_base % num_oracles`
+- [DECISION] Infinite failover rotation: `attempt = elapsed_secs / 15`, `leader = (cycle + attempt) % num_oracles` - if leader stalls, next node takes over after 15s, wraps around forever (0→1→2→0→1→...)
+- [DECISION] No attempt cap - rotation cycles infinitely through all oracles. Contract safety: late submissions from recovered stalled leaders revert harmlessly (E019_CycleAlreadyProcessed or E024_InvalidOrderStatus)
 - [DECISION] First-seen tracking via `HashMap<u64, Instant>` keyed by l3_cycle - all nodes compute same attempt number from wall clock (NTP-synced, ±1s drift fine for 15s windows). Cleaned up on success
 - [DECISION] Keep existing `calculate_bridge_leader` for ITP creation, cross-chain, rebalance - those paths are rare/manual and don't need failover
 
@@ -2128,20 +2128,20 @@ Most sources have stale and zero-value data polluting the system. Zero values ar
 
 ### Fix Remaining E2E Failures (Sell USDC Return + Rebalance)
 
-- [DECISION] L3-native leader election: replace `current_cycle + 500M` with `min_order_id + 500M` - current_cycle is a local unsynchronized counter that drifts per-issuer, causing all issuers to elect different leaders (nobody processes confirmBatch/confirmFills). min_order_id is on-chain and deterministic across all nodes.
-- [DECISION] E2E rebalance test: replace `proposeRebalance(bytes32,uint256[])` with `requestRebalance(bytes32,uint256[],address[],uint256[],string)` - proposeRebalance doesn't exist in the contract, requestRebalance emits RebalanceRequested event for issuers to detect.
+- [DECISION] L3-native leader election: replace `current_cycle + 500M` with `min_order_id + 500M` - current_cycle is a local unsynchronized counter that drifts per-oracle, causing all oracles to elect different leaders (nobody processes confirmBatch/confirmFills). min_order_id is on-chain and deterministic across all nodes.
+- [DECISION] E2E rebalance test: replace `proposeRebalance(bytes32,uint256[])` with `requestRebalance(bytes32,uint256[],address[],uint256[],string)` - proposeRebalance doesn't exist in the contract, requestRebalance emits RebalanceRequested event for oracles to detect.
 - [DECISION] E2E rebalance polling: replace `getPendingRebalance(bytes32)` with `getITPState(bytes32)` weight comparison - getPendingRebalance doesn't exist, getITPState returns current weights which can be compared to target.
 
 ## Session: 20260211-1600-m3x7
 
-### Revert AP Multi-Asset → Issuer-Driven Per-Asset Settlement
+### Revert AP Multi-Asset → Oracle-Driven Per-Asset Settlement
 
-- [FAILED] AP-side multi-asset decomposition via getITPState (session q9w4) - violated architecture: issuers decompose and net, AP is dumb executor
+- [FAILED] AP-side multi-asset decomposition via getITPState (session q9w4) - violated architecture: oracles decompose and net, AP is dumb executor
 - [DECISION] Revert AP to event-driven executor: removed abigen!(IndexItpReader), itp_id, index_address, provider from OnChainSettlement
 - [DECISION] New contract: emitAssetTrades(cycleNumber, AssetTrade[], blsSignature) - BLS-authenticated, no state changes, event-only
 - [DECISION] AssetTrade has per-asset side field (not per-call) - cross-ITP netting can produce mixed BUY/SELL per asset
 - [DECISION] No itpId in AssetTradeRequest event - trades are cycle-level, netted across all ITPs
-- [DECISION] Issuer decomposition: shares = usdc_amount * 1e18 / NAV, usdc_for_asset[i] = shares * qty[i] * price[i] / 1e36
+- [DECISION] Oracle decomposition: shares = usdc_amount * 1e18 / NAV, usdc_for_asset[i] = shares * qty[i] * price[i] / 1e36
 - [DECISION] Cross-ITP netting uses signed arithmetic (I256): BUY adds, SELL subtracts per asset
 - [DECISION] AP trade_id = cycle_number * 10000 + log_index (from event) - unique per asset trade per cycle
 - [DECISION] AssetTrade[] sorted by asset address for deterministic consensus hashing
@@ -2166,7 +2166,7 @@ After: 10 PASS / 4 FAIL
 ### Multi-Asset AP Settlement (REVERTED — see session m3x7)
 
 - [DECISION] Replace single base_token in OnChainSettlement with itp_id + index_address + provider - AP now resolves ITP inventory on-chain via getITPState and executes N proportional trades instead of 1
-- [DECISION] Use abigen! locally in ap/src/main.rs for IndexItpReader - avoids cross-crate dependency on issuer crate
+- [DECISION] Use abigen! locally in ap/src/main.rs for IndexItpReader - avoids cross-crate dependency on oracle crate
 - [DECISION] trade_id = order_id * 1000 + asset_index - provides unique trade IDs per asset within an order while maintaining traceability
 - [DECISION] Remove BTC/ETH address injection from deployment merge steps - AP no longer needs hardcoded token addresses since it reads them from getITPState
 - [DECISION] Default real_price to $1 (1e18) when price fetch fails - ensures settlement proceeds even without Bitget API connectivity
@@ -2253,7 +2253,7 @@ After: 10 PASS / 4 FAIL
 
 **Contract Changes:**
 - [DECISION] Replaced 3-step rebalance flow (proposeRebalance → confirmRebalanceBatch → updateWeights) with 2-step: permissionless requestRebalance (event-only) + single BLS rebalance() call - simpler, fewer attack surfaces, single atomic operation
-- [DECISION] requestRebalance() is fully permissionless and only emits an event - issuers verify off-chain (deployer check or delisting check) before executing. This avoids on-chain access control complexity while preserving security via BLS consensus
+- [DECISION] requestRebalance() is fully permissionless and only emits an event - oracles verify off-chain (deployer check or delisting check) before executing. This avoids on-chain access control complexity while preserving security via BLS consensus
 - [DECISION] Swap-and-pop for asset removal (descending index order) - O(1) per removal, avoids expensive array shifting. Requires removeIndices sorted descending to prevent index invalidation
 - [DECISION] RebalanceLib remains an external library (delegatecall) with storage mappings passed as parameters - avoids circular dependencies between Index.sol and the library
 - [DECISION] Preserved deprecated storage slots (_deprecated_pendingRebalances, nextRebalanceNonce) in IndexStorage.sol and BridgeProxy.sol - UUPS proxy pattern requires storage layout stability across upgrades
@@ -2262,10 +2262,10 @@ After: 10 PASS / 4 FAIL
 
 **Data/Script Changes:**
 - [DECISION] symbol-map.json format changed from {"addr": "PAIR"} to {"addr": {"pair": "PAIR", "source": "bitget"}} - enables multi-exchange support and delisting verification. Backward compatible parsing (string values still accepted)
-- [DECISION] Created exchange-listings.json from existing bitget-all-pairs.json - issuers cross-reference this to verify delisting claims in requestRebalance notes
+- [DECISION] Created exchange-listings.json from existing bitget-all-pairs.json - oracles cross-reference this to verify delisting claims in requestRebalance notes
 - [DECISION] manage-assets.sh computes removeIndices + redistributed weights from --delist symbols - avoids manual index computation errors
 
-### Update Issuer Rebalance Event Parsing
+### Update Oracle Rebalance Event Parsing
 
 - [DECISION] Renamed RebalanceProposedEvent to RebalanceRequestedEvent with new fields (requester, remove_indices, add_assets, note) to match updated contract event - contract now supports asset add/remove in rebalance
 - [DECISION] Removed WeightsLengthMismatch error variant since old_weights no longer exists in the event - only new_weights are emitted
@@ -2276,7 +2276,7 @@ After: 10 PASS / 4 FAIL
 
 ### Fix Cross-Chain Order Dedup — Orders Stuck After Failed Processing
 
-- [FAILED] Premature seen_orders dedup in ArbitrumChainReader — marking orders as "seen" BEFORE orchestrator processes them caused orders to be permanently skipped if bridge/submit failed (E097, insufficient gas, etc.). Required issuer restart to clear in-memory HashSet.
+- [FAILED] Premature seen_orders dedup in ArbitrumChainReader — marking orders as "seen" BEFORE orchestrator processes them caused orders to be permanently skipped if bridge/submit failed (E097, insufficient gas, etc.). Required oracle restart to clear in-memory HashSet.
 - [DECISION] Move dedup marking to AFTER successful processing — get_confirmed_cross_chain_orders() no longer marks orders as "seen". Caller (main.rs) calls mark_order_processed() after successful bridge+submit completion. Failed orders are retried on the next cycle.
 - [DECISION] Add retry counter (MAX_ORDER_RETRIES=5) per order to prevent infinite retries for permanently failing orders. After 5 failed attempts, order is silently skipped.
 - [DECISION] Mark expired and zero-user orders as "seen" immediately — these will never succeed, no point retrying.
@@ -2289,7 +2289,7 @@ After: 10 PASS / 4 FAIL
 - [DECISION] Mine empty blocks on Anvil (`anvil_mine`) after buy tx to push events past confirmations threshold - dev Anvil doesn't auto-mine, so events stay "unconfirmed"
 - [DECISION] Filter already-processed cross-chain orders in orchestrator before re-processing - prevents infinite batch/fill retry loop when order already filled
 - [DECISION] Mark order as Filled when confirmFills reverts with 0x6e6e29cb (already-filled error) - stops SubmittedOnL3→batch→fill retry cycle
-- [FAILED] Directly starting issuers without ISSUER_ARBITRUM_RPC_URL env var - issuers default to real Arbitrum RPC instead of local Anvil, failing to find events
+- [FAILED] Directly starting oracles without ORACLE_ARBITRUM_RPC_URL env var - oracles default to real Arbitrum RPC instead of local Anvil, failing to find events
 
 ### Verified Fill Price Uses Real NAV
 
@@ -2299,19 +2299,19 @@ After: 10 PASS / 4 FAIL
 
 ## Session: 20260209-2100-k4m7
 
-### Make NAV Evolve — AP Computes NAV, Issuers Use Real Fill Prices
+### Make NAV Evolve — AP Computes NAV, Oracles Use Real Fill Prices
 
 - [DECISION] AP computes NAV from on-chain inventory + cached Bitget prices via new /nav endpoint - single source of truth for live NAV
-- [DECISION] Issuer fetches NAV from AP via raw TCP HTTP GET (no reqwest dep) with $1 fallback if AP unreachable - zero new dependencies
+- [DECISION] Oracle fetches NAV from AP via raw TCP HTTP GET (no reqwest dep) with $1 fallback if AP unreachable - zero new dependencies
 - [DECISION] Frontend fetches NAV from AP /nav in parallel with on-chain totalSupply - AP for live NAV, chain for shares
 - [DECISION] Removed run_nav_push entirely - no longer pushing NAV on-chain since AP serves it live
-- [DECISION] Used raw tokio::net::TcpStream for issuer→AP HTTP request instead of adding reqwest dependency - keeps issuer lean
+- [DECISION] Used raw tokio::net::TcpStream for oracle→AP HTTP request instead of adding reqwest dependency - keeps oracle lean
 
 ## Session: 20260209-1830-f9p3
 
 ### Fix ITP Creation Prices — Use Real Bitget Prices
 
-- [DECISION] Fetch real Bitget spot prices at ITP creation time instead of hardcoding $1 - prevents NAV explosion (~$700 vs $1) when issuers push real prices
+- [DECISION] Fetch real Bitget spot prices at ITP creation time instead of hardcoding $1 - prevents NAV explosion (~$700 vs $1) when oracles push real prices
 - [DECISION] Shell script fetches all tickers in one API call, Python extracts per-symbol prices to JSON - avoids 100 individual API calls
 - [DECISION] Graceful fallback: if Bitget unreachable or <50 prices found, proceed with $1 defaults - E2E test still works offline
 - [DECISION] Frontend fetches from AP /prices proxy (already exists in useApBalances.ts) rather than Bitget directly - avoids CORS, reuses existing infra
@@ -2336,7 +2336,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] createITP() now takes uint256[] prices parameter for initial inventory computation (qty = weight * 1e18 / price). Prices are NOT stored — only used for initial inventory calc. This removes the E099 dependency on registerAssetIndex.
 
-[DECISION] updateWeights() now takes uint256[] newInventory and uint256 nav. Issuers compute new inventory off-chain (q_new = w_new * NAV / price) using Bitget prices and pass both to contract. This removes the dependency on on-chain asset prices for rebalance.
+[DECISION] updateWeights() now takes uint256[] newInventory and uint256 nav. Oracles compute new inventory off-chain (q_new = w_new * NAV / price) using Bitget prices and pass both to contract. This removes the dependency on on-chain asset prices for rebalance.
 
 [DECISION] Removed E005 limit price validation entirely. On-chain prices were stale (never updated in production), making the 50% deviation check useless and blocking legitimate orders.
 
@@ -2366,7 +2366,7 @@ After: 10 PASS / 4 FAIL
 
 ### ITP Quantity-Based Pricing
 
-[DECISION] Replace weight-based NAV (`sum(weight * price)`) with inventory-based NAV (`sum(qty * price) / 1e18`). At creation, convert weights to per-share quantities: `qty[i] = (weight[i] * 1e18) / price[i]`. ITP starts at $1. Quantities stored on-chain in `_itpInventory` and only change on rebalance. All layers (contract, issuer, frontend) use the same formula with their own price feeds.
+[DECISION] Replace weight-based NAV (`sum(weight * price)`) with inventory-based NAV (`sum(qty * price) / 1e18`). At creation, convert weights to per-share quantities: `qty[i] = (weight[i] * 1e18) / price[i]`. ITP starts at $1. Quantities stored on-chain in `_itpInventory` and only change on rebalance. All layers (contract, oracle, frontend) use the same formula with their own price feeds.
 
 [DECISION] Require asset prices registered before ITP creation (E099 error). `createITP` now reverts if any asset lacks a registered on-chain price. This is necessary because inventory computation divides by price (`qty = weight * 1e18 / price`), so zero price would cause incorrect behavior.
 
@@ -2374,15 +2374,15 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Frontend uses inventory-first with weight fallback. If `inventory.some(q => q > 0n)`, use inventory-based formula. Otherwise fall back to weight-based for legacy ITPs with zero inventory.
 
-[DECISION] Issuer `calculate_nav` parameter changed from `composition` (address, weight) to `inventory` (address, qty_per_share). Formula: `NAV = sum(qty * price) / 1e18`. No longer divides by total weight. Issuer reads quantities from contract via `getITPState`.
+[DECISION] Oracle `calculate_nav` parameter changed from `composition` (address, weight) to `inventory` (address, qty_per_share). Formula: `NAV = sum(qty * price) / 1e18`. No longer divides by total weight. Oracle reads quantities from contract via `getITPState`.
 
 ## Session: 20260208-1430-v3m9
 
 ### USDC/USDT Swap Responsibility
 
-[DECISION] Remove AP auto-swap (effective_quote + swap_stable block in ap/src/main.rs). AP always uses settlement.quote_token (USDC). MockBitgetVault executes trades with any token pair (burn/mint), so USDC→base_token works directly without USDT intermediary. The USDT netting result remains computed by issuers for future production use with real CEX.
+[DECISION] Remove AP auto-swap (effective_quote + swap_stable block in ap/src/main.rs). AP always uses settlement.quote_token (USDC). MockBitgetVault executes trades with any token pair (burn/mint), so USDC→base_token works directly without USDT intermediary. The USDT netting result remains computed by oracles for future production use with real CEX.
 
-[DECISION] No separate USDC/USDT TradeRequest needed from issuers. The on-chain Index.confirmBatch only emits TradeRequests for ITP orders (pair_id = keccak256(itpId, assetIndex)). There's no mechanism to inject arbitrary stablecoin swap TradeRequests. Since MockBitgetVault handles any token pair, the USDT swap is simply not needed.
+[DECISION] No separate USDC/USDT TradeRequest needed from oracles. The on-chain Index.confirmBatch only emits TradeRequests for ITP orders (pair_id = keccak256(itpId, assetIndex)). There's no mechanism to inject arbitrary stablecoin swap TradeRequests. Since MockBitgetVault handles any token pair, the USDT swap is simply not needed.
 
 ### SELL (Withdraw) buy_amount Calculation
 
@@ -2390,7 +2390,7 @@ After: 10 PASS / 4 FAIL
 
 ### Deploy Script Bridge Contracts
 
-[DECISION] Added BridgeProxy + BridgedItpFactory to DeployFullSystemE2E.s.sol. Chicken-and-egg resolved by initializing BridgeProxy with factory=address(0), then deploying factory with proxy address, then calling setBridgedItpFactory. Signer threshold set to 2 for local E2E (2/3 issuers).
+[DECISION] Added BridgeProxy + BridgedItpFactory to DeployFullSystemE2E.s.sol. Chicken-and-egg resolved by initializing BridgeProxy with factory=address(0), then deploying factory with proxy address, then calling setBridgedItpFactory. Signer threshold set to 2 for local E2E (2/3 oracles).
 
 ### E2E Test Script Updates
 
@@ -2414,7 +2414,7 @@ After: 10 PASS / 4 FAIL
 
 [FAILED] Order mapping only stored on leader node — caused race condition where followers' regular consensus would batch bridge orders (no L3 ID filter). Root cause: `execute_submit_order()` only runs on leader, `store_order_mapping()` is called inside it. First attempted fix (reading nextOrderId on followers) caused worse race: premature sync stored wrong l3_id=0, poisoned validate_submit_order_proposal.
 
-[DECISION] Order-based batch leader election — changed batch/fills leader from `cycle % num_issuers` to `first_order_id % num_issuers`. Same node that submitted the order (and has the arb→L3 mapping) also leads batch and fills. Eliminates need for cross-node mapping sync.
+[DECISION] Order-based batch leader election — changed batch/fills leader from `cycle % num_oracles` to `first_order_id % num_oracles`. Same node that submitted the order (and has the arb→L3 mapping) also leads batch and fills. Eliminates need for cross-node mapping sync.
 
 [DECISION] Removed follower L3 order ID sync entirely — was causing 3 bugs: (1) premature sync before leader executes → wrong l3_id=0, (2) stored mapping triggers "Order already submitted" rejection in validate_submit_order_proposal, (3) setting SubmittedOnL3 status on follower before proposal arrives → "unexpected status" rejection. Only leader stores mapping (via execute_submit_order).
 
@@ -2426,7 +2426,7 @@ After: 10 PASS / 4 FAIL
 
 [FIXED] MOCK_USDT false-positive on fresh Anvil — `cast call "decimals()"` returns exit 0 on empty addresses (Anvil quirk). Script skipped deploying MOCK_USDT, registered non-existent address in vault, causing `swapStable` to revert. Fix: use `cast code` to verify actual bytecode exists.
 
-[DECISION] **AP follows issuer orders — AP does NOT detect trading pairs.** Issuers determine what to trade; AP executes issuer orders. This is a core architecture principle that must be respected by all dev agents.
+[DECISION] **AP follows oracle orders — AP does NOT detect trading pairs.** Oracles determine what to trade; AP executes oracle orders. This is a core architecture principle that must be respected by all dev agents.
 
 [FAILED] Bash integer overflow for 18-decimal token amounts — 500e18 > int64 max (9.2e18). `$((500e18 - 0))` wraps to 1937910009842106368. Fix: use `bc` for all arithmetic on token amounts in vital-e2e-test.sh.
 
@@ -2434,25 +2434,25 @@ After: 10 PASS / 4 FAIL
 
 ### submitOrderFor — Cross-Chain Share Attribution
 
-[DECISION] Added `submitOrderFor(address beneficiary, ...)` to Index.sol — issuers submit orders on behalf of the original Arbitrum user. Shares and refunds go to the beneficiary; USDC is pulled from msg.sender (issuer). Access control via `IssuerRegistry.isActiveIssuer()`. Existing `submitOrder` unchanged for direct L3 users.
+[DECISION] Added `submitOrderFor(address beneficiary, ...)` to Index.sol — oracles submit orders on behalf of the original Arbitrum user. Shares and refunds go to the beneficiary; USDC is pulled from msg.sender (oracle). Access control via `OracleRegistry.isActiveOracle()`. Existing `submitOrder` unchanged for direct L3 users.
 
 [DECISION] Refactored Index.sol submitOrder into `_createOrder(user, payer, ...)` internal function — both `submitOrder` (user=payer=msg.sender) and `submitOrderFor` (user=beneficiary, payer=msg.sender) share the same logic. Keeps code DRY.
 
-[DECISION] Added `isActiveIssuer(address)` to IssuerRegistry — loops through `_issuers` mapping checking `addr == target && status == 1`. Small array (3 issuers in production), O(n) is acceptable.
+[DECISION] Added `isActiveOracle(address)` to OracleRegistry — loops through `_oracles` mapping checking `addr == target && status == 1`. Small array (3 oracles in production), O(n) is acceptable.
 
 ## Session: 20260206-1700-e2v7
 
 ### Vital E2E Test Script + Start Script Updates
 
-[DECISION] Source global.env in start-ap.sh and start-issuers.sh — maps BITGET_PUB/PK/PASS to BITGET_API_KEY/SECRET/PASSPHRASE (AP) and BITGET_READONLY_API_KEY/SECRET/PASSPHRASE (issuers) for real price fetching. Previous dummy credentials replaced with real ones from global.env.
+[DECISION] Source global.env in start-ap.sh and start-oracles.sh — maps BITGET_PUB/PK/PASS to BITGET_API_KEY/SECRET/PASSPHRASE (AP) and BITGET_READONLY_API_KEY/SECRET/PASSPHRASE (oracles) for real price fetching. Previous dummy credentials replaced with real ones from global.env.
 
 [DECISION] Added --deployment-file and --real-bitget-prices flags to start-ap.sh — enables real chain mode (RpcChainReader) and live Bitget price fetching for MockBitgetVault price updates before trades.
 
 [DECISION] Created vital-e2e-test.sh as comprehensive E2E orchestration — automates full buy+sell cycle with PASS/FAIL checklist. Checks: TX submission, ITP shares minted, real Bitget prices, USDT/USDC swap, on-chain settlement, BLS consensus, shares burned, USDC returned. Uses storage slot reads for share verification since _userShares has no public getter.
 
-[DECISION] vital-e2e-test.sh checks ALL 3 issuer addresses for shares — leader varies per cycle (cycle_number % num_issuers), so any issuer can end up as share holder. Script records pre-buy shares snapshot and detects delta (not just non-zero) to handle --skip-deploy with existing state.
+[DECISION] vital-e2e-test.sh checks ALL 3 oracle addresses for shares — leader varies per cycle (cycle_number % num_oracles), so any oracle can end up as share holder. Script records pre-buy shares snapshot and detects delta (not just non-zero) to handle --skip-deploy with existing state.
 
-[FAILED] Assumed Issuer1 always holds shares from buy flow — issuer signer addresses are custom keys (0xC0D3C9E5/0xC0d3ca67/0xC0D3C8DF), NOT standard Anvil accounts (0x7099..). Leader rotation means any issuer can be the share holder. Fixed by scanning all 3.
+[FAILED] Assumed Oracle1 always holds shares from buy flow — oracle signer addresses are custom keys (0xC0D3C9E5/0xC0d3ca67/0xC0D3C8DF), NOT standard Anvil accounts (0x7099..). Leader rotation means any oracle can be the share holder. Fixed by scanning all 3.
 
 [DECISION] Sell limitPrice set to 1 (minimum) — sell order uses limitPrice=1 and slippageTier=1 to ensure fill regardless of price. The buy flow also uses limitPrice=1 for the same reason.
 
@@ -2476,11 +2476,11 @@ After: 10 PASS / 4 FAIL
 
 ### E2E Buy → Rebalance → Sell with Money Logger
 
-[DECISION] Prices must be set via setPriceAdmin BEFORE starting issuers — assetCount is loaded at boot and cached. If 0, all price fetches return empty and fills pipeline stalls.
+[DECISION] Prices must be set via setPriceAdmin BEFORE starting oracles — assetCount is loaded at boot and cached. If 0, all price fetches return empty and fills pipeline stalls.
 
-[FAILED] Issuer auto-rebalance (confirmRebalanceBatch → updateWeights) — confirmRebalanceBatch succeeds but active flag is cleared by the time updateWeights runs. Likely race condition: the library delegatecall in processRebalanceDeltas somehow clears the active flag or it's a storage layout issue with the proxy + library chain. Manual updateWeights (called immediately after proposeRebalance) works fine.
+[FAILED] Oracle auto-rebalance (confirmRebalanceBatch → updateWeights) — confirmRebalanceBatch succeeds but active flag is cleared by the time updateWeights runs. Likely race condition: the library delegatecall in processRebalanceDeltas somehow clears the active flag or it's a storage layout issue with the proxy + library chain. Manual updateWeights (called immediately after proposeRebalance) works fine.
 
-[DECISION] For E2E test, rebalance done via manual proposeRebalance + immediate updateWeights call. Issuer auto-rebalance needs debugging (suspected storage collision in RebalanceLib delegatecall through proxy).
+[DECISION] For E2E test, rebalance done via manual proposeRebalance + immediate updateWeights call. Oracle auto-rebalance needs debugging (suspected storage collision in RebalanceLib delegatecall through proxy).
 
 ## Session: 20260206-0050-k9x1
 
@@ -2492,11 +2492,11 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Deploy200AssetITP.s.sol script deploys 200 MockERC20 tokens directly (no MockTokenFactory batching) — simpler in Forge script context, single transaction.
 
-[DECISION] Sell order submitted directly on L3 Index (not via ArbBridgeCustody) — ArbBridgeCustody has no sell function. Share holder (issuer signer from buy flow) calls submitOrder(side=SELL) directly.
+[DECISION] Sell order submitted directly on L3 Index (not via ArbBridgeCustody) — ArbBridgeCustody has no sell function. Share holder (oracle signer from buy flow) calls submitOrder(side=SELL) directly.
 
-[DECISION] ~~Manual confirmBatch + confirmFills for sell flow~~ SUPERSEDED — Added `run_l3_native_order_processing()` to `issuer/src/main.rs` that auto-processes L3-native pending orders (sell orders, direct L3 buys) via BLS consensus. Uses cycle offset +500M to avoid collision with bridge pipeline cycles. Reuses existing `run_batch_confirm_phase()` + `run_fills_confirm_phase()` infrastructure.
+[DECISION] ~~Manual confirmBatch + confirmFills for sell flow~~ SUPERSEDED — Added `run_l3_native_order_processing()` to `oracle/src/main.rs` that auto-processes L3-native pending orders (sell orders, direct L3 buys) via BLS consensus. Uses cycle offset +500M to avoid collision with bridge pipeline cycles. Reuses existing `run_batch_confirm_phase()` + `run_fills_confirm_phase()` infrastructure.
 
-[DECISION] Share holder for sell is issuer1 signer (0xC0D3C9E5...) — bridge buy flow assigns shares to the issuer signer who called submitOrder on L3 Index.
+[DECISION] Share holder for sell is oracle1 signer (0xC0D3C9E5...) — bridge buy flow assigns shares to the oracle signer who called submitOrder on L3 Index.
 
 [DECISION] L3-native order filtering — Orders not in BridgeOrchestrator's `order_status` map are considered L3-native. Bridge orders always have an entry from detection time.
 
@@ -2504,21 +2504,21 @@ After: 10 PASS / 4 FAIL
 - 200-asset ITP created (ITP ID = 0x02)
 - Buy flow: 100 USDC → 100e18 ITP shares minted (auto via bridge pipeline)
 - Sell flow: submitOrder(SELL, 50e18) → auto confirmBatch (BLS 3/3) → auto confirmFills (BLS 3/3) → 50e18 shares burned, 50e18 USDC returned
-- L3-native auto-processing: Issuer nodes detect, filter, batch, and fill L3-native orders without manual intervention
+- L3-native auto-processing: Oracle nodes detect, filter, batch, and fill L3-native orders without manual intervention
 
 ## Session: 20260206-0025-f7c3
 
 ### Bridge Buy Flow E2E (vital-test.md Scenario B) — COMPLETE
 
-[FAILED] BridgeOrchestrator DISABLED despite env vars — `ISSUER_BRIDGE_PROXY_ADDRESS` env var is read by config but never flows to `params.bridge_proxy`. The CLI `--bridge-proxy` flag is required. Fixed: added `--bridge-proxy ${ISSUER_BRIDGE_PROXY_ADDRESS}` to `scripts/start-local-issuers.sh`.
+[FAILED] BridgeOrchestrator DISABLED despite env vars — `ORACLE_BRIDGE_PROXY_ADDRESS` env var is read by config but never flows to `params.bridge_proxy`. The CLI `--bridge-proxy` flag is required. Fixed: added `--bridge-proxy ${ORACLE_BRIDGE_PROXY_ADDRESS}` to `scripts/start-local-oracles.sh`.
 
-[FAILED] submitOrder E002_InsufficientBalance — Bridge Arb→L3 minted L3_WUSDC to IssuerCustodyL3 (a BLSCustody proxy), but Index.submitOrder() checks `usdc.balanceOf(msg.sender)` requiring the caller (issuer signer) to hold L3_WUSDC. Fixed: mint to issuer signer + approve Index before submitOrder.
+[FAILED] submitOrder E002_InsufficientBalance — Bridge Arb→L3 minted L3_WUSDC to OracleCustodyL3 (a BLSCustody proxy), but Index.submitOrder() checks `usdc.balanceOf(msg.sender)` requiring the caller (oracle signer) to hold L3_WUSDC. Fixed: mint to oracle signer + approve Index before submitOrder.
 
-[FAILED] Custody release E026_TargetNotWhitelisted(ARB_USDC) — IssuerCustodyArb (BLSCustody) requires whitelisted targets for execute(). ARB_USDC was not whitelisted. BLSCustody has 2-day timelock on whitelist. Fixed for E2E: Anvil storage manipulation (`_whitelisted` mapping at slot 2, not slot 4 — use `forge inspect BLSCustody storage-layout`).
+[FAILED] Custody release E026_TargetNotWhitelisted(ARB_USDC) — OracleCustodyArb (BLSCustody) requires whitelisted targets for execute(). ARB_USDC was not whitelisted. BLSCustody has 2-day timelock on whitelist. Fixed for E2E: Anvil storage manipulation (`_whitelisted` mapping at slot 2, not slot 4 — use `forge inspect BLSCustody storage-layout`).
 
-[DECISION] Fills use actual order amounts — Changed hardcoded `fill_amount: 1e18` to `o.get_order_amount(order_id)` in `issuer/src/main.rs`. Fill price still 1e18 (mock 1:1).
+[DECISION] Fills use actual order amounts — Changed hardcoded `fill_amount: 1e18` to `o.get_order_amount(order_id)` in `oracle/src/main.rs`. Fill price still 1e18 (mock 1:1).
 
-[DECISION] BLSCustody storage layout — Constants (STANDARD_THRESHOLD etc.) don't occupy storage. Actual slot order: 0=issuerRegistry, 1=usedNonces mapping, 2=_whitelisted mapping, 3=whitelistProposedAt, 4=whitelistActivatedAt, 5-8=pending upgrade fields, 8=_nonce. Always verify with `forge inspect`.
+[DECISION] BLSCustody storage layout — Constants (STANDARD_THRESHOLD etc.) don't occupy storage. Actual slot order: 0=oracleRegistry, 1=usedNonces mapping, 2=_whitelisted mapping, 3=whitelistProposedAt, 4=whitelistActivatedAt, 5-8=pending upgrade fields, 8=_nonce. Always verify with `forge inspect`.
 
 ---
 
@@ -2530,7 +2530,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Cross-chain buy flow simulated, not real bridge — User calls buyITPFromArbitrum() to lock ARB_USDC in ArbBridgeCustody. Script then mints L3_USDC to L3BridgeCustody to simulate bridge arrival. This tests the contract interfaces without requiring real bridge infrastructure.
 
-[DECISION] Bridge config via environment variables — Added ISSUER_CUSTODY_L3, ISSUER_ARB_CUSTODY, ISSUER_L3_USDC, ISSUER_ARB_USDC to issuer-local.env and start-local-issuers.sh. Allows bridge orchestrator configuration without CLI changes.
+[DECISION] Bridge config via environment variables — Added ORACLE_CUSTODY_L3, ORACLE_ARB_CUSTODY, ORACLE_L3_USDC, ORACLE_ARB_USDC to oracle-local.env and start-local-oracles.sh. Allows bridge orchestrator configuration without CLI changes.
 
 [DECISION] parse-money-logs.sh enhanced for bridge events — Added parsing for CrossChainOrderCreated, BridgeLockConfirmed, BridgeCompleted, and custody release events. Uses grep patterns matching both PascalCase events and snake_case log fields.
 
@@ -2562,7 +2562,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Index.sol library extraction: Split into RebalanceLib, PriceLib, AdminLib — External library functions compile to delegatecall so storage layout is preserved. BLS verification kept in Index.sol to avoid stack-too-deep in libraries (storage mapping params + BLS params exceeded 16-slot stack limit). Libraries handle business logic only, caller does BLS check.
 
-[DECISION] BLS verification stays in Index.sol, not libraries — Initial attempt to put _verifyBLSSignature in RebalanceLib/PriceLib caused "stack too deep" errors. Storage mapping params (3-6 refs) + issuerRegistry + governance + calldata exceeded EVM stack. Solution: caller (Index.sol) verifies BLS before calling library.
+[DECISION] BLS verification stays in Index.sol, not libraries — Initial attempt to put _verifyBLSSignature in RebalanceLib/PriceLib caused "stack too deep" errors. Storage mapping params (3-6 refs) + oracleRegistry + governance + calldata exceeded EVM stack. Solution: caller (Index.sol) verifies BLS before calling library.
 
 [DECISION] confirmRebalanceBatch loops in Index.sol, not library — processRebalanceDeltas handles single ITP in library. Index.sol loops over itpIds array. Avoids passing itpIds array + blsSignature through library (stack depth).
 
@@ -2578,7 +2578,7 @@ After: 10 PASS / 4 FAIL
 
 ### Story 7-17: Architecture Gap Fixes
 
-[DECISION] IssuerRegistry BLS/testMode dual-auth pattern — Used `_testMode` storage variable on IssuerRegistry directly instead of `governance.testMode()` (which doesn't exist). Follows AssetPairRegistry pattern. Admin can toggle testMode; in testMode, rotation/approval/IP update require admin; in production mode, they require BLS signatures.
+[DECISION] OracleRegistry BLS/testMode dual-auth pattern — Used `_testMode` storage variable on OracleRegistry directly instead of `governance.testMode()` (which doesn't exist). Follows AssetPairRegistry pattern. Admin can toggle testMode; in testMode, rotation/approval/IP update require admin; in production mode, they require BLS signatures.
 
 [DECISION] NTP implementation uses raw UDP SNTP instead of sntpc crate — Avoids external dependency, gives full control over NTP v4 packet format. 48-byte packets, calculates drift from server transmit timestamp vs local midpoint. Graceful degradation on failure.
 
@@ -2592,15 +2592,15 @@ After: 10 PASS / 4 FAIL
 
 ## Session: 20260204-1500-c9x7
 
-### Issuer Auto-Discovery of Starting Cycle (Hotplug Resilience)
+### Oracle Auto-Discovery of Starting Cycle (Hotplug Resilience)
 
 [IMPLEMENTED] Added `lastProcessedCycleNumber` public variable to IndexStorage.sol (slot 19) — Tracks the highest cycle number successfully processed by `confirmBatch()` or `confirmRebalanceBatch()`. Updated in both functions with `if (cycleNumber > lastProcessedCycleNumber) lastProcessedCycleNumber = cycleNumber`.
 
 [IMPLEMENTED] Added `get_last_processed_cycle()` method to ChainReader trait — Returns `u64` cycle number. Default implementation returns 0 for backwards compatibility. EthersChainReader implementation queries Index contract's `lastProcessedCycleNumber()` getter.
 
-[IMPLEMENTED] Added `--start-cycle` CLI flag to issuer for manual override — Allows operators to specify starting cycle directly when needed. Used by `BootstrapParams.start_cycle`.
+[IMPLEMENTED] Added `--start-cycle` CLI flag to oracle for manual override — Allows operators to specify starting cycle directly when needed. Used by `BootstrapParams.start_cycle`.
 
-[IMPLEMENTED] Auto-discovery in bootstrap — When `start_cycle` is None and not in mock mode or skip-reconstruction, queries chain for `lastProcessedCycleNumber` and sets `start_cycle = last + 1`. This enables issuers to "hotplug" — restart without manual configuration and automatically resume from the correct cycle.
+[IMPLEMENTED] Auto-discovery in bootstrap — When `start_cycle` is None and not in mock mode or skip-reconstruction, queries chain for `lastProcessedCycleNumber` and sets `start_cycle = last + 1`. This enables oracles to "hotplug" — restart without manual configuration and automatically resume from the correct cycle.
 
 [VERIFIED] Contracts build successfully, all Index tests pass.
 
@@ -2608,11 +2608,11 @@ After: 10 PASS / 4 FAIL
 
 ## Session: 20260204-1330-y8k2
 
-### Issuer Consensus Cycle Number Mismatch
+### Oracle Consensus Cycle Number Mismatch
 
-[FAILED] Issuers trying to submit batches with cycle 1, but on-chain cycles 1, 999999, 1000000 already processed — Transaction reverts with `E019_CycleAlreadyProcessed(1)`. Root cause: issuers use internal cycle counter starting at 0, incrementing each ~1s. With `--skip-reconstruction`, state is not synced from chain.
+[FAILED] Oracles trying to submit batches with cycle 1, but on-chain cycles 1, 999999, 1000000 already processed — Transaction reverts with `E019_CycleAlreadyProcessed(1)`. Root cause: oracles use internal cycle counter starting at 0, incrementing each ~1s. With `--skip-reconstruction`, state is not synced from chain.
 
-[ANALYSIS] Internal vs on-chain cycle numbers are decoupled. Issuers use internal cycles for timing (299, 302, etc.) but submit on-chain with cycle 1 for `confirmBatch()`. The contract checks `cycleProcessed[cycleNumber]` mapping and reverts if already used.
+[ANALYSIS] Internal vs on-chain cycle numbers are decoupled. Oracles use internal cycles for timing (299, 302, etc.) but submit on-chain with cycle 1 for `confirmBatch()`. The contract checks `cycleProcessed[cycleNumber]` mapping and reverts if already used.
 
 [DECISION] Multiple fix options identified:
 1. Add `currentCycle()` getter to Index contract for state reconstruction
@@ -2638,7 +2638,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] FIX: Relaxed validate_release_proposal() to allow Pending/BridgedToL3/SubmittedOnL3/Batched/None — Same leader/follower asymmetry. Previous fix only allowed None, but followers have Pending (order was tracked on initial detection).
 
-[DECISION] FIX: Cross-chain order leader election must use order_id instead of current_cycle — Issuers detect orders at different cycles (timing jitter), so `cycle % 3` yields different leaders on different nodes. Using `order_id % 3` is deterministic regardless of detection timing. Applied to Bridge Arb→L3 and Submit Order phases. Later phases (batch confirm, L3→Arb, custody release, fills) only run on the leader node anyway (followers participate via P2P message handlers).
+[DECISION] FIX: Cross-chain order leader election must use order_id instead of current_cycle — Oracles detect orders at different cycles (timing jitter), so `cycle % 3` yields different leaders on different nodes. Using `order_id % 3` is deterministic regardless of detection timing. Applied to Bridge Arb→L3 and Submit Order phases. Later phases (batch confirm, L3→Arb, custody release, fills) only run on the leader node anyway (followers participate via P2P message handlers).
 
 [DECISION] FIX: confirmFills calldata encoding used wrong Fill struct — Selector was `(uint256,uint256,uint256)` (3-field struct) but on-chain Fill has 5 fields: `(uint256 orderId, uint256 fillPrice, uint256 fillAmount, uint256 cycleNumber, bytes32 txHash)`. Fixed selector and encoding to include all 5 fields, with cycleNumber copied from the function parameter and txHash zeroed.
 
@@ -2648,7 +2648,7 @@ After: 10 PASS / 4 FAIL
 
 ### E2E Buy Flow Gap Fixes (5 gaps)
 
-[DECISION] GAP 1 (CRITICAL): Replaced 3 silent `?` guards in `build_bridge_orchestrator()` with explicit `warn!()` logging (BRIDGE-001/002/003 codes) — Without this, BridgeOrchestrator silently returns None and issuers skip all CrossChainOrderCreated events with no log output explaining why.
+[DECISION] GAP 1 (CRITICAL): Replaced 3 silent `?` guards in `build_bridge_orchestrator()` with explicit `warn!()` logging (BRIDGE-001/002/003 codes) — Without this, BridgeOrchestrator silently returns None and oracles skip all CrossChainOrderCreated events with no log output explaining why.
 
 [DECISION] GAP 1: Added startup diagnostic in main.rs — Logs BRIDGE-010 warning if ArbitrumReader is available but BridgeOrchestrator is None, plus periodic debug log every 100 cycles when cross-chain processing is skipped.
 
@@ -2664,18 +2664,18 @@ After: 10 PASS / 4 FAIL
 
 ## Session: 20260203-2145-r7m1
 
-### Force Real Bitget Prices for Issuers (Story 7.12 prep)
+### Force Real Bitget Prices for Oracles (Story 7.12 prep)
 
 [DECISION] Created .env at project root with BITGET_READONLY_API_KEY, BITGET_READONLY_API_SECRET, BITGET_READONLY_PASSPHRASE — gitignored, sourced by local-e2e-deploy.sh
-[DECISION] Removed --mock-prices from all 3 issuer commands in local-e2e-deploy.sh — issuers now require real Bitget credentials via env vars, no silent fallback
+[DECISION] Removed --mock-prices from all 3 oracle commands in local-e2e-deploy.sh — oracles now require real Bitget credentials via env vars, no silent fallback
 [DECISION] Deploy script fails fast if Bitget credentials missing — explicit check before any deployment starts
-[DECISION] AP price mode remains toggleable via --real-prices flag (controls MockBitgetVault pricing) — separate concern from issuer price fetching
+[DECISION] AP price mode remains toggleable via --real-prices flag (controls MockBitgetVault pricing) — separate concern from oracle price fetching
 
 ## Session: 20260203-1730-bls4
 
 ### BLS Bridge Proposal Signing Bug Fix
 
-[FAILED] BLS signature verification failing between issuer nodes for bridge proposals — Followers received "Invalid leader signature on bridge proposal" for every BridgeArbToL3Proposal. Root cause: BridgeOrchestrator used `sign_with_keypair()` for pre-hashed messages, which adds an extra keccak256, but verification used `verify_message_hash()` which expects the raw hash.
+[FAILED] BLS signature verification failing between oracle nodes for bridge proposals — Followers received "Invalid leader signature on bridge proposal" for every BridgeArbToL3Proposal. Root cause: BridgeOrchestrator used `sign_with_keypair()` for pre-hashed messages, which adds an extra keccak256, but verification used `verify_message_hash()` which expects the raw hash.
 
 [ANALYSIS] Hash mismatch:
 - Leader: `sign_with_keypair(message_hash.as_bytes())` → hashes already-hashed message again
@@ -2683,7 +2683,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Use `sign_message_hash()` for all pre-computed hashes in orchestrator — Changed all 8 occurrences from `sign_with_keypair` to `sign_message_hash` in bridge/orchestrator.rs for bridge proposals, submit order, confirm batch, confirm fills, custody execute, and release to vault flows.
 
-[IMPLEMENTED] issuer/src/bridge/orchestrator.rs — All 8 places now use `sign_message_hash(&self.bls_keypair, &hash_bytes)` with explicit conversion `let hash_bytes: [u8; 32] = message_hash.into()`.
+[IMPLEMENTED] oracle/src/bridge/orchestrator.rs — All 8 places now use `sign_message_hash(&self.bls_keypair, &hash_bytes)` with explicit conversion `let hash_bytes: [u8; 32] = message_hash.into()`.
 
 [VERIFIED] Cross-chain order 3 successfully processed with 2/3 consensus after fix — Leader signature verified by followers, signatures collected, bridge executed.
 
@@ -2703,7 +2703,7 @@ After: 10 PASS / 4 FAIL
 
 [IMPLEMENTED] common/src/bls/signer.rs — Added `sign_message_hash(keypair, &[u8; 32])` and `verify_message_hash(pubkey, &[u8; 32], sig)` that use `hash_to_g1` directly.
 
-[IMPLEMENTED] issuer/src/consensus/protocol.rs — Updated ITP creation leader signing (line ~1405) and follower signing (line ~1703) to use `sign_message_hash`. Updated follower verification (line ~1658) to use `verify_message_hash`.
+[IMPLEMENTED] oracle/src/consensus/protocol.rs — Updated ITP creation leader signing (line ~1405) and follower signing (line ~1703) to use `sign_message_hash`. Updated follower verification (line ~1658) to use `verify_message_hash`.
 
 [VERIFIED] completeCreateItp transaction succeeded at block 768 after fix — Bridged ITP deployed at 0x6D360bb190D0dBD9dD8f966654b4640AE86e8900.
 
@@ -2717,7 +2717,7 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Store incoming connections in map before returning — Added `conns.insert(temp_peer_id, conn)` after setup in `accept_incoming()`. The reader_loop already re-keys to real peer_id on first message.
 
-[IMPLEMENTED] Fix in issuer/src/p2p/connection.rs:169-173 — Connection now stored with temp_peer_id, re-keyed to actual_peer_id when identified.
+[IMPLEMENTED] Fix in oracle/src/p2p/connection.rs:169-173 — Connection now stored with temp_peer_id, re-keyed to actual_peer_id when identified.
 
 [IMPLEMENTED] Regression test `test_incoming_connection_stored_for_broadcast` — Verifies incoming connections are available for broadcast. Test creates two transports, has B connect to A, verifies A can broadcast to B. Will fail with clear message if bug reintroduced.
 
@@ -2745,7 +2745,7 @@ After: 10 PASS / 4 FAIL
 
 [IMPLEMENTED] L3BridgeCustody/Index.sol validation — Both contracts validate USDC has 18 decimals on initialization.
 
-[IMPLEMENTED] Issuer bridge orchestrator update — release_to_vault now uses build_usdc_transfer_calldata_with_amount() for 18→6 conversion.
+[IMPLEMENTED] Oracle bridge orchestrator update — release_to_vault now uses build_usdc_transfer_calldata_with_amount() for 18→6 conversion.
 
 [IMPLEMENTED] Suspicious amount detection — CrossChainOrder.has_suspicious_amount() warns if amount < 1e12 (likely 6-decimal confusion).
 
@@ -2755,7 +2755,7 @@ After: 10 PASS / 4 FAIL
 
 ### Threshold BLS Verification Fix (Story 6.21 continuation)
 
-[DECISION] IssuerRegistry must store G2 pubkeys (128 bytes) instead of G1 (64 bytes) — BLSLib.verifyBLS expects G2 pubkeys for pairing check. Previous architecture stored G1 for on-chain aggregation, but this broke BLS verification. G2 aggregation cannot be done on-chain (no precompile).
+[DECISION] OracleRegistry must store G2 pubkeys (128 bytes) instead of G1 (64 bytes) — BLSLib.verifyBLS expects G2 pubkeys for pairing check. Previous architecture stored G1 for on-chain aggregation, but this broke BLS verification. G2 aggregation cannot be done on-chain (no precompile).
 
 [DECISION] G2 aggregation computed off-chain in Rust, passed to contract — Since there's no G2 addition precompile, aggregated pubkey is computed off-chain using `common::bls::utils::aggregate_pubkeys()` and passed to BridgeProxy.completeCreateItp().
 
@@ -2763,21 +2763,21 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] Threshold verification is cryptographically secure without on-chain pubkey aggregation — If the aggregated pubkey doesn't match the keys that actually signed, the pairing check will fail. No way to forge a valid signature for an incorrect aggregated pubkey.
 
-[DECISION] Configurable signer threshold via BridgeProxy.setSignerThreshold() — For 3 issuers: threshold=2 (2-of-3). For 20 issuers: threshold=11 (11-of-20). Adapts to number of registered issuers.
+[DECISION] Configurable signer threshold via BridgeProxy.setSignerThreshold() — For 3 oracles: threshold=2 (2-of-3). For 20 oracles: threshold=11 (11-of-20). Adapts to number of registered oracles.
 
 ---
 
 ## Session: 20260201-1630-b7k9
 
-### Story 6.21: BLS-Based ITP Creation via Issuer Consensus
+### Story 6.21: BLS-Based ITP Creation via Oracle Consensus
 
-[DECISION] ITP creation completion moves from bridge-node (single EOA owner) to issuer consensus (11/20 BLS threshold) — Current `completeCreateItp` uses owner-only access control, inconsistent with BLS security model used for all other consensus operations. New design requires BLS signature verification.
+[DECISION] ITP creation completion moves from bridge-node (single EOA owner) to oracle consensus (11/20 BLS threshold) — Current `completeCreateItp` uses owner-only access control, inconsistent with BLS security model used for all other consensus operations. New design requires BLS signature verification.
 
-[DECISION] Contract modification required: BridgeProxy.completeCreateItp() must accept and verify BLS signature — Message hash includes: chainId, bridgeProxy address, admin, nonce, orbitItp. Verified against aggregated pubkey from IssuerRegistry.
+[DECISION] Contract modification required: BridgeProxy.completeCreateItp() must accept and verify BLS signature — Message hash includes: chainId, bridgeProxy address, admin, nonce, orbitItp. Verified against aggregated pubkey from OracleRegistry.
 
 [DECISION] New consensus phase added: ItpCreation — Runs after SignSubmit phase. Leader broadcasts ITP_CREATION_PROPOSAL, followers respond with ITP_CREATION_SIGN, leader aggregates and submits.
 
-[DECISION] CreateItpRequested event watching added to issuer chain reader — Issuers subscribe to events and queue requests for consensus processing. Existing bridge-node can be deprecated after this is implemented.
+[DECISION] CreateItpRequested event watching added to oracle chain reader — Oracles subscribe to events and queue requests for consensus processing. Existing bridge-node can be deprecated after this is implemented.
 
 ---
 
@@ -2809,13 +2809,13 @@ After: 10 PASS / 4 FAIL
 
 [DECISION] ITP vault deployment moved to E2E script (post-Forge) — Forge script simulation prevents setITPVault() from seeing createITP() state in same broadcast. E2E script deploys ITP vault via `forge create` then calls setITPVault() via cast. Location: scripts/e2e-full-system.sh
 
-[DECISION] OrderSubmitted event abigen macro must mark itpId as indexed — Solidity event has `bytes32 indexed itpId` but Rust abigen was missing `indexed`, causing event parsing to fail ("Invalid data" error). Fixed in issuer/src/chain/reader.rs abigen macro.
+[DECISION] OrderSubmitted event abigen macro must mark itpId as indexed — Solidity event has `bytes32 indexed itpId` but Rust abigen was missing `indexed`, causing event parsing to fail ("Invalid data" error). Fixed in oracle/src/chain/reader.rs abigen macro.
 
 [DECISION] buy_amount calculation for MockBitgetVault trades — Formula was `amount * price / 1e18` (wrong: produces huge values). Correct formula is `amount * 1e18 / price` (for BUY orders, divides USDC by price to get token amount). Fixed in ap/src/main.rs:664
 
-[FAILED] Consensus batches empty despite order submission — Orders submitted successfully (OrderSubmitted events emitted), issuers run consensus cycles (submit_batch transactions sent), but batches contain no orders. Timing issue: issuers' get_pending_orders() may not find orders due to event query timing or block confirmation delays. Needs further investigation.
+[FAILED] Consensus batches empty despite order submission — Orders submitted successfully (OrderSubmitted events emitted), oracles run consensus cycles (submit_batch transactions sent), but batches contain no orders. Timing issue: oracles' get_pending_orders() may not find orders due to event query timing or block confirmation delays. Needs further investigation.
 
-[GAP] Global assetCount() function missing from Index.sol — Issuers query assetCount() but Index.sol stores asset count per-ITP in ITPCore struct, not as global function. Causes "Asset count is 0" warnings. Issuers should query ITP-specific asset count instead.
+[GAP] Global assetCount() function missing from Index.sol — Oracles query assetCount() but Index.sol stores asset count per-ITP in ITPCore struct, not as global function. Causes "Asset count is 0" warnings. Oracles should query ITP-specific asset count instead.
 
 ---
 
@@ -2829,9 +2829,9 @@ After: 10 PASS / 4 FAIL
 [DECISION] trade_id for MockBitgetVault.executeTrade() derived from order_id.as_u64() — maintains traceability between mock order and on-chain settlement
 
 [FAILED] C1 - BitgetVaultClient passed to process_events but never used — fixed by adding actual execute_trade() call after fill verification
-[FAILED] Task 3.2-3.4 incorrectly marked complete — issuer --bitget-vault flag exists but fill verification doesn't use MockBitgetVault.getFill(); NOW FIXED
+[FAILED] Task 3.2-3.4 incorrectly marked complete — oracle --bitget-vault flag exists but fill verification doesn't use MockBitgetVault.getFill(); NOW FIXED
 
-[DECISION] M1 - Created BitgetVaultReader in common/src/adapters/bitget_vault_reader.rs — read-only client for issuer fill verification (FR13). Added fill_verifier field to ConsensusProtocol with with_fill_verifier() builder. On-chain verification added as step 4 in batch validation.
+[DECISION] M1 - Created BitgetVaultReader in common/src/adapters/bitget_vault_reader.rs — read-only client for oracle fill verification (FR13). Added fill_verifier field to ConsensusProtocol with with_fill_verifier() builder. On-chain verification added as step 4 in batch validation.
 [DECISION] M2 - Git submodule fixed via `git submodule update --init --force contracts/lib/openzeppelin-contracts-upgradeable`
 
 [GAP] M4 - E2E script validates node startup but not rebalance flow — script waits for consensus cycles but doesn't emit TradeRequest or verify weight changes. Full flow test requires additional work.
@@ -2844,10 +2844,10 @@ After: 10 PASS / 4 FAIL
 [DECISION] chain_writer refactored from Arc<Option<T>> to Option<Arc<T>> — enables passing directly as Arc<C> to ConsensusProtocol::new()
 [DECISION] ConsensusProtocol only constructed when ALL of: real_p2p, bls_keypair, chain_writer, key_registry are available — mock mode falls back to existing fetch-and-log behavior
 [DECISION] Test key seeds (--bls-key-seed-index N, --test-key-seeds) generate deterministic BLS keys matching InMemoryKeyRegistry::generate_test_registry() — avoids needing external key files for E2E testing
-[DECISION] E2E script deploys MockIssuerRegistry (not full IssuerRegistry proxy) — simpler setup, BLS verification is done off-chain in Rust protocol
-[DECISION] On-chain peer discovery: OnChainPeerDiscovery queries IssuerRegistry.getIssuers() and parses Issuer.ip (bytes32, UTF-8 "ip:port") into PeerInfo — replaces --peer CLI flags for production; --peer retained as static fallback
+[DECISION] E2E script deploys MockOracleRegistry (not full OracleRegistry proxy) — simpler setup, BLS verification is done off-chain in Rust protocol
+[DECISION] On-chain peer discovery: OnChainPeerDiscovery queries OracleRegistry.getOracles() and parses Oracle.ip (bytes32, UTF-8 "ip:port") into PeerInfo — replaces --peer CLI flags for production; --peer retained as static fallback
 [DECISION] Self-filtering in OnChainPeerDiscovery uses Ethereum address comparison (from ChainWriter) — peer_id not stored on-chain, discovered during TCP handshake
-[DECISION] E2E script encodes "127.0.0.1:<port>" as left-aligned zero-padded bytes32 in addIssuer() ip field — matches ip_string() parsing in Rust
+[DECISION] E2E script encodes "127.0.0.1:<port>" as left-aligned zero-padded bytes32 in addOracle() ip field — matches ip_string() parsing in Rust
 
 ## Session: 20260131-cr611-review
 
@@ -2858,7 +2858,7 @@ After: 10 PASS / 4 FAIL
 [DECISION] Shell script e2e-rebalance.sh now verifies final weight values numerically and asserts pending rebalance cleared — was only checking supply preservation (M-2 fix)
 
 [GAP] AC3 (confirmFills for rebalance trades) not testable — on-chain rebalance flow is propose→confirm→updateWeights, there is no separate rebalance fill path through confirmFills(). Rebalance trades happen off-chain via AP. confirmFills() is for user order fills only. AC3 needs revision.
-[GAP] AC5 (multi-ITP netting reduces volume) not verifiable on-chain — _processRebalanceDeltas() emits per-ITP trade deltas independently. Cross-ITP netting is designed to happen in the Rust netting engine (issuer/src/netting/rebalance.rs). On-chain contract does not perform global netting. AC5 should reference Rust engine tests.
+[GAP] AC5 (multi-ITP netting reduces volume) not verifiable on-chain — _processRebalanceDeltas() emits per-ITP trade deltas independently. Cross-ITP netting is designed to happen in the Rust netting engine (oracle/src/netting/rebalance.rs). On-chain contract does not perform global netting. AC5 should reference Rust engine tests.
 [GAP] AC6 partial rebalance not supported — updateWeights() requires exact match with pending target weights (all-or-nothing). No mechanism for partial weight updates after partial fills. Architecture Appendix C references partial fill handling but no contract implementation exists. Future story needed.
 
 ## Session: 20260131-review2
@@ -2874,24 +2874,24 @@ After: 10 PASS / 4 FAIL
 
 ### Story 6-10: E2E Order to Mint - Code Review Findings
 
-[DECISION] Slippage rejection cannot be tested on-chain — Index.confirmFills() trusts BLS consensus, does not re-validate slippage tiers. Slippage enforcement is issuer-level (issuer/src/slippage/mod.rs). Renamed test from test_e2e_order_slippage_rejection to test_e2e_order_strict_slippage_tier_on_chain_path.
+[DECISION] Slippage rejection cannot be tested on-chain — Index.confirmFills() trusts BLS consensus, does not re-validate slippage tiers. Slippage enforcement is oracle-level (oracle/src/slippage/mod.rs). Renamed test from test_e2e_order_slippage_rejection to test_e2e_order_strict_slippage_tier_on_chain_path.
 [DECISION] Shell E2E script must assert final state numerically (ITP balance == expected, order status == FILLED) — unconditional PASS without assertions is insufficient for AC6.
 [DECISION] Shell E2E script must fail-fast if ITP vault is not set — minting silently skips on address(0) vault, masking real failures.
 
 ### Story 6-10: E2E Order to Mint - Infrastructure Gap Analysis
 
-[DECISION] E2E Foundry test deploys minimal stack (MockERC20, MockGovernance, Index UUPS proxy, ITP vault) without IssuerRegistry - BLS verification bypassed when IssuerRegistry not set, matching production code behavior in Index._verifyBLSSignature()
+[DECISION] E2E Foundry test deploys minimal stack (MockERC20, MockGovernance, Index UUPS proxy, ITP vault) without OracleRegistry - BLS verification bypassed when OracleRegistry not set, matching production code behavior in Index._verifyBLSSignature()
 [DECISION] E2E shell script uses direct `cast send --create` deployment (not DeployL3.s.sol) to avoid BLS verification complexity - matches Foundry test setUp() pattern
-[DECISION] E2E shell script simulates issuer behavior via admin `cast send` calls (no separate issuer/AP processes) - tests the contract layer E2E flow, not the full multi-process orchestration
+[DECISION] E2E shell script simulates oracle behavior via admin `cast send` calls (no separate oracle/AP processes) - tests the contract layer E2E flow, not the full multi-process orchestration
 
-[GAP] Deploy.s.sol deploys placeholder stubs only - does NOT wire registries (no setIssuerRegistry/setFeeRegistry calls). Real deployment (DeployL3.s.sol) wires them but doesn't set ITP vaults or authorize Index on FeeRegistry. Future deploy script improvements needed.
-[GAP] Issuer consensus only calls submit_batch() in SIGN_SUBMIT phase (issuer/src/main.rs:1015-1087) - never calls confirm_fills(). AP's FillReporter has confirm_fills() (ap/src/fill/reporter.rs:258) but sends empty BLS signature. Full issuer→confirmFills pipeline not yet wired.
+[GAP] Deploy.s.sol deploys placeholder stubs only - does NOT wire registries (no setOracleRegistry/setFeeRegistry calls). Real deployment (DeployL3.s.sol) wires them but doesn't set ITP vaults or authorize Index on FeeRegistry. Future deploy script improvements needed.
+[GAP] Oracle consensus only calls submit_batch() in SIGN_SUBMIT phase (oracle/src/main.rs:1015-1087) - never calls confirm_fills(). AP's FillReporter has confirm_fills() (ap/src/fill/reporter.rs:258) but sends empty BLS signature. Full oracle→confirmFills pipeline not yet wired.
 [GAP] ITP vault setup (setITPVault) not automated in any deployment script - minting silently skips if vault not configured (Index.sol:306-308). Deployment scripts need post-deploy ITP vault creation and wiring step.
 [GAP] L3BridgeCustody.reverseLock() only sets lock.reversed=true but does NOT transfer USDC back - reversed funds permanently locked with no extraction mechanism (from Story 6.8 review, re-confirmed here).
 
 ## Session: 20260131-0000-r7k3
 
-### Story 6-7: Wire Issuer to 1inch
+### Story 6-7: Wire Oracle to 1inch
 
 [DECISION] DexPriceSource fallback chain: 1inch API (via CachedQuoteClient) -> on-chain reserves (OnChainQuoteClient) -> error with DEGRADED_QUOTES atomic flag
 [DECISION] CustodyWriter message hash matches BLSCustody.sol line 106: keccak256(abi.encode(chainId, custodyAddress, target, data, nonce)) using ethers::abi::encode
@@ -2900,7 +2900,7 @@ After: 10 PASS / 4 FAIL
 [DECISION] CrossChainOrchestrator Fusion+ retry: 60s timeout, max 3 retries, defer after 3 cycles, auto-refund USDC
 [DECISION] Order routing implemented as separate order_router module with ExecutionVenue enum (Cex/DexArbitrum/CrossChain) and RoutingConfig (dex_pair_ids HashSet, crosschain_pair_ids HashMap)
 [DECISION] Integration test script uses POSIX-compatible grep/sed (not grep -oP) for macOS compatibility
-[DECISION] Pre-existing test failures accepted: 1 in issuer (slippage boundary), 7 in common (price_math + rate_limiter timing)
+[DECISION] Pre-existing test failures accepted: 1 in oracle (slippage boundary), 7 in common (price_math + rate_limiter timing)
 
 ## Session: 20260131-1200-b8r3
 
@@ -2915,7 +2915,7 @@ After: 10 PASS / 4 FAIL
 ### Story 6.8 Code Review Findings
 
 [DECISION] L3BridgeCustody.reverseLock() only sets lock.reversed=true — does NOT transfer USDC back. Reversed funds remain permanently locked in the contract with no extraction mechanism. Needs a governance/admin withdrawal function in a future story.
-[DECISION] CollateralRegistry has no awareness of bridge lock state — cannot distinguish reversed from completed bridges. Application layer (issuers) must enforce not recording reversed bridges. Added test_collateral_accidentalRecordOfReversedBridgeBreaksInvariant to document this risk.
+[DECISION] CollateralRegistry has no awareness of bridge lock state — cannot distinguish reversed from completed bridges. Application layer (oracles) must enforce not recording reversed bridges. Added test_collateral_accidentalRecordOfReversedBridgeBreaksInvariant to document this risk.
 [DECISION] MockERC20 uses 18 decimals (not real USDC's 6) — acceptable since bridge contracts have no decimal conversion logic. Documented in test setUp().
 
 ## Session: 20260130-audit-e6h5
@@ -2940,7 +2940,7 @@ After: 10 PASS / 4 FAIL
 - common/src/error.rs (INFRA-XXX prefix)
 - ap/src/source_failure/handler.rs (typed error return)
 - ap/src/source_failure/tests.rs (assertion updated)
-- ~30 Rust files across ap/, issuer/, common/ (error codes added to 153 log statements)
+- ~30 Rust files across ap/, oracle/, common/ (error codes added to 153 log statements)
 - 7 Rust files (SAFETY comments on expects/unwraps)
 
 ---
@@ -2977,11 +2977,11 @@ After: 10 PASS / 4 FAIL
 
 ### Decisions Made
 
-[DECISION] Logging: Single shared module in common/ crate - eliminates duplicate setup_logging() in issuer and AP
+[DECISION] Logging: Single shared module in common/ crate - eliminates duplicate setup_logging() in oracle and AP
 [DECISION] File output always JSON, stdout configurable - ensures machine-parseable logs for Promtail/Loki regardless of developer preference
 [DECISION] Loki stream-based retention (preferred over per-file logrotate) - simpler single-file approach, level-based retention enforced by Loki retention_stream rules
 [DECISION] logrotate.conf as OS-level backup - defense in depth for size-based rotation even without Loki
-[DECISION] Contextual fields via tracing::Span - cycle_number, issuer_id, order_id, itp_id injected by calling code, not the logging module itself
+[DECISION] Contextual fields via tracing::Span - cycle_number, oracle_id, order_id, itp_id injected by calling code, not the logging module itself
 
 ## Session: 20260128-0148-x7k2
 
@@ -3001,7 +3001,7 @@ After: 10 PASS / 4 FAIL
 [DECISION] Rebalance netting: Batch all, net deltas, execute once - gas efficient
 [DECISION] AP buffer: Self-replenishing, no debt allowed - sustainable model
 [DECISION] Key storage: Software wallet (Phase 1) - upgrade to HSM later
-[DECISION] ITP creation: Permissionless with issuer approval, min 0.25% weight
+[DECISION] ITP creation: Permissionless with oracle approval, min 0.25% weight
 
 ### Architecture Documents Created
 - architecture-inputs-checklist.md
@@ -3016,7 +3016,7 @@ After: 10 PASS / 4 FAIL
 
 ### Architecture v1.1 Updates
 [DECISION] Storage pattern: Proposal D Hybrid - UniV4 singleton + packed structs + transient storage
-[DECISION] Flow correction: AP reads on-chain events, NO direct issuer→AP P2P communication
+[DECISION] Flow correction: AP reads on-chain events, NO direct oracle→AP P2P communication
 [DECISION] Partial fill handling: Stop on most filled asset %, fill until weights match ITP
 [DECISION] Orderbook depth: Leader includes for patch sizing, NOT stored on-chain
 [DECISION] Slashing: NO - kick only, no financial penalty
@@ -3063,7 +3063,7 @@ After: 10 PASS / 4 FAIL
 ### High Priority Gaps
 [GAP] Order refund mechanism - where is USDC during pending state?
 [GAP] Partial fill edge cases - what if <10% filled?
-[GAP] Issuer sync on join - how long, can participate mid-cycle?
+[GAP] Oracle sync on join - how long, can participate mid-cycle?
 [GAP] Price disagreement resolution - who's price is "correct"?
 [GAP] AP buffer funding - initial amount, who provides?
 [GAP] Delisting flow - forced rebalance process undocumented
@@ -3076,22 +3076,22 @@ After: 10 PASS / 4 FAIL
 [DECISION] Loss allocation: user always takes losses, never global pool
 [DECISION] Leader timeout: 500ms, next in hash order (Option A)
 [DECISION] Price tolerance: fixed per-asset, 20% = consensus disagreement threshold
-[DECISION] Min issuers: 3, threshold 2/3 (Option B)
+[DECISION] Min oracles: 3, threshold 2/3 (Option B)
 [DECISION] BLS replay protection: cycleNumber in signed message (Option A)
-[DECISION] Issuer griefing: 3 strikes in 1h → kick vote (Option A)
+[DECISION] Oracle griefing: 3 strikes in 1h → kick vote (Option A)
 [DECISION] BLS key storage: .env on disk Phase 1
 [DECISION] AP failure: queue orders, if AP stops 5min → pause + refund
 [DECISION] AP buffer: protocol funds, no on-chain tracking
-[DECISION] Per-ITP pause: issuers can pause individual ITP (Option B)
+[DECISION] Per-ITP pause: oracles can pause individual ITP (Option B)
 [DECISION] State reconstruction: compute from on-chain, rebalance progress derived from inventory
 
 ### New Sections Added to architecture.md
 - Section 19: Operations (monitoring thresholds, error codes, logs)
-- Appendix D: Issuer State Reconstruction Algorithm
+- Appendix D: Oracle State Reconstruction Algorithm
 - Leader timeout & failover flow
 - Price validation flow
 - Asset delisting flow
-- New issuer join flow
+- New oracle join flow
 - P2P message types specification
 
 ---
@@ -3100,15 +3100,15 @@ After: 10 PASS / 4 FAIL
 
 ### Architecture v1.6 Updates
 [DECISION] uint256 for all data types - EVM native, no casting, safer code
-[DECISION] Issuer ↔ AP communication: NO direct P2P, AP reads on-chain events only
-[DECISION] AP fill verification: issuers poll Bitget API directly, not via AP
+[DECISION] Oracle ↔ AP communication: NO direct P2P, AP reads on-chain events only
+[DECISION] AP fill verification: oracles poll Bitget API directly, not via AP
 
 ### Structural Improvements to architecture.md
 - Added Table of Contents (22 sections + 4 appendices)
-- Added Section 20: Issuer Consensus Reference (consolidated rules)
+- Added Section 20: Oracle Consensus Reference (consolidated rules)
 - Added Section 21: Visual References (ASCII diagrams)
 - Updated all data structures to use uint256 consistently
-- Clarified AP/Issuer communication model
+- Clarified AP/Oracle communication model
 - Fixed formatting issues (stray |, spacing)
 
 ### Order Routing Algorithm Propositions Created
@@ -3192,7 +3192,7 @@ Created crosschain-swap-flow.md with:
 ### Solana Custody Decision
 [DECISION] No BLS on Solana - BN254 precompiles are EVM-specific, Solana uses Ed25519
 [DECISION] Solana custody Phase 1: Squads Multisig with 11/20 threshold (Ed25519 keys)
-[DECISION] Issuers hold two key types: BLS (BN254) for EVM, Ed25519 for Solana Squads
+[DECISION] Oracles hold two key types: BLS (BN254) for EVM, Ed25519 for Solana Squads
 
 ### Documents Updated
 - architecture.md v1.5 → v1.6
@@ -3219,7 +3219,7 @@ Created 4 architecture options for ITP lending on Morpho:
 **Architecture 2: Native L3 Lending (Morpho Fork)**
 - Full Morpho deployment on Index L3
 - No bridging for ITPs
-- Full issuer control, highest complexity
+- Full oracle control, highest complexity
 
 **Architecture 3: Synthetic Debt Position**
 - ITPs stay on L3, debt issued on Arbitrum
@@ -3233,22 +3233,22 @@ Created 4 architecture options for ITP lending on Morpho:
 - Lowest complexity, best composability
 
 [DECISION PENDING] Final architecture selection for ITP-Morpho lending integration
-[DECISION PENDING] Issuer management algorithm selection (A: On-Chain Params, B: Off-Chain + Validation, C: Strategy Contracts)
+[DECISION PENDING] Oracle management algorithm selection (A: On-Chain Params, B: Off-Chain + Validation, C: Strategy Contracts)
 
-### Issuer Management Algorithm Propositions Added
+### Oracle Management Algorithm Propositions Added
 **Proposition A: On-Chain Parameter Contract** (Recommended for V1)
-- Store target params on-chain, issuers read + compute + sign
+- Store target params on-chain, oracles read + compute + sign
 - Fully deterministic, auditable
 
 **Proposition B: Off-Chain Consensus with On-Chain Validation**
-- Issuers run optimization algorithm off-chain
+- Oracles run optimization algorithm off-chain
 - On-chain contract validates within hard limits
 - More flexible but non-deterministic
 
 **Proposition C: Hybrid with Strategy Contracts**
 - Deploy multiple strategy contracts (Conservative, Balanced, Aggressive)
-- Issuers vote to select strategy, keepers execute
-- Minimal issuer burden, fully autonomous
+- Oracles vote to select strategy, keepers execute
+- Minimal oracle burden, fully autonomous
 
 ### Documents Created/Updated
 - itp-morpho-lending-architectures.md (Architecture 1 + Proposition A Complete Algorithms)
@@ -3256,7 +3256,7 @@ Created 4 architecture options for ITP lending on Morpho:
 ### Architecture Updates
 [DECISION] DEV environment: Fork Morpho Blue + MetaMorpho on Index L3 (no bridging needed)
 [DECISION] PROD environment: Official Morpho on Arbitrum with custom BLS bridge
-[DECISION] Issuer management: Proposition A (On-Chain Parameter Controller) with complete algorithms
+[DECISION] Oracle management: Proposition A (On-Chain Parameter Controller) with complete algorithms
 
 ### Complete Algorithms Added
 - MorphoParameterController.sol: Full contract with computeRebalanceAction(), computeSupplyCapUpdate(), computeAllActions()
@@ -3274,10 +3274,10 @@ Created 4 architecture options for ITP lending on Morpho:
 [DECISION] All orders are limit orders only - no market orders (simplifies execution, guarantees price protection)
 [DECISION] Multi-chain BLS Custody architecture - same BLS pubkey controls custody on L3, Arb, Eth, Base, Optimism
 [DECISION] Solana custody via Squads Multisig (11/20 Ed25519) - separate from BLS
-[DECISION] BLS-piloted issuer bridge - fast bridge (~seconds) vs native Orbit (~10 min)
+[DECISION] BLS-piloted oracle bridge - fast bridge (~seconds) vs native Orbit (~10 min)
 [DECISION] Inventory + debt system - custodies maintain USDC inventory, track inter-custody debt, settle at $5k threshold
 [DECISION] Stateless collateral tracking - CollateralRegistry on-chain per ITP per chain
-[DECISION] Individual issuer key rotation - 10/19 other issuers must approve + 24h timelock
+[DECISION] Individual oracle key rotation - 10/19 other oracles must approve + 24h timelock
 [DECISION] Unified netting engine - 7-step pipeline (pair→fill→slippage→chain→bridge→USDT→fee)
 [DECISION] Slippage tiered buckets - 0.3%, 1%, 3% tiers, orders only filled within their tier limit
 [DECISION] Pair merging - all same-pair orders merged into one order for execution
@@ -3286,7 +3286,7 @@ Created 4 architecture options for ITP lending on Morpho:
 [DECISION] ChainId in all signed messages - prevents cross-chain replay
 
 ### New Sections Added to architecture.md v1.7
-- Section 17: Issuer Key Management (key rotation flow, Squads, storage progression)
+- Section 17: Oracle Key Management (key rotation flow, Squads, storage progression)
 - Appendix E: Cross-Chain Execution Examples (4 detailed examples)
 - Enhanced Section 5: Multi-chain contract deployment table, BLSCustody contract
 - Enhanced Section 6: LimitOrder struct, slippage tiers, CEX vs DEX execution
@@ -3320,7 +3320,7 @@ Created 4 architecture options for ITP lending on Morpho:
 
 ### Items NOT Added (Already Covered or Rejected)
 [DECISION] Max Trade Size Limits: Already covered by split execution at 25/50/75/100% liquidity
-[DECISION] Emergency Recovery if <11 issuers: Admin rejected this feature
+[DECISION] Emergency Recovery if <11 oracles: Admin rejected this feature
 
 ### Sections Added to architecture.md v1.8
 - Section 5: Custody Whitelist Management + UUPS Upgrade Pattern
@@ -3345,8 +3345,8 @@ Conducted security-focused adversarial review. Identified 14 issues, 8 selected 
 [NOTED] #1 Single Price Oracle (Bitget only) - acknowledged risk, Phase 2 item
 [NOTED] #2 AP Front-Running - no MEV protection, accepted risk with suspension mechanism
 [NOTED] #5 BLS-Ed25519 Dual-Key Coordination - needs clarification but not blocking
-[NOTED] #9 Issuer Coalition Attack - 11/20 threshold accepted, monitoring mitigates
-[NOTED] #11 Permissionless ITP Spam - low priority, doesn't affect issuers significantly
+[NOTED] #9 Oracle Coalition Attack - 11/20 threshold accepted, monitoring mitigates
+[NOTED] #11 Permissionless ITP Spam - low priority, doesn't affect oracles significantly
 [NOTED] #13 Order Submission Rate Limiting - reactive via queue depth, acceptable Phase 1
 [NOTED] #14 Rebalance Front-Running - accepted risk, low priority
 
@@ -3434,13 +3434,13 @@ Session continued: Merged approved proposals into architecture.md v1.9
 | Bridge | Native Orbit→Arb | Wormhole/Circle CCTP | Cross-VM bridge |
 | Price Oracle | Bitget API | Pyth Network + Bitget | Solana native oracle |
 | Block Time | ~250ms | ~400ms | Solana slot time |
-| Gas Token | IND (free issuers) | SOL | Standard Solana |
+| Gas Token | IND (free oracles) | SOL | Standard Solana |
 
 #### Preserved Architecture (Chain-Agnostic)
 [DECISION] Unified Netting Engine - identical 7-step pipeline
 [DECISION] AP Buffer Strategy - same debt-based replenishment
 [DECISION] Order System - limit orders only, slippage tiers (0.3%/1%/3%)
-[DECISION] Issuer Cycle - 1 second, 5-phase (fills, netting, inventory, batch, sign)
+[DECISION] Oracle Cycle - 1 second, 5-phase (fills, netting, inventory, batch, sign)
 [DECISION] Priority Algorithm - same fair share buckets
 [DECISION] ITP Management - same creation/weights/rebalance flows
 [DECISION] Economics - same fee structure
@@ -3455,8 +3455,8 @@ Session continued: Merged approved proposals into architecture.md v1.9
 [DECISION] Wormhole as fallback bridge - for non-USDC assets
 [DECISION] BLS retained for EVM chains only - Arbitrum/Ethereum/Base/Optimism custody
 
-#### Issuer Key Architecture (Dual-Key)
-[DECISION] Each issuer holds TWO key types:
+#### Oracle Key Architecture (Dual-Key)
+[DECISION] Each oracle holds TWO key types:
 - Ed25519 for Solana (Squads multisig signing)
 - BLS (BN254) for EVM chains (BLSCustody signing)
 - Compromise of one doesn't affect the other
@@ -3480,7 +3480,7 @@ programs/
 
 #### Implementation Priority (v2)
 1. Index Program (Anchor) + Squads setup
-2. Ed25519 signing in issuer nodes
+2. Ed25519 signing in oracle nodes
 3. Jupiter integration
 4. Simple test AP (mock Bitget)
 5. Wormhole/CCTP bridge
@@ -3536,7 +3536,7 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 12. [FIXED] Slippage-Based Fill Grouping - Added detailed algorithm and ASCII diagram
 13. [FIXED] Pair System - Added full registry table, Source Types & Execution table, ITPPairConfig struct
 14. [FIXED] Price Validation Flow - Added complete 6-step validation with staleness check
-15. [FIXED] Issuer Consensus Reference - Added consolidated table with all thresholds, quorums, and price disagreement resolution
+15. [FIXED] Oracle Consensus Reference - Added consolidated table with all thresholds, quorums, and price disagreement resolution
 16. [FIXED] Fee Sharing - Expanded with stateless calculation flow and 2% mini order warning
 
 ### Documents Updated
@@ -3626,12 +3626,12 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 [DECISION] AllocationError enum provides clear error handling: ZeroTotalAmount, EmptySourceOrders
 
 ### Files Created
-- issuer/src/slippage/mod.rs (SlippageTier, FilterResult, filter_by_slippage)
-- issuer/src/slippage/fill_allocator.rs (MergedOrderContext, SourceFill, allocate_fills, AllocationError)
+- oracle/src/slippage/mod.rs (SlippageTier, FilterResult, filter_by_slippage)
+- oracle/src/slippage/fill_allocator.rs (MergedOrderContext, SourceFill, allocate_fills, AllocationError)
 
 ### Files Modified
-- issuer/src/lib.rs (added slippage module export)
-- issuer/Cargo.toml (added rust_decimal dependency)
+- oracle/src/lib.rs (added slippage module export)
+- oracle/Cargo.toml (added rust_decimal dependency)
 - Cargo.toml (added rust_decimal to workspace)
 
 ### Tests Written (20 total)
@@ -3670,7 +3670,7 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 
 [BLOCKED] chain/reader.rs has pre-existing compilation errors:
 - Uses old ITPCore struct fields (id, vault, name, symbol, assets, weights, total_supply, status) but actual ITPCore has different fields (name, symbol, creator, created_at, fee_rate, status, total_supply, total_value, asset_count)
-- Uses old enum variants (ITPStatus::Deprecated, IssuerStatus::Slashed) instead of current variants (ITPStatus::Paused/Delisting, IssuerStatus::Suspended)
+- Uses old enum variants (ITPStatus::Deprecated, OracleStatus::Slashed) instead of current variants (ITPStatus::Paused/Delisting, OracleStatus::Suspended)
 - Uses old PriceSource::Oracle variant that doesn't exist
 - Generated ABI types are tuples, not structs with named fields
 - These issues need resolution in story 3-2 (chain-reader)
@@ -3759,7 +3759,7 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 [DECISION] confirmFills() calculates shares as fillAmount * 1e18 / fillPrice for BUY orders
 [DECISION] confirmFills() transfers USDC back to user for SELL orders
 [DECISION] refundExpiredOrder() validates order has passed deadline before refunding
-[DECISION] BLS signature verification uses IssuerRegistry.getAggregatedPubkey() - skipped if registry not set (Phase 1 mock)
+[DECISION] BLS signature verification uses OracleRegistry.getAggregatedPubkey() - skipped if registry not set (Phase 1 mock)
 [DECISION] Message format for batch: keccak256(abi.encode(chainid, this, cycleNumber, orderIds))
 [DECISION] Message format for fills: keccak256(abi.encode(chainid, this, cycleNumber, fills))
 [DECISION] Message format for refund: keccak256(abi.encode(chainid, this, "refund", orderId))
@@ -3791,7 +3791,7 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 
 ### Files Created
 - contracts/src/core/BLSCustody.sol (complete implementation)
-- contracts/src/mocks/MockIssuerRegistry.sol (mock for testing)
+- contracts/src/mocks/MockOracleRegistry.sol (mock for testing)
 - contracts/test/BLSCustody.t.sol (27 tests, all passing)
 
 ### Tests Summary
@@ -3806,14 +3806,14 @@ Per v1.8 decision, AP buffer debt for Bitget minimum buy aggregation is retained
 ### Story 3-5: Cycle Manager - Adversarial Code Review
 
 [DECISION] Log level for CRITICAL threshold: Changed from warn! to error! - per architecture Section 21, ERROR level for failures requiring attention
-[DECISION] issuer_id log format: Changed from u32 to hex string (0x{:08x}) - per architecture Section 21 spec
+[DECISION] oracle_id log format: Changed from u32 to hex string (0x{:08x}) - per architecture Section 21 spec
 [DECISION] Threshold scope: Changed from phase duration to total cycle duration - per architecture Section 22, thresholds (WARNING >500ms, CRITICAL >2s) apply to full cycle, not individual phases
 [DECISION] Minimum cycle duration: Added MIN_CYCLE_DURATION_MS (5ms) constant - prevents division by zero in phase_duration_ms()
 [DECISION] NTP documentation: Added comprehensive doc comments clarifying NTP integration is a stub requiring external set_reference_time() calls
 
 ### Issues Fixed (5 total)
 - C1 CRITICAL: warn! → error! for CRITICAL threshold [manager.rs:206]
-- C2 CRITICAL: issuer_id format u32 → hex string [manager.rs:194]
+- C2 CRITICAL: oracle_id format u32 → hex string [manager.rs:194]
 - C3 CRITICAL: Threshold applied to cycle duration, not phase [manager.rs:204]
 - M1 MEDIUM: Added NTP stub documentation [manager.rs struct docs, set_reference_time docs]
 - L4 LOW: Added MIN_CYCLE_DURATION_MS validation [manager.rs:46, main.rs:420]
@@ -3850,10 +3850,10 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 ```
 
 ### Files Modified
-- issuer/src/cycle/manager.rs (C1, C2, C3, L4, M1 fixes)
-- issuer/src/cycle/mod.rs (export MIN_CYCLE_DURATION_MS)
-- issuer/src/lib.rs (export MIN_CYCLE_DURATION_MS)
-- issuer/src/main.rs (cycle_duration_ms validation)
+- oracle/src/cycle/manager.rs (C1, C2, C3, L4, M1 fixes)
+- oracle/src/cycle/mod.rs (export MIN_CYCLE_DURATION_MS)
+- oracle/src/lib.rs (export MIN_CYCLE_DURATION_MS)
+- oracle/src/main.rs (cycle_duration_ms validation)
 - _bmad-output/implementation-artifacts/3-5-cycle-manager.md (review notes, status: done)
 - _bmad-output/implementation-artifacts/sprint-status.yaml (status: done)
 
@@ -3918,16 +3918,16 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 [DECISION] Added documentation clarifying hash-to-curve Solidity compatibility flow
 [DECISION] Added documentation explaining BN254 G1 subgroup membership (prime order, no explicit check needed)
 [DECISION] Added documentation about 256 iteration limit probability (~2^-256 failure chance)
-[DECISION] Added security documentation for rogue-key attack prevention (requires PoP at protocol level during issuer registration)
+[DECISION] Added security documentation for rogue-key attack prevention (requires PoP at protocol level during oracle registration)
 [DECISION] Added note about duplicate write_bigint_be functions (intentional for module independence)
 
 ### Files Modified
-- issuer/src/batcher/mod.rs (deadline U256 comparison, documentation)
-- issuer/src/netting/mod.rs (fee integration, removed clone, I256 types)
-- issuer/src/netting/pair.rs (I256 overflow protection)
-- issuer/src/netting/usdt.rs (I256 types, DepegState documentation)
-- issuer/src/netting/bridge.rs (order_id tracking)
-- issuer/src/slippage/mod.rs (FilteredMergedOrder, filter_merged_order, validation)
+- oracle/src/batcher/mod.rs (deadline U256 comparison, documentation)
+- oracle/src/netting/mod.rs (fee integration, removed clone, I256 types)
+- oracle/src/netting/pair.rs (I256 overflow protection)
+- oracle/src/netting/usdt.rs (I256 types, DepegState documentation)
+- oracle/src/netting/bridge.rs (order_id tracking)
+- oracle/src/slippage/mod.rs (FilteredMergedOrder, filter_merged_order, validation)
 - common/src/bls/utils.rs (documentation, security notes)
 - common/src/bls/signer.rs (no changes, documentation in mod.rs sufficient)
 
@@ -4037,27 +4037,27 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 
 ## Session: 20260130-1845-z4m2
 
-### Story 2-12: IssuerRegistry.sol - Core Registry
+### Story 2-12: OracleRegistry.sol - Core Registry
 
 [DECISION] UUPS upgradeable pattern with Governance contract integration for admin checks
 [DECISION] Aggregated pubkey stored as uint256[2] (G1 point coordinates) for efficient BLSLib operations
-[DECISION] addIssuer() validates pubkey is on curve via BLSLib.isOnCurve() before storing
-[DECISION] removeIssuer() admin-only for now, BLS vote path implemented in removeIssuerByVote()
+[DECISION] addOracle() validates pubkey is on curve via BLSLib.isOnCurve() before storing
+[DECISION] removeOracle() admin-only for now, BLS vote path implemented in removeOracleByVote()
 [DECISION] Aggregated key update: add = ecAdd(agg, new), remove = ecAdd(agg, ecNegate(old))
 [DECISION] Key rotation (Story 2-13) implemented with stubs: requestKeyRotation(), approveRotation(), executeRotation(), forceRotationWindow()
-[DECISION] Rotation requires 10/19 other issuer approvals + 24h timelock + 1h safe period after last approval
+[DECISION] Rotation requires 10/19 other oracle approvals + 24h timelock + 1h safe period after last approval
 [DECISION] Admin escape hatch: forceRotationWindow() after 48h stuck rotation
 
 ### Files Created
-- contracts/src/registry/IssuerRegistry.sol (full implementation with UUPS proxy, BLS key aggregation, rotation support)
-- contracts/test/IssuerRegistry.t.sol (37 tests, all passing)
+- contracts/src/registry/OracleRegistry.sol (full implementation with UUPS proxy, BLS key aggregation, rotation support)
+- contracts/test/OracleRegistry.t.sol (37 tests, all passing)
 
 ### Tests Written (37 total)
-**Initialization (6):** setsGovernance, zeroAggregatedPubkey, zeroActiveIssuers, revertsWithZeroAddress, cannotBeInitialized, cannotBeReinitialized
-**Add Issuer (10):** createsIssuerWithCorrectData, incrementsActiveCount, assignsSequentialIds, emitsIssuerAdded, updatesAggregatedPubkey, revertsForNonAdmin, revertsForZeroAddress, revertsForInvalidPubkeyLength, revertsForOffCurvePubkey, multipleIssuers_sameAddress
-**Remove Issuer (7):** deactivatesIssuer, decrementsActiveCount, emitsIssuerRemoved, updatesAggregatedPubkey, addAndRemoveRestoresZero, revertsForNonAdmin, revertsForNonExistentIssuer, revertsForAlreadyInactiveIssuer
-**View Functions (5):** getIssuer_returnsCorrectData, getIssuer_returnsEmptyForNonExistent, getIssuers_returnsAllIssuers, getIssuers_includesInactiveIssuers, activeIssuerCount_accurate
-**Aggregated Pubkey (2):** multipleAddRemove, samePublicKey_differentIssuers
+**Initialization (6):** setsGovernance, zeroAggregatedPubkey, zeroActiveOracles, revertsWithZeroAddress, cannotBeInitialized, cannotBeReinitialized
+**Add Oracle (10):** createsOracleWithCorrectData, incrementsActiveCount, assignsSequentialIds, emitsOracleAdded, updatesAggregatedPubkey, revertsForNonAdmin, revertsForZeroAddress, revertsForInvalidPubkeyLength, revertsForOffCurvePubkey, multipleOracles_sameAddress
+**Remove Oracle (7):** deactivatesOracle, decrementsActiveCount, emitsOracleRemoved, updatesAggregatedPubkey, addAndRemoveRestoresZero, revertsForNonAdmin, revertsForNonExistentOracle, revertsForAlreadyInactiveOracle
+**View Functions (5):** getOracle_returnsCorrectData, getOracle_returnsEmptyForNonExistent, getOracles_returnsAllOracles, getOracles_includesInactiveOracles, activeOracleCount_accurate
+**Aggregated Pubkey (2):** multipleAddRemove, samePublicKey_differentOracles
 **Constants (1):** constants_areCorrect
 **Upgrade (2):** upgradeAuthorization_onlyAdmin, upgrade_preservesState
 **Access Control (1):** viewFunctions_accessibleByAnyone
@@ -4069,7 +4069,7 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 
 ### Code Review: Story 2-10 ArbBridgeCustody - Destination Release
 
-[DECISION] buyITPFromArbitrum must store CrossChainOrder in crossChainOrders mapping - order params (limitPrice, deadline, user, itpId) were completely lost after tx, issuers had no way to retrieve them
+[DECISION] buyITPFromArbitrum must store CrossChainOrder in crossChainOrders mapping - order params (limitPrice, deadline, user, itpId) were completely lost after tx, oracles had no way to retrieve them
 [DECISION] getCrossChainOrder() view function implemented - required by IArbBridgeCustody interface but was missing from contract
 [DECISION] Added itpId != bytes32(0) validation using existing E060_ZeroITPId error - prevents locking USDC for invalid zero ITP ID
 [DECISION] Added proof.sourceBlockNumber != 0 to proof validation - block 0 is genesis, not a valid lock block
@@ -4103,13 +4103,13 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 
 ### Story 6-5: Deploy BLSCustody to Arbitrum
 
-[DECISION] Deploy full chain on Arbitrum: Governance -> IssuerRegistry -> BLSCustody (all as UUPS proxies)
-[DECISION] IssuerRegistry approach: Deploy real IssuerRegistry on Arbitrum (consistent with L3 pattern, supports key rotation)
+[DECISION] Deploy full chain on Arbitrum: Governance -> OracleRegistry -> BLSCustody (all as UUPS proxies)
+[DECISION] OracleRegistry approach: Deploy real OracleRegistry on Arbitrum (consistent with L3 pattern, supports key rotation)
 [DECISION] Whitelist proposal: Made conditional via SKIP_WHITELIST env var due to known G1/G2 pubkey mismatch
 [DECISION] 1inch Router V6 address on Arbitrum: 0x111111125421cA6dc452d289314280a0f8842A65 (same address across all EVM chains)
 [DECISION] USDC address on Arbitrum: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831 (native USDC)
-[DECISION] Tests use MockIssuerRegistry for whitelist tests (returns empty aggregated pubkey), real IssuerRegistry for init chain tests
-[FAILED] proposeWhitelist() with real IssuerRegistry - IssuerRegistry.getAggregatedPubkey() returns 64-byte G1 point, but BLSLib.verifyBLS() expects 128-byte G2 pubkey. Returns false -> revert E020_InvalidBLSSignature. Phase 1 BLS skip only works with MockIssuerRegistry (returns 0-length bytes). Made whitelist step conditional.
+[DECISION] Tests use MockOracleRegistry for whitelist tests (returns empty aggregated pubkey), real OracleRegistry for init chain tests
+[FAILED] proposeWhitelist() with real OracleRegistry - OracleRegistry.getAggregatedPubkey() returns 64-byte G1 point, but BLSLib.verifyBLS() expects 128-byte G2 pubkey. Returns false -> revert E020_InvalidBLSSignature. Phase 1 BLS skip only works with MockOracleRegistry (returns 0-length bytes). Made whitelist step conditional.
 [DECISION] Foundry etherscan config: Added arbitrum profile to foundry.toml for contract verification
 
 ---
@@ -4129,7 +4129,7 @@ test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out
 [DECISION] Task 7 (integration test) deferred - requires running L3 node or Anvil fork, not practical in unit test suite
 
 [FAILED] Initial RpcChainWriter had send_with_retry generic method with PendingTransaction<'_, Http> lifetime - anonymous lifetime not allowed in generic function signature. Removed in favor of inline send pattern.
-[FAILED] Initial ITP/Issuer type conversions used enum variants (ITPStatus::Active, IssuerStatus::Slashed) but actual types use raw U256. Fixed to use H256::from() and raw U256.
+[FAILED] Initial ITP/Oracle type conversions used enum variants (ITPStatus::Active, OracleStatus::Slashed) but actual types use raw U256. Fixed to use H256::from() and raw U256.
 
 ---
 
@@ -4141,16 +4141,16 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 ### HIGH Severity Code Gaps
 
-[GAP-H1] Netting engine implements 4 of 7 pipeline steps - Missing: fill priority allocation (step 2), slippage filter integration (step 3), chain grouping (step 4). Existing: pair netting, bridge netting, USDT netting, fee allocation. Location: issuer/src/netting/mod.rs
+[GAP-H1] Netting engine implements 4 of 7 pipeline steps - Missing: fill priority allocation (step 2), slippage filter integration (step 3), chain grouping (step 4). Existing: pair netting, bridge netting, USDT netting, fee allocation. Location: oracle/src/netting/mod.rs
 [GAP-H2] minBuyAmount per-asset mapping not implemented in Index.sol - Architecture specifies `mapping(address => uint256) public minBuyAmount` for per-asset minimum order sizes. Current code uses a single global MIN_ORDER_AMOUNT constant. Location: contracts/src/core/Index.sol
 [GAP-H3] SELL orders disabled in Index.sol - submitOrder() reverts with E033_SellOrdersNotSupported. Architecture specifies full BUY/SELL support. Blocked on ITP token escrow integration. Location: contracts/src/core/Index.sol:167
-[GAP-H4] BLS signature verification mocked in registries - CollateralRegistry, FeeRegistry, AssetPairRegistry, and IssuerRegistry use placeholder/mock BLS verification. Real BN254 verification not wired. Location: contracts/src/registry/*.sol
+[GAP-H4] BLS signature verification mocked in registries - CollateralRegistry, FeeRegistry, AssetPairRegistry, and OracleRegistry use placeholder/mock BLS verification. Real BN254 verification not wired. Location: contracts/src/registry/*.sol
 [GAP-H7] NAV calculation is MVP stub - _getCurrentPrice() ignores itpId parameter, always returns assetPrices[0]. Architecture specifies per-asset weighted NAV calculation. Location: contracts/src/core/Index.sol
-[GAP-H8] On-chain peer discovery not implemented - OnChainPeerDiscovery returns cached peers only. Architecture specifies reading issuer IPs from on-chain registry. Location: issuer/src/p2p/discovery.rs
+[GAP-H8] On-chain peer discovery not implemented - OnChainPeerDiscovery returns cached peers only. Architecture specifies reading oracle IPs from on-chain registry. Location: oracle/src/p2p/discovery.rs
 
 ### MEDIUM Severity Code Gaps
 
-[GAP-M8] USDT netting pair classification uses placeholder heuristic - First byte >= 0x80 used to detect USDT pairs. Production needs AssetPairRegistry lookup. Location: issuer/src/netting/usdt.rs
+[GAP-M8] USDT netting pair classification uses placeholder heuristic - First byte >= 0x80 used to detect USDT pairs. Production needs AssetPairRegistry lookup. Location: oracle/src/netting/usdt.rs
 
 ### Architecture.md Fixes Applied (v2.0)
 
@@ -4183,13 +4183,13 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 [DECISION] FIX: ABI encoding offset bug in build_confirm_batch_calldata and build_confirm_fills_calldata — Dynamic array offsets used 64 (wrong) instead of 96 (3 head words * 32). Confirmed via `cast calldata` comparison. This caused confirmBatch to always revert with empty 0x data.
 
-[DECISION] FIX: arb_usdc_address and l3_usdc_address hardcoded to Address::zero() in BridgeConfig — Added l3_usdc and arb_usdc fields to IssuerConfig, parse from deployment file (L3_USDC/ARB_USDC keys), and wire into bootstrap/consensus.rs. Custody release was failing with E026_TargetNotWhitelisted(address(0)) because the USDC target was zero.
+[DECISION] FIX: arb_usdc_address and l3_usdc_address hardcoded to Address::zero() in BridgeConfig — Added l3_usdc and arb_usdc fields to OracleConfig, parse from deployment file (L3_USDC/ARB_USDC keys), and wire into bootstrap/consensus.rs. Custody release was failing with E026_TargetNotWhitelisted(address(0)) because the USDC target was zero.
 
 [DECISION] FIX: Custody release validation rejected follower proposals — validate_release_proposal() required order status BridgedBackToArb, but followers don't track order status (only leader does). Changed to allow None status (untracked orders) in validation.
 
-[FAILED] Duplicate leader election causes multiple submitOrder calls — Both issuer 1 and issuer 2 act as leader and call submitOrder for the same arb order, creating duplicate L3 orders. Root cause: calculate_leader() returns different results on different nodes (likely due to different last_signature values). The nextOrderId read + submitOrder is not atomic, so both map arb_order_id=0 to l3_order_id=1 but one gets order 1 and the other gets order 2. This needs investigation in the leader election mechanism.
+[FAILED] Duplicate leader election causes multiple submitOrder calls — Both oracle 1 and oracle 2 act as leader and call submitOrder for the same arb order, creating duplicate L3 orders. Root cause: calculate_leader() returns different results on different nodes (likely due to different last_signature values). The nextOrderId read + submitOrder is not atomic, so both map arb_order_id=0 to l3_order_id=1 but one gets order 1 and the other gets order 2. This needs investigation in the leader election mechanism.
 
-[DECISION] FIX: Replaced signature-based leader election with deterministic cycle-based election for bridge operations — calculate_bridge_leader() uses `cycle % num_issuers` instead of `keccak256(last_signature)[0] % num_issuers`. The signature-based approach fails because last_signature may differ between nodes (not yet synchronized). Cycle number is identical on all nodes, guaranteeing a single leader. Applied to all 3 bridge call sites: cross-chain order processing, batch confirmation, and ITP creation.
+[DECISION] FIX: Replaced signature-based leader election with deterministic cycle-based election for bridge operations — calculate_bridge_leader() uses `cycle % num_oracles` instead of `keccak256(last_signature)[0] % num_oracles`. The signature-based approach fails because last_signature may differ between nodes (not yet synchronized). Cycle number is identical on all nodes, guaranteeing a single leader. Applied to all 3 bridge call sites: cross-chain order processing, batch confirmation, and ITP creation.
 
 
 ## Session 20260204-2010-m8b5
@@ -4202,11 +4202,11 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 [DECISION] Wall-clock aligned cycles - CycleManager now derives cycle number from `unix_timestamp_ms / cycle_duration_ms` instead of counting from boot time. All nodes on the same machine agree on cycle number regardless of boot time. Falls back to interval mode if `--start-cycle` is explicitly set.
 
-[DECISION] Cycle-based leader rotation - Leader election changed from `keccak256(last_bls_signature) % num_issuers` to `cycle_number % num_issuers`. The old approach broke because followers return zero signatures in ConsensusResult::Success, causing leader election divergence between leader and followers.
+[DECISION] Cycle-based leader rotation - Leader election changed from `keccak256(last_bls_signature) % num_oracles` to `cycle_number % num_oracles`. The old approach broke because followers return zero signatures in ConsensusResult::Success, causing leader election divergence between leader and followers.
 
-[FAILED] Simultaneous issuer startup without wall-clock alignment - Even starting all 3 issuers at the same millisecond wasn't sufficient because bootstrap RPC calls take variable time, causing CycleManager to start at different wall-clock moments across nodes.
+[FAILED] Simultaneous oracle startup without wall-clock alignment - Even starting all 3 oracles at the same millisecond wasn't sufficient because bootstrap RPC calls take variable time, causing CycleManager to start at different wall-clock moments across nodes.
 
-[DECISION] num_issuers must match actual running nodes - Default was 20 (production), but with 3 running nodes, leader election computes `cycle % 20` giving leader indices 0-19, of which only 0-2 have running nodes. Fixed by requiring `--num-issuers 3` in E2E scripts.
+[DECISION] num_oracles must match actual running nodes - Default was 20 (production), but with 3 running nodes, leader election computes `cycle % 20` giving leader indices 0-19, of which only 0-2 have running nodes. Fixed by requiring `--num-oracles 3` in E2E scripts.
 
 ## Session: 20260208-1845-k8q3
 
@@ -4261,24 +4261,24 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 ## Session 20260209-0400-b3k7
 
-[FAILED] compute_assets_hash using 20 bytes per address - Solidity's abi.encodePacked(address[]) uses 32 bytes (left-padded), not 20 bytes. This caused BLS message hash mismatch between Rust issuers and on-chain BridgeProxy, resulting in E071_InvalidBLSSignature on every completeCreateItp call. Fixed by padding addresses to 32 bytes in Rust.
+[FAILED] compute_assets_hash using 20 bytes per address - Solidity's abi.encodePacked(address[]) uses 32 bytes (left-padded), not 20 bytes. This caused BLS message hash mismatch between Rust oracles and on-chain BridgeProxy, resulting in E071_InvalidBLSSignature on every completeCreateItp call. Fixed by padding addresses to 32 bytes in Rust.
 
 [DECISION] Individual addresses in abi.encodePacked are 20 bytes, but address[] arrays use 32 bytes per element - Solidity treats array elements differently from individual values in encodePacked. This is a subtle difference that caused the BLS verification failure.
 
 ## Session 20260210-1430-p7h3
 
-[DECISION] data-node as standalone binary (not compiled into issuer/AP) - Keeps AP/issuer binaries lean, historical storage is a separate concern. Uses common crate's BitgetReadOnlyClientImpl for price fetching.
+[DECISION] data-node as standalone binary (not compiled into oracle/AP) - Keeps AP/oracle binaries lean, historical storage is a separate concern. Uses common crate's BitgetReadOnlyClientImpl for price fetching.
 [DECISION] clap env feature added locally (not to workspace) - Workspace clap only has "derive"; data-node needs "env" for DATABASE_URL etc. Override in data-node/Cargo.toml to avoid affecting other crates.
 [DECISION] UNNEST-based batch insert for prices - More efficient than individual INSERTs for ~627 rows per cycle, with ON CONFLICT DO NOTHING for idempotency.
 [DECISION] Time-bucket downsampling via epoch-floor math for 5m/15m intervals - date_trunc only supports standard units (minute, hour, day), so 5m/15m use floor(epoch/secs)*secs approach.
 
 ## Session: 20260210-2145-k8m7
 
-### AP & Issuer Use Price-History Backend for ITP Price
+### AP & Oracle Use Price-History Backend for ITP Price
 
 - [DECISION] Box<dyn NavCalculator> blanket impl instead of enum dispatch - NavSignHandler is generic over NC: NavCalculator, adding blanket impl for Box<dyn NavCalculator> avoids changing every callsite and keeps the trait object approach clean
 - [DECISION] query_latest_prices_batch uses DISTINCT ON (symbol) - Single DB round trip for all N asset prices instead of N sequential queries like /verify-nav. O(1) vs O(N) DB calls.
-- [DECISION] data_node_url passed as CLI arg (not through IssuerConfig) - Issuer config is complex with its own ConfigBuilder pattern; for this feature a simple CLI arg is sufficient and avoids config migration
+- [DECISION] data_node_url passed as CLI arg (not through OracleConfig) - Oracle config is complex with its own ConfigBuilder pattern; for this feature a simple CLI arg is sufficient and avoids config migration
 - [DECISION] AP /nav handler branches on data_node_url presence - When set, delegates to backend; when absent, preserves existing inline on-chain+Bitget logic unchanged. Zero regression risk.
 - [FAILED] AP delegating /nav to data-node - data-node had stale 2-asset ITP snapshot (DB only had old "created" snapshot from 2-asset test), producing $1002 NAV instead of $0.99. AP should compute NAV locally from on-chain state + live Bitget cache. Reverted AP to always compute locally.
 - [FAILED] Price-history started without Bitget credentials or RPC/index-address - collector couldn't fetch prices (last_fetch_at: null) or refresh ITP snapshots. Needs BITGET_READONLY_API_KEY, --rpc-url, --index-address.
@@ -4296,7 +4296,7 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 - [FAILED] fetch_prices fails entire batch on first error (bitget.rs `?` operator) - One bad asset kills all 100 price lookups. Fixed: `match` + collect partial results with warn.
 - [DECISION] Rebalance stalls on missing prices instead of skipping - Was calling `mark_rebalance_completed` on missing prices (permanent skip). Now `continue` to retry next cycle. User requirement: "everything should stall if there is no proper price data".
 - [FAILED] $1 fallback for added assets in rebalance - User rejected: "we dont tolarate wrong prices". Replaced with stall behavior.
-- [FAILED] Issuers used 6-entry default symbol map instead of 684-entry file - `--symbol-map-file` was never passed to issuer launch in start.sh. All 100 ITP assets got PriceNotAvailable. Fixed by adding `--symbol-map-file $SCRIPT_DIR/data/symbol-map.json` to issuer args.
+- [FAILED] Oracles used 6-entry default symbol map instead of 684-entry file - `--symbol-map-file` was never passed to oracle launch in start.sh. All 100 ITP assets got PriceNotAvailable. Fixed by adding `--symbol-map-file $SCRIPT_DIR/data/symbol-map.json` to oracle args.
 - [DECISION] Bulk ticker cache for BitgetPriceFetcher - `get_all_tickers()` fetches all ~743 Bitget pairs in 1 HTTP call with 30s TTL cache. Reduced initial consensus from ~4 min (684 sequential API calls) to <1s. Added `get_all_tickers` to `BitgetReadOnlyClient` trait with default impl.
 - [FAILED] Step 4 (deploy-all-bitget-tokens.py) overwrites symbol-map.json losing ITP tokens - Step 3 creates symbol-map with 100 ITP tokens, step 4 overwrites with 684 Bitget tokens. Added merge step after step 4.
 - [FAILED] Merge step uses wrong addresses from itp-100-asset.json - Foundry `vm.writeJson` saves SIMULATION addresses during script execution, but broadcast produces DIFFERENT addresses (deployer nonce differs between simulation and broadcast). All 100/100 token addresses in JSON were wrong. Additionally, step 3b (Arb deployment) overwrites JSON after step 3a (L3 deployment), further corrupting addresses.
@@ -4315,9 +4315,9 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 [FAILED] Inline RebalanceLib delta emission (single function) - stack too deep error from Yul optimizer due to too many local variables in rebalance(). Fixed by extracting to separate internal function.
 
-[DECISION] Audit trail: Event-driven from on-chain data via AP event monitor (already reads AssetTradeRequest events). Writes JSONL to logs/audit-trail.jsonl with ASSET_TRADE_RECEIVED, VAULT_TRADE_EXECUTED, VAULT_TRADE_FAILED events. Rejected issuer-side inline instrumentation (scattered audit.log() calls in processing functions) in favor of on-chain truth.
+[DECISION] Audit trail: Event-driven from on-chain data via AP event monitor (already reads AssetTradeRequest events). Writes JSONL to logs/audit-trail.jsonl with ASSET_TRADE_RECEIVED, VAULT_TRADE_EXECUTED, VAULT_TRADE_FAILED events. Rejected oracle-side inline instrumentation (scattered audit.log() calls in processing functions) in favor of on-chain truth.
 
-[DECISION] Audit module: common/src/audit.rs - thread-safe JSONL writer with Arc<Mutex<BufWriter<File>>>. Used by AP only; issuer has no event monitor infrastructure to justify a polling task.
+[DECISION] Audit module: common/src/audit.rs - thread-safe JSONL writer with Arc<Mutex<BufWriter<File>>>. Used by AP only; oracle has no event monitor infrastructure to justify a polling task.
 
 ## Session: 20260213-1830-k4m7
 
@@ -4339,9 +4339,9 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 
 [DECISION] Preserve bid/ask from Bitget ticker: CachedTicker stores last_price + best_bid + best_ask. /itp-bid-ask computes ITP-level NAV bid/ask from ticker data and spread in bps.
 
-[DECISION] Cycle duration 3000ms -> 2000ms: Previously blocked by 2-3s Bitget fetch per issuer. Now issuers read from in-memory cache (<10ms). The 3000ms→2000ms reduction is safe since price fetch is no longer the bottleneck.
+[DECISION] Cycle duration 3000ms -> 2000ms: Previously blocked by 2-3s Bitget fetch per oracle. Now oracles read from in-memory cache (<10ms). The 3000ms→2000ms reduction is safe since price fetch is no longer the bottleneck.
 
-[DECISION] Switched issuer BackendPriceFetcher and AP from /latest-prices to /fast-prices endpoint. Response format changed from `{prices: {sym: "price_str"}}` to `{prices: {sym: {last_price, bid, ask}}}`.
+[DECISION] Switched oracle BackendPriceFetcher and AP from /latest-prices to /fast-prices endpoint. Response format changed from `{prices: {sym: "price_str"}}` to `{prices: {sym: {last_price, bid, ask}}}`.
 
 [DECISION] Cycle duration 3000ms -> 1000ms (final): Measured cycle elapsed: idle=26-34ms, consensus=26-44ms, on-chain-tx=318-331ms. 1000ms gives 3x headroom on heaviest cycles. Smoke test passes (buy+sell) at 1000ms.
 
@@ -4363,7 +4363,7 @@ Compared architecture.md (v1.9) against full codebase. Updated architecture.md t
 - [DECISION] Anvil auto-impersonation — eth_sendTransaction from known accounts accepted without signatures, mock wallet just proxies RPC calls
 - [DECISION] Sequential test execution (workers: 1) — tests depend on prior state (buy before sell, deposit before borrow)
 - [DECISION] Backend API verification alongside UI — UI may show stale data (5s polling), backend confirms on-chain state directly
-- [DECISION] pollUntil helper — buy/sell go through bridge relay + issuer processing, need async polling with configurable timeout
+- [DECISION] pollUntil helper — buy/sell go through bridge relay + oracle processing, need async polling with configurable timeout
 - [DECISION] Centralized selectors.ts — no data-testid in codebase, selectors by role/text/CSS hierarchy in one file
 - [DECISION] EIP-6963 announceProvider dispatch — newer wagmi versions use this discovery protocol alongside window.ethereum
 - [DECISION] Chain ID 42161 for mock wallet — matches NEXT_PUBLIC_CHAIN_ID env var, frontend expects Arbitrum chain ID
@@ -4511,7 +4511,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Dual momentum cash mode: when avg trailing return < 0, return all-zero weights. Main loop detects empty rebalance result and sells all holdings, keeping portfolio_value as cash NAV until next rebalance.
 
-[DECISION] 20260221-0300-bls1: BLS seed mismatch root cause — bls-tool uses vec![idx; 32] but issuer used [seed_idx, 0x42, 0..0]. Fixed issuer to match bls-tool. This was the root cause of E020_InvalidBLSSignature on every non-empty batch since deployment. Never caught because empty batches skip on-chain submission.
+[DECISION] 20260221-0300-bls1: BLS seed mismatch root cause — bls-tool uses vec![idx; 32] but oracle used [seed_idx, 0x42, 0..0]. Fixed oracle to match bls-tool. This was the root cause of E020_InvalidBLSSignature on every non-empty batch since deployment. Never caught because empty batches skip on-chain submission.
 
 
 [DECISION] 20260221-0300-bls2: Fixed InMemoryKeyRegistry::generate_test_registry_with_offset (keys.rs) and registry_sync test helpers — all had old [i, 0x42, 0..0] seed format. Now all BLS seed generation across the entire codebase uses vec![idx; 32] matching bls-tool.
@@ -4539,13 +4539,13 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Finding 7 (AP fill pipeline uses dummy prices) deferred - Significant production code change in AP service. Requires E2E environment with real Bitget feeds to verify correct price propagation through fills. Lower priority since AP fills work correctly in practice.
 
-[DECISION] Finding 8 (BLS hash domain mismatch between issuer/contract) deferred - Requires coordinated change across Rust issuer and Solidity contracts with E2E BLS signing tests. High risk of breaking consensus if done incorrectly. Needs dedicated session with full issuer cluster running.
+[DECISION] Finding 8 (BLS hash domain mismatch between oracle/contract) deferred - Requires coordinated change across Rust oracle and Solidity contracts with E2E BLS signing tests. High risk of breaking consensus if done incorrectly. Needs dedicated session with full oracle cluster running.
 
 [DECISION] Finding 9 (arbitration/dispute stubs unimplemented) deferred - Governance arbitration is a future feature. Stubs exist as placeholders. Implementing requires full governance design specification that doesn't exist yet.
 
 ## 20260221-2100-r3p2 — P2Pool Implementation Plan Review Round 3
 
-[DECISION] Chain indexer eth_call data population — replaced empty-array INSERT placeholders with actual eth_call to getBatch()/getPosition() for all event handlers. Both data-node (Task 2.5) and issuer (Task 3.9) indexers now fetch real on-chain state.
+[DECISION] Chain indexer eth_call data population — replaced empty-array INSERT placeholders with actual eth_call to getBatch()/getPosition() for all event handlers. Both data-node (Task 2.5) and oracle (Task 3.9) indexers now fetch real on-chain state.
 
 [DECISION] Solvency check includes fee — changed all solvency checks from `< payout + accumulatedFees` to `< payout + accumulatedFees + fee`. The fee is added to accumulatedFees after the check, so it must be included in the pre-check.
 
@@ -4565,7 +4565,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Expanded underspecified tasks — Tasks 3.5 (TickScheduler), 3.6 (TickResolver), 3.7 (API endpoints), 3.8 (engine loop + main.rs) all expanded from stubs to full implementations with complete code.
 
-[DECISION] Chain indexer consistency — documented that both indexers (data-node Task 2.5, issuer Task 3.9) must use same vision_address and start_block, handle reorgs by deleting reorged data, and have clear failure modes (stale REST data vs delayed ticks).
+[DECISION] Chain indexer consistency — documented that both indexers (data-node Task 2.5, oracle Task 3.9) must use same vision_address and start_block, handle reorgs by deleting reorged data, and have clear failure modes (stale REST data vs delayed ticks).
 
 [DECISION] updateBatchMarkets BLS-gated — added BLS signature requirement covering (batchId, marketIds, resolutionTypes, currentTick) to prevent mid-tick market manipulation by batch creator.
 
@@ -4587,15 +4587,15 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] TickResult/MarketResult struct reconciliation — TickResult now uses `voided_players: Vec<Address>` and `player_balances: Vec<PlayerBalance>`. MarketResult simplified to `(market_id, outcome, pct_change: f64, player_results)` matching resolver output.
 
-[DECISION] RewardsClaimed event handling — added handler to both data-node indexer (re-reads position from chain) and issuer chain listener (calls scheduler.on_rewards_claimed). Without this, both local states went stale after claims.
+[DECISION] RewardsClaimed event handling — added handler to both data-node indexer (re-reads position from chain) and oracle chain listener (calls scheduler.on_rewards_claimed). Without this, both local states went stale after claims.
 
-[DECISION] Single P2PoolConfig definition — merged Task 3.1 and Task 3.8 configs into one canonical definition in p2pool/config.rs with all 9 fields. Task 3.8 references it via IssuerConfig.
+[DECISION] Single P2PoolConfig definition — merged Task 3.1 and Task 3.8 configs into one canonical definition in p2pool/config.rs with all 9 fields. Task 3.8 references it via OracleConfig.
 
-[DECISION] forceWithdraw uses on-chain totalDeposited — removed totalDeposited parameter from forceWithdraw. Now reads pos.totalDeposited from storage, consistent with withdraw(). Removes trust in issuer-provided param.
+[DECISION] forceWithdraw uses on-chain totalDeposited — removed totalDeposited parameter from forceWithdraw. Now reads pos.totalDeposited from storage, consistent with withdraw(). Removes trust in oracle-provided param.
 
 [DECISION] Unified fee model — claims are now fee-free (just transfer incremental gains + track totalClaimed). Fees collected only on withdraw/forceWithdraw based on lifetime profit: `totalExtracted = finalBalance + totalClaimed`, `profit = totalExtracted - totalDeposited`. Prevents overtaxing players who lose then recover.
 
-[DECISION] Market whitelist validation in resolver — added check that all batch market_ids are in the active issuer-curated whitelist before resolving. Rejects non-whitelisted markets.
+[DECISION] Market whitelist validation in resolver — added check that all batch market_ids are in the active oracle-curated whitelist before resolving. Rejects non-whitelisted markets.
 
 [DECISION] kv_store table in migration — added CREATE TABLE kv_store (key TEXT PK, value TEXT) to Task 2.3c migration. Used by chain indexer for last_indexed_block tracking.
 
@@ -4603,9 +4603,9 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Removed updateBitmap — bitmap hash is immutable (set once at joinBatch). No on-chain update function. Players must withdraw and rejoin to change strategy.
 
-[DECISION] Solvency trust model documented — per-payout solvency checks are correct but no global invariant. BLS issuer quorum is the trust anchor. Documented as design note in contract.
+[DECISION] Solvency trust model documented — per-payout solvency checks are correct but no global invariant. BLS oracle quorum is the trust anchor. Documented as design note in contract.
 
-## Session: 20260224-issuer-bls-audit (Issuer BLS Verification Audit)
+## Session: 20260224-oracle-bls-audit (Oracle BLS Verification Audit)
 
 [DECISION] Eliminated 9 "key not found" BLS bypass paths in protocol.rs — when a follower couldn't find the leader's public key in the registry, it silently continued and signed the proposal. Changed all 9 to return Error::BlsVerification, rejecting the proposal entirely.
 
@@ -4615,7 +4615,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Aggregator threshold hardened — calculate_threshold(0) now returns 2 (was 1). set_threshold() now asserts threshold >= 2 to prevent vacuous consensus.
 
-[DECISION] Created issuer/src/vision/ stub module — the p2pool->vision rename (commit ebdb26ed) removed p2pool/ but never created vision/. Created minimal mod.rs + config.rs stubs to allow lib compilation. Full vision module implementation is separate work.
+[DECISION] Created oracle/src/vision/ stub module — the p2pool->vision rename (commit ebdb26ed) removed p2pool/ but never created vision/. Created minimal mod.rs + config.rs stubs to allow lib compilation. Full vision module implementation is separate work.
 
 ## Session: 20260224-task5 (Task 5: Secure data-node connections)
 
@@ -4623,29 +4623,29 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] Production guards: --no-tls, --bls-key-seed-index, --skip-reconstruction now panic without --mock. These flags were dev-only but had no enforcement.
 
-[DECISION] Bearer token auth via --data-node-token / DATA_NODE_TOKEN env var flows into VisionConfig.data_node_token, ArbitrationConfig.data_node_token, and IssuerConfig.data_node_token. DataNodePriceFetcher::with_token() constructor applies bearer_auth() on all HTTP requests.
+[DECISION] Bearer token auth via --data-node-token / DATA_NODE_TOKEN env var flows into VisionConfig.data_node_token, ArbitrationConfig.data_node_token, and OracleConfig.data_node_token. DataNodePriceFetcher::with_token() constructor applies bearer_auth() on all HTTP requests.
 
 [DECISION] Vision engine.rs does not exist yet (only config.rs and mod.rs stubs). Added data_node_token field to VisionConfig for when engine is implemented. The main.rs already passes it through.
 
 ## Session: 20260224-phase0b (Phase 0b: Fix apply_pending_config_update crash)
 
-[DECISION] Replaced pending_config_update tuple `(u8, usize)` with `ConfigUpdate` struct containing `active_count`, `threshold`, `node_index`, and `issuer_registry_index`. This prevents the `LeaderElector::new()` panic when `node_index >= new_num_issuers` after an issuer is removed.
+[DECISION] Replaced pending_config_update tuple `(u8, usize)` with `ConfigUpdate` struct containing `active_count`, `threshold`, `node_index`, and `oracle_registry_index`. This prevents the `LeaderElector::new()` panic when `node_index >= new_num_oracles` after an oracle is removed.
 
-[DECISION] Added `RuntimeConfig` struct with atomic fields (`AtomicU8`/`AtomicUsize`) for lock-free interior mutability of `node_index`, `num_issuers`, `issuer_registry_index`, and `signature_threshold`. These fields change at runtime when issuers join/leave, but `ConsensusProtocol` methods take `&self`. Using atomics avoids wrapping the entire `ConsensusConfig` in a `RwLock` (which would require `.read().await` at 85+ access sites).
+[DECISION] Added `RuntimeConfig` struct with atomic fields (`AtomicU8`/`AtomicUsize`) for lock-free interior mutability of `node_index`, `num_oracles`, `oracle_registry_index`, and `signature_threshold`. These fields change at runtime when oracles join/leave, but `ConsensusProtocol` methods take `&self`. Using atomics avoids wrapping the entire `ConsensusConfig` in a `RwLock` (which would require `.read().await` at 85+ access sites).
 
-[DECISION] RegistrySyncHandler now computes `node_index` as dense rank (count of active issuers with ID < ours) and `issuer_registry_index` from the on-chain ID. If this node is removed from the active set, logs ERROR and skips config update instead of pushing invalid indices that would panic.
+[DECISION] RegistrySyncHandler now computes `node_index` as dense rank (count of active oracles with ID < ours) and `oracle_registry_index` from the on-chain ID. If this node is removed from the active set, logs ERROR and skips config update instead of pushing invalid indices that would panic.
 
 [FAILED] Considered wrapping entire `ConsensusConfig` in `RwLock<ConsensusConfig>` — rejected because `self.config.*` is accessed 85+ times throughout protocol.rs, and adding `.read().await` everywhere would be a massive, error-prone refactor. Atomics are cleaner for the few fields that change.
 
 ## Session: 20260224-2300-k9p1 (Phase -1d: Bootstrap key registry from chain)
 
-[DECISION] `build_key_registry()` now queries on-chain IssuerRegistry as primary path. Previously it returned `None` when `!self.params.test_key_seeds`, which meant production nodes NEVER had a key registry and BLS verification from peers was broken. The new flow: (1) query chain for active issuers, (2) validate each BLS pubkey is correct length (128 bytes) AND a valid on-curve G2 point via `deserialize_g2_point()`, (3) register into InMemoryKeyRegistry. Falls back to deterministic test seeds only if chain query fails/empty AND `test_key_seeds` flag is set.
+[DECISION] `build_key_registry()` now queries on-chain OracleRegistry as primary path. Previously it returned `None` when `!self.params.test_key_seeds`, which meant production nodes NEVER had a key registry and BLS verification from peers was broken. The new flow: (1) query chain for active oracles, (2) validate each BLS pubkey is correct length (128 bytes) AND a valid on-curve G2 point via `deserialize_g2_point()`, (3) register into InMemoryKeyRegistry. Falls back to deterministic test seeds only if chain query fails/empty AND `test_key_seeds` flag is set.
 
-[DECISION] Made `build_key_registry()` async since it now calls `chain_reader.get_issuer_registry().await`. The caller `build_keys()` was already async so only needed `.await` at call site.
+[DECISION] Made `build_key_registry()` async since it now calls `chain_reader.get_oracle_registry().await`. The caller `build_keys()` was already async so only needed `.await` at call site.
 
 ## Session: 20260224-2320-v4m7 (Phase 0d: Leader identity verification with dual-view tolerance)
 
-[DECISION] Leader identity verification uses key_registry.registered_peers() to compute dense index from PeerId. Sorting all registered peers by extract_issuer_id() and finding position gives the same dense index used by LeaderElector (cycle % num_issuers). Added +-1 issuer count tolerance window for config propagation lag (~5s window when issuer set changes).
+[DECISION] Leader identity verification uses key_registry.registered_peers() to compute dense index from PeerId. Sorting all registered peers by extract_oracle_id() and finding position gives the same dense index used by LeaderElector (cycle % num_oracles). Added +-1 oracle count tolerance window for config propagation lag (~5s window when oracle set changes).
 
 [DECISION] Added proposal_sender() method on MessageHandleResult enum to centralize extraction of sender PeerId from all 19 proposal variants. This avoids duplicating the is_valid_leader check inside each match arm in handle_message(). The check runs once before the main match block, rejecting non-leader proposals with CONSENSUS-020 warning.
 
@@ -4653,7 +4653,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] PeerScorer wired into ConsensusProtocol via Option<Arc<PeerScorer>> field (not through P2PTransport trait). The trait is generic so concrete transport methods aren't accessible. Builder pattern with_peer_scorer() mirrors with_fill_verifier(). Bootstrap grabs scorer from p2p_transport.peer_scorer() and passes it in.
 
-[DECISION] peer_registry (Arc<RwLock<Vec<PeerId>>>) added to ConsensusProtocol, populated at construction from key_registry.registered_peers() sorted by extract_issuer_id(). Refreshed in apply_pending_config_update() when issuer set changes. Provides deterministic PeerId->index mapping for leader verification.
+[DECISION] peer_registry (Arc<RwLock<Vec<PeerId>>>) added to ConsensusProtocol, populated at construction from key_registry.registered_peers() sorted by extract_oracle_id(). Refreshed in apply_pending_config_update() when oracle set changes. Provides deterministic PeerId->index mapping for leader verification.
 
 [DECISION] Zeroed PeerIds (all zeros) and temp PeerIds (first byte 0xFE/0xFF) skip leader verification entirely (return true). These are used during bootstrap before re-keying assigns real identities. Verifying them would always fail since they're not in the registry.
 
@@ -4661,7 +4661,7 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 ## Session: 20260224-2350-m7q4 (P2P-7: Observability — metrics + structured logging)
 
-[DECISION] P2PMetrics uses AtomicU64 counters with Relaxed ordering (same pattern as IssuerMetrics). Relaxed is sufficient because these are monotonic counters for diagnostics — no cross-field consistency needed.
+[DECISION] P2PMetrics uses AtomicU64 counters with Relaxed ordering (same pattern as OracleMetrics). Relaxed is sufficient because these are monotonic counters for diagnostics — no cross-field consistency needed.
 
 [DECISION] P2PMetrics exposed via /health endpoint under a "p2p" key, serialized as P2PMetricsSnapshot via serde. This extends the existing health JSON (which already has consensus, heartbeat sections) rather than creating a separate /metrics endpoint.
 
@@ -4685,10 +4685,10 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Added missing columns to `vision_batches` table: `next_config_hash`, `next_lock_offset`, `last_promotion_tick`. These were written by handlers but didn't exist in the schema.
 
 ### FRONTEND PROXY ROUTE
-[DECISION] Created `frontend/app/api/vision/batches/route.ts` — proxies to issuer health port (`localhost:10001`). Frontend's `useBatches` hook calls `/api/vision/batches` but no Next.js route existed. 5s revalidate, 10s timeout, 502 fallback.
+[DECISION] Created `frontend/app/api/vision/batches/route.ts` — proxies to oracle health port (`localhost:10001`). Frontend's `useBatches` hook calls `/api/vision/batches` but no Next.js route existed. 5s revalidate, 10s timeout, 502 fallback.
 
 ### BOT CONFIGURATION
-[FAILED] Vision bot started with `VISION_API_URL=http://localhost:9001` (P2P port) — should be `http://localhost:10001` (health/API port). Issuer port layout: P2P = base port, health/API = base + 1000.
+[FAILED] Vision bot started with `VISION_API_URL=http://localhost:9001` (P2P port) — should be `http://localhost:10001` (health/API port). Oracle port layout: P2P = base port, health/API = base + 1000.
 
 [FAILED] Bot stale `pnl.json` from previous Anvil run — bots thought they had 50 positions but those don't exist on fresh chain. Must delete state file between Anvil restarts.
 
@@ -4701,13 +4701,13 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 - [DECISION] Created centralized constants file `frontend/lib/vision/constants.ts` — single source of truth for VISION_USDC_DECIMALS (18), ARB_USDC_DECIMALS (6), contract addresses, chain IDs, and gas thresholds. All components/hooks import from here instead of hardcoding.
 - [DECISION] useDepositToVision uses raw wagmi `useWriteContract` instead of custom `useChainWriteContract` — the cross-chain deposit targets Arbitrum, but useChainWriteContract always injects `activeChainId` (L3). Raw hook allows explicit `chainId: arbChainId`.
-- [DECISION] useDepositToVision polls L3 virtualBalance every 3s with 2min timeout to detect issuer credit — simpler than WebSocket subscription, matches the existing polling pattern in the codebase.
+- [DECISION] useDepositToVision polls L3 virtualBalance every 3s with 2min timeout to detect oracle credit — simpler than WebSocket subscription, matches the existing polling pattern in the codebase.
 - [DECISION] useJoinBatch (both vision/ and p2pool/) completely removed approve flow — under dual-balance, joinBatch pulls from Vision internal balance. Hook now reads `balanceOf(address)` and rejects if insufficient with "Deposit USDC first" message.
 - [DECISION] Bot adds `executor.deposit_balance(deposit_wei)` before `join_batch()` — L3 direct deposit flow: approve L3 USDC → depositBalance → joinBatch. Bot manages its own Vision balance.
 - [DECISION] start.sh bot funding changed from Arb USDC (6 dec) to L3 WUSDC (18 dec) — amounts updated from 50000000000 (50k * 1e6) to 50000000000000000000000 (50k * 1e18).
 - [DECISION] wagmi.ts multi-chain config: L3 as primary chain (activeChain) + Arbitrum as secondary — transports configured separately for each chain ID. Allows cross-chain deposit UI.
 - [DECISION] All formatUnits/parseUnits calls across vision and p2pool components changed from hardcoded `6` to `VISION_USDC_DECIMALS` (18) — centralized constant prevents decimal mismatch bugs.
-[DECISION] 20260228-1907-e2eb — Arb bridge tests use 08/09 numbering (not 06/07 which are taken by backtester-smoke and issuer-resilience). Config expanded with array pattern ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts'] to include new tests while keeping 07 excluded.
+[DECISION] 20260228-1907-e2eb — Arb bridge tests use 08/09 numbering (not 06/07 which are taken by backtester-smoke and oracle-resilience). Config expanded with array pattern ['**/0[0-6]-*.spec.ts', '**/0[89]-*.spec.ts'] to include new tests while keeping 07 excluded.
 
 ## Session: 20260301-sol2-v1r3 (SOL-2 virtual balance insolvency fix)
 
@@ -4725,19 +4725,19 @@ The backtester currently supports one rebalance method: **periodic time-based re
 
 [DECISION] 20260302-1010-bls1: NavOracle hash must use L3 chain_id (111222333), not Arb chain_id (421611337) - the oracle contract is on L3 and uses block.chainid. Root cause of persistent 0x10aa8d54 (BLSVerifier__InvalidSignature) errors.
 
-[DECISION] 20260302-e2e-prod-cycles: Changed e2e issuer cycle params from fast-mode (200ms/150ms/20ms) to production values (1000ms/800ms/50ms) to match vps-deploy.sh. Tests now reflect real fill times.
+[DECISION] 20260302-e2e-prod-cycles: Changed e2e oracle cycle params from fast-mode (200ms/150ms/20ms) to production values (1000ms/800ms/50ms) to match vps-deploy.sh. Tests now reflect real fill times.
 
 [DECISION] 20260303-INFRA007 - Follower price proposal verification must use cycle_number from incoming P2P message, not from local state (unwrap_or(0) caused BLS mismatch after hours of running)
 
 ## Session: 20260304-e2e-fixes (Fix 4 skipped E2E tests + NAV production issue)
 
 - [DECISION] NAV test was silently skipping (`continue`) when navValue count was 0 (NAV not loaded yet). Changed to `expect(...).toBeVisible({ timeout: 45_000 })` to properly wait for data-node NAV to load.
-- [DECISION] ITP2 BridgedITP: Added `deployBridgedItpDirect` helper that impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(), then sets BridgeProxy.orbitToArbitrum storage slot 5 via anvil_setStorageAt. BridgeProxy storage layout: slot 0=BLSVerifier._blsIssuerRegistry, slot 1=issuerRegistry, slot 2=bridgedItpFactory, slot 3=nextCreationNonce, slot 4=_pendingCreations, slot 5=orbitToArbitrum.
+- [DECISION] ITP2 BridgedITP: Added `deployBridgedItpDirect` helper that impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(), then sets BridgeProxy.orbitToArbitrum storage slot 5 via anvil_setStorageAt. BridgeProxy storage layout: slot 0=BLSVerifier._blsOracleRegistry, slot 1=oracleRegistry, slot 2=bridgedItpFactory, slot 3=nextCreationNonce, slot 4=_pendingCreations, slot 5=orbitToArbitrum.
 - [DECISION] `placeSellOrderDirect` had a bug: hard-coded BRIDGED_ITP (ITP1's address) for the ERC20 approve, regardless of which ITP was being sold. Fixed to dynamically resolve BridgedITP address per itpId.
 - [DECISION] Production NAV: useItpNav.ts was fetching directly from `DATA_NODE_URL` (defaults to localhost:8200) which doesn't work from browser in production. Added `/api/itp-price` Next.js API route as server-side proxy. Hook now fetches from `/api/itp-price` instead.
 - [DECISION] Source detail pool TVL test: changed from /source/coingecko to /source/pumpfun (where test 13 deposits) and added ensureBatchExists + depositToVisionBalance setup to guarantee pool has data.
 [DECISION] 20260307-0210-40fa Renaming all Arb/Arbitrum chain references → Settlement across entire codebase. Settlement chain on testnet = Sonic Testnet (chain ID 14601, RPC https://rpc.testnet.soniclabs.com). arbitration/ directory excluded (dispute arbitration, not Arbitrum).
-- [DECISION] 20260307-dual-chain: Dual-chain testnet — deploy settlement contracts to Sonic Testnet (14601) separately from L3 (111222333). testnet.sh now deploys DeployFullSystemE2E to both chains, saves per-chain JSONs (e2e-full-system-l3.json, e2e-full-system-sonic.json), merges settlement addresses (SettlementBridgeCustody, SETTLEMENT_USDC, MockBitgetVault, etc.) from Sonic into active-deployment.json. Issuers/AP/data-node start with SETTLEMENT_RPC_URL pointing to Sonic. envs/testnet/.env updated with Sonic settlement chain ID + RPC.
+- [DECISION] 20260307-dual-chain: Dual-chain testnet — deploy settlement contracts to Sonic Testnet (14601) separately from L3 (111222333). testnet.sh now deploys DeployFullSystemE2E to both chains, saves per-chain JSONs (e2e-full-system-l3.json, e2e-full-system-sonic.json), merges settlement addresses (SettlementBridgeCustody, SETTLEMENT_USDC, MockBitgetVault, etc.) from Sonic into active-deployment.json. Oracles/AP/data-node start with SETTLEMENT_RPC_URL pointing to Sonic. envs/testnet/.env updated with Sonic settlement chain ID + RPC.
 
 ## 20260308-1030-b4x9
 
@@ -4745,5 +4745,5 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Block re-scan 10k → incremental cursor — was re-scanning 10,000 blocks of settlement history every poll cycle. Now uses AtomicU64 cursor that advances after each successful scan. First scan starts from tip - 200 blocks.
 [DECISION] Settlement confirmations 2 → 1 — Sonic has instant finality (FTM/Fantom DAG consensus). 1 confirmation is sufficient.
 [DECISION] Vision deposit poll 5s → 1s, finality 15 → 3 — deposit detection was unnecessarily slow.
-[DECISION] Data-node settlement scanner 3s → 1s — consistency with reduced issuer polling.
+[DECISION] Data-node settlement scanner 3s → 1s — consistency with reduced oracle polling.
 [FAILED] Uploaded macOS ARM binaries to Linux VPS — `file` check before upload would have caught this. VPS must build from source.

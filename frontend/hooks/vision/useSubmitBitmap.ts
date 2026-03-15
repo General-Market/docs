@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
 import { bitmapToHex, hashBitmap, encodeBitmap, type BetDirection } from '@/lib/vision/bitmap'
 
 export interface SubmitBitmapParams {
@@ -12,16 +12,16 @@ export interface SubmitBitmapParams {
 }
 
 export interface SubmitBitmapResult {
-  /** Number of issuers that accepted the bitmap */
+  /** Number of oracles that accepted the bitmap */
   acceptedCount: number
-  /** Total number of issuers attempted */
+  /** Total number of oracles attempted */
   totalCount: number
-  /** Per-issuer results */
+  /** Per-oracle results */
   results: Array<{ url: string; accepted: boolean; error?: string }>
 }
 
 export interface UseSubmitBitmapReturn {
-  /** Submit a pre-encoded bitmap to all issuer nodes */
+  /** Submit a pre-encoded bitmap to all oracle nodes */
   submitBitmap: (params: SubmitBitmapParams) => Promise<SubmitBitmapResult>
   /** Convenience: encode bets, hash, and submit in one call */
   submitBets: (batchId: number, bets: BetDirection[], marketCount: number) => Promise<SubmitBitmapResult>
@@ -34,15 +34,15 @@ export interface UseSubmitBitmapReturn {
 }
 
 /**
- * Hook to submit bitmap bytes to issuer nodes after on-chain commitment.
+ * Hook to submit bitmap bytes to oracle nodes after on-chain commitment.
  *
  * After joinBatch (or updateBitmap) commits the bitmap hash on-chain,
- * the player must reveal the actual bitmap bytes to all issuer nodes
- * before the reveal deadline. Each issuer verifies:
+ * the player must reveal the actual bitmap bytes to all oracle nodes
+ * before the reveal deadline. Each oracle verifies:
  *   1. keccak256(bitmap) == expected_hash
  *   2. expected_hash matches the player's on-chain commitment
  *
- * The bitmap is submitted to all issuers in parallel.
+ * The bitmap is submitted to all oracles in parallel.
  */
 export function useSubmitBitmap(): UseSubmitBitmapReturn {
   const { address } = useAccount()
@@ -67,10 +67,10 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
       expected_hash: params.bitmapHash,
     })
 
-    type IssuerResult = { url: string; accepted: boolean; error?: string }
+    type OracleResult = { url: string; accepted: boolean; error?: string }
 
-    const trySubmit = async (): Promise<IssuerResult[]> => {
-      // Use server-side fan-out API route (avoids CORS, reaches all issuers)
+    const trySubmit = async (): Promise<OracleResult[]> => {
+      // Use server-side fan-out API route (avoids CORS, reaches all oracles)
       try {
         const res = await fetch(`${VISION_API_URL}/vision/bitmap`, {
           method: 'POST',
@@ -79,15 +79,15 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
         })
         if (res.ok) {
           const data = await res.json()
-          if (data.results) return data.results as IssuerResult[]
+          if (data.results) return data.results as OracleResult[]
         }
       } catch {
         // Proxy failed, fall through to direct
       }
 
-      // Fallback: direct issuer URLs (works in non-browser contexts)
+      // Fallback: direct oracle URLs (works in non-browser contexts)
       return Promise.all(
-        VISION_ISSUER_URLS.map(async (url): Promise<IssuerResult> => {
+        VISION_ORACLE_URLS.map(async (url): Promise<OracleResult> => {
           try {
             const res = await fetch(`${url}/vision/bitmap`, {
               method: 'POST',
@@ -127,7 +127,7 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
     setIsSubmitting(false)
 
     if (acceptedCount === 0) {
-      const errMsg = 'No issuers accepted the bitmap'
+      const errMsg = 'No oracles accepted the bitmap'
       setError(errMsg)
     }
 

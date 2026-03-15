@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
-import { ISSUER_VISION_URL } from '@/lib/config'
+import { ORACLE_VISION_URL } from '@/lib/config'
 
-const ISSUER_URL = ISSUER_VISION_URL
+const ORACLE_URL = ORACLE_VISION_URL
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const batchId = searchParams.get('batch_id')
     const qs = batchId ? `?batch_id=${batchId}` : ''
-    const res = await fetch(`${ISSUER_URL}/vision/leaderboard${qs}`, {
+    const res = await fetch(`${ORACLE_URL}/vision/leaderboard${qs}`, {
       next: { revalidate: 5 },
       signal: AbortSignal.timeout(10_000),
     })
-    if (!res.ok) throw new Error(`Issuer API ${res.status}`)
+    if (!res.ok) throw new Error(`Oracle API ${res.status}`)
     const data = await res.json()
     return NextResponse.json(data)
   } catch (err) {

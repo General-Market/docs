@@ -53,7 +53,7 @@ contract MorphoCuratorIRMLiquidationTest is MorphoTestHelper {
                 if (next > targetPrice) next = targetPrice;
             }
             bytes32 msgHash = keccak256(abi.encode(block.chainid, address(oracle), address(itp), next, block.timestamp, _nextCycle));
-            oracle.updatePrice(next, block.timestamp, _nextCycle, signWithTestIssuers(msgHash), 1, 0x07);
+            oracle.updatePrice(next, block.timestamp, _nextCycle, signWithTestOracles(msgHash), 1, 0x07);
             _nextCycle++;
             current = next;
         }

@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Stress Test: Index L3 Issuer Infrastructure
+ * Stress Test: Index L3 Oracle Infrastructure
  *
  * Entry point — orchestrates all phases, handles CLI args.
  *
@@ -10,7 +10,7 @@
  * Phases:
  *   0  Netting correctness (simplest, ~30s)
  *   1  ITP creation scaling (~2 min)
- *   2  Issuer relay stress (~5 min)
+ *   2  Oracle relay stress (~5 min)
  *   3  Order flood (~5 min)
  *   4  Rebalance storm (~2 min)
  *   5  Combined load (~3 min)
@@ -52,7 +52,7 @@ function parseArgs(): { phase: number | null; verbose: boolean; dryRun: boolean 
       dryRun = true;
     } else if (args[i] === '--help' || args[i] === '-h') {
       console.log(`
-Stress Test: Index L3 Issuer Infrastructure
+Stress Test: Index L3 Oracle Infrastructure
 
 Usage: npx tsx scripts/stress-test/index.ts [options]
 
@@ -65,7 +65,7 @@ Options:
 Phases:
   0  Netting correctness
   1  ITP creation scaling (direct L3)
-  2  Issuer relay stress (BridgeProxy)
+  2  Oracle relay stress (BridgeProxy)
   3  Order flood (buy/sell)
   4  Rebalance storm
   5  Combined load (60s sustained)
@@ -87,7 +87,7 @@ async function main() {
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║           INDEX L3 STRESS TEST                              ║
-║  Finding breaking points in issuer infrastructure           ║
+║  Finding breaking points in oracle infrastructure           ║
 ╚══════════════════════════════════════════════════════════════╝
 `);
 
@@ -102,7 +102,7 @@ async function main() {
   }
   log('RPCs: OK');
 
-  // Service health pre-flight (warn, don't block — Phase 1 doesn't need issuers)
+  // Service health pre-flight (warn, don't block — Phase 1 doesn't need oracles)
   log('Checking service health...');
   const services = await checkServicesReady();
   for (const svc of services) {

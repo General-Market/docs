@@ -1,6 +1,6 @@
 //! Read-only MockBitgetVault client for fill verification (FR13)
 //!
-//! Issuers use this to verify fills via on-chain read-only calls to
+//! Oracles use this to verify fills via on-chain read-only calls to
 //! MockBitgetVault.getFill() without direct AP communication.
 
 use ethers::prelude::*;
@@ -22,7 +22,7 @@ pub enum BitgetVaultReaderError {
 
 /// Read-only MockBitgetVault client for fill verification
 ///
-/// Used by issuers to verify fills on-chain (FR13: no direct AP communication).
+/// Used by oracles to verify fills on-chain (FR13: no direct AP communication).
 pub struct BitgetVaultReader {
     vault_contract: MockBitgetVaultContract<Provider<Http>>,
     client: Arc<Provider<Http>>,
@@ -74,7 +74,7 @@ impl BitgetVaultReader {
 
     /// Get the ERC20 balance of a token for a specific account (Story 7.18)
     ///
-    /// Used by issuers to verify that the AP actually holds acquired tokens.
+    /// Used by oracles to verify that the AP actually holds acquired tokens.
     pub async fn get_account_balance(
         &self,
         token: Address,

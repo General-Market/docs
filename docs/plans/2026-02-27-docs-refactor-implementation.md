@@ -48,7 +48,7 @@ Create `docs/snippets/nav-formula.mdx`:
 NAV = sum(qty[i] * price[i]) / 1e18
 ```
 
-Where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is computed identically on-chain, in issuer nodes, and in the frontend. See [ITPs](/index/concepts/itps) for the full pricing model.
+Where `qty[i]` is the fixed per-share quantity of asset `i` and `price[i]` is its current market price. NAV is computed identically on-chain, in oracle nodes, and in the frontend. See [ITPs](/index/concepts/itps) for the full pricing model.
 </Note>
 ```
 
@@ -150,7 +150,7 @@ flowchart LR
     A[Predict UP/DOWN] --> B[Encode Bitmap]
     B --> C[keccak256 Hash]
     C --> D[Commit Hash On-Chain]
-    D --> E[Reveal Bytes to Issuers]
+    D --> E[Reveal Bytes to Oracles]
     E --> F[Tick Resolves]
 ```
 ```
@@ -170,7 +170,7 @@ Every tick, the system resolves all markets in a batch:
 2. Determine outcome (UP / DOWN / FLAT)
 3. Match winners against losers (parimutuel)
 4. Update player balances
-5. BLS-sign results across issuers
+5. BLS-sign results across oracles
 
 Check your balance after resolution: `GET /vision/balance/{batchId}/{playerAddress}`
 ```
@@ -224,7 +224,7 @@ curl https://generalmarket.io/api/vision/balance/{batchId}/{playerAddress}
 
 Response: `{ "batch_id": 1, "player": "0x...", "balance": "15000000", "stake_per_tick": "100000" }`
 
-To claim on-chain, you need BLS-signed proofs from 2/3+ issuers. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
+To claim on-chain, you need BLS-signed proofs from 2/3+ oracles. See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim flow.
 ```
 
 **Add Mermaid diagram (replace or add after "BLS Signature Flow" heading):**
@@ -233,13 +233,13 @@ To claim on-chain, you need BLS-signed proofs from 2/3+ issuers. See [Bot Lifecy
 ```mermaid
 sequenceDiagram
     participant Player
-    participant Issuers
+    participant Oracles
     participant Contract
 
-    Player->>Issuers: GET /vision/balance/{batchId}/{player}
-    Issuers->>Issuers: Compute balance from tick results
-    Issuers->>Issuers: BLS-sign balance message
-    Issuers-->>Player: Return balance + partial BLS sig
+    Player->>Oracles: GET /vision/balance/{batchId}/{player}
+    Oracles->>Oracles: Compute balance from tick results
+    Oracles->>Oracles: BLS-sign balance message
+    Oracles-->>Player: Return balance + partial BLS sig
     Player->>Player: Aggregate 2/3+ BLS signatures
     Player->>Contract: claimRewards(batchId, fromTick, toTick, newBalance, blsSig)
     Contract->>Contract: Verify BLS signature
@@ -334,8 +334,8 @@ flowchart TD
         E[Vision Contract]
     end
 
-    subgraph OffChain["Off-Chain (Issuers)"]
-        F[Issuer Nodes]
+    subgraph OffChain["Off-Chain (Oracles)"]
+        F[Oracle Nodes]
     end
 
     D -->|"joinBatch(bitmapHash)"| E
@@ -486,13 +486,13 @@ git commit -m "docs: add diagrams and practical-first structure to Index concept
 
 ---
 
-### Task 6: Index architecture — issuer-nodes, data-node
+### Task 6: Index architecture — oracle-nodes, data-node
 
 **Files:**
-- Modify: `docs/index/architecture/issuer-nodes.mdx`
+- Modify: `docs/index/architecture/oracle-nodes.mdx`
 - Modify: `docs/index/architecture/data-node.mdx`
 
-#### issuer-nodes.mdx — Replace ASCII consensus flow with Mermaid
+#### oracle-nodes.mdx — Replace ASCII consensus flow with Mermaid
 
 Replace the ASCII diagram (lines 35-60) with:
 
@@ -550,7 +550,7 @@ flowchart LR
 
     subgraph Consumers
         FE[Frontend]
-        IS[Issuer Nodes]
+        IS[Oracle Nodes]
     end
 
     S1 & S2 & S3 & S4 --> V
@@ -562,6 +562,6 @@ flowchart LR
 **Step: Commit**
 
 ```bash
-git add docs/index/architecture/issuer-nodes.mdx docs/index/architecture/data-node.mdx
+git add docs/index/architecture/oracle-nodes.mdx docs/index/architecture/data-node.mdx
 git commit -m "docs: replace ASCII diagrams with Mermaid in architecture pages"
 ```

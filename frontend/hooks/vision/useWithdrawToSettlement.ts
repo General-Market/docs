@@ -7,13 +7,13 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
-import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
 import { indexL3 } from '@/lib/wagmi'
 
 export type WithdrawToSettlementStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
 
 export interface UseWithdrawToSettlementReturn {
-  /** Call Vision.withdrawToSettlement(amount) on L3 — debits virtualBalance, issuers release from SettlementBridgeCustody */
+  /** Call Vision.withdrawToSettlement(amount) on L3 — debits virtualBalance, oracles release from SettlementBridgeCustody */
   withdraw: (amount: bigint) => void
   /** Current step */
   step: WithdrawToSettlementStep
@@ -27,10 +27,10 @@ export interface UseWithdrawToSettlementReturn {
 
 /**
  * Hook to withdraw from virtualBalance on Vision.sol (L3).
- * This triggers issuers to release USDC from SettlementBridgeCustody on Settlement.
+ * This triggers oracles to release USDC from SettlementBridgeCustody on Settlement.
  * Only debits virtualBalance — use useWithdrawBalance for realBalance.
  *
- * After L3 tx confirms, polls issuer API for Settlement-side completion.
+ * After L3 tx confirms, polls oracle API for Settlement-side completion.
  */
 export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
   const { address } = useAccount()
@@ -80,7 +80,7 @@ export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
     })
   }, [address, writeWithdraw])
 
-  // On-chain success -> extract withdrawId, start polling issuer API
+  // On-chain success -> extract withdrawId, start polling oracle API
   useEffect(() => {
     if (!isWithdrawSuccess || !withdrawReceipt || withdrawHandled.current) return
     withdrawHandled.current = true
@@ -106,7 +106,7 @@ export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
     resetWithdraw()
   }, [isWithdrawSuccess, withdrawReceipt, resetWithdraw])
 
-  // Poll issuer API for withdraw completion
+  // Poll oracle API for withdraw completion
   useEffect(() => {
     if (step !== 'polling' || !withdrawId) return
 
@@ -131,8 +131,8 @@ export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
         // Proxy failed, try direct
       }
 
-      // Fallback: direct issuer URLs
-      for (const url of VISION_ISSUER_URLS) {
+      // Fallback: direct oracle URLs
+      for (const url of VISION_ORACLE_URLS) {
         try {
           const res = await fetch(`${url}/vision/withdraw/${withdrawId}/status`)
           if (res.ok) {
@@ -148,7 +148,7 @@ export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
             return
           }
         } catch {
-          // Try next issuer
+          // Try next oracle
         }
       }
     }

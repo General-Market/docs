@@ -8,7 +8,7 @@ import {Morpho} from "@morpho-blue/Morpho.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {MetaMorpho} from "@metamorpho/MetaMorpho.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
@@ -25,7 +25,7 @@ contract MorphoBorrowLendTest is TestHelper {
     Morpho morpho;
     AdaptiveCurveIrm irm;
     ITPNAVOracle oracle;
-    MirrorIssuerRegistry mirror;
+    MirrorOracleRegistry mirror;
     MetaMorpho vault;
     MockERC20 settlementUSDC;
     MockERC20 itpToken;
@@ -51,14 +51,14 @@ contract MorphoBorrowLendTest is TestHelper {
         settlementUSDC = new MockERC20("SettlementUSDC", "USDC", 6);
         itpToken = new MockERC20("ITP Vault", "ITP", 18);
 
-        // Deploy MirrorIssuerRegistry as UUPS proxy with real BLS aggregated pubkey
+        // Deploy MirrorOracleRegistry as UUPS proxy with real BLS aggregated pubkey
         bytes memory testPubkey = blsAggPubkey("0,1,2");
-        MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry mirrorImpl = new MirrorOracleRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(mirrorImpl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (testPubkey, 2, 3, owner))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (testPubkey, 2, 3, owner))
         );
-        mirror = MirrorIssuerRegistry(address(proxy));
+        mirror = MirrorOracleRegistry(address(proxy));
 
         // Sync mirror registry with individual pubkeys and create snapshot (TOFU bootstrap)
         {
@@ -67,7 +67,7 @@ contract MorphoBorrowLendTest is TestHelper {
             for (uint8 i = 0; i < 3; i++) { pubkeys[i] = blsPubkey(i); ids[i] = i; }
             uint256 bitmask = 0x07;
             bytes32 syncHash = keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(mirror), uint256(1), keccak256(abi.encode(pubkeys, ids)), bitmask, uint256(3), uint256(2)));
-            bytes memory syncSig = signWithTestIssuers(syncHash);
+            bytes memory syncSig = signWithTestOracles(syncHash);
             mirror.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
         }
 
@@ -78,7 +78,7 @@ contract MorphoBorrowLendTest is TestHelper {
         // Push initial BLS-signed price via updatePrice (cycle 1)
         {
             bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), ORACLE_PRICE, block.timestamp, uint256(1)));
-            bytes memory sig = signWithTestIssuers(h);
+            bytes memory sig = signWithTestOracles(h);
             oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig, 1, 0x07);
         }
 
@@ -125,7 +125,7 @@ contract MorphoBorrowLendTest is TestHelper {
         // Refresh oracle price after warp (otherwise price() reverts with E096_StaleOraclePrice)
         {
             bytes32 h2 = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), ORACLE_PRICE, block.timestamp, uint256(2)));
-            bytes memory sig2 = signWithTestIssuers(h2);
+            bytes memory sig2 = signWithTestOracles(h2);
             oracle.updatePrice(ORACLE_PRICE, block.timestamp, 2, sig2, 1, 0x07);
         }
 
@@ -197,7 +197,7 @@ contract MorphoBorrowLendTest is TestHelper {
         mirror.setAuthorizedMissedCountCaller(address(oracle2), true);
         {
             bytes32 h = keccak256(abi.encode(block.chainid, address(oracle2), address(itpToken2), ORACLE_PRICE, block.timestamp, uint256(1)));
-            oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 1, 0x07);
+            oracle2.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestOracles(h), 1, 0x07);
         }
 
         MarketParams memory mp2 = MarketParams({
@@ -232,7 +232,7 @@ contract MorphoBorrowLendTest is TestHelper {
         mirror.setAuthorizedMissedCountCaller(address(oracle3), true);
         {
             bytes32 h = keccak256(abi.encode(block.chainid, address(oracle3), address(itpToken3), ORACLE_PRICE, block.timestamp, uint256(1)));
-            oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestIssuers(h), 1, 0x07);
+            oracle3.updatePrice(ORACLE_PRICE, block.timestamp, 1, signWithTestOracles(h), 1, 0x07);
         }
 
         MarketParams memory mp3 = MarketParams({
@@ -361,7 +361,7 @@ contract MorphoBorrowLendTest is TestHelper {
         uint256 newPrice = 90e24;
         {
             bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itpToken), newPrice, block.timestamp, uint256(3)));
-            oracle.updatePrice(newPrice, block.timestamp, 3, signWithTestIssuers(h), 1, 0x07);
+            oracle.updatePrice(newPrice, block.timestamp, 3, signWithTestOracles(h), 1, 0x07);
         }
 
         // At 90 USDC/ITP: collateral = 9,000 USDC, max borrow = 6,930 USDC

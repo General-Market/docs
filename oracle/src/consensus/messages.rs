@@ -940,12 +940,12 @@ impl ConsensusMessageHandler {
                     signature,
                 }
             }
-            // MirrorIssuerRegistry sync (Step 12)
+            // MirrorOracleRegistry sync (Step 12)
             P2PMessage::MirrorSyncProposal {
                 leader_id,
                 nonce,
-                issuer_pubkeys,
-                issuer_ids,
+                oracle_pubkeys,
+                oracle_ids,
                 active_bitmask,
                 active_count,
                 threshold,
@@ -965,8 +965,8 @@ impl ConsensusMessageHandler {
                     from,
                     leader_id,
                     nonce,
-                    issuer_pubkeys,
-                    issuer_ids,
+                    oracle_pubkeys,
+                    oracle_ids,
                     active_bitmask,
                     active_count,
                     threshold,
@@ -1562,7 +1562,7 @@ pub enum MessageHandleResult {
     /// Process an ITP creation signature from a follower (Story 6.21)
     ProcessItpCreationSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         nonce: U256,
         signature: P2PBLSSignature,
@@ -1581,7 +1581,7 @@ pub enum MessageHandleResult {
     /// Process a bridge Settlement→L3 signature from a follower (Story 7.2)
     ProcessBridgeSettlementToL3Sign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         order_id: U256,
         signature: P2PBLSSignature,
@@ -1602,7 +1602,7 @@ pub enum MessageHandleResult {
     /// Process a submit order signature from a follower (Story 7.3)
     ProcessSubmitOrderForUserSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         settlement_order_id: U256,
         signature: P2PBLSSignature,
@@ -1619,7 +1619,7 @@ pub enum MessageHandleResult {
     /// Process a confirm batch signature from a follower (Story 7.4)
     ProcessConfirmBatchSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1635,7 +1635,7 @@ pub enum MessageHandleResult {
     /// Process a confirm fills signature from a follower (Story 7.4)
     ProcessConfirmFillsSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1653,7 +1653,7 @@ pub enum MessageHandleResult {
     /// Process a bridge L3→Settlement signature from a follower (Story 7.5)
     ProcessBridgeL3ToSettlementSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1671,7 +1671,7 @@ pub enum MessageHandleResult {
     /// Process a custody release to vault signature from a follower (Story 7.6)
     ProcessReleaseToVaultSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1687,7 +1687,7 @@ pub enum MessageHandleResult {
     /// Process a rebalance batch signature from a follower (Story 7-14)
     ProcessRebalanceBatchSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1705,7 +1705,7 @@ pub enum MessageHandleResult {
     /// Process an update weights signature from a follower (Story 7-14)
     ProcessUpdateWeightsSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         itp_id: H256,
         signature: P2PBLSSignature,
@@ -1725,12 +1725,12 @@ pub enum MessageHandleResult {
     /// Process a single-phase rebalance signature from a follower
     ProcessRebalanceSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         itp_id: H256,
         signature: P2PBLSSignature,
     },
-    /// Process an asset trades proposal from the leader (issuer-driven settlement)
+    /// Process an asset trades proposal from the leader (oracle-driven settlement)
     ProcessAssetTradesProposal {
         from: PeerId,
         leader_id: PeerId,
@@ -1738,10 +1738,10 @@ pub enum MessageHandleResult {
         trades_data: Vec<(Address, u8, U256, U256, Address)>,
         leader_signature: P2PBLSSignature,
     },
-    /// Process an asset trades signature from a follower (issuer-driven settlement)
+    /// Process an asset trades signature from a follower (oracle-driven settlement)
     ProcessAssetTradesSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         cycle_number: u64,
         signature: P2PBLSSignature,
@@ -1760,7 +1760,7 @@ pub enum MessageHandleResult {
     /// Process a submit sell order signature from a follower (cross-chain sell)
     ProcessSubmitSellOrderSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         order_id: U256,
         signature: P2PBLSSignature,
@@ -1777,7 +1777,7 @@ pub enum MessageHandleResult {
     /// Process a complete sell order signature from a follower (cross-chain sell)
     ProcessCompleteSellOrderSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         order_id: U256,
         signature: P2PBLSSignature,
@@ -1792,7 +1792,7 @@ pub enum MessageHandleResult {
     /// Process a burn sell order signature
     ProcessBurnSellOrderSign {
         from: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         order_id: U256,
         signature: P2PBLSSignature,
@@ -1882,13 +1882,13 @@ pub enum MessageHandleResult {
         itp_address: Address,
         signature: P2PBLSSignature,
     },
-    /// Process a MirrorIssuerRegistry sync proposal from the leader (Step 12)
+    /// Process a MirrorOracleRegistry sync proposal from the leader (Step 12)
     ProcessMirrorSyncProposal {
         from: PeerId,
         leader_id: PeerId,
         nonce: u64,
-        issuer_pubkeys: Vec<Vec<u8>>,
-        issuer_ids: Vec<u64>,
+        oracle_pubkeys: Vec<Vec<u8>>,
+        oracle_ids: Vec<u64>,
         active_bitmask: U256,
         active_count: u64,
         threshold: u64,
@@ -1897,7 +1897,7 @@ pub enum MessageHandleResult {
         reference_nonce: u64,
         leader_signature: P2PBLSSignature,
     },
-    /// Process a MirrorIssuerRegistry sync signature from a follower (Step 12)
+    /// Process a MirrorOracleRegistry sync signature from a follower (Step 12)
     ProcessMirrorSyncSign {
         from: PeerId,
         signer_index: u8,

@@ -1,0 +1,81 @@
+{
+  "l3Reachable": true,
+  "settlementReachable": true,
+  "coreContracts": [
+    {
+      "name": "Index",
+      "address": "0x97d2117cF135896C308828950Da841FEc4160F07",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "OracleRegistry",
+      "address": "0xEd8912AD58C46b0902dCE885395935390E734EF1",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "Vision",
+      "address": "0x8aF92d1D6397c0073f47D1f754983A2Da51C06C8",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3_WUSDC",
+      "address": "0xDd65a103462E62d98D7Ed71c66C146E2415C4641",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "CollateralRegistry",
+      "address": "0xba2f31f78F43106cb64f49d0241869a722669015",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgeProxy",
+      "address": "0xDd2D80a03CD6f43e94EB10c6a3218420175D5f17",
+      "hasCode": true,
+      "chain": "l3"
+    }
+  ],
+  "optionalContracts": [
+    {
+      "name": "MockBitgetVault",
+      "address": "0xCD6305A4f1ABecE4FDbbbB9840A94CcD94AE61ac",
+      "hasCode": false,
+      "chain": "l3"
+    },
+    {
+      "name": "Governance",
+      "address": "0xF007f86501737595748EFb92FE2D7D50E7Ec4c46",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgeCustody",
+      "address": "0x7d21FB4122A784FE0430b830Fc509d20c398603f",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "BLSCustody",
+      "address": "0xE9389CBD79df49046a833bC422879a1bB27D985f",
+      "hasCode": true,
+      "chain": "l3"
+    }
+  ],
+  "morpho": {
+    "deployed": true,
+    "collateralTokenAlive": true,
+    "oracleAlive": true,
+    "stale": false
+  },
+  "visionBatches": {
+    "count": 45,
+    "firstBatchExists": false
+  },
+  "staleAddresses": [
+    "[optional] MockBitgetVault (0xCD6305A4f1ABecE4FDbbbB9840A94CcD94AE61ac) has no code on L3"
+  ]
+}

@@ -25,7 +25,7 @@ Most consumers use token addresses purely as **address → symbol map keys**. Th
 `MockBitgetVault.sol:423`: `IMockERC20(sellToken).burn(address(this), burnSellAmount);`
 `MockBitgetVault.sol:432`: `IMockERC20(buyToken).mint(address(this), mintBuyAmount);`
 
-Users can create ITPs from **any** catalog token via the frontend. When someone buys that ITP, the issuer decomposes into per-asset trades, and the AP calls `executeTrade()` with those token addresses. If they're virtual (no bytecode), the mint/burn reverts.
+Users can create ITPs from **any** catalog token via the frontend. When someone buys that ITP, the oracle decomposes into per-asset trades, and the AP calls `executeTrade()` with those token addresses. If they're virtual (no bytecode), the mint/burn reverts.
 
 **Fix:** Check `token.code.length` before calling mint/burn. Virtual tokens are tracked via the vault's existing `netPosition` mapping (line 435-436), which already runs for all tokens regardless.
 
@@ -37,7 +37,7 @@ Users can create ITPs from **any** catalog token via the frontend. When someone 
 
 | Component | File | How it uses addresses | Needs real contracts? |
 |-----------|------|----------------------|----------------------|
-| **Issuer** | `issuer/src/price/symbol_map.rs:116` | `HashMap<Address, String>` — looks up Bitget symbol for price fetch | NO |
+| **Oracle** | `oracle/src/price/symbol_map.rs:116` | `HashMap<Address, String>` — looks up Bitget symbol for price fetch | NO |
 | **AP** | `ap/src/main.rs:586-646` | `HashMap<String, String>` — looks up symbol for data-node price query | NO |
 | **Data-node** | `data-node/src/api.rs:281-297` | `HashMap<String, String>` — extracts Bitget symbols for kline collection | NO |
 | **Frontend** | `frontend/public/deployed-assets.json` | Array of `{address, symbol}` for CreateITP asset picker UI | NO |
@@ -50,7 +50,7 @@ symbol-map.json
   ↓ address → "BTCUSDC"
 Bitget API (https://api.bitget.com/api/v2/spot/market/tickers)
   ↓ price
-Issuer NAV calculation: Σ(qty[i] * price[i]) / 1e18
+Oracle NAV calculation: Σ(qty[i] * price[i]) / 1e18
   ↓ BLS-signed
 Investment.sol._itpNavs[itpId] = nav
 ```
@@ -248,10 +248,10 @@ Fully replaced by `generate-virtual-tokens.py`.
 
 | File | Why unchanged |
 |------|---------------|
-| `issuer/src/price/symbol_map.rs` | Reads `symbol-map.json` format identically — `HashMap<Address, String>` |
-| `issuer/src/bootstrap/price.rs` | Passes symbol map to BitgetPriceFetcher unchanged |
-| `issuer/src/api/nav.rs` | NAV = Σ(qty * price) / 1e18 — only needs address→symbol mapping |
-| `issuer/src/main.rs:654-677` | Builds `quote_tokens` map from symbol suffixes — works with virtual addresses |
+| `oracle/src/price/symbol_map.rs` | Reads `symbol-map.json` format identically — `HashMap<Address, String>` |
+| `oracle/src/bootstrap/price.rs` | Passes symbol map to BitgetPriceFetcher unchanged |
+| `oracle/src/api/nav.rs` | NAV = Σ(qty * price) / 1e18 — only needs address→symbol mapping |
+| `oracle/src/main.rs:654-677` | Builds `quote_tokens` map from symbol suffixes — works with virtual addresses |
 | `ap/src/main.rs` | Loads `HashMap<String, String>` from symbol-map.json unchanged |
 | `ap/src/external/bitget_vault.rs` | Passes addresses to vault — no ERC20 calls from AP side |
 | `data-node/src/api.rs` | `load_symbol_map()` reads same JSON format |
@@ -267,8 +267,8 @@ Fully replaced by `generate-virtual-tokens.py`.
 
 ## Why This Works
 
-### 1. Issuer price pipeline
-`issuer/src/price/symbol_map.rs:49`: `get_symbol(&asset)` returns `Option<&str>`. A virtual address maps to "BTCUSDC" the same way a deployed address does. The issuer then fetches the price from Bitget API using the symbol string.
+### 1. Oracle price pipeline
+`oracle/src/price/symbol_map.rs:49`: `get_symbol(&asset)` returns `Option<&str>`. A virtual address maps to "BTCUSDC" the same way a deployed address does. The oracle then fetches the price from Bitget API using the symbol string.
 
 ### 2. AP settlement + MockBitgetVault
 `ap/src/main.rs:586-646`: Loads symbol-map into `HashMap<String, String>`. Used for data-node price lookups. The AP passes token addresses to `MockBitgetVault.executeTrade()` — the vault now skips mint/burn for virtual tokens and tracks everything via `netPosition`.
@@ -283,7 +283,7 @@ Fully replaced by `generate-virtual-tokens.py`.
 `Investment.sol:707-711`: `_itpAssets[itpId].push(_assets[i])` stores any address. `_getCurrentPrice()` returns the BLS-pushed NAV from `_itpNavs`, not from calling token contracts.
 
 ### 6. New ITPs from virtual catalog tokens
-User creates ITP from frontend → selects virtual catalog tokens → `createITP()` stores virtual addresses in `_itpAssets` → issuer decomposes buys/sells → AP calls `MockBitgetVault.executeTrade()` with virtual addresses → vault skips mint/burn (no bytecode), tracks via `netPosition` → trade succeeds.
+User creates ITP from frontend → selects virtual catalog tokens → `createITP()` stores virtual addresses in `_itpAssets` → oracle decomposes buys/sells → AP calls `MockBitgetVault.executeTrade()` with virtual addresses → vault skips mint/burn (no bytecode), tracks via `netPosition` → trade succeeds.
 
 ---
 
@@ -311,11 +311,11 @@ grep "virtual" logs/generate-virtual-tokens.log
 # 3. Verify symbol-map.json has entries
 python3 -c "import json; sm=json.load(open('data/symbol-map.json')); print(f'{len(sm)} entries')"
 
-# 4. Verify issuer loaded symbol map
-grep "Loaded custom symbol map" logs/issuer-1.log
+# 4. Verify oracle loaded symbol map
+grep "Loaded custom symbol map" logs/oracle-1.log
 
 # 5. Verify prices are flowing
-grep "Price fetch" logs/issuer-1.log | head -5
+grep "Price fetch" logs/oracle-1.log | head -5
 
 # 6. Verify frontend assets
 python3 -c "import json; a=json.load(open('frontend/public/deployed-assets.json')); print(f'{len(a)} assets')"

@@ -15,11 +15,11 @@ echo "============================================"
 echo ""
 
 # Optional environment variables:
-#   ISSUER_REGISTRY_ADDRESS - Reuse an existing IssuerRegistry deployment (skips Governance+IssuerRegistry deploy)
-#   SKIP_WHITELIST=true     - Skip whitelist proposals (needed when IssuerRegistry has real BLS keys,
+#   ORACLE_REGISTRY_ADDRESS - Reuse an existing OracleRegistry deployment (skips Governance+OracleRegistry deploy)
+#   SKIP_WHITELIST=true     - Skip whitelist proposals (needed when OracleRegistry has real BLS keys,
 #                             due to G1/G2 pubkey mismatch in Phase 1 BLS verification)
-if [ -n "${ISSUER_REGISTRY_ADDRESS:-}" ]; then
-    echo "Using existing IssuerRegistry: $ISSUER_REGISTRY_ADDRESS"
+if [ -n "${ORACLE_REGISTRY_ADDRESS:-}" ]; then
+    echo "Using existing OracleRegistry: $ORACLE_REGISTRY_ADDRESS"
 fi
 
 cd contracts

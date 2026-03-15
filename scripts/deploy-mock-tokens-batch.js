@@ -154,5 +154,5 @@ fs.writeFileSync(OUTPUT_FILE, JSON.stringify(symbolMap, null, 2));
 console.log(`\n=== Deployment Complete ===`);
 console.log(`Deployed: ${deployed}/${assets.length} tokens`);
 console.log(`Symbol map: ${OUTPUT_FILE}`);
-console.log(`\nTo use with issuer:`);
-console.log(`  ./target/debug/issuer --symbol-map-file ${OUTPUT_FILE} ...`);
+console.log(`\nTo use with oracle:`);
+console.log(`  ./target/debug/oracle --symbol-map-file ${OUTPUT_FILE} ...`);

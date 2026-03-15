@@ -73,10 +73,10 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 # XML parsing (SEC 13F)
 quick-xml = { version = "0.37", features = ["serialize"] }
 
-# URL parsing (issuer health collector)
+# URL parsing (oracle health collector)
 url = "2"
 
-# Randomization (issuer health collector)
+# Randomization (oracle health collector)
 rand = "0.8"
 
 # Market data providers (from AA)

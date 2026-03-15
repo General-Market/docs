@@ -50,7 +50,7 @@ export default function BatchEntryPanel({
   marketIds = [],
 }: BatchEntryPanelProps) {
   // -- Batch data --
-  // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
+  // Fetch live batch list from oracles (for display: playerCount, tvl, currentTick)
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
@@ -151,7 +151,7 @@ export default function BatchEntryPanel({
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
     && (isJoined || (!!configHash && marketIds.length > 0))
 
-  // -- After on-chain join succeeds, submit bitmap to issuers --
+  // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
     if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
     submitBitmap({

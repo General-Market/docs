@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {Governance} from "../src/Governance.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import {FeeRegistry} from "../src/registry/FeeRegistry.sol";
 import {AssetPairRegistry} from "../src/registry/AssetPairRegistry.sol";
 import {CollateralRegistry} from "../src/registry/CollateralRegistry.sol";
@@ -28,8 +28,8 @@ contract DeployL3Test is BLSTestHelper {
     // Deployed addresses
     address public governanceProxy;
     address public governanceImpl;
-    address public issuerRegistryProxy;
-    address public issuerRegistryImpl;
+    address public oracleRegistryProxy;
+    address public oracleRegistryImpl;
     address public feeRegistryProxy;
     address public feeRegistryImpl;
     address public assetPairRegistryAddr;
@@ -63,11 +63,11 @@ contract DeployL3Test is BLSTestHelper {
 
         // ============ PHASE 2: Registries ============
         {
-            IssuerRegistry impl = new IssuerRegistry();
-            issuerRegistryImpl = address(impl);
-            bytes memory initData = abi.encodeWithSelector(IssuerRegistry.initialize.selector, governanceProxy);
-            ERC1967Proxy proxy = new ERC1967Proxy(issuerRegistryImpl, initData);
-            issuerRegistryProxy = address(proxy);
+            OracleRegistry impl = new OracleRegistry();
+            oracleRegistryImpl = address(impl);
+            bytes memory initData = abi.encodeWithSelector(OracleRegistry.initialize.selector, governanceProxy);
+            ERC1967Proxy proxy = new ERC1967Proxy(oracleRegistryImpl, initData);
+            oracleRegistryProxy = address(proxy);
         }
         {
             FeeRegistry impl = new FeeRegistry();
@@ -77,11 +77,11 @@ contract DeployL3Test is BLSTestHelper {
             feeRegistryProxy = address(proxy);
         }
         {
-            AssetPairRegistry apr = new AssetPairRegistry(deployer, issuerRegistryProxy);
+            AssetPairRegistry apr = new AssetPairRegistry(deployer, oracleRegistryProxy);
             assetPairRegistryAddr = address(apr);
         }
         {
-            CollateralRegistry cr = new CollateralRegistry(deployer, issuerRegistryProxy);
+            CollateralRegistry cr = new CollateralRegistry(deployer, oracleRegistryProxy);
             collateralRegistryAddr = address(cr);
         }
 
@@ -89,7 +89,7 @@ contract DeployL3Test is BLSTestHelper {
         {
             BLSCustody impl = new BLSCustody();
             blsCustodyImpl = address(impl);
-            bytes memory initData = abi.encodeWithSelector(BLSCustody.initialize.selector, issuerRegistryProxy);
+            bytes memory initData = abi.encodeWithSelector(BLSCustody.initialize.selector, oracleRegistryProxy);
             ERC1967Proxy proxy = new ERC1967Proxy(blsCustodyImpl, initData);
             blsCustodyProxy = address(proxy);
         }
@@ -97,7 +97,7 @@ contract DeployL3Test is BLSTestHelper {
             L3BridgeCustody impl = new L3BridgeCustody();
             l3BridgeCustodyImpl = address(impl);
             bytes memory initData = abi.encodeWithSelector(
-                L3BridgeCustody.initialize.selector, issuerRegistryProxy, usdc
+                L3BridgeCustody.initialize.selector, oracleRegistryProxy, usdc
             );
             ERC1967Proxy proxy = new ERC1967Proxy(l3BridgeCustodyImpl, initData);
             l3BridgeCustodyProxy = address(proxy);
@@ -113,7 +113,7 @@ contract DeployL3Test is BLSTestHelper {
         }
 
         // Wire registries into Index
-        Investment(indexProxy).setIssuerRegistry(issuerRegistryProxy);
+        Investment(indexProxy).setOracleRegistry(oracleRegistryProxy);
         Investment(indexProxy).setFeeRegistry(feeRegistryProxy);
 
         vm.stopPrank();
@@ -141,14 +141,14 @@ contract DeployL3Test is BLSTestHelper {
 
     // ============ Phase 2 Tests: Registries ============
 
-    function test_issuerRegistry_governanceMatches() public view {
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+    function test_oracleRegistry_governanceMatches() public view {
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
         assertEq(address(reg.governance()), governanceProxy);
     }
 
-    function test_issuerRegistry_activeCountZero() public view {
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
-        assertEq(reg.activeIssuerCount(), 0);
+    function test_oracleRegistry_activeCountZero() public view {
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
+        assertEq(reg.activeOracleCount(), 0);
     }
 
     function test_feeRegistry_adminIsCorrect() public view {
@@ -168,14 +168,14 @@ contract DeployL3Test is BLSTestHelper {
 
     // ============ Phase 3 Tests: Custody ============
 
-    function test_blsCustody_issuerRegistryMatches() public view {
+    function test_blsCustody_oracleRegistryMatches() public view {
         BLSCustody custody = BLSCustody(blsCustodyProxy);
-        assertEq(address(custody.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(custody.oracleRegistry()), oracleRegistryProxy);
     }
 
-    function test_l3BridgeCustody_issuerRegistryMatches() public view {
+    function test_l3BridgeCustody_oracleRegistryMatches() public view {
         L3BridgeCustody custody = L3BridgeCustody(l3BridgeCustodyProxy);
-        assertEq(address(custody.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(custody.oracleRegistry()), oracleRegistryProxy);
     }
 
     function test_l3BridgeCustody_usdcMatches() public view {
@@ -195,9 +195,9 @@ contract DeployL3Test is BLSTestHelper {
         assertEq(address(idx.usdc()), usdc);
     }
 
-    function test_index_issuerRegistryWired() public view {
+    function test_index_oracleRegistryWired() public view {
         Investment idx = Investment(indexProxy);
-        assertEq(address(idx.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(idx.oracleRegistry()), oracleRegistryProxy);
     }
 
     function test_index_feeRegistryWired() public view {
@@ -205,70 +205,70 @@ contract DeployL3Test is BLSTestHelper {
         assertEq(address(idx.feeRegistry()), feeRegistryProxy);
     }
 
-    // ============ Phase 6 Tests: Test Issuer Registration ============
+    // ============ Phase 6 Tests: Test Oracle Registration ============
 
-    function test_registerTestIssuers_threeIssuers() public {
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+    function test_registerTestOracles_threeOracles() public {
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
 
         // Real BLS G2 pubkeys from deterministic seeds via FFI
         bytes memory pubkey1 = blsPubkey(0);
         bytes memory pubkey2 = blsPubkey(1);
         bytes memory pubkey3 = blsPubkey(2);
 
-        address issuer1 = address(uint160(uint256(keccak256("test-issuer-1"))));
-        address issuer2 = address(uint160(uint256(keccak256("test-issuer-2"))));
-        address issuer3 = address(uint160(uint256(keccak256("test-issuer-3"))));
+        address oracle1 = address(uint160(uint256(keccak256("test-oracle-1"))));
+        address oracle2 = address(uint160(uint256(keccak256("test-oracle-2"))));
+        address oracle3 = address(uint160(uint256(keccak256("test-oracle-3"))));
 
         // Generate Proof of Possession signatures
-        bytes32 popMsg1 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1, pubkey1));
-        bytes32 popMsg2 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer2, pubkey2));
-        bytes32 popMsg3 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer3, pubkey3));
+        bytes32 popMsg1 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle1, pubkey1));
+        bytes32 popMsg2 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle2, pubkey2));
+        bytes32 popMsg3 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle3, pubkey3));
         bytes memory popSig1 = blsSign(vm.toString(uint256(0)), popMsg1);
         bytes memory popSig2 = blsSign(vm.toString(uint256(1)), popMsg2);
         bytes memory popSig3 = blsSign(vm.toString(uint256(2)), popMsg3);
 
-        // addIssuer requires admin of governance
-        // Each addIssuer increments registryNonce; must snapshot before next addIssuer
+        // addOracle requires admin of governance
+        // Each addOracle increments registryNonce; must snapshot before next addOracle
         vm.startPrank(deployer);
-        uint256 id1 = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig1);
+        uint256 id1 = reg.addOracle(oracle1, bytes32("oracle1.index.network"), pubkey1, popSig1);
         reg.setAggregatedPubkey(pubkey1, 1); // snapshot nonce 1
-        uint256 id2 = reg.addIssuer(issuer2, bytes32("issuer2.index.network"), pubkey2, popSig2);
+        uint256 id2 = reg.addOracle(oracle2, bytes32("oracle2.index.network"), pubkey2, popSig2);
         reg.setAggregatedPubkey(pubkey2, 2); // snapshot nonce 2
-        uint256 id3 = reg.addIssuer(issuer3, bytes32("issuer3.index.network"), pubkey3, popSig3);
+        uint256 id3 = reg.addOracle(oracle3, bytes32("oracle3.index.network"), pubkey3, popSig3);
         reg.setAggregatedPubkey(pubkey3, 3); // snapshot nonce 3
         vm.stopPrank();
 
         assertEq(id1, 0);
         assertEq(id2, 1);
         assertEq(id3, 2);
-        assertEq(reg.activeIssuerCount(), 3);
+        assertEq(reg.activeOracleCount(), 3);
 
         // After setAggregatedPubkey snapshots, getAggregatedPubkey returns the last set pubkey
         bytes memory aggKey = reg.getAggregatedPubkey();
         assertEq(aggKey.length, 128);
     }
 
-    function test_registerTestIssuers_issuerDataCorrect() public {
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+    function test_registerTestOracles_oracleDataCorrect() public {
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
 
         // Real BLS G2 pubkey from deterministic seed via FFI
         bytes memory pubkey1 = blsPubkey(0);
-        address issuer1 = address(uint160(uint256(keccak256("test-issuer-1"))));
+        address oracle1 = address(uint160(uint256(keccak256("test-oracle-1"))));
 
         // Generate Proof of Possession
-        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), issuer1, pubkey1));
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(reg), oracle1, pubkey1));
         bytes memory popSig = blsSign(vm.toString(uint256(0)), popMsg);
 
         vm.startPrank(deployer);
-        uint256 id = reg.addIssuer(issuer1, bytes32("issuer1.index.network"), pubkey1, popSig);
+        uint256 id = reg.addOracle(oracle1, bytes32("oracle1.index.network"), pubkey1, popSig);
         reg.setAggregatedPubkey(pubkey1, 1); // snapshot nonce 1
         vm.stopPrank();
 
-        TypesLib.Issuer memory issuer = reg.getIssuer(id);
-        assertEq(issuer.addr, issuer1);
-        assertEq(issuer.ip, bytes32("issuer1.index.network"));
-        assertEq(issuer.blsPubkey, pubkey1);
-        assertEq(issuer.status, 1); // active
+        TypesLib.Oracle memory oracle = reg.getOracle(id);
+        assertEq(oracle.addr, oracle1);
+        assertEq(oracle.ip, bytes32("oracle1.index.network"));
+        assertEq(oracle.blsPubkey, pubkey1);
+        assertEq(oracle.status, 1); // active
     }
 
     // ============ UUPS Proxy Verification Tests ============
@@ -280,9 +280,9 @@ contract DeployL3Test is BLSTestHelper {
         bytes32 govImpl = vm.load(governanceProxy, implSlot);
         assertEq(address(uint160(uint256(govImpl))), governanceImpl);
 
-        // IssuerRegistry
-        bytes32 irImpl = vm.load(issuerRegistryProxy, implSlot);
-        assertEq(address(uint160(uint256(irImpl))), issuerRegistryImpl);
+        // OracleRegistry
+        bytes32 irImpl = vm.load(oracleRegistryProxy, implSlot);
+        assertEq(address(uint160(uint256(irImpl))), oracleRegistryImpl);
 
         // FeeRegistry
         bytes32 frImpl = vm.load(feeRegistryProxy, implSlot);
@@ -310,19 +310,19 @@ contract DeployL3Test is BLSTestHelper {
     // ============ Deployment Order Tests ============
 
     function test_deploymentOrder_governanceFirst() public view {
-        // Governance should be deployed before IssuerRegistry
-        // Verified by IssuerRegistry being initialized with governanceProxy
-        IssuerRegistry reg = IssuerRegistry(issuerRegistryProxy);
+        // Governance should be deployed before OracleRegistry
+        // Verified by OracleRegistry being initialized with governanceProxy
+        OracleRegistry reg = OracleRegistry(oracleRegistryProxy);
         assertEq(address(reg.governance()), governanceProxy);
     }
 
-    function test_deploymentOrder_issuerRegistryBeforeCustody() public view {
-        // BLSCustody and L3BridgeCustody depend on IssuerRegistry
+    function test_deploymentOrder_oracleRegistryBeforeCustody() public view {
+        // BLSCustody and L3BridgeCustody depend on OracleRegistry
         BLSCustody bls = BLSCustody(blsCustodyProxy);
-        assertEq(address(bls.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(bls.oracleRegistry()), oracleRegistryProxy);
 
         L3BridgeCustody l3b = L3BridgeCustody(l3BridgeCustodyProxy);
-        assertEq(address(l3b.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(l3b.oracleRegistry()), oracleRegistryProxy);
     }
 
     // ============ Reinitialization Protection Tests ============
@@ -332,9 +332,9 @@ contract DeployL3Test is BLSTestHelper {
         Governance(governanceProxy).initialize(makeAddr("attacker"));
     }
 
-    function test_issuerRegistry_cannotReinitialize() public {
+    function test_oracleRegistry_cannotReinitialize() public {
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        IssuerRegistry(issuerRegistryProxy).initialize(makeAddr("attacker"));
+        OracleRegistry(oracleRegistryProxy).initialize(makeAddr("attacker"));
     }
 
     function test_feeRegistry_cannotReinitialize() public {

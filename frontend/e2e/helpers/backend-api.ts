@@ -573,7 +573,7 @@ export async function getItpCountL3(): Promise<number> {
 
 /**
  * Rebalance an ITP by calling requestRebalance on the L3 Index contract
- * (emits RebalanceRequested event on L3) and waiting for issuers to
+ * (emits RebalanceRequested event on L3) and waiting for oracles to
  * execute it via BLS consensus.
  * Shifts 0.5% weight from asset[0] to asset[1].
  */
@@ -599,8 +599,8 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
   }
 
   // Send requestRebalance to L3 Index (emits RebalanceRequested event).
-  // On Anvil: issuers read events directly from L3 RPC.
-  // On testnet: issuers use DataNodeChainReader which may not forward RebalanceRequested events.
+  // On Anvil: oracles read events directly from L3 RPC.
+  // On testnet: oracles use DataNodeChainReader which may not forward RebalanceRequested events.
   const calldata = encodeFunctionData({
     abi: INDEX_ABI,
     functionName: 'requestRebalance',
@@ -631,7 +631,7 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     }]);
   }
 
-  // Wait for issuers to execute the rebalance on L3 (weights change)
+  // Wait for oracles to execute the rebalance on L3 (weights change)
   // Rebalance consensus can take 2+ cycles
   await pollUntil(
     () => getItpStateL3(itpId),
@@ -998,7 +998,7 @@ export async function getL3OrderStatus(orderId: number): Promise<number> {
 }
 
 /**
- * Request rebalance via BridgeProxy (event-only, picked up by issuers).
+ * Request rebalance via BridgeProxy (event-only, picked up by oracles).
  * Shifts 0.5% weight between asset[0] and asset[1].
  * Returns the rebalance nonce.
  */
@@ -1061,7 +1061,7 @@ export async function requestRebalanceDirect(
 
 /**
  * Mine empty blocks on Settlement Anvil.
- * Issuers require `confirmations` (default: 2) blocks after an event
+ * Oracles require `confirmations` (default: 2) blocks after an event
  * before they consider it confirmed. On Anvil with auto-mine, blocks
  * only advance when txs are submitted, so events may never become
  * "confirmed" without this helper.
@@ -1106,8 +1106,8 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
  * then sets BridgeProxy storage mappings via anvil_setStorageAt.
  *
  * BridgeProxy storage layout (OZ v5 ERC-7201 + BLSVerifier):
- *   slot 0: BLSVerifier._blsIssuerRegistry
- *   slot 1: issuerRegistry
+ *   slot 0: BLSVerifier._blsOracleRegistry
+ *   slot 1: oracleRegistry
  *   slot 2: bridgedItpFactory
  *   slot 3: nextCreationNonce
  *   slot 4: _pendingCreations (mapping)

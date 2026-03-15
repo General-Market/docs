@@ -1,6 +1,6 @@
 //! MockChain implementation for testing chain interactions
 //!
-//! Provides an in-memory mock of the blockchain for testing issuer/AP components
+//! Provides an in-memory mock of the blockchain for testing oracle/AP components
 //! without a real chain connection.
 
 use std::collections::HashMap;
@@ -15,7 +15,7 @@ use tokio::sync::{broadcast, RwLock};
 
 use crate::error::Error;
 use crate::traits::{ChainEvent, ChainReader, ChainWriter, EventFilter, EventStream, PendingRebalance};
-use crate::types::{Fill, ITPCore, Issuer, LimitOrder, Price, TxHash};
+use crate::types::{Fill, ITPCore, Oracle, LimitOrder, Price, TxHash};
 
 use super::MockError;
 
@@ -28,8 +28,8 @@ struct MockChainState {
     itps: HashMap<H256, ITPCore>,
     /// Current prices by asset address
     prices: HashMap<Address, Price>,
-    /// Registered issuers
-    issuers: Vec<Issuer>,
+    /// Registered oracles
+    oracles: Vec<Oracle>,
     /// Cycle number tracker
     current_cycle: u64,
     /// Transaction counter for generating tx hashes
@@ -352,12 +352,12 @@ impl ChainReader for MockChain {
         Ok(state.prices.values().cloned().collect())
     }
 
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error> {
         self.maybe_fail().await?;
         self.apply_latency().await;
 
         let state = self.state.read().await;
-        Ok(state.issuers.clone())
+        Ok(state.oracles.clone())
     }
 
     async fn subscribe_events(&self, filter: EventFilter) -> Result<EventStream, Error> {
@@ -557,7 +557,7 @@ pub struct MockChainBuilder {
     orders: Vec<LimitOrder>,
     itps: Vec<(H256, ITPCore)>,
     prices: Vec<Price>,
-    issuers: Vec<Issuer>,
+    oracles: Vec<Oracle>,
     config: MockChainConfig,
 }
 
@@ -568,7 +568,7 @@ impl MockChainBuilder {
             orders: Vec::new(),
             itps: Vec::new(),
             prices: Vec::new(),
-            issuers: Vec::new(),
+            oracles: Vec::new(),
             config: MockChainConfig::default(),
         }
     }
@@ -591,9 +591,9 @@ impl MockChainBuilder {
         self
     }
 
-    /// Set issuer registry
-    pub fn with_issuers(mut self, issuers: Vec<Issuer>) -> Self {
-        self.issuers = issuers;
+    /// Set oracle registry
+    pub fn with_oracles(mut self, oracles: Vec<Oracle>) -> Self {
+        self.oracles = oracles;
         self
     }
 
@@ -629,7 +629,7 @@ impl MockChainBuilder {
         for price in self.prices {
             state.prices.insert(price.asset, price);
         }
-        state.issuers = self.issuers;
+        state.oracles = self.oracles;
 
         let (event_tx, _) = broadcast::channel(self.config.event_capacity);
 
@@ -713,8 +713,8 @@ mod tests {
         let prices = mock.get_prices().await.unwrap();
         assert!(prices.is_empty());
 
-        let issuers = mock.get_issuer_registry().await.unwrap();
-        assert!(issuers.is_empty());
+        let oracles = mock.get_oracle_registry().await.unwrap();
+        assert!(oracles.is_empty());
     }
 
     #[tokio::test]

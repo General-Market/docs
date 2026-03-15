@@ -1,6 +1,6 @@
 //! BitgetReadOnlyClient implementation
 //!
-//! Read-only Bitget API client for issuer fill verification.
+//! Read-only Bitget API client for oracle fill verification.
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};

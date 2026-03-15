@@ -3,14 +3,14 @@ pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {Governance} from "../../src/Governance.sol";
-import {IssuerRegistry} from "../../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
 import {BLSCustody} from "../../src/core/BLSCustody.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployBLSCustody - Generic BLSCustody deployment script for any EVM chain
-/// @notice Deploys Governance, IssuerRegistry, and BLSCustody as UUPS proxies
+/// @notice Deploys Governance, OracleRegistry, and BLSCustody as UUPS proxies
 /// @dev Story 6.6: Generic multi-chain deployment. Chain-specific parameters come from env vars.
-///      Supports reusing an existing IssuerRegistry via ISSUER_REGISTRY_ADDRESS env var.
+///      Supports reusing an existing OracleRegistry via ORACLE_REGISTRY_ADDRESS env var.
 ///      Whitelist proposal is conditional (SKIP_WHITELIST=true to skip) because proposeWhitelist()
 ///      calls BLSLib.verifyBLS() which may fail if aggregated pubkey is non-empty but G1 (64 bytes)
 ///      rather than the expected G2 format (128 bytes). Phase 1 with empty aggregated pubkey works.
@@ -18,8 +18,8 @@ contract DeployBLSCustody is Script {
     // Deployed addresses
     address public governanceProxy;
     address public governanceImpl;
-    address public issuerRegistryProxy;
-    address public issuerRegistryImpl;
+    address public oracleRegistryProxy;
+    address public oracleRegistryImpl;
     address public blsCustodyProxy;
     address public blsCustodyImpl;
 
@@ -27,8 +27,8 @@ contract DeployBLSCustody is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        // Optional: reuse an already-deployed IssuerRegistry
-        address existingIssuerRegistry = vm.envOr("ISSUER_REGISTRY_ADDRESS", address(0));
+        // Optional: reuse an already-deployed OracleRegistry
+        address existingOracleRegistry = vm.envOr("ORACLE_REGISTRY_ADDRESS", address(0));
 
         console2.log("===========================================");
         console2.log("BLSCustody DEPLOYMENT");
@@ -40,12 +40,12 @@ contract DeployBLSCustody is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        if (existingIssuerRegistry != address(0)) {
-            issuerRegistryProxy = existingIssuerRegistry;
-            console2.log("Using existing IssuerRegistry:", existingIssuerRegistry);
+        if (existingOracleRegistry != address(0)) {
+            oracleRegistryProxy = existingOracleRegistry;
+            console2.log("Using existing OracleRegistry:", existingOracleRegistry);
         } else {
             _deployGovernance(deployer);
-            _deployIssuerRegistry();
+            _deployOracleRegistry();
         }
 
         _deployBLSCustody();
@@ -53,7 +53,7 @@ contract DeployBLSCustody is Script {
         vm.stopBroadcast();
 
         // Post-deploy verification (outside broadcast)
-        _verify(existingIssuerRegistry);
+        _verify(existingOracleRegistry);
 
         // Save deployment output
         _saveDeployment(deployer);
@@ -85,23 +85,23 @@ contract DeployBLSCustody is Script {
         console2.log("");
     }
 
-    function _deployIssuerRegistry() internal {
-        console2.log("Deploying IssuerRegistry...");
+    function _deployOracleRegistry() internal {
+        console2.log("Deploying OracleRegistry...");
 
-        IssuerRegistry impl = new IssuerRegistry();
-        issuerRegistryImpl = address(impl);
-        console2.log("  Implementation:", issuerRegistryImpl);
+        OracleRegistry impl = new OracleRegistry();
+        oracleRegistryImpl = address(impl);
+        console2.log("  Implementation:", oracleRegistryImpl);
 
         ERC1967Proxy proxy = new ERC1967Proxy(
-            issuerRegistryImpl,
-            abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
+            oracleRegistryImpl,
+            abi.encodeCall(OracleRegistry.initialize, (governanceProxy))
         );
-        issuerRegistryProxy = address(proxy);
-        console2.log("  Proxy:", issuerRegistryProxy);
+        oracleRegistryProxy = address(proxy);
+        console2.log("  Proxy:", oracleRegistryProxy);
 
         // Inline verification: fail fast before deploying BLSCustody
-        IssuerRegistry registry = IssuerRegistry(issuerRegistryProxy);
-        require(address(registry.governance()) == governanceProxy, "IssuerRegistry: governance mismatch");
+        OracleRegistry registry = OracleRegistry(oracleRegistryProxy);
+        require(address(registry.governance()) == governanceProxy, "OracleRegistry: governance mismatch");
         console2.log("  Verified: governance =", address(registry.governance()));
         console2.log("");
     }
@@ -115,39 +115,39 @@ contract DeployBLSCustody is Script {
 
         ERC1967Proxy proxy = new ERC1967Proxy(
             blsCustodyImpl,
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
         blsCustodyProxy = address(proxy);
         console2.log("  Proxy:", blsCustodyProxy);
         console2.log("");
     }
 
-    function _verify(address existingIssuerRegistry) internal view {
+    function _verify(address existingOracleRegistry) internal view {
         console2.log("Verifying deployment...");
 
         // Verify BLSCustody initialization
         BLSCustody custody = BLSCustody(blsCustodyProxy);
         require(
-            address(custody.issuerRegistry()) == issuerRegistryProxy,
-            "BLSCustody: issuerRegistry mismatch"
+            address(custody.oracleRegistry()) == oracleRegistryProxy,
+            "BLSCustody: oracleRegistry mismatch"
         );
         require(custody.nonce() == 0, "BLSCustody: nonce should be 0");
-        console2.log("  BLSCustody issuerRegistry:", address(custody.issuerRegistry()));
+        console2.log("  BLSCustody oracleRegistry:", address(custody.oracleRegistry()));
         console2.log("  BLSCustody nonce:", custody.nonce());
 
-        // Verify Governance + IssuerRegistry if freshly deployed
-        if (existingIssuerRegistry == address(0)) {
+        // Verify Governance + OracleRegistry if freshly deployed
+        if (existingOracleRegistry == address(0)) {
             Governance gov = Governance(governanceProxy);
             require(!gov.isPaused(), "Governance: should not be paused");
             console2.log("  Governance admin:", gov.admin());
 
-            IssuerRegistry registry = IssuerRegistry(issuerRegistryProxy);
+            OracleRegistry registry = OracleRegistry(oracleRegistryProxy);
             require(
                 address(registry.governance()) == governanceProxy,
-                "IssuerRegistry: governance mismatch"
+                "OracleRegistry: governance mismatch"
             );
-            require(registry.activeIssuerCount() == 0, "IssuerRegistry: active count should be 0");
-            console2.log("  IssuerRegistry governance:", address(registry.governance()));
+            require(registry.activeOracleCount() == 0, "OracleRegistry: active count should be 0");
+            console2.log("  OracleRegistry governance:", address(registry.governance()));
         }
 
         console2.log("  Deployment verified successfully!");
@@ -163,7 +163,7 @@ contract DeployBLSCustody is Script {
             '  "contracts": {\n'
         );
 
-        // Include Governance and IssuerRegistry only if freshly deployed
+        // Include Governance and OracleRegistry only if freshly deployed
         if (governanceImpl != address(0)) {
             json = string.concat(json,
                 '    "Governance": {\n',
@@ -172,15 +172,15 @@ contract DeployBLSCustody is Script {
                 '    },\n'
             );
             json = string.concat(json,
-                '    "IssuerRegistry": {\n',
-                '      "proxy": "', vm.toString(issuerRegistryProxy), '",\n',
-                '      "implementation": "', vm.toString(issuerRegistryImpl), '"\n',
+                '    "OracleRegistry": {\n',
+                '      "proxy": "', vm.toString(oracleRegistryProxy), '",\n',
+                '      "implementation": "', vm.toString(oracleRegistryImpl), '"\n',
                 '    },\n'
             );
         } else {
             json = string.concat(json,
-                '    "IssuerRegistry": {\n',
-                '      "proxy": "', vm.toString(issuerRegistryProxy), '"\n',
+                '    "OracleRegistry": {\n',
+                '      "proxy": "', vm.toString(oracleRegistryProxy), '"\n',
                 '    },\n'
             );
         }

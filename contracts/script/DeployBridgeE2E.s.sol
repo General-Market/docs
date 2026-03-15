@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployBridgeE2E - Deploy Bridge + MockBitget on existing L3 deployment
-/// @notice Uses existing IssuerRegistry, Index, AssetPairRegistry from L3 deployment
+/// @notice Uses existing OracleRegistry, Index, AssetPairRegistry from L3 deployment
 contract DeployBridgeE2E is DeployBLSHelper {
     bytes32 constant BITGET_SOURCE = keccak256("BITGET");
     address constant MOCK_USDC_QUOTE = address(0xdead000000000000000000000000000000000001);
@@ -22,12 +22,12 @@ contract DeployBridgeE2E is DeployBLSHelper {
         console.log("=== BRIDGE E2E DEPLOYMENT ===");
 
         // Get existing contract addresses from env or use deployed defaults
-        address issuerRegistry = vm.envOr("ISSUER_REGISTRY_ADDRESS", address(0xae3DcC43AC2E735C43b2a2bCd9C25FcA00441785));
+        address oracleRegistry = vm.envOr("ORACLE_REGISTRY_ADDRESS", address(0xae3DcC43AC2E735C43b2a2bCd9C25FcA00441785));
         address assetPairRegistry = vm.envOr("ASSET_PAIR_REGISTRY_ADDRESS", address(0x9705f5D06C229FAb0A284aBB12aA521eF7E8E070));
         address indexContract = vm.envOr("INDEX_ADDRESS", address(0xeD31026718e15Ffcff000831dD568a351354ADC2));
 
         console.log("Using existing contracts:");
-        console.log("  IssuerRegistry:", issuerRegistry);
+        console.log("  OracleRegistry:", oracleRegistry);
         console.log("  AssetPairRegistry:", assetPairRegistry);
         console.log("  Index:", indexContract);
 
@@ -44,11 +44,11 @@ contract DeployBridgeE2E is DeployBLSHelper {
         address mockBitgetVault = address(vault);
         console.log("MockBitgetVault:", mockBitgetVault);
 
-        // Deploy BridgeProxy with existing IssuerRegistry
+        // Deploy BridgeProxy with existing OracleRegistry
         address bridgeImpl = address(new BridgeProxy());
         bytes memory bridgeInit = abi.encodeWithSelector(
             BridgeProxy.initialize.selector,
-            issuerRegistry,
+            oracleRegistry,
             address(0), // factory not yet deployed
             admin
         );
@@ -99,11 +99,11 @@ contract DeployBridgeE2E is DeployBLSHelper {
         vm.stopBroadcast();
 
         // Export deployment
-        _exportDeployment(issuerRegistry, assetPairRegistry, indexContract, mockBitgetVault, bridgeProxy, bridgedItpFactory);
+        _exportDeployment(oracleRegistry, assetPairRegistry, indexContract, mockBitgetVault, bridgeProxy, bridgedItpFactory);
     }
 
     function _exportDeployment(
-        address issuerRegistry,
+        address oracleRegistry,
         address assetPairRegistry,
         address indexContract,
         address mockBitgetVault,
@@ -112,7 +112,7 @@ contract DeployBridgeE2E is DeployBLSHelper {
     ) internal {
         string memory obj = "d";
         vm.serializeUint(obj, "chainId", block.chainid);
-        vm.serializeAddress(obj, "IssuerRegistry", issuerRegistry);
+        vm.serializeAddress(obj, "OracleRegistry", oracleRegistry);
         vm.serializeAddress(obj, "AssetPairRegistry", assetPairRegistry);
         vm.serializeAddress(obj, "Index", indexContract);
         vm.serializeAddress(obj, "MockBitgetVault", mockBitgetVault);

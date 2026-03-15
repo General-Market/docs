@@ -7,7 +7,7 @@
 mod bridge;
 mod exchange_mode;
 mod fill;
-mod issuer;
+mod oracle;
 mod itp;
 mod order;
 mod p2p;
@@ -17,7 +17,7 @@ mod settlement;
 pub use bridge::*;
 pub use exchange_mode::*;
 pub use fill::*;
-pub use issuer::*;
+pub use oracle::*;
 pub use itp::*;
 pub use order::{EnumConversionError, LimitOrder, OrderId, OrderStatus, Side};
 pub use p2p::*;

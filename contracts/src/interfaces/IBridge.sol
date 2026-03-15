@@ -12,11 +12,11 @@ interface IL3BridgeCustody {
     // ============ BRIDGE INITIATION ============
 
     /// @notice Initiate a bridge transfer by locking USDC
-    /// @dev Called by issuer consensus to lock funds for bridge
+    /// @dev Called by oracle consensus to lock funds for bridge
     /// @dev Message: keccak256(abi.encode(chainid, this, destChainId, amount, nonce))
     /// @param destChainId Destination chain ID
     /// @param amount Amount to lock (18 decimals)
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @return nonce The unique nonce for this lock
     function initiateBridge(
         uint256 destChainId,
@@ -31,7 +31,7 @@ interface IL3BridgeCustody {
     /// @dev Message: keccak256(abi.encode(chainid, this, nonce, destTxHash))
     /// @param nonce The lock nonce
     /// @param destTxHash Transaction hash on destination chain
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function markReleased(
         uint256 nonce,
         bytes32 destTxHash,
@@ -41,11 +41,11 @@ interface IL3BridgeCustody {
     ) external;
 
     /// @notice Reverse a lock after timeout (1 hour)
-    /// @dev Requires 15/20 issuer signatures (emergency threshold)
+    /// @dev Requires 15/20 oracle signatures (emergency threshold)
     /// @dev Can only be called if lock is older than 1 hour and not released
     /// @dev Message: keccak256(abi.encode(chainid, this, "reverse", nonce, signerCount))
     /// @param nonce The lock nonce to reverse
-    /// @param blsSignature Aggregated BLS signature from 15/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 15/20 oracles
     /// @param signerCount Number of signers (must be >= 15)
     function reverseLock(
         uint256 nonce,
@@ -103,7 +103,7 @@ interface ISettlementBridgeCustody {
     /// @param amount Amount to release (18 decimals)
     /// @param nonce Nonce from source chain lock
     /// @param proof Release proof with source chain verification
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function completeBridge(
         uint256 sourceChainId,
         uint256 amount,
@@ -134,7 +134,7 @@ interface ISettlementBridgeCustody {
     // ============ BUY/SELL ORDER CUSTODY ============
 
     /// @notice Complete a buy order by transferring escrowed USDC to vault
-    /// @dev Called by issuers after L3 order processing. Deletes the cross-chain order.
+    /// @dev Called by oracles after L3 order processing. Deletes the cross-chain order.
     /// @param orderId The cross-chain order ID
     /// @param vault Destination vault address for USDC
     /// @param blsSignature Aggregated BLS signature
@@ -152,7 +152,7 @@ interface ISettlementBridgeCustody {
     /// @param orderId The cross-chain order ID
     /// @param blsSignature Aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing issuers
+    /// @param signersBitmask Bitmask of signing oracles
     function refundBuyOrder(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -207,7 +207,7 @@ interface ISettlementBridgeCustody {
     // ============ CROSS-CHAIN SELL ============
 
     /// @notice Sell ITP tokens from Settlement (cross-chain sell)
-    /// @dev Escrows BridgedITP tokens, signals issuers to sell on L3
+    /// @dev Escrows BridgedITP tokens, signals oracles to sell on L3
     /// @param itpId The ITP to sell
     /// @param amount Amount of BridgedITP tokens to sell (18 decimals)
     /// @param limitPrice Minimum price per ITP token (18 decimals)
@@ -223,7 +223,7 @@ interface ISettlementBridgeCustody {
     ) external returns (uint256 orderId);
 
     /// @notice Complete a sell order after L3 execution
-    /// @dev Called by issuers after selling on L3. Pulls USDC from vault directly to user.
+    /// @dev Called by oracles after selling on L3. Pulls USDC from vault directly to user.
     /// @param orderId The sell order ID
     /// @param usdcProceeds USDC proceeds to send to user (6 decimals)
     /// @param vault Source vault address to pull USDC from
@@ -329,11 +329,11 @@ interface ISettlementBridgeCustody {
     /// @return orderId The unique order ID for this deposit
     function depositToVision(uint256 usdcAmount) external returns (uint256 orderId);
 
-    /// @notice Mark a Vision deposit as completed (issuers call after L3 credit confirmed)
+    /// @notice Mark a Vision deposit as completed (oracles call after L3 credit confirmed)
     /// @param orderId The deposit order ID
     /// @param blsSignature Aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing issuers
+    /// @param signersBitmask Bitmask of signing oracles
     function completeVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -341,11 +341,11 @@ interface ISettlementBridgeCustody {
         uint256 signersBitmask
     ) external;
 
-    /// @notice Refund a failed Vision deposit (issuers call if L3 credit fails)
+    /// @notice Refund a failed Vision deposit (oracles call if L3 credit fails)
     /// @param orderId The deposit order ID
     /// @param blsSignature Aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing issuers
+    /// @param signersBitmask Bitmask of signing oracles
     function refundVisionDeposit(
         uint256 orderId,
         bytes calldata blsSignature,
@@ -360,7 +360,7 @@ interface ISettlementBridgeCustody {
     /// @param amount Amount in 18 decimals (internal format)
     /// @param blsSignature Aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing issuers
+    /// @param signersBitmask Bitmask of signing oracles
     function completeVisionWithdraw(
         uint256 withdrawId,
         address user,

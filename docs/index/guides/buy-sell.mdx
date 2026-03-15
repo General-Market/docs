@@ -50,11 +50,11 @@ After submission, the order passes through three stages. Each one is visible. No
 | Stage | What Happens | Status |
 |-------|-------------|--------|
 | **Submit** | USDC spend approved and order submitted to BridgeProxy on L1/L2 | Wallet confirmation |
-| **Process** | USDC bridges to L3, order is relayed, batched by issuer nodes via BLS consensus, and the Authorized Participant (AP) fills the underlying assets on exchanges | Automatic -- takes 1-5 minutes |
+| **Process** | USDC bridges to L3, order is relayed, batched by oracle nodes via BLS consensus, and the Authorized Participant (AP) fills the underlying assets on exchanges | Automatic -- takes 1-5 minutes |
 | **Deliver** | Collateral recorded on-chain, bridged back to origin chain, bridge finalized, and ITP shares minted to the buyer's wallet | Automatic -- takes 1-3 minutes |
 
 <Info>
-Order processing is fully automatic after submission. Close the modal. Walk away. The order does not need your attention. It needs the issuers' signatures. Track progress on the **Portfolio** page if waiting is unbearable.
+Order processing is fully automatic after submission. Close the modal. Walk away. The order does not need your attention. It needs the oracles' signatures. Track progress on the **Portfolio** page if waiting is unbearable.
 </Info>
 
 ### Real-Time Order Tracking

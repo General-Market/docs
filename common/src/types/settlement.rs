@@ -1,4 +1,4 @@
-//! Settlement chain event types shared between data-node, issuer, and AP.
+//! Settlement chain event types shared between data-node, oracle, and AP.
 //!
 //! These types represent cross-chain events from the BridgeProxy and
 //! SettlementBridgeCustody contracts on the Settlement chain.

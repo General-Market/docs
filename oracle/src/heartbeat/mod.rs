@@ -1,4 +1,4 @@
-//! Heartbeat monitoring for issuer node health tracking
+//! Heartbeat monitoring for oracle node health tracking
 //!
 //! This module provides heartbeat-based peer health monitoring per architecture Section 4:
 //!

@@ -47,7 +47,7 @@ class TestRunCycle:
         from framework.core import RiskCheck
         risk = RiskCheck(5, 100 * 10**6)
 
-        issuer_urls_fn = lambda: ["http://localhost:10001"]
+        oracle_urls_fn = lambda: ["http://localhost:10001"]
 
         with patch("bot.fetch_batches") as mock_fb, \
              patch("bot.fetch_markets") as mock_fm, \
@@ -60,7 +60,7 @@ class TestRunCycle:
                 {"id": "sol", "price": 100, "change": 5.0, "volume": 2e8, "market_cap": 5e10},
             ]
 
-            run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn)
+            run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn)
 
             executor.approve_usdc.assert_called_once()
             executor.join_batch.assert_called_once()
@@ -81,13 +81,13 @@ class TestRunCycle:
 
         strategy = MagicMock()
         risk = MagicMock()
-        issuer_urls_fn = lambda: ["http://localhost:10001"]
+        oracle_urls_fn = lambda: ["http://localhost:10001"]
 
         with patch("bot.fetch_batches") as mock_fb, \
              patch("bot.time"):
             mock_fb.return_value = [{"id": 6, "market_ids": ["btc"]}]
 
-            run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn)
+            run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn)
 
             executor.join_batch.assert_not_called()
             tracker.check_all.assert_called_once()

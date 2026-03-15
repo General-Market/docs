@@ -6,11 +6,11 @@
 # Full money trail with 100-asset ITP, real Bitget prices, BLS consensus:
 #   1. Deploy core contracts (DeployFullSystemE2E)
 #   2. Deploy 100-asset ITP (Deploy100AssetITP) — generates symbol-map.json
-#   3. Start 3 issuers + AP
+#   3. Start 3 oracles + AP
 #   4. Buy ITP via SettlementBridgeCustody (cross-chain bridge)
 #   5. Wait for buy fills
 #   6. Propose rebalance (skewed weights: 2%/1%/0.75%)
-#   7. Wait for issuer auto-processing (BLS consensus)
+#   7. Wait for oracle auto-processing (BLS consensus)
 #   8. Sell ITP via L3 Index
 #   9. Wait for sell fills
 #  10. AP verification
@@ -73,9 +73,9 @@ cleanup() {
     echo ""
     echo "=== Cleaning up ==="
     [ -n "$FORGE_KILLER_PID" ] && kill "$FORGE_KILLER_PID" 2>/dev/null
-    pkill -f 'target/release/issuer' 2>/dev/null || true
+    pkill -f 'target/release/oracle' 2>/dev/null || true
     pkill -f 'target/release/ap' 2>/dev/null || true
-    echo "Issuers and AP stopped. Anvil left running."
+    echo "Oracles and AP stopped. Anvil left running."
 }
 
 trap cleanup EXIT
@@ -85,8 +85,8 @@ echo -e "${BOLD}=== 100-Asset ITP E2E Test ===${NC}"
 echo "$(date '+%Y-%m-%d %H:%M:%S')"
 echo ""
 
-# Kill orphaned issuers/AP BEFORE Anvil so they get a clean shutdown
-pkill -9 -f 'target/release/issuer' 2>/dev/null || true
+# Kill orphaned oracles/AP BEFORE Anvil so they get a clean shutdown
+pkill -9 -f 'target/release/oracle' 2>/dev/null || true
 pkill -9 -f 'target/release/ap' 2>/dev/null || true
 
 # Wait for port 9100 (AP metrics) to be free
@@ -132,7 +132,7 @@ fi
 if [ "$SKIP_BUILD" = false ]; then
     echo ""
     echo "=== Step 1: Building binaries ==="
-    cargo build --release -p issuer -p ap 2>&1 | tail -5
+    cargo build --release -p oracle -p ap 2>&1 | tail -5
     echo "Build complete"
 else
     echo ""
@@ -291,7 +291,7 @@ if [ ! -f "$ITP_100_DEPLOYMENT" ]; then
     exit 1
 fi
 
-# Merge ITP data into active-deployment.json (AP/issuers read from it)
+# Merge ITP data into active-deployment.json (AP/oracles read from it)
 python3 -c "
 import json
 deploy = json.load(open('$DEPLOYMENT_FILE'))
@@ -344,35 +344,35 @@ else
     echo -e "${YELLOW}WARNING: data/symbol-map.json not found${NC}"
 fi
 
-# ==== Step 4: Fund issuers, register, configure vault ====
+# ==== Step 4: Fund oracles, register, configure vault ====
 echo ""
-echo "=== Step 4: Funding issuers + configuring vault ==="
+echo "=== Step 4: Funding oracles + configuring vault ==="
 
-ISSUER_1_ADDR="0xC0D3C9E530Ca6d71469Bb678e6592274154d9CaD"
-ISSUER_2_ADDR="0xC0d3ca67dA45613E7c5B2d55F09b00b3c99721F4"
-ISSUER_3_ADDR="0xC0D3C8DFd3445fD2e4Dfed9D11b5b7032B3BD1ac"
+ORACLE_1_ADDR="0xC0D3C9E530Ca6d71469Bb678e6592274154d9CaD"
+ORACLE_2_ADDR="0xC0d3ca67dA45613E7c5B2d55F09b00b3c99721F4"
+ORACLE_3_ADDR="0xC0D3C8DFd3445fD2e4Dfed9D11b5b7032B3BD1ac"
 
 FRONTEND_WALLET="0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4"
-for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$FRONTEND_WALLET"; do
+for ADDR in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$FRONTEND_WALLET"; do
     cast send "$ADDR" --value "10ether" --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 done
-echo "  Funded issuers + AP + frontend wallet with ETH"
+echo "  Funded oracles + AP + frontend wallet with ETH"
 
 # Fund frontend wallet with SETTLEMENT_USDC so it can buy ITPs from the UI
 cast send "$SETTLEMENT_USDC" "mint(address,uint256)" "$FRONTEND_WALLET" "10000000000" \
     --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 echo "  Frontend wallet (0xC0D3..3850) funded with 10,000 SETTLEMENT_USDC"
 
-# Register issuers
-ISSUER_REGISTRY=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
+# Register oracles
+ORACLE_REGISTRY=$(jq -r '.contracts.OracleRegistry' "$DEPLOYMENT_FILE")
 DUMMY_BLS_PUBKEY="0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80"
 DUMMY_IP="0x3132372e302e302e313a39303031000000000000000000000000000000000000"
 
-for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR"; do
-    cast send "$ISSUER_REGISTRY" "addIssuer(address,bytes32,bytes)" "$ADDR" "$DUMMY_IP" "$DUMMY_BLS_PUBKEY" \
+for ADDR in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR"; do
+    cast send "$ORACLE_REGISTRY" "addOracle(address,bytes32,bytes)" "$ADDR" "$DUMMY_IP" "$DUMMY_BLS_PUBKEY" \
         --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
 done
-echo "  Registered 3 issuers in IssuerRegistry"
+echo "  Registered 3 oracles in OracleRegistry"
 
 # Deploy MOCK_USDT
 echo "  Deploying MOCK_USDT..."
@@ -407,7 +407,7 @@ echo "  Stable tokens registered (USDC + USDT)"
 echo ""
 echo "=== Step 5: Starting services ==="
 
-pkill -9 -f 'target/release/issuer' 2>/dev/null || true
+pkill -9 -f 'target/release/oracle' 2>/dev/null || true
 pkill -9 -f 'target/release/ap' 2>/dev/null || true
 
 # Wait for port 9100 (AP metrics) to be free before restarting
@@ -420,11 +420,11 @@ if [ -f "data/ap_block_tracker.json" ]; then
     rm -f data/ap_block_tracker.json
 fi
 
-# Export RPC for start-issuers.sh and start-ap.sh (deployment JSON may not have rpc field)
-export ISSUER_RPC_URL="$RPC"
+# Export RPC for start-oracles.sh and start-ap.sh (deployment JSON may not have rpc field)
+export ORACLE_RPC_URL="$RPC"
 
-./scripts/start-issuers.sh
-echo "Issuers starting..."
+./scripts/start-oracles.sh
+echo "Oracles starting..."
 
 ./scripts/start-ap.sh
 echo "AP starting..."
@@ -525,7 +525,7 @@ else
 fi
 
 # BLS consensus check
-if grep -q "signature threshold reached\|Fills confirmed\|Batch confirmation completed" logs/issuer-1.log 2>/dev/null; then
+if grep -q "signature threshold reached\|Fills confirmed\|Batch confirmation completed" logs/oracle-1.log 2>/dev/null; then
     check_pass "BLS consensus reached (buy)"
 else
     check_fail "BLS consensus (buy)" "No consensus logs"
@@ -579,10 +579,10 @@ else
     INITIAL_WEIGHTS_RAW=$(cast call "$INDEX" "getITPState(bytes32)" "$ITP_100_ID" --rpc-url "$RPC" 2>/dev/null || echo "")
     echo "  Initial weights snapshot saved for comparison"
 
-    # ==== Step 8b: Wait for issuers to process rebalance ====
+    # ==== Step 8b: Wait for oracles to process rebalance ====
     echo ""
     echo "=== Step 8b: Waiting for rebalance processing (180s max) ==="
-    echo "  Issuers auto-detect via get_pending_rebalances() + BLS consensus"
+    echo "  Oracles auto-detect via get_pending_rebalances() + BLS consensus"
 
     REBALANCE_DONE=false
     # Target: asset 0 weight = 2e16 (2% = 20000000000000000)
@@ -621,7 +621,7 @@ else:
     done
 
     if [ "$REBALANCE_DONE" = true ]; then
-        check_pass "Weights updated by issuers (rebalance complete)"
+        check_pass "Weights updated by oracles (rebalance complete)"
 
         # NAV must still be $1. Rebalance recalculates quantities: q_new = (w_new * NAV) / price.
         # With all prices = $1: q_new = w_new * 1 / 1 = w_new. NAV = sum(w_new) = 1e18 = $1.
@@ -635,13 +635,13 @@ else:
         check_fail "Weights updated" "Pending rebalance still active after 180s"
     fi
 
-    # Check issuer logs for rebalance consensus
-    if grep -q "Rebalance consensus complete\|Weights updated on-chain" logs/issuer-*.log 2>/dev/null; then
-        check_pass "Rebalance BLS consensus (issuer logs)"
-    elif grep -q "Found pending rebalances" logs/issuer-1.log 2>/dev/null; then
-        check_pass "Rebalance detected by issuers"
+    # Check oracle logs for rebalance consensus
+    if grep -q "Rebalance consensus complete\|Weights updated on-chain" logs/oracle-*.log 2>/dev/null; then
+        check_pass "Rebalance BLS consensus (oracle logs)"
+    elif grep -q "Found pending rebalances" logs/oracle-1.log 2>/dev/null; then
+        check_pass "Rebalance detected by oracles"
     else
-        check_fail "Rebalance BLS consensus" "No rebalance logs in issuer-1.log"
+        check_fail "Rebalance BLS consensus" "No rebalance logs in oracle-1.log"
     fi
 
     # Check AP processed rebalance TradeRequests
@@ -777,7 +777,7 @@ else
         check_fail "Limit order enforcement" "$REAL_VIOLATIONS real violation(s) (excluding $ZERO_LIMIT_VIOLATIONS rebalance)"
     fi
 
-    # --- 11d. AP only applies issuer orders (TradeRequest events from chain) ---
+    # --- 11d. AP only applies oracle orders (TradeRequest events from chain) ---
     TR_TOTAL=$(grep -c "Processing TradeRequest event" logs/ap.log 2>/dev/null | tr -d ' ' || echo "0")
     TR_TOTAL=${TR_TOTAL:-0}
     # Verify AP only processed events from Index.sol (not arbitrary sources)
@@ -786,7 +786,7 @@ else
     if [ "$TR_TOTAL" -ge 1 ] 2>/dev/null; then
         UNATTRIBUTED=$(sed 's/\x1b\[[0-9;]*m//g' logs/ap.log 2>/dev/null | grep "Processing TradeRequest" | grep -v "block=" | wc -l | tr -d ' ')
         if [ "$UNATTRIBUTED" -eq 0 ]; then
-            check_pass "AP only processes issuer TradeRequests ($TR_TOTAL events, all from chain)"
+            check_pass "AP only processes oracle TradeRequests ($TR_TOTAL events, all from chain)"
         else
             check_fail "AP order source" "$UNATTRIBUTED TradeRequest(s) without block attribution"
         fi
@@ -884,14 +884,14 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     echo -e "${GREEN}${BOLD}ALL CHECKS PASSED${NC}"
     echo ""
     echo "Log files:"
-    echo "  logs/issuer-1.log  logs/issuer-2.log  logs/issuer-3.log"
+    echo "  logs/oracle-1.log  logs/oracle-2.log  logs/oracle-3.log"
     echo "  logs/ap.log"
     exit 0
 else
     echo -e "${RED}${BOLD}$FAIL_COUNT CHECK(S) FAILED${NC}"
     echo ""
     echo "Debug with:"
-    echo "  tail -200 logs/issuer-1.log | grep -iE 'error|fail|rebalance|weight|pending'"
+    echo "  tail -200 logs/oracle-1.log | grep -iE 'error|fail|rebalance|weight|pending'"
     echo "  tail -200 logs/ap.log | grep -iE 'error|fail|trade|settlement|rebalance'"
     exit 1
 fi

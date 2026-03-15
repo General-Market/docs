@@ -1,7 +1,7 @@
 //! Cycle manager implementation for coordinated order processing.
 //!
 //! The CycleManager runs a 1-second cycle loop with 5 phases,
-//! coordinating order processing across all issuers.
+//! coordinating order processing across all oracles.
 
 use super::ntp::NtpSyncState;
 use super::{CyclePhase, CycleState};
@@ -25,8 +25,8 @@ pub struct CycleConfig {
     /// Prevents spinning too fast when there's pending work.
     pub min_cycle_gap_ms: u64,
 
-    /// Issuer node ID for logging.
-    pub issuer_id: u32,
+    /// Oracle node ID for logging.
+    pub oracle_id: u32,
 
     /// Timing tolerance in milliseconds for NTP sync (default: 200ms).
     pub timing_tolerance_ms: u64,
@@ -51,7 +51,7 @@ impl Default for CycleConfig {
         Self {
             cycle_duration_ms: 1000,
             min_cycle_gap_ms: 50,
-            issuer_id: 0,
+            oracle_id: 0,
             timing_tolerance_ms: 200,
             warn_threshold_ms: 500,
             critical_threshold_ms: 2000,
@@ -87,9 +87,9 @@ impl CycleConfig {
         self
     }
 
-    /// Sets the issuer ID.
-    pub fn with_issuer_id(mut self, issuer_id: u32) -> Self {
-        self.issuer_id = issuer_id;
+    /// Sets the oracle ID.
+    pub fn with_oracle_id(mut self, oracle_id: u32) -> Self {
+        self.oracle_id = oracle_id;
         self
     }
 
@@ -102,7 +102,7 @@ impl CycleConfig {
 /// Callback type for phase-specific hooks.
 pub type PhaseCallback = Box<dyn Fn(CyclePhase, u64) + Send + Sync>;
 
-/// Manages the issuer cycle loop with configurable timing.
+/// Manages the oracle cycle loop with configurable timing.
 ///
 /// The CycleManager coordinates the 5-phase cycle structure:
 /// PROCESS_FILLS -> NETTING -> INVENTORY_CHECK -> GENERATE_BATCH -> SIGN_SUBMIT
@@ -166,15 +166,15 @@ impl CycleManager {
     }
 
     /// Creates a CycleManager with default 1-second cycles.
-    pub fn default_with_issuer_id(issuer_id: u32) -> Self {
-        Self::new(CycleConfig::default().with_issuer_id(issuer_id))
+    pub fn default_with_oracle_id(oracle_id: u32) -> Self {
+        Self::new(CycleConfig::default().with_oracle_id(oracle_id))
     }
 
     /// Creates a CycleManager for testing with short cycles.
     ///
     /// Uses interval-based counting (wall_clock_aligned=false) for deterministic tests.
-    pub fn for_testing(cycle_duration_ms: u64, issuer_id: u32) -> Self {
-        let mut config = CycleConfig::with_duration_ms(cycle_duration_ms).with_issuer_id(issuer_id);
+    pub fn for_testing(cycle_duration_ms: u64, oracle_id: u32) -> Self {
+        let mut config = CycleConfig::with_duration_ms(cycle_duration_ms).with_oracle_id(oracle_id);
         config.wall_clock_aligned = false;
         Self::new(config)
     }
@@ -291,9 +291,9 @@ impl CycleManager {
         })
     }
 
-    /// Formats issuer_id as hex string per architecture Section 21 spec.
-    fn format_issuer_id(&self) -> String {
-        format!("0x{:08x}", self.config.issuer_id)
+    /// Formats oracle_id as hex string per architecture Section 21 spec.
+    fn format_oracle_id(&self) -> String {
+        format!("0x{:08x}", self.config.oracle_id)
     }
 
     /// Advances to the next phase and executes callbacks.
@@ -308,13 +308,13 @@ impl CycleManager {
         let prev_duration = self.state.advance_phase();
         let new_phase = self.state.get_cycle_phase();
         let cycle_number = self.state.get_current_cycle();
-        let issuer_id_hex = self.format_issuer_id();
+        let oracle_id_hex = self.format_oracle_id();
 
         // Log phase transition with JSON-compatible format per architecture Section 21
         info!(
             timestamp = %Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             cycle_number,
-            issuer_id = %issuer_id_hex,
+            oracle_id = %oracle_id_hex,
             phase = %new_phase,
             previous_phase = %prev_phase,
             phase_duration_ms = prev_duration,
@@ -329,7 +329,7 @@ impl CycleManager {
                 error!(
                     code = "INFRA-001",
                     cycle_number = completed_cycle,
-                    issuer_id = %issuer_id_hex,
+                    oracle_id = %oracle_id_hex,
                     cycle_duration_ms = total_cycle_ms,
                     threshold_ms = self.config.critical_threshold_ms,
                     "CRITICAL: Cycle exceeded critical threshold"
@@ -338,7 +338,7 @@ impl CycleManager {
                 warn!(
                     code = "INFRA-001",
                     cycle_number = completed_cycle,
-                    issuer_id = %issuer_id_hex,
+                    oracle_id = %oracle_id_hex,
                     cycle_duration_ms = total_cycle_ms,
                     threshold_ms = self.config.warn_threshold_ms,
                     "Cycle exceeded warning threshold"
@@ -383,7 +383,7 @@ impl CycleManager {
     async fn start_wall_clock(&mut self, shutdown: Arc<AtomicBool>) {
         let max_cycle_ms = self.config.cycle_duration_ms;
         let min_gap_ms = self.config.min_cycle_gap_ms;
-        let issuer_id_hex = self.format_issuer_id();
+        let oracle_id_hex = self.format_oracle_id();
 
         // Set initial state from wall clock
         let mut cycle_number = Self::unix_timestamp_ms() / max_cycle_ms;
@@ -393,7 +393,7 @@ impl CycleManager {
 
         info!(
             cycle_number,
-            issuer_id = %issuer_id_hex,
+            oracle_id = %oracle_id_hex,
             heartbeat_ms = max_cycle_ms,
             min_gap_ms,
             demand_driven = self.work_rx.is_some(),
@@ -405,7 +405,7 @@ impl CycleManager {
             if shutdown.load(Ordering::Relaxed) {
                 info!(
                     cycle_number = self.state.get_current_cycle(),
-                    issuer_id = %issuer_id_hex,
+                    oracle_id = %oracle_id_hex,
                     "CycleManager shutting down"
                 );
                 break;
@@ -466,7 +466,7 @@ impl CycleManager {
             info!(
                 cycle = cycle_number,
                 trigger = ?trigger,
-                issuer_id = %issuer_id_hex,
+                oracle_id = %oracle_id_hex,
                 "Cycle advanced"
             );
 
@@ -484,12 +484,12 @@ impl CycleManager {
     async fn start_interval(&mut self, shutdown: Arc<AtomicBool>) {
         let phase_duration = Duration::from_millis(self.config.phase_duration_ms());
         let mut phase_interval = interval(phase_duration);
-        let issuer_id_hex = self.format_issuer_id();
+        let oracle_id_hex = self.format_oracle_id();
 
         // Log startup
         info!(
             cycle_number = self.state.get_current_cycle(),
-            issuer_id = %issuer_id_hex,
+            oracle_id = %oracle_id_hex,
             cycle_duration_ms = self.config.cycle_duration_ms,
             phase_duration_ms = self.config.phase_duration_ms(),
             timestamp = %Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
@@ -503,7 +503,7 @@ impl CycleManager {
                 info!(
                     cycle_number = self.state.get_current_cycle(),
                     phase = %self.state.get_cycle_phase(),
-                    issuer_id = %issuer_id_hex,
+                    oracle_id = %oracle_id_hex,
                     "CycleManager shutting down"
                 );
                 break;
@@ -519,7 +519,7 @@ impl CycleManager {
                         warn!(
                             code = "INFRA-001",
                             cycle_number = self.state.get_current_cycle(),
-                            issuer_id = %issuer_id_hex,
+                            oracle_id = %oracle_id_hex,
                             drift_ms = drift,
                             tolerance_ms = tolerance,
                             "Timing drift approaching tolerance limit"
@@ -546,7 +546,7 @@ impl CycleManager {
     async fn start_wall_clock_channel(&mut self, mut shutdown_rx: tokio::sync::oneshot::Receiver<()>) {
         let max_cycle_ms = self.config.cycle_duration_ms;
         let min_gap_ms = self.config.min_cycle_gap_ms;
-        let issuer_id_hex = self.format_issuer_id();
+        let oracle_id_hex = self.format_oracle_id();
 
         let mut cycle_number = Self::unix_timestamp_ms() / max_cycle_ms;
         self.state.set_cycle_and_phase(cycle_number, CyclePhase::SignSubmit);
@@ -555,7 +555,7 @@ impl CycleManager {
 
         info!(
             cycle_number,
-            issuer_id = %issuer_id_hex,
+            oracle_id = %oracle_id_hex,
             heartbeat_ms = max_cycle_ms,
             min_gap_ms,
             demand_driven = self.work_rx.is_some(),
@@ -573,7 +573,7 @@ impl CycleManager {
                 _ = &mut shutdown_rx => {
                     info!(
                         cycle_number = self.state.get_current_cycle(),
-                        issuer_id = %issuer_id_hex,
+                        oracle_id = %oracle_id_hex,
                         "CycleManager received shutdown signal"
                     );
                     break;
@@ -620,7 +620,7 @@ impl CycleManager {
             info!(
                 cycle = cycle_number,
                 trigger = ?trigger,
-                issuer_id = %issuer_id_hex,
+                oracle_id = %oracle_id_hex,
                 "Cycle advanced"
             );
 
@@ -636,11 +636,11 @@ impl CycleManager {
     async fn start_interval_channel(&mut self, mut shutdown_rx: tokio::sync::oneshot::Receiver<()>) {
         let phase_duration = Duration::from_millis(self.config.phase_duration_ms());
         let mut phase_interval = interval(phase_duration);
-        let issuer_id_hex = self.format_issuer_id();
+        let oracle_id_hex = self.format_oracle_id();
 
         info!(
             cycle_number = self.state.get_current_cycle(),
-            issuer_id = %issuer_id_hex,
+            oracle_id = %oracle_id_hex,
             cycle_duration_ms = self.config.cycle_duration_ms,
             phase_duration_ms = self.config.phase_duration_ms(),
             timestamp = %Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
@@ -660,7 +660,7 @@ impl CycleManager {
                                 warn!(
                                     code = "INFRA-001",
                                     cycle_number = self.state.get_current_cycle(),
-                                    issuer_id = %issuer_id_hex,
+                                    oracle_id = %oracle_id_hex,
                                     drift_ms = drift,
                                     tolerance_ms = tolerance,
                                     "Timing drift approaching tolerance limit"
@@ -673,7 +673,7 @@ impl CycleManager {
                     info!(
                         cycle_number = self.state.get_current_cycle(),
                         phase = %self.state.get_cycle_phase(),
-                        issuer_id = %issuer_id_hex,
+                        oracle_id = %oracle_id_hex,
                         "CycleManager received shutdown signal"
                     );
                     break;

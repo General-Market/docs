@@ -129,7 +129,7 @@ Nearly every knowledge page has a counterpart on the docs site:
 - `parimutuel-prediction-markets` ↔ `docs/vision/concepts/` pages
 - `on-chain-index-products` ↔ `docs/index/concepts/itps.mdx`
 - `nav-calculation` ↔ `docs/index/concepts/itps.mdx` (NAV section)
-- `bls-consensus` ↔ `docs/index/architecture/issuer-nodes.mdx`
+- `bls-consensus` ↔ `docs/index/architecture/oracle-nodes.mdx`
 - `build-prediction-market-bot` ↔ `docs/vision/bots/quickstart.mdx`
 - `prediction-market-api` ↔ `docs/vision/api/` pages
 - `on-chain-index-api` ↔ `docs/index/api/` pages
@@ -203,9 +203,9 @@ faq:
 6. **`bls-consensus.mdx`**
    - Target: "BLS consensus in DeFi"
    - Schema: `["TechArticle", "DefinedTerm", "FAQPage"]`
-   - Content: what BLS signatures are, multi-issuer consensus, aggregation, why no single-point manipulation
+   - Content: what BLS signatures are, multi-oracle consensus, aggregation, why no single-point manipulation
    - Code: signature verification flow
-   - FAQ: "Why BLS instead of ECDSA multisig?", "How many issuers must agree?"
+   - FAQ: "Why BLS instead of ECDSA multisig?", "How many oracles must agree?"
 
 **Builder/technical (`category: "builder"`, `proficiencyLevel: "Expert"`):**
 
@@ -267,7 +267,7 @@ General Market is a DeFi protocol with two products: Index Tracking Products (IT
 
 ## Index Tracking Products (ITPs)
 
-On-chain index funds. Fixed basket of assets, NAV floats with underlying prices. Created with custom weights, rebalanced without changing NAV. Multi-issuer BLS consensus for trustless execution. Lending integration via Morpho.
+On-chain index funds. Fixed basket of assets, NAV floats with underlying prices. Created with custom weights, rebalanced without changing NAV. Multi-oracle BLS consensus for trustless execution. Lending integration via Morpho.
 
 - App: https://www.generalmarket.io
 - API: https://www.generalmarket.io/api/itps
@@ -361,7 +361,7 @@ Expand current 15.9KB file. Structure:
 ... [all endpoints]
 
 ## 6. Architecture
-[Issuers, data node, bridge, settlement, contracts]
+[Oracles, data node, bridge, settlement, contracts]
 
 ## 7. Security Model
 [BLS consensus, sealed bets, no single-point-of-failure]

@@ -2,29 +2,29 @@
 pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {IssuerRegistry} from "../../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployIssuerRegistry - Deployment script for IssuerRegistry
-/// @notice Deploys IssuerRegistry with UUPS proxy pattern
+/// @title DeployOracleRegistry - Deployment script for OracleRegistry
+/// @notice Deploys OracleRegistry with UUPS proxy pattern
 /// @dev Story 2.12 - Task 12
-contract DeployIssuerRegistry is Script {
+contract DeployOracleRegistry is Script {
     function run() external returns (address proxy, address implementation) {
         // Get deployment parameters from environment
         address governance = vm.envAddress("GOVERNANCE_ADDRESS");
 
-        console2.log("Deploying IssuerRegistry...");
+        console2.log("Deploying OracleRegistry...");
         console2.log("Governance:", governance);
 
         vm.startBroadcast();
 
         // Deploy implementation
-        implementation = address(new IssuerRegistry());
+        implementation = address(new OracleRegistry());
         console2.log("Implementation deployed at:", implementation);
 
         // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
-            IssuerRegistry.initialize.selector,
+            OracleRegistry.initialize.selector,
             governance
         );
 
@@ -35,9 +35,9 @@ contract DeployIssuerRegistry is Script {
         vm.stopBroadcast();
 
         // Verify deployment
-        IssuerRegistry registry = IssuerRegistry(proxy);
+        OracleRegistry registry = OracleRegistry(proxy);
         require(address(registry.governance()) == governance, "Governance mismatch");
-        require(registry.activeIssuerCount() == 0, "Active count should be 0");
+        require(registry.activeOracleCount() == 0, "Active count should be 0");
 
         console2.log("Deployment verified successfully!");
     }
@@ -46,10 +46,10 @@ contract DeployIssuerRegistry is Script {
     function deploy(address governance) external returns (address proxy, address implementation) {
         vm.startBroadcast();
 
-        implementation = address(new IssuerRegistry());
+        implementation = address(new OracleRegistry());
 
         bytes memory initData = abi.encodeWithSelector(
-            IssuerRegistry.initialize.selector,
+            OracleRegistry.initialize.selector,
             governance
         );
 

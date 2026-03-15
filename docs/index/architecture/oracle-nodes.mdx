@@ -1,13 +1,13 @@
 ---
-title: "Issuer Nodes"
+title: "Oracle Nodes"
 description: "BLS consensus nodes that batch orders and coordinate execution"
 ---
 
-# Issuer Nodes
+# Oracle Nodes
 
 Three machines agree every second. This is more than most committees achieve in a year.
 
-Written in Rust (68K LOC), the issuer nodes are the consensus layer of the protocol. They batch orders, coordinate BLS signing across peers, and submit confirmed batches on-chain. One-second cycles. Round-robin leaders. No meetings.
+Written in Rust (68K LOC), the oracle nodes are the consensus layer of the protocol. They batch orders, coordinate BLS signing across peers, and submit confirmed batches on-chain. One-second cycles. Round-robin leaders. No meetings.
 
 ## What They Do
 
@@ -49,7 +49,7 @@ flowchart TD
 ```
 
 <Info>
-  The BLS threshold of `ceil(2n/3)` ensures Byzantine fault tolerance — the issuer nodes can tolerate up to `floor((n-1)/3)` malicious or offline issuer nodes while still making progress.
+  The BLS threshold of `ceil(2n/3)` ensures Byzantine fault tolerance — the oracle nodes can tolerate up to `floor((n-1)/3)` malicious or offline oracle nodes while still making progress.
 </Info>
 
 ## Cycle Timing
@@ -60,7 +60,7 @@ One second. Five phases. 200 milliseconds each. The precision is not aspirationa
 |---|---|---|
 | **COLLECT** | 200ms | Gather new pending orders from chain events and peer gossip |
 | **PROPOSE** | 200ms | Leader constructs and broadcasts the proposed batch |
-| **SIGN_SUBMIT** | 200ms | Peer issuer nodes validate the proposal and return BLS partial signatures |
+| **SIGN_SUBMIT** | 200ms | Peer oracle nodes validate the proposal and return BLS partial signatures |
 | **CONFIRM** | 200ms | Leader aggregates signatures and submits the confirmed batch on-chain |
 | **REBALANCE** | 200ms | Process any pending ITP rebalance operations (weight updates → new quantities) |
 
@@ -79,7 +79,7 @@ gantt
 
 ## Leader Election
 
-Round-robin. Deterministic. Based on the node's index in `IssuerRegistry.sol`. The leader rotates every second.
+Round-robin. Deterministic. Based on the node's index in `OracleRegistry.sol`. The leader rotates every second.
 
 The leader builds the proposal, aggregates signatures, and submits the batch. If a leader fails, the cycle is lost and the next leader takes over. No negotiation. No second chances.
 
@@ -88,7 +88,7 @@ The leader builds the proposal, aggregates signatures, and submits the batch. If
 | Property | Detail |
 |---|---|
 | **Transport** | TCP with TLS |
-| **Discovery** | Static config + on-chain registry via `IssuerRegistry.sol` |
+| **Discovery** | Static config + on-chain registry via `OracleRegistry.sol` |
 | **Messages** | Batch proposals, BLS partial signatures, heartbeats |
 | **Serialization** | Binary, because latency is not negotiable |
 
@@ -108,24 +108,24 @@ A buyer and a seller of the same asset in the same batch cancel each other out. 
 |---|---|
 | **Curve** | BN254 (alt_bn128) |
 | **EVM compatibility** | Uses precompiles at `0x06` (addition), `0x07` (scalar multiplication), `0x08` (pairing) |
-| **Key registration** | Each issuer node registers the node's BLS public key in `IssuerRegistry.sol` |
+| **Key registration** | Each oracle node registers the node's BLS public key in `OracleRegistry.sol` |
 | **Aggregation** | Partial signatures are aggregated into a single signature by the leader |
 | **Verification** | On-chain via `BLSLib.sol` against the stored aggregated public key |
 
 <Warning>
-  BLS verification is **never bypassed** — not in local development, not in tests, not anywhere. If BLS is blocking development, the correct approach is to fix the BLS pipeline (generate proper test keys, register them in IssuerRegistry, compute valid signatures), not to add bypass logic.
+  BLS verification is **never bypassed** — not in local development, not in tests, not anywhere. If BLS is blocking development, the correct approach is to fix the BLS pipeline (generate proper test keys, register them in OracleRegistry, compute valid signatures), not to add bypass logic.
 </Warning>
 
 ## Security: AP Isolation (FR13)
 
-The issuers and the AP do not talk. They cannot. This is not a limitation -- it is the architecture.
+The oracles and the AP do not talk. They cannot. This is not a limitation -- it is the architecture.
 
 <Warning>
-  Issuer nodes **cannot communicate directly** with the AP. The AP discovers confirmed batches exclusively through on-chain `TradeRequest` events. This boundary exists because if the signers and the executor could coordinate off-chain, the system would have a single point of collusion.
+  Oracle nodes **cannot communicate directly** with the AP. The AP discovers confirmed batches exclusively through on-chain `TradeRequest` events. This boundary exists because if the signers and the executor could coordinate off-chain, the system would have a single point of collusion.
 </Warning>
 
 ```text
-  Issuer Nodes                L3 Chain                AP
+  Oracle Nodes                L3 Chain                AP
   ┌───────────┐         ┌──────────────┐        ┌─────────┐
   │           │────tx──►│  Index.sol   │        │         │
   │  Consensus│         │              │──event─►│ Execute │

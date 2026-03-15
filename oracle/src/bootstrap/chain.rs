@@ -4,7 +4,7 @@ use super::{BootstrapError, BootstrapParams, ChainComponents};
 use crate::{
     SettlementChainReader, SettlementChainReaderConfig, SettlementChainWriter,
     SettlementChainWriterConfig, SettlementReader, ChainReaderConfig, ChainWriterConfig,
-    ContractAddresses, EthersChainReader, EthersChainWriter, GasConfig, IssuerConfig,
+    ContractAddresses, EthersChainReader, EthersChainWriter, GasConfig, OracleConfig,
 };
 use crate::chain::DataNodeSettlementReader;
 use common::adapters::DataNodeChainReader;
@@ -16,7 +16,7 @@ use tracing::{debug, info, warn};
 
 /// Builder for chain-related components
 pub struct ChainBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     params: &'a BootstrapParams,
     contract_addresses: &'a ContractAddresses,
     target_chain_id: u64,
@@ -24,7 +24,7 @@ pub struct ChainBuilder<'a> {
 
 impl<'a> ChainBuilder<'a> {
     pub fn new(
-        config: &'a IssuerConfig,
+        config: &'a OracleConfig,
         params: &'a BootstrapParams,
         contract_addresses: &'a ContractAddresses,
         target_chain_id: u64,
@@ -118,7 +118,7 @@ impl<'a> ChainBuilder<'a> {
             node_id,
             index = ?self.contract_addresses.index,
             governance = ?self.contract_addresses.governance,
-            issuer_registry = ?self.contract_addresses.issuer_registry,
+            oracle_registry = ?self.contract_addresses.oracle_registry,
             "EthersChainReader initialized"
         );
 
@@ -253,8 +253,8 @@ impl<'a> ChainBuilder<'a> {
         };
 
         // Build SettlementChainWriter
-        // Use settlement_private_key if set (e.g. when issuer keys are EIP-7702 on settlement chain),
-        // otherwise fall back to the issuer's own key.
+        // Use settlement_private_key if set (e.g. when oracle keys are EIP-7702 on settlement chain),
+        // otherwise fall back to the oracle's own key.
         let settlement_key = self.config.effective_settlement_private_key()
             .map_err(|e| BootstrapError::Config(format!("Failed to read settlement private key: {}", e)))?
             .or_else(|| self.config.effective_private_key().ok().flatten());

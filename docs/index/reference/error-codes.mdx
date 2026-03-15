@@ -78,7 +78,7 @@ Errors raised by the timelock-based whitelist management system.
 | `E031` | `TargetAlreadyWhitelisted` | The target is already in the whitelist. |
 | `E032` | `TargetNotCurrentlyWhitelisted` | The target is not currently in the whitelist. |
 | `E034` | `OrderNotYetExpired` | Order deadline has not passed yet (still in the future). |
-| `E035` | `IssuerRegistryNotSet` | IssuerRegistry is not configured (required for BLS verification in production). |
+| `E035` | `OracleRegistryNotSet` | OracleRegistry is not configured (required for BLS verification in production). |
 
 ## Upgrade Errors (E038 - E044)
 
@@ -91,7 +91,7 @@ Errors raised during contract upgrade proposals, timelocks, and execution.
 | `E040` | `NoPendingUpgrade` | No pending upgrade to execute. |
 | `E041` | `ImplementationMismatch` | Implementation address does not match the expected address. |
 | `E042` | `UpgradeTimelockActive` | Upgrade timelock has not expired yet. |
-| `E043` | `ZeroIssuerRegistry` | Zero address not allowed for issuer registry. |
+| `E043` | `ZeroOracleRegistry` | Zero address not allowed for oracle registry. |
 | `E044` | `StandardUpgradePending` | Cannot use emergency upgrade when a standard upgrade is already pending. |
 
 ## L3 Bridge Custody Errors (E045 - E053)
@@ -200,7 +200,7 @@ Errors added for production hardening: queue depth limits, price staleness check
 
 ## Mirror Registry Errors (E090 - E093)
 
-Errors raised by the MirrorIssuerRegistry contract on the settlement chain.
+Errors raised by the MirrorOracleRegistry contract on the settlement chain.
 
 | Code | Name | Description |
 |------|------|-------------|
@@ -218,7 +218,7 @@ Errors raised by the NAV Oracle for price submissions and staleness checks.
 | `E094` | `StaleCycleNumber` | Cycle number is stale (must be greater than last processed). |
 | `E095` | `InvalidOraclePrice` | Oracle price cannot be zero. |
 | `E096` | `StaleOraclePrice` | Oracle price is stale (exceeds MAX_STALENESS). |
-| `E097` | `NotActiveIssuer` | Caller is not a registered active issuer. |
+| `E097` | `NotActiveOracle` | Caller is not a registered active oracle. |
 | `E098` | `ZeroBeneficiary` | Beneficiary address cannot be zero. |
 
 ## Cross-Chain Rebalance Errors (E099 - E115)
@@ -294,13 +294,13 @@ Errors raised during Vision deposit and withdrawal processing on the L3 bridge.
 
 ## Mirror Registry Phase 2B Errors (E135 - E138)
 
-Errors for issuer pubkey validation, missed count authorization, and order cancellation.
+Errors for oracle pubkey validation, missed count authorization, and order cancellation.
 
 | Code | Name | Description |
 |------|------|-------------|
-| `E135` | `MissingIssuerPubkey` | Missing individual issuer pubkey (expected 128 bytes, got 0). |
+| `E135` | `MissingOraclePubkey` | Missing individual oracle pubkey (expected 128 bytes, got 0). |
 | `E136` | `NotAuthorizedMissedCountCaller` | Caller not authorized for incrementMissedCounts. |
-| `E137` | `PubkeysIdsLengthMismatch` | Issuer pubkeys and IDs array length mismatch. |
+| `E137` | `PubkeysIdsLengthMismatch` | Oracle pubkeys and IDs array length mismatch. |
 | `E138` | `OrderNotCancellable` | Order cannot be cancelled (not in PENDING status). |
 
 ## Replay Protection Errors (E139 - E143)

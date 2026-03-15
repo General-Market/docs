@@ -13,7 +13,7 @@ Every tick, the system resolves all markets in a batch. It is a small reckoning,
 2. Determine outcome (UP / DOWN / FLAT)
 3. Match winners against losers (parimutuel)
 4. Update player balances
-5. BLS-sign results across issuers
+5. BLS-sign results across oracles
 
 Check your balance after resolution: `GET /vision/balance/{batchId}/{playerAddress}`
 
@@ -40,7 +40,7 @@ Tick numbers are computed from Unix timestamps: `currentTick = block.timestamp /
 
 ## Resolution Cycle
 
-When a tick becomes due for resolution, the issuer engine runs its pipeline. It is mechanical, deterministic, and utterly fair -- which is to say, it has no mercy:
+When a tick becomes due for resolution, the oracle engine runs its pipeline. It is mechanical, deterministic, and utterly fair -- which is to say, it has no mercy:
 
 ```mermaid
 flowchart TD
@@ -62,7 +62,7 @@ flowchart TD
 
 **2. Filter active players.** Only players with a non-zero balance participate. Zero-balance players are skipped.
 
-**3. Check bitmap reveals.** Each active player's bitmap must have been revealed to the issuer (submitted via `POST /vision/bitmap`). Players who did not reveal are **voided** -- their balance stays unchanged and they do not participate in side matching.
+**3. Check bitmap reveals.** Each active player's bitmap must have been revealed to the oracle (submitted via `POST /vision/bitmap`). Players who did not reveal are **voided** -- their balance stays unchanged and they do not participate in side matching.
 
 **4. Compute multipliers.** Each revealed player gets an early multiplier and a commitment multiplier applied to their stake. See [Multipliers](#multipliers) below.
 
@@ -76,7 +76,7 @@ flowchart TD
 
 **6. Aggregate balance changes.** Sum each player's deltas across all markets to produce a single net balance change per player.
 
-**7-8. BLS consensus and on-chain submission.** Issuers sign the results with BLS keys and submit on-chain for claiming.
+**7-8. BLS consensus and on-chain submission.** Oracles sign the results with BLS keys and submit on-chain for claiming.
 
 ## Market Outcomes
 
@@ -181,7 +181,7 @@ The default **commitment offset** is 9. This parameter shifts the commitment mul
 
 ## Reveal Window
 
-After a tick ends, there is a pause. Ten minutes of grace. Issuers wait for the **reveal window** (default: 600 seconds) before resolving. This gives players time to submit their bitmap reveals to issuers.
+After a tick ends, there is a pause. Ten minutes of grace. Oracles wait for the **reveal window** (default: 600 seconds) before resolving. This gives players time to submit their bitmap reveals to oracles.
 
 ```
 Tick ends at: T

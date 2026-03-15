@@ -7,7 +7,7 @@
  *
  * Environment:
  *   L3_RPC          — L3 RPC URL (default: http://142.132.164.24/)
- *   ISSUER_BASE     — Base URL for issuers (default: http://116.203.156.98)
+ *   ORACLE_BASE     — Base URL for oracles (default: http://116.203.156.98)
  *   DEPOSIT_AMOUNT  — USDC per batch join (default: 10)
  */
 
@@ -30,11 +30,11 @@ import * as path from 'path'
 // ── Config ──
 
 const L3_RPC = process.env.L3_RPC || 'http://142.132.164.24/'
-const ISSUER_BASE = process.env.ISSUER_BASE || 'http://116.203.156.98'
-const ISSUER_URLS = [
-  `${ISSUER_BASE}/issuer1`,
-  `${ISSUER_BASE}/issuer2`,
-  `${ISSUER_BASE}/issuer3`,
+const ORACLE_BASE = process.env.ORACLE_BASE || 'http://116.203.156.98'
+const ORACLE_URLS = [
+  `${ORACLE_BASE}/oracle1`,
+  `${ORACLE_BASE}/oracle2`,
+  `${ORACLE_BASE}/oracle3`,
 ]
 const DEPOSIT_AMOUNT = parseUnits(process.env.DEPOSIT_AMOUNT || '10', 18) // L3 USDC = 18 dec
 const STAKE_PER_TICK = DEPOSIT_AMOUNT
@@ -218,10 +218,10 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/** Get market count for a batch from issuer API */
+/** Get market count for a batch from oracle API */
 async function getMarketCount(batchId: number): Promise<number> {
   try {
-    const res = await fetch(`${ISSUER_URLS[0]}/vision/batches`, {
+    const res = await fetch(`${ORACLE_URLS[0]}/vision/batches`, {
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) return 20 // fallback
@@ -236,8 +236,8 @@ async function getMarketCount(batchId: number): Promise<number> {
   }
 }
 
-/** Submit bitmap to all issuers */
-async function submitBitmapToIssuers(
+/** Submit bitmap to all oracles */
+async function submitBitmapToOracles(
   player: string,
   batchId: number,
   bitmap: Hex,
@@ -251,7 +251,7 @@ async function submitBitmapToIssuers(
   })
 
   const results = await Promise.allSettled(
-    ISSUER_URLS.map(url =>
+    ORACLE_URLS.map(url =>
       fetch(`${url}/vision/bitmap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,9 +264,9 @@ async function submitBitmapToIssuers(
   const ok = results.filter(r => r.status === 'fulfilled' && (r.value as Response).ok).length
   const fail = results.length - ok
   if (ok === 0) {
-    console.log(`    ⚠️  All ${results.length} issuer bitmap submissions failed`)
+    console.log(`    ⚠️  All ${results.length} oracle bitmap submissions failed`)
   } else if (fail > 0) {
-    console.log(`    ⚠️  Bitmap submitted to ${ok}/${results.length} issuers`)
+    console.log(`    ⚠️  Bitmap submitted to ${ok}/${results.length} oracles`)
   }
 }
 
@@ -391,8 +391,8 @@ async function joinBatchForBot(
     })
     await publicClient.waitForTransactionReceipt({ hash })
 
-    // Submit bitmap to issuers
-    await submitBitmapToIssuers(botAddress, batch.batchId, bitmap, bmpHash)
+    // Submit bitmap to oracles
+    await submitBitmapToOracles(botAddress, batch.batchId, bitmap, bmpHash)
 
     const upCount = bets.filter(b => b).length
     console.log(`    ✅ Joined batch #${batch.batchId} (${batch.sourceKey}) — ${upCount}/${marketCount} UP`)
@@ -429,7 +429,7 @@ async function runBot(botIndex: number, botKey: Hex, batches: BatchConfig[]): Pr
   console.log(`  Fetching market counts...`)
   const marketCounts = new Map<number, number>()
   try {
-    const res = await fetch(`${ISSUER_URLS[0]}/vision/batches`, { signal: AbortSignal.timeout(10_000) })
+    const res = await fetch(`${ORACLE_URLS[0]}/vision/batches`, { signal: AbortSignal.timeout(10_000) })
     if (res.ok) {
       const data = await res.json() as any
       for (const b of (data.batches || [])) {
@@ -458,7 +458,7 @@ async function main() {
   console.log('  Vision Trading Bots')
   console.log('═══════════════════════════════════════════')
   console.log(`  RPC: ${L3_RPC}`)
-  console.log(`  Issuers: ${ISSUER_URLS.join(', ')}`)
+  console.log(`  Oracles: ${ORACLE_URLS.join(', ')}`)
   console.log(`  Deposit per batch: ${Number(DEPOSIT_AMOUNT) / 1e18} USDC`)
 
   const batches = loadBatches()

@@ -3,18 +3,18 @@ pragma solidity ^0.8.20;
 
 /// @title IBLSCustody - BLS-secured custody contract interface
 /// @notice Multi-sig custody using BLS signature aggregation
-/// @dev All operations require BLS signatures from issuer quorum
+/// @dev All operations require BLS signatures from oracle quorum
 /// @dev Message format: keccak256(abi.encode(chainid, this, functionSpecificData...))
 interface IBLSCustody {
     // ============ EXECUTION ============
 
     /// @notice Execute an arbitrary call with BLS signature authorization
-    /// @dev Requires 11/20 issuer signatures (standard threshold)
+    /// @dev Requires 11/20 oracle signatures (standard threshold)
     /// @dev Target must be whitelisted before execution
     /// @dev Message: keccak256(abi.encode(chainid, this, target, data, nonce))
     /// @param target Address to call (must be whitelisted)
     /// @param data Calldata for the call
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param nonce Unique nonce to prevent replay attacks
     /// @return success Whether the call succeeded
     /// @return returnData Data returned by the call
@@ -30,11 +30,11 @@ interface IBLSCustody {
     // ============ WHITELIST MANAGEMENT ============
 
     /// @notice Propose adding a target address to whitelist
-    /// @dev Requires 11/20 issuer signatures
+    /// @dev Requires 11/20 oracle signatures
     /// @dev Starts 2-day timelock before activation
     /// @dev Message: keccak256(abi.encode(chainid, this, "proposeWhitelist", target))
     /// @param target Address to propose for whitelisting
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function proposeWhitelist(
         address target,
         bytes calldata blsSignature,
@@ -49,11 +49,11 @@ interface IBLSCustody {
     function activateWhitelist(address target) external;
 
     /// @notice Emergency remove a target from whitelist
-    /// @dev Requires 15/20 issuer signatures (emergency threshold)
+    /// @dev Requires 15/20 oracle signatures (emergency threshold)
     /// @dev Takes effect immediately - no timelock
     /// @dev Message: keccak256(abi.encode(chainid, this, "emergencyRemove", target))
     /// @param target Address to remove from whitelist
-    /// @param blsSignature Aggregated BLS signature from 15/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 15/20 oracles
     function emergencyRemoveWhitelist(
         address target,
         bytes calldata blsSignature,
@@ -64,11 +64,11 @@ interface IBLSCustody {
     // ============ UPGRADE MANAGEMENT ============
 
     /// @notice Propose a UUPS upgrade to new implementation (standard 7-day timelock)
-    /// @dev Requires 15/20 issuer signatures
+    /// @dev Requires 15/20 oracle signatures
     /// @dev Starts 7-day timelock before execution
     /// @dev Message: keccak256(abi.encode(chainid, this, "proposeUpgrade", newImpl))
     /// @param newImpl Address of the new implementation contract
-    /// @param blsSignature Aggregated BLS signature from 15/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 15/20 oracles
     function proposeUpgrade(
         address newImpl,
         bytes calldata blsSignature,
@@ -77,11 +77,11 @@ interface IBLSCustody {
     ) external;
 
     /// @notice Propose an emergency UUPS upgrade (24-hour timelock)
-    /// @dev Requires 17/20 issuer signatures (emergency upgrade threshold per NFR13)
+    /// @dev Requires 17/20 oracle signatures (emergency upgrade threshold per NFR13)
     /// @dev Starts 24-hour timelock before execution
     /// @dev Message: keccak256(abi.encode(chainid, this, "proposeEmergencyUpgrade", newImpl))
     /// @param newImpl Address of the new implementation contract
-    /// @param blsSignature Aggregated BLS signature from 17/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 17/20 oracles
     function proposeEmergencyUpgrade(
         address newImpl,
         bytes calldata blsSignature,

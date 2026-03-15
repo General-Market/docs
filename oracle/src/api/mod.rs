@@ -1,4 +1,4 @@
-//! HTTP API module for Issuer node
+//! HTTP API module for Oracle node
 //!
 //! Provides public HTTP endpoints for external callers to obtain BLS-signed data.
 //!
@@ -9,9 +9,9 @@
 //! ## Security Model
 //!
 //! All endpoints are public (no authentication). Security comes from BLS signature verification:
-//! - Anyone can request individual BLS signatures from issuers
-//! - Signatures are only useful when aggregated from 2/3+ of issuers
-//! - Aggregated signatures are verified on-chain against IssuerRegistry aggregated pubkey
+//! - Anyone can request individual BLS signatures from oracles
+//! - Signatures are only useful when aggregated from 2/3+ of oracles
+//! - Aggregated signatures are verified on-chain against OracleRegistry aggregated pubkey
 
 pub mod backend_nav;
 mod itp_registry;

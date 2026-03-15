@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace Vision's bilateral betting with a sealed parimutuel P2Pool prediction market — single Vision.sol contract, issuer tick engine + chain indexer + batch API, data-node for raw price data only, new frontend.
+**Goal:** Replace Vision's bilateral betting with a sealed parimutuel P2Pool prediction market — single Vision.sol contract, oracle tick engine + chain indexer + batch API, data-node for raw price data only, new frontend.
 
-**Architecture:** Single `Vision.sol` monolith contract (batches + pool vault + bot registry) on Orbit L3. Issuer gets new `p2pool/` module for tick-based resolution with BLS consensus, a unified chain indexer (Vision.sol events → Postgres), and batch/history/backtest REST API. Data-node extended with new collectors (Polymarket, Twitch, HackerNews, Weather) and serves only raw market catalog + price snapshot. Frontend replaces Vision tab with cards grid + inline expansion + Pyodide Python strategy editor.
+**Architecture:** Single `Vision.sol` monolith contract (batches + pool vault + bot registry) on Orbit L3. Oracle gets new `p2pool/` module for tick-based resolution with BLS consensus, a unified chain indexer (Vision.sol events → Postgres), and batch/history/backtest REST API. Data-node extended with new collectors (Polymarket, Twitch, HackerNews, Weather) and serves only raw market catalog + price snapshot. Frontend replaces Vision tab with cards grid + inline expansion + Pyodide Python strategy editor.
 
 **Tech Stack:** Solidity 0.8.24 (Foundry), Rust (tokio + axum), Next.js 15 + React 19, Tailwind, wagmi v3 + viem, Pyodide (WASM Python)
 
@@ -41,7 +41,7 @@ interface IVision {
         uint256[] customThresholds;
         uint256 createdAtTick;     // immutable — when batch was created (block.timestamp / tickDuration)
         // NOTE: No on-chain currentTick. Ticks are deterministic: tick_n = createdAtTick + n.
-        // The issuer tracks tick progression off-chain and attests via BLS signatures
+        // The oracle tracks tick progression off-chain and attests via BLS signatures
         // that include (fromTick, toTick) ranges. The contract enforces monotonic tick
         // claims via lastClaimedTick without needing on-chain tick advancement.
         bool paused;
@@ -119,7 +119,7 @@ interface IVision {
     // ============ FEE MANAGEMENT ============
     function collectFees() external;
 
-    // ============ ISSUER OPERATIONS ============
+    // ============ ORACLE OPERATIONS ============
     function pause(uint256 batchId, bytes calldata blsSignature) external;
     function unpause(uint256 batchId, bytes calldata blsSignature) external;
     function forceWithdraw(uint256 batchId, address player, uint256 finalBalance, bytes calldata blsSignature) external;
@@ -152,7 +152,7 @@ contract Vision is IVision, ReentrancyGuard {
     // ============ IMMUTABLES ============
     IERC20 public immutable USDC;
     IERC20 public immutable WIND;
-    address public immutable issuerRegistry;
+    address public immutable oracleRegistry;
 
     // ============ STATE ============
     uint256 public nextBatchId;
@@ -197,10 +197,10 @@ contract Vision is IVision, ReentrancyGuard {
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
 
-    constructor(address _usdc, address _wind, address _issuerRegistry, address _feeCollector) {
+    constructor(address _usdc, address _wind, address _oracleRegistry, address _feeCollector) {
         USDC = IERC20(_usdc);
         WIND = IERC20(_wind);
-        issuerRegistry = _issuerRegistry;
+        oracleRegistry = _oracleRegistry;
         feeCollector = _feeCollector;
     }
 
@@ -244,7 +244,7 @@ contract VisionTest is Test {
     Vision public vision;
     MockERC20 public usdc;
     MockERC20 public wind;
-    address public issuerRegistry;
+    address public oracleRegistry;
     address public feeCollector;
 
     address public alice = makeAddr("alice");
@@ -253,13 +253,13 @@ contract VisionTest is Test {
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
         wind = new MockERC20("WIND", "WIND", 18);
-        issuerRegistry = makeAddr("issuerRegistry");
+        oracleRegistry = makeAddr("oracleRegistry");
         feeCollector = makeAddr("feeCollector");
 
         vision = new Vision(
             address(usdc),
             address(wind),
-            issuerRegistry,
+            oracleRegistry,
             feeCollector
         );
     }
@@ -331,7 +331,7 @@ contract VisionTest is Test {
         vm.prank(alice);
         uint256 batchId = vision.createBatch(mIds, rTypes, 600, thresholds);
 
-        // Update — requires BLS signature from issuers
+        // Update — requires BLS signature from oracles
         bytes32[] memory newIds = new bytes32[](2);
         newIds[0] = keccak256("btc_usd_10m");
         newIds[1] = keccak256("sol_usd_10m");
@@ -443,14 +443,14 @@ function updateBatchMarkets(
     if (batch.creator != msg.sender) revert Unauthorized();
     if (marketIds.length != resolutionTypes.length) revert ArrayLengthMismatch();
 
-    // BLS-gated: issuers must approve market changes to prevent
+    // BLS-gated: oracles must approve market changes to prevent
     // mid-tick manipulation. Tick is computed deterministically (no on-chain currentTick).
     uint256 currentTick = block.timestamp / batch.tickDuration;
     bytes32 msgHash = keccak256(abi.encodePacked(
         batchId, keccak256(abi.encodePacked(marketIds)),
         keccak256(abi.encodePacked(resolutionTypes)), currentTick
     ));
-    if (!issuerRegistry.verifyAggregated(msgHash, blsSig)) revert InvalidBLSSignature();
+    if (!oracleRegistry.verifyAggregated(msgHash, blsSig)) revert InvalidBLSSignature();
 
     delete batch.marketIds;
     delete batch.resolutionTypes;
@@ -633,7 +633,7 @@ function claimRewards(
     if (fromTick <= pos.lastClaimedTick) revert TickAlreadyClaimed();
     if (toTick < fromTick) revert InvalidTickRange();
 
-    // Verify BLS signature — issuers attest newBalance is correct after resolution
+    // Verify BLS signature — oracles attest newBalance is correct after resolution
     bytes32 message = keccak256(abi.encode(
         block.chainid,
         address(this),
@@ -646,7 +646,7 @@ function claimRewards(
     ));
     _verifyBLS(message, blsSignature);
 
-    // newBalance is the issuer-attested balance after tick resolution.
+    // newBalance is the oracle-attested balance after tick resolution.
     // Claims are fee-free — fees are collected on withdraw based on lifetime profit.
     // This avoids overtaxing players who lose then recover (finding 9 fix).
     if (newBalance > pos.balance) {
@@ -714,8 +714,8 @@ function getPosition(uint256 batchId, address player) external view returns (Pla
 // ============ INTERNAL ============
 
 function _verifyBLS(bytes32 message, bytes calldata blsSignature) internal view {
-    // Read aggregated pubkey from IssuerRegistry
-    (bool success, bytes memory data) = issuerRegistry.staticcall(
+    // Read aggregated pubkey from OracleRegistry
+    (bool success, bytes memory data) = oracleRegistry.staticcall(
         abi.encodeWithSignature("getAggregatedPubkey()")
     );
     require(success, "Failed to read aggregated pubkey");
@@ -730,7 +730,7 @@ function _verifyBLS(bytes32 message, bytes calldata blsSignature) internal view 
 **Step 4: Run tests**
 
 Run: `cd contracts && forge test --match-contract VisionTest -v`
-Expected: join + deposit + updateBitmap tests PASS. BLS-gated functions (claimRewards, withdraw, forceWithdraw, pause) MUST use precomputed BLS test fixtures generated with `bls-tool` binary (see `scripts/bls-tool/`). Set up a mock IssuerRegistry in the test that returns a known aggregated pubkey, then sign messages with the corresponding test secret key. **No BLS bypass paths — per CLAUDE.md rules.**
+Expected: join + deposit + updateBitmap tests PASS. BLS-gated functions (claimRewards, withdraw, forceWithdraw, pause) MUST use precomputed BLS test fixtures generated with `bls-tool` binary (see `scripts/bls-tool/`). Set up a mock OracleRegistry in the test that returns a known aggregated pubkey, then sign messages with the corresponding test secret key. **No BLS bypass paths — per CLAUDE.md rules.**
 
 **Step 5: Commit**
 
@@ -741,7 +741,7 @@ git commit -m "feat(contracts): implement player operations in Vision.sol"
 
 ---
 
-### Task 1.4: Implement bot registry and issuer operations
+### Task 1.4: Implement bot registry and oracle operations
 
 **Files:**
 - Modify: `contracts/src/vision/Vision.sol`
@@ -779,7 +779,7 @@ function test_deregisterBot() public {
     assertEq(addrs.length, 0);
 }
 
-function test_pause_revertNonIssuer() public {
+function test_pause_revertNonOracle() public {
     uint256 batchId = _createDefaultBatch();
 
     // Without valid BLS sig, should revert
@@ -789,7 +789,7 @@ function test_pause_revertNonIssuer() public {
 }
 ```
 
-**Step 2: Implement bot registry + issuer ops**
+**Step 2: Implement bot registry + oracle ops**
 
 Add to `contracts/src/vision/Vision.sol`:
 
@@ -851,7 +851,7 @@ function getAllActiveBots() external view returns (address[] memory, Bot[] memor
     return (addrs, bots);
 }
 
-// ============ ISSUER OPERATIONS ============
+// ============ ORACLE OPERATIONS ============
 
 function pause(uint256 batchId, bytes calldata blsSignature) external {
     bytes32 message = keccak256(abi.encode(
@@ -918,11 +918,11 @@ function collectFees() external {
 // The per-payout solvency checks (claimRewards, withdraw, forceWithdraw) ensure
 // individual payouts don't exceed available USDC. However, there is no global invariant
 // enforcing sum(all player balances) + accumulatedFees <= USDC.balanceOf(this).
-// Player balances are BLS-attested by the issuer quorum — the contract trusts issuers
-// to not inflate balances beyond what the pool can cover. This is by design: the issuer
+// Player balances are BLS-attested by the oracle quorum — the contract trusts oracles
+// to not inflate balances beyond what the pool can cover. This is by design: the oracle
 // quorum is the trust anchor. A compromised quorum could attest inflated balances
 // and drain the pool. Mitigation: threshold BLS (n-of-m) makes this require multiple
-// compromised issuers. The per-payout solvency check is a last-resort defense that
+// compromised oracles. The per-payout solvency check is a last-resort defense that
 // reverts individual drains even if attested balances are wrong.
 ```
 
@@ -935,7 +935,7 @@ Expected: All tests PASS
 
 ```bash
 git add contracts/src/vision/Vision.sol contracts/test/Vision.t.sol
-git commit -m "feat(contracts): implement bot registry and issuer ops in Vision.sol"
+git commit -m "feat(contracts): implement bot registry and oracle ops in Vision.sol"
 ```
 
 ---
@@ -1305,7 +1305,7 @@ git commit -m "feat(data-node): add Polymarket collector"
 - Modify: `data-node/src/api.rs`
 - Create: `data-node/src/p2pool_api.rs`
 
-The data-node serves only raw market/price data for P2Pool. Batch state, history, and backtest endpoints live on the issuer (Task 3.7).
+The data-node serves only raw market/price data for P2Pool. Batch state, history, and backtest endpoints live on the oracle (Task 3.7).
 
 **Step 1: Create P2Pool API module**
 
@@ -1382,14 +1382,14 @@ pub async fn snapshot(
 
 #[derive(Deserialize)]
 pub struct ActiveMarketsParams {
-    // Future: filter by issuer whitelist version
+    // Future: filter by oracle whitelist version
 }
 
 pub async fn active_markets(
     State(state): State<Arc<AppState>>,
     Query(_params): Query<ActiveMarketsParams>,
 ) -> Result<Json<Vec<MarketSnapshot>>, StatusCode> {
-    // For now, return all active markets. When issuer whitelist is implemented,
+    // For now, return all active markets. When oracle whitelist is implemented,
     // filter by the signed whitelist.
     snapshot(State(state), Query(SnapshotParams {
         source: None,
@@ -1426,19 +1426,19 @@ git commit -m "feat(data-node): add P2Pool snapshot and market catalog endpoints
 
 ---
 
-## Phase 3: Issuer — P2Pool Tick Engine
+## Phase 3: Oracle — P2Pool Tick Engine
 
 ### Task 3.1: Create p2pool module skeleton
 
 **Files:**
-- Create: `issuer/src/p2pool/mod.rs`
-- Create: `issuer/src/p2pool/types.rs`
-- Create: `issuer/src/p2pool/config.rs`
-- Modify: `issuer/src/lib.rs`
+- Create: `oracle/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/types.rs`
+- Create: `oracle/src/p2pool/config.rs`
+- Modify: `oracle/src/lib.rs`
 
 **Step 1: Define P2Pool types**
 
-Create `issuer/src/p2pool/types.rs`:
+Create `oracle/src/p2pool/types.rs`:
 
 ```rust
 use ethers::types::{Address, H256, U256};
@@ -1535,7 +1535,7 @@ pub enum Side {
 }
 ```
 
-Create `issuer/src/p2pool/config.rs`:
+Create `oracle/src/p2pool/config.rs`:
 
 ```rust
 use serde::{Deserialize, Serialize};
@@ -1572,7 +1572,7 @@ impl Default for P2PoolConfig {
 }
 ```
 
-Create `issuer/src/p2pool/mod.rs`:
+Create `oracle/src/p2pool/mod.rs`:
 
 ```rust
 pub mod config;
@@ -1589,18 +1589,18 @@ pub mod types;
 
 **Step 2: Register module**
 
-Add `pub mod p2pool;` to `issuer/src/lib.rs`.
+Add `pub mod p2pool;` to `oracle/src/lib.rs`.
 
 **Step 3: Build**
 
-Run: `cd issuer && cargo build`
+Run: `cd oracle && cargo build`
 Expected: Compiles
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/p2pool/ issuer/src/lib.rs
-git commit -m "feat(issuer): add p2pool module skeleton with types and config"
+git add oracle/src/p2pool/ oracle/src/lib.rs
+git commit -m "feat(oracle): add p2pool module skeleton with types and config"
 ```
 
 ---
@@ -1608,14 +1608,14 @@ git commit -m "feat(issuer): add p2pool module skeleton with types and config"
 ### Task 3.1b: Create P2Pool database migrations
 
 **Files:**
-- Create: `issuer/migrations/YYYYMMDD_create_p2pool_tables.sql`
+- Create: `oracle/migrations/YYYYMMDD_create_p2pool_tables.sql`
 
 The P2Pool API endpoints (Task 3.7) and chain listener (Task 3.9) read/write several Postgres tables. Create them before implementing those tasks.
 
 **Step 1: Write the migration**
 
 ```sql
--- P2Pool batch state (indexed from Vision.sol events by the issuer's chain listener)
+-- P2Pool batch state (indexed from Vision.sol events by the oracle's chain listener)
 CREATE TABLE IF NOT EXISTS p2pool_batches (
     batch_id BIGINT PRIMARY KEY,
     creator TEXT NOT NULL,
@@ -1651,7 +1651,7 @@ CREATE TABLE IF NOT EXISTS kv_store (
     value TEXT NOT NULL
 );
 
--- Tick resolution results (written by chain listener after issuer BLS consensus)
+-- Tick resolution results (written by chain listener after oracle BLS consensus)
 CREATE TABLE IF NOT EXISTS p2pool_tick_results (
     batch_id BIGINT NOT NULL REFERENCES p2pool_batches(batch_id),
     tick_id BIGINT NOT NULL,
@@ -1666,14 +1666,14 @@ CREATE TABLE IF NOT EXISTS p2pool_tick_results (
 
 **Step 2: Run the migration**
 
-Run: `cd issuer && sqlx migrate run` (or apply manually via `psql`)
+Run: `cd oracle && sqlx migrate run` (or apply manually via `psql`)
 Expected: Tables created
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/migrations/
-git commit -m "feat(issuer): add P2Pool database migration tables"
+git add oracle/migrations/
+git commit -m "feat(oracle): add P2Pool database migration tables"
 ```
 
 ---
@@ -1681,12 +1681,12 @@ git commit -m "feat(issuer): add P2Pool database migration tables"
 ### Task 3.2: Implement bitmap store
 
 **Files:**
-- Create: `issuer/src/p2pool/bitmap_store.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/bitmap_store.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 **Step 1: Implement bitmap storage**
 
-Create `issuer/src/p2pool/bitmap_store.rs`:
+Create `oracle/src/p2pool/bitmap_store.rs`:
 
 ```rust
 use ethers::types::{Address, H256};
@@ -1696,7 +1696,7 @@ use sha2::{Sha256, Digest};
 
 use super::types::StoredBitmap;
 
-/// In-memory store for player bitmaps. Each issuer holds all bitmaps.
+/// In-memory store for player bitmaps. Each oracle holds all bitmaps.
 pub struct BitmapStore {
     /// (batch_id, player) → StoredBitmap
     bitmaps: RwLock<HashMap<(u64, Address), StoredBitmap>>,
@@ -1837,18 +1837,18 @@ mod tests {
 
 **Step 2: Update mod.rs**
 
-Add `pub mod bitmap_store;` to `issuer/src/p2pool/mod.rs`.
+Add `pub mod bitmap_store;` to `oracle/src/p2pool/mod.rs`.
 
 **Step 3: Build and test**
 
-Run: `cd issuer && cargo test p2pool::bitmap_store`
+Run: `cd oracle && cargo test p2pool::bitmap_store`
 Expected: All tests pass
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/p2pool/bitmap_store.rs issuer/src/p2pool/mod.rs
-git commit -m "feat(issuer): implement bitmap store with hash verification"
+git add oracle/src/p2pool/bitmap_store.rs oracle/src/p2pool/mod.rs
+git commit -m "feat(oracle): implement bitmap store with hash verification"
 ```
 
 ---
@@ -1856,12 +1856,12 @@ git commit -m "feat(issuer): implement bitmap store with hash verification"
 ### Task 3.3: Implement multiplier computation
 
 **Files:**
-- Create: `issuer/src/p2pool/multiplier.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/multiplier.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 **Step 1: Implement multiplier logic**
 
-Create `issuer/src/p2pool/multiplier.rs`:
+Create `oracle/src/p2pool/multiplier.rs`:
 
 ```rust
 use ethers::types::{Address, U256};
@@ -1982,14 +1982,14 @@ mod tests {
 
 **Step 2: Update mod.rs, build and test**
 
-Run: `cd issuer && cargo test p2pool::multiplier`
+Run: `cd oracle && cargo test p2pool::multiplier`
 Expected: All tests pass
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/src/p2pool/multiplier.rs issuer/src/p2pool/mod.rs
-git commit -m "feat(issuer): implement multiplier computation (early + commitment)"
+git add oracle/src/p2pool/multiplier.rs oracle/src/p2pool/mod.rs
+git commit -m "feat(oracle): implement multiplier computation (early + commitment)"
 ```
 
 ---
@@ -1997,12 +1997,12 @@ git commit -m "feat(issuer): implement multiplier computation (early + commitmen
 ### Task 3.4: Implement side matching (parimutuel resolution)
 
 **Files:**
-- Create: `issuer/src/p2pool/side_matching.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/side_matching.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 **Step 1: Implement side matching**
 
-Create `issuer/src/p2pool/side_matching.rs`:
+Create `oracle/src/p2pool/side_matching.rs`:
 
 ```rust
 use ethers::types::{Address, U256};
@@ -2238,14 +2238,14 @@ mod tests {
 
 **Step 2: Build and test**
 
-Run: `cd issuer && cargo test p2pool::side_matching`
+Run: `cd oracle && cargo test p2pool::side_matching`
 Expected: All tests pass
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/src/p2pool/side_matching.rs issuer/src/p2pool/mod.rs
-git commit -m "feat(issuer): implement parimutuel side matching"
+git add oracle/src/p2pool/side_matching.rs oracle/src/p2pool/mod.rs
+git commit -m "feat(oracle): implement parimutuel side matching"
 ```
 
 ---
@@ -2253,8 +2253,8 @@ git commit -m "feat(issuer): implement parimutuel side matching"
 ### Task 3.5: Implement tick scheduler
 
 **Files:**
-- Create: `issuer/src/p2pool/tick_scheduler.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/tick_scheduler.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 This manages per-batch tick scheduling. Each batch has its own independent tick clock.
 
@@ -2440,15 +2440,15 @@ mod tests {
 }
 ```
 
-**Commit message:** `feat(issuer): implement per-batch tick scheduler`
+**Commit message:** `feat(oracle): implement per-batch tick scheduler`
 
 ---
 
 ### Task 3.6: Implement tick resolver (full pipeline)
 
 **Files:**
-- Create: `issuer/src/p2pool/resolver.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/resolver.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 This is the most complex task in the entire plan. It orchestrates the full per-tick resolution pipeline. Each step is detailed below with implementation guidance.
 
@@ -2546,7 +2546,7 @@ impl TickResolver {
         // If no price update since tick opened → cancel that sub-market
         let staleness_threshold = self.config.staleness_threshold_secs;
 
-        // === Step 6: Validate markets against issuer whitelist ===
+        // === Step 6: Validate markets against oracle whitelist ===
         // Reject batches with market IDs not in the active whitelist.
         // This prevents garbage/malicious market IDs from wasting resolution resources.
         let active_markets = self.fetch_active_market_ids().await?;
@@ -2725,19 +2725,19 @@ impl TickResolver {
 
 Write tests using the example from the brief (Tick 5 multi-market resolution).
 
-**Commit message:** `feat(issuer): implement full tick resolution pipeline`
+**Commit message:** `feat(oracle): implement full tick resolution pipeline`
 
 ---
 
-### Task 3.7: Implement P2Pool API endpoints on issuer
+### Task 3.7: Implement P2Pool API endpoints on oracle
 
 **Files:**
-- Create: `issuer/src/p2pool/api.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/api.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
-REST endpoints served by the issuer. Follow the same axum pattern used in the existing issuer API.
+REST endpoints served by the oracle. Follow the same axum pattern used in the existing oracle API.
 
-The issuer now serves ALL P2Pool state endpoints (batches, batch state, history, backtest) in addition to bitmap/balance/reveal. The data-node only serves raw market data (`/p2pool/snapshot`, `/p2pool/markets/active`).
+The oracle now serves ALL P2Pool state endpoints (batches, batch state, history, backtest) in addition to bitmap/balance/reveal. The data-node only serves raw market data (`/p2pool/snapshot`, `/p2pool/markets/active`).
 
 `P2PoolState` includes a `pool: PgPool` for querying the Postgres tables populated by the chain listener (Task 3.9).
 
@@ -2876,7 +2876,7 @@ The issuer now serves ALL P2Pool state endpoints (batches, batch state, history,
    ```
 
 4. **`GET /p2pool/backtest`** — Run strategy against historical data (real implementation).
-   Uses the issuer's own resolution functions — no mock flag needed since the issuer
+   Uses the oracle's own resolution functions — no mock flag needed since the oracle
    has direct access to its Postgres price data and resolution logic.
    ```rust
    #[derive(Deserialize)]
@@ -2908,12 +2908,12 @@ The issuer now serves ALL P2Pool state endpoints (batches, batch state, history,
        Query(params): Query<BacktestParams>,
    ) -> Result<Json<BacktestResult>, StatusCode> {
        // Fetch historical prices from data-node's market_prices table
-       // (issuer connects to same Postgres or proxies to data-node for price data)
+       // (oracle connects to same Postgres or proxies to data-node for price data)
        // Simulate tick resolution using % change formula
        // Apply strategy bitmap to determine UP/DOWN calls
        // Compute win/loss per tick and cumulative PnL
        // Return real BacktestResult
-       todo!("Full implementation with issuer's resolution functions")
+       todo!("Full implementation with oracle's resolution functions")
    }
    ```
 
@@ -2987,7 +2987,7 @@ The issuer now serves ALL P2Pool state endpoints (batches, batch state, history,
    }
    ```
 
-8. **`GET /p2pool/markets`** — Issuer-curated market whitelist.
+8. **`GET /p2pool/markets`** — Oracle-curated market whitelist.
    Returns the BLS-signed JSON of active markets from the hybrid registry.
 
 **Route registration:**
@@ -3003,40 +3003,40 @@ The issuer now serves ALL P2Pool state endpoints (batches, batch state, history,
 .route("/p2pool/markets", get(api::markets))
 ```
 
-**Commit message:** `feat(issuer): implement P2Pool REST API endpoints (batch, history, backtest, bitmap, balance)`
+**Commit message:** `feat(oracle): implement P2Pool REST API endpoints (batch, history, backtest, bitmap, balance)`
 
 ---
 
-### Task 3.8: Integrate tick engine into issuer main loop
+### Task 3.8: Integrate tick engine into oracle main loop
 
 **Files:**
-- Modify: `issuer/src/main.rs`
-- Modify: `issuer/src/bootstrap/mod.rs`
-- Modify: `issuer/src/config.rs`
-- Modify: `issuer/Cargo.toml`
-- Create: `issuer/src/p2pool/engine.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Modify: `oracle/src/main.rs`
+- Modify: `oracle/src/bootstrap/mod.rs`
+- Modify: `oracle/src/config.rs`
+- Modify: `oracle/Cargo.toml`
+- Create: `oracle/src/p2pool/engine.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
 **Step 1: Add sqlx dependency**
 
-In `issuer/Cargo.toml`:
+In `oracle/Cargo.toml`:
 ```toml
 [dependencies]
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "macros"] }
 ```
 
-**Step 2: Wire P2Pool config into IssuerConfig**
+**Step 2: Wire P2Pool config into OracleConfig**
 
-In `issuer/src/config.rs`, add a field to `IssuerConfig`:
+In `oracle/src/config.rs`, add a field to `OracleConfig`:
 ```rust
-// P2PoolConfig is already defined in issuer/src/p2pool/config.rs (Task 3.1)
-// Just add the field to IssuerConfig:
+// P2PoolConfig is already defined in oracle/src/p2pool/config.rs (Task 3.1)
+// Just add the field to OracleConfig:
 pub p2pool: P2PoolConfig,
 ```
 
 **Step 2: Create tick engine loop**
 
-Create `issuer/src/p2pool/engine.rs`:
+Create `oracle/src/p2pool/engine.rs`:
 ```rust
 use std::sync::Arc;
 use tokio::sync::watch;
@@ -3045,7 +3045,7 @@ use crate::p2pool::resolver::TickResolver;
 use crate::consensus::BLSConsensus;
 
 /// Main tick engine loop. Polls scheduler for due batches, resolves ticks,
-/// achieves BLS consensus with other issuers, and updates balances.
+/// achieves BLS consensus with other oracles, and updates balances.
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
@@ -3078,7 +3078,7 @@ pub async fn run(
                             // Resolve tick
                             match resolver.resolve_tick(&batch, tick_id, &players, tick_start, tick_end).await {
                                 Ok(result) => {
-                                    // BLS consensus: all issuers must compute same result
+                                    // BLS consensus: all oracles must compute same result
                                     let result_hash = result.compute_hash(); // deterministic hash of TickResult
                                     match consensus.sign_and_aggregate(result_hash).await {
                                         Ok(aggregated_sig) => {
@@ -3146,28 +3146,28 @@ if config.p2pool.enabled {
 
 **Step 4: Build and test**
 
-Run: `cd issuer && cargo build`
+Run: `cd oracle && cargo build`
 Expected: Compiles. Full integration test requires running chain + data-node.
 
-**Commit message:** `feat(issuer): integrate P2Pool tick engine into main loop`
+**Commit message:** `feat(oracle): integrate P2Pool tick engine into main loop`
 
 ---
 
 ### Task 3.9: Unified Vision.sol chain listener + indexer
 
 **Files:**
-- Create: `issuer/src/p2pool/chain_listener.rs`
-- Modify: `issuer/src/p2pool/mod.rs`
+- Create: `oracle/src/p2pool/chain_listener.rs`
+- Modify: `oracle/src/p2pool/mod.rs`
 
-The issuer is the single indexer for Vision.sol events. Each event handler does BOTH:
+The oracle is the single indexer for Vision.sol events. Each event handler does BOTH:
 1. **In-memory scheduler update** — feeds the tick scheduler for resolution
 2. **Postgres write** — persists batch/position/tick state for the REST API (Task 3.7)
 
-This replaces what was previously two separate indexers (data-node + issuer). Single indexer eliminates consistency issues.
+This replaces what was previously two separate indexers (data-node + oracle). Single indexer eliminates consistency issues.
 
 **Step 1: Create unified chain listener module**
 
-Create `issuer/src/p2pool/chain_listener.rs`:
+Create `oracle/src/p2pool/chain_listener.rs`:
 
 ```rust
 use ethers::prelude::*;
@@ -3440,14 +3440,14 @@ if config.p2pool.enabled {
 
 **Step 3: Build and test**
 
-Run: `cd issuer && cargo build`
+Run: `cd oracle && cargo build`
 Expected: Compiles
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/p2pool/chain_listener.rs issuer/src/p2pool/mod.rs
-git commit -m "feat(issuer): unified Vision.sol chain listener with scheduler + Postgres indexer"
+git add oracle/src/p2pool/chain_listener.rs oracle/src/p2pool/mod.rs
+git commit -m "feat(oracle): unified Vision.sol chain listener with scheduler + Postgres indexer"
 ```
 
 ---
@@ -3469,7 +3469,7 @@ Create `frontend/hooks/p2pool/useBatches.ts`:
 ```typescript
 import { useQuery } from '@tanstack/react-query'
 
-const ISSUER_URL = process.env.NEXT_PUBLIC_ISSUER_URL || 'http://localhost:8100'
+const ORACLE_URL = process.env.NEXT_PUBLIC_ORACLE_URL || 'http://localhost:8100'
 
 export interface BatchInfo {
   id: number
@@ -3487,7 +3487,7 @@ export function useBatches() {
   return useQuery<BatchInfo[]>({
     queryKey: ['p2pool-batches'],
     queryFn: async () => {
-      const res = await fetch(`${ISSUER_URL}/p2pool/batches`)
+      const res = await fetch(`${ORACLE_URL}/p2pool/batches`)
       if (!res.ok) return []
       return res.json()
     },
@@ -3659,7 +3659,7 @@ Implement:
 - Monaco/CodeMirror editor for Python
 - Template picker (Momentum, Bear All, Random, Custom)
 - `[RUN PREVIEW]` button that executes strategy via Pyodide, shows bitmap preview
-- `[BACKTEST]` button that calls issuer `/p2pool/backtest` endpoint (`ISSUER_URL`)
+- `[BACKTEST]` button that calls oracle `/p2pool/backtest` endpoint (`ORACLE_URL`)
 - Backtest result chart (win rate curve) using recharts
 
 **Commit message:** `feat(frontend): implement Python strategy editor with Pyodide and backtest`
@@ -3677,7 +3677,7 @@ Implement:
 - Bitmap encoding: array of 1/0 → packed bytes (tick-major ordering)
 - keccak256 hashing of bitmap
 - `joinBatch()` contract call via wagmi `useWriteContract`
-- Bitmap submission to issuer nodes via REST API
+- Bitmap submission to oracle nodes via REST API
 - Deposit flow: approve USDC → joinBatch with bitmap hash
 
 **Commit message:** `feat(frontend): implement bitmap encoding and on-chain batch joining`
@@ -3697,7 +3697,7 @@ Implement:
 - Tick duration input
 - Custom threshold inputs for _x types
 - Preview → `createBatch()` contract call
-- Note: market catalog from data-node, batch state from issuer
+- Note: market catalog from data-node, batch state from oracle
 
 **Commit message:** `feat(frontend): implement batch creation flow`
 
@@ -3714,9 +3714,9 @@ Implement:
 
 Implement:
 - Deposit: approve + `deposit()` call
-- Withdraw: fetch BLS-signed balance from issuer (`ISSUER_URL`) → `withdraw()` call with proof
-- Claim: fetch BLS-signed balance for tick range from issuer (`ISSUER_URL`) → `claimRewards()` call
-- Batch history for UI: `ISSUER_URL/p2pool/batch/{id}/history`
+- Withdraw: fetch BLS-signed balance from oracle (`ORACLE_URL`) → `withdraw()` call with proof
+- Claim: fetch BLS-signed balance for tick range from oracle (`ORACLE_URL`) → `claimRewards()` call
+- Batch history for UI: `ORACLE_URL/p2pool/batch/{id}/history`
 
 **Commit message:** `feat(frontend): implement deposit, withdraw, and claim flows`
 
@@ -3778,7 +3778,7 @@ Run: `cd contracts && forge build` and `cd frontend && npm run build`
 - Modify or create deploy script for Vision.sol
 - Update `deployments/` artifacts
 
-Add Vision.sol to deployment alongside existing contracts. Register Vision contract address in issuer config.
+Add Vision.sol to deployment alongside existing contracts. Register Vision contract address in oracle config.
 
 **Commit message:** `chore: add Vision.sol deployment script`
 
@@ -3788,7 +3788,7 @@ Add Vision.sol to deployment alongside existing contracts. Register Vision contr
 ## Task Dependency Graph
 
 ```
-Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Issuer)           Phase 4 (Frontend)
+Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Oracle)           Phase 4 (Frontend)
 ═══════════════════    ═══════════════════════    ═════════════════════════  ═══════════════════
 1.1 skeleton           2.1 Polymarket             3.1 skeleton
   ↓                    2.2 Twitch                   ↓
@@ -3796,7 +3796,7 @@ Phase 1 (Contract)     Phase 2 (Data Node)        Phase 3 (Issuer)           Pha
   ↓                    2.3b Weather                  ↓
 1.3 player ops         2.4 snapshot + markets      3.2 bitmap store           4.1 page skeleton
   ↓                                                  ↓                          ↓
-1.4 bots + issuer ops                              3.3 multiplier             4.2 expanded view
+1.4 bots + oracle ops                              3.3 multiplier             4.2 expanded view
                                                    3.4 side matching            ↓
                                                      ↓                        4.3 Python editor
                                                    3.5 tick scheduler            ↓
@@ -3814,4 +3814,4 @@ Phase 5 (Cleanup) — after all above complete
 5.2 update deploys
 ```
 
-**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 3 (batch/history/backtest endpoints on issuer). Phase 2 provides market catalog only. Task 3.1b (DB migrations) must complete before Tasks 3.7 and 3.9. Phase 5 runs last.
+**Phases 1, 2, 3 can run in parallel.** Phase 4 depends on Phase 1 (contract ABI) and Phase 3 (batch/history/backtest endpoints on oracle). Phase 2 provides market catalog only. Task 3.1b (DB migrations) must complete before Tasks 3.7 and 3.9. Phase 5 runs last.

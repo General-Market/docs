@@ -78,11 +78,11 @@
 8. completeSellOrder              → USDC vault→user (using STORED fill price)  [Settlement]
 ```
 
-**Recovery:** If pipeline fails permanently after step 2 (BridgedITP burned but L3 sell never completes), issuers call `remintForFailedSell` (BLS-gated) to re-mint BridgedITP to the user. See Task 1b.
+**Recovery:** If pipeline fails permanently after step 2 (BridgedITP burned but L3 sell never completes), oracles call `remintForFailedSell` (BLS-gated) to re-mint BridgedITP to the user. See Task 1b.
 
 **Key invariant:** BridgedITP destroyed (step 2) BEFORE L3 shares burned (step 6). No unbacked BridgedITP possible.
 
-**USDC amount:** `completeSellOrder` uses the **stored fill price from Phase B** (not a fresh NAV sample) to calculate `usdcProceeds`. All issuers agree on this via BLS consensus.
+**USDC amount:** `completeSellOrder` uses the **stored fill price from Phase B** (not a fresh NAV sample) to calculate `usdcProceeds`. All oracles agree on this via BLS consensus.
 
 ---
 
@@ -208,7 +208,7 @@ function refundSellOrder(...) external override {
 
 **Step 5:** Add events and error codes to `ErrorsLib.sol` and `IBridge.sol`.
 
-**Step 5b (v5):** Add `limitPrice` to `CrossChainSellOrderCreated` event in `IBridge.sol` and emit it in `sellITPFromSettlement`. This allows issuers to read the user's limit price from events without an extra RPC call (see Task 12).
+**Step 5b (v5):** Add `limitPrice` to `CrossChainSellOrderCreated` event in `IBridge.sol` and emit it in `sellITPFromSettlement`. This allows oracles to read the user's limit price from events without an extra RPC call (see Task 12).
 
 **Step 6:** `forge build`
 
@@ -247,8 +247,8 @@ function mintFromCustody(bytes32 itpId, address to, uint256 amount) external {
 /// @notice Recovery: re-mint BridgedITP directly to user after a permanently failed sell.
 /// @dev ATOMIC: mints to user + deletes order in one tx. No intermediate state.
 ///      One-shot: once called, the order is gone — cannot be called again (no replay).
-///      BLS-gated with all issuers agreeing the L3 sell pipeline failed permanently.
-///      Issuers MUST verify the L3 order was cancelled/refunded/never-submitted before calling.
+///      BLS-gated with all oracles agreeing the L3 sell pipeline failed permanently.
+///      Oracles MUST verify the L3 order was cancelled/refunded/never-submitted before calling.
 /// @param orderId The sell order ID
 function remintAndRefundFailedSell(
     uint256 orderId,
@@ -261,7 +261,7 @@ function remintAndRefundFailedSell(
     if (!order.burned) revert ErrorsLib.E148_SellSharesNotBurned(orderId);
 
     // v3-H1 FIX: Enforce minimum delay after burn before allowing remint.
-    // This gives L3 ample time to finalize — prevents TOCTOU where issuers
+    // This gives L3 ample time to finalize — prevents TOCTOU where oracles
     // have stale L3 view and remint while L3 sell is actually completing.
     if (block.timestamp < order.burnedAt + MIN_REMINT_DELAY) {
         revert ErrorsLib.E151_RemintTooEarly(orderId, order.burnedAt + MIN_REMINT_DELAY);
@@ -293,7 +293,7 @@ function remintAndRefundFailedSell(
 - No `burned=false` reset → no burn→remint→burn loop possible
 - BridgedITP goes directly to user → no custody intermediate state
 
-**Issuer responsibility:** Before proposing this via BLS consensus, issuers MUST verify:
+**Oracle responsibility:** Before proposing this via BLS consensus, oracles MUST verify:
 1. The L3 order was never submitted (status < SellSubmittedOnL3), OR
 2. The L3 order was refunded/cancelled on L3 (shares returned to user's L3 balance)
 This is an off-chain check enforced by BLS consensus (11/20 must agree).
@@ -331,11 +331,11 @@ This ensures tokens held by custody can ONLY be burned via `burnSellOrderShares 
 
 ### Task 2: Add limit price to CrossChainSellOrder on-chain enforcement
 
-Currently `confirmFills` on L3 checks `order.limitPrice` — but the issuer submits sells with `limitPrice = 0`.
+Currently `confirmFills` on L3 checks `order.limitPrice` — but the oracle submits sells with `limitPrice = 0`.
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs` (~line 4275)
-- Modify: `issuer/src/main.rs` (sell fills section ~line 2523)
+- Modify: `oracle/src/bridge/orchestrator.rs` (~line 4275)
+- Modify: `oracle/src/main.rs` (sell fills section ~line 2523)
 
 **Step 1:** In `execute_submit_sell_order` (orchestrator.rs), pass the user's actual limit price instead of `U256::zero()`. Read from orchestrator state.
 
@@ -356,15 +356,15 @@ if let Some(limit_price) = o.get_sell_order_limit_price(settlement_order_id).awa
 
 **Step 4:** Same check for E021 fallback path (main.rs ~line 2577).
 
-**Step 5:** `cargo check --bin issuer`
+**Step 5:** `cargo check --bin oracle`
 
-**Step 6:** Commit: `fix(issuer): enforce sell limit price — read from settlement order, pass to L3`
+**Step 6:** Commit: `fix(oracle): enforce sell limit price — read from settlement order, pass to L3`
 
 ---
 
 ### Task 3: Fix fill amount fallback + store actual fill amounts (addresses audit H4, C3)
 
-**Files:** `issuer/src/main.rs`, `issuer/src/bridge/orchestrator.rs`
+**Files:** `oracle/src/main.rs`, `oracle/src/bridge/orchestrator.rs`
 
 **Step 1:** Replace all `unwrap_or(U256::exp10(18))` in sell pipeline with skip-on-missing:
 
@@ -393,7 +393,7 @@ for fill in &fills {
 }
 ```
 
-**Step 4 (C3 fix):** In Phase C, use **stored fill price** (NOT fresh NAV) for proceeds. If stored data is missing (issuer restart), **recover from on-chain FillConfirmed events** (v2-H2 fix):
+**Step 4 (C3 fix):** In Phase C, use **stored fill price** (NOT fresh NAV) for proceeds. If stored data is missing (oracle restart), **recover from on-chain FillConfirmed events** (v2-H2 fix):
 
 ```rust
 let usdc_proceeds = {
@@ -401,7 +401,7 @@ let usdc_proceeds = {
     let mut fill_amount = o.get_sell_order_fill_amount(&order_id).await;
     let mut fill_price = o.get_sell_order_fill_price(&order_id).await;
 
-    // v2-H2 FIX: If in-memory fill data is lost (issuer restart), recover from on-chain events.
+    // v2-H2 FIX: If in-memory fill data is lost (oracle restart), recover from on-chain events.
     // Query L3 FillConfirmed events for this order to get the actual fill price and amount.
     if fill_amount.is_none() || fill_price.is_none() {
         warn!(order_id = %order_id, "Fill data missing from memory — recovering from on-chain events");
@@ -445,13 +445,13 @@ let usdc_proceeds = {
 This ensures:
 - Partial fills use actual fill amount (not original order amount) → fixes v1-H4
 - NAV drift between Phase B and C is impossible → fixes v1-C3
-- Issuer restart doesn't lose fill data → fixes v2-H2 (on-chain recovery)
+- Oracle restart doesn't lose fill data → fixes v2-H2 (on-chain recovery)
 - Zero proceeds close the order cleanly → fixes v3-H3 (no dead state)
 
 **Step 5 (v3-H4 fix — l3_order_id mapping recovery):** The `l3_order_id` needed for FillConfirmed event recovery is stored in `sell_order_mappings` (in-memory). After restart, this mapping is empty. Fix by reconstructing it on startup:
 
 ```rust
-// On issuer startup, rebuild sell_order_mappings from on-chain events.
+// On oracle startup, rebuild sell_order_mappings from on-chain events.
 // Query L3 OrderSubmitted events for orders matching known settlement sell order IDs.
 // The settlement sell order ID is embedded in the L3 order's metadata (user address + itpId).
 // Alternatively, query CrossChainSellOrderCreated events on Settlement to get (orderId, itpId, user),
@@ -484,7 +484,7 @@ async fn rebuild_sell_order_mappings(&self, settlement_reader: &SettlementReader
 }
 ```
 
-Call this during issuer startup before entering the main loop.
+Call this during oracle startup before entering the main loop.
 
 **Step 6 (v3-H5 fix — all unwrap_or(1e18) locations):** Replace ALL instances. Complete list (verified via grep):
 
@@ -503,25 +503,25 @@ main.rs:2196  — buy E021 fallback (can mint 100x unbacked BridgedITP)
 
 All 4 must use the skip-on-missing pattern. Same for buy pipeline (`main.rs:1878, 1948`).
 
-**Step 7:** `cargo check --bin issuer`
+**Step 7:** `cargo check --bin oracle`
 
-**Step 8:** Commit: `fix(issuer): store fill price/amount for sell proceeds — prevent NAV drift and partial fill overpay`
+**Step 8:** Commit: `fix(oracle): store fill price/amount for sell proceeds — prevent NAV drift and partial fill overpay`
 
 ---
 
-## Part 2: Issuer Pipeline Reorder
+## Part 2: Oracle Pipeline Reorder
 
 ### Task 4: Add burn-before-sell gate with correct state machine (addresses audit C1, H1, H5, H6)
 
 Reorder the sell pipeline: burn BridgedITP on Settlement BEFORE submitting sell on L3. Fix all state machine interactions.
 
 **Files:**
-- Modify: `issuer/src/main.rs` (sell pipeline + watchdog handling)
-- Modify: `issuer/src/bridge/orchestrator.rs` (new burn phase + guards)
-- Modify: `issuer/src/consensus/protocol.rs` (new consensus phase)
-- Modify: `issuer/src/chain/settlement_writer.rs` (new burn_sell_order_shares function)
-- Modify: `issuer/src/bridge/types.rs` (new status, proposal types)
-- Modify: `issuer/src/bridge/watchdog.rs` (terminal list)
+- Modify: `oracle/src/main.rs` (sell pipeline + watchdog handling)
+- Modify: `oracle/src/bridge/orchestrator.rs` (new burn phase + guards)
+- Modify: `oracle/src/consensus/protocol.rs` (new consensus phase)
+- Modify: `oracle/src/chain/settlement_writer.rs` (new burn_sell_order_shares function)
+- Modify: `oracle/src/bridge/types.rs` (new status, proposal types)
+- Modify: `oracle/src/bridge/watchdog.rs` (terminal list)
 
 **Step 1:** Add new `BridgeOrderStatus::SellBurned` between `SellPending` and `SellSubmittedOnL3`:
 
@@ -727,9 +727,9 @@ Store pending burn tx hashes in orchestrator:
 sell_burn_tx_hashes: RwLock<HashMap<U256, H256>>,  // order_id → pending burn tx
 ```
 
-**Step 9:** `cargo check --bin issuer`
+**Step 9:** `cargo check --bin oracle`
 
-**Step 10:** Commit: `fix(issuer): add burn-before-sell gate with non-blocking receipts and correct state machine`
+**Step 10:** Commit: `fix(oracle): add burn-before-sell gate with non-blocking receipts and correct state machine`
 
 ---
 
@@ -738,8 +738,8 @@ sell_burn_tx_hashes: RwLock<HashMap<U256, H256>>,  // order_id → pending burn 
 After `confirmFills` for sell, record the collateral movement for accounting/auditing.
 
 **Files:**
-- Modify: `issuer/src/main.rs` (sell Phase B, after fills confirmed)
-- Modify: `issuer/src/bridge/orchestrator.rs` (collateral tracking)
+- Modify: `oracle/src/main.rs` (sell Phase B, after fills confirmed)
+- Modify: `oracle/src/bridge/orchestrator.rs` (collateral tracking)
 
 **Step 1:** After sell confirmFills succeeds, record collateral move:
 
@@ -757,9 +757,9 @@ match protocol.run_record_collateral_move_phase(current_cycle, ...).await {
 - Source: user's L3 address
 - Destination: vault/custody on Settlement
 
-**Step 3:** `cargo check --bin issuer`
+**Step 3:** `cargo check --bin oracle`
 
-**Step 4:** Commit: `fix(issuer): add collateral move recording for sell orders`
+**Step 4:** Commit: `fix(oracle): add collateral move recording for sell orders`
 
 ---
 
@@ -773,19 +773,19 @@ Already covered in Task 3, Step 2. Ensure buy fills also skip on missing amount 
 
 ### Task 7: Verify buy flow pendingMints integration
 
-The contract now has `pendingMints` mapping + `clearPendingMint`. Verify the issuer reads `pendingMints` on startup to recover un-minted orders.
+The contract now has `pendingMints` mapping + `clearPendingMint`. Verify the oracle reads `pendingMints` on startup to recover un-minted orders.
 
 **Files:**
-- Verify: `issuer/src/main.rs` (startup section)
-- Verify: `issuer/src/chain/settlement_reader.rs` (reading pendingMints)
+- Verify: `oracle/src/main.rs` (startup section)
+- Verify: `oracle/src/chain/settlement_reader.rs` (reading pendingMints)
 
-**Step 1:** On issuer startup, query `pendingMints` for all recent order IDs. For each non-zero entry, inject into the mint pipeline.
+**Step 1:** On oracle startup, query `pendingMints` for all recent order IDs. For each non-zero entry, inject into the mint pipeline.
 
 **Step 2:** After successful `mintBridgedShares`, call `clearPendingMint(orderId)` via settlement_writer.
 
-**Step 3:** `cargo check --bin issuer`
+**Step 3:** `cargo check --bin oracle`
 
-**Step 4:** Commit: `fix(issuer): integrate pendingMints crash recovery for buy flow`
+**Step 4:** Commit: `fix(oracle): integrate pendingMints crash recovery for buy flow`
 
 ---
 
@@ -824,7 +824,7 @@ This ensures `clearPendingMint` cannot be called before `mintBridgedShares` succ
 
 **Root cause:** `_createOrder` SELL path decrements `_userShares` but NOT `totalSupply`. All 4 cancel/refund paths increment BOTH. Net: every cancelled sell inflates `totalSupply` by `order.amount`. Partial fills where `fillAmount < order.amount / 2` also inflate.
 
-**Impact:** `getITPState().totalSupply` returns inflated value → issuer computes inflated `total_value` in `reconstruction.rs:391` → rebalance progress inaccurate. Frontend displays wrong TVL/market cap. Note: ERC4626 vault `totalAssets()` uses `ERC20.totalSupply()` (correct), NOT `_itps.totalSupply` (inflated), so vault share pricing is NOT affected.
+**Impact:** `getITPState().totalSupply` returns inflated value → oracle computes inflated `total_value` in `reconstruction.rs:391` → rebalance progress inaccurate. Frontend displays wrong TVL/market cap. Note: ERC4626 vault `totalAssets()` uses `ERC20.totalSupply()` (correct), NOT `_itps.totalSupply` (inflated), so vault share pricing is NOT affected.
 
 **Files:**
 - Modify: `contracts/src/core/Investment.sol`
@@ -867,7 +867,7 @@ if (fill.fillAmount < order.amount) {
 // clearing any inflation accumulated before the fix.
 ```
 
-This is safe because during the upgrade there are no in-flight escrows (deploy order: contracts upgrade is atomic, and the issuer stops processing during upgrade).
+This is safe because during the upgrade there are no in-flight escrows (deploy order: contracts upgrade is atomic, and the oracle stops processing during upgrade).
 
 **Step 4:** `forge build`
 
@@ -938,8 +938,8 @@ function setSettlementBridgeCustody(address _settlementBridgeCustody) external o
 **Contrast with buy flow:** Buy followers independently verify fill amounts and prices. Sell followers don't.
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs` (follower validation)
-- Modify: `issuer/src/main.rs` (store limitPrice from settlement event)
+- Modify: `oracle/src/bridge/orchestrator.rs` (follower validation)
+- Modify: `oracle/src/main.rs` (store limitPrice from settlement event)
 
 **Step 1:** Store sell order `limitPrice` when detected (main.rs, sell order event processing):
 
@@ -1014,9 +1014,9 @@ async fn validate_complete_sell_order_proposal(&self, proposal: &CompleteSellOrd
 }
 ```
 
-**Step 3:** `cargo check --bin issuer`
+**Step 3:** `cargo check --bin oracle`
 
-**Step 4:** Commit: `fix(issuer): add independent proceeds validation for sell order followers`
+**Step 4:** Commit: `fix(oracle): add independent proceeds validation for sell order followers`
 
 ---
 
@@ -1045,7 +1045,7 @@ async fn validate_complete_sell_order_proposal(&self, proposal: &CompleteSellOrd
 
 **Deployment order (v3-H2 fix — corrected from v3):**
 
-1. **Deploy issuer first** (Tasks 2-5, 12): New states (`SellBurned`, `SellBurnPending`), guards, watchdog, fill storage, l3_order_id recovery, independent follower validation. The new issuer code is dormant — `burnSellOrderShares` doesn't exist on the contract yet, so the burn phase simply won't find any orders to burn. The existing sell pipeline continues unchanged. Task 12 (follower validation) activates immediately — it hardens the existing completeSellOrder consensus even before the new burn gate.
+1. **Deploy oracle first** (Tasks 2-5, 12): New states (`SellBurned`, `SellBurnPending`), guards, watchdog, fill storage, l3_order_id recovery, independent follower validation. The new oracle code is dormant — `burnSellOrderShares` doesn't exist on the contract yet, so the burn phase simply won't find any orders to burn. The existing sell pipeline continues unchanged. Task 12 (follower validation) activates immediately — it hardens the existing completeSellOrder consensus even before the new burn gate.
 
 2. **Deploy contracts atomically** (Tasks 1a-1c, 8-11): ALL changes in a **single UUPS upgrade transaction**:
    - New `CrossChainSellOrder` struct with `burned`/`burnedAt` fields
@@ -1062,7 +1062,7 @@ async fn validate_complete_sell_order_proposal(&self, proposal: &CompleteSellOrd
 
    No backward compatibility concern — break freely per CLAUDE.md. Any in-flight pre-upgrade sell orders will fail and can be manually resolved.
 
-3. **Activate**: Once contracts are upgraded, the issuer's new burn phase activates automatically — it now finds `burnSellOrderShares` callable.
+3. **Activate**: Once contracts are upgraded, the oracle's new burn phase activates automatically — it now finds `burnSellOrderShares` callable.
 
 ---
 
@@ -1089,7 +1089,7 @@ async fn validate_complete_sell_order_proposal(&self, proposal: &CompleteSellOrd
 |---------|-----|-----|
 | v2-C1: remint burn→remint→burn infinite loop + unbacked ITP via L3 order in-flight | CRIT | Task 1b rewritten: atomic + `MIN_REMINT_DELAY` (1h cooldown after burn) |
 | v2-H1: SellBurnPending missing from guards/watchdog/stale-handler | HIGH | Task 4 Steps 6-7: added everywhere with on-chain state check |
-| v2-H2: In-memory fill data lost on issuer restart | HIGH | Task 3 Step 4: on-chain FillConfirmed event recovery |
+| v2-H2: In-memory fill data lost on oracle restart | HIGH | Task 3 Step 4: on-chain FillConfirmed event recovery |
 | v2-H3: E142 error string detection is brittle | HIGH | Task 4 Step 5: replaced with on-chain `order.burned` query |
 | v2-H4: clearPendingMint has no access control | HIGH | Task 8: require `mintProcessed` before allowing clear |
 
@@ -1098,7 +1098,7 @@ async fn validate_complete_sell_order_proposal(&self, proposal: &CompleteSellOrd
 | Finding | Sev | Fix |
 |---------|-----|-----|
 | v3-H1: remintAndRefundFailedSell TOCTOU — stale L3 view → unbacked ITP | HIGH | Task 1b: `MIN_REMINT_DELAY = 1 hours` on-chain cooldown after `burnedAt` timestamp. Gives L3 ample finality time. |
-| v3-H2: Deployment ordering wrong — contracts before issuer creates unbacked window | HIGH | Deployment section rewritten: issuer deploys first (dormant), contracts upgrade atomically second, migration for pre-upgrade orders |
+| v3-H2: Deployment ordering wrong — contracts before oracle creates unbacked window | HIGH | Deployment section rewritten: oracle deploys first (dormant), contracts upgrade atomically second, migration for pre-upgrade orders |
 | v3-H3: Zero-proceeds guard creates permanent dead state | HIGH | Task 3 Step 4: call completeSellOrder with 0 proceeds instead of `continue` — contract handles gracefully |
 | v3-H4: l3_order_id mapping lost on restart — fill recovery fails | HIGH | Task 3 Step 5: `rebuild_sell_order_mappings` on startup from on-chain CrossChainSellOrderCreated + L3 OrderSubmitted events |
 | v3-H5: unwrap_or(1e18) locations incomplete in plan | HIGH | Task 3 Step 6: complete list of all 4 sell + 3 buy instances with line numbers |
@@ -1124,7 +1124,7 @@ Methodology: Slither (114 findings: 4H 24M 52L 31I 3G) + Aderyn (failed, Prague 
 | **Followers blindly sign leader's `usdc_proceeds`** — `validate_complete_sell_order_proposal` never independently computes proceeds | **MEDIUM** | **Task 12: add independent proceeds calculation + limitPrice check in follower validation** |
 | Zero `usdcProceeds` in completeSellOrder burns tokens for nothing | LOW | ATTACK confirmed: by design for dust orders. Proceeds round to 0 at 6-dec for near-worthless ITPs. Completing with 0 is correct (alternative = permanent stuck order). |
 | `burnBridgedShares` appears unused / dead code with arbitrary-address burn | MEDIUM | Already addressed by Task 1c (custody guard). Function kept for future direct-burn use case. |
-| `setBridgeProxy` not actually one-time despite NatSpec | MEDIUM | Dismissed: BLS-gated. Requires issuer quorum compromise. |
+| `setBridgeProxy` not actually one-time despite NatSpec | MEDIUM | Dismissed: BLS-gated. Requires oracle quorum compromise. |
 | Investment.sol upgrade uses single admin key, no timelock | MEDIUM | Dismissed: architectural decision (governance.admin pattern). Out of scope for sell flow fix. |
 | BridgeProxy `_authorizeUpgrade` is `onlyOwner {}` (no timelock, no BLS) — inconsistent with SettlementBridgeCustody | MEDIUM | Noted as architectural gap. Out of scope — requires separate governance hardening pass. |
 | No minimum sell amount in sellITPFromSettlement | LOW | Already addressed in v4-H3 (Task 1a Step 0: MIN_SELL_AMOUNT = 1e15) |
@@ -1150,10 +1150,10 @@ Methodology: Slither (114 findings: 4H 24M 52L 31I 3G) + Aderyn (failed, Prague 
 
 | Risk | Why Accepted |
 |------|-------------|
-| AP asset trades fire-and-forget | AP has own retry. Issuer cannot force AP execution. Same for buy. |
+| AP asset trades fire-and-forget | AP has own retry. Oracle cannot force AP execution. Same for buy. |
 | L3 sell USDC to inaccessible address | Internal accounting. User gets Settlement USDC via vault. AP is responsible for vault liquidity. |
 | Vault USDC depletion if sells >> buys | AP operational responsibility to maintain vault liquidity from asset sales. If vault runs dry: completeSellOrder retries until funded. If permanently unfunded: remintAndRefundFailedSell returns BridgedITP to user. Not a protocol-level fix — depends on AP business operations. |
 | Vault approval exhaustion | Operational: vault MUST approve custody for type(uint256).max USDC. Documented as deployment invariant. If violated: same recovery path as vault depletion. |
-| Burn-before-sell gate is issuer-side only, no on-chain cross-chain enforcement | **Trust assumption (documented):** The L3 `confirmFills` function cannot check Settlement-side state (different chains). The ordering (burn → submit → fills) is enforced by the issuer pipeline + BLS consensus (11/20 must agree). A rogue issuer cannot bypass this alone — they need 10 other issuers to co-sign. This is the same trust model as the buy flow (completeBuyOrder gate is also issuer-enforced). Cross-chain on-chain enforcement would require a bridge message, which adds complexity and latency without meaningful security improvement given the BLS threshold. |
-| No on-chain limitPrice enforcement in completeSellOrder | `CrossChainSellOrder.limitPrice` stored but not validated on-chain in `completeSellOrder`. Enforcement is off-chain in issuer Rust code (Task 2). BLS quorum signs the `usdcProceeds` — all 11/20 issuers must agree on the amount. A compromised quorum could fill at any price, but a compromised quorum can already do far worse (mint unbacked shares, steal vault USDC). Same trust model as buy flow. |
+| Burn-before-sell gate is oracle-side only, no on-chain cross-chain enforcement | **Trust assumption (documented):** The L3 `confirmFills` function cannot check Settlement-side state (different chains). The ordering (burn → submit → fills) is enforced by the oracle pipeline + BLS consensus (11/20 must agree). A rogue oracle cannot bypass this alone — they need 10 other oracles to co-sign. This is the same trust model as the buy flow (completeBuyOrder gate is also oracle-enforced). Cross-chain on-chain enforcement would require a bridge message, which adds complexity and latency without meaningful security improvement given the BLS threshold. |
+| No on-chain limitPrice enforcement in completeSellOrder | `CrossChainSellOrder.limitPrice` stored but not validated on-chain in `completeSellOrder`. Enforcement is off-chain in oracle Rust code (Task 2). BLS quorum signs the `usdcProceeds` — all 11/20 oracles must agree on the amount. A compromised quorum could fill at any price, but a compromised quorum can already do far worse (mint unbacked shares, steal vault USDC). Same trust model as buy flow. |
 | `setSettlementBridgeCustody` weaker than `setBridgeProxy` | Asymmetric: owner-only vs BLS-gated. Accepted because BridgeProxy owner is a multisig in production, and the custody address rarely changes. Task 11 adds zero-check + event for auditability. Full BLS-gating deferred to future governance hardening pass. |

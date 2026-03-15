@@ -6,7 +6,7 @@
 //! ## Architecture
 //!
 //! 1. **RegistrySyncState**: Cached state containing nonce, aggregated pubkey,
-//!    active count, threshold, state hash, BLS signature, and issuer ID.
+//!    active count, threshold, state hash, BLS signature, and oracle ID.
 //!
 //! 2. **RegistrySyncHandler**: Watches for RegistryStateChanged events and
 //!    updates the cached state with fresh BLS signatures.
@@ -19,12 +19,12 @@
 //! BLS signature is computed over:
 //! `keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, activeCount, threshold))`
 //!
-//! This matches the Solidity verification in MirrorIssuerRegistry.sol.
+//! This matches the Solidity verification in MirrorOracleRegistry.sol.
 //! The chain_id and mirror_address parameters bind the message to a specific
 //! chain and contract, preventing cross-chain replay attacks.
 
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
-use common::types::{BLSPublicKey, Issuer};
+use common::types::{BLSPublicKey, Oracle};
 use common::Error as CommonError;
 use ethers::types::H256;
 use serde::{Deserialize, Serialize};
@@ -40,22 +40,22 @@ use crate::consensus::ConfigUpdate;
 /// It is updated whenever a new RegistryStateChanged event is observed.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RegistrySyncState {
-    /// Monotonically increasing nonce from L3 IssuerRegistry
+    /// Monotonically increasing nonce from L3 OracleRegistry
     pub nonce: u64,
 
     /// New aggregated G2 public key (128 bytes)
-    /// Computed off-chain by summing all active issuer G2 keys
+    /// Computed off-chain by summing all active oracle G2 keys
     #[serde(with = "hex_bytes")]
     pub aggregated_pubkey: Vec<u8>,
 
-    /// Number of currently active issuers
+    /// Number of currently active oracles
     pub active_count: u64,
 
     /// BLS signature threshold (e.g., 2 for 2/3 consensus)
     pub threshold: u64,
 
-    /// keccak256 of all active issuer pubkeys concatenated in order
-    /// This matches L3 IssuerRegistry.getRegistryStateHash()
+    /// keccak256 of all active oracle pubkeys concatenated in order
+    /// This matches L3 OracleRegistry.getRegistryStateHash()
     #[serde(with = "hex_h256")]
     pub state_hash: H256,
 
@@ -63,8 +63,8 @@ pub struct RegistrySyncState {
     #[serde(with = "hex_bytes")]
     pub bls_signature: Vec<u8>,
 
-    /// Issuer ID that produced this signature (0-19)
-    pub issuer_id: u8,
+    /// Oracle ID that produced this signature (0-19)
+    pub oracle_id: u8,
 }
 
 /// Thread-safe cache for RegistrySyncState
@@ -78,8 +78,8 @@ pub fn new_registry_sync_cache() -> RegistrySyncCache {
 /// Error type for registry sync operations
 #[derive(Debug, Clone, Error)]
 pub enum RegistrySyncError {
-    #[error("no active issuers found")]
-    NoActiveIssuers,
+    #[error("no active oracles found")]
+    NoActiveOracles,
 
     #[error("failed to aggregate pubkeys: {0}")]
     AggregationFailed(String),
@@ -96,8 +96,8 @@ pub enum RegistrySyncError {
     #[error("failed to fetch events: {0}")]
     EventFetchError(String),
 
-    #[error("failed to fetch issuer data: {0}")]
-    IssuerFetchError(String),
+    #[error("failed to fetch oracle data: {0}")]
+    OracleFetchError(String),
 }
 
 impl From<CommonError> for RegistrySyncError {
@@ -106,29 +106,29 @@ impl From<CommonError> for RegistrySyncError {
     }
 }
 
-/// Compute aggregated G2 public key from active issuers (Task 3, AC #6)
+/// Compute aggregated G2 public key from active oracles (Task 3, AC #6)
 ///
-/// This function sums all active issuer G2 public keys using point addition,
-/// matching the on-chain algorithm in IssuerRegistry.getAggregatedPubkey().
+/// This function sums all active oracle G2 public keys using point addition,
+/// matching the on-chain algorithm in OracleRegistry.getAggregatedPubkey().
 ///
 /// # Arguments
-/// * `issuers` - List of all issuers (will filter for active ones)
+/// * `oracles` - List of all oracles (will filter for active ones)
 ///
 /// # Returns
 /// The aggregated G2 public key as 128 bytes
 ///
 /// # Errors
-/// Returns error if no active issuers or aggregation fails
-pub fn compute_aggregated_pubkey(issuers: &[Issuer]) -> Result<Vec<u8>, RegistrySyncError> {
-    // Filter only active issuers (status == 1)
-    let active_pubkeys: Vec<BLSPublicKey> = issuers
+/// Returns error if no active oracles or aggregation fails
+pub fn compute_aggregated_pubkey(oracles: &[Oracle]) -> Result<Vec<u8>, RegistrySyncError> {
+    // Filter only active oracles (status == 1)
+    let active_pubkeys: Vec<BLSPublicKey> = oracles
         .iter()
         .filter(|i| i.is_active())
         .map(|i| BLSPublicKey(i.bls_pubkey.to_vec()))
         .collect();
 
     if active_pubkeys.is_empty() {
-        return Err(RegistrySyncError::NoActiveIssuers);
+        return Err(RegistrySyncError::NoActiveOracles);
     }
 
     // Use the common aggregate_pubkeys function
@@ -139,12 +139,12 @@ pub fn compute_aggregated_pubkey(issuers: &[Issuer]) -> Result<Vec<u8>, Registry
 
 /// Sign the registry sync message with BLS keypair (Task 4, AC #3)
 ///
-/// Signs the pre-computed message hash using the issuer's BLS private key.
-/// The signature can be aggregated with other issuers' signatures for
-/// threshold verification on MirrorIssuerRegistry.
+/// Signs the pre-computed message hash using the oracle's BLS private key.
+/// The signature can be aggregated with other oracles' signatures for
+/// threshold verification on MirrorOracleRegistry.
 ///
 /// # Arguments
-/// * `keypair` - The issuer's BLS keypair
+/// * `keypair` - The oracle's BLS keypair
 /// * `message_hash` - The 32-byte message hash from `build_registry_sync_message_hash`
 ///
 /// # Returns
@@ -162,18 +162,18 @@ pub fn sign_registry_sync_message(
 
 /// Compute the BLS threshold for consensus (strict BFT: floor(2n/3) + 1)
 ///
-/// For n active issuers, threshold = floor(2n/3) + 1.
+/// For n active oracles, threshold = floor(2n/3) + 1.
 /// This is the standard BFT threshold tolerating floor(n/3) Byzantine faults.
 ///
 /// Examples:
-/// - 3 issuers: threshold = 3 (all must sign — can't tolerate any fault with only 3 nodes)
-/// - 4 issuers: threshold = 3
-/// - 5 issuers: threshold = 4
-/// - 6 issuers: threshold = 5
-/// - 20 issuers: threshold = 14
+/// - 3 oracles: threshold = 3 (all must sign — can't tolerate any fault with only 3 nodes)
+/// - 4 oracles: threshold = 3
+/// - 5 oracles: threshold = 4
+/// - 6 oracles: threshold = 5
+/// - 20 oracles: threshold = 14
 ///
 /// **IMPORTANT**: This threshold value is embedded in the BLS-signed message.
-/// MirrorIssuerRegistry.sol (Story 8.2) must use the same formula to verify
+/// MirrorOracleRegistry.sol (Story 8.2) must use the same formula to verify
 /// that enough signatures were collected before accepting a sync update.
 pub fn compute_threshold(active_count: u64) -> u64 {
     if active_count == 0 {
@@ -196,8 +196,8 @@ use tracing::{debug, error, info, warn};
 /// Configuration for RegistrySyncHandler
 #[derive(Debug, Clone)]
 pub struct RegistrySyncConfig {
-    /// L3 IssuerRegistry contract address
-    pub issuer_registry_address: Address,
+    /// L3 OracleRegistry contract address
+    pub oracle_registry_address: Address,
     /// Polling interval in milliseconds
     pub poll_interval_ms: u64,
     /// Maximum blocks to query in a single getLogs request
@@ -211,7 +211,7 @@ pub struct RegistrySyncConfig {
 impl Default for RegistrySyncConfig {
     fn default() -> Self {
         Self {
-            issuer_registry_address: Address::zero(),
+            oracle_registry_address: Address::zero(),
             poll_interval_ms: 5_000, // 5 seconds
             max_block_range: 1_000,
             initial_scan_blocks: 86_400, // 24h downtime tolerance at 1s blocks
@@ -221,13 +221,13 @@ impl Default for RegistrySyncConfig {
 
 /// Handler for watching RegistryStateChanged events and updating sync cache
 ///
-/// This handler polls L3 IssuerRegistry for RegistryStateChanged events,
+/// This handler polls L3 OracleRegistry for RegistryStateChanged events,
 /// then updates the RegistrySyncCache with fresh BLS-signed proofs.
 ///
 /// ## Workflow (AC #5)
 /// 1. Poll for RegistryStateChanged events in block range
 /// 2. For each event with higher nonce than cached:
-///    a. Fetch all active issuers from IssuerRegistry
+///    a. Fetch all active oracles from OracleRegistry
 ///    b. Compute aggregated G2 pubkey off-chain
 ///    c. Build message hash and BLS-sign it
 ///    d. Update cached RegistrySyncState
@@ -236,23 +236,23 @@ pub struct RegistrySyncHandler<M: Middleware> {
     provider: Arc<M>,
     /// Configuration
     config: RegistrySyncConfig,
-    /// Chain reader for fetching issuer data
+    /// Chain reader for fetching oracle data
     chain_reader: Arc<dyn ChainReader>,
     /// BLS keypair for signing
     bls_keypair: BLSKeyPair,
-    /// Issuer ID (0-19) — used for RegistrySyncState.issuer_id in BLS signing
-    issuer_id: u8,
-    /// On-chain issuer ID from IssuerRegistry (1-based). Used to compute
-    /// node_index (dense rank among active issuers) and issuer_registry_index
+    /// Oracle ID (0-19) — used for RegistrySyncState.oracle_id in BLS signing
+    oracle_id: u8,
+    /// On-chain oracle ID from OracleRegistry (1-based). Used to compute
+    /// node_index (dense rank among active oracles) and oracle_registry_index
     /// (for signer bitmaps) when pushing ConfigUpdate.
-    on_chain_issuer_id: u64,
+    on_chain_oracle_id: u64,
     /// Cache to update
     cache: RegistrySyncCache,
     /// Event topic hash
     event_topic: H256,
     /// Last processed block number
     last_block: u64,
-    /// Optional key registry for runtime updates on issuer join/leave
+    /// Optional key registry for runtime updates on oracle join/leave
     key_registry: Option<Arc<crate::consensus::InMemoryKeyRegistry>>,
     /// Optional shared cell for pushing consensus config updates
     pending_config_update: Option<Arc<RwLock<Option<ConfigUpdate>>>>,
@@ -268,10 +268,10 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
     /// # Arguments
     /// * `provider` - L3 chain provider
     /// * `config` - RegistrySyncConfig
-    /// * `chain_reader` - For fetching issuer data
+    /// * `chain_reader` - For fetching oracle data
     /// * `bls_keypair` - BLS keypair for signing
-    /// * `issuer_id` - Legacy 0-based index (used for RegistrySyncState)
-    /// * `on_chain_issuer_id` - On-chain issuer ID from IssuerRegistry (for computing indices)
+    /// * `oracle_id` - Legacy 0-based index (used for RegistrySyncState)
+    /// * `on_chain_oracle_id` - On-chain oracle ID from OracleRegistry (for computing indices)
     /// * `cache` - RegistrySyncCache to update
     /// * `chain_id` - Chain ID for chain-bound message hashing (prevents cross-chain replay)
     /// * `mirror_address` - Mirror contract address for chain-bound message hashing
@@ -280,8 +280,8 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         config: RegistrySyncConfig,
         chain_reader: Arc<dyn ChainReader>,
         bls_keypair: BLSKeyPair,
-        issuer_id: u8,
-        on_chain_issuer_id: u64,
+        oracle_id: u8,
+        on_chain_oracle_id: u64,
         cache: RegistrySyncCache,
         chain_id: u64,
         mirror_address: Address,
@@ -296,8 +296,8 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             config,
             chain_reader,
             bls_keypair,
-            issuer_id,
-            on_chain_issuer_id,
+            oracle_id,
+            on_chain_oracle_id,
             cache,
             event_topic,
             last_block: 0,
@@ -308,7 +308,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         }
     }
 
-    /// Set key registry for runtime updates on issuer join/leave
+    /// Set key registry for runtime updates on oracle join/leave
     pub fn with_key_registry(
         mut self,
         registry: Arc<crate::consensus::InMemoryKeyRegistry>,
@@ -348,12 +348,12 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         debug!(
             from_block,
             to_block,
-            issuer_registry = ?self.config.issuer_registry_address,
+            oracle_registry = ?self.config.oracle_registry_address,
             "Polling for RegistryStateChanged events"
         );
 
         let filter = Filter::new()
-            .address(self.config.issuer_registry_address)
+            .address(self.config.oracle_registry_address)
             .topic0(self.event_topic)
             .from_block(from_block)
             .to_block(to_block);
@@ -395,7 +395,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
 
     /// Process a RegistryStateChanged event and update the cache
     ///
-    /// 1. Fetch all active issuers
+    /// 1. Fetch all active oracles
     /// 2. Compute aggregated pubkey
     /// 3. Build and sign message
     /// 4. Update cache if nonce is higher
@@ -424,37 +424,37 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             "Processing RegistryStateChanged event"
         );
 
-        // Fetch all active issuers from chain
-        let issuers = self.chain_reader
-            .get_issuer_registry()
+        // Fetch all active oracles from chain
+        let oracles = self.chain_reader
+            .get_oracle_registry()
             .await
-            .map_err(|e| RegistrySyncError::IssuerFetchError(format!("Failed to fetch issuers: {}", e)))?;
+            .map_err(|e| RegistrySyncError::OracleFetchError(format!("Failed to fetch oracles: {}", e)))?;
 
         // Verify active count matches event
-        let active_issuers: Vec<_> = issuers.iter().filter(|i| i.is_active()).collect();
-        if active_issuers.len() as u64 != event.active_count {
+        let active_oracles: Vec<_> = oracles.iter().filter(|i| i.is_active()).collect();
+        if active_oracles.len() as u64 != event.active_count {
             warn!(
-                chain_active = active_issuers.len(),
+                chain_active = active_oracles.len(),
                 event_active = event.active_count,
-                "Active issuer count mismatch, using chain data"
+                "Active oracle count mismatch, using chain data"
             );
         }
 
-        // Update key registry if available (runtime auto-update on issuer join/leave)
+        // Update key registry if available (runtime auto-update on oracle join/leave)
         if let Some(ref key_registry) = self.key_registry {
             use common::types::BLSPublicKey;
 
-            for issuer in issuers.iter() {
-                // Use generate_peer_id with the on-chain issuer ID for consistency
+            for oracle in oracles.iter() {
+                // Use generate_peer_id with the on-chain oracle ID for consistency
                 // with bootstrap (which also uses generate_peer_id).
                 // The enumerate() index is a dense index that diverges from on-chain
-                // IDs after any issuer removal.
-                let peer_id = generate_peer_id(issuer.id as u32);
+                // IDs after any oracle removal.
+                let peer_id = generate_peer_id(oracle.id as u32);
 
-                if issuer.is_active() {
-                    let pubkey = BLSPublicKey(issuer.bls_pubkey.to_vec());
+                if oracle.is_active() {
+                    let pubkey = BLSPublicKey(oracle.bls_pubkey.to_vec());
                     if let Err(e) = key_registry.register(peer_id, pubkey) {
-                        warn!(issuer_id = issuer.id, error = %e, "Failed to update key registry");
+                        warn!(oracle_id = oracle.id, error = %e, "Failed to update key registry");
                     }
                 } else {
                     let _ = key_registry.unregister(&peer_id);
@@ -464,52 +464,52 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             key_registry.set_registry_nonce(event.nonce);
 
             debug!(
-                active = active_issuers.len(),
+                active = active_oracles.len(),
                 registry_nonce = event.nonce,
                 "Updated InMemoryKeyRegistry from chain"
             );
         }
 
         // Push consensus config update if cell is available
-        let active_count = active_issuers.len() as u64;
+        let active_count = active_oracles.len() as u64;
         let threshold = compute_threshold(active_count);
         if let Some(ref config_cell) = self.pending_config_update {
             // Check if this node is still in the active set
-            let my_id = self.on_chain_issuer_id;
-            let is_active = active_issuers.iter().any(|i| i.id == my_id);
+            let my_id = self.on_chain_oracle_id;
+            let is_active = active_oracles.iter().any(|i| i.id == my_id);
 
             if !is_active {
                 error!(
-                    on_chain_issuer_id = my_id,
+                    on_chain_oracle_id = my_id,
                     active_count,
-                    "This node is no longer in the active issuer set! \
+                    "This node is no longer in the active oracle set! \
                      It was removed or deactivated. Skipping config update — \
                      node should be shut down gracefully."
                 );
                 // Do NOT push a config update — the node cannot participate.
                 // A future phase will trigger graceful shutdown here.
             } else {
-                // Compute dense node_index: count of active issuers with ID < ours
-                let node_index = active_issuers
+                // Compute dense node_index: count of active oracles with ID < ours
+                let node_index = active_oracles
                     .iter()
                     .filter(|i| i.id < my_id)
                     .count() as u8;
 
-                // issuer_registry_index = our on-chain ID (for signer bitmaps)
-                let issuer_registry_index = my_id as u8;
+                // oracle_registry_index = our on-chain ID (for signer bitmaps)
+                let oracle_registry_index = my_id as u8;
 
                 let update = ConfigUpdate {
                     active_count: active_count as u8,
                     threshold: threshold as usize,
                     node_index,
-                    issuer_registry_index,
+                    oracle_registry_index,
                 };
 
                 info!(
                     active_count,
                     threshold,
                     node_index,
-                    issuer_registry_index,
+                    oracle_registry_index,
                     "Pushed consensus config update"
                 );
 
@@ -519,7 +519,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
         }
 
         // Compute aggregated pubkey
-        let aggregated_pubkey = compute_aggregated_pubkey(&issuers)?;
+        let aggregated_pubkey = compute_aggregated_pubkey(&oracles)?;
 
         // Build message hash and sign (chain-bound via chain_id + mirror_address)
         let message_hash = build_registry_sync_message_hash(
@@ -541,7 +541,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             threshold,
             event.state_hash,
             bls_signature,
-            self.issuer_id,
+            self.oracle_id,
         );
 
         // Validate before caching
@@ -560,7 +560,7 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
             nonce = event.nonce,
             active_count,
             threshold,
-            issuer_id = self.issuer_id,
+            oracle_id = self.oracle_id,
             "Updated RegistrySyncState cache"
         );
 
@@ -613,9 +613,9 @@ impl<M: Middleware + 'static> RegistrySyncHandler<M> {
     /// Polls for events and updates the cache continuously.
     pub async fn run(&mut self, shutdown: Arc<std::sync::atomic::AtomicBool>) {
         info!(
-            issuer_registry = ?self.config.issuer_registry_address,
+            oracle_registry = ?self.config.oracle_registry_address,
             poll_interval_ms = self.config.poll_interval_ms,
-            issuer_id = self.issuer_id,
+            oracle_id = self.oracle_id,
             "Starting RegistrySyncHandler"
         );
 
@@ -651,7 +651,7 @@ impl RegistrySyncState {
         threshold: u64,
         state_hash: H256,
         bls_signature: Vec<u8>,
-        issuer_id: u8,
+        oracle_id: u8,
     ) -> Self {
         Self {
             nonce,
@@ -660,7 +660,7 @@ impl RegistrySyncState {
             threshold,
             state_hash,
             bls_signature,
-            issuer_id,
+            oracle_id,
         }
     }
 
@@ -689,8 +689,8 @@ impl RegistrySyncState {
         if self.bls_signature.len() != 64 {
             return Err("bls_signature must be 64 bytes (G1 point)");
         }
-        if self.issuer_id > 19 {
-            return Err("issuer_id must be 0-19");
+        if self.oracle_id > 19 {
+            return Err("oracle_id must be 0-19");
         }
         Ok(())
     }
@@ -704,7 +704,7 @@ impl RegistrySyncState {
             "threshold": self.threshold,
             "stateHash": format!("0x{}", hex::encode(self.state_hash.as_bytes())),
             "blsSignature": format!("0x{}", hex::encode(&self.bls_signature)),
-            "issuerId": self.issuer_id,
+            "oracleId": self.oracle_id,
         })
     }
 }
@@ -716,7 +716,7 @@ impl RegistrySyncState {
 ///
 /// **CRITICAL — Solidity coordination (Story 8.2):**
 /// This uses `abi.encode` (standard ABI encoding with proper padding), NOT `abi.encodePacked`.
-/// The Solidity side in MirrorIssuerRegistry.sol uses:
+/// The Solidity side in MirrorOracleRegistry.sol uses:
 /// `keccak256(abi.encode("REGISTRY_SYNC", block.chainid, address(this), nonce, newAggPubkey, newActiveCount, newThreshold))`
 ///
 /// The `chain_id` and `mirror_address` parameters bind the message to a specific
@@ -815,7 +815,7 @@ mod tests {
             threshold: 2,
             state_hash: H256::from([0xBB; 32]),
             bls_signature: vec![0xCC; 64],
-            issuer_id: 1,
+            oracle_id: 1,
         }
     }
 
@@ -825,7 +825,7 @@ mod tests {
         assert_eq!(state.nonce, 5);
         assert_eq!(state.active_count, 3);
         assert_eq!(state.threshold, 2);
-        assert_eq!(state.issuer_id, 1);
+        assert_eq!(state.oracle_id, 1);
     }
 
     #[test]
@@ -895,10 +895,10 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_invalid_issuer_id() {
+    fn test_validate_invalid_oracle_id() {
         let mut state = create_test_state();
-        state.issuer_id = 20; // Invalid (max is 19)
-        assert_eq!(state.validate(), Err("issuer_id must be 0-19"));
+        state.oracle_id = 20; // Invalid (max is 19)
+        assert_eq!(state.validate(), Err("oracle_id must be 0-19"));
     }
 
     #[test]
@@ -909,7 +909,7 @@ mod tests {
         assert_eq!(json["nonce"], 5);
         assert_eq!(json["activeCount"], 3);
         assert_eq!(json["threshold"], 2);
-        assert_eq!(json["issuerId"], 1);
+        assert_eq!(json["oracleId"], 1);
 
         // Check hex formatting
         let pubkey = json["aggregatedPubkey"].as_str().unwrap();
@@ -1038,14 +1038,14 @@ mod tests {
 
     // === Task 3 Tests: compute_aggregated_pubkey ===
 
-    fn create_test_issuer(id: u8, active: bool) -> Issuer {
+    fn create_test_oracle(id: u8, active: bool) -> Oracle {
         use ethers::types::{Address, Bytes, U256};
 
         // Generate a deterministic keypair for testing (must match bls-tool: vec![idx; 32])
         let seed = vec![id; 32];
         let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
-        Issuer {
+        Oracle {
             id: id as u64,
             addr: Address::from([id; 20]),
             ip: H256::from([id; 32]),
@@ -1056,64 +1056,64 @@ mod tests {
     }
 
     #[test]
-    fn test_compute_aggregated_pubkey_single_issuer() {
-        let issuers = vec![create_test_issuer(1, true)];
-        let result = compute_aggregated_pubkey(&issuers);
+    fn test_compute_aggregated_pubkey_single_oracle() {
+        let oracles = vec![create_test_oracle(1, true)];
+        let result = compute_aggregated_pubkey(&oracles);
         assert!(result.is_ok());
         let pubkey = result.unwrap();
         assert_eq!(pubkey.len(), 128);
-        // Single issuer's aggregated pubkey equals their own pubkey
-        assert_eq!(pubkey, issuers[0].bls_pubkey.to_vec());
+        // Single oracle's aggregated pubkey equals their own pubkey
+        assert_eq!(pubkey, oracles[0].bls_pubkey.to_vec());
     }
 
     #[test]
-    fn test_compute_aggregated_pubkey_multiple_issuers() {
-        let issuers = vec![
-            create_test_issuer(1, true),
-            create_test_issuer(2, true),
-            create_test_issuer(3, true),
+    fn test_compute_aggregated_pubkey_multiple_oracles() {
+        let oracles = vec![
+            create_test_oracle(1, true),
+            create_test_oracle(2, true),
+            create_test_oracle(3, true),
         ];
-        let result = compute_aggregated_pubkey(&issuers);
+        let result = compute_aggregated_pubkey(&oracles);
         assert!(result.is_ok());
         let pubkey = result.unwrap();
         assert_eq!(pubkey.len(), 128);
         // Aggregated pubkey should be different from any individual pubkey
-        assert_ne!(pubkey, issuers[0].bls_pubkey.to_vec());
-        assert_ne!(pubkey, issuers[1].bls_pubkey.to_vec());
-        assert_ne!(pubkey, issuers[2].bls_pubkey.to_vec());
+        assert_ne!(pubkey, oracles[0].bls_pubkey.to_vec());
+        assert_ne!(pubkey, oracles[1].bls_pubkey.to_vec());
+        assert_ne!(pubkey, oracles[2].bls_pubkey.to_vec());
     }
 
     #[test]
     fn test_compute_aggregated_pubkey_filters_inactive() {
-        let issuers = vec![
-            create_test_issuer(1, true),
-            create_test_issuer(2, false), // Inactive
-            create_test_issuer(3, true),
+        let oracles = vec![
+            create_test_oracle(1, true),
+            create_test_oracle(2, false), // Inactive
+            create_test_oracle(3, true),
         ];
-        let result = compute_aggregated_pubkey(&issuers);
+        let result = compute_aggregated_pubkey(&oracles);
         assert!(result.is_ok());
 
-        // Compare with aggregation of only active issuers
-        let active_only = vec![create_test_issuer(1, true), create_test_issuer(3, true)];
+        // Compare with aggregation of only active oracles
+        let active_only = vec![create_test_oracle(1, true), create_test_oracle(3, true)];
         let active_result = compute_aggregated_pubkey(&active_only).unwrap();
         assert_eq!(result.unwrap(), active_result);
     }
 
     #[test]
     fn test_compute_aggregated_pubkey_no_active_fails() {
-        let issuers = vec![
-            create_test_issuer(1, false),
-            create_test_issuer(2, false),
+        let oracles = vec![
+            create_test_oracle(1, false),
+            create_test_oracle(2, false),
         ];
-        let result = compute_aggregated_pubkey(&issuers);
-        assert!(matches!(result, Err(RegistrySyncError::NoActiveIssuers)));
+        let result = compute_aggregated_pubkey(&oracles);
+        assert!(matches!(result, Err(RegistrySyncError::NoActiveOracles)));
     }
 
     #[test]
     fn test_compute_aggregated_pubkey_empty_fails() {
-        let issuers: Vec<Issuer> = vec![];
-        let result = compute_aggregated_pubkey(&issuers);
-        assert!(matches!(result, Err(RegistrySyncError::NoActiveIssuers)));
+        let oracles: Vec<Oracle> = vec![];
+        let result = compute_aggregated_pubkey(&oracles);
+        assert!(matches!(result, Err(RegistrySyncError::NoActiveOracles)));
     }
 
     // === Task 4 Tests: sign_registry_sync_message ===
@@ -1175,13 +1175,13 @@ mod tests {
     #[test]
     fn test_compute_threshold() {
         assert_eq!(compute_threshold(0), 0);
-        assert_eq!(compute_threshold(1), 1); // 1 issuer needs 1 sig
-        assert_eq!(compute_threshold(2), 2); // 2 issuers need 2 sigs
-        assert_eq!(compute_threshold(3), 2); // 3 issuers need 2 sigs (ceil(2*3/3) = 2)
-        assert_eq!(compute_threshold(4), 3); // 4 issuers need 3 sigs
-        assert_eq!(compute_threshold(5), 4); // 5 issuers need 4 sigs
-        assert_eq!(compute_threshold(6), 4); // 6 issuers need 4 sigs (ceil(2*6/3) = 4)
-        assert_eq!(compute_threshold(20), 14); // 20 issuers need 14 sigs
+        assert_eq!(compute_threshold(1), 1); // 1 oracle needs 1 sig
+        assert_eq!(compute_threshold(2), 2); // 2 oracles need 2 sigs
+        assert_eq!(compute_threshold(3), 2); // 3 oracles need 2 sigs (ceil(2*3/3) = 2)
+        assert_eq!(compute_threshold(4), 3); // 4 oracles need 3 sigs
+        assert_eq!(compute_threshold(5), 4); // 5 oracles need 4 sigs
+        assert_eq!(compute_threshold(6), 4); // 6 oracles need 4 sigs (ceil(2*6/3) = 4)
+        assert_eq!(compute_threshold(20), 14); // 20 oracles need 14 sigs
     }
 
     // === Integration: Full workflow test ===
@@ -1192,8 +1192,8 @@ mod tests {
         use common::traits::BLSSigner;
         use common::types::BLSSignature;
 
-        // Create 3 issuers with deterministic keys
-        let issuers: Vec<Issuer> = (0..3).map(|i| create_test_issuer(i, true)).collect();
+        // Create 3 oracles with deterministic keys
+        let oracles: Vec<Oracle> = (0..3).map(|i| create_test_oracle(i, true)).collect();
         let keypairs: Vec<BLSKeyPair> = (0..3u8)
             .map(|i| {
                 let seed = vec![i; 32];
@@ -1202,7 +1202,7 @@ mod tests {
             .collect();
 
         // Step 1: Compute aggregated pubkey
-        let agg_pubkey = compute_aggregated_pubkey(&issuers).unwrap();
+        let agg_pubkey = compute_aggregated_pubkey(&oracles).unwrap();
         assert_eq!(agg_pubkey.len(), 128);
 
         // Step 2: Build message hash
@@ -1211,7 +1211,7 @@ mod tests {
         let threshold = compute_threshold(active_count);
         let message_hash = build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), nonce, &agg_pubkey, active_count, threshold);
 
-        // Step 3: Each issuer signs the message
+        // Step 3: Each oracle signs the message
         let signatures: Vec<Vec<u8>> = keypairs
             .iter()
             .map(|kp| sign_registry_sync_message(kp, &message_hash).unwrap())
@@ -1235,7 +1235,7 @@ mod tests {
     #[test]
     fn test_registry_sync_config_default() {
         let config = RegistrySyncConfig::default();
-        assert_eq!(config.issuer_registry_address, ethers::types::Address::zero());
+        assert_eq!(config.oracle_registry_address, ethers::types::Address::zero());
         assert_eq!(config.poll_interval_ms, 5_000);
         assert_eq!(config.max_block_range, 1_000);
         assert_eq!(config.initial_scan_blocks, 86_400);
@@ -1244,7 +1244,7 @@ mod tests {
     #[test]
     fn test_registry_sync_config_custom() {
         let config = RegistrySyncConfig {
-            issuer_registry_address: ethers::types::Address::from([0x11u8; 20]),
+            oracle_registry_address: ethers::types::Address::from([0x11u8; 20]),
             poll_interval_ms: 10_000,
             max_block_range: 500,
             initial_scan_blocks: 50_000,
@@ -1257,12 +1257,12 @@ mod tests {
     #[test]
     fn print_aggregated_pubkey_for_e2e() {
         // E2E deploy uses seeds [0,0x42], [1,0x42], [2,0x42]
-        let issuers = vec![
-            create_test_issuer(0, true),
-            create_test_issuer(1, true),
-            create_test_issuer(2, true),
+        let oracles = vec![
+            create_test_oracle(0, true),
+            create_test_oracle(1, true),
+            create_test_oracle(2, true),
         ];
-        let agg = compute_aggregated_pubkey(&issuers).unwrap();
+        let agg = compute_aggregated_pubkey(&oracles).unwrap();
         println!("AGGREGATED_PUBKEY={}", hex::encode(&agg));
     }
 }

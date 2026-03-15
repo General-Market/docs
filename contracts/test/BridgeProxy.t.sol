@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 import "../src/bridge/BridgeProxy.sol";
 import "../src/bridge/BridgedItpFactory.sol";
 import "../src/bridge/BridgedITP.sol";
-import "../src/registry/IssuerRegistry.sol";
-import {IIssuerRegistry} from "../src/interfaces/IIssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
+import {IOracleRegistry} from "../src/interfaces/IOracleRegistry.sol";
 import {IBridgedItpFactory} from "../src/interfaces/IBridgedItpFactory.sol";
 import "../src/libraries/ErrorsLib.sol";
 import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
@@ -72,7 +72,7 @@ contract BridgeProxyTest is TestHelper {
     BridgeProxy public bridgeProxy;
     BridgeProxy public bridgeProxyImpl;
     BridgedItpFactory public factory;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
     MockIndex public mockIndex;
 
@@ -110,9 +110,9 @@ contract BridgeProxyTest is TestHelper {
     );
 
     function setUp() public {
-        // Deploy real governance and issuer registry via UUPS proxy
+        // Deploy real governance and oracle registry via UUPS proxy
         governance = deployGovernance(owner);
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
         vm.startPrank(owner);
 
@@ -122,7 +122,7 @@ contract BridgeProxyTest is TestHelper {
         // Deploy proxy
         bytes memory initData = abi.encodeWithSelector(
             BridgeProxy.initialize.selector,
-            address(issuerRegistry),
+            address(oracleRegistry),
             address(0), // Will set factory after deployment
             owner
         );
@@ -141,8 +141,8 @@ contract BridgeProxyTest is TestHelper {
 
         vm.stopPrank();
 
-        // Register real BLS test issuers (seeds 0,1,2) and set aggregated pubkey
-        registerTestIssuersWithBLS(issuerRegistry, owner);
+        // Register real BLS test oracles (seeds 0,1,2) and set aggregated pubkey
+        registerTestOraclesWithBLS(oracleRegistry, owner);
     }
 
     // ============ SIGNING HELPERS ============
@@ -163,7 +163,7 @@ contract BridgeProxyTest is TestHelper {
         bytes32 messageHash = keccak256(
             abi.encodePacked(block.chainid, address(bridgeProxy), admin, nonce, weightsHash, assetsHash)
         );
-        return signWithTestIssuers(messageHash);
+        return signWithTestOracles(messageHash);
     }
 
     /// @dev Sign rebalance message for BridgeProxy
@@ -179,7 +179,7 @@ contract BridgeProxyTest is TestHelper {
             block.chainid, address(bridgeProxy), "rebalance",
             itpId, removeIndices, addAssets, newWeights, prices, quoteTokens
         ));
-        return signWithTestIssuers(messageHash);
+        return signWithTestOracles(messageHash);
     }
 
     // ============ requestCreateItp Tests ============
@@ -475,7 +475,7 @@ contract BridgeProxyTest is TestHelper {
 
     function test_completeCreateItp_revertsCreationNotFound() public {
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E072_CreationNotFound.selector, 999));
-        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        bridgeProxy.completeCreateItp(999, bytes32(uint256(1)), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_completeCreateItp_revertsWithWrongSignatureLength() public {
@@ -513,8 +513,8 @@ contract BridgeProxyTest is TestHelper {
         // Snapshot at nonce 3 has valid 128-byte pubkey, so mock is irrelevant.
         // The dummy signature (64 zero bytes) fails BLS verification → InvalidSignature.
         vm.mockCall(
-            address(issuerRegistry),
-            abi.encodeWithSelector(IIssuerRegistry.getAggregatedPubkey.selector),
+            address(oracleRegistry),
+            abi.encodeWithSelector(IOracleRegistry.getAggregatedPubkey.selector),
             abi.encode(new bytes(64))
         );
 
@@ -539,7 +539,7 @@ contract BridgeProxyTest is TestHelper {
 
         vm.expectRevert();
         // Paused reverts before BLS — any signature works
-        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        bridgeProxy.completeCreateItp(nonce, bytes32(uint256(1)), signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_completeCreateItp_success() public {
@@ -567,7 +567,7 @@ contract BridgeProxyTest is TestHelper {
         // We don't know the exact bridgedItpAddress, so we use a placeholder
         emit ItpCreated(orbitItpId, address(0), nonce, user);
 
-        // Step 4: Call completeCreateItp with L3 itpId (created by issuer on L3 beforehand)
+        // Step 4: Call completeCreateItp with L3 itpId (created by oracle on L3 beforehand)
         address bridgedItpAddress = bridgeProxy.completeCreateItp(nonce, orbitItpId, signature, 3, 7);
 
         // Step 5: Verify state changes
@@ -661,16 +661,16 @@ contract BridgeProxyTest is TestHelper {
 
     // ============ Admin Functions Tests ============
 
-    function test_setIssuerRegistry_onlyOwner() public {
+    function test_setOracleRegistry_onlyOwner() public {
         address newRegistry = address(0x999);
 
         vm.prank(attacker);
         vm.expectRevert();
-        bridgeProxy.setIssuerRegistry(newRegistry);
+        bridgeProxy.setOracleRegistry(newRegistry);
 
         vm.prank(owner);
-        bridgeProxy.setIssuerRegistry(newRegistry);
-        assertEq(address(bridgeProxy.issuerRegistry()), newRegistry);
+        bridgeProxy.setOracleRegistry(newRegistry);
+        assertEq(address(bridgeProxy.oracleRegistry()), newRegistry);
     }
 
     function test_setBridgedItpFactory_onlyOwner() public {
@@ -876,7 +876,7 @@ contract BridgeProxyTest is TestHelper {
         , 3, 7);
 
         // BridgeProxy no longer calls Index.rebalance(, 3, 7) directly —
-        // issuer relays to L3 separately. Just verify it didn't revert.
+        // oracle relays to L3 separately. Just verify it didn't revert.
     }
 
     function test_rebalance_invalidBLS() public {
@@ -895,7 +895,7 @@ contract BridgeProxyTest is TestHelper {
         address[] memory emptyQt = new address[](0);
 
         // Use a wrong-message signature to force BLS failure → E020
-        bytes memory badSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory badSig = signWithTestOracles(keccak256("wrong message"));
 
         vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
         bridgeProxy.rebalance(
@@ -923,7 +923,7 @@ contract BridgeProxyTest is TestHelper {
 
         vm.expectRevert();
         bridgeProxy.rebalance(
-            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signWithTestIssuers(keccak256("irrelevant"))
+            orbitItpId, emptyIndices, emptyAddrs, newWeights, prices, emptyQt, signWithTestOracles(keccak256("irrelevant"))
         , 3, 7);
     }
 
@@ -941,7 +941,7 @@ contract BridgeProxyTest is TestHelper {
         assertEq(bridgeProxy.itpDeployer(orbitItpId), newDeployer);
 
         // BridgeProxy no longer calls Index.transferCreator() directly —
-        // issuer relays to L3 separately.
+        // oracle relays to L3 separately.
     }
 
     function test_transferDeployer_notDeployer() public {

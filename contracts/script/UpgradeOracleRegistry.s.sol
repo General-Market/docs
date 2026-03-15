@@ -2,25 +2,25 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 
-/// @title UpgradeIssuerRegistry
-/// @notice UUPS upgrade for IssuerRegistry proxy (adds setAggregatedPubkey storage)
-contract UpgradeIssuerRegistry is Script {
+/// @title UpgradeOracleRegistry
+/// @notice UUPS upgrade for OracleRegistry proxy (adds setAggregatedPubkey storage)
+contract UpgradeOracleRegistry is Script {
     function run() external {
-        address proxyAddress = vm.envAddress("ISSUER_REGISTRY");
+        address proxyAddress = vm.envAddress("ORACLE_REGISTRY");
 
         vm.startBroadcast();
 
         // Deploy new implementation
-        IssuerRegistry newImpl = new IssuerRegistry();
-        console.log("New IssuerRegistry implementation:", address(newImpl));
+        OracleRegistry newImpl = new OracleRegistry();
+        console.log("New OracleRegistry implementation:", address(newImpl));
 
         // Upgrade proxy (caller must be admin)
-        IssuerRegistry proxy = IssuerRegistry(proxyAddress);
+        OracleRegistry proxy = OracleRegistry(proxyAddress);
         proxy.upgradeToAndCall(address(newImpl), "");
 
-        console.log("IssuerRegistry upgraded successfully");
+        console.log("OracleRegistry upgraded successfully");
         console.log("Proxy address:", proxyAddress);
 
         vm.stopBroadcast();

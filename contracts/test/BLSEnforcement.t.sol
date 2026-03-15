@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../src/core/Investment.sol";
 import "../src/core/BLSCustody.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/registry/CollateralRegistry.sol";
 import "../src/registry/FeeRegistry.sol";
 import "../src/registry/AssetPairRegistry.sol";
@@ -23,12 +23,12 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract BLSEnforcementTest is TestHelper {
     Investment public index;
     BLSCustody public custody;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
 
     function setUp() public {
         governance = deployGovernance(address(this));
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
         // Deploy Index with real MockERC20 as USDC (address(0x1) is ecrecover precompile)
         MockERC20 usdc = new MockERC20("USDC", "USDC", 18);
@@ -43,7 +43,7 @@ contract BLSEnforcementTest is TestHelper {
         BLSCustody custodyImpl = new BLSCustody();
         ERC1967Proxy custodyProxy = new ERC1967Proxy(
             address(custodyImpl),
-            abi.encodeCall(BLSCustody.initialize, (address(issuerRegistry)))
+            abi.encodeCall(BLSCustody.initialize, (address(oracleRegistry)))
         );
         custody = BLSCustody(address(custodyProxy));
     }
@@ -52,8 +52,8 @@ contract BLSEnforcementTest is TestHelper {
 
     function test_index_emptySignature_reverts() public {
         // Set registry with valid pubkey
-        issuerRegistry.setAggregatedPubkey(new bytes(128), 0);
-        index.setIssuerRegistry(address(issuerRegistry));
+        oracleRegistry.setAggregatedPubkey(new bytes(128), 0);
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Create an ITP so confirmBatch has something to work with
         address[] memory assets = new address[](1);
@@ -71,7 +71,7 @@ contract BLSEnforcementTest is TestHelper {
     }
 
     function test_custody_emptySignature_reverts() public {
-        issuerRegistry.setAggregatedPubkey(new bytes(128), 0);
+        oracleRegistry.setAggregatedPubkey(new bytes(128), 0);
 
         // Propose whitelist with empty sig must revert (BLS verification fails)
         vm.expectRevert();
@@ -84,7 +84,7 @@ contract BLSEnforcementTest is TestHelper {
         // Do NOT set aggregated pubkey — no snapshot exists.
         // lastSnapshotNonce=0, referenceNonce=3 > 0 → NonceFuture.
         // Still reverts — no bypass possible without a valid snapshot.
-        index.setIssuerRegistry(address(issuerRegistry));
+        index.setOracleRegistry(address(oracleRegistry));
 
         uint256[] memory orderIds = new uint256[](0);
         vm.expectRevert(BLSVerifier.BLSVerifier__NonceFuture.selector);
@@ -100,16 +100,16 @@ contract BLSEnforcementTest is TestHelper {
     // ============ UNSET REGISTRY REVERTS ============
 
     function test_index_unsetRegistry_reverts() public {
-        // Do NOT call setIssuerRegistry
+        // Do NOT call setOracleRegistry
         uint256[] memory orderIds = new uint256[](0);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E043_ZeroIssuerRegistry.selector));
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E043_ZeroOracleRegistry.selector));
         index.confirmBatch(1, orderIds, new bytes(64), 3, 7);
     }
 
     // ============ NO TESTMODE FUNCTION EXISTS ============
 
-    function test_noTestModeFunction_onIssuerRegistry() public pure {
-        // If this compiles, testMode() and setTestMode() don't exist on IssuerRegistry.
+    function test_noTestModeFunction_onOracleRegistry() public pure {
+        // If this compiles, testMode() and setTestMode() don't exist on OracleRegistry.
         // We verify by checking the function selector doesn't exist.
         // The fact that we removed these functions means calling them would be a compile error.
         // This test exists as a regression guard: if someone re-adds testMode, they must
@@ -117,7 +117,7 @@ contract BLSEnforcementTest is TestHelper {
         bytes4 setTestModeSelector = bytes4(keccak256("setTestMode(bool)"));
         bytes4 testModeSelector = bytes4(keccak256("testMode()"));
 
-        // These selectors should NOT match any function in IssuerRegistry
+        // These selectors should NOT match any function in OracleRegistry
         // (we can't call them — that's the point)
         assertTrue(setTestModeSelector != bytes4(0), "Selector sanity check");
         assertTrue(testModeSelector != bytes4(0), "Selector sanity check");
@@ -144,7 +144,7 @@ contract BLSEnforcementTest is TestHelper {
 
     function test_collateralRegistry_emptyPubkey_failsVerification() public {
         CollateralRegistry cr = new CollateralRegistry(address(this), address(0x1));
-        // issuerRegistry has no aggregated pubkey set
+        // oracleRegistry has no aggregated pubkey set
         // _verifyBLS should fail when pubkey is empty
         // We can't call _verifyBLS directly, but recordCollateralMove with a BLS sig
         // and empty pubkey should fail because verification returns false
@@ -181,12 +181,12 @@ contract BLSEnforcementTest is TestHelper {
     // ============ WRONG SIGNATURE OVER VALID PUBKEY REVERTS ============
 
     function test_index_wrongSignature_reverts() public {
-        // Register real BLS issuers so pubkey is valid
-        registerTestIssuersWithBLS(issuerRegistry, address(this));
-        index.setIssuerRegistry(address(issuerRegistry));
+        // Register real BLS oracles so pubkey is valid
+        registerTestOraclesWithBLS(oracleRegistry, address(this));
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Sign wrong message — real signature, wrong message hash
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
 
         uint256[] memory orderIds = new uint256[](0);
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
@@ -200,8 +200,8 @@ contract BLSEnforcementTest is TestHelper {
         // referenceNonce=3 > lastSnapshotNonce=0 → NonceFuture.
         // In the snapshot model, pubkey length checks are implicit: corrupted
         // snapshots can't produce valid BLS verification anyway.
-        issuerRegistry.setAggregatedPubkey(new bytes(64), 0);
-        index.setIssuerRegistry(address(issuerRegistry));
+        oracleRegistry.setAggregatedPubkey(new bytes(64), 0);
+        index.setOracleRegistry(address(oracleRegistry));
 
         uint256[] memory orderIds = new uint256[](0);
         vm.expectRevert(BLSVerifier.BLSVerifier__NonceFuture.selector);
@@ -212,6 +212,6 @@ contract BLSEnforcementTest is TestHelper {
     // Verification command (run manually):
     //   grep -rn "mockCall.*0x08\|mockCall.*address(8)\|PRECOMPILE_PAIRING\|DUMMY_BLS_SIG\|dummyBlsSignature" contracts/test/
     // Expected: ZERO results. All BLS verification uses real signatures via FFI.
-    // The only remaining vm.mockCall instances mock issuerRegistry.getAggregatedPubkey()
+    // The only remaining vm.mockCall instances mock oracleRegistry.getAggregatedPubkey()
     // to test empty/invalid pubkey error paths — these are intentional.
 }

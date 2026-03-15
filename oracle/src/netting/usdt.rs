@@ -103,7 +103,7 @@ const RESUME_DURATION: Duration = Duration::from_secs(3600);
 
 /// State tracking for USDT depeg detection
 ///
-/// This state is designed to persist across multiple issuer cycles.
+/// This state is designed to persist across multiple oracle cycles.
 /// The depeg resume logic requires rate stability for 1 hour, which
 /// spans many cycles. The NettingEngine maintains this state between
 /// calls to `run_netting_pipeline()`.

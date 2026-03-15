@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/Governance.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -42,7 +42,7 @@ contract DeployBLSCustodyForkTest is Test {
         internal
         returns (
             address governanceProxy,
-            address issuerRegistryProxy,
+            address oracleRegistryProxy,
             address blsCustodyProxy
         )
     {
@@ -56,19 +56,19 @@ contract DeployBLSCustodyForkTest is Test {
         );
         governanceProxy = address(govProxy);
 
-        // IssuerRegistry
-        IssuerRegistry irImpl = new IssuerRegistry();
+        // OracleRegistry
+        OracleRegistry irImpl = new OracleRegistry();
         ERC1967Proxy irProxy = new ERC1967Proxy(
             address(irImpl),
-            abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
+            abi.encodeCall(OracleRegistry.initialize, (governanceProxy))
         );
-        issuerRegistryProxy = address(irProxy);
+        oracleRegistryProxy = address(irProxy);
 
         // BLSCustody
         BLSCustody custodyImpl = new BLSCustody();
         ERC1967Proxy custodyProxy = new ERC1967Proxy(
             address(custodyImpl),
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
         blsCustodyProxy = address(custodyProxy);
 
@@ -80,20 +80,20 @@ contract DeployBLSCustodyForkTest is Test {
     function test_deployment_verifyInitialization() public {
         (
             address governanceProxy,
-            address issuerRegistryProxy,
+            address oracleRegistryProxy,
             address blsCustodyProxy
         ) = _deployFullChain();
 
         // Verify BLSCustody
         BLSCustody custody = BLSCustody(blsCustodyProxy);
-        assertEq(address(custody.issuerRegistry()), issuerRegistryProxy, "IssuerRegistry mismatch");
+        assertEq(address(custody.oracleRegistry()), oracleRegistryProxy, "OracleRegistry mismatch");
         assertEq(custody.nonce(), 0, "Nonce should be 0");
         assertFalse(custody.isNonceUsed(0), "Nonce 0 should not be used");
 
-        // Verify IssuerRegistry
-        IssuerRegistry ir = IssuerRegistry(issuerRegistryProxy);
+        // Verify OracleRegistry
+        OracleRegistry ir = OracleRegistry(oracleRegistryProxy);
         assertEq(address(ir.governance()), governanceProxy, "Governance mismatch");
-        assertEq(ir.activeIssuerCount(), 0, "Should have 0 active issuers");
+        assertEq(ir.activeOracleCount(), 0, "Should have 0 active oracles");
 
         // Verify Governance
         Governance gov = Governance(governanceProxy);
@@ -136,29 +136,29 @@ contract DeployBLSCustodyForkTest is Test {
         BLSCustody(blsCustodyProxy).initialize(address(0x999));
     }
 
-    // ============ DEPLOYMENT WITH EXISTING ISSUER REGISTRY ============
+    // ============ DEPLOYMENT WITH EXISTING ORACLE REGISTRY ============
 
-    function test_deployWithExistingIssuerRegistry() public {
-        // First deploy the full chain to get an IssuerRegistry
+    function test_deployWithExistingOracleRegistry() public {
+        // First deploy the full chain to get an OracleRegistry
         (
             ,
-            address issuerRegistryProxy,
+            address oracleRegistryProxy,
         ) = _deployFullChain();
 
-        // Now deploy a second BLSCustody pointing to the same IssuerRegistry
+        // Now deploy a second BLSCustody pointing to the same OracleRegistry
         vm.startPrank(deployer);
         BLSCustody custodyImpl2 = new BLSCustody();
         ERC1967Proxy custodyProxy2 = new ERC1967Proxy(
             address(custodyImpl2),
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
         vm.stopPrank();
 
         BLSCustody custody2 = BLSCustody(address(custodyProxy2));
         assertEq(
-            address(custody2.issuerRegistry()),
-            issuerRegistryProxy,
-            "Should reuse existing IssuerRegistry"
+            address(custody2.oracleRegistry()),
+            oracleRegistryProxy,
+            "Should reuse existing OracleRegistry"
         );
         assertEq(custody2.nonce(), 0, "New custody nonce should be 0");
     }

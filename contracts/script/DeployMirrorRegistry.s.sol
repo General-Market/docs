@@ -2,10 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployMirrorRegistry - Deploy MirrorIssuerRegistry on Settlement
+/// @title DeployMirrorRegistry - Deploy MirrorOracleRegistry on Settlement
 /// @dev Requires bls-tool to be built for FFI pubkey generation.
 ///      Usage:
 ///        forge script script/DeployMirrorRegistry.s.sol:DeployMirrorRegistry \
@@ -23,7 +23,7 @@ contract DeployMirrorRegistry is Script {
         uint256 _activeCount = 3;
         address _admin = msg.sender;
 
-        console.log("Deploying MirrorIssuerRegistry on Settlement...");
+        console.log("Deploying MirrorOracleRegistry on Settlement...");
         console.log("  admin:", _admin);
         console.log("  activeCount:", _activeCount);
         console.log("  threshold:", _threshold);
@@ -32,12 +32,12 @@ contract DeployMirrorRegistry is Script {
         vm.startBroadcast();
 
         // Deploy implementation
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         console.log("  Implementation:", address(impl));
 
         // Deploy proxy with init
         bytes memory initData = abi.encodeCall(
-            MirrorIssuerRegistry.initialize,
+            MirrorOracleRegistry.initialize,
             (aggPubkey, _threshold, _activeCount, _admin)
         );
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
@@ -46,7 +46,7 @@ contract DeployMirrorRegistry is Script {
         vm.stopBroadcast();
 
         // Verify
-        MirrorIssuerRegistry mirror = MirrorIssuerRegistry(address(proxy));
+        MirrorOracleRegistry mirror = MirrorOracleRegistry(address(proxy));
         console.log("  Verification:");
         console.log("    registryNonce:", mirror.registryNonce());
         console.log("    lastSnapshotNonce:", mirror.lastSnapshotNonce());

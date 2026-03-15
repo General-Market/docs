@@ -1,7 +1,7 @@
 /**
  * Phase 1: ITP Creation Scaling (Direct L3)
  *
- * Bypasses issuer relay — calls Index.createITP() directly on L3.
+ * Bypasses oracle relay — calls Index.createITP() directly on L3.
  * Measures gas costs, wall time, and RPC latency as ITP count grows.
  */
 

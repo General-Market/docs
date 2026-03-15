@@ -75,8 +75,8 @@ contract DeployItpWhitelist is DeployBLSHelper {
         vm.startBroadcast(deployerKey);
 
         address admin = vm.addr(deployerKey);
-        address issuerReg = vm.envOr("ISSUER_REGISTRY", address(0x1));
-        registry = new AssetPairRegistry(admin, issuerReg);
+        address oracleReg = vm.envOr("ORACLE_REGISTRY", address(0x1));
+        registry = new AssetPairRegistry(admin, oracleReg);
         console.log("  AssetPairRegistry deployed:", address(registry));
 
         vm.stopBroadcast();

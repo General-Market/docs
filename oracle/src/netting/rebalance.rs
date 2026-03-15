@@ -5,7 +5,7 @@
 //!
 //! # Architecture
 //!
-//! The Rebalance Netting Engine runs during Phase 2 of the Issuer Cycle (1-second cycles):
+//! The Rebalance Netting Engine runs during Phase 2 of the Oracle Cycle (1-second cycles):
 //!
 //! ```text
 //! CYCLE N:
@@ -259,7 +259,7 @@ impl RebalanceQueue {
 
     /// Check if the batch is ready for execution using block timestamp (consensus-safe)
     ///
-    /// Use this method in distributed issuer networks to ensure all nodes
+    /// Use this method in distributed oracle networks to ensure all nodes
     /// agree on batch readiness based on chain time, not local clocks.
     ///
     /// # Arguments

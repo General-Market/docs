@@ -15,7 +15,7 @@ rpc_url = "http://142.132.164.24/"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 
-issuer_discovery = "static"
-issuer_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
+oracle_discovery = "static"
+oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
 batch_ids = []

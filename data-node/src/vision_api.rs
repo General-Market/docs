@@ -1,7 +1,7 @@
 //! Vision price data endpoints
 //!
 //! Serves raw market/price data for Vision strategy scripts.
-//! Batch state, history, and backtest endpoints live on the issuer.
+//! Batch state, history, and backtest endpoints live on the oracle.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ pub struct MarketSnapshot {
     pub value: Decimal,
     /// Integer-scaled price: round(value * 1e8), serialized as string.
     /// May be negative (e.g., interest rates, temperatures). Consumers MUST parse as i128, not u128.
-    /// Computed once at the data-node — all issuers parse the same string to the same i128.
+    /// Computed once at the data-node — all oracles parse the same string to the same i128.
     pub value_scaled: String,
     /// Scale factor applied to produce value_scaled. Always 100_000_000 (1e8).
     pub price_scale: u64,
@@ -167,7 +167,7 @@ pub async fn snapshot(
         .map(
             |(asset_id, source, symbol, name, value, change_pct, volume_24h, market_cap, category, fetched_at)| {
                 // Convert Decimal → f64 → integer-scaled i128, rounding once here so all
-                // issuers parse the same string to the same i128 (no per-hardware f64 drift).
+                // oracles parse the same string to the same i128 (no per-hardware f64 drift).
                 // i128 (not u128) to preserve sign for negative values (e.g., interest rates,
                 // temperatures). Consumers must parse value_scaled as i128.
                 let value_f64: f64 = value.to_string().parse().unwrap_or(0.0);
@@ -209,10 +209,10 @@ pub async fn snapshot(
 
 // ---- GET /vision/markets/active ----
 
-/// Active markets catalog for Vision issuers.
+/// Active markets catalog for Vision oracles.
 ///
 /// For now, returns the full catalog (snapshot with limit=50000).
-/// Future: will filter by BLS-signed issuer whitelist.
+/// Future: will filter by BLS-signed oracle whitelist.
 /// If SNAPSHOT_HMAC_SECRET is configured, response includes X-Snapshot-HMAC header.
 pub async fn active_markets(
     State(state): State<Arc<AppState>>,

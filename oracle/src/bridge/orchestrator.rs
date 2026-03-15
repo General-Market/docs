@@ -3,7 +3,7 @@
 //! Implements BLS consensus-based bridging following the vital-test.md flow:
 //! 1. Leader proposes bridge for CrossChainOrder
 //! 2. Followers validate and sign
-//! 3. Threshold reached → execute bridge (mint L3Usdc to IssuerCustody L3)
+//! 3. Threshold reached → execute bridge (mint L3Usdc to OracleCustody L3)
 //!
 //! Story 7.2: Bridge USDC Orchestrator (Settlement→L3)
 //! Story 7.3: Submit Order for User
@@ -42,7 +42,7 @@ use super::types::{
     RebalanceBatchResult, UpdateWeightsResult,
     // Single-phase rebalance
     build_rebalance_hash, build_rebalance_calldata, RebalanceResult,
-    // Issuer-driven per-asset settlement
+    // Oracle-driven per-asset settlement
     AssetTrade, AssetTradesProposal, AssetTradesResult,
     build_emit_asset_trades_hash, build_emit_asset_trades_calldata,
     // NAV push
@@ -83,7 +83,7 @@ pub struct BridgeOrchestrator {
     bls_signer: Bn254BLSSigner,
     /// This node's peer ID
     peer_id: PeerId,
-    /// This node's index in the issuer set
+    /// This node's index in the oracle set
     node_index: u8,
     /// Generic signature manager for bridge Settlement→L3 proposals (replaces pending_signatures)
     bridge_sigs: SignatureCollectionManager<U256>,
@@ -122,7 +122,7 @@ pub struct BridgeOrchestrator {
     /// Prevents concurrent cycles from racing on the same rebalance.
     /// Entries auto-expire after 60s to handle leader crashes.
     processing_rebalances: RwLock<HashMap<H256, Instant>>,
-    /// Consolidated phase state for asset trades (issuer-driven settlement)
+    /// Consolidated phase state for asset trades (oracle-driven settlement)
     asset_trades_phase: PhaseState<u64>,
     /// Stale order watchdog for detecting stuck orders
     watchdog: RwLock<super::watchdog::StaleOrderWatchdog>,
@@ -170,7 +170,7 @@ pub struct BridgeOrchestrator {
     nav_sigs: SignatureCollectionManager<H256>,
     /// Signature manager for NavOracle proposals (keyed by itp_address as H256)
     nav_oracle_sigs: SignatureCollectionManager<H256>,
-    /// Signature manager for MirrorIssuerRegistry sync proposals (keyed by nonce as H256)
+    /// Signature manager for MirrorOracleRegistry sync proposals (keyed by nonce as H256)
     mirror_sync_sigs: SignatureCollectionManager<H256>,
     /// Whether we've already set max L3 USDC approval for Index (skips approve tx per order)
     l3_usdc_approved: std::sync::atomic::AtomicBool,
@@ -251,7 +251,7 @@ impl BridgeOrchestrator {
         &self.peer_id
     }
 
-    /// Get this node's index in the issuer set
+    /// Get this node's index in the oracle set
     pub fn node_index(&self) -> u8 {
         self.node_index
     }
@@ -873,7 +873,7 @@ impl BridgeOrchestrator {
     // Bridge Execution (AC: #4 - Local E2E Simulation)
     // ========================================================================
 
-    /// Execute the bridge by minting L3Usdc to IssuerCustody L3 (local E2E)
+    /// Execute the bridge by minting L3Usdc to OracleCustody L3 (local E2E)
     ///
     /// In production, this would call a bridge contract with the aggregated BLS signature.
     /// In local E2E, we simulate by directly minting L3Usdc.
@@ -888,7 +888,7 @@ impl BridgeOrchestrator {
 
         let mut calldata = mint_selector.to_vec();
 
-        // recipient = issuer signer (so it can call submitOrder which checks msg.sender balance)
+        // recipient = oracle signer (so it can call submitOrder which checks msg.sender balance)
         let signer_address = self.config.signer_address;
         let mut recipient_bytes = [0u8; 32];
         recipient_bytes[12..32].copy_from_slice(signer_address.as_bytes());
@@ -932,7 +932,7 @@ impl BridgeOrchestrator {
             recipient = ?signer_address,
             source_chain = "Settlement",
             dest_chain = "L3",
-            "BridgeCompleted: Settlement→L3 executed (local E2E mint to issuer signer)"
+            "BridgeCompleted: Settlement→L3 executed (local E2E mint to oracle signer)"
         );
 
         Ok(tx_hash)
@@ -1076,7 +1076,7 @@ impl BridgeOrchestrator {
     /// 4. Slippage tier is valid (0, 1, or 2)
     ///
     /// **Deferred to Story 7.4:**
-    /// - Verify IssuerCustody L3 has sufficient L3Usdc via chain reader
+    /// - Verify OracleCustody L3 has sufficient L3Usdc via chain reader
     /// - Verify ITP exists on Index via chain reader
     pub async fn validate_submit_order_proposal(
         &self,
@@ -1426,7 +1426,7 @@ impl BridgeOrchestrator {
     ) -> Result<H256, BridgeError> {
         let submit_start = std::time::Instant::now();
 
-        // Step 1: Approve Index contract to spend L3 USDC from issuer signer.
+        // Step 1: Approve Index contract to spend L3 USDC from oracle signer.
         // Use max approval (type(uint256).max) on first call, then skip on subsequent calls.
         // This eliminates one full L3 transaction per order.
         if !self.l3_usdc_approved.load(std::sync::atomic::Ordering::Relaxed) {
@@ -2311,7 +2311,7 @@ impl BridgeOrchestrator {
 
     /// Build the message hash for BLS signing a custody execute call
     ///
-    /// This builds the hash that issuers need to sign for BLS consensus
+    /// This builds the hash that oracles need to sign for BLS consensus
     /// before calling execute_custody_call or execute_custody_approve.
     ///
     /// Story 7.4: Task 7.2
@@ -2487,7 +2487,7 @@ impl BridgeOrchestrator {
             cycle_number,
             &order_ids,
             total_amount,
-            self.config.issuer_custody_settlement,
+            self.config.oracle_custody_settlement,
         );
 
         // Sign with leader's BLS key using sign_message_hash (not sign_with_keypair)
@@ -2504,7 +2504,7 @@ impl BridgeOrchestrator {
             cycle_number = cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
-            destination = ?self.config.issuer_custody_settlement,
+            destination = ?self.config.oracle_custody_settlement,
             message_hash = ?message_hash,
             "Bridge L3→Settlement proposal created"
         );
@@ -2514,7 +2514,7 @@ impl BridgeOrchestrator {
             cycle_number,
             order_ids,
             total_amount,
-            destination: self.config.issuer_custody_settlement,
+            destination: self.config.oracle_custody_settlement,
             leader_signature,
             message_hash,
         })
@@ -2535,7 +2535,7 @@ impl BridgeOrchestrator {
             cycle_number,
             &order_ids,
             total_amount,
-            self.config.issuer_custody_settlement,
+            self.config.oracle_custody_settlement,
         );
 
         // Sign with leader's BLS key using sign_message_hash (not sign_with_keypair)
@@ -2552,7 +2552,7 @@ impl BridgeOrchestrator {
             cycle_number = cycle_number,
             order_count = order_ids.len(),
             total_amount = %total_amount,
-            destination = ?self.config.issuer_custody_settlement,
+            destination = ?self.config.oracle_custody_settlement,
             message_hash = ?message_hash,
             "Bridge L3→Settlement proposal created (with explicit amount)"
         );
@@ -2562,7 +2562,7 @@ impl BridgeOrchestrator {
             cycle_number,
             order_ids,
             total_amount,
-            destination: self.config.issuer_custody_settlement,
+            destination: self.config.oracle_custody_settlement,
             leader_signature,
             message_hash,
         })
@@ -2612,10 +2612,10 @@ impl BridgeOrchestrator {
         }
 
         // 3. Verify destination matches our config
-        if proposal.destination != self.config.issuer_custody_settlement {
+        if proposal.destination != self.config.oracle_custody_settlement {
             warn!(
                 cycle_number = proposal.cycle_number,
-                expected = ?self.config.issuer_custody_settlement,
+                expected = ?self.config.oracle_custody_settlement,
                 received = ?proposal.destination,
                 "Bridge L3→Settlement proposal: destination mismatch"
             );
@@ -2751,11 +2751,11 @@ impl BridgeOrchestrator {
     // Story 7.5: Bridge L3→Settlement Execution (AC: #3, #4, #5)
     // ========================================================================
 
-    /// Execute bridge L3→Settlement by minting SettlementUSDC to IssuerCustody Settlement (local E2E)
+    /// Execute bridge L3→Settlement by minting SettlementUSDC to OracleCustody Settlement (local E2E)
     ///
     /// This simulates the bridge by:
     /// 1. "Releasing" L3Usdc from Index escrow (simulated - no actual burn)
-    /// 2. Minting SettlementUSDC to IssuerCustody on Settlement
+    /// 2. Minting SettlementUSDC to OracleCustody on Settlement
     ///
     /// In production, this would call actual bridge contracts.
     pub async fn execute_bridge_l3_to_settlement(
@@ -2775,17 +2775,17 @@ impl BridgeOrchestrator {
             });
         }
 
-        // Validate destination matches our configured IssuerCustody Settlement address
+        // Validate destination matches our configured OracleCustody Settlement address
         // This prevents executing a malicious proposal with a different destination
-        if proposal.destination != self.config.issuer_custody_settlement {
+        if proposal.destination != self.config.oracle_custody_settlement {
             warn!(
                 cycle_number = proposal.cycle_number,
                 proposal_destination = ?proposal.destination,
-                expected_destination = ?self.config.issuer_custody_settlement,
+                expected_destination = ?self.config.oracle_custody_settlement,
                 "Bridge L3→Settlement proposal has invalid destination"
             );
             return Err(BridgeError::InvalidDestination {
-                expected: self.config.issuer_custody_settlement,
+                expected: self.config.oracle_custody_settlement,
                 actual: proposal.destination,
             });
         }
@@ -2798,13 +2798,13 @@ impl BridgeOrchestrator {
             "Simulating L3Usdc release from Index escrow"
         );
 
-        // Step 2: Mint SettlementUSDC to IssuerCustody on Settlement
+        // Step 2: Mint SettlementUSDC to OracleCustody on Settlement
         // Build SettlementUSDC.mint(recipient, amount) calldata
         let mint_selector = &ethers::utils::keccak256("mint(address,uint256)")[..4];
 
         let mut calldata = mint_selector.to_vec();
 
-        // recipient = IssuerCustody Settlement (32 bytes, address padded)
+        // recipient = OracleCustody Settlement (32 bytes, address padded)
         let mut recipient_bytes = [0u8; 32];
         recipient_bytes[12..32].copy_from_slice(proposal.destination.as_bytes());
         calldata.extend_from_slice(&recipient_bytes);
@@ -2897,7 +2897,7 @@ impl BridgeOrchestrator {
 
     /// Create a custody release to vault proposal (leader only)
     ///
-    /// This proposes releasing SettlementUSDC from IssuerCustody on Settlement
+    /// This proposes releasing SettlementUSDC from OracleCustody on Settlement
     /// to MockBitgetVault for AP trading.
     ///
     /// Prerequisites: Orders must be in BridgedBackToSettlement status (from Story 7.5).
@@ -2927,7 +2927,7 @@ impl BridgeOrchestrator {
         // Use Settlement chain ID since the custody release happens on Settlement
         let message_hash = build_release_to_vault_hash(
             self.config.settlement_chain_id,
-            self.config.issuer_custody_settlement,
+            self.config.oracle_custody_settlement,
             cycle_number,
             &order_ids,
             total_amount,
@@ -2949,7 +2949,7 @@ impl BridgeOrchestrator {
             order_count = order_ids.len(),
             total_amount = %total_amount,
             vault_address = ?self.config.bitget_vault,
-            custody_address = ?self.config.issuer_custody_settlement,
+            custody_address = ?self.config.oracle_custody_settlement,
             message_hash = ?message_hash,
             "Custody release to vault proposal created"
         );
@@ -3007,7 +3007,7 @@ impl BridgeOrchestrator {
         // 3. Verify message hash matches
         let expected_hash = build_release_to_vault_hash(
             self.config.settlement_chain_id,
-            self.config.issuer_custody_settlement,
+            self.config.oracle_custody_settlement,
             proposal.cycle_number,
             &proposal.order_ids,
             proposal.total_amount,
@@ -3105,7 +3105,7 @@ impl BridgeOrchestrator {
         // Rebuild the message hash to verify it matches
         let expected_hash = build_release_to_vault_hash(
             self.config.settlement_chain_id,
-            self.config.issuer_custody_settlement,
+            self.config.oracle_custody_settlement,
             proposal.cycle_number,
             &proposal.order_ids,
             proposal.total_amount,
@@ -3184,7 +3184,7 @@ impl BridgeOrchestrator {
 
     /// Execute custody release to MockBitgetVault via BLSCustody.execute()
     ///
-    /// This calls BLSCustody.execute() to transfer SettlementUSDC from IssuerCustody
+    /// This calls BLSCustody.execute() to transfer SettlementUSDC from OracleCustody
     /// on Settlement to MockBitgetVault.
     pub async fn execute_release_to_vault(
         &self,
@@ -3226,11 +3226,11 @@ impl BridgeOrchestrator {
             proposal.total_amount,
         );
 
-        // Execute via BLSCustody.execute() on IssuerCustody Settlement
+        // Execute via BLSCustody.execute() on OracleCustody Settlement
         // Target is the SettlementUSDC token contract
         let tx_hash = self
             .execute_custody_call(
-                self.config.issuer_custody_settlement,  // custody contract
+                self.config.oracle_custody_settlement,  // custody contract
                 self.config.settlement_usdc_address,    // target (SettlementUSDC)
                 &inner_calldata,                  // transfer(vault, usdc_amount_6dec)
                 &result.aggregated_signature,
@@ -3935,7 +3935,7 @@ impl BridgeOrchestrator {
         // from createITP). BLS signature obtained via setItpNav consensus.
         // IMPORTANT: use nav_signer_bitmap (from NAV consensus), NOT
         // aggregated.signer_bitmap (from rebalance consensus) — different
-        // issuers may have signed each phase.
+        // oracles may have signed each phase.
         let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature, reference_nonce, nav_signer_bitmap);
         match self.l3_writer.send_transaction(
             self.config.index_address,
@@ -3981,7 +3981,7 @@ impl BridgeOrchestrator {
     }
 
     // ========================================================================
-    // Issuer-Driven Per-Asset Settlement: Asset Trades Consensus
+    // Oracle-Driven Per-Asset Settlement: Asset Trades Consensus
     // ========================================================================
 
     /// Create an asset trades proposal (leader only)
@@ -4764,8 +4764,8 @@ impl BridgeOrchestrator {
             let expected_18dec = fa * fp / U256::exp10(18);
             let expected_6dec = expected_18dec / U256::exp10(12);
 
-            // Allow tolerance for minor NAV drift between issuers.
-            // Each issuer independently computes fill_price from its own NAV calculation,
+            // Allow tolerance for minor NAV drift between oracles.
+            // Each oracle independently computes fill_price from its own NAV calculation,
             // which can differ slightly due to price feed timing.
             // Tolerance: 0.1% of proceeds, minimum $0.01 (10_000 in 6-dec USDC)
             let diff = if proposal.usdc_proceeds > expected_6dec {
@@ -5409,6 +5409,6 @@ impl BridgeOrchestrator {
     }
 }
 
-// Tests are in issuer/tests/bridge_settlement_to_l3_integration.rs (Task 10)
-// Submit order tests will be in issuer/tests/submit_order_integration.rs
+// Tests are in oracle/tests/bridge_settlement_to_l3_integration.rs (Task 10)
+// Submit order tests will be in oracle/tests/submit_order_integration.rs
 // Basic unit tests for types are in types.rs

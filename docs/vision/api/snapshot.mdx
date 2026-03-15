@@ -1,0 +1,276 @@
+---
+title: "Snapshot Endpoints"
+description: "Market price snapshots and source metadata for Vision"
+---
+
+# Snapshot Endpoints
+
+The world, frozen at an instant. Market price snapshots and source health metadata -- the raw material from which predictions are made and against which they are judged.
+
+```
+  Snapshot data flow:
+
+  ~90 data sources          Data Node               Next.js API
+  (crypto, flights,     collects & stores        proxies to browser
+   weather, trains...)   in SQLite
+       |                     |                        |
+       +---> fetch/poll ---> +--- /vision/snapshot -> +---> /api/vision/snapshot
+       |     every 5 min     |                        |
+       +---> fetch/poll ---> +--- /market/stats ----> +---> /api/vision/snapshot/meta
+       |                     |                        |
+       +---> fetch/poll ---> +                        |
+                                                      |
+  Grid view:  GET /api/vision/snapshot                |
+              Returns up to 5000 assets               |
+              Capped at 200 per source                 |
+                                                      |
+  Detail:     GET /api/vision/snapshot?source=crypto   |
+              Returns up to 10,000 assets for          |
+              that single source                       |
+```
+
+---
+
+## Get Market Snapshot
+
+Current price/value data for market assets. The present, quantified.
+
+```
+GET /api/vision/snapshot
+```
+
+<ParamField query="source" type="string">
+  Optional. When provided, returns assets only from that source (up to 10,000). Without it, returns a capped grid view (up to 200 per source, 5,000 total).
+</ParamField>
+
+<CodeGroup>
+```bash cURL
+# Grid view (all sources, capped)
+curl "https://generalmarket.io/api/vision/snapshot"
+
+# Single source detail
+curl "https://generalmarket.io/api/vision/snapshot?source=crypto"
+```
+
+```javascript JavaScript
+// Grid view
+const res = await fetch("/api/vision/snapshot");
+const { prices, totalAssets } = await res.json();
+console.log(`${prices.length} assets loaded (${totalAssets} total)`);
+
+// Single source
+const detail = await fetch("/api/vision/snapshot?source=earthquake");
+const quakes = await detail.json();
+```
+
+```python Python
+import requests
+
+# Grid view
+resp = requests.get("https://generalmarket.io/api/vision/snapshot")
+data = resp.json()
+print(f"{len(data['prices'])} assets in grid view")
+
+# Single source
+resp = requests.get(
+    "https://generalmarket.io/api/vision/snapshot",
+    params={"source": "crypto"}
+)
+crypto = resp.json()
+for p in crypto["prices"][:5]:
+    print(f"{p['symbol']:>10s}  ${p['value']:.2f}  {p['changePct'] or 0:+.1f}%")
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "generatedAt": "2026-03-14T12:00:00Z",
+  "maxAgeSecs": null,
+  "totalAssets": 42000,
+  "sources": [],
+  "prices": [
+    {
+      "source": "crypto",
+      "assetId": "BTC",
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "category": "layer-1",
+      "value": 97432.15,
+      "prevClose": null,
+      "changePct": 2.45,
+      "volume24h": 28500000000,
+      "marketCap": 1920000000000,
+      "fetchedAt": "2026-03-14T11:59:30Z",
+      "imageUrl": null
+    },
+    {
+      "source": "earthquake",
+      "assetId": "USGS/us7000abc1",
+      "symbol": "M4.2 Ridgecrest CA",
+      "name": "M4.2 - 10km N of Ridgecrest, CA",
+      "category": null,
+      "value": 4.2,
+      "prevClose": null,
+      "changePct": null,
+      "volume24h": null,
+      "marketCap": null,
+      "fetchedAt": "2026-03-14T11:55:00Z",
+      "imageUrl": null
+    }
+  ]
+}
+```
+</Expandable>
+
+**Price entry fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `source` | string | Data source identifier |
+| `assetId` | string | Unique asset ID within the source |
+| `symbol` | string | Short display label |
+| `name` | string | Full asset name |
+| `category` | string\|null | Source-specific category |
+| `value` | number | Current value/price |
+| `prevClose` | null | Reserved (not populated) |
+| `changePct` | number\|null | Percentage change (source-dependent period) |
+| `volume24h` | number\|null | 24h volume (crypto/finance only) |
+| `marketCap` | number\|null | Market cap (crypto only) |
+| `fetchedAt` | string | ISO timestamp of the data fetch |
+| `imageUrl` | null | Reserved (not populated) |
+
+```
+  Grid view capping:
+
+  Source         Raw assets    Capped to
+  ----------    ----------    ---------
+  crypto         10,000        200
+  defi            6,000        200
+  earthquake        150        150  (under cap)
+  flights         3,200        200
+  weather           500        200
+  trains          1,800        200
+  ...
+
+  Total grid: up to ~5,000 assets displayed
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Snapshot returned |
+| `502` | Data-node upstream unavailable |
+
+<Note>
+  Snapshots are cached for 30 seconds at the CDN. The `totalAssets` field always reflects the true count from the data-node, even when the `prices` array is capped.
+</Note>
+
+---
+
+## Get Source Metadata
+
+Health status, asset counts, and sync timing for all data sources. A diagnostic of the machinery that watches the world.
+
+```
+GET /api/vision/snapshot/meta
+```
+
+<CodeGroup>
+```bash cURL
+curl "https://generalmarket.io/api/vision/snapshot/meta"
+```
+
+```javascript JavaScript
+const res = await fetch("/api/vision/snapshot/meta");
+const meta = await res.json();
+console.log(`${meta.totalSources} sources, ${meta.totalAssets} total assets`);
+for (const src of meta.sources) {
+  console.log(`  ${src.sourceId}: ${src.status} (${meta.assetCounts[src.sourceId]} assets)`);
+}
+```
+
+```python Python
+import requests
+
+resp = requests.get("https://generalmarket.io/api/vision/snapshot/meta")
+meta = resp.json()
+for src in meta["sources"]:
+    count = meta["assetCounts"].get(src["sourceId"], 0)
+    print(f"{src['sourceId']:20s}  {src['status']:12s}  {count} assets")
+```
+</CodeGroup>
+
+<Expandable title="Response">
+```json
+{
+  "generatedAt": "2026-03-14T12:00:00Z",
+  "totalAssets": 42000,
+  "totalSources": 87,
+  "totalCategories": 10,
+  "sources": [
+    {
+      "sourceId": "crypto",
+      "displayName": "crypto",
+      "enabled": true,
+      "syncIntervalSecs": 300,
+      "lastSync": "2026-03-14T11:59:30Z",
+      "nextSync": null,
+      "estimatedNextUpdate": null,
+      "status": "healthy"
+    },
+    {
+      "sourceId": "earthquake",
+      "displayName": "earthquake",
+      "enabled": true,
+      "syncIntervalSecs": 300,
+      "lastSync": "2026-03-14T11:55:00Z",
+      "nextSync": null,
+      "estimatedNextUpdate": null,
+      "status": "healthy"
+    },
+    {
+      "sourceId": "old_source",
+      "displayName": "old_source",
+      "enabled": true,
+      "syncIntervalSecs": 300,
+      "lastSync": "2026-02-01T00:00:00Z",
+      "nextSync": null,
+      "estimatedNextUpdate": null,
+      "status": "stale"
+    }
+  ],
+  "assetCounts": {
+    "crypto": 10000,
+    "earthquake": 150,
+    "old_source": 500
+  }
+}
+```
+</Expandable>
+
+**Source entry fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sourceId` | string | Unique source identifier |
+| `displayName` | string | Display name (currently same as sourceId) |
+| `enabled` | boolean | Always `true` for listed sources |
+| `syncIntervalSecs` | number | Sync interval (default 300s) |
+| `lastSync` | string\|null | ISO timestamp of last successful sync |
+| `nextSync` | null | Reserved |
+| `estimatedNextUpdate` | null | Reserved |
+| `status` | string | Health status (see below) |
+
+**Status derivation:**
+
+```
+  status = "healthy"      if activeAssets > 0 AND newest record < 7 days old
+  status = "stale"        if activeAssets > 0 AND newest record > 7 days old
+  status = "stale"        if activeAssets > 0 AND no newest record timestamp
+  status = "not_started"  if activeAssets == 0
+```
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Metadata returned (cached 30s, stale-while-revalidate 60s) |
+| `502` | Data-node upstream unavailable |

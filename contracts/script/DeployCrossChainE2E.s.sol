@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/mocks/MockERC20.sol";
 import "../src/Governance.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/mocks/MockBitgetVault.sol";
 import "../src/core/Investment.sol";
 import "../src/registry/AssetPairRegistry.sol";
@@ -24,7 +24,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
     // Storage to avoid stack issues
     address usdc;
     address indexProxy;
-    address issuerRegistry;
+    address oracleRegistry;
     address assetPairRegistry;
     address mockBitgetVault;
     address bridgeProxy;
@@ -51,11 +51,11 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         indexProxy = address(new ERC1967Proxy(indexImpl, indexInit));
         console.log("Index:", indexProxy);
 
-        IssuerRegistry regImpl = new IssuerRegistry();
-        issuerRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(IssuerRegistry.initialize.selector, governance)));
-        console.log("IssuerRegistry:", issuerRegistry);
+        OracleRegistry regImpl = new OracleRegistry();
+        oracleRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance)));
+        console.log("OracleRegistry:", oracleRegistry);
 
-        assetPairRegistry = address(new AssetPairRegistry(admin, issuerRegistry));
+        assetPairRegistry = address(new AssetPairRegistry(admin, oracleRegistry));
         console.log("AssetPairRegistry:", assetPairRegistry);
 
         MockBitgetVault vault = new MockBitgetVault();
@@ -63,14 +63,14 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         mockBitgetVault = address(vault);
         console.log("MockBitgetVault:", mockBitgetVault);
 
-        Investment(indexProxy).setIssuerRegistry(issuerRegistry);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
+        Investment(indexProxy).setOracleRegistry(oracleRegistry);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
 
         // Bridge Side
         address bridgeImpl = address(new BridgeProxy());
         bytes memory bridgeInit = abi.encodeWithSelector(
             BridgeProxy.initialize.selector,
-            issuerRegistry,
+            oracleRegistry,
             address(0),
             admin
         );
@@ -91,7 +91,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         console.log("Authorized bridge set on Index");
 
         // Setup
-        _registerIssuers();
+        _registerOracles();
         _whitelistAssets();
 
         address user = 0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc;
@@ -102,39 +102,39 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         _exportDeployment();
     }
 
-    function _registerIssuers() internal {
-        address[3] memory issuers = [
+    function _registerOracles() internal {
+        address[3] memory oracles = [
             address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8),
             address(0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC),
             address(0x90F79bf6EB2c4f870365E785982E1f101E93b906)
         ];
 
-        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
-        // Issuer 0
+        // Must snapshot (setAggregatedPubkey) after EACH addOracle due to PendingSnapshot constraint
+        // Oracle 0
         {
             bytes memory pubkey = blsPubkey(0);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[0], pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, oracleRegistry, oracles[0], pubkey));
             bytes memory popSig = blsSign("0", popMsg);
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[0], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
-            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsPubkey(0), 1);
+            OracleRegistry(oracleRegistry).addOracle(oracles[0], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            OracleRegistry(oracleRegistry).setAggregatedPubkey(blsPubkey(0), 1);
         }
 
-        // Issuer 1
+        // Oracle 1
         {
             bytes memory pubkey = blsPubkey(1);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[1], pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, oracleRegistry, oracles[1], pubkey));
             bytes memory popSig = blsSign("1", popMsg);
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[1], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
-            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
+            OracleRegistry(oracleRegistry).addOracle(oracles[1], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            OracleRegistry(oracleRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
         }
 
-        // Issuer 2
+        // Oracle 2
         {
             bytes memory pubkey = blsPubkey(2);
-            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuers[2], pubkey));
+            bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, oracleRegistry, oracles[2], pubkey));
             bytes memory popSig = blsSign("2", popMsg);
-            IssuerRegistry(issuerRegistry).addIssuer(issuers[2], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
-            IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
+            OracleRegistry(oracleRegistry).addOracle(oracles[2], bytes32(bytes("127.0.0.1:9000")), pubkey, popSig);
+            OracleRegistry(oracleRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
         }
     }
 
@@ -142,7 +142,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         AssetPairRegistry apr = AssetPairRegistry(assetPairRegistry);
 
         // Propose all 627 assets with real BLS signatures
-        // referenceNonce=0, signersBitmask=7 (3 test issuers = bits 0,1,2)
+        // referenceNonce=0, signersBitmask=7 (3 test oracles = bits 0,1,2)
         for (uint256 i = 1; i <= 627; i++) {
             address asset = address(uint160(i));
             uint256 nonce = apr.getNonce();
@@ -172,7 +172,7 @@ contract DeployCrossChainE2E is DeployBLSHelper {
         vm.serializeUint(obj, "chainId", block.chainid);
         vm.serializeAddress(obj, "Index", indexProxy);
         vm.serializeAddress(obj, "USDC", usdc);
-        vm.serializeAddress(obj, "IssuerRegistry", issuerRegistry);
+        vm.serializeAddress(obj, "OracleRegistry", oracleRegistry);
         vm.serializeAddress(obj, "AssetPairRegistry", assetPairRegistry);
         vm.serializeAddress(obj, "MockBitgetVault", mockBitgetVault);
         vm.serializeAddress(obj, "BridgeProxy", bridgeProxy);

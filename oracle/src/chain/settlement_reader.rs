@@ -653,7 +653,7 @@ impl<M: Middleware> SettlementChainReader<M> {
             let order_id = U256::from(id);
 
             // Rate-limit between order queries to avoid public RPC rate limits.
-            // 200ms per pair × 74 orders = ~15s total. 3 issuers concurrent = ~5 req/s each.
+            // 200ms per pair × 74 orders = ~15s total. 3 oracles concurrent = ~5 req/s each.
             if id > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(200)).await;
             }

@@ -1,0 +1,405 @@
+---
+title: "Bridge Architecture"
+description: "Cross-chain bridge between Index L3 and Settlement -- buy/sell flows, custody, and backing guarantees"
+---
+
+# Bridge Architecture
+
+The bridge exists because assets live on one chain and users live on another. Geography, even digital, is a curse.
+
+Two chains. Different trust models. Different decimal conventions. The bridge reconciles them while enforcing the one rule that cannot be broken: no ITP shares are minted without confirmed collateral. Everything else is negotiable. This is not.
+
+## Chain Overview
+
+```text
++=========================================+     +=========================================+
+|          SETTLEMENT (Arbitrum)           |     |            INDEX L3 (Orbit)              |
+|         Chain ID: 14601                  |     |         Chain ID: 111222333              |
+|         USDC: 6 decimals                 |     |         USDC: 18 decimals                |
+|                                          |     |                                          |
+|  Users deposit/withdraw here             |     |  Core protocol logic lives here           |
+|  BridgedITP tokens (ERC-20 replicas)     |     |  ITP shares, NAV, order matching          |
+|  AP receives USDC for asset purchases    |     |  BLS consensus, batch/fill lifecycle      |
++=========================================+     +=========================================+
+```
+
+## Contract Layout
+
+Five contracts. Three on Settlement, two on L3. Each holds custody of something the others need.
+
+```text
+   SETTLEMENT (Chain 14601)                         INDEX L3 (Chain 111222333)
+  +-----------------------------------------+      +-----------------------------------------+
+  |                                         |      |                                         |
+  |  +-----------------------------------+  |      |  +-----------------------------------+  |
+  |  | SettlementBridgeCustody.sol        |  |      |  | Index.sol                         |  |
+  |  | (UUPS Proxy)                       |  |      |  | (Core protocol)                   |  |
+  |  |                                    |  |      |  |                                   |  |
+  |  | - Holds user USDC for buy orders   |  |      |  | - submitOrder / confirmBatch      |  |
+  |  | - Escrows BridgedITP for sells     |  |      |  | - confirmFills (mints/burns)      |  |
+  |  | - completeBuyOrder (releases USDC) |  |      |  | - NAV computation                 |  |
+  |  | - completeSellOrder (pays user)    |  |      |  +-----------------------------------+  |
+  |  | - refundBuyOrder / refundSellOrder |  |      |                                         |
+  |  +-----------------------------------+  |      |  +-----------------------------------+  |
+  |                                         |      |  | L3BridgeCustody.sol                |  |
+  |  +-----------------------------------+  |      |  | (UUPS Proxy)                       |  |
+  |  | BridgeProxy.sol                    |  |      |  |                                   |  |
+  |  | (UUPS Proxy)                       |  |      |  | - Locks L3 USDC for bridging      |  |
+  |  |                                    |  |      |  | - Two-phase commit (lock/release)  |  |
+  |  | - mintBridgedShares (BLS-gated)    |  |      |  | - 1-hour timeout for reversals     |  |
+  |  | - burnBridgedShares (BLS-gated)    |  |      |  +-----------------------------------+  |
+  |  | - ITP creation relay               |  |      |                                         |
+  |  | - Replay protection (orderId map)  |  |      +-----------------------------------------+
+  |  +-----------------------------------+  |
+  |                                         |
+  |  +-----------------------------------+  |
+  |  | BridgedItpFactory.sol              |  |
+  |  |                                    |  |
+  |  | - CREATE2 deploys BridgedITP       |  |
+  |  | - One BridgedITP per L3 ITP        |  |
+  |  +-----------------------------------+  |
+  |                                         |
+  |  +-----------------------------------+  |
+  |  | BridgedITP.sol (one per ITP)       |  |
+  |  |                                    |  |
+  |  | - ERC-20 replica of L3 ITP shares  |  |
+  |  | - mint/burn only by BridgeProxy    |  |
+  |  | - 18 decimals                      |  |
+  |  +-----------------------------------+  |
+  |                                         |
+  +-----------------------------------------+
+```
+
+<Info>
+All bridge contracts use the UUPS proxy pattern (OpenZeppelin 5.x). Every state-changing bridge operation requires a valid aggregated BLS signature from the oracle nodes -- there are no admin bypasses.
+</Info>
+
+## Decimal Conversion
+
+Six decimals on one side. Eighteen on the other. The bridge converts at the boundary. Get this wrong and users receive 1e12x too much or too little.
+
+```text
+  User deposits 100 USDC on Settlement
+  ====================================
+
+  Settlement (6 dec):   100_000_000          (100 * 1e6)
+                             |
+                       DecimalLib.toInternal()
+                             |
+                             v
+  L3 internal (18 dec): 100_000_000_000_000_000_000   (100 * 1e18)
+
+
+  USDC released back to AP on Settlement
+  =======================================
+
+  L3 internal (18 dec): 100_000_000_000_000_000_000
+                             |
+                       DecimalLib.toUsdc()
+                             |
+                             v
+  Settlement (6 dec):   100_000_000          (100 * 1e6)
+```
+
+<Warning>
+Never assume USDC is 6 decimals everywhere. L3 uses 18-decimal USDC. Mixing up decimals in bridge logic would mean users receive 1e12x too much or too little.
+</Warning>
+
+## Bridge Buy Flow
+
+Ten steps. Four BLS consensus rounds. Two chains. One invariant: USDC must be released to the AP before shares are minted. Always.
+
+```text
+  SETTLEMENT (6-dec USDC)                              INDEX L3 (18-dec USDC)
+  =======================                              ======================
+
+  1. User calls buyITPFromSettlement()
+     on SettlementBridgeCustody
+     |
+     |  USDC transferred from user
+     |  to SettlementBridgeCustody
+     |  (escrowed)
+     |
+     v
+  2. Event: CrossChainOrderCreated
+     (orderId, itpId, user, amount)
+     |
+     |                                          3. Oracles detect event on Settlement
+     |                                             |
+     |                                             v
+     |                                          4. Oracles submit order to Index.sol
+     |                                             (BLS consensus round #1)
+     |                                             |
+     |                                             v
+     |                                          5. Oracles batch the order
+     |                                             (BLS consensus round #2)
+     |                                             |
+     |                                             v
+     |                                          6. AP executes trade on Bitget
+     |                                             (buys underlying assets)
+     |                                             |
+     |                                             v
+     |                                          7. Oracles confirm fill on L3
+     |                                             (BLS consensus round #3)
+     |                                             |
+     |                                             +---> ITP shares minted to user on L3
+     |                                                   (Index.sol)
+     |
+     |  <<<< CRITICAL CHECKPOINT >>>>
+     |
+  8. Oracles call completeBuyOrder()
+     on SettlementBridgeCustody
+     (BLS consensus round #4)
+     |
+     |  - Verifies BLS signature
+     |  - Stores PendingMint for crash recovery
+     |  - Releases USDC to AP vault
+     |  - Deletes order from storage
+     |
+     v
+  9. Oracles call mintBridgedShares()
+     on BridgeProxy
+     (BLS-verified)
+     |
+     |  - BridgeProxy calls BridgedITP.mint()
+     |  - User receives BridgedITP on Settlement
+     |  - Replay protection: orderId marked processed
+     |
+     v
+  10. User holds both:
+      - ITP shares on L3
+      - BridgedITP (ERC-20 replica) on Settlement
+```
+
+<Warning>
+**The Backing Invariant:** `completeBuyOrder` on Settlement MUST succeed BEFORE `mintBridgedShares` is called. If `completeBuyOrder` fails (gas issue, revert, timeout), the entire order is rolled back via `refundBuyOrder` -- USDC is returned to the user and no shares are minted anywhere. There is no optimistic minting.
+</Warning>
+
+### Crash Recovery
+
+Machines crash. The question is not whether, but when. The `pendingMints` mapping in SettlementBridgeCustody is the recovery anchor. On restart, oracles query it to find orders where USDC was released but BridgedITP was not yet minted, then resume.
+
+```text
+  completeBuyOrder succeeds
+         |
+         |  pendingMints[orderId] = { itpId, user, amount }
+         |
+         v
+  mintBridgedShares called?
+         |
+    +----+----+
+    |         |
+   YES        NO (crash)
+    |         |
+    v         v
+  clearPendingMint()    Oracle restarts, queries pendingMints,
+  (only if BridgeProxy   retries mintBridgedShares
+   confirms mint done)
+```
+
+## Bridge Sell Flow
+
+The reverse. Burn the tokens, return the USDC. Same number of steps, same number of consensus rounds, same refusal to compromise on backing.
+
+```text
+  SETTLEMENT (6-dec USDC)                              INDEX L3 (18-dec USDC)
+  =======================                              ======================
+
+  1. User calls sellITPFromSettlement()
+     on SettlementBridgeCustody
+     |
+     |  BridgedITP transferred from user
+     |  to SettlementBridgeCustody
+     |  (escrowed)
+     |
+     v
+  2. Event: CrossChainSellOrderCreated
+     (orderId, itpId, user, amount)
+     |
+     |                                          3. Oracles detect event on Settlement
+     |                                             |
+     |                                             v
+     |                                          4. Oracles submit sell order to Index.sol
+     |                                             (BLS consensus round #1)
+     |                                             |
+     |                                             v
+     |                                          5. Oracles batch the order
+     |                                             (BLS consensus round #2)
+     |                                             |
+     |                                             v
+     |                                          6. AP sells underlying assets on Bitget
+     |                                             |
+     |                                             v
+     |                                          7. Oracles confirm fill on L3
+     |                                             (BLS consensus round #3)
+     |                                             |
+     |                                             +---> ITP shares burned on L3
+     |                                                   USDC released to L3BridgeCustody
+     |
+  8. Oracles call burnSellOrderShares()
+     on SettlementBridgeCustody
+     |
+     |  - Burns escrowed BridgedITP via BridgeProxy
+     |  - Marks order as burned
+     |
+     v
+  9. Oracles call completeSellOrder()
+     on SettlementBridgeCustody
+     (BLS consensus round #4)
+     |
+     |  - Verifies BLS signature
+     |  - Transfers USDC proceeds from AP vault to user
+     |  - Deletes sell order from storage
+     |
+     v
+  10. User receives USDC on Settlement
+      BridgedITP destroyed
+      L3 shares burned
+```
+
+### Failed Sell Recovery
+
+If BridgedITP is burned but the L3 fill never completes, the user's tokens are gone with no USDC to show for it. This cannot stand. A safety valve exists:
+
+```text
+  burnSellOrderShares() succeeds
+  BridgedITP is destroyed
+         |
+         v
+  L3 fill fails or times out?
+         |
+    +----+----+
+    |         |
+    NO        YES
+    |         |
+    v         v
+  Normal      remintAndRefundFailedSell()
+  completion  (BLS-gated, only after MIN_REMINT_DELAY = 1 hour)
+              |
+              v
+              BridgedITP re-minted to user
+              Sell order deleted
+```
+
+## The Backing Invariant
+
+The single most important property of the entire protocol. Not the most interesting. Not the most clever. The most important. Every minted share must be 1:1 backed by underlying assets. Without this, everything else is theater.
+
+```text
+  +-----------------------------------------------------------------------+
+  |                        THE BACKING INVARIANT                          |
+  |                                                                       |
+  |   For every ITP share in existence, the underlying assets MUST        |
+  |   have been purchased and confirmed on a real exchange.               |
+  |                                                                       |
+  |   Minting shares without backing = protocol insolvency.               |
+  |   This is the WORST possible failure mode.                            |
+  +-----------------------------------------------------------------------+
+
+  HOW THE BRIDGE ENFORCES IT:
+
+  +-----------+     +-----------+     +-----------+     +-----------+
+  |   User    |     |   USDC    |     |    AP     |     |  Shares   |
+  |  deposits |---->|  escrowed |---->|   buys    |---->|  minted   |
+  |   USDC    |     |  in       |     |  assets   |     |  on L3    |
+  |           |     |  custody  |     |  on       |     |           |
+  +-----------+     +-----------+     |  Bitget   |     +-----------+
+                                      +-----------+
+                         ^                                    |
+                         |                                    |
+                    completeBuyOrder               ONLY happens AFTER
+                    releases USDC                  completeBuyOrder
+                    to AP vault                    succeeds
+                         |                                    |
+                         +------------ MUST PRECEDE ----------+
+
+
+  WHAT CANNOT HAPPEN:
+
+  +-----------+                                   +-----------+
+  |   User    |          XXXXXXXXXXXX             |  Shares   |
+  |  deposits |---X----> "optimistic  -----X----->|  minted   |
+  |   USDC    |          minting"                 |  without  |
+  +-----------+          XXXXXXXXXXXX             |  backing  |
+                                                  +-----------+
+                     ^^^ THIS PATH DOES NOT EXIST ^^^
+```
+
+<Warning>
+**Never mint ITP shares without confirmed backing.** The bridge enforces this by requiring `completeBuyOrder` (which releases escrowed USDC to the AP for asset purchases) to succeed before `mintBridgedShares` is called. If `completeBuyOrder` reverts, the oracles execute `refundBuyOrder` instead -- USDC goes back to the user, zero shares minted. Unbacked ITP is worse than stuck orders, worse than slow consensus, worse than any other failure mode.
+</Warning>
+
+## Order Lifecycle on the Bridge
+
+```text
+                              BUY ORDER STATES
+                              ================
+
+  buyITPFromSettlement()         completeBuyOrder()          mintBridgedShares()
+         |                              |                           |
+         v                              v                           v
+  +------------+    BLS x3     +---------------+    BLS x1    +-----------+
+  |  ESCROWED  |------------->|  COMPLETING   |------------>|  MINTED   |
+  |  (USDC in  |   (submit,   |  (USDC to AP, |  (BridgedITP|  (done)   |
+  |  custody)  |    batch,    |   pending     |   minted)   |           |
+  +------------+    fill)     |   mint stored)|             +-----------+
+        |                      +---------------+
+        |                             |
+        v                             v
+  +------------+              +---------------+
+  |  REFUNDED  |              |  clearPending |
+  |  (timeout/ |              |  Mint()       |
+  |   failure) |              +---------------+
+  +------------+
+
+
+                              SELL ORDER STATES
+                              =================
+
+  sellITPFromSettlement()     burnSellOrderShares()     completeSellOrder()
+         |                           |                         |
+         v                           v                         v
+  +------------+    BLS x3    +------------+    BLS x1   +-----------+
+  |  ESCROWED  |------------>|   BURNED   |------------>|  SETTLED  |
+  |  (BridgedITP|  (submit,  |  (BridgedITP|  (USDC to  |  (done)   |
+  |  in custody)|   batch,   |   destroyed)|   user)    |           |
+  +------------+    fill)    +------------+             +-----------+
+        |                          |
+        v                          v
+  +------------+           +----------------+
+  |  REFUNDED  |           | remintAndRefund|
+  |  (pre-burn |           | FailedSell()   |
+  |   only)    |           | (after 1hr)    |
+  +------------+           +----------------+
+```
+
+## Replay Protection
+
+Every operation is recorded so it cannot happen twice. The mappings are the protocol's memory of what it has already done.
+
+```text
+  BridgeProxy:
+    mintProcessed[orderId] = true    // prevents double-mint of BridgedITP
+    burnProcessed[orderId] = true    // prevents double-burn of BridgedITP
+
+  SettlementBridgeCustody:
+    bridgeCompleted[chainId][nonce]  // prevents double-release of USDC
+    crossChainOrders[orderId]        // deleted after completion (CEI pattern)
+    crossChainSellOrders[orderId]    // deleted after completion (CEI pattern)
+```
+
+## Timing
+
+Ninety seconds, end to end. Not fast. But correct -- and correctness is not negotiable here.
+
+```text
+  Round 1: Submit order to L3         ~1s cycle + tx confirmation
+  Round 2: Batch the order            ~1s cycle + tx confirmation
+  Round 3: Fill (AP executes trade)   ~1s cycle + exchange execution
+  Round 4: completeBuyOrder +         ~1s cycle + tx confirmation
+           mintBridgedShares
+
+  Total: ~1-2 minutes (dominated by exchange execution time)
+```
+
+The sell flow takes the same time. Each round requires BLS signature aggregation from `ceil(2n/3)` registered oracle nodes. Patience is the price of integrity.

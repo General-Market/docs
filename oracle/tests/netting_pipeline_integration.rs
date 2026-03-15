@@ -11,7 +11,7 @@
 //! STEP 7: Fee Allocation   - Distribute costs by order size
 
 use ethers::types::{Address, H256, U256};
-use issuer::netting::{BridgeRequest, NettingEngine};
+use oracle::netting::{BridgeRequest, NettingEngine};
 use rust_decimal::Decimal;
 
 // Re-export common types
@@ -286,7 +286,7 @@ fn test_pipeline_netting_savings_calculation() {
 
 #[test]
 fn test_pipeline_with_rebalance_slot_allocation() {
-    use issuer::netting::RebalanceTrade;
+    use oracle::netting::RebalanceTrade;
 
     let mut engine = NettingEngine::new();
     let pair_id = usdc_pair(5);

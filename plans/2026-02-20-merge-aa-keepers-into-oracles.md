@@ -1,14 +1,14 @@
-# Merge AA Keepers into Index Issuers — Implementation Plan
+# Merge AA Keepers into Index Oracles — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add betting arbitration to the issuer binary as a modular async subsystem, eliminating the AA keeper binary.
+**Goal:** Add betting arbitration to the oracle binary as a modular async subsystem, eliminating the AA keeper binary.
 
-**Architecture:** New `issuer/src/arbitration/` module runs alongside the 1-second trading cycle. Reuses Index's BLS (`common/src/bls/`), P2P (TCP+TLS+MessagePack), and chain infrastructure. AA's HTTP P2P and BLS code are deleted. New `ArbitrationSettlement.sol` contract uses IssuerRegistry for BLS verification with configurable threshold (default 2).
+**Architecture:** New `oracle/src/arbitration/` module runs alongside the 1-second trading cycle. Reuses Index's BLS (`common/src/bls/`), P2P (TCP+TLS+MessagePack), and chain infrastructure. AA's HTTP P2P and BLS code are deleted. New `ArbitrationSettlement.sol` contract uses OracleRegistry for BLS verification with configurable threshold (default 2).
 
-**Tech Stack:** Rust (issuer + common crates), Solidity (ArbitrationSettlement), ethers-rs, arkworks BN254, axum (data-node REST client), reqwest (HTTP client for data-node queries)
+**Tech Stack:** Rust (oracle + common crates), Solidity (ArbitrationSettlement), ethers-rs, arkworks BN254, axum (data-node REST client), reqwest (HTTP client for data-node queries)
 
-**Design doc:** `docs/plans/2026-02-20-merge-aa-keepers-into-issuers-design.md`
+**Design doc:** `docs/plans/2026-02-20-merge-aa-keepers-into-oracles-design.md`
 
 ---
 
@@ -44,7 +44,7 @@ Add these variants before the closing `}` of `P2PMessage` enum (after `SetItpNav
     ArbitrationPriceVote {
         /// Voter's peer ID
         voter_id: PeerId,
-        /// Voter's index in issuer set (for bitmap)
+        /// Voter's index in oracle set (for bitmap)
         voter_index: u8,
         /// Bet ID (identifies proposal)
         bet_id: U256,
@@ -59,7 +59,7 @@ Add these variants before the closing `}` of `P2PMessage` enum (after `SetItpNav
     ArbitrationResolutionSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Bet ID (identifies proposal)
         bet_id: U256,
@@ -140,11 +140,11 @@ git commit -m "feat(common): add ArbitrationPriceProposal/Vote/ResolutionSign P2
 ### Task 2: Wire Arbitration Messages into ConsensusMessageHandler
 
 **Files:**
-- Modify: `issuer/src/consensus/messages.rs`
+- Modify: `oracle/src/consensus/messages.rs`
 
 **Step 1: Add new MessageHandleResult variants**
 
-Find the `MessageHandleResult` enum in `issuer/src/consensus/messages.rs` and add:
+Find the `MessageHandleResult` enum in `oracle/src/consensus/messages.rs` and add:
 
 ```rust
     /// Forward arbitration price proposal to arbitration subsystem
@@ -166,14 +166,14 @@ In the `handle_message` method, add match arms for the 3 new P2P message types. 
 
 **Step 3: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles (with warnings about unused variant — expected until Task 6 wires it)
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/consensus/messages.rs
-git commit -m "feat(issuer): route arbitration P2P messages to ForwardToArbitration handler"
+git add oracle/src/consensus/messages.rs
+git commit -m "feat(oracle): route arbitration P2P messages to ForwardToArbitration handler"
 ```
 
 ---
@@ -181,7 +181,7 @@ git commit -m "feat(issuer): route arbitration P2P messages to ForwardToArbitrat
 ### Task 3: Create Arbitration Types Module
 
 **Files:**
-- Create: `issuer/src/arbitration/types.rs`
+- Create: `oracle/src/arbitration/types.rs`
 
 Port AA's domain types adapted to Index error conventions.
 
@@ -268,7 +268,7 @@ pub struct ArbitrationResult {
     pub creator_wins: bool,
     /// Aggregated BLS signature (64 bytes, G1 point)
     pub aggregated_signature: Vec<u8>,
-    /// Bitmap of which issuers signed (bit i = issuer i)
+    /// Bitmap of which oracles signed (bit i = oracle i)
     pub signer_bitmap: U256,
     /// Number of signers
     pub signer_count: usize,
@@ -294,14 +294,14 @@ pub enum ArbitrationPhase {
 
 **Step 2: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles (module not yet wired into lib.rs — will be in Task 6)
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/src/arbitration/types.rs
-git commit -m "feat(issuer): add arbitration domain types (ArbitrationConfig, Request, Result, Phase)"
+git add oracle/src/arbitration/types.rs
+git commit -m "feat(oracle): add arbitration domain types (ArbitrationConfig, Request, Result, Phase)"
 ```
 
 ---
@@ -309,7 +309,7 @@ git commit -m "feat(issuer): add arbitration domain types (ArbitrationConfig, Re
 ### Task 4: Port Bilateral Resolution Logic
 
 **Files:**
-- Create: `issuer/src/arbitration/resolution.rs`
+- Create: `oracle/src/arbitration/resolution.rs`
 - Reference: `../AA/keeper/src/bilateral_resolution.rs` (lines 1-358)
 
 Port AA's bilateral resolution with minimal changes: swap `anyhow` for `thiserror`, drop the `PgPool` dependency (data comes from data-node REST now), keep all integer math identical.
@@ -629,14 +629,14 @@ mod tests {
 
 **Step 2: Run tests**
 
-Run: `cargo test -p issuer -- resolution -v`
+Run: `cargo test -p oracle -- resolution -v`
 Expected: All 9 tests PASS
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/src/arbitration/resolution.rs
-git commit -m "feat(issuer): port bilateral resolution VM from AA keeper (integer math, thiserror)"
+git add oracle/src/arbitration/resolution.rs
+git commit -m "feat(oracle): port bilateral resolution VM from AA keeper (integer math, thiserror)"
 ```
 
 ---
@@ -644,7 +644,7 @@ git commit -m "feat(issuer): port bilateral resolution VM from AA keeper (intege
 ### Task 5: Create Data-Node Price Fetcher
 
 **Files:**
-- Create: `issuer/src/arbitration/market_data.rs`
+- Create: `oracle/src/arbitration/market_data.rs`
 
 Replaces AA's `backend_client.rs` and direct Postgres queries. Queries the merged data-node REST API instead.
 
@@ -778,23 +778,23 @@ mod tests {
 
 **Step 2: Run tests**
 
-Run: `cargo test -p issuer -- market_data -v`
+Run: `cargo test -p oracle -- market_data -v`
 Expected: 2 unit tests PASS
 
 **Step 3: Commit**
 
 ```bash
-git add issuer/src/arbitration/market_data.rs
-git commit -m "feat(issuer): add DataNodePriceFetcher for arbitration exit prices"
+git add oracle/src/arbitration/market_data.rs
+git commit -m "feat(oracle): add DataNodePriceFetcher for arbitration exit prices"
 ```
 
 ---
 
-### Task 6: Create Arbitration Module Scaffold + Wire into Issuer
+### Task 6: Create Arbitration Module Scaffold + Wire into Oracle
 
 **Files:**
-- Create: `issuer/src/arbitration/mod.rs`
-- Modify: `issuer/src/lib.rs` (add `pub mod arbitration;`)
+- Create: `oracle/src/arbitration/mod.rs`
+- Modify: `oracle/src/lib.rs` (add `pub mod arbitration;`)
 
 **Step 1: Write the module file**
 
@@ -888,44 +888,44 @@ impl ArbitrationSubsystem {
 
 **Step 2: Wire into lib.rs**
 
-Add `pub mod arbitration;` to `issuer/src/lib.rs` alongside the other module declarations.
+Add `pub mod arbitration;` to `oracle/src/lib.rs` alongside the other module declarations.
 
-**Step 3: Add `regex` dependency to issuer Cargo.toml**
+**Step 3: Add `regex` dependency to oracle Cargo.toml**
 
 The resolution module uses `regex` (via `LazyLock`). Check if it's already a dependency; if not, add it.
 
-Run: `grep regex issuer/Cargo.toml`
+Run: `grep regex oracle/Cargo.toml`
 
 If missing, add: `regex = "1"` to `[dependencies]`
 
 **Step 4: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles with warnings about unused fields/TODOs
 
 **Step 5: Run all tests**
 
-Run: `cargo test -p issuer -- arbitration -v`
+Run: `cargo test -p oracle -- arbitration -v`
 Expected: All resolution + market_data tests pass
 
 **Step 6: Commit**
 
 ```bash
-git add issuer/src/arbitration/ issuer/src/lib.rs issuer/Cargo.toml
-git commit -m "feat(issuer): wire arbitration module into issuer (scaffold + resolution + price fetcher)"
+git add oracle/src/arbitration/ oracle/src/lib.rs oracle/Cargo.toml
+git commit -m "feat(oracle): wire arbitration module into oracle (scaffold + resolution + price fetcher)"
 ```
 
 ---
 
-### Task 7: Add Arbitration Config to Issuer Config
+### Task 7: Add Arbitration Config to Oracle Config
 
 **Files:**
-- Modify: `issuer/src/config.rs`
-- Modify: `issuer/src/main.rs` (parse new CLI args)
+- Modify: `oracle/src/config.rs`
+- Modify: `oracle/src/main.rs` (parse new CLI args)
 
-**Step 1: Add arbitration fields to IssuerConfig**
+**Step 1: Add arbitration fields to OracleConfig**
 
-In `issuer/src/config.rs`, add to the `IssuerConfig` struct:
+In `oracle/src/config.rs`, add to the `OracleConfig` struct:
 
 ```rust
     // --- Arbitration subsystem fields ---
@@ -969,11 +969,11 @@ In `issuer/src/config.rs`, add to the `IssuerConfig` struct:
 
 **Step 3: Wire config into ArbitrationConfig construction**
 
-Add a helper method or builder that converts `IssuerConfig` arbitration fields into `ArbitrationConfig`. Add this in the config module or in `arbitration/types.rs`:
+Add a helper method or builder that converts `OracleConfig` arbitration fields into `ArbitrationConfig`. Add this in the config module or in `arbitration/types.rs`:
 
 ```rust
 impl ArbitrationConfig {
-    pub fn from_issuer_config(config: &IssuerConfig) -> Option<Self> {
+    pub fn from_oracle_config(config: &OracleConfig) -> Option<Self> {
         if !config.arbitration_enabled.unwrap_or(false) {
             return None;
         }
@@ -996,14 +996,14 @@ impl ArbitrationConfig {
 
 **Step 4: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles
 
 **Step 5: Commit**
 
 ```bash
-git add issuer/src/config.rs issuer/src/main.rs issuer/src/arbitration/types.rs
-git commit -m "feat(issuer): add arbitration config fields (vault, threshold, data-node-url)"
+git add oracle/src/config.rs oracle/src/main.rs oracle/src/arbitration/types.rs
+git commit -m "feat(oracle): add arbitration config fields (vault, threshold, data-node-url)"
 ```
 
 ---
@@ -1013,7 +1013,7 @@ git commit -m "feat(issuer): add arbitration config fields (vault, threshold, da
 **Files:**
 - Create: `contracts/src/arbitration/ArbitrationSettlement.sol`
 - Reference: `contracts/src/libraries/BLSLib.sol` (already exists)
-- Reference: `contracts/src/registry/IssuerRegistry.sol` (already exists)
+- Reference: `contracts/src/registry/OracleRegistry.sol` (already exists)
 
 **Step 1: Write the contract**
 
@@ -1022,10 +1022,10 @@ git commit -m "feat(issuer): add arbitration config fields (vault, threshold, da
 pragma solidity ^0.8.24;
 
 import {BLSLib} from "../libraries/BLSLib.sol";
-import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 
-/// @title ArbitrationSettlement — BLS-verified bet resolution via issuer consensus
-/// @notice Replaces ResolutionDAOVoting. Uses IssuerRegistry for BLS key management.
+/// @title ArbitrationSettlement — BLS-verified bet resolution via oracle consensus
+/// @notice Replaces ResolutionDAOVoting. Uses OracleRegistry for BLS key management.
 /// @dev Configurable signature threshold (default 2, upgradable via governance).
 contract ArbitrationSettlement {
     // ============ ERRORS ============
@@ -1041,7 +1041,7 @@ contract ArbitrationSettlement {
     event ThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
 
     // ============ STATE ============
-    IIssuerRegistry public immutable issuerRegistry;
+    IOracleRegistry public immutable oracleRegistry;
     address public immutable collateralVault;
     address public governance;
     uint256 public signatureThreshold;
@@ -1051,12 +1051,12 @@ contract ArbitrationSettlement {
 
     // ============ CONSTRUCTOR ============
     constructor(
-        address _issuerRegistry,
+        address _oracleRegistry,
         address _collateralVault,
         address _governance,
         uint256 _threshold
     ) {
-        issuerRegistry = IIssuerRegistry(_issuerRegistry);
+        oracleRegistry = IOracleRegistry(_oracleRegistry);
         collateralVault = _collateralVault;
         governance = _governance;
         signatureThreshold = _threshold;
@@ -1064,11 +1064,11 @@ contract ArbitrationSettlement {
 
     // ============ SETTLEMENT ============
 
-    /// @notice Settle a bet using aggregated BLS signatures from issuers
+    /// @notice Settle a bet using aggregated BLS signatures from oracles
     /// @param betId The bet ID from CollateralVault
     /// @param creatorWins Whether the creator wins the bet
     /// @param signature Aggregated BLS G1 signature (64 bytes: x || y)
-    /// @param signerBitmap Bitmap of which issuers signed (bit i = issuer i)
+    /// @param signerBitmap Bitmap of which oracles signed (bit i = oracle i)
     function settleBet(
         uint256 betId,
         bool creatorWins,
@@ -1087,7 +1087,7 @@ contract ArbitrationSettlement {
         // Build message hash: keccak256(abi.encode(betId, creatorWins))
         bytes32 messageHash = keccak256(abi.encode(betId, creatorWins));
 
-        // Compute aggregated pubkey from IssuerRegistry for the signing set
+        // Compute aggregated pubkey from OracleRegistry for the signing set
         uint256[4] memory aggPubkey = _aggregatePubkeys(signerBitmap);
 
         // Verify BLS signature
@@ -1124,13 +1124,13 @@ contract ArbitrationSettlement {
 
     // ============ INTERNAL ============
 
-    /// @notice Aggregate pubkeys from IssuerRegistry for the given signer bitmap
+    /// @notice Aggregate pubkeys from OracleRegistry for the given signer bitmap
     function _aggregatePubkeys(uint256 bitmap) internal view returns (uint256[4] memory agg) {
         bool first = true;
         for (uint256 i = 0; i < 256; i++) {
             if (bitmap & (1 << i) != 0) {
-                // Get pubkey for issuer i from registry
-                bytes memory pubkeyBytes = issuerRegistry.getIssuerPubkey(i);
+                // Get pubkey for oracle i from registry
+                bytes memory pubkeyBytes = oracleRegistry.getOraclePubkey(i);
                 require(pubkeyBytes.length == 128, "Invalid pubkey length");
 
                 uint256[4] memory pk;
@@ -1143,9 +1143,9 @@ contract ArbitrationSettlement {
                     first = false;
                 } else {
                     // G2 addition via ecAdd isn't directly available as a precompile.
-                    // For G2 aggregation, we store the pre-aggregated pubkey in IssuerRegistry
+                    // For G2 aggregation, we store the pre-aggregated pubkey in OracleRegistry
                     // and verify against it. This loop is for bitmap validation only.
-                    // In practice, the aggregated pubkey is computed off-chain by issuers
+                    // In practice, the aggregated pubkey is computed off-chain by oracles
                     // and we verify signature against the registry's stored aggregated key
                     // filtered by the bitmap.
                     revert("G2 aggregation: use registry pre-aggregated key");
@@ -1164,18 +1164,18 @@ contract ArbitrationSettlement {
 }
 ```
 
-**Note:** The G2 aggregation approach needs refinement — in practice, issuers pass the pre-aggregated pubkey or the contract uses the registry's stored aggregated key. This is the same pattern used by `Index.sol` for batch confirmation. Adapt based on how `Index.sol` currently handles bitmap-based BLS verification.
+**Note:** The G2 aggregation approach needs refinement — in practice, oracles pass the pre-aggregated pubkey or the contract uses the registry's stored aggregated key. This is the same pattern used by `Index.sol` for batch confirmation. Adapt based on how `Index.sol` currently handles bitmap-based BLS verification.
 
 **Step 2: Verify compilation**
 
 Run: `forge build` (from contracts/ directory)
-Expected: Compiles. May need interface adjustments for `getIssuerPubkey`.
+Expected: Compiles. May need interface adjustments for `getOraclePubkey`.
 
 **Step 3: Commit**
 
 ```bash
 git add contracts/src/arbitration/ArbitrationSettlement.sol
-git commit -m "feat(contracts): add ArbitrationSettlement with IssuerRegistry BLS verification"
+git commit -m "feat(contracts): add ArbitrationSettlement with OracleRegistry BLS verification"
 ```
 
 ---
@@ -1183,9 +1183,9 @@ git commit -m "feat(contracts): add ArbitrationSettlement with IssuerRegistry BL
 ### Task 9: Create ArbitrationListener (Event Polling)
 
 **Files:**
-- Create: `issuer/src/arbitration/listener.rs`
+- Create: `oracle/src/arbitration/listener.rs`
 
-Polls CollateralVault for `ArbitrationRequested` events using the issuer's existing ChainReader infrastructure.
+Polls CollateralVault for `ArbitrationRequested` events using the oracle's existing ChainReader infrastructure.
 
 **Step 1: Write the listener module**
 
@@ -1323,18 +1323,18 @@ impl ArbitrationListener {
 
 **Step 2: Add to mod.rs**
 
-Add `pub mod listener;` to `issuer/src/arbitration/mod.rs`
+Add `pub mod listener;` to `oracle/src/arbitration/mod.rs`
 
 **Step 3: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/arbitration/listener.rs issuer/src/arbitration/mod.rs
-git commit -m "feat(issuer): add ArbitrationListener polling CollateralVault events"
+git add oracle/src/arbitration/listener.rs oracle/src/arbitration/mod.rs
+git commit -m "feat(oracle): add ArbitrationListener polling CollateralVault events"
 ```
 
 ---
@@ -1342,8 +1342,8 @@ git commit -m "feat(issuer): add ArbitrationListener polling CollateralVault eve
 ### Task 10: Create ArbitrationProcessor (4-Phase Consensus)
 
 **Files:**
-- Create: `issuer/src/arbitration/consensus.rs`
-- Create: `issuer/src/arbitration/processor.rs`
+- Create: `oracle/src/arbitration/consensus.rs`
+- Create: `oracle/src/arbitration/processor.rs`
 
 The processor orchestrates the 4-phase consensus for each bet. Uses Index's P2P transport and BLS signer.
 
@@ -1353,7 +1353,7 @@ The processor orchestrates the 4-phase consensus for each bet. Uses Index's P2P 
 //! Arbitration consensus hash builders
 //!
 //! Builds message hashes for BLS signing during arbitration consensus.
-//! Follows the same pattern as issuer/src/bridge/types.rs hash builders.
+//! Follows the same pattern as oracle/src/bridge/types.rs hash builders.
 
 use ethers::abi::encode;
 use ethers::abi::Token;
@@ -1563,23 +1563,23 @@ impl ArbitrationProcessor {
 
 **Step 3: Add modules to mod.rs**
 
-Add `pub mod consensus;` and `pub mod processor;` to `issuer/src/arbitration/mod.rs`
+Add `pub mod consensus;` and `pub mod processor;` to `oracle/src/arbitration/mod.rs`
 
 **Step 4: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles
 
 **Step 5: Run tests**
 
-Run: `cargo test -p issuer -- arbitration -v`
+Run: `cargo test -p oracle -- arbitration -v`
 Expected: All arbitration tests pass (resolution, market_data, consensus hash tests)
 
 **Step 6: Commit**
 
 ```bash
-git add issuer/src/arbitration/
-git commit -m "feat(issuer): add ArbitrationProcessor with 4-phase consensus + hash builders"
+git add oracle/src/arbitration/
+git commit -m "feat(oracle): add ArbitrationProcessor with 4-phase consensus + hash builders"
 ```
 
 ---
@@ -1587,7 +1587,7 @@ git commit -m "feat(issuer): add ArbitrationProcessor with 4-phase consensus + h
 ### Task 11: Spawn Arbitration Subsystem in main.rs
 
 **Files:**
-- Modify: `issuer/src/main.rs`
+- Modify: `oracle/src/main.rs`
 
 **Step 1: Add arbitration startup logic**
 
@@ -1595,9 +1595,9 @@ After the existing bootstrap and before the main loop, add:
 
 ```rust
     // --- Arbitration subsystem (optional) ---
-    let arbitration_tx = if let Some(arb_config) = ArbitrationConfig::from_issuer_config(&config) {
-        let (arb_msg_tx, arb_msg_rx) = issuer::arbitration::arbitration_channel();
-        let subsystem = issuer::arbitration::ArbitrationSubsystem::new(arb_config, arb_msg_rx);
+    let arbitration_tx = if let Some(arb_config) = ArbitrationConfig::from_oracle_config(&config) {
+        let (arb_msg_tx, arb_msg_rx) = oracle::arbitration::arbitration_channel();
+        let subsystem = oracle::arbitration::ArbitrationSubsystem::new(arb_config, arb_msg_rx);
         let shutdown_clone = shutdown.clone();
         tokio::spawn(async move {
             subsystem.run(shutdown_clone).await;
@@ -1624,14 +1624,14 @@ In the P2P message handling loop, add:
 
 **Step 3: Verify compilation**
 
-Run: `cargo check -p issuer`
+Run: `cargo check -p oracle`
 Expected: Compiles
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/main.rs
-git commit -m "feat(issuer): spawn arbitration subsystem on startup when enabled"
+git add oracle/src/main.rs
+git commit -m "feat(oracle): spawn arbitration subsystem on startup when enabled"
 ```
 
 ---
@@ -1656,7 +1656,7 @@ contract ArbitrationSettlementTest is Test {
     function setUp() public {
         // Deploy with mock addresses
         settlement = new ArbitrationSettlement(
-            address(0x1), // mock IssuerRegistry
+            address(0x1), // mock OracleRegistry
             address(0x2), // mock CollateralVault
             address(this), // governance = test contract
             2              // threshold = 2
@@ -1734,7 +1734,7 @@ git commit -m "test(contracts): add ArbitrationSettlement unit tests (threshold,
 
 **Step 1: Full workspace compilation**
 
-Run: `cargo build -p common -p issuer`
+Run: `cargo build -p common -p oracle`
 Expected: Clean compilation
 
 **Step 2: Run all common tests**
@@ -1742,9 +1742,9 @@ Expected: Clean compilation
 Run: `cargo test -p common -v`
 Expected: All existing + new P2P serialization tests pass
 
-**Step 3: Run all issuer tests**
+**Step 3: Run all oracle tests**
 
-Run: `cargo test -p issuer -v`
+Run: `cargo test -p oracle -v`
 Expected: All existing + new arbitration tests pass
 
 **Step 4: Run Solidity tests**
@@ -1766,16 +1766,16 @@ git commit -m "fix: integration fixes for arbitration merger compilation"
 | Task | Component | Files | Tests |
 |------|-----------|-------|-------|
 | 1 | P2P message types | `common/src/types/p2p.rs` | 3 serialization roundtrips |
-| 2 | Message routing | `issuer/src/consensus/messages.rs` | Compile check |
-| 3 | Domain types | `issuer/src/arbitration/types.rs` | Compile check |
-| 4 | Resolution VM | `issuer/src/arbitration/resolution.rs` | 9 unit tests |
-| 5 | Price fetcher | `issuer/src/arbitration/market_data.rs` | 2 unit tests |
-| 6 | Module scaffold | `issuer/src/arbitration/mod.rs` + lib.rs | Compile + run |
-| 7 | Config | `issuer/src/config.rs` + main.rs | Compile check |
+| 2 | Message routing | `oracle/src/consensus/messages.rs` | Compile check |
+| 3 | Domain types | `oracle/src/arbitration/types.rs` | Compile check |
+| 4 | Resolution VM | `oracle/src/arbitration/resolution.rs` | 9 unit tests |
+| 5 | Price fetcher | `oracle/src/arbitration/market_data.rs` | 2 unit tests |
+| 6 | Module scaffold | `oracle/src/arbitration/mod.rs` + lib.rs | Compile + run |
+| 7 | Config | `oracle/src/config.rs` + main.rs | Compile check |
 | 8 | Settlement contract | `contracts/src/arbitration/ArbitrationSettlement.sol` | Forge build |
-| 9 | Event listener | `issuer/src/arbitration/listener.rs` | Compile check |
-| 10 | Processor + consensus | `issuer/src/arbitration/{consensus,processor}.rs` | 4 hash tests |
-| 11 | Startup wiring | `issuer/src/main.rs` | Compile check |
+| 9 | Event listener | `oracle/src/arbitration/listener.rs` | Compile check |
+| 10 | Processor + consensus | `oracle/src/arbitration/{consensus,processor}.rs` | 4 hash tests |
+| 11 | Startup wiring | `oracle/src/main.rs` | Compile check |
 | 12 | Contract tests | `contracts/test/ArbitrationSettlement.t.sol` | 5 Forge tests |
 | 13 | Integration | All | Full workspace build + test |
 

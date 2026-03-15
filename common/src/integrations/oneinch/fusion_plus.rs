@@ -1,7 +1,7 @@
 //! 1inch Fusion+ cross-chain swap integration
 //!
 //! Fusion+ enables cross-chain swaps using an intent-based architecture where:
-//! - Issuers create intents (cross-chain swap requests)
+//! - Oracles create intents (cross-chain swap requests)
 //! - 1inch resolvers compete to fill the intents
 //! - Settlement occurs atomically on the destination chain
 //!

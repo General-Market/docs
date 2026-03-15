@@ -66,7 +66,7 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('GET /api/vision/batches returns valid response', async () => {
     const res = await apiGet('/api/vision/batches');
-    // On testnet, issuer may return 502 if no batches configured
+    // On testnet, oracle may return 502 if no batches configured
     if (res.ok) {
       const data = await res.json();
       const batches = data.batches || data;
@@ -103,13 +103,13 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('GET /api/vision/leaderboard returns valid response', async () => {
     const res = await apiGet('/api/vision/leaderboard');
-    // On testnet, issuer may return 502 if no leaderboard data
+    // On testnet, oracle may return 502 if no leaderboard data
     if (res.ok) {
       const data = await res.json();
       expect(data).toHaveProperty('leaderboard');
       expect(Array.isArray(data.leaderboard)).toBe(true);
     } else {
-      // 502 is acceptable — issuer returns fallback empty leaderboard
+      // 502 is acceptable — oracle returns fallback empty leaderboard
       const data = await res.json();
       expect(data).toHaveProperty('leaderboard');
     }

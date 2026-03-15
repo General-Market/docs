@@ -31,7 +31,7 @@ abstract contract DeployBLSHelper is Script {
         return vm.ffi(cmd);
     }
 
-    /// @notice Get a single issuer's G2 public key from seed index
+    /// @notice Get a single oracle's G2 public key from seed index
     function blsPubkey(uint8 seedIndex) internal returns (bytes memory) {
         string[] memory cmd = new string[](4);
         cmd[0] = BLS_TOOL;

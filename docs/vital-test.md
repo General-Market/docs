@@ -1,11 +1,11 @@
 # Index Protocol Local E2E Test
 
-Note : The 3 Issuers the AP and frontend should be live. No E2E Virtual!
+Note : The 3 Oracles the AP and frontend should be live. No E2E Virtual!
 
 
 ## Overview
 
-This E2E test runs **everything through the bridge path** across two separate local chains: an **Arbitrum chain** (port 8546, chain ID 42161) and an **Index L3 chain** (port 8545, chain ID 111222333). ITP creation and purchases are initiated from Arbitrum and processed by issuers using **real BLS signatures** (no mocking).
+This E2E test runs **everything through the bridge path** across two separate local chains: an **Arbitrum chain** (port 8546, chain ID 42161) and an **Index L3 chain** (port 8545, chain ID 111222333). ITP creation and purchases are initiated from Arbitrum and processed by oracles using **real BLS signatures** (no mocking).
 
 ## Architecture Overview
 
@@ -52,7 +52,7 @@ This E2E test runs **everything through the bridge path** across two separate lo
 │                        RPC: http://localhost:8545                                │
 │                                                                                 │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐                    │
-│  │   Index    │ │  L3Usdc    │ │  L3Bridge  │ │  Issuer    │                    │
+│  │   Index    │ │  L3Usdc    │ │  L3Bridge  │ │  Oracle    │                    │
 │  │   .sol     │ │ (MockERC20)│ │  Custody   │ │  Registry  │                    │
 │  │            │ │            │ │            │ │  (BLS keys)│                    │
 │  │ submitOrder│ │ Order      │ │            │ │            │                    │
@@ -66,14 +66,14 @@ This E2E test runs **everything through the bridge path** across two separate lo
 │  └────────────┘ └────────────┘ └──────────────────┘                             │
 │                                                                                 │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                              │
-│  │  Issuer 1   │  │  Issuer 2   │  │  Issuer 3   │                              │
+│  │  Oracle 1   │  │  Oracle 2   │  │  Oracle 3   │                              │
 │  │   :9001     │  │   :9002     │  │   :9003     │                              │
 │  │             │  │             │  │             │                              │
 │  │ REAL BLS    │  │ REAL BLS    │  │ REAL BLS    │  ◄── P2P Consensus           │
 │  │ (2/3 thres) │  │ (2/3 thres) │  │ (2/3 thres) │      real BLS agg            │
 │  └─────────────┘  └─────────────┘  └─────────────┘                              │
 │                                                                                 │
-│  Issuers operate on BOTH chains:                                                │
+│  Oracles operate on BOTH chains:                                                │
 │  - L3 RPC (port 8545) for Index events and contract calls                       │
 │  - Arbitrum RPC (port 8546) for bridge events and cross-chain operations        │
 └─────────────────────────────────────────────────────────────────────────────────┘
@@ -84,21 +84,21 @@ This E2E test runs **everything through the bridge path** across two separate lo
 ## Key Points
 
 - **Bridge-only testing**: All user actions originate from Arbitrum (port 8546, chain 42161)
-- **Issuers ARE the bridge**: Issuers control all cross-chain USDC movement with BLS signatures
-- **Real BLS signatures**: Issuers use actual BLS key generation and threshold signing (2/3 required)
+- **Oracles ARE the bridge**: Oracles control all cross-chain USDC movement with BLS signatures
+- **Real BLS signatures**: Oracles use actual BLS key generation and threshold signing (2/3 required)
 - **Dual Anvil chains**: L3 (port 8545, chain 111222333) for core Index contracts, Arbitrum (port 8546, chain 42161) for user-facing bridge contracts
 - **No mock consensus**: P2P gossip and BLS aggregation are real
 - **Two USDC tokens**: ARB_USDC (Arbitrum) and L3Usdc (Index L3) on separate chains
-- **User calls once**: User only calls `buyITPFromArbitrum()` (buy) or `sellITPFromArbitrum()` (sell) - issuers handle everything else
+- **User calls once**: User only calls `buyITPFromArbitrum()` (buy) or `sellITPFromArbitrum()` (sell) - oracles handle everything else
 - **Frontend connects ONLY to Arbitrum**: Port 8546, chain ID 42161
-- **Issuers operate on BOTH chains**: L3 RPC on port 8545, Arbitrum RPC on port 8546
+- **Oracles operate on BOTH chains**: L3 RPC on port 8545, Arbitrum RPC on port 8546
 - **AP watches L3, trades on Arbitrum**: Monitors L3 Index events, executes trades on MockBitgetVault (Arbitrum)
 
 ---
 
 ## Flow 1: Create ITP via Bridge
 
-User on Arbitrum (port 8546) requests ITP creation → Issuers reach BLS consensus → ITP created on Index L3 (port 8545).
+User on Arbitrum (port 8546) requests ITP creation → Oracles reach BLS consensus → ITP created on Index L3 (port 8545).
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -116,10 +116,10 @@ User on Arbitrum (port 8546) requests ITP creation → Issuers reach BLS consens
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 2: Issuers observe event and reach BLS consensus                      │
+│  STEP 2: Oracles observe event and reach BLS consensus                      │
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │  Issuer 1                    Issuer 2                    Issuer 3     │  │
+│  │  Oracle 1                    Oracle 2                    Oracle 3     │  │
 │  │     │                           │                           │         │  │
 │  │     │◄──── P2P Gossip ─────────►│◄──── P2P Gossip ─────────►│         │  │
 │  │     │                           │                           │         │  │
@@ -131,7 +131,7 @@ User on Arbitrum (port 8546) requests ITP creation → Issuers reach BLS consens
 │  │                    Aggregate BLS signatures (2/3 threshold)           │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  Lead issuer submits to chain with aggregated BLS signature                 │
+│  Lead oracle submits to chain with aggregated BLS signature                 │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -142,11 +142,11 @@ User on Arbitrum (port 8546) requests ITP creation → Issuers reach BLS consens
 │      requestId: 0,                                                          │
 │      itpId: bytes32,               // Deterministic ITP ID                  │
 │      blsSignature: bytes,          // Aggregated BLS signature              │
-│      signersBitmask: uint256       // Which issuers signed (e.g., 0b111)    │
+│      signersBitmask: uint256       // Which oracles signed (e.g., 0b111)    │
 │  )                                                                          │
 │                                                                             │
 │  On-chain verification:                                                     │
-│  1. Verify BLS signature against IssuerRegistry aggregated pubkey           │
+│  1. Verify BLS signature against OracleRegistry aggregated pubkey           │
 │  2. Check 2/3 threshold met                                                 │
 │  3. Create ITP in Index.sol                                                 │
 │  4. Deploy ITP vault via BridgedItpFactory                                  │
@@ -159,9 +159,9 @@ User on Arbitrum (port 8546) requests ITP creation → Issuers reach BLS consens
 
 ## Flow 2: Buy ITP via Bridge
 
-User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control all cross-chain USDC movement with BLS signatures.
+User on Arbitrum (port 8546) buys ITP. **Oracles ARE the bridge** - they control all cross-chain USDC movement with BLS signatures.
 
-**Key insight**: Issuers (with BLS consensus) perform all bridge operations and call `submitOrder()` on L3 on behalf of the user.
+**Key insight**: Oracles (with BLS consensus) perform all bridge operations and call `submitOrder()` on L3 on behalf of the user.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -189,27 +189,27 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 2: ISSUERS bridge USDC from Arbitrum → L3 (with BLS)                  │
+│  STEP 2: ORACLES bridge USDC from Arbitrum → L3 (with BLS)                  │
 │                                                                             │
-│  Issuers observe CrossChainOrderCreated event and:                          │
+│  Oracles observe CrossChainOrderCreated event and:                          │
 │  1. Reach BLS consensus on processing the order                             │
 │  2. Call bridge contract with aggregated BLS signature                      │
 │  3. USDC is released from custody and bridged to L3                         │
 │                                                                             │
 │  ┌─────────────────────┐                    ┌─────────────────────┐        │
 │  │  ArbUSDC            │  ══BLS══════════►  │    L3Usdc           │        │
-│  │  (in ArbCustody)    │  (issuers bridge)  │  (for Index order)  │        │
+│  │  (in ArbCustody)    │  (oracles bridge)  │  (for Index order)  │        │
 │  └─────────────────────┘                    └─────────────────────┘        │
 │                                                                             │
-│  In production: Issuers call completeBridge() with BLS signature            │
+│  In production: Oracles call completeBridge() with BLS signature            │
 │  In local E2E:  Simulate by minting L3Usdc                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 3: ISSUERS submit order on L3 Index (with BLS, on behalf of user)     │
+│  STEP 3: ORACLES submit order on L3 Index (with BLS, on behalf of user)     │
 │                                                                             │
-│  Issuers (NOT the user) call submitOrder on L3:                             │
+│  Oracles (NOT the user) call submitOrder on L3:                             │
 │                                                                             │
 │  Index.submitOrder(                                                         │
 │      itpId: bytes32,               // Same ITP as Arbitrum order            │
@@ -229,9 +229,9 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 4: Issuers confirm batch with BLS consensus                           │
+│  STEP 4: Oracles confirm batch with BLS consensus                           │
 │                                                                             │
-│  Issuers:                                                                   │
+│  Oracles:                                                                   │
 │  1. Fetch current asset prices                                              │
 │  2. Reach consensus on batch via P2P (real BLS)                             │
 │  3. Aggregate BLS signatures (2/3 threshold)                                │
@@ -248,28 +248,28 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 5: ISSUERS bridge USDC back from L3 → Arbitrum (with BLS)             │
+│  STEP 5: ORACLES bridge USDC back from L3 → Arbitrum (with BLS)             │
 │                                                                             │
-│  Issuers (with BLS) authorize USDC release from L3 to Arbitrum:             │
-│  1. USDC goes to ISSUER-CONTROLLED CUSTODY on Arbitrum                      │
-│  2. NOT directly to AP - issuers control the custody                        │
+│  Oracles (with BLS) authorize USDC release from L3 to Arbitrum:             │
+│  1. USDC goes to ORACLE-CONTROLLED CUSTODY on Arbitrum                      │
+│  2. NOT directly to AP - oracles control the custody                        │
 │                                                                             │
 │  ┌─────────────────────┐                    ┌─────────────────────┐        │
 │  │  L3Usdc             │  ══BLS══════════►  │    ArbUSDC          │        │
-│  │  (in Index escrow)  │  (issuers bridge)  │  (issuer custody)   │        │
+│  │  (in Index escrow)  │  (oracles bridge)  │  (oracle custody)   │        │
 │  └─────────────────────┘                    └─────────────────────┘        │
 │                                                                             │
-│  In local E2E: Simulate by minting ArbUSDC to issuer custody                │
+│  In local E2E: Simulate by minting ArbUSDC to oracle custody                │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 6: ISSUERS (BLS) send USDC to MockBitgetVault for AP to trade         │
+│  STEP 6: ORACLES (BLS) send USDC to MockBitgetVault for AP to trade         │
 │                                                                             │
-│  Issuers use BLS to authorize transfer from custody to MockBitgetVault:     │
+│  Oracles use BLS to authorize transfer from custody to MockBitgetVault:     │
 │                                                                             │
 │  ┌────────────────────┐                     ┌──────────────────────┐       │
-│  │  Issuer Custody    │ ══BLS═══════════►   │   MockBitgetVault    │       │
+│  │  Oracle Custody    │ ══BLS═══════════►   │   MockBitgetVault    │       │
 │  │  (BLS-controlled)  │   ArbUSDC           │   (Arbitrum side)    │       │
 │  │  (Arbitrum)        │                     │                      │       │
 │  └────────────────────┘                     └──────────────────────┘       │
@@ -291,7 +291,7 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 7: Issuers confirm fills, ITP shares minted on L3                     │
+│  STEP 7: Oracles confirm fills, ITP shares minted on L3                     │
 │                                                                             │
 │  Index.confirmFills(                                                        │
 │      cycleNumber: uint256,                                                  │
@@ -311,12 +311,12 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Complete USDC Flow Diagram (Issuers = Bridge)
+### Complete USDC Flow Diagram (Oracles = Bridge)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                   USDC FLOW (Buy ITP via Bridge)                            │
-│                   Issuers control ALL operations with BLS                   │
+│                   Oracles control ALL operations with BLS                   │
 │                                                                             │
 │   ARBITRUM                                                      ARBITRUM    │
 │   ────────                          L3                          ────────    │
@@ -330,19 +330,19 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
 │       └───────────────►│ (1) user locks       │                  │          │
 │                        │                      │                  │          │
 │                        │                      │                  │          │
-│         ISSUERS (BLS)  │     L3Usdc           │                  │          │
+│         ORACLES (BLS)  │     L3Usdc           │                  │          │
 │         ══════════════►│─────────────────────►│ (3) order        │          │
 │                        │ (2) bridge →         │    submitted     │          │
 │                        │                      │                  │          │
 │                        │                      │ (4) batch        │          │
 │                        │                      │    confirmed     │          │
 │                        │                      │                  │          │
-│         ISSUERS (BLS)  │    ArbUSDC           │                  │          │
+│         ORACLES (BLS)  │    ArbUSDC           │                  │          │
 │         ◄══════════════│◄─────────────────────│ (5) bridge ←     │          │
 │                        │                      │                  │          │
 │                        │                      │                  │          │
 │     ┌──────────────┐   │                      │                  │          │
-│     │Issuer Custody│◄──┘                      │                  │          │
+│     │Oracle Custody│◄──┘                      │                  │          │
 │     │(BLS-controlled)══════════════════════════════ArbUSDC══════►│         │
 │     │  (Arbitrum)  │     (6) BLS release to vault                │ (7) AP   │
 │     └──────────────┘                                             │  trades  │
@@ -367,7 +367,7 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
 │    - sellITPFromArbitrum()                 - confirmBatch()                 │
 │    - Locks user's ARB_USDC                 - confirmFills()                 │
 │  • BLSCustody (BLS-controlled)           • Governance                      │
-│    - Holds USDC after bridge back        • IssuerRegistry (BLS keys)       │
+│    - Holds USDC after bridge back        • OracleRegistry (BLS keys)       │
 │    - BLS required to release             • CollateralRegistry              │
 │  • MockBitgetVault                       • L3BridgeCustody                  │
 │    - executeTrade()                      • ITP Vaults (ERC4626)             │
@@ -377,17 +377,17 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
 │  • 627 Mock ERC20 Tokens                                                    │
 │    - BTC, ETH, SOL, etc.                                                    │
 │                                                                             │
-│  ISSUERS are the BRIDGE (all BLS-controlled):                              │
-│  - Issuers (BLS) bridge USDC Arbitrum → L3                                 │
-│  - Issuers (BLS) call submitOrder on L3 (on behalf of user)                │
-│  - Issuers (BLS) call confirmBatch on L3                                   │
-│  - Issuers (BLS) bridge USDC L3 → Arbitrum (to BLSCustody)                │
-│  - Issuers (BLS) release USDC from custody to MockBitgetVault              │
-│  - Issuers (BLS) call confirmFills on L3                                   │
+│  ORACLES are the BRIDGE (all BLS-controlled):                              │
+│  - Oracles (BLS) bridge USDC Arbitrum → L3                                 │
+│  - Oracles (BLS) call submitOrder on L3 (on behalf of user)                │
+│  - Oracles (BLS) call confirmBatch on L3                                   │
+│  - Oracles (BLS) bridge USDC L3 → Arbitrum (to BLSCustody)                │
+│  - Oracles (BLS) release USDC from custody to MockBitgetVault              │
+│  - Oracles (BLS) call confirmFills on L3                                   │
 │                                                                             │
 │  Frontend connects ONLY to Arbitrum (port 8546, chain 42161)              │
 │  AP watches L3 events (port 8545), trades on MockBitgetVault (port 8546)  │
-│  Issuers operate on BOTH chains (L3 + Arbitrum RPCs via BLS)              │
+│  Oracles operate on BOTH chains (L3 + Arbitrum RPCs via BLS)              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -395,21 +395,21 @@ User on Arbitrum (port 8546) buys ITP. **Issuers ARE the bridge** - they control
 
 ## Component Details
 
-### Issuer Node (Real BLS)
+### Oracle Node (Real BLS)
 
-Issuers use **real BLS signatures**, not mocks:
+Oracles use **real BLS signatures**, not mocks:
 
 - **BLS Key Generation**: Deterministic keys from seeds for local testing (`--test-key-seeds`)
 - **P2P Consensus**: Real gossip protocol between 3 nodes
 - **Threshold Signing**: 2/3 signatures required for aggregation
-- **On-chain Verification**: BLSLib verifies aggregated signature against IssuerRegistry pubkey
+- **On-chain Verification**: BLSLib verifies aggregated signature against OracleRegistry pubkey
 
 ```
 CLI Flags:
   --node-id 1              Node identifier (1, 2, or 3)
   --l3-rpc URL             L3 chain RPC (http://localhost:8545)
   --arb-rpc URL            Arbitrum chain RPC (http://localhost:8546)
-  --num-issuers 3          Total issuers in network
+  --num-oracles 3          Total oracles in network
   --l3-chain-id 111222333  L3 chain ID
   --arb-chain-id 42161     Arbitrum chain ID
   --test-key-seeds         Use deterministic BLS keys (for reproducible testing)
@@ -421,7 +421,7 @@ CLI Flags:
 
 ### AP (Authorized Participant)
 
-Executes trades on MockBitgetVault when issuers emit TradeRequest:
+Executes trades on MockBitgetVault when oracles emit TradeRequest:
 
 ```
 CLI Flags:
@@ -457,14 +457,14 @@ function sellITPFromArbitrum(
     uint256 deadline
 ) external returns (uint256 orderId);
 
-// Issuers complete a sell order after L3 fill (BLS required)
+// Oracles complete a sell order after L3 fill (BLS required)
 function completeSellOrder(
     uint256 orderId,
     uint256 usdcProceeds,   // USDC to send to user
     bytes calldata blsSignature
 ) external;
 
-// Events emitted for issuers to observe
+// Events emitted for oracles to observe
 event CrossChainOrderCreated(uint256 orderId, bytes32 itpId, address user, uint256 amount);
 event CrossChainSellOrderCreated(uint256 orderId, bytes32 itpId, address user, address bridgedItpAddress, uint256 amount);
 ```
@@ -497,7 +497,7 @@ This script:
 1. Starts **two Anvil instances**:
    - **L3 Anvil**: port 8545, chain ID 111222333
    - **Arbitrum Anvil**: port 8546, chain ID 42161
-2. Deploys L3 contracts (Index, Governance, IssuerRegistry, CollateralRegistry, L3BridgeCustody, ITP Vaults)
+2. Deploys L3 contracts (Index, Governance, OracleRegistry, CollateralRegistry, L3BridgeCustody, ITP Vaults)
 3. Deploys Arbitrum contracts (BridgeProxy, ArbBridgeCustody, BridgedItpFactory, BLSCustody, MockBitgetVault, Morpho Blue)
 4. Deploys 627 mock ERC20 tokens + ARB_USDC on Arbitrum
 5. Creates test ITPs for testing:
@@ -505,7 +505,7 @@ This script:
    - **DeFi Index (DEFI)**: UNI 100%
 6. Funds MockBitgetVault with 1M of each token (on Arbitrum)
 7. Generates data/symbol-map.json
-8. Starts 3 issuer nodes with **real BLS keys** (connected to both chains)
+8. Starts 3 oracle nodes with **real BLS keys** (connected to both chains)
 9. Starts AP with mock Bitget client (watches L3, trades on Arbitrum)
 10. Outputs deployment addresses and instructions
 
@@ -521,16 +521,16 @@ cast send $BRIDGE_PROXY "requestCreateItp(address[],uint256[],string,string)" \
   "[$BTC_ADDR,$ETH_ADDR]" "[5000,5000]" "My Portfolio" "MPTF" \
   --private-key $USER_KEY --rpc-url $ARB_RPC
 
-# 2. Watch issuers reach BLS consensus
-tail -f /tmp/issuer1.log | grep -iE "(CreateItpRequested|consensus|BLS|complete)"
+# 2. Watch oracles reach BLS consensus
+tail -f /tmp/oracle1.log | grep -iE "(CreateItpRequested|consensus|BLS|complete)"
 
-# 3. Verify ITP created on L3 (after issuers call completeCreateItp)
+# 3. Verify ITP created on L3 (after oracles call completeCreateItp)
 cast call $INDEX "getITPState(bytes32)" $ITP_ID --rpc-url $L3_RPC
 ```
 
-### Scenario B: Buy ITP via Bridge (Issuers = Bridge)
+### Scenario B: Buy ITP via Bridge (Oracles = Bridge)
 
-User only calls `buyITPFromArbitrum()` once. **Issuers handle everything else with BLS**:
+User only calls `buyITPFromArbitrum()` once. **Oracles handle everything else with BLS**:
 
 ```bash
 # ============================================================
@@ -555,20 +555,20 @@ cast send $ARB_CUSTODY "buyITPFromArbitrum(bytes32,uint256,uint256,uint256,uint2
 # Event: CrossChainOrderCreated emitted (on Arbitrum)
 
 # ============================================================
-# STEPS 2-8: ISSUERS handle everything (automatic via issuer nodes)
+# STEPS 2-8: ORACLES handle everything (automatic via oracle nodes)
 # ============================================================
 
-# Issuers observe CrossChainOrderCreated on Arbitrum and with BLS consensus:
+# Oracles observe CrossChainOrderCreated on Arbitrum and with BLS consensus:
 # 2. Bridge USDC from Arbitrum → L3
 # 3. Call submitOrder on L3 Index (on behalf of user)
 # 4. Call confirmBatch with BLS (on L3)
 # 5. Bridge USDC back from L3 → Arbitrum (to BLSCustody)
 # 6. Send USDC to MockBitgetVault (on Arbitrum)
 # 7. AP executes trades on MockBitgetVault (on Arbitrum)
-# 8. Issuers call confirmFills with BLS (on L3)
+# 8. Oracles call confirmFills with BLS (on L3)
 
-# Watch the full flow in issuer logs:
-tail -f /tmp/issuer1.log | grep -iE "(CrossChain|Bridge|Order|Batch|Fill|BLS|consensus)"
+# Watch the full flow in oracle logs:
+tail -f /tmp/oracle1.log | grep -iE "(CrossChain|Bridge|Order|Batch|Fill|BLS|consensus)"
 
 # Watch AP execute trades:
 tail -f /tmp/ap.log | grep -iE "(Trade|execute|MockBitget)"
@@ -581,30 +581,30 @@ cast call $ITP_VAULT "balanceOf(address)" $USER_ADDR --rpc-url $L3_RPC
 # VERIFY: AP has asset tokens on Arbitrum
 cast call $MOCK_BTC "balanceOf(address)" $AP_ADDR --rpc-url $ARB_RPC
 
-# VERIFY: ARB_USDC was moved from custody (issuers transferred it)
+# VERIFY: ARB_USDC was moved from custody (oracles transferred it)
 cast call $ARB_USDC "balanceOf(address)" $ARB_CUSTODY --rpc-url $ARB_RPC
 ```
 
 ### Local E2E Simulation (Manual Steps)
 
-For local testing where issuer automation isn't running, simulate the issuer operations manually:
+For local testing where oracle automation isn't running, simulate the oracle operations manually:
 
 ```bash
-# --- Simulate Step 2: Issuers bridge USDC Arbitrum → L3 ---
+# --- Simulate Step 2: Oracles bridge USDC Arbitrum → L3 ---
 # (Mint L3Usdc on L3 chain to simulate bridge)
-cast send $L3_USDC "mint(address,uint256)" $ISSUER_CUSTODY_L3 100000000 \
+cast send $L3_USDC "mint(address,uint256)" $ORACLE_CUSTODY_L3 100000000 \
   --private-key $DEPLOYER_KEY --rpc-url $L3_RPC
 
-# --- Simulate Step 3: Issuers submit order on L3 ---
-# (Issuer calls on behalf of user, USDC comes from issuer custody)
+# --- Simulate Step 3: Oracles submit order on L3 ---
+# (Oracle calls on behalf of user, USDC comes from oracle custody)
 cast send $L3_USDC "approve(address,uint256)" $INDEX $(cast max-uint) \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
 cast send $INDEX "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
   $ITP_ID 0 100000000 1000000 1 $DEADLINE \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
-# --- Steps 4-8: Handled by issuer nodes automatically ---
+# --- Steps 4-8: Handled by oracle nodes automatically ---
 ```
 
 ### Scenario C: Full E2E Flow (Create + Buy via Bridge)
@@ -621,9 +621,9 @@ cast send $BRIDGE_PROXY "requestCreateItp(address[],uint256[],string,string)" \
   "[$BTC_ADDR,$ETH_ADDR]" "[6000,4000]" "E2E Test ITP" "E2ET" \
   --private-key $USER_KEY --rpc-url $ARB_RPC
 
-# Wait for issuers to reach BLS consensus and complete
+# Wait for oracles to reach BLS consensus and complete
 sleep 15
-tail -f /tmp/issuer1.log | grep -iE "(CreateItp|BLS|complete)"
+tail -f /tmp/oracle1.log | grep -iE "(CreateItp|BLS|complete)"
 
 # Get the created ITP ID (on L3)
 ITP_ID=$(cast call $INDEX "getITPState(bytes32)" $ITP_ID --rpc-url $L3_RPC)
@@ -659,7 +659,7 @@ cast send $INDEX "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
   $ITP_ID 0 500000000 1000000 1 $DEADLINE \
   --private-key $USER_KEY --rpc-url $L3_RPC
 
-echo "Order submitted on L3, waiting for issuers..."
+echo "Order submitted on L3, waiting for oracles..."
 
 # ============================================================
 # PART 3: Verify Results
@@ -691,13 +691,13 @@ cast call $ARB_CUSTODY "currentOrderId()" --rpc-url $ARB_RPC
 cast call $ARB_CUSTODY "getCrossChainOrder(uint256)" 0 --rpc-url $ARB_RPC
 ```
 
-### Check BLS / Issuer State
+### Check BLS / Oracle State
 
 ```bash
-# Issuer registry - get aggregated BLS pubkey (on L3)
-cast call $ISSUER_REGISTRY "getAggregatedPubkey()" --rpc-url $L3_RPC
+# Oracle registry - get aggregated BLS pubkey (on L3)
+cast call $ORACLE_REGISTRY "getAggregatedPubkey()" --rpc-url $L3_RPC
 
-# Issuer health endpoints
+# Oracle health endpoints
 curl http://localhost:9001/health
 curl http://localhost:9002/health
 curl http://localhost:9003/health
@@ -726,43 +726,43 @@ cast call $ARB_USDC "balanceOf(address)" $ARB_CUSTODY --rpc-url $ARB_RPC
 ### Infrastructure
 - [ ] L3 Anvil running on port 8545, chain ID 111222333
 - [ ] Arbitrum Anvil running on port 8546, chain ID 42161
-- [ ] L3 contracts deployed (Index, Governance, IssuerRegistry, CollateralRegistry, L3BridgeCustody, ITP Vaults)
+- [ ] L3 contracts deployed (Index, Governance, OracleRegistry, CollateralRegistry, L3BridgeCustody, ITP Vaults)
 - [ ] Arbitrum contracts deployed (ArbBridgeCustody, BridgedItpFactory, BLSCustody, MockBitgetVault, Morpho Blue)
 - [ ] 627 mock tokens + ARB_USDC deployed on Arbitrum and funded
 - [ ] Test ITPs created (Crypto Blend, DeFi Index)
 - [ ] symbol-map.json generated
 
 ### Services (Real BLS)
-- [ ] Issuer 1 running with BLS key 0 (connected to both L3 + Arbitrum RPCs)
-- [ ] Issuer 2 running with BLS key 1 (connected to both L3 + Arbitrum RPCs)
-- [ ] Issuer 3 running with BLS key 2 (connected to both L3 + Arbitrum RPCs)
+- [ ] Oracle 1 running with BLS key 0 (connected to both L3 + Arbitrum RPCs)
+- [ ] Oracle 2 running with BLS key 1 (connected to both L3 + Arbitrum RPCs)
+- [ ] Oracle 3 running with BLS key 2 (connected to both L3 + Arbitrum RPCs)
 - [ ] AP running — watches L3 events (port 8545), trades on Arbitrum (port 8546)
-- [ ] P2P gossip working between issuers
+- [ ] P2P gossip working between oracles
 
 ### Scenario A: Create ITP via Bridge
 - [ ] requestCreateItp() called on BridgeProxy
 - [ ] CreateItpRequested event emitted
-- [ ] All 3 issuers observe event
+- [ ] All 3 oracles observe event
 - [ ] BLS consensus reached (2/3 threshold)
 - [ ] completeCreateItp() called with aggregated BLS sig
 - [ ] CreateItpCompleted event emitted
 - [ ] ITP exists in Index.sol
 
-### Scenario B: Buy ITP via Bridge (Issuers = Bridge)
+### Scenario B: Buy ITP via Bridge (Oracles = Bridge)
 - [ ] User has ARB_USDC on Arbitrum (port 8546)
 - [ ] User calls buyITPFromArbitrum() on Arbitrum (ONLY user action)
 - [ ] ARB_USDC transferred to ArbBridgeCustody (locked, on Arbitrum)
 - [ ] CrossChainOrderCreated event emitted (on Arbitrum)
-- [ ] **Issuers (BLS)**: Bridge USDC from Arbitrum → L3
-- [ ] **Issuers (BLS)**: Call submitOrder() on Index (on L3, on behalf of user)
+- [ ] **Oracles (BLS)**: Bridge USDC from Arbitrum → L3
+- [ ] **Oracles (BLS)**: Call submitOrder() on Index (on L3, on behalf of user)
 - [ ] L3Usdc escrowed in Index contract (on L3)
 - [ ] OrderSubmitted event emitted (on L3)
-- [ ] **Issuers (BLS)**: Call confirmBatch (2/3 threshold, on L3)
+- [ ] **Oracles (BLS)**: Call confirmBatch (2/3 threshold, on L3)
 - [ ] TradeRequest events emitted (on L3)
-- [ ] **Issuers (BLS)**: Bridge USDC back L3 → Arbitrum (to BLSCustody)
-- [ ] **Issuers (BLS)**: Release USDC from custody to MockBitgetVault (on Arbitrum)
+- [ ] **Oracles (BLS)**: Bridge USDC back L3 → Arbitrum (to BLSCustody)
+- [ ] **Oracles (BLS)**: Release USDC from custody to MockBitgetVault (on Arbitrum)
 - [ ] AP executes trades on MockBitgetVault (on Arbitrum)
-- [ ] **Issuers (BLS)**: Call confirmFills (2/3 threshold, on L3)
+- [ ] **Oracles (BLS)**: Call confirmFills (2/3 threshold, on L3)
 - [ ] User receives ITP shares on L3
 
 ---
@@ -772,11 +772,11 @@ cast call $ARB_USDC "balanceOf(address)" $ARB_CUSTODY --rpc-url $ARB_RPC
 | Issue | Diagnosis | Fix |
 |-------|-----------|-----|
 | BLS signature invalid | Check key seeds match | Verify `--bls-key-seed-index` matches node-id (0,1,2) |
-| No consensus | P2P not connected | Ensure all 3 issuers running before sending requests |
+| No consensus | P2P not connected | Ensure all 3 oracles running before sending requests |
 | USDC transfer fails | Not approved | User must approve ArbBridgeCustody before buying (on Arbitrum) |
-| ITP not created | Bridge not processed | Check issuer logs for errors, ensure ArbBridgeCustody address correct |
+| ITP not created | Bridge not processed | Check oracle logs for errors, ensure ArbBridgeCustody address correct |
 | AP not trading | Missing TradeRequest | Check `--index-contract` address matches L3 deployment |
-| Wrong chain ID | Issuer misconfigured | Use `--l3-chain-id 111222333` and `--arb-chain-id 42161` on all issuers |
+| Wrong chain ID | Oracle misconfigured | Use `--l3-chain-id 111222333` and `--arb-chain-id 42161` on all oracles |
 | Wrong RPC | Connecting to wrong chain | L3 operations on port 8545, Arbitrum operations on port 8546 |
 | Frontend not loading | Connected to wrong chain | Frontend connects ONLY to Arbitrum (port 8546, chain 42161) |
 
@@ -788,19 +788,19 @@ cast call $ARB_USDC "balanceOf(address)" $ARB_CUSTODY --rpc-url $ARB_RPC
 # All services
 tail -f /tmp/anvil-l3.log       # L3 Anvil (port 8545, chain 111222333)
 tail -f /tmp/anvil-arb.log      # Arbitrum Anvil (port 8546, chain 42161)
-tail -f /tmp/issuer1.log
-tail -f /tmp/issuer2.log
-tail -f /tmp/issuer3.log
+tail -f /tmp/oracle1.log
+tail -f /tmp/oracle2.log
+tail -f /tmp/oracle3.log
 tail -f /tmp/ap.log
 
 # Filter for BLS consensus
-tail -f /tmp/issuer1.log | grep -iE "(BLS|consensus|aggregate|threshold)"
+tail -f /tmp/oracle1.log | grep -iE "(BLS|consensus|aggregate|threshold)"
 
 # Filter for bridge events (cross-chain between L3 and Arbitrum)
-tail -f /tmp/issuer1.log | grep -iE "(bridge|CreateItp|CrossChain)"
+tail -f /tmp/oracle1.log | grep -iE "(bridge|CreateItp|CrossChain)"
 
 # Filter for order flow
-tail -f /tmp/issuer1.log | grep -iE "(Order|Batch|Fill|confirm)"
+tail -f /tmp/oracle1.log | grep -iE "(Order|Batch|Fill|confirm)"
 ```
 
 ---
@@ -822,7 +822,7 @@ ARB_CHAIN_ID=42161
 # ============================================================
 INDEX=<from deployment>
 L3_USDC=<from deployment>           # USDC on L3 (Index uses this)
-ISSUER_REGISTRY=<from deployment>
+ORACLE_REGISTRY=<from deployment>
 L3_BRIDGE_CUSTODY=<from deployment> # L3BridgeCustody
 GOVERNANCE=<from deployment>
 COLLATERAL_REGISTRY=<from deployment>
@@ -850,9 +850,9 @@ ITP_VAULT=<from deployment>         # ERC4626 vault for ITP (on L3)
 # Anvil Default Accounts (same keys work on both chains)
 # ============================================================
 DEPLOYER_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-ISSUER1_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-ISSUER2_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
-ISSUER3_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
+ORACLE1_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+ORACLE2_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+ORACLE3_KEY=0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6
 
 # User account (for testing)
 USER_KEY=0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a
@@ -882,29 +882,29 @@ When buying ITP:
 | Step | Chain | Contract | Function | Who Calls | BLS |
 |------|-------|----------|----------|-----------|-----|
 | 1. Request | Arbitrum | BridgeProxy | `requestCreateItp()` | User | No |
-| 2. Complete | L3 | BridgeProxy | `completeCreateItp()` | **Issuers** | **Yes** |
+| 2. Complete | L3 | BridgeProxy | `completeCreateItp()` | **Oracles** | **Yes** |
 
-### Buy ITP Flow (via Bridge) - Issuers = Bridge
+### Buy ITP Flow (via Bridge) - Oracles = Bridge
 
 | Step | Chain | Contract | Function | Who Calls | BLS |
 |------|-------|----------|----------|-----------|-----|
 | 1. Lock USDC | Arbitrum | ArbBridgeCustody | `buyITPFromArbitrum()` | User | No |
-| 2. Bridge → | Arb→L3 | Bridge | (USDC to L3) | **Issuers** | **Yes** |
-| 3. Submit order | L3 | Index | `submitOrder()` | **Issuers** | **Yes** |
-| 4. Confirm batch | L3 | Index | `confirmBatch()` | **Issuers** | **Yes** |
-| 5. Bridge ← | L3→Arb | Bridge | (USDC to custody) | **Issuers** | **Yes** |
-| 6. Fund vault | Arbitrum | IssuerCustody | release to vault | **Issuers** | **Yes** |
+| 2. Bridge → | Arb→L3 | Bridge | (USDC to L3) | **Oracles** | **Yes** |
+| 3. Submit order | L3 | Index | `submitOrder()` | **Oracles** | **Yes** |
+| 4. Confirm batch | L3 | Index | `confirmBatch()` | **Oracles** | **Yes** |
+| 5. Bridge ← | L3→Arb | Bridge | (USDC to custody) | **Oracles** | **Yes** |
+| 6. Fund vault | Arbitrum | OracleCustody | release to vault | **Oracles** | **Yes** |
 | 7. Execute trade | Arbitrum | MockBitgetVault | `executeTrade()` | AP | No |
-| 8. Confirm fills | L3 | Index | `confirmFills()` | **Issuers** | **Yes** |
+| 8. Confirm fills | L3 | Index | `confirmFills()` | **Oracles** | **Yes** |
 
 ### Key Points
 
 - **Dual Anvil chains**: L3 (port 8545, chain 111222333) and Arbitrum (port 8546, chain 42161)
-- **Issuers ARE the bridge**: They control all cross-chain USDC movement with BLS
+- **Oracles ARE the bridge**: They control all cross-chain USDC movement with BLS
 - **Two USDC tokens on separate chains**: ARB_USDC (Arbitrum) and L3Usdc (Index L3)
-- **User only calls once**: `buyITPFromArbitrum()` or `sellITPFromArbitrum()` - issuers handle everything else
+- **User only calls once**: `buyITPFromArbitrum()` or `sellITPFromArbitrum()` - oracles handle everything else
 - **Frontend connects ONLY to Arbitrum** (port 8546, chain 42161)
-- **Real BLS**: Issuers use real BLS keys, 2/3 threshold required
+- **Real BLS**: Oracles use real BLS keys, 2/3 threshold required
 - **AP watches L3, trades on Arbitrum**: MockBitgetVault on Arbitrum side
 
 **Run `./scripts/local-e2e-deploy.sh` to start testing the bridge flow.**
@@ -919,7 +919,7 @@ When buying ITP:
 
 ## Flow 3: Sell ITP via Bridge
 
-User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initiated from **Arbitrum** via `ArbBridgeCustody.sellITPFromArbitrum()`, and issuers handle the cross-chain coordination to execute the sell on L3.
+User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initiated from **Arbitrum** via `ArbBridgeCustody.sellITPFromArbitrum()`, and oracles handle the cross-chain coordination to execute the sell on L3.
 
 > **RESOLVED (Story 7.14):** The `E033_SellOrdersNotSupported` guard has been removed from `Index.submitOrder()`. SELL orders now proceed to the share balance check (`E081_InsufficientShares`). The full SELL path (submit → confirmBatch → confirmFills → shares burned, USDC returned) is verified working via SellE2E.s.sol.
 
@@ -952,15 +952,15 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 2: Issuers detect sell event on Arbitrum, reach BLS consensus         │
+│  STEP 2: Oracles detect sell event on Arbitrum, reach BLS consensus         │
 │                                                                             │
-│  Issuers observe CrossChainSellOrderCreated on Arbitrum (port 8546) and:   │
+│  Oracles observe CrossChainSellOrderCreated on Arbitrum (port 8546) and:   │
 │  1. Validate the sell order parameters                                      │
 │  2. Reach BLS consensus via P2P gossip                                      │
 │  3. Aggregate BLS signatures (2/3 threshold)                                │
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │  Issuer 1                    Issuer 2                    Issuer 3     │  │
+│  │  Oracle 1                    Oracle 2                    Oracle 3     │  │
 │  │     │◄──── P2P Gossip ─────────►│◄──── P2P Gossip ─────────►│         │  │
 │  │  Sign with BLS key 0        Sign with BLS key 1        Sign with BLS  │  │
 │  │                                                         key 2         │  │
@@ -971,9 +971,9 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 3: Issuers submit SELL order on L3 (on behalf of user)                │
+│  STEP 3: Oracles submit SELL order on L3 (on behalf of user)                │
 │                                                                             │
-│  Issuers call on L3 (port 8545):                                           │
+│  Oracles call on L3 (port 8545):                                           │
 │  Index.submitOrderFor(                                                      │
 │      user: address,               // Original Arbitrum user                 │
 │      itpId: bytes32,              // Same ITP as Arbitrum order             │
@@ -990,9 +990,9 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 4: Issuers confirm batch with BLS consensus (on L3)                   │
+│  STEP 4: Oracles confirm batch with BLS consensus (on L3)                   │
 │                                                                             │
-│  Issuers:                                                                   │
+│  Oracles:                                                                   │
 │  1. Collect SELL order(s) + any BUY orders for netting                      │
 │  2. Calculate component trades (reverse weights):                           │
 │     ITP is 50% BTC / 50% ETH                                               │
@@ -1034,7 +1034,7 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  STEP 6: L3 order fills, USDC returned on L3                                │
 │                                                                             │
-│  Issuers confirm fills on L3 (port 8545):                                  │
+│  Oracles confirm fills on L3 (port 8545):                                  │
 │                                                                             │
 │  Index.confirmFills(                                                        │
 │      cycleNumber: uint256,                                                  │
@@ -1054,13 +1054,13 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 7: Issuers bridge USDC from L3 → Arbitrum                             │
+│  STEP 7: Oracles bridge USDC from L3 → Arbitrum                             │
 │                                                                             │
 │  USDC proceeds from the sell need to reach the user on Arbitrum.           │
 │                                                                             │
 │  ┌─────────────────────┐                    ┌─────────────────────┐        │
 │  │  L3Usdc             │  ══BLS══════════►  │    ARB_USDC         │        │
-│  │  (sell proceeds)    │  (issuers bridge)  │  (to ArbCustody)    │        │
+│  │  (sell proceeds)    │  (oracles bridge)  │  (to ArbCustody)    │        │
 │  └─────────────────────┘                    └─────────────────────┘        │
 │                                                                             │
 │  In local E2E: Simulate by minting ARB_USDC to ArbBridgeCustody           │
@@ -1068,9 +1068,9 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 8: Issuers complete sell order on Arbitrum, user receives USDC        │
+│  STEP 8: Oracles complete sell order on Arbitrum, user receives USDC        │
 │                                                                             │
-│  Issuers call on Arbitrum (port 8546):                                     │
+│  Oracles call on Arbitrum (port 8546):                                     │
 │  ArbBridgeCustody.completeSellOrder(                                       │
 │      orderId: uint256,             // Original sell order ID                │
 │      usdcProceeds: uint256,        // USDC amount to send to user          │
@@ -1105,7 +1105,7 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
 │       │ BridgedITP     │                │                  │                │
 │       └───────────────►│ (1) escrowed   │                  │                │
 │                        │                │                  │                │
-│         ISSUERS (BLS)  │                │                  │                │
+│         ORACLES (BLS)  │                │                  │                │
 │         ══════════════►│────────────────────────────────►  │ (3) SELL       │
 │                        │ (2) detect event                  │    submitted   │
 │                        │                │                  │                │
@@ -1119,7 +1119,7 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
 │                        │                │                  │ (6) confirm    │
 │                        │                │                  │    Fills       │
 │                        │                │                  │                │
-│         ISSUERS (BLS)  │                │     (7) bridge USDC L3→Arb       │
+│         ORACLES (BLS)  │                │     (7) bridge USDC L3→Arb       │
 │         ◄══════════════│◄───────────────────────────────── │                │
 │                        │                │                  │                │
 │       ◄────────────────│ (8) complete   │                  │                │
@@ -1136,13 +1136,13 @@ User on Arbitrum sells their BridgedITP tokens back for USDC. The sell is initia
 | Step | Chain | Contract | Function | Who Calls | BLS |
 |------|-------|----------|----------|-----------|-----|
 | 1. Escrow BridgedITP | Arbitrum | ArbBridgeCustody | `sellITPFromArbitrum()` | User | No |
-| 2. Detect event | Arbitrum | — | (observe CrossChainSellOrderCreated) | **Issuers** | **Yes** |
-| 3. Submit sell on L3 | L3 | Index | `submitOrderFor(SELL)` | **Issuers** | **Yes** |
-| 4. Confirm batch | L3 | Index | `confirmBatch()` | **Issuers** | **Yes** |
+| 2. Detect event | Arbitrum | — | (observe CrossChainSellOrderCreated) | **Oracles** | **Yes** |
+| 3. Submit sell on L3 | L3 | Index | `submitOrderFor(SELL)` | **Oracles** | **Yes** |
+| 4. Confirm batch | L3 | Index | `confirmBatch()` | **Oracles** | **Yes** |
 | 5. Sell assets | Arbitrum | MockBitgetVault | `executeTrade()` (reverse) | AP | No |
-| 6. Confirm fills | L3 | Index | `confirmFills()` | **Issuers** | **Yes** |
-| 7. Bridge USDC | L3→Arb | Bridge | (L3Usdc → ARB_USDC) | **Issuers** | **Yes** |
-| 8. Complete sell | Arbitrum | ArbBridgeCustody | `completeSellOrder()` | **Issuers** | **Yes** |
+| 6. Confirm fills | L3 | Index | `confirmFills()` | **Oracles** | **Yes** |
+| 7. Bridge USDC | L3→Arb | Bridge | (L3Usdc → ARB_USDC) | **Oracles** | **Yes** |
+| 8. Complete sell | Arbitrum | ArbBridgeCustody | `completeSellOrder()` | **Oracles** | **Yes** |
 
 ---
 
@@ -1174,16 +1174,16 @@ cast send $ARB_CUSTODY "sellITPFromArbitrum(bytes32,uint256,uint256,uint256,uint
 # Event: CrossChainSellOrderCreated emitted on Arbitrum
 
 # ============================================================
-# STEP 2-3: Issuers detect event on Arb, submit SELL on L3
+# STEP 2-3: Oracles detect event on Arb, submit SELL on L3
 # ============================================================
-# (Automated by issuers, or simulate manually:)
+# (Automated by oracles, or simulate manually:)
 cast send $INDEX "submitOrderFor(address,bytes32,uint8,uint256,uint256,uint256,uint256)" \
   $USER_ADDR $ITP_ID 1 50000000 1000000 1 $DEADLINE \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 # side=1 (SELL), amount=50 USDC worth, limitPrice=$1.00
 
 # ============================================================
-# STEP 4: Issuers confirm batch (BLS) on L3
+# STEP 4: Oracles confirm batch (BLS) on L3
 # ============================================================
 SELL_ORDER_ID=$(cast call $INDEX "nextOrderId()" --rpc-url $L3_RPC)
 SELL_ORDER_ID=$((SELL_ORDER_ID - 1))
@@ -1191,7 +1191,7 @@ SELL_ORDER_ID=$((SELL_ORDER_ID - 1))
 CYCLE=$(($(cast call $INDEX "currentCycleNumber()" --rpc-url $L3_RPC) + 1))
 cast send $INDEX "confirmBatch(uint256,uint256[],bytes)" \
   $CYCLE "[$SELL_ORDER_ID]" "0x" \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
 # ============================================================
 # STEP 5: AP sells assets back on MockBitgetVault (on Arbitrum)
@@ -1217,11 +1217,11 @@ cast send $MOCK_VAULT "executeTrade(uint256,address,address,uint256,uint256)" \
 # sellAmt=0.00833 ETH (18 dec), buyAmt=25 ARB_USDC (6 dec)
 
 # ============================================================
-# STEP 6: Issuers confirm fills on L3
+# STEP 6: Oracles confirm fills on L3
 # ============================================================
 cast send $INDEX "confirmFills(uint256,(uint256,uint256,uint256,uint256)[],bytes)" \
   $CYCLE "[($SELL_ORDER_ID,1000000000000000000,50000000,$CYCLE)]" "0x" \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
 # ============================================================
 # STEP 7: Simulate bridge USDC L3 → Arbitrum
@@ -1231,12 +1231,12 @@ cast send $ARB_USDC "mint(address,uint256)" $ARB_CUSTODY 50000000 \
   --private-key $DEPLOYER_KEY --rpc-url $ARB_RPC
 
 # ============================================================
-# STEP 8: Issuers complete sell order on Arbitrum
+# STEP 8: Oracles complete sell order on Arbitrum
 # ============================================================
 SELL_ORDER_ID_ARB=0  # orderId from CrossChainSellOrderCreated
 cast send $ARB_CUSTODY "completeSellOrder(uint256,uint256,bytes)" \
   $SELL_ORDER_ID_ARB 50000000 "0x" \
-  --private-key $ISSUER1_KEY --rpc-url $ARB_RPC
+  --private-key $ORACLE1_KEY --rpc-url $ARB_RPC
 
 # ============================================================
 # VERIFY: ITP shares burned, USDC returned to user on Arbitrum
@@ -1287,7 +1287,7 @@ ARBITRUM (port 8546):
 
 ## Flow 4: Rebalance ITP
 
-Asset Manager proposes new weights → Issuers approve via BLS → Trades execute → Weights updated on-chain.
+Asset Manager proposes new weights → Oracles approve via BLS → Trades execute → Weights updated on-chain.
 
 **Key insight**: Rebalance uses its own dedicated functions (`proposeRebalance`, `confirmRebalanceBatch`, `updateWeights`), separate from the normal order flow. TradeRequest events are emitted for the AP to execute.
 
@@ -1316,9 +1316,9 @@ Asset Manager proposes new weights → Issuers approve via BLS → Trades execut
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 2: Issuers confirm rebalance batch (BLS consensus)                    │
+│  STEP 2: Oracles confirm rebalance batch (BLS consensus)                    │
 │                                                                             │
-│  Issuers calculate net trade deltas from weight changes:                    │
+│  Oracles calculate net trade deltas from weight changes:                    │
 │                                                                             │
 │  ITP totalValue = 50 USDC (from buy flow)                                  │
 │  BTC: 50% → 70% = +20% × $50 = +$10 BUY                               │
@@ -1361,7 +1361,7 @@ Asset Manager proposes new weights → Issuers approve via BLS → Trades execut
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 4: Issuers update weights on-chain (BLS consensus)                    │
+│  STEP 4: Oracles update weights on-chain (BLS consensus)                    │
 │                                                                             │
 │  After verifying all trades executed correctly:                              │
 │                                                                             │
@@ -1390,7 +1390,7 @@ Asset Manager proposes new weights → Issuers approve via BLS → Trades execut
 │              REBALANCE FLOW (Weight Change)                                 │
 │              BTC 50%→70%, ETH 50%→30%                                       │
 │                                                                             │
-│   Asset Manager          L3 Index          Issuers (BLS)          AP       │
+│   Asset Manager          L3 Index          Oracles (BLS)          AP       │
 │       │                     │                   │                  │        │
 │       │── proposeRebalance ►│                   │                  │        │
 │       │   [70%, 30%]        │                   │                  │        │
@@ -1425,9 +1425,9 @@ Asset Manager proposes new weights → Issuers approve via BLS → Trades execut
 | Step | Chain | Contract | Function | Who Calls | BLS |
 |------|-------|----------|----------|-----------|-----|
 | 1. Propose | L3 | Index | `proposeRebalance()` | Asset Manager | No |
-| 2. Confirm batch | L3 | Index | `confirmRebalanceBatch()` | **Issuers** | **Yes** |
+| 2. Confirm batch | L3 | Index | `confirmRebalanceBatch()` | **Oracles** | **Yes** |
 | 3. Execute trades | Arbitrum | MockBitgetVault | `executeTrade()` | AP | No |
-| 4. Update weights | L3 | Index | `updateWeights()` | **Issuers** | **Yes** |
+| 4. Update weights | L3 | Index | `updateWeights()` | **Oracles** | **Yes** |
 
 ---
 
@@ -1452,14 +1452,14 @@ cast call $INDEX "getITPWeights(bytes32)" $ITP_ID --rpc-url $L3_RPC
 
 cast send $INDEX "proposeRebalance(bytes32,uint256[])" \
   $ITP_ID "[700000000000000000,300000000000000000]" \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 # 70% = 7e17, 30% = 3e17, sum = 1e18
 
 # Verify pending rebalance (on L3)
 cast call $INDEX "getPendingRebalance(bytes32)" $ITP_ID --rpc-url $L3_RPC
 
 # ============================================================
-# STEP 2: Issuers confirm rebalance batch (BLS) on L3
+# STEP 2: Oracles confirm rebalance batch (BLS) on L3
 # ============================================================
 # On-chain _processRebalanceDeltas calculates:
 #   BTC: +20% × totalValue($50) = +$10 → TradeRequest(BUY, $10)
@@ -1468,7 +1468,7 @@ cast call $INDEX "getPendingRebalance(bytes32)" $ITP_ID --rpc-url $L3_RPC
 REBAL_CYCLE=$(($(cast call $INDEX "currentCycleNumber()" --rpc-url $L3_RPC) + 1))
 cast send $INDEX "confirmRebalanceBatch(uint256,bytes32[],bytes)" \
   $REBAL_CYCLE "[$ITP_ID]" "0x" \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
 # Check TradeRequest events emitted (on L3)
 cast logs --from-block latest --address $INDEX --rpc-url $L3_RPC
@@ -1500,11 +1500,11 @@ cast send $MOCK_VAULT "executeTrade(uint256,address,address,uint256,uint256)" \
 # sellAmt=10 ARB_USDC, buyAmt=0.0002 BTC
 
 # ============================================================
-# STEP 4: Issuers update weights on-chain (BLS) on L3
+# STEP 4: Oracles update weights on-chain (BLS) on L3
 # ============================================================
 cast send $INDEX "updateWeights(bytes32,uint256[],bytes)" \
   $ITP_ID "[700000000000000000,300000000000000000]" "0x" \
-  --private-key $ISSUER1_KEY --rpc-url $L3_RPC
+  --private-key $ORACLE1_KEY --rpc-url $L3_RPC
 
 # ============================================================
 # VERIFY: Weights updated, trades executed
@@ -1563,13 +1563,13 @@ RESULT:
 - [x] User submits SELL order on Index (side=1) — **PASS** (SellE2E.s.sol, Order 4)
 - [x] ITP shares escrowed/locked from user — **PASS** (_userShares[itpId][user] -= amount)
 - [x] OrderSubmitted event with SELL side — **PASS** (verified in forge logs)
-- [x] **Issuers (BLS)**: confirmBatch with sell order — **PASS** (manual invocation, cycle 2000000)
+- [x] **Oracles (BLS)**: confirmBatch with sell order — **PASS** (manual invocation, cycle 2000000)
 - [x] TradeRequest events with SELL side emitted — **PASS** (forge logs)
 - [x] AP sells assets on MockBitgetVault (reverse trades) — **SKIPPED** (manual E2E bypasses AP)
 - [x] AP receives ArbUSDC from selling assets — **SKIPPED** (manual E2E)
-- [x] **Issuers (BLS)**: Bridge ARB_USDC → L3Usdc (simulated) — **N/A** (dual chain E2E, bridge simulated by minting)
+- [x] **Oracles (BLS)**: Bridge ARB_USDC → L3Usdc (simulated) — **N/A** (dual chain E2E, bridge simulated by minting)
 - [x] L3Usdc deposited to Index contract — **PASS** (Index holds USDC for fills)
-- [x] **Issuers (BLS)**: confirmFills — **PASS** (manual invocation)
+- [x] **Oracles (BLS)**: confirmFills — **PASS** (manual invocation)
 - [x] ITP shares burned (totalSupply decreased) — **PASS** (Order status = FILLED)
 - [x] L3Usdc transferred to user — **PASS** (USDC balance increased)
 - [x] ITP totalValue decreased — **PASS** (verified via getITP)
@@ -1578,13 +1578,13 @@ RESULT:
 - [x] ITP creator calls proposeRebalance() with new weights — **PASS** (ITP 4: 50/50 → 70/30)
 - [x] RebalanceProposed event emitted with old and new weights — **PASS** (forge logs)
 - [x] PendingRebalance stored (active = true) — **PASS** (getPendingRebalance verified)
-- [x] **Issuers (BLS)**: confirmRebalanceBatch() — **PASS** (cycle 10000000)
+- [x] **Oracles (BLS)**: confirmRebalanceBatch() — **PASS** (cycle 10000000)
 - [x] _processRebalanceDeltas calculates correct buy/sell deltas — **PASS** (TradeRequest emitted)
 - [x] TradeRequest events emitted (BUY for increased weight, SELL for decreased) — **PASS**
 - [x] RebalanceBatchConfirmed event emitted — **PASS** (forge logs)
 - [x] AP executes trades on MockBitgetVault — **SKIPPED** (USDC-neutral, no on-chain effect)
 - [x] Sell proceeds fund buys (USDC neutral) — **N/A** (trades skipped)
-- [x] **Issuers (BLS)**: updateWeights() with new weights — **PASS**
+- [x] **Oracles (BLS)**: updateWeights() with new weights — **PASS**
 - [x] On-chain weights updated to match target — **PASS** (70%/30% verified)
 - [x] PendingRebalance cleared (active = false) — **PASS** (getPendingRebalance verified)
 - [x] WeightsUpdated event emitted — **PASS** (forge logs)
@@ -1599,7 +1599,7 @@ RESULT:
 |---|-----|----------|--------|---------|
 | 1 | ~~SELL orders disabled~~ | ~~CRITICAL~~ | **RESOLVED** | E033 guard removed from `submitOrder()`. SELL orders now accepted. `_userShares` mapping tracks share balances. Verified 2026-02-04. |
 | 2 | ~~ITP share escrow for SELL~~ | ~~HIGH~~ | **RESOLVED** | `_userShares[itpId][user]` mapping added in IndexStorage.sol (slot 18). SELL decrements, BUY fills increment. No ERC4626 vault needed. |
-| 3 | **Rebalance automation** | MEDIUM | **OPEN** | Issuers don't auto-detect `RebalanceProposed` events. Manual `cast` or Forge script invocation required. Wiring deferred to future story. |
+| 3 | **Rebalance automation** | MEDIUM | **OPEN** | Oracles don't auto-detect `RebalanceProposed` events. Manual `cast` or Forge script invocation required. Wiring deferred to future story. |
 | 4 | **TradeRequest for rebalance** | LOW | **OPEN** | `_processRebalanceDeltas` uses `keccak256(abi.encode(itpId, assetIndex))` for pairId. AP must handle both formats. Not tested with live AP. |
 
 ---
@@ -1612,41 +1612,41 @@ RESULT:
 |-----------|--------|---------|
 | L3 Anvil | Running | port 8545, chain ID 111222333 |
 | Arbitrum Anvil | Running | port 8546, chain ID 42161 |
-| Issuer 1 | Running | node-id 1, BLS seed 0, port 9001, connected to both chains |
-| Issuer 2 | Running | node-id 2, BLS seed 1, port 9002, connected to both chains |
-| Issuer 3 | Running | node-id 3, BLS seed 2, port 9003, connected to both chains |
+| Oracle 1 | Running | node-id 1, BLS seed 0, port 9001, connected to both chains |
+| Oracle 2 | Running | node-id 2, BLS seed 1, port 9002, connected to both chains |
+| Oracle 3 | Running | node-id 3, BLS seed 2, port 9003, connected to both chains |
 | AP | Running | mock-bitget, watches L3 events (8545), trades on Arb (8546) |
-| IssuerRegistry | 3 active | Aggregated pubkey: empty (BLS verification skipped) |
+| OracleRegistry | 3 active | Aggregated pubkey: empty (BLS verification skipped) |
 
 ### Scenario A: Create ITP via Bridge — PASS
 
 | Step | Block | Result | Details |
 |------|-------|--------|---------|
 | requestCreateItp() | 110 | PASS | User called BridgeProxy, CreateItpRequested emitted |
-| Issuers auto-process | 111-113 | PASS | **Real BLS consensus**: issuers observed event, created ITP on L3 Index, called completeCreateItp() |
+| Oracles auto-process | 111-113 | PASS | **Real BLS consensus**: oracles observed event, created ITP on L3 Index, called completeCreateItp() |
 | ItpCreated | 113 | PASS | ITP ID=3, BridgedITP deployed at 0x1bc7...c2, 3 blocks latency |
 
 **ITP Created:**
 - Name: "Vital Test ITP", Symbol: "VITAL"
 - Assets: BTC (50%) + ETH (50%)
-- Creator: Issuer 1 (0x7099...) — submitted via BLS consensus
+- Creator: Oracle 1 (0x7099...) — submitted via BLS consensus
 - NAV: $1.00 (1e18)
 
 ### Scenario B: Buy ITP via Bridge — PASS (with manual simulation)
 
-#### Automated Steps (Issuer Consensus)
+#### Automated Steps (Oracle Consensus)
 
 | Step | Block | Result | Details |
 |------|-------|--------|---------|
 | buyITPFromArbitrum() | 117 | PASS | User locked 50 ArbUSDC in ArbBridgeCustody, orderId=4 |
-| Issuers auto-bridge | — | **GAP** | Issuers do NOT auto-process CrossChainOrderCreated events |
+| Oracles auto-bridge | — | **GAP** | Oracles do NOT auto-process CrossChainOrderCreated events |
 
-#### Manually Simulated Issuer Steps
+#### Manually Simulated Oracle Steps
 
 | Step | Block | Result | Details |
 |------|-------|--------|---------|
-| Bridge Arb→L3 | 192 | PASS | 50 L3Usdc minted to Issuer (simulated bridge) |
-| Approve Index | 193 | PASS | Issuer approved Index for L3Usdc |
+| Bridge Arb→L3 | 192 | PASS | 50 L3Usdc minted to Oracle (simulated bridge) |
+| Approve Index | 193 | PASS | Oracle approved Index for L3Usdc |
 | submitOrder() | 194 | PASS | Order submitted on L3 Index, 50 L3Usdc escrowed, orderId=1 |
 | confirmBatch() | 195 | PASS | Cycle 2, TradeRequest + BatchConfirmed emitted |
 | Bridge L3→Arb | 196 | PASS | 50 ArbUSDC minted to AP (simulated bridge-back + custody release) |
@@ -1659,7 +1659,7 @@ RESULT:
 ```
 USDC FLOW:
   User ArbUSDC (50) → ArbBridgeCustody (locked)
-  L3Usdc (50) minted → Issuer → Index (escrowed)
+  L3Usdc (50) minted → Oracle → Index (escrowed)
   ArbUSDC (50) minted → AP → MockBitgetVault (traded)
 
 ASSET FLOW:
@@ -1667,7 +1667,7 @@ ASSET FLOW:
   MockBitgetVault ETH (0.00833) → AP [at $3,000/ETH = $25]
 
 SHARES:
-  50 ITP shares minted to Issuer 1 (on behalf of user)
+  50 ITP shares minted to Oracle 1 (on behalf of user)
   ITP totalSupply: 50e18
   ITP NAV: $1.00
 ```
@@ -1681,15 +1681,15 @@ SHARES:
 | Index.sol | — | 50e18 | — | — | — |
 | MockBitgetVault | 50e18 | — | ~1M-0.0005 | ~1M-0.00833 | — |
 | AP (deployer) | 0 | — | 0.0005 | 0.00833 | — |
-| Issuer 1 | — | 50e18 | — | — | 50* |
+| Oracle 1 | — | 50e18 | — | — | 50* |
 
-*Shares minted to Issuer 1 (order submitter), not original user. Production flow would track the original Arbitrum user.
+*Shares minted to Oracle 1 (order submitter), not original user. Production flow would track the original Arbitrum user.
 
 ### Gaps Found
 
 | # | Gap | Severity | Details |
 |---|-----|----------|---------|
-| 1 | **Cross-chain order automation** | HIGH | Issuers auto-handle CreateItpRequested but NOT CrossChainOrderCreated. The buy flow requires manual simulation of bridge + submit + batch + fill steps. |
+| 1 | **Cross-chain order automation** | HIGH | Oracles auto-handle CreateItpRequested but NOT CrossChainOrderCreated. The buy flow requires manual simulation of bridge + submit + batch + fill steps. |
 | 2 | **MockBitgetVault version mismatch** | MEDIUM | Deployed bytecode lacks setPrice()/getPrice() functions. AP cannot set dynamic prices on the vault. |
 | 3 | **No ITP vault (ERC4626)** | MEDIUM | itpVaults mapping returns 0x0 for ITP 3. Shares tracked internally in Index.sol but not via ERC4626 vault tokens. |
 | 4 | **Double decimal conversion** | LOW | MockERC20 uses 18 decimals but ArbBridgeCustody applies 6→18 conversion (×1e12), inflating internalAmount to 50e30. Downstream code should use the raw transfered amount, not the inflated internalAmount. |
@@ -1697,7 +1697,7 @@ SHARES:
 
 ### Remediation Plan
 
-1. **Gap 1**: Wire `run_cross_chain_processing()` in the issuer main loop to poll ArbBridgeCustody for CrossChainOrderCreated events and trigger the bridge→submit→batch→fill pipeline automatically.
+1. **Gap 1**: Wire `run_cross_chain_processing()` in the oracle main loop to poll ArbBridgeCustody for CrossChainOrderCreated events and trigger the bridge→submit→batch→fill pipeline automatically.
 2. **Gap 2**: Redeploy MockBitgetVault with the latest source (includes setPrice/getPrice). Run `forge script script/DeployMockVault.s.sol` after building with updated source.
 3. **Gap 3**: Deploy ERC4626 ITP vault when creating ITP via bridge. The BridgedItpFactory deploys on Arbitrum side but no L3 vault is created.
 4. **Gap 4**: For local E2E with MockERC20 (18 dec), skip the decimal conversion in ArbBridgeCustody, or use a 6-decimal mock USDC.
@@ -1744,7 +1744,7 @@ SHARES:
 | PendingRebalance cleared | PASS | active=false |
 | Shares unchanged | PASS | totalSupply unaffected |
 
-**Key Finding**: Rebalance contract path fully functional. Issuer automation deferred (manual invocation via Forge scripts).
+**Key Finding**: Rebalance contract path fully functional. Oracle automation deferred (manual invocation via Forge scripts).
 
 **Script Created**:
 - `contracts/script/RebalanceE2E.s.sol` — Full rebalance cycle

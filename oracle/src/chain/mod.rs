@@ -1,4 +1,4 @@
-//! Chain interaction module for the Issuer node
+//! Chain interaction module for the Oracle node
 //!
 //! Provides implementations for reading from and writing to the blockchain.
 //! - `EthersChainReader` - reads blockchain state (Story 3.2)

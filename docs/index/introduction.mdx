@@ -81,7 +81,7 @@ General Market is a protocol for **index products**, **prediction markets**, and
    │                                │                                     │
    │   "Buy the Top-100 ITP"       │                                     │
    ├───────────────────────────────►│                                     │
-   │                                │  Issuer consensus (BLS, 1s cycle)   │
+   │                                │  Oracle consensus (BLS, 1s cycle)   │
    │                                │  ─────────────────────────────────  │
    │                                │  3 nodes agree on price + batch     │
    │                                │                                     │
@@ -122,7 +122,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
     Moves assets between the Index L3 and Arbitrum. ITP shares cross as standard ERC-20 tokens, composable with DeFi on the other side. Two chains, one position. The bridge is the part you forget about until it matters.
   </Card>
   <Card title="Explorer" icon="magnifying-glass-chart">
-    System health dashboard. Issuer node status, consensus metrics, data source monitoring, fee tracking. The control tower. The place you visit when things are working, to reassure yourself they still are.
+    System health dashboard. Oracle node status, consensus metrics, data source monitoring, fee tracking. The control tower. The place you visit when things are working, to reassure yourself they still are.
   </Card>
   <Card title="Bot Framework" icon="robot">
     Python trading bots for Vision markets. Register on-chain through the BotRegistry. Build strategies programmatically. The machines trade while you sleep, which is either a comfort or a terror.
@@ -167,7 +167,7 @@ Every system is an act of faith in its own plumbing. These are the pipes.
  │              │                     txs                   │                    │
  │              │                        │                  │                    │
  │   ┌──────────▼───────┐    ┌──────────▼──────┐   ┌──────▼────────────────┐   │
- │   │  ISSUER NODES    │    │   AP / KEEPER    │   │    SETTLEMENT         │   │
+ │   │  ORACLE NODES    │    │   AP / KEEPER    │   │    SETTLEMENT         │   │
  │   │  (3x Rust)       │    │    (Rust)        │   │    (Arbitrum)         │   │
  │   │                  │    │                  │   │                       │   │
  │   │  BLS consensus   │    │  Bitget trade    │   │  Morpho lending      │   │

@@ -86,11 +86,11 @@ console.log(`Stake per tick: ${data.stake_per_tick}`);
 <Info>
 In the production release, this endpoint will also return BLS signature fields for on-chain withdrawal proofs:
 
-- `bls_signature` -- The issuer's BLS signature over the balance proof message
-- `issuer_id` -- The issuer node ID that produced the signature
-- `pubkey` -- The issuer's BLS public key
+- `bls_signature` -- The oracle's BLS signature over the balance proof message
+- `oracle_id` -- The oracle node ID that produced the signature
+- `pubkey` -- The oracle's BLS public key
 
-Players aggregate signatures from 2/3+ issuers and submit them on-chain to withdraw. See [Balance Proofs](/vision/concepts/balance-proofs) for details on the verification flow.
+Players aggregate signatures from 2/3+ oracles and submit them on-chain to withdraw. See [Balance Proofs](/vision/concepts/balance-proofs) for details on the verification flow.
 </Info>
 
 ### Errors

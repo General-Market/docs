@@ -242,7 +242,7 @@ export const VISION_ABI = [
     type: 'function',
   },
 
-  // ============ ISSUER OPERATIONS ============
+  // ============ ORACLE OPERATIONS ============
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },

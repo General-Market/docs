@@ -11,8 +11,8 @@ abigen!(
 );
 
 abigen!(
-    IssuerRegistryContract,
-    "src/adapters/abi/issuer_registry_abi.json"
+    OracleRegistryContract,
+    "src/adapters/abi/oracle_registry_abi.json"
 );
 
 abigen!(

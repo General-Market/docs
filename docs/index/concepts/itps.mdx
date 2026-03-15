@@ -60,7 +60,7 @@ Where:
 - `price[i]` is the current market price of asset `i`
 - The division by `1e18` normalizes to a human-readable value
 
-The same formula runs on-chain in `Index.sol`, off-chain in the issuer nodes, and in the frontend. Three places, one truth. If they ever disagree, something is very wrong.
+The same formula runs on-chain in `Index.sol`, off-chain in the oracle nodes, and in the frontend. Three places, one truth. If they ever disagree, something is very wrong.
 
 ## ITP Creation: How Quantities Are Set
 
@@ -168,5 +168,5 @@ Where the formula lives, for those who need to see the source. Trust, but verify
 | Contract | `Index.sol` | `_getCurrentPrice()` -- computes NAV from stored inventory |
 | Contract | `Index.sol` | `updateWeights()` -- rebalance: recalculates quantities preserving NAV |
 | Storage | `IndexStorage.sol` | `_itpInventory[itpId]` -- canonical per-share quantities |
-| Issuer | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
+| Oracle | `nav.rs` | `calculate_nav()` -- reads inventory via `getITPState` |
 | Frontend | `useItpNav.ts` | Inventory-first calculation, weight fallback for legacy ITPs |

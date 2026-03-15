@@ -11,7 +11,7 @@ interface ICollateralRegistry {
     // ============ COLLATERAL TRACKING ============
 
     /// @notice Record a collateral movement between chains or positions
-    /// @dev Called by issuer consensus to update collateral state
+    /// @dev Called by oracle consensus to update collateral state
     /// @dev Message: keccak256(abi.encode(chainid, this, itpId, fromChain, toChain, amount, txType, nonce))
     /// @dev Chain ID 0 = external/no-chain (CEX operations). Use actual chain IDs for on-chain collateral.
     /// @param itpId The ITP this collateral belongs to
@@ -19,7 +19,7 @@ interface ICollateralRegistry {
     /// @param toChain Destination chain ID (0 for external/CEX, 111222333 for L3, other EVM chain IDs)
     /// @param amount Amount of collateral moved (18 decimals)
     /// @param txType Transaction type (BRIDGE, SWAP_IN, SWAP_OUT, BUY, SELL)
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function recordCollateralMove(
         bytes32 itpId,
         uint256 fromChain,

@@ -79,7 +79,7 @@ Or build from scratch against the Vision API:
 1. **Discover batches.** `GET /vision/batches` returns active batches with their market definitions, tick schedules, and current pool sizes.
 2. **Generate predictions.** Run your model against the batch markets. Encode results as a bitmap — one bit per market outcome.
 3. **Commit on-chain.** Call `joinBatch(batchId, deposit, stakePerTick, keccak256(bitmap))`. Your hashed commitment is recorded. Nobody can see your predictions.
-4. **Reveal to issuers.** `POST /vision/bitmap` sends your plaintext bitmap to the issuer node network. They verify it matches your on-chain hash.
+4. **Reveal to oracles.** `POST /vision/bitmap` sends your plaintext bitmap to the oracle node network. They verify it matches your on-chain hash.
 5. **Collect winnings.** After tick resolution, claim via BLS-verified balance proof. No withdrawal delays, no admin keys.
 
 The entire cycle — from data ingestion to on-chain commitment — can run in under 10 seconds. Most competitive bots target sub-5 seconds to maximize the time available for model computation rather than execution overhead.

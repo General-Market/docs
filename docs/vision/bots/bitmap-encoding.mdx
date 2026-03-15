@@ -150,7 +150,7 @@ function decodeBitmap(bitmap: Uint8Array, marketCount: number): ('UP' | 'DOWN')[
 
 ## Hashing
 
-The on-chain commitment is `keccak256(bitmap_bytes)`. You publish the hash before revealing the opinion. A sealed confession -- the blockchain knows you have a view but not what it is. This hash is what you pass to `joinBatch()` as `bitmapHash`, and what issuers verify when you later reveal the actual bitmap.
+The on-chain commitment is `keccak256(bitmap_bytes)`. You publish the hash before revealing the opinion. A sealed confession -- the blockchain knows you have a view but not what it is. This hash is what you pass to `joinBatch()` as `bitmapHash`, and what oracles verify when you later reveal the actual bitmap.
 
 <CodeGroup>
 
@@ -189,8 +189,8 @@ The seal-then-reveal scheme -- first commit, then confess:
 2. Bot calls:     joinBatch(batchId, deposit, stake, bitmapHash)
                   → bitmapHash stored on-chain in PlayerPosition.bitmapHash
 3. Bot submits:   POST /vision/bitmap { bitmap_hex, expected_hash }
-4. Issuer checks: keccak256(decode_hex(bitmap_hex)) == expected_hash
-5. Issuer checks: expected_hash == on-chain PlayerPosition.bitmapHash
+4. Oracle checks: keccak256(decode_hex(bitmap_hex)) == expected_hash
+5. Oracle checks: expected_hash == on-chain PlayerPosition.bitmapHash
 6. Both match → bitmap accepted for tick resolution
 ```
 

@@ -39,7 +39,7 @@ git checkout HEAD -- docs/api/portfolio.mdx
 git checkout HEAD -- docs/api/simulation.mdx
 git checkout HEAD -- docs/api/morpho.mdx
 git checkout HEAD -- docs/architecture/contracts.mdx
-git checkout HEAD -- docs/architecture/issuer-nodes.mdx
+git checkout HEAD -- docs/architecture/oracle-nodes.mdx
 git checkout HEAD -- docs/architecture/data-node.mdx
 git checkout HEAD -- docs/reference/error-codes.mdx
 git checkout HEAD -- docs/reference/contract-addresses.mdx
@@ -81,7 +81,7 @@ mv docs/api/morpho.mdx docs/index/api/morpho.mdx
 
 # Move architecture
 mv docs/architecture/contracts.mdx docs/index/architecture/contracts.mdx
-mv docs/architecture/issuer-nodes.mdx docs/index/architecture/issuer-nodes.mdx
+mv docs/architecture/oracle-nodes.mdx docs/index/architecture/oracle-nodes.mdx
 mv docs/architecture/data-node.mdx docs/index/architecture/data-node.mdx
 
 # Move reference
@@ -203,7 +203,7 @@ git commit -m "docs: restructure Index docs into index/ subdirectory"
       "group": "Architecture",
       "pages": [
         "index/architecture/contracts",
-        "index/architecture/issuer-nodes",
+        "index/architecture/oracle-nodes",
         "index/architecture/data-node"
       ]
     },
@@ -347,7 +347,7 @@ Content from Vision.sol + types.rs:
 - What a batch is: group of markets with shared pool, tick duration, resolution config
 - Creation: `createBatch(marketIds, resolutionTypes, tickDuration, customThresholds)`
 - Batch struct fields: id, creator, market_ids, resolution_types, tick_duration, custom_thresholds, paused
-- Batch lifecycle: created → running → paused (by issuers via BLS)
+- Batch lifecycle: created → running → paused (by oracles via BLS)
 - Metadata: `setBatchMetadata(batchId, name, description, websiteUrl, videoUrl, imageUrl)`
 - Max assets: 100+ per batch
 - Tick durations: 5min, 10min, 30min, 1h, 4h, 1 day (MAX_TICK_DURATION = 30 days)
@@ -358,7 +358,7 @@ Content from bot.py + types.rs:
 - Big-endian bit packing: bit 0 = MSB of byte 0, bit 7 = LSB of byte 0
 - 1 = UP, 0 = DOWN
 - Size: `ceil(marketCount / 8)` bytes
-- Sealed commitment: player submits `keccak256(bitmap)` on-chain, reveals actual bytes to issuers
+- Sealed commitment: player submits `keccak256(bitmap)` on-chain, reveals actual bytes to oracles
 - Example with 10 markets: 2 bytes, last 6 bits unused
 - Code examples (Python + TypeScript) for encoding/decoding
 
@@ -366,7 +366,7 @@ Content from bot.py + types.rs:
 
 Content from engine.rs + types.rs:
 - Tick = one resolution interval
-- At tick end: issuers fetch prices → resolve outcomes → compute payoffs → update balances
+- At tick end: oracles fetch prices → resolve outcomes → compute payoffs → update balances
 - MarketOutcome enum: Up, Down, Flat, Cancelled, AllSameSide, AllLosers
 - AllSameSide: everyone bet the same direction → no losers → pot returned
 - AllLosers: no one on winning side → pot distributed (edge case)
@@ -384,13 +384,13 @@ Content from IVision.sol:
 **Step 5: Write `docs/vision/concepts/balance-proofs.mdx`**
 
 Content from Vision.sol claimRewards/withdraw:
-- Off-chain balance tracking by issuers
+- Off-chain balance tracking by oracles
 - BLS-signed balance proof flow:
   1. `GET /vision/balance/{batchId}/{player}`
-  2. Issuers compute balance (deposits + winnings - losses - fees)
+  2. Oracles compute balance (deposits + winnings - losses - fees)
   3. BLS signature: `keccak256(abi.encode(chainId, contractAddr, "CLAIM", batchId, player, fromTick, toTick, newBalance))`
   4. Player calls `claimRewards(batchId, fromTick, toTick, newBalance, blsSignature)`
-  5. Contract verifies BLS sig against issuer registry (2/3+ threshold)
+  5. Contract verifies BLS sig against oracle registry (2/3+ threshold)
 - BLS is NEVER bypassed — no test modes, no admin overrides
 - Use `<Warning>` callout for BLS emphasis
 
@@ -438,7 +438,7 @@ Minimal working bot in Python + TypeScript (from bot.py reference):
 4. Poll `/vision/batches`
 5. Encode bitmap for one batch
 6. Join batch (approve USDC + joinBatch)
-7. Submit bitmap to issuers (`POST /vision/bitmap`)
+7. Submit bitmap to oracles (`POST /vision/bitmap`)
 8. Claim rewards after ticks resolve
 
 Full working code in `<CodeGroup>` (Python + TypeScript).
@@ -501,14 +501,14 @@ git commit -m "docs: add Vision bot development docs (overview, quickstart, enco
 - Create: `docs/vision/api/ticks.mdx`
 - Create: `docs/vision/api/leaderboard.mdx`
 
-**Source of truth:** `issuer/src/vision/api.rs`
+**Source of truth:** `oracle/src/vision/api.rs`
 
 All API pages MUST use Mintlify `<ParamField>` components (not markdown tables) for parameters. Use `<Tabs>` with cURL + Python + TypeScript for every endpoint. Use `<ResponseExample>` for responses.
 
 **Step 1: Write `docs/vision/api/overview.mdx`**
 
 - Base URLs:
-  - Vision API (issuer): `https://generalmarket.io/api/vision` (proxied to issuer port 10001)
+  - Vision API (oracle): `https://generalmarket.io/api/vision` (proxied to oracle port 10001)
   - Data Node: `https://generalmarket.io/api` (port 8200)
 - No authentication required
 - JSON responses
@@ -539,7 +539,7 @@ Use `<ParamField>` for response fields:
 
 **Step 4: Write `docs/vision/api/bitmap.mdx`**
 
-- `POST /vision/bitmap` — submit bitmap to issuers
+- `POST /vision/bitmap` — submit bitmap to oracles
 
 Request body:
 ```mdx
@@ -848,7 +848,7 @@ List every documentation page with title + one-line description:
 
 **Step 3: Write `docs/llms-full.txt`**
 
-Complete Vision API inlined into one file. Every endpoint with parameters, request body, response schema. Derived from `issuer/src/vision/api.rs`.
+Complete Vision API inlined into one file. Every endpoint with parameters, request body, response schema. Derived from `oracle/src/vision/api.rs`.
 
 **Step 4: Create `docs/skills/` directory and write SKILL.md router**
 

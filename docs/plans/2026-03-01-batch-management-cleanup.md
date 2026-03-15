@@ -7,8 +7,8 @@ Session: `20260301-1200-b8m3`
 ### Batch lifecycle
 
 1. **Data-node** generates recommended config per source (every 60s)
-2. **Leader issuer** fetches from its own data-node, proposes to cluster
-3. **Other issuers** (with their own data-nodes) verify against their view, BLS co-sign
+2. **Leader oracle** fetches from its own data-node, proposes to cluster
+3. **Other oracles** (with their own data-nodes) verify against their view, BLS co-sign
 4. **Signed config** stored on leader's data-node, replicated to followers' data-nodes
 5. **Frontend/bots** fetch signed config from API — batch is playable BEFORE on-chain
 6. **First user** calls `createBatchAndJoin()` — creates batch on-chain AND joins atomically
@@ -154,8 +154,8 @@ async fn compute_asset_resolutions(
 
 **Files**:
 - `data-node/src/batch_engine.rs` — Replace `compute_asset_thresholds()` with `compute_asset_resolutions()`
-- `issuer/src/vision/resolver.rs:328` — Add 6 match arms for codes 8-13
-- `issuer/src/vision/engine.rs:99` — Add to `parse_resolution_type()`
+- `oracle/src/vision/resolver.rs:328` — Add 6 match arms for codes 8-13
+- `oracle/src/vision/engine.rs:99` — Add to `parse_resolution_type()`
 
 ---
 
@@ -182,11 +182,11 @@ async fn compute_asset_resolutions(
 
 ### 3. CRITICAL — Lock-period config freeze & diffusion
 
-**Current**: Data-node recomputes blindly every 60s. Config hash can change during lock period. Issuer orchestrator has no lock awareness.
+**Current**: Data-node recomputes blindly every 60s. Config hash can change during lock period. Oracle orchestrator has no lock awareness.
 
 **The flow (corrected)**:
-- Only 1 leader issuer pushes signed config to its data-node
-- Other issuers fetch from it, verify, BLS co-sign
+- Only 1 leader oracle pushes signed config to its data-node
+- Other oracles fetch from it, verify, BLS co-sign
 - Config is served via API to frontend/bots BEFORE on-chain
 - First user calls `createBatchAndJoin()` to put it on-chain
 - Batches not consumed on-chain get garbage collected
@@ -202,14 +202,14 @@ else:
     normal recompute
 ```
 
-**Issuer orchestrator**: If in lock window, queue `updateBatchConfig()` for next tick start.
+**Oracle orchestrator**: If in lock window, queue `updateBatchConfig()` for next tick start.
 
 **API**: Serve `{ current, staged }` so bots/frontend can prepare for next tick.
 
 **Files**:
 - `data-node/src/batch_engine.rs` — Lock-aware loop, `staged_configs`
 - `data-node/src/api.rs` — Update `/batches/recommended` response
-- `issuer/src/vision/batch_config_orchestrator.rs` — Lock-window queuing
+- `oracle/src/vision/batch_config_orchestrator.rs` — Lock-window queuing
 
 ---
 
@@ -228,11 +228,11 @@ else:
 
 ### 5. HIGH — Resolution type string ↔ u8 mapping
 
-Add new types to both data-node and issuer, verify consistency.
+Add new types to both data-node and oracle, verify consistency.
 
 **Files**:
-- `issuer/src/vision/engine.rs:99` — `parse_resolution_type()`
-- `issuer/src/vision/resolver.rs:328` — `resolve_outcome()`
+- `oracle/src/vision/engine.rs:99` — `parse_resolution_type()`
+- `oracle/src/vision/resolver.rs:328` — `resolve_outcome()`
 
 ---
 
@@ -290,7 +290,7 @@ Bot workflow:
 2. `GET /vision/snapshot?source=crypto` → get live prices
 3. Run strategy → generate bitmap
 4. Call `createBatchAndJoin(sourceId, configHash, tickDuration, lockOffset, blsSig, nonce, bitmask, deposit, stake, bitmapHash)`
-5. `POST /vision/bitmap` → reveal bitmap to issuers
+5. `POST /vision/bitmap` → reveal bitmap to oracles
 
 Verify the current response shape already has all fields. If not, add missing ones.
 
@@ -307,7 +307,7 @@ Already works: `resolver.rs` checks `prices.is_stale()` per market → `Cancelle
 **Fix**: Log cancelled markets prominently. Add cancelled count to settlement records. Frontend shows "X markets cancelled (source offline)" instead of silent refund.
 
 **Files**:
-- `issuer/src/vision/resolver.rs` — Improve logging
+- `oracle/src/vision/resolver.rs` — Improve logging
 - `data-node/src/api.rs` — Add `cancelled_count` to settlement response
 - Frontend — Show cancellation reason in batch UI
 
@@ -345,7 +345,7 @@ Total: ~13h. No new dependencies.
 ### Pre-requisites
 
 All tests run on local devnet: `./stop.sh && ./start.sh --vision`
-- L3: port 8545, data-node: port 8200, issuer API: port 10001
+- L3: port 8545, data-node: port 8200, oracle API: port 10001
 - Test user: `0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4` (funded by start.sh)
 
 ### Layer 1 — Data-Node Unit Tests (Rust)
@@ -365,9 +365,9 @@ Run: `cd data-node && cargo test`
 | `test_config_freeze_during_lock` | During lock period, config hash doesn't change, staged config computed | #3 |
 | `test_cleanup_old_configs` | Unsigned configs older than 1h deleted, latest signed per source kept | #6 |
 
-### Layer 2 — Issuer Unit Tests (Rust)
+### Layer 2 — Oracle Unit Tests (Rust)
 
-Run: `cd issuer && cargo test`
+Run: `cd oracle && cargo test`
 
 | Test | Verifies | Issue |
 |------|----------|-------|
@@ -537,8 +537,8 @@ Manual verification after all code changes, run once:
 grep "resolution_type" data-node.log | head -20
 # Should show mix of flat_30, up_30, up_300, up_3000
 
-# 3. Check issuer logs for consensus:
-grep "batch_config" issuer-1.log | head -10
+# 3. Check oracle logs for consensus:
+grep "batch_config" oracle-1.log | head -10
 # Should show leader push + follower verify
 
 # 4. Verify lock period on API:
@@ -549,8 +549,8 @@ curl -s http://localhost:8200/batches/signed | jq '.[0].lockOffsetSecs'
 cd frontend && npx playwright test --config=e2e/playwright.config.ts
 # All tests pass (88 existing + 2 new = 90)
 
-# 6. Wait for a tick resolution, check issuer logs:
-grep "resolve_outcome\|Cancelled" issuer-1.log | tail -20
+# 6. Wait for a tick resolution, check oracle logs:
+grep "resolve_outcome\|Cancelled" oracle-1.log | tail -20
 # Should show per-market outcomes using new resolution types
 ```
 
@@ -571,8 +571,8 @@ grep "resolve_outcome\|Cancelled" issuer-1.log | tail -20
 | File | Type | Tests | Issues Covered |
 |------|------|-------|---------------|
 | `data-node/src/batch_engine.rs` (inline `#[test]`) | Unit | 10 | #0, #1, #2, #3, #6 |
-| `issuer/src/vision/resolver.rs` (inline `#[test]`) | Unit | 6 | #1, #5, #8 |
-| `issuer/src/vision/batch_config_orchestrator.rs` (inline `#[test]`) | Unit | 1 | #3 |
+| `oracle/src/vision/resolver.rs` (inline `#[test]`) | Unit | 6 | #1, #5, #8 |
+| `oracle/src/vision/batch_config_orchestrator.rs` (inline `#[test]`) | Unit | 1 | #3 |
 | `frontend/e2e/tests/15-vision-batch-config.spec.ts` | E2E/API | 5 | #0, #1, #2, #7 |
 | `frontend/e2e/tests/16-vision-tick-display.spec.ts` | E2E/UI | 3 | #4, #3, #8 |
 | Manual system test | Full | 6 steps | All |
@@ -663,12 +663,12 @@ state.config_history.write().await.insert(config.config_hash.clone(), config.clo
 
 ---
 
-### Issuer/Vision Fixes
+### Oracle/Vision Fixes
 
 **IS-1: Staleness check permanently bypassed** — `engine.rs:254` sets `last_update = now` for every price. `is_stale()` always returns `false`.
 
 ```rust
-// issuer/src/vision/engine.rs — build_market_prices()
+// oracle/src/vision/engine.rs — build_market_prices()
 // CHANGE: use actual price timestamp from data-node snapshot, not `now`
 // The snapshot JSON has a `last_updated` or `timestamp` field per asset.
 // Pass it through instead of overriding with current time:
@@ -680,7 +680,7 @@ prices.insert(market_id, start_price, end_price, last_update);
 **IS-2: f64 non-determinism in resolution** — All payout math uses `f64`. Different CPUs produce different results at boundary conditions.
 
 ```rust
-// issuer/src/vision/resolver.rs — resolve_outcome(), pct_change computation
+// oracle/src/vision/resolver.rs — resolve_outcome(), pct_change computation
 // CHANGE: use integer basis points for threshold comparison
 // Instead of: pct_change > threshold (f64 comparison)
 // Do:
@@ -689,7 +689,7 @@ let change_bps = if start_price_u128 != 0 {
 } else { 0 };
 // Compare change_bps against threshold_bps (both i128, deterministic)
 
-// issuer/src/vision/multiplier.rs — effective_stake computation
+// oracle/src/vision/multiplier.rs — effective_stake computation
 // CHANGE: use fixed-point math (multiply first, divide last)
 // Instead of: stake_f64 * total_mult → f64 as u128
 // Do:
@@ -699,7 +699,7 @@ let early_mult_bps = 10000 + early_bps; // 10000 = 1.0x
 let effective_stake = (stake * early_mult_bps * commit_mult_bps) / (10000 * 10000);
 ```
 
-**IS-3: No BLS consensus on tick resolution** — Single issuer resolves unilaterally. `// (TODO)` in engine.rs.
+**IS-3: No BLS consensus on tick resolution** — Single oracle resolves unilaterally. `// (TODO)` in engine.rs.
 
 ```
 This is the most critical missing piece. Implementation:
@@ -707,7 +707,7 @@ This is the most critical missing piece. Implementation:
 1. After resolver computes outcomes + balances, leader serializes:
    resolution_payload = {tick_id, batch_id, market_outcomes[], player_balances[]}
 
-2. Leader hashes payload, signs with BLS, broadcasts to other issuers
+2. Leader hashes payload, signs with BLS, broadcasts to other oracles
 
 3. Followers independently compute the same payload from their data-nodes,
    compare hash. If match → BLS co-sign. If mismatch → reject + log divergence.
@@ -718,15 +718,15 @@ This is the most critical missing piece. Implementation:
 5. On-chain: verify BLS, update balances atomically
 
 Files:
-  - issuer/src/vision/engine.rs — add consensus round after resolution
-  - issuer/src/vision/consensus.rs — new file, BLS signing + verification
+  - oracle/src/vision/engine.rs — add consensus round after resolution
+  - oracle/src/vision/consensus.rs — new file, BLS signing + verification
   - contracts/src/vision/Vision.sol — add settleTick() with BLS verification
 ```
 
 **IS-5: Multiplier f64 precision loss** — Formulas match spec (`early = 1 + t²/T²`, `commit = log10(n+9)`, `eff = stake × mult`). But `U256 → u128 → f64 → f64 math → u128 → U256` conversion path loses precision for large stakes (>2^53).
 
 ```rust
-// issuer/src/vision/multiplier.rs
+// oracle/src/vision/multiplier.rs
 // CHANGE: fixed-point arithmetic for effective_stake
 // Keep f64 for mult display only; use integer math for stake computation
 let stake_u128 = player.stake_per_tick.as_u128();
@@ -745,7 +745,7 @@ let effective_stake = U256::from(effective_u128).min(player.balance);
 **IS-6: Short bitmap defaults to Side::Down** — Out-of-bounds bitmap bits return `false` = Down for all future ticks.
 
 ```rust
-// issuer/src/vision/resolver.rs — resolve_tick()
+// oracle/src/vision/resolver.rs — resolve_tick()
 // ADD: validate bitmap covers the tick being resolved
 let required_bits = (tick_offset + 1) * num_markets;
 let available_bits = bitmap.len() * 8;
@@ -759,9 +759,9 @@ if available_bits < required_bits {
 **IS-7: Unauthenticated price feed** — Snapshot fetched via plain HTTP GET.
 
 ```rust
-// issuer/src/vision/engine.rs — snapshot fetch
+// oracle/src/vision/engine.rs — snapshot fetch
 // ADD: HMAC verification of snapshot response
-// Data-node signs snapshot with shared secret, issuer verifies
+// Data-node signs snapshot with shared secret, oracle verifies
 let hmac_header = response.headers().get("x-snapshot-hmac");
 let body = response.bytes().await?;
 let expected = hmac_sha256(&shared_secret, &body);
@@ -886,7 +886,7 @@ All references to `flat_30` in this doc, tests, and integration plan should read
 
 **Problem**: `payout = finalBalance - fee - alreadyClaimed` underflows when player claimed rewards then lost money (finalBalance < alreadyClaimed).
 
-**Fix**: Pin `finalBalance` semantics. The issuer MUST sign `finalBalance = position.balance` (remaining, AFTER claims). The contract should NOT subtract `totalClaimed` from payout. Instead, the fix is simpler:
+**Fix**: Pin `finalBalance` semantics. The oracle MUST sign `finalBalance = position.balance` (remaining, AFTER claims). The contract should NOT subtract `totalClaimed` from payout. Instead, the fix is simpler:
 
 ```solidity
 // withdraw() — the CORRECT fix:
@@ -933,19 +933,19 @@ down_* and flat_300/flat_3000 are available for manual batch creation.
 1. data-node: Add `fetched_at` (unix timestamp) per asset in /vision/snapshot response
    File: data-node/src/vision_api.rs — add field to SnapshotAsset struct
 
-2. issuer: Extend SnapshotData type to carry timestamps
-   File: issuer/src/vision/engine.rs — SnapshotData = HashMap<H256, (f64, f64, u64)>
+2. oracle: Extend SnapshotData type to carry timestamps
+   File: oracle/src/vision/engine.rs — SnapshotData = HashMap<H256, (f64, f64, u64)>
    (value, change_pct, fetched_at)
 
-3. issuer: Use fetched_at in build_market_prices
-   File: issuer/src/vision/engine.rs:254 — prices.insert(market_id, start, end, fetched_at)
+3. oracle: Use fetched_at in build_market_prices
+   File: oracle/src/vision/engine.rs:254 — prices.insert(market_id, start, end, fetched_at)
 ```
 
 ### RC-6: DN-3 validation is bypassable — FIXED
 
 **Problem**: Attacker controls all 3 fields. Internal consistency check is security theater.
 
-**Fix**: Settlement should only come via BLS-signed path (same as batch configs). Issuers compute settlement from their own resolution data, BLS-sign it, and push to data-node with BLS verification. No separate admin-token path.
+**Fix**: Settlement should only come via BLS-signed path (same as batch configs). Oracles compute settlement from their own resolution data, BLS-sign it, and push to data-node with BLS verification. No separate admin-token path.
 
 ```
 Short-term: validate config_hash exists + cross-reference against known on-chain prices
@@ -974,12 +974,12 @@ if recomputed != expected_hash_bytes {
 
 ### RC-8: Deploy order creates race — FIXED
 
-**Problem**: Data-node emitting new types before issuers understand them → wrong resolution.
+**Problem**: Data-node emitting new types before oracles understand them → wrong resolution.
 
-**Fix**: Deploy issuers FIRST (steps 2-3), data-node SECOND (step 4). Also: `parse_resolution_type` should return `Cancelled` for unknown types, not default to `up_x`.
+**Fix**: Deploy oracles FIRST (steps 2-3), data-node SECOND (step 4). Also: `parse_resolution_type` should return `Cancelled` for unknown types, not default to `up_x`.
 
 ```rust
-// issuer/src/vision/engine.rs — parse_resolution_type()
+// oracle/src/vision/engine.rs — parse_resolution_type()
 _ => {
     tracing::warn!(res_type = s, "Unknown resolution type — treating as Cancelled");
     255 // special code → Cancelled in resolve_outcome
@@ -1104,7 +1104,7 @@ require(finalBalance <= position.balance + DUST_THRESHOLD, "finalBalance exceeds
 
 ## Consolidated TODO (Implementation Order)
 
-**RULE**: Deploy issuers BEFORE data-node for resolution type changes.
+**RULE**: Deploy oracles BEFORE data-node for resolution type changes.
 
 ### Phase 0 — Instant Fixes (< 1 hour total)
 
@@ -1113,15 +1113,15 @@ require(finalBalance <= position.balance + DUST_THRESHOLD, "finalBalance exceeds
 | T-01 | DN-2: Filter empty admin token | `data-node/src/main.rs` | `ADMIN_TOKEN="" cargo run` → refuses to start or rejects empty header | 5m |
 | T-02 | Issue #0: Lock period 25% | `data-node/src/batch_engine.rs:22-23` | `cargo test test_lock_pct` | 10m |
 | T-03 | Issue #0: Lock period frontend | `frontend/lib/vision/tick.ts:35-37` | `lockOffsetForDuration(600) === 150` | 10m |
-| T-04 | RC-8: Unknown resolution type → Cancelled | `issuer/src/vision/engine.rs:111` | `parse_resolution_type("garbage") → 255` | 10m |
+| T-04 | RC-8: Unknown resolution type → Cancelled | `oracle/src/vision/engine.rs:111` | `parse_resolution_type("garbage") → 255` | 10m |
 
-### Phase 1 — Resolution Types (issuer first, then data-node)
+### Phase 1 — Resolution Types (oracle first, then data-node)
 
 | # | Task | File | Verify | Effort |
 |---|------|------|--------|--------|
-| T-05 | Issue #5: Add codes 8-13 to `parse_resolution_type` | `issuer/src/vision/engine.rs:99-111` | Unit test: `parse("up_300") == 8` etc. | 30m |
-| T-06 | Issue #1: Add 6 match arms in `resolve_outcome` | `issuer/src/vision/resolver.rs:328-413` | Unit tests for up_300, down_3000, flat_300, flat_3000 | 1h |
-| T-07 | RC-13: Remove Flat from directional types | `issuer/src/vision/resolver.rs:328-413` | `up_x` with change < threshold → `Down` (not `Flat`) | 30m |
+| T-05 | Issue #5: Add codes 8-13 to `parse_resolution_type` | `oracle/src/vision/engine.rs:99-111` | Unit test: `parse("up_300") == 8` etc. | 30m |
+| T-06 | Issue #1: Add 6 match arms in `resolve_outcome` | `oracle/src/vision/resolver.rs:328-413` | Unit tests for up_300, down_3000, flat_300, flat_3000 | 1h |
+| T-07 | RC-13: Remove Flat from directional types | `oracle/src/vision/resolver.rs:328-413` | `up_x` with change < threshold → `Down` (not `Flat`) | 30m |
 | T-08 | RC-1: Data-node uses `flat_x`/`up_x` not `flat_30` | `data-node/src/batch_engine.rs` | `compute_asset_resolutions` emits `"flat_x"` with bps=30 | 30m |
 | T-09 | Issue #1: Smart resolution from historical data | `data-node/src/batch_engine.rs` | Integration: `GET /batches/recommended` shows varied types | 2h |
 
@@ -1136,15 +1136,15 @@ require(finalBalance <= position.balance + DUST_THRESHOLD, "finalBalance exceeds
 | T-14 | DN-1/RC-7: Config hash recomputation on store | `data-node/src/api.rs` | curl POST with tampered config → 400 | 1h |
 | T-15 | DN-4/RC-10: Atomic nonce check in write lock | `data-node/src/api.rs` | Concurrent replays → second one rejected | 1h |
 
-### Phase 3 — Security P1 (issuer pipeline)
+### Phase 3 — Security P1 (oracle pipeline)
 
 | # | Task | File | Verify | Effort |
 |---|------|------|--------|--------|
 | T-16 | RC-5: Add `fetched_at` to snapshot response | `data-node/src/vision_api.rs` | `curl /vision/snapshot` → each asset has `fetchedAt` field | 1h |
-| T-17 | RC-5: Carry timestamp through SnapshotData | `issuer/src/vision/engine.rs` | `SnapshotData` has `(f64, f64, u64)` per market | 1h |
-| T-18 | IS-1: Use fetched_at in build_market_prices | `issuer/src/vision/engine.rs:254` | Stale asset → `is_stale()` returns true → `Cancelled` | 30m |
-| T-19 | IS-6: Validate bitmap covers tick | `issuer/src/vision/resolver.rs` | Short bitmap → player skipped (not defaulted to Down) | 1h |
-| T-20 | RC-14: Commitment mult from balance coverage | `issuer/src/vision/resolver.rs` + `multiplier.rs` | Zero-padded bitmap → same mult as funded ticks only | 1h |
+| T-17 | RC-5: Carry timestamp through SnapshotData | `oracle/src/vision/engine.rs` | `SnapshotData` has `(f64, f64, u64)` per market | 1h |
+| T-18 | IS-1: Use fetched_at in build_market_prices | `oracle/src/vision/engine.rs:254` | Stale asset → `is_stale()` returns true → `Cancelled` | 30m |
+| T-19 | IS-6: Validate bitmap covers tick | `oracle/src/vision/resolver.rs` | Short bitmap → player skipped (not defaulted to Down) | 1h |
+| T-20 | RC-14: Commitment mult from balance coverage | `oracle/src/vision/resolver.rs` + `multiplier.rs` | Zero-padded bitmap → same mult as funded ticks only | 1h |
 | T-21 | DN-3/RC-6: Settlement via BLS path (short-term: validate config_hash) | `data-node/src/api.rs` | POST settlement with fake config_hash → rejected | 1h |
 
 ### Phase 4 — Batch Management Features
@@ -1153,7 +1153,7 @@ require(finalBalance <= position.balance + DUST_THRESHOLD, "finalBalance exceeds
 |---|------|------|--------|--------|
 | T-22 | Issue #2: Asset exclusion filters | `data-node/src/batch_engine.rs` | Stale/dust/new assets excluded from config | 2h |
 | T-23 | Issue #3: Lock-period config freeze | `data-node/src/batch_engine.rs` | Config hash stable during lock window | 2h |
-| T-24 | Issue #3: Lock-period queue in orchestrator | `issuer/src/vision/batch_config_orchestrator.rs` | updateBatchConfig queued during lock | 1h |
+| T-24 | Issue #3: Lock-period queue in orchestrator | `oracle/src/vision/batch_config_orchestrator.rs` | updateBatchConfig queued during lock | 1h |
 | T-25 | Issue #6: GC for unconsumed configs | `data-node/src/batch_engine.rs` | Old configs deleted after 1h | 30m |
 | T-26 | DN-5: Historical config map (don't overwrite) | `data-node/src/batch_engine.rs` | Old config_hash still fetchable after recompute | 1h |
 | T-27 | Issue #7: Bot API completeness | `data-node/src/api.rs` | `GET /batches/signed` has all required fields | 1h |
@@ -1164,15 +1164,15 @@ require(finalBalance <= position.balance + DUST_THRESHOLD, "finalBalance exceeds
 | # | Task | File | Verify | Effort |
 |---|------|------|--------|--------|
 | T-29 | Issue #4: Tick duration from API | `frontend/lib/vision/tick.ts` + new hook | Source page shows correct tick timer | 2h |
-| T-30 | Issue #8: Cancelled market observability | `issuer/src/vision/resolver.rs` + frontend | Cancelled markets logged + shown in UI | 1h |
-| T-31 | IS-7: HMAC on snapshot responses | `data-node/src/vision_api.rs` + `issuer/src/vision/engine.rs` | Tampered snapshot → issuer rejects | 2h |
+| T-30 | Issue #8: Cancelled market observability | `oracle/src/vision/resolver.rs` + frontend | Cancelled markets logged + shown in UI | 1h |
+| T-31 | IS-7: HMAC on snapshot responses | `data-node/src/vision_api.rs` + `oracle/src/vision/engine.rs` | Tampered snapshot → oracle rejects | 2h |
 
 ### Phase 6 — Heavy Lifts (separate sprints)
 
 | # | Task | File | Verify | Effort |
 |---|------|------|--------|--------|
-| T-32 | IS-3: BLS consensus on tick resolution | `issuer/src/vision/` + `Vision.sol` | Multi-issuer agreement before balance update | 3-5 days |
-| T-33 | IS-2/RC-9: Integer arithmetic for resolution | `issuer/src/vision/resolver.rs` + `multiplier.rs` | All issuers produce identical results | 2-3 days |
+| T-32 | IS-3: BLS consensus on tick resolution | `oracle/src/vision/` + `Vision.sol` | Multi-oracle agreement before balance update | 3-5 days |
+| T-33 | IS-2/RC-9: Integer arithmetic for resolution | `oracle/src/vision/resolver.rs` + `multiplier.rs` | All oracles produce identical results | 2-3 days |
 
 ### Verification Checklist (run after each phase)
 
@@ -1182,7 +1182,7 @@ cd data-node && cargo test && cd ..
 cd frontend && npx tsc --noEmit
 
 # After Phase 1:
-cd issuer && cargo test
+cd oracle && cargo test
 cd data-node && cargo test
 # Start system, verify: curl http://localhost:8200/batches/signed | jq '.[0].markets[0].resolutionType'
 
@@ -1192,7 +1192,7 @@ cd contracts && forge test
 cd data-node && cargo test
 
 # After Phase 3:
-cd issuer && cargo test
+cd oracle && cargo test
 # Start system, stop a data feed for 5 min, verify stale markets cancelled
 
 # After Phase 4:
@@ -1205,7 +1205,7 @@ cd frontend && npx playwright test --config=e2e/playwright.config.ts
 # Visual check: source page shows correct tick timer + lock indicator
 
 # After Phase 6:
-# Full system test with 3 issuer nodes
+# Full system test with 3 oracle nodes
 # Verify all 3 agree on tick resolution before applying balances
 ```
 
@@ -1217,13 +1217,13 @@ cd frontend && npx playwright test --config=e2e/playwright.config.ts
 - [x] flat_300 / flat_3000, same for up and down → Issue #1
 - [x] Set volatility from historical data (24h → last batch → flat) → Issue #1
 - [x] Don't include stale/dead assets in batches → Issue #2
-- [x] Lock-period config freeze across data-node, issuers, frontend, bots → Issue #3
+- [x] Lock-period config freeze across data-node, oracles, frontend, bots → Issue #3
 - [x] Frontend tick duration from signed config (not hardcoded category) → Issue #4
 - [x] Resolution type mapping consistency (string ↔ u8) → Issue #5
 - [x] GC for batch configs nobody consumed on-chain → Issue #6
 - [x] Bot-facing API has everything to play (config + BLS sig + markets) → Issue #7
 - [x] Source downtime → stale markets cancelled, observability → Issue #8
-- [x] 1 leader issuer pushes, others verify + BLS co-sign → Description
+- [x] 1 leader oracle pushes, others verify + BLS co-sign → Description
 - [x] First user creates batch on-chain via createBatchAndJoin() → Description
 - [x] Frontend/bots get config BEFORE on-chain → Description
 - [x] Resolution follows vision-p2pool-brief.md (condition met/not met, parimutuel) → Description

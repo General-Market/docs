@@ -390,19 +390,19 @@ if [ -n "$SIM_CATS" ]; then
     fi
 fi
 
-# Check Vision batches (served by issuers, not data-node)
+# Check Vision batches (served by oracles, not data-node)
 if [ -n "$VISION" ]; then
-    ISSUER_URL="${ISSUER_URL:-http://116.203.156.98/issuer1}"
-    VISION_RESP=$(curl -sf "$ISSUER_URL/vision/batches" 2>/dev/null || echo "")
+    ORACLE_URL="${ORACLE_URL:-http://116.203.156.98/oracle1}"
+    VISION_RESP=$(curl -sf "$ORACLE_URL/vision/batches" 2>/dev/null || echo "")
     if [ -n "$VISION_RESP" ]; then
         BATCH_COUNT=$(echo "$VISION_RESP" | jq '.batches | length' 2>/dev/null || echo "0")
         if [ "$BATCH_COUNT" -gt 0 ]; then
-            check_pass "Vision batches available ($BATCH_COUNT via issuer)"
+            check_pass "Vision batches available ($BATCH_COUNT via oracle)"
         else
-            check_warn "Vision batches" "0 batches on issuer — may need re-indexing"
+            check_warn "Vision batches" "0 batches on oracle — may need re-indexing"
         fi
     else
-        check_warn "Vision batches" "Issuer API unreachable at $ISSUER_URL"
+        check_warn "Vision batches" "Oracle API unreachable at $ORACLE_URL"
     fi
 fi
 

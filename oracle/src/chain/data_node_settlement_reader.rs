@@ -3,7 +3,7 @@
 //! Implements `SettlementReader` by calling data-node HTTP endpoints and
 //! receiving events via SSE, instead of direct RPC to the settlement chain.
 //! Deduplication state (seen_orders, retry_counts) is maintained locally
-//! per-issuer instance.
+//! per-oracle instance.
 
 use std::collections::HashMap;
 use std::time::Duration;
@@ -26,7 +26,7 @@ use super::settlement_trait::SettlementReader;
 /// Settlement chain reader backed by data-node HTTP API.
 ///
 /// Events are fetched via HTTP (not SSE) with block range queries.
-/// Dedup state is local to this instance — each issuer maintains its own.
+/// Dedup state is local to this instance — each oracle maintains its own.
 pub struct DataNodeSettlementReader {
     base_url: String,
     client: Client,
@@ -126,7 +126,7 @@ impl SettlementReader for DataNodeSettlementReader {
         _to_block: u64,
     ) -> Result<Vec<ItpCreationRequest>, SettlementReaderError> {
         // Events come via SSE; for block-range queries we'd need a dedicated endpoint.
-        // For now return all pending creations (the issuer filters by block range).
+        // For now return all pending creations (the oracle filters by block range).
         self.get_all_pending_requests().await
     }
 

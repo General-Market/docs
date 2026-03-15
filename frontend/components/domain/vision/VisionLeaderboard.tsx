@@ -4,7 +4,7 @@ import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 
 /**
  * Vision leaderboard showing player rankings by PnL.
- * Uses the /vision/leaderboard endpoint from the issuer API.
+ * Uses the /vision/leaderboard endpoint from the oracle API.
  */
 export function VisionLeaderboard() {
   const { leaderboard, isLoading, isError } = useVisionLeaderboard()

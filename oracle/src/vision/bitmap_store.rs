@@ -261,7 +261,7 @@ impl BitmapStore {
     /// Reload all bitmaps from the DB into the in-memory store.
     ///
     /// Called once at startup for crash recovery.  Any row whose `player`
-    /// address or hash cannot be parsed is silently skipped — the issuer will
+    /// address or hash cannot be parsed is silently skipped — the oracle will
     /// simply request a fresh bitmap from the player on the next tick.
     pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), BitmapStoreError> {
         let rows = sqlx::query_as::<_, (i64, String, Vec<u8>, String, String, i64, String)>(

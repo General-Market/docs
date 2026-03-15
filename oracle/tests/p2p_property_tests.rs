@@ -5,10 +5,10 @@
 
 use proptest::prelude::*;
 
-use issuer::p2p::rate_limit::RateBucket;
-use issuer::p2p::peer_scoring::PeerScorer;
-use issuer::p2p::equivocation::EquivocationDetector;
-use issuer::p2p::wal::{ConsensusWAL, WALEntry, WalRole, WalSyncMode};
+use oracle::p2p::rate_limit::RateBucket;
+use oracle::p2p::peer_scoring::PeerScorer;
+use oracle::p2p::equivocation::EquivocationDetector;
+use oracle::p2p::wal::{ConsensusWAL, WALEntry, WalRole, WalSyncMode};
 
 // ---------------------------------------------------------------------------
 // Helpers

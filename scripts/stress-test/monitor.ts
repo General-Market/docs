@@ -1,9 +1,9 @@
 /**
- * Background health monitoring for issuers and AP.
+ * Background health monitoring for oracles and AP.
  * Polls health endpoints every 1s, captures time-series data.
  */
 
-import { ISSUER_HEALTH_PORTS, AP_HEALTH_PORT } from './config';
+import { ORACLE_HEALTH_PORTS, AP_HEALTH_PORT } from './config';
 import { timer } from './helpers';
 
 export interface HealthSample {
@@ -77,7 +77,7 @@ export function startMonitor(intervalMs = 1_000): void {
 
   _interval = setInterval(async () => {
     const services = [
-      ...ISSUER_HEALTH_PORTS.map((port, i) => ({ port, name: `issuer-${i + 1}` })),
+      ...ORACLE_HEALTH_PORTS.map((port, i) => ({ port, name: `oracle-${i + 1}` })),
       { port: AP_HEALTH_PORT, name: 'ap' },
     ];
 
@@ -125,7 +125,7 @@ export function getMonitorSnapshot(): MonitorData {
 /** Quick health check — returns true if all services respond. */
 export async function checkAllHealthy(): Promise<boolean> {
   const services = [
-    ...ISSUER_HEALTH_PORTS.map((port, i) => ({ port, name: `issuer-${i + 1}` })),
+    ...ORACLE_HEALTH_PORTS.map((port, i) => ({ port, name: `oracle-${i + 1}` })),
     { port: AP_HEALTH_PORT, name: 'ap' },
   ];
 
@@ -148,12 +148,12 @@ export interface ServiceStatus {
 export async function checkServicesReady(): Promise<ServiceStatus[]> {
   const results: ServiceStatus[] = [];
 
-  // Check issuers
-  for (let i = 0; i < ISSUER_HEALTH_PORTS.length; i++) {
-    const port = ISSUER_HEALTH_PORTS[i];
-    const sample = await pollHealth(port, `issuer-${i + 1}`);
+  // Check oracles
+  for (let i = 0; i < ORACLE_HEALTH_PORTS.length; i++) {
+    const port = ORACLE_HEALTH_PORTS[i];
+    const sample = await pollHealth(port, `oracle-${i + 1}`);
     results.push({
-      name: `issuer-${i + 1}`,
+      name: `oracle-${i + 1}`,
       healthy: sample.status === 'ok',
       latencyMs: sample.latencyMs,
       details: sample.status === 'ok'

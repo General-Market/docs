@@ -4,10 +4,10 @@
 //!   sign                  Sign a message hash with deterministic keypairs
 //!   pubkey                Get G2 public key for a single seed index
 //!   agg-pubkey-from-seeds Get aggregated G2 pubkey from seed indices
-//!   from-registry         Read active issuers from IssuerRegistry and print aggregated pubkey
+//!   from-registry         Read active oracles from OracleRegistry and print aggregated pubkey
 //!
 //! The first three use deterministic seed-based keys for tests/deploy scripts.
-//! The last reads from a live IssuerRegistry contract.
+//! The last reads from a live OracleRegistry contract.
 
 use clap::{Parser, Subcommand};
 use ethers::prelude::*;
@@ -29,9 +29,9 @@ struct Args {
     #[arg(long)]
     rpc: Option<String>,
 
-    /// IssuerRegistry contract address (legacy: same as `from-registry --issuer-registry`)
+    /// OracleRegistry contract address (legacy: same as `from-registry --oracle-registry`)
     #[arg(long)]
-    issuer_registry: Option<Address>,
+    oracle_registry: Option<Address>,
 }
 
 #[derive(Subcommand)]
@@ -57,14 +57,14 @@ enum Command {
         #[arg(long)]
         seed_indices: String,
     },
-    /// Read active issuers from IssuerRegistry and print aggregated pubkey
+    /// Read active oracles from OracleRegistry and print aggregated pubkey
     FromRegistry {
         /// RPC endpoint URL
         #[arg(long)]
         rpc: String,
-        /// IssuerRegistry contract address
+        /// OracleRegistry contract address
         #[arg(long)]
-        issuer_registry: Address,
+        oracle_registry: Address,
     },
 }
 
@@ -179,28 +179,28 @@ async fn main() {
         Some(Command::AggPubkeyFromSeeds { seed_indices }) => {
             cmd_agg_pubkey_from_seeds(&seed_indices);
         }
-        Some(Command::FromRegistry { rpc, issuer_registry }) => {
-            run_from_registry(&rpc, issuer_registry).await;
+        Some(Command::FromRegistry { rpc, oracle_registry }) => {
+            run_from_registry(&rpc, oracle_registry).await;
         }
         None => {
-            // Legacy mode: --rpc + --issuer-registry
-            if let (Some(rpc), Some(registry)) = (args.rpc, args.issuer_registry) {
+            // Legacy mode: --rpc + --oracle-registry
+            if let (Some(rpc), Some(registry)) = (args.rpc, args.oracle_registry) {
                 run_from_registry(&rpc, registry).await;
             } else {
                 eprintln!("Usage: bls-tool <COMMAND>");
                 eprintln!("  sign                  Sign message hash with seed keypairs");
                 eprintln!("  pubkey                Get pubkey for a seed index");
                 eprintln!("  agg-pubkey-from-seeds Get aggregated pubkey from seeds");
-                eprintln!("  from-registry         Read from IssuerRegistry contract");
+                eprintln!("  from-registry         Read from OracleRegistry contract");
                 eprintln!("");
-                eprintln!("Legacy: bls-tool --rpc <RPC> --issuer-registry <ADDR>");
+                eprintln!("Legacy: bls-tool --rpc <RPC> --oracle-registry <ADDR>");
                 std::process::exit(1);
             }
         }
     }
 }
 
-async fn run_from_registry(rpc: &str, issuer_registry: Address) {
+async fn run_from_registry(rpc: &str, oracle_registry: Address) {
     let provider = Provider::<Http>::try_from(rpc)
         .unwrap_or_else(|e| {
             eprintln!("Failed to connect to RPC: {e}");
@@ -208,10 +208,10 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
         });
     let provider = Arc::new(provider);
 
-    let selector = &ethers::utils::keccak256("getActiveIssuerEndpoints()")[..4];
+    let selector = &ethers::utils::keccak256("getActiveOracleEndpoints()")[..4];
 
     let tx = TransactionRequest::new()
-        .to(issuer_registry)
+        .to(oracle_registry)
         .data(selector.to_vec());
 
     let result = provider
@@ -245,11 +245,11 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
     }
 
     if ids.is_empty() {
-        eprintln!("No active issuers found");
+        eprintln!("No active oracles found");
         std::process::exit(1);
     }
 
-    let issuers: Vec<common::types::Issuer> = ids
+    let oracles: Vec<common::types::Oracle> = ids
         .iter()
         .zip(ips.iter())
         .zip(pubkeys.iter())
@@ -263,7 +263,7 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
                 .expect("ip is 32 bytes");
             let pubkey_bytes = pk_tok.clone().into_bytes().expect("pubkey is bytes");
 
-            common::types::Issuer {
+            common::types::Oracle {
                 id,
                 addr: Address::zero(),
                 ip: H256::from(ip_bytes),
@@ -274,7 +274,7 @@ async fn run_from_registry(rpc: &str, issuer_registry: Address) {
         })
         .collect();
 
-    let aggregated = issuer::registry_sync::compute_aggregated_pubkey(&issuers)
+    let aggregated = oracle::registry_sync::compute_aggregated_pubkey(&oracles)
         .unwrap_or_else(|e| {
             eprintln!("Failed to compute aggregated pubkey: {e}");
             std::process::exit(1);

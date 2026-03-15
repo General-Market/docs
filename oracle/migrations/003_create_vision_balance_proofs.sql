@@ -1,5 +1,5 @@
 -- BLS-signed balance proofs, generated at tick end and stored for immediate serving.
--- Survives issuer restarts — no need to re-generate proofs for previously resolved ticks.
+-- Survives oracle restarts — no need to re-generate proofs for previously resolved ticks.
 
 CREATE TABLE IF NOT EXISTS vision_balance_proofs (
     batch_id        BIGINT NOT NULL,

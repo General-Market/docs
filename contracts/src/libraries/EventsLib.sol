@@ -31,10 +31,10 @@ library EventsLib {
         uint256 deadline
     );
 
-    /// @notice Emitted when a batch of orders is confirmed by issuer consensus
+    /// @notice Emitted when a batch of orders is confirmed by oracle consensus
     /// @param cycleNumber The cycle in which this batch was confirmed
     /// @param orderIds Array of order IDs included in the batch
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     event BatchConfirmed(
         uint256 indexed cycleNumber,
         uint256[] orderIds,
@@ -303,10 +303,10 @@ library EventsLib {
 
     // ============ ARCHITECTURE GAP FIX EVENTS (Story 7.17) ============
 
-    /// @notice Emitted when an issuer updates their IP address
-    /// @param issuerId The issuer whose IP was updated
+    /// @notice Emitted when an oracle updates their IP address
+    /// @param oracleId The oracle whose IP was updated
     /// @param newIp The new IP address
-    event IssuerIpUpdated(uint256 indexed issuerId, bytes32 newIp);
+    event OracleIpUpdated(uint256 indexed oracleId, bytes32 newIp);
 
     /// @notice Emitted when a staleness limit is updated for an asset type
     /// @param assetType The asset type (0=CEX, 1=DEX, 2=low-liquidity)
@@ -326,24 +326,24 @@ library EventsLib {
 
     // ============ REGISTRY SYNC EVENTS (Story 8.1) ============
 
-    /// @notice Emitted when IssuerRegistry state changes (add/remove issuer, key rotation)
-    /// @dev Used by MirrorIssuerRegistry on other chains to sync via BLS proofs
+    /// @notice Emitted when OracleRegistry state changes (add/remove oracle, key rotation)
+    /// @dev Used by MirrorOracleRegistry on other chains to sync via BLS proofs
     /// @param nonce Monotonically increasing nonce for replay protection
-    /// @param activeCount Number of currently active issuers
-    /// @param stateHash keccak256 of all active issuer pubkeys concatenated in order
+    /// @param activeCount Number of currently active oracles
+    /// @param stateHash keccak256 of all active oracle pubkeys concatenated in order
     event RegistryStateChanged(
         uint256 indexed nonce,
         uint256 activeCount,
         bytes32 stateHash
     );
 
-    /// @notice Emitted when MirrorIssuerRegistry is synced from L3
+    /// @notice Emitted when MirrorOracleRegistry is synced from L3
     /// @dev Emitted after successful BLS signature verification and state update
     /// @param nonce The new registry nonce
-    /// @param activeCount Number of active issuers
+    /// @param activeCount Number of active oracles
     /// @param threshold BLS threshold for signatures
     /// @param pubkeyHash keccak256 hash of new aggregated pubkey for indexing
-    /// @param signersBitmask Bitmask indicating which issuers signed the sync proof
+    /// @param signersBitmask Bitmask indicating which oracles signed the sync proof
     event RegistrySynced(
         uint256 indexed nonce,
         uint256 activeCount,
@@ -366,7 +366,7 @@ library EventsLib {
     /// @param itpAddress The ITP token address this oracle prices
     /// @param price The new NAV price (36 decimals)
     /// @param timestamp Block timestamp when price was updated
-    /// @param cycleNumber The issuer cycle number that produced this price
+    /// @param cycleNumber The oracle cycle number that produced this price
     event NAVPriceUpdated(
         address indexed itpAddress,
         uint256 price,
@@ -375,9 +375,9 @@ library EventsLib {
         uint256 signersBitmask
     );
 
-    // ============ ISSUER DECOMPOSITION EVENTS ============
+    // ============ ORACLE DECOMPOSITION EVENTS ============
 
-    /// @notice Per-asset trade instruction after cross-ITP netting by issuers
+    /// @notice Per-asset trade instruction after cross-ITP netting by oracles
     /// @dev No itpId — trades are cycle-level, netted across all ITPs.
     ///      AP monitors this event to execute one vault trade per asset.
     /// @param cycleNumber Cycle requesting the trade
@@ -406,7 +406,7 @@ library EventsLib {
     // ============ REBALANCE V2 EVENTS (Asset Changes) ============
 
     /// @notice Emitted when anyone requests a rebalance (permissionless event-only)
-    /// @dev Issuers detect this event and verify before executing via BLS consensus
+    /// @dev Oracles detect this event and verify before executing via BLS consensus
     /// @param requester Address that requested the rebalance
     /// @param itpId The ITP to rebalance
     /// @param removeIndices Indices of assets to remove (sorted descending)
@@ -445,16 +445,16 @@ library EventsLib {
     /// @notice Emitted when a registry snapshot is created (after setAggregatedPubkey)
     /// @param nonce The snapshot nonce
     /// @param blockNumber Block number when snapshot was created
-    /// @param activeBitmask Bitmask of active issuer IDs
+    /// @param activeBitmask Bitmask of active oracle IDs
     event SnapshotCreated(uint256 indexed nonce, uint256 blockNumber, uint256 activeBitmask);
 
-    /// @notice Emitted when a snapshot is pending (after add/remove issuer)
-    /// @dev Issuer nodes should log WARNING if gap persists > 10 blocks
+    /// @notice Emitted when a snapshot is pending (after add/remove oracle)
+    /// @dev Oracle nodes should log WARNING if gap persists > 10 blocks
     /// @param nonce The nonce that needs a snapshot
     event SnapshotPending(uint256 indexed nonce);
 
     /// @notice Emitted when non-signer missed counts are incremented
-    /// @param nonSignersBitmask Bitmask of issuers that did not sign
+    /// @param nonSignersBitmask Bitmask of oracles that did not sign
     event NonSignersRecorded(uint256 nonSignersBitmask);
 
     // ============ BRIDGE RECOVERY EVENTS ============

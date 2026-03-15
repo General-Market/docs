@@ -46,9 +46,9 @@ impl Default for ArbitrationConfig {
 }
 
 impl ArbitrationConfig {
-    /// Build ArbitrationConfig from IssuerConfig fields.
+    /// Build ArbitrationConfig from OracleConfig fields.
     /// Returns None if arbitration is not enabled.
-    pub fn from_issuer_config(config: &crate::config::IssuerConfig) -> Option<Self> {
+    pub fn from_oracle_config(config: &crate::config::OracleConfig) -> Option<Self> {
         if !config.arbitration_enabled.unwrap_or(false) {
             return None;
         }

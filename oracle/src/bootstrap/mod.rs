@@ -1,4 +1,4 @@
-//! Bootstrap module for Issuer node initialization
+//! Bootstrap module for Oracle node initialization
 //!
 //! Extracts component initialization from main.rs into composable builders.
 
@@ -18,7 +18,7 @@ pub use price::PriceBuilder;
 pub use state::StateBuilder;
 pub use types::*;
 
-use crate::{IssuerConfig, ContractAddresses, new_registry_sync_cache};
+use crate::{OracleConfig, ContractAddresses, new_registry_sync_cache};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use tracing::info;
@@ -32,10 +32,10 @@ pub struct BootstrapParams {
     pub from_block: Option<u64>,
     pub checkpoint_path: String,
     pub cycle_duration_ms: u64,
-    pub num_issuers: u8,
+    pub num_oracles: u8,
     pub signature_threshold_override: Option<usize>,
     pub bls_key_seed_index: Option<u8>,
-    pub on_chain_issuer_id: Option<u8>,
+    pub on_chain_oracle_id: Option<u8>,
     pub test_key_seeds: bool,
     pub key_registry_offset: u8,
     pub bridge_proxy: Option<String>,
@@ -73,22 +73,22 @@ pub struct BootstrapParams {
 }
 
 /// Main bootstrap orchestrator
-pub struct IssuerBootstrap {
-    config: IssuerConfig,
+pub struct OracleBootstrap {
+    config: OracleConfig,
     params: BootstrapParams,
 }
 
-impl IssuerBootstrap {
-    pub fn new(config: IssuerConfig, params: BootstrapParams) -> Self {
+impl OracleBootstrap {
+    pub fn new(config: OracleConfig, params: BootstrapParams) -> Self {
         Self { config, params }
     }
 
-    /// Build all issuer components
-    pub async fn build(mut self, shutdown: Arc<AtomicBool>) -> Result<IssuerComponents, BootstrapError> {
+    /// Build all oracle components
+    pub async fn build(mut self, shutdown: Arc<AtomicBool>) -> Result<OracleComponents, BootstrapError> {
         let node_id = self.config.node_id.ok_or(BootstrapError::MissingNodeId)?;
         let target_chain_id = self.params.chain_id_override.unwrap_or(111222333);
 
-        info!(node_id, "Starting issuer bootstrap");
+        info!(node_id, "Starting oracle bootstrap");
 
         // Resolve contract addresses
         let contract_addresses = if self.params.mock_chain {
@@ -126,7 +126,7 @@ impl IssuerBootstrap {
         }
 
         // Build state
-        let issuer_state = StateBuilder::new(&self.config, &self.params, &contract_addresses, target_chain_id)
+        let oracle_state = StateBuilder::new(&self.config, &self.params, &contract_addresses, target_chain_id)
             .build(&chain.reader)
             .await?;
 
@@ -171,11 +171,11 @@ impl IssuerBootstrap {
 
         info!(node_id, "Bootstrap complete");
 
-        Ok(IssuerComponents {
+        Ok(OracleComponents {
             node_id,
             target_chain_id,
             chain,
-            issuer_state,
+            oracle_state,
             price,
             execution,
             p2p,

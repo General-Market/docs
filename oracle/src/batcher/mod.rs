@@ -1,4 +1,4 @@
-//! Order Batcher module for Index L3 Issuer
+//! Order Batcher module for Index L3 Oracle
 //!
 //! Collects and validates orders for batching. Orders with expired deadlines
 //! are queued for refund. Orders for paused ITPs or during system pause remain pending.

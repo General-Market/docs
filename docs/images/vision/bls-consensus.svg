@@ -12,15 +12,15 @@
   <!-- Background -->
   <rect width="960" height="620" fill="#FFFFFF"/>
 
-  <!-- ===== TOP ROW: 3 Issuer cards ===== -->
+  <!-- ===== TOP ROW: 3 Oracle cards ===== -->
   <!-- Centered: 270*3 + 24*2 = 858, start x = (960-858)/2 = 51 -->
 
-  <!-- Issuer 1 -->
+  <!-- Oracle 1 -->
   <rect x="51" y="32" width="270" height="200" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
   <!-- Dark gradient header strip -->
   <rect x="51" y="32" width="270" height="40" rx="12" fill="url(#darkGrad)"/>
   <rect x="51" y="56" width="270" height="16" fill="url(#darkGrad)"/>
-  <text x="186" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Issuer 1</text>
+  <text x="186" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Oracle 1</text>
   <!-- Body -->
   <text x="75" y="100" fill="#0A0A0A" font-size="11" opacity="0.5">1. Fetch prices from DN-1</text>
   <text x="75" y="122" fill="#0A0A0A" font-size="11" opacity="0.5">2. Resolve outcomes</text>
@@ -30,22 +30,22 @@
   <!-- Signed data -->
   <text x="75" y="180" fill="#0A0A0A" font-size="9" font-family="JetBrains Mono, monospace" opacity="0.3">tick_id · config_hash · bitmap_set · balances</text>
 
-  <!-- Issuer 2 -->
+  <!-- Oracle 2 -->
   <rect x="345" y="32" width="270" height="200" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
   <rect x="345" y="32" width="270" height="40" rx="12" fill="url(#darkGrad)"/>
   <rect x="345" y="56" width="270" height="16" fill="url(#darkGrad)"/>
-  <text x="480" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Issuer 2</text>
+  <text x="480" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Oracle 2</text>
   <text x="369" y="100" fill="#0A0A0A" font-size="11" opacity="0.5">1. Fetch prices from DN-2</text>
   <text x="369" y="122" fill="#0A0A0A" font-size="11" opacity="0.5">2. Resolve outcomes</text>
   <text x="369" y="144" fill="#0A0A0A" font-size="11" opacity="0.5">3. BLS sign message</text>
   <line x1="361" y1="160" x2="599" y2="160" stroke="#0A0A0A" opacity="0.08" stroke-width="1"/>
   <text x="369" y="180" fill="#0A0A0A" font-size="9" font-family="JetBrains Mono, monospace" opacity="0.3">tick_id · config_hash · bitmap_set · balances</text>
 
-  <!-- Issuer 3 -->
+  <!-- Oracle 3 -->
   <rect x="639" y="32" width="270" height="200" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
   <rect x="639" y="32" width="270" height="40" rx="12" fill="url(#darkGrad)"/>
   <rect x="639" y="56" width="270" height="16" fill="url(#darkGrad)"/>
-  <text x="774" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Issuer 3</text>
+  <text x="774" y="58" text-anchor="middle" fill="white" font-size="14" font-weight="600">Oracle 3</text>
   <text x="663" y="100" fill="#0A0A0A" font-size="11" opacity="0.5">1. Fetch prices from DN-3</text>
   <text x="663" y="122" fill="#0A0A0A" font-size="11" opacity="0.5">2. Resolve outcomes</text>
   <text x="663" y="144" fill="#0A0A0A" font-size="11" opacity="0.5">3. BLS sign message</text>
@@ -79,7 +79,7 @@
   <!-- ===== BOTTOM: Vision.sol (L3) ===== -->
   <rect x="310" y="474" width="340" height="80" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>
   <text x="480" y="506" text-anchor="middle" fill="#0A0A0A" font-size="14" font-weight="600">Vision.sol (L3)</text>
-  <text x="480" y="528" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Verify against IssuerRegistry aggregated pubkey</text>
+  <text x="480" y="528" text-anchor="middle" fill="#0A0A0A" font-size="11" opacity="0.5">Verify against OracleRegistry aggregated pubkey</text>
 
   <!-- ===== RIGHT FLOATING PANEL: Protected by BLS ===== -->
   <rect x="720" y="300" width="200" height="172" rx="12" fill="#0A0A0A" opacity="0.03" filter="url(#shadow)"/>

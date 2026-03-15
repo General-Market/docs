@@ -52,19 +52,19 @@ With `workers: 2` and `fullyParallel: false`:
 **Lesson**: Any `page.goto()` in tests running under parallel load should have a retry or catch. The dev server compiles pages on first visit and can abort under resource pressure.
 
 ### 8. Stale Pending Orders on L3
-**Bug**: After multiple test runs without restart, 4 pending buy orders accumulated on L3 that issuers never processed. Issuer's `get_pending_orders()` uses incremental cursor scanning — stale orders from previous sessions may not be re-scanned.
+**Bug**: After multiple test runs without restart, 4 pending buy orders accumulated on L3 that oracles never processed. Oracle's `get_pending_orders()` uses incremental cursor scanning — stale orders from previous sessions may not be re-scanned.
 **Fix**: Restart system (stop.sh/start.sh) for clean state before full test run.
-**Lesson**: Always restart the system before a full E2E run. Stale on-chain state from prior runs can confuse issuers. The issuer's `order_cursor` in `chain/reader.rs` (REORG_BUFFER=10 blocks) can miss orders submitted many blocks ago if the cursor has advanced.
+**Lesson**: Always restart the system before a full E2E run. Stale on-chain state from prior runs can confuse oracles. The oracle's `order_cursor` in `chain/reader.rs` (REORG_BUFFER=10 blocks) can miss orders submitted many blocks ago if the cursor has advanced.
 
 ### 9. Log File Bloat (~4GB)
-**Bug**: Issuer logs grew to ~1GB+ each (3 issuers × ~1GB = 3GB+). Also rotated logs (`.2026-03-04` files) accumulated.
+**Bug**: Oracle logs grew to ~1GB+ each (3 oracles × ~1GB = 3GB+). Also rotated logs (`.2026-03-04` files) accumulated.
 **Fix**: Deleted rotated logs, truncated current logs before test run.
-**Lesson**: Before starting E2E tests, always clean logs: `truncate -s 0 logs/issuer-*.log` and `rm -f logs/issuer-*.2026-03-*`. Check disk space with `df -h`.
+**Lesson**: Before starting E2E tests, always clean logs: `truncate -s 0 logs/oracle-*.log` and `rm -f logs/oracle-*.2026-03-*`. Check disk space with `df -h`.
 
 ### 10. Stale Processes Taking Resources
 **Bug**: Old `start.sh`, `tail -f`, and stale `zsh` shells from previous Claude sessions consumed memory/CPU.
 **Fix**: `pkill -f "tail -f"` and kill stale processes before starting.
-**Lesson**: Before E2E runs, check `ps aux | grep -E "start.sh|tail|issuer|anvil|data-node"` and kill stale processes.
+**Lesson**: Before E2E runs, check `ps aux | grep -E "start.sh|tail|oracle|anvil|data-node"` and kill stale processes.
 
 ## Key Architecture Notes
 
@@ -76,8 +76,8 @@ With `workers: 2` and `fullyParallel: false`:
 - No `anvil_impersonateAccount` needed — Anvil auto-accepts from all addresses in dev mode
 
 ### L3 vs Arb Orders
-- **Bridge orders** (Arb → L3): Detected via `CrossChainOrderCreated` events on Arb. Issuers relay to L3 via `Index.submitOrder()`. Always work reliably.
-- **Direct L3 orders** (UI buy/sell): User calls `Index.submitOrder()` directly on L3 via mock wallet. Detected by issuers via `OrderSubmitted` events + `get_pending_orders()` polling. Can be missed if issuer cursor advances past event block.
+- **Bridge orders** (Arb → L3): Detected via `CrossChainOrderCreated` events on Arb. Oracles relay to L3 via `Index.submitOrder()`. Always work reliably.
+- **Direct L3 orders** (UI buy/sell): User calls `Index.submitOrder()` directly on L3 via mock wallet. Detected by oracles via `OrderSubmitted` events + `get_pending_orders()` polling. Can be missed if oracle cursor advances past event block.
 - L3-native processing: `run_l3_native_order_processing()` in `main.rs` line 2777. Skipped when `has_unmapped_bridge_orders()` is true.
 
 ### USDC Decimals
@@ -85,8 +85,8 @@ With `workers: 2` and `fullyParallel: false`:
 - Arb: 6 decimals (ARB_USDC)
 - The buy modal on frontend uses L3 amounts (18 dec). Never assume 6 everywhere.
 
-### Issuer Consensus
-- 3 issuers, BLS signatures, 2/3 threshold
+### Oracle Consensus
+- 3 oracles, BLS signatures, 2/3 threshold
 - 1s cycle time (heartbeat-driven + work-driven)
 - Price consensus: NAV oracle updates (~every cycle)
 - Order consensus: batch + fill (triggered by pending orders)
@@ -136,8 +136,8 @@ Tests that don't need a wallet (e.g., 11-vision-sources) use plain `page` fixtur
 
 ## Pre-E2E Checklist
 1. Kill stale processes: `pkill -f "tail -f"`, check for old start.sh
-2. Clean logs: `truncate -s 0 logs/issuer-*.log && rm -f logs/issuer-*.2026-03-*`
+2. Clean logs: `truncate -s 0 logs/oracle-*.log && rm -f logs/oracle-*.2026-03-*`
 3. Fresh restart: `bash stop.sh && bash start.sh --vision --no-tail`
-4. Wait for all 8 services: L3 (8545), Arb (8546), data-node (8200), issuers 1-3 (9001-9003), AP (9100), frontend (3000)
-5. Verify health: `curl localhost:8200/health` and check issuer logs for "State reconstruction complete"
+4. Wait for all 8 services: L3 (8545), Arb (8546), data-node (8200), oracles 1-3 (9001-9003), AP (9100), frontend (3000)
+5. Verify health: `curl localhost:8200/health` and check oracle logs for "State reconstruction complete"
 6. Run: `cd frontend && npx playwright test --config=e2e/playwright.config.ts`

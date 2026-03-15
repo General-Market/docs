@@ -4,8 +4,8 @@ import { Footer } from '@/components/layout/Footer'
 import ExplorerPageClient from './ExplorerPageClient'
 
 export const metadata: Metadata = {
-  title: 'Explorer — Issuer Network',
-  description: 'Real-time monitoring of the issuer consensus network.',
+  title: 'Explorer — Oracle Network',
+  description: 'Real-time monitoring of the oracle consensus network.',
 }
 
 export default function ExplorerPage() {

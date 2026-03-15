@@ -438,7 +438,7 @@ contract BLSLibTest is Test {
         assertTrue(valid, "Rust-generated aggregated signature (11 signers) should verify in Solidity");
     }
 
-    // Aggregated test vector: 20 signers (full issuer set)
+    // Aggregated test vector: 20 signers (full oracle set)
     function test_rustVector_aggregated_20_signers() public view {
         bytes memory aggPubkey = hex"252ef02973e8b5dc6ed232fc491f0c47fb8e5a681d50f6596d38512b6084dff109bf3992f94c3850338eb663059a96eb32ee8bc00f5c943740829cccbd757bfa14f6ee44de09e89933af0165153e7fc31776d0749406de178e50784866e4e5c10642d63501dfed09bc9e92b583f012bdf5dee39199234ee96095dc9fe5aecb01";
         bytes32 message = 0xbafdb061f5dc5278d9402034a25473301e36392a5e9274880570e8c88e34a711;
@@ -494,7 +494,7 @@ contract BLSLibTest is Test {
         // But we need the individual pk0 and pk1 that compose aggPubkey.
         // Since we don't have them hardcoded, let's just verify the mathematical property
         // using the single-signer case (already tested above).
-        // The multi-signer case is tested via the IssuerRegistry integration test.
+        // The multi-signer case is tested via the OracleRegistry integration test.
     }
 
     // Test: empty pubkeys array should return false

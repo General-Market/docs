@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import "../interfaces/IBridge.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
@@ -41,8 +41,8 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
     // ============ STORAGE ============
 
-    /// @notice Reference to IssuerRegistry for BLS key verification
-    IIssuerRegistry public issuerRegistry;
+    /// @notice Reference to OracleRegistry for BLS key verification
+    IOracleRegistry public oracleRegistry;
 
     /// @notice USDC token contract
     IERC20 public usdc;
@@ -68,12 +68,12 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     // ============ INITIALIZER ============
 
     /// @notice Initialize the L3BridgeCustody contract
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
     /// @param usdc_ Address of the USDC token contract (must be 18 decimals on L3)
-    function initialize(address issuerRegistry_, address usdc_) external initializer {
+    function initialize(address oracleRegistry_, address usdc_) external initializer {
         __UUPSUpgradeable_init();
-        if (issuerRegistry_ == address(0)) {
-            revert ErrorsLib.E043_ZeroIssuerRegistry();
+        if (oracleRegistry_ == address(0)) {
+            revert ErrorsLib.E043_ZeroOracleRegistry();
         }
         if (usdc_ == address(0)) {
             revert ErrorsLib.E050_ZeroUSDCAddress();
@@ -85,8 +85,8 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
             revert ErrorsLib.E080_InvalidUsdcDecimals(usdcDecimals, DecimalLib.INTERNAL_DECIMALS);
         }
 
-        issuerRegistry = IIssuerRegistry(issuerRegistry_);
-        __BLSVerifier_init(issuerRegistry_);
+        oracleRegistry = IOracleRegistry(oracleRegistry_);
+        __BLSVerifier_init(oracleRegistry_);
         usdc = IERC20(usdc_);
     }
 
@@ -250,7 +250,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     /// @dev Since PendingLock has no sender field, recovery requires BLS-verified recipient
     /// @param nonce The lock nonce that was reversed
     /// @param recipient Address to receive the funds
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function withdrawReversedFunds(
         uint256 nonce,
         address recipient,
@@ -308,7 +308,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
     /// @notice Propose a standard upgrade (7-day timelock)
     /// @param newImpl New implementation address
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function proposeUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -328,7 +328,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
 
     /// @notice Propose an emergency upgrade (24-hour timelock, 17/20 threshold)
     /// @param newImpl New implementation address
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -373,7 +373,7 @@ contract L3BridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier, IL3Brid
     }
 
     /// @notice Cancel a pending upgrade
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function cancelUpgrade(bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (pendingUpgradeImpl == address(0)) {
             revert ErrorsLib.E040_NoPendingUpgrade();

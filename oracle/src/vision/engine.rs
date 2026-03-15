@@ -26,7 +26,7 @@ use super::tick_scheduler::TickScheduler;
 use super::types::MarketConfig;
 
 // ---------------------------------------------------------------------------
-// Bitmap gossip types for cross-issuer bitmap synchronisation
+// Bitmap gossip types for cross-oracle bitmap synchronisation
 // ---------------------------------------------------------------------------
 
 /// Bitmap gossip message variants forwarded from the P2P layer to the engine.
@@ -67,7 +67,7 @@ pub enum IncomingBitmapGossip {
 
 /// Incoming balance proofs batch from a peer, forwarded by the P2P message handler.
 pub struct IncomingBalanceProofsBatch {
-    /// PeerId of the sender (used to derive signer_index via `extract_issuer_id`)
+    /// PeerId of the sender (used to derive signer_index via `extract_oracle_id`)
     pub from_peer: [u8; 32],
     pub batch_id: u64,
     pub tick_id: u64,
@@ -76,7 +76,7 @@ pub struct IncomingBalanceProofsBatch {
     pub signer_index: u8,
 }
 
-/// Per-(batch_id, player) accumulator of BLS signatures from different issuers.
+/// Per-(batch_id, player) accumulator of BLS signatures from different oracles.
 struct PlayerSigEntry {
     balance: U256,
     tick_id: u64,
@@ -531,7 +531,7 @@ async fn build_market_prices(
 
             // start_price: prefer reference from previous tick, else use end_price.
             // If start == end but change_pct is non-trivial, derive start from change_pct.
-            // All arithmetic in integer (i128, scaled by 1e8) — deterministic across issuers.
+            // All arithmetic in integer (i128, scaled by 1e8) — deterministic across oracles.
             let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
 
             if start_price == end_price {
@@ -652,7 +652,7 @@ async fn get_chain_timestamp(rpc_url: &str) -> u64 {
 
 /// Apply player balance updates to the scheduler, with optional DB persistence.
 ///
-/// Extracted as a helper so both single-issuer (direct) and multi-issuer
+/// Extracted as a helper so both single-oracle (direct) and multi-oracle
 /// (consensus fallback / degraded mode) paths can share the same logic.
 pub async fn apply_balances(
     scheduler: &Arc<TickScheduler>,
@@ -776,8 +776,8 @@ async fn store_balance_proof(
 
 /// Generate BLS-signed WITHDRAW balance proofs for all players after tick resolution.
 ///
-/// Signs proofs, stores the local issuer's proof in DB, and broadcasts
-/// via `broadcast_tx` for P2P aggregation with peer issuers.
+/// Signs proofs, stores the local oracle's proof in DB, and broadcasts
+/// via `broadcast_tx` for P2P aggregation with peer oracles.
 async fn generate_and_store_balance_proofs(
     db_pool: &Option<sqlx::PgPool>,
     bls_keypair: &Option<Arc<BLSKeyPair>>,
@@ -853,7 +853,7 @@ async fn generate_and_store_balance_proofs(
     }
 }
 
-/// Aggregate balance proofs from multiple issuers and upsert to DB.
+/// Aggregate balance proofs from multiple oracles and upsert to DB.
 ///
 /// Called after the 5s collection window expires for a batch.
 /// If >= 2 signatures exist for a player, aggregates them.
@@ -862,7 +862,7 @@ async fn aggregate_and_store_batch_proofs(
     pool: &sqlx::PgPool,
     batch_id: u64,
     entries: Vec<(Address, PlayerSigEntry)>,
-    num_issuers: usize,
+    num_oracles: usize,
 ) {
     let signer = Bn254BLSSigner::new();
 
@@ -909,7 +909,7 @@ async fn aggregate_and_store_batch_proofs(
         tracing::info!(
             batch_id, tick_id, player = %player,
             signer_count = entry.signatures.len(),
-            num_issuers,
+            num_oracles,
             "Aggregating balance proof"
         );
 
@@ -925,7 +925,7 @@ async fn aggregate_and_store_batch_proofs(
 ///
 /// SECURITY (HIGH-4): Each individual BLS signature from the peer is verified
 /// against the sender's registered public key before acceptance. This prevents
-/// a malicious issuer from injecting forged balance proofs that corrupt aggregation.
+/// a malicious oracle from injecting forged balance proofs that corrupt aggregation.
 async fn handle_incoming_balance_proofs(
     collector: &mut BalanceProofCollector,
     db_pool: &sqlx::PgPool,
@@ -938,7 +938,7 @@ async fn handle_incoming_balance_proofs(
     let tick_id = msg.tick_id;
     let from_peer = msg.from_peer;
     // Derive signer_index from peer identity (NOT self-reported)
-    let signer_index = crate::bootstrap::extract_issuer_id(&from_peer) as u8;
+    let signer_index = crate::bootstrap::extract_oracle_id(&from_peer) as u8;
 
     // Look up the sender's BLS public key. Reject the entire batch if not registered —
     // accepting proofs from unregistered peers would allow arbitrary key injection.
@@ -988,7 +988,7 @@ async fn handle_incoming_balance_proofs(
 
         // Look up our own recorded balance for this (batch_id, player) to cross-check.
         // SECURITY: reject if we have no record OR if balances mismatch. Never accept
-        // unverified proofs — a malicious issuer could inject forged balances that
+        // unverified proofs — a malicious oracle could inject forged balances that
         // corrupt aggregation and block legitimate withdrawals.
         let db_balance: Option<String> = sqlx::query_scalar(
             "SELECT balance FROM vision_balance_proofs WHERE batch_id = $1 AND player = $2"
@@ -1045,10 +1045,10 @@ async fn handle_incoming_balance_proofs(
 /// 4. Runs the tick resolver to compute outcomes
 /// 5. Records settlements to data-node for threshold feedback
 /// 6. Marks the tick as resolved in the scheduler
-/// 7. Drives BLS consensus with other issuers (multi-issuer mode)
+/// 7. Drives BLS consensus with other oracles (multi-oracle mode)
 /// 8. Submits the signed result on-chain (after consensus)
 ///
-/// In single-issuer mode (`num_issuers <= 1` or `bls_keypair` is `None`),
+/// In single-oracle mode (`num_oracles <= 1` or `bls_keypair` is `None`),
 /// balance updates are applied directly without consensus.
 ///
 /// # Balance Proof Aggregation
@@ -1059,11 +1059,11 @@ async fn handle_incoming_balance_proofs(
 ///
 /// # Bitmap Gossip
 ///
-/// When an issuer receives a bitmap from a player via the API, it broadcasts
+/// When an oracle receives a bitmap from a player via the API, it broadcasts
 /// a `BitmapGossip` to all peers. Peers that lack the bitmap reply with
-/// `BitmapRequest`; the sender responds with `BitmapResponse`. All issuers
+/// `BitmapRequest`; the sender responds with `BitmapResponse`. All oracles
 /// end up with the same set of bitmaps before each tick resolves, removing
-/// the single-issuer-as-gatekeeper problem.
+/// the single-oracle-as-gatekeeper problem.
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
@@ -1097,10 +1097,10 @@ pub async fn run(
         }
     };
 
-    // Construct tick consensus orchestrator for multi-issuer BLS consensus.
-    // When num_issuers <= 1 or no BLS keypair, we run in single-issuer mode
+    // Construct tick consensus orchestrator for multi-oracle BLS consensus.
+    // When num_oracles <= 1 or no BLS keypair, we run in single-oracle mode
     // and apply balance updates directly without consensus.
-    let tick_consensus: Option<Arc<TickConsensus>> = if config.num_issuers > 1 {
+    let tick_consensus: Option<Arc<TickConsensus>> = if config.num_oracles > 1 {
         match &bls_keypair {
             Some(keypair) => {
                 let vision_address: Address = config
@@ -1113,34 +1113,34 @@ pub async fn run(
                 let tc = TickConsensus::new(
                     config.chain_id,
                     vision_address,
-                    config.num_issuers,
+                    config.num_oracles,
                     Arc::new(common::bls::Bn254BLSSigner::new()),
                     keypair.clone(),
                 );
                 tracing::info!(
-                    num_issuers = config.num_issuers,
+                    num_oracles = config.num_oracles,
                     chain_id = config.chain_id,
-                    "Tick consensus enabled (multi-issuer mode)"
+                    "Tick consensus enabled (multi-oracle mode)"
                 );
                 Some(Arc::new(tc))
             }
             None => {
                 tracing::warn!(
-                    num_issuers = config.num_issuers,
-                    "num_issuers > 1 but no BLS keypair — falling back to single-issuer mode"
+                    num_oracles = config.num_oracles,
+                    "num_oracles > 1 but no BLS keypair — falling back to single-oracle mode"
                 );
                 None
             }
         }
     } else {
-        tracing::info!("Single-issuer mode — tick consensus disabled");
+        tracing::info!("Single-oracle mode — tick consensus disabled");
         None
     };
 
     // HIGH-5: Pinned price snapshots for consensus-retry stability.
     //
     // When tick resolution fails and the engine retries on the next poll,
-    // freshly-fetched prices may have shifted — causing issuers to compute
+    // freshly-fetched prices may have shifted — causing oracles to compute
     // different outcomes and never converge on consensus.
     //
     // Fix: cache the first successful MarketPrices build for each (batch_id, tick_id)
@@ -1170,7 +1170,7 @@ pub async fn run(
             .vision_address
             .parse()
             .unwrap_or_else(|_| Address::zero());
-        let agg_num_issuers = config.num_issuers;
+        let agg_num_oracles = config.num_oracles;
         let agg_shutdown = shutdown.clone();
         let agg_key_registry = key_registry.clone();
 
@@ -1215,7 +1215,7 @@ pub async fn run(
                                     &pool,
                                     batch_id,
                                     entries,
-                                    agg_num_issuers,
+                                    agg_num_oracles,
                                 ).await;
                             }
                         }
@@ -1715,7 +1715,7 @@ pub async fn run(
                     }
 
                     // Compute bitmap_set_hash: sorted (player, bitmap_hash) pairs, hashed together.
-                    // Included in the consensus proposal so all issuers agree on which bitmaps were used.
+                    // Included in the consensus proposal so all oracles agree on which bitmaps were used.
                     let active_bitmaps = resolver.bitmap_store.get_all_active_for_batch(batch_id).await;
                     let mut bitmap_set: Vec<(Address, H256)> = active_bitmaps.iter()
                         .map(|b| (b.player, b.hash))
@@ -1853,11 +1853,11 @@ pub async fn run(
                                     .await;
 
                                     // === BLS Consensus Gate ===
-                                    // Multi-issuer: create proposal, defer balance application.
-                                    // Single-issuer: apply balances directly.
+                                    // Multi-oracle: create proposal, defer balance application.
+                                    // Single-oracle: apply balances directly.
                                     // NO degraded mode — if consensus proposal fails, skip the tick.
                                     if let Some(ref tc) = tick_consensus {
-                                        // Multi-issuer mode: start consensus round
+                                        // Multi-oracle mode: start consensus round
                                         match tc.create_proposal(&result, 0).await {
                                             Ok((result_hash, _leader_sig, player_balances)) => {
                                                 tracing::info!(
@@ -1883,7 +1883,7 @@ pub async fn run(
                                             }
                                         }
                                     } else {
-                                        // Single-issuer mode: apply balance updates directly
+                                        // Single-oracle mode: apply balance updates directly
                                         apply_balances(
                                             &scheduler,
                                             &db_pool,

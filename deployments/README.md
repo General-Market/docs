@@ -2,7 +2,7 @@
 
 ## Overview
 
-BLSCustody is deployed on multiple EVM chains using a UUPS proxy pattern. Each chain gets its own Governance, IssuerRegistry, and BLSCustody contracts (or can reuse an existing IssuerRegistry).
+BLSCustody is deployed on multiple EVM chains using a UUPS proxy pattern. Each chain gets its own Governance, OracleRegistry, and BLSCustody contracts (or can reuse an existing OracleRegistry).
 
 ## Supported Chains
 
@@ -28,18 +28,18 @@ export PRIVATE_KEY=0x...
 export ETHEREUM_RPC_URL=https://...
 export ETHERSCAN_API_KEY=...  # Optional: for contract verification
 
-# Optional: reuse an existing IssuerRegistry
-# export ISSUER_REGISTRY_ADDRESS=0x...
+# Optional: reuse an existing OracleRegistry
+# export ORACLE_REGISTRY_ADDRESS=0x...
 
 ./scripts/deploy-ethereum.sh
 ```
 
 This deploys:
 1. **Governance** (UUPS proxy) - admin set to deployer
-2. **IssuerRegistry** (UUPS proxy) - linked to Governance
-3. **BLSCustody** (UUPS proxy) - linked to IssuerRegistry
+2. **OracleRegistry** (UUPS proxy) - linked to Governance
+3. **BLSCustody** (UUPS proxy) - linked to OracleRegistry
 
-If `ISSUER_REGISTRY_ADDRESS` is set, steps 1-2 are skipped.
+If `ORACLE_REGISTRY_ADDRESS` is set, steps 1-2 are skipped.
 
 ### Step 2: Propose Whitelist Targets
 
@@ -56,7 +56,7 @@ This proposes:
 - **1inch Aggregation Router V6** (`0x111111125421cA6dc452d289314280a0f8842A65`)
 - **USDC** (chain-specific address)
 
-**Note:** `proposeWhitelist()` requires BLS signature verification. In Phase 1 with an empty aggregated pubkey (no issuers registered), verification is skipped. Once issuers are registered, whitelist proposals must be BLS-signed by the issuer network.
+**Note:** `proposeWhitelist()` requires BLS signature verification. In Phase 1 with an empty aggregated pubkey (no oracles registered), verification is skipped. Once oracles are registered, whitelist proposals must be BLS-signed by the oracle network.
 
 ### Step 3: Activate Whitelist (after 2-day timelock)
 
@@ -80,9 +80,9 @@ cast send $BLSCUSTODY_ADDRESS \
 
 After deployment, verify:
 
-1. **IssuerRegistry set correctly:**
+1. **OracleRegistry set correctly:**
    ```bash
-   cast call $BLSCUSTODY_ADDRESS "issuerRegistry()" --rpc-url $RPC_URL
+   cast call $BLSCUSTODY_ADDRESS "oracleRegistry()" --rpc-url $RPC_URL
    ```
 
 2. **Nonce is 0 (no used nonces):**
@@ -126,7 +126,7 @@ Each deployment writes a JSON file to `deployments/<chain>.json`:
       "proxy": "0x...",
       "implementation": "0x..."
     },
-    "IssuerRegistry": {
+    "OracleRegistry": {
       "proxy": "0x...",
       "implementation": "0x..."
     },
@@ -138,8 +138,8 @@ Each deployment writes a JSON file to `deployments/<chain>.json`:
 }
 ```
 
-When using an existing IssuerRegistry (`ISSUER_REGISTRY_ADDRESS`), only `IssuerRegistry.proxy`, `BLSCustody.proxy`, and `BLSCustody.implementation` are included (Governance is omitted).
+When using an existing OracleRegistry (`ORACLE_REGISTRY_ADDRESS`), only `OracleRegistry.proxy`, `BLSCustody.proxy`, and `BLSCustody.implementation` are included (Governance is omitted).
 
-## IssuerRegistry on Non-L3 Chains
+## OracleRegistry on Non-L3 Chains
 
-The canonical IssuerRegistry lives on L3. For other chains, the current approach deploys a full IssuerRegistry per chain. The same issuer set must be configured on each chain to ensure the same aggregated BLS public key is used everywhere. Future enhancements may use cross-chain messaging to sync the aggregated key.
+The canonical OracleRegistry lives on L3. For other chains, the current approach deploys a full OracleRegistry per chain. The same oracle set must be configured on each chain to ensure the same aggregated BLS public key is used everywhere. Future enhancements may use cross-chain messaging to sync the aggregated key.

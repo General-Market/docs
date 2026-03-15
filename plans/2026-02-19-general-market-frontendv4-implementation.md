@@ -911,7 +911,7 @@ git commit -m "feat(v4): restyle Backtest tab — simulation components"
 - Tab navigation: underline style (AP Status | Performance)
 - Stat cards: white rounded-xl shadow-card pattern
   - Consensus: `text-3xl font-bold text-text-primary font-mono` showing "2/3"
-  - Active Issuers, Network, Fill Speed
+  - Active Oracles, Network, Fill Speed
 
 **Step 2: Restyle APBalanceCard, charts, PerformanceSection**
 

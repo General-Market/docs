@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 import {Id, MarketParams, Position, Market} from "@morpho-blue/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {BLSVerifier} from "../src/libraries/BLSVerifier.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
@@ -43,7 +43,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
     /// @param newPrice New oracle price (Morpho-scaled)
     function _updateOraclePriceFrom(address caller, uint256 newPrice) internal {
         bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itp), newPrice, block.timestamp, _nextCycleNumber));
-        bytes memory sig = signWithTestIssuers(h);
+        bytes memory sig = signWithTestOracles(h);
         vm.prank(caller);
         oracle.updatePrice(newPrice, block.timestamp, _nextCycleNumber, sig, 1, 0x07);
         _nextCycleNumber++;
@@ -52,7 +52,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
     /// @notice Sign a NAV update hash with the current key set (seeds 0,1,2)
     function _signOracleUpdate(uint256 price_, uint256 cycleNumber) internal returns (bytes memory) {
         bytes32 h = keccak256(abi.encode(block.chainid, address(oracle), address(itp), price_, block.timestamp, cycleNumber));
-        return signWithTestIssuers(h);
+        return signWithTestOracles(h);
     }
 
     /// @notice Build individual pubkeys and IDs for a sync operation
@@ -86,7 +86,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
                 newThreshold
             )
         );
-        return signWithTestIssuers(h);
+        return signWithTestOracles(h);
     }
 
     /// @notice Perform a sync on the mirror registry with individual pubkeys
@@ -120,7 +120,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
     // ============ TASK 1: PERMISSIONLESS MIRROR REGISTRY SYNC (AC #1) ============
 
-    /// @notice AC1: Non-curator address can sync MirrorIssuerRegistry
+    /// @notice AC1: Non-curator address can sync MirrorOracleRegistry
     function test_mirrorRegistrySync_permissionless() public {
         uint256 currentNonce = mirrorRegistry.registryNonce();
         uint256 newNonce = currentNonce + 1;
@@ -343,7 +343,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
 
         // Step 5: Simulate ITP sell proceeds
         // NOTE: In production, liquidator would sell ITP via Index contract's sell order flow,
-        // which is a cross-chain operation (Settlement→L3→Settlement) requiring issuer consensus.
+        // which is a cross-chain operation (Settlement→L3→Settlement) requiring oracle consensus.
         // For this Foundry test, we simulate the USDC proceeds by minting equivalent value.
         // The key assertion is that the liquidator ends profitable, proving the economic model works.
         uint256 usdcProceeds = seized * dropPrice / 1e36;
@@ -571,7 +571,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
         }
     }
 
-    /// @notice AC4: MirrorIssuerRegistry.sync() has no access control
+    /// @notice AC4: MirrorOracleRegistry.sync() has no access control
     function test_accessControl_mirrorRegistrySync_noRestriction() public {
         address[] memory callers = new address[](3);
         callers[0] = independentLiquidator;
@@ -692,7 +692,7 @@ contract MorphoPermissionlessLiquidationTest is MorphoTestHelper {
     function test_edgeCase_invalidBLSSignature_reverts() public {
         uint256 newCycle = oracle.lastCycleNumber() + 1;
         // Sign a completely different message — real BLS sig but over wrong content
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
 
         vm.prank(randomUser);
         vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);

@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/mocks/MockERC20.sol";
 import "../src/Governance.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/mocks/MockBitgetVault.sol";
 import "../src/core/Investment.sol";
 import "../src/core/BLSCustody.sol";
@@ -56,7 +56,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     address public mockUsdt;
     address public governance;
     address public indexProxy;
-    address public issuerRegistry;
+    address public oracleRegistry;
     address public collateralRegistry;
     address public l3BridgeCustodyProxy;
     address public settlementBridgeCustodyProxy;
@@ -67,9 +67,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     // Anvil accounts
     address public admin;
-    address public issuer1;
-    address public issuer2;
-    address public issuer3;
+    address public oracle1;
+    address public oracle2;
+    address public oracle3;
     address public ap;
     address public user;
     address public constant TEST_USER = 0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4;
@@ -88,7 +88,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         _deployBridge();
         _deployCustody();
         _wireContracts();
-        _registerIssuers();
+        _registerOracles();
         _fundContracts();
         _fundUser();
 
@@ -101,9 +101,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     function _setupAccounts() internal {
         uint256 deployerKey = _getDeployerKey();
         admin = vm.addr(deployerKey);
-        issuer1 = vm.addr(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d);
-        issuer2 = vm.addr(0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a);
-        issuer3 = vm.addr(0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6);
+        oracle1 = vm.addr(0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d);
+        oracle2 = vm.addr(0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a);
+        oracle3 = vm.addr(0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6);
         ap = vm.addr(0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a);
         // Anvil account 5 for user
         user = vm.addr(0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba);
@@ -157,10 +157,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployRegistries() internal {
         console.log("Phase 3: Deploy Registries");
-        IssuerRegistry regImpl = new IssuerRegistry();
-        issuerRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(IssuerRegistry.initialize.selector, governance)));
-        collateralRegistry = address(new CollateralRegistry(admin, issuerRegistry));
-        console.log("  IssuerRegistry:", issuerRegistry);
+        OracleRegistry regImpl = new OracleRegistry();
+        oracleRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance)));
+        collateralRegistry = address(new CollateralRegistry(admin, oracleRegistry));
+        console.log("  OracleRegistry:", oracleRegistry);
         console.log("  CollateralRegistry:", collateralRegistry);
     }
 
@@ -169,18 +169,18 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
         // L3BridgeCustody
         address l3Impl = address(new L3BridgeCustody());
-        bytes memory l3Init = abi.encodeWithSelector(L3BridgeCustody.initialize.selector, issuerRegistry, l3Wusdc);
+        bytes memory l3Init = abi.encodeWithSelector(L3BridgeCustody.initialize.selector, oracleRegistry, l3Wusdc);
         l3BridgeCustodyProxy = address(new ERC1967Proxy(l3Impl, l3Init));
 
         // SettlementBridgeCustody (with indexContract for cross-chain buy)
         // bridgeProxyAddr set during initialize to avoid BLS-gated setBridgeProxy call
         address settlementImpl = address(new SettlementBridgeCustody());
-        bytes memory settlementInit = abi.encodeWithSelector(SettlementBridgeCustody.initialize.selector, issuerRegistry, settlementUsdc, indexProxy, bridgeProxyAddr);
+        bytes memory settlementInit = abi.encodeWithSelector(SettlementBridgeCustody.initialize.selector, oracleRegistry, settlementUsdc, indexProxy, bridgeProxyAddr);
         settlementBridgeCustodyProxy = address(new ERC1967Proxy(settlementImpl, settlementInit));
 
         // BLSCustody
         address blsImpl = address(new BLSCustody());
-        bytes memory blsInit = abi.encodeWithSelector(BLSCustody.initialize.selector, issuerRegistry);
+        bytes memory blsInit = abi.encodeWithSelector(BLSCustody.initialize.selector, oracleRegistry);
         blsCustodyProxy = address(new ERC1967Proxy(blsImpl, blsInit));
 
         console.log("  L3BridgeCustody:", l3BridgeCustodyProxy);
@@ -205,7 +205,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // 2. Deploy ERC1967Proxy wrapping BridgeProxy (factory set to address(0) initially)
         bytes memory bridgeInit = abi.encodeWithSelector(
             BridgeProxy.initialize.selector,
-            issuerRegistry,
+            oracleRegistry,
             address(0), // factory not yet deployed
             admin
         );
@@ -227,8 +227,8 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _wireContracts() internal {
         console.log("Phase 6: Wire Contracts");
-        Investment(indexProxy).setIssuerRegistry(issuerRegistry);
-        console.log("  Index wired to IssuerRegistry");
+        Investment(indexProxy).setOracleRegistry(oracleRegistry);
+        console.log("  Index wired to OracleRegistry");
         Investment(indexProxy).setAuthorizedBridge(bridgeProxyAddr);
         console.log("  Index authorized bridge set to BridgeProxy");
         // BridgeProxy set on SettlementBridgeCustody during initialize() (avoids BLS-gated setBridgeProxy)
@@ -237,28 +237,28 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         MockBitgetVault(mockBitgetVault).approveSpender(settlementUsdc, settlementBridgeCustodyProxy, type(uint256).max);
         console.log("  MockBitgetVault: approved SettlementBridgeCustody for SETTLEMENT_USDC spending");
         // Authorize all BLS-verifying contracts for incrementMissedCounts
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
-        console.log("  IssuerRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(indexProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(blsCustodyProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(l3BridgeCustodyProxy, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
+        console.log("  OracleRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
     }
 
-    function _registerIssuers() internal {
-        console.log("Phase 7: Register 3 Issuers");
+    function _registerOracles() internal {
+        console.log("Phase 7: Register 3 Oracles");
 
-        // Must snapshot (setAggregatedPubkey) after EACH addIssuer due to PendingSnapshot constraint
-        _registerIssuer(0, issuer1, "127.0.0.1:9001");
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsPubkey(0), 1);
+        // Must snapshot (setAggregatedPubkey) after EACH addOracle due to PendingSnapshot constraint
+        _registerOracle(0, oracle1, "127.0.0.1:9001");
+        OracleRegistry(oracleRegistry).setAggregatedPubkey(blsPubkey(0), 1);
 
-        _registerIssuer(1, issuer2, "127.0.0.1:9002");
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
+        _registerOracle(1, oracle2, "127.0.0.1:9002");
+        OracleRegistry(oracleRegistry).setAggregatedPubkey(blsAggPubkey("0,1"), 2);
 
-        _registerIssuer(2, issuer3, "127.0.0.1:9003");
-        IssuerRegistry(issuerRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
+        _registerOracle(2, oracle3, "127.0.0.1:9003");
+        OracleRegistry(oracleRegistry).setAggregatedPubkey(blsAggPubkey("0,1,2"), 3);
 
-        console.log("  Aggregated pubkey set on IssuerRegistry (snapshot after each addIssuer)");
+        console.log("  Aggregated pubkey set on OracleRegistry (snapshot after each addOracle)");
     }
 
     function _fundContracts() internal {
@@ -311,17 +311,17 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         MockERC20(settlementUsdc).mint(TEST_USER, USER_INITIAL_BALANCE_6DEC);
         console.log("  Test user 0xC0D3..3850 funded (L3_WUSDC 18dec + SETTLEMENT_USDC 6dec)");
 
-        // Fund issuer and AP accounts with gas (GM/ETH)
+        // Fund oracle and AP accounts with gas (GM/ETH)
         // Uses call instead of transfer (2300 gas stipend too low on some chains like Sonic)
         uint256 gasFunding = 10 ether;
         uint256 totalNeeded = gasFunding * 5;
         if (address(admin).balance > totalNeeded + 1 ether) {
-            address[5] memory recipients = [issuer1, issuer2, issuer3, ap, user];
+            address[5] memory recipients = [oracle1, oracle2, oracle3, ap, user];
             for (uint256 r = 0; r < recipients.length; r++) {
                 (bool ok,) = payable(recipients[r]).call{value: gasFunding}("");
                 require(ok, "gas funding transfer failed");
             }
-            console.log("  Issuers + AP + user funded with 10 ETH each for gas");
+            console.log("  Oracles + AP + user funded with 10 ETH each for gas");
         } else {
             console.log("  Skipping gas funding (deployer balance too low)");
         }
@@ -339,7 +339,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         MockBitgetVault(mockBitgetVault).fundVault(token, amount);
     }
 
-    function _registerIssuer(uint256 idx, address issuer, string memory ipPort) internal {
+    function _registerOracle(uint256 idx, address oracle, string memory ipPort) internal {
         bytes memory ipBytes = bytes(ipPort);
         bytes32 ipBytes32;
         assembly { ipBytes32 := mload(add(ipBytes, 32)) }
@@ -348,12 +348,12 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         bytes memory pubkey = blsPubkey(uint8(idx));
 
         // Generate Proof of Possession signature
-        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, issuerRegistry, issuer, pubkey));
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, oracleRegistry, oracle, pubkey));
         bytes memory popSig = blsSign(vm.toString(idx), popMsg);
 
         // Deployer (admin) is the broadcast sender, so no vm.prank needed
-        IssuerRegistry(issuerRegistry).addIssuer(issuer, ipBytes32, pubkey, popSig);
-        console.log("  Registered issuer", idx + 1, ":", issuer);
+        OracleRegistry(oracleRegistry).addOracle(oracle, ipBytes32, pubkey, popSig);
+        console.log("  Registered oracle", idx + 1, ":", oracle);
     }
 
     function _exportDeployment() internal {
@@ -376,7 +376,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         string memory p1 = string.concat(
             '    "Index": "', vm.toString(indexProxy), '",\n',
             '    "Governance": "', vm.toString(governance), '",\n',
-            '    "IssuerRegistry": "', vm.toString(issuerRegistry), '",\n',
+            '    "OracleRegistry": "', vm.toString(oracleRegistry), '",\n',
             '    "CollateralRegistry": "', vm.toString(collateralRegistry), '",\n'
         );
         string memory p2 = string.concat(
@@ -402,9 +402,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         return string.concat(
             '  "accounts": {\n',
             '    "admin": "', vm.toString(admin), '",\n',
-            '    "issuer1": "', vm.toString(issuer1), '",\n',
-            '    "issuer2": "', vm.toString(issuer2), '",\n',
-            '    "issuer3": "', vm.toString(issuer3), '",\n',
+            '    "oracle1": "', vm.toString(oracle1), '",\n',
+            '    "oracle2": "', vm.toString(oracle2), '",\n',
+            '    "oracle3": "', vm.toString(oracle3), '",\n',
             '    "ap": "', vm.toString(ap), '",\n',
             '    "user": "', vm.toString(user), '",\n',
             '    "testUser": "', vm.toString(TEST_USER), '"\n',

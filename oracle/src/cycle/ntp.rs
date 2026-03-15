@@ -1,7 +1,7 @@
 //! NTP time synchronization for cycle manager.
 //!
 //! Implements SNTP (Simple Network Time Protocol) queries to detect clock drift
-//! between issuer nodes. Uses raw UDP sockets with the NTP v4 packet format.
+//! between oracle nodes. Uses raw UDP sockets with the NTP v4 packet format.
 //!
 //! Architecture Section 7: "Method: Wall Clock + NTP (off-chain), Tolerance: ±200ms"
 

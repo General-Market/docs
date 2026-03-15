@@ -1,6 +1,6 @@
 //! Bitget API integration
 //!
-//! Contains read-only client for issuer fill verification.
+//! Contains read-only client for oracle fill verification.
 
 mod read_only;
 mod types;

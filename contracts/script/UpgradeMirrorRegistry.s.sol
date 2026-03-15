@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 
-/// @title UpgradeMirrorRegistry - Upgrade MirrorIssuerRegistry implementation
+/// @title UpgradeMirrorRegistry - Upgrade MirrorOracleRegistry implementation
 /// @dev Usage:
 ///   PROXY=0x015e39eefbab8f5d317dc7900465ea2673bf8424 \
 ///   forge script script/UpgradeMirrorRegistry.s.sol:UpgradeMirrorRegistry \
@@ -13,11 +13,11 @@ contract UpgradeMirrorRegistry is Script {
     function run() external {
         address proxy = vm.envAddress("PROXY");
 
-        console.log("Upgrading MirrorIssuerRegistry...");
+        console.log("Upgrading MirrorOracleRegistry...");
         console.log("  Proxy:", proxy);
 
         // Read state before upgrade
-        MirrorIssuerRegistry mirror = MirrorIssuerRegistry(proxy);
+        MirrorOracleRegistry mirror = MirrorOracleRegistry(proxy);
         uint256 nonceBefore = mirror.registryNonce();
         uint256 snapshotBefore = mirror.lastSnapshotNonce();
         uint256 countBefore = mirror.activeCount();
@@ -29,7 +29,7 @@ contract UpgradeMirrorRegistry is Script {
         vm.startBroadcast();
 
         // Deploy new implementation
-        MirrorIssuerRegistry newImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry newImpl = new MirrorOracleRegistry();
         console.log("  New implementation:", address(newImpl));
 
         // Upgrade proxy

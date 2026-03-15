@@ -1,5 +1,5 @@
 #!/usr/bin/env -S cargo +nightly -Zscript
-//! Script to print test BLS public keys for IssuerRegistry
+//! Script to print test BLS public keys for OracleRegistry
 //! Run with: cargo +nightly -Zscript scripts/print-test-bls-keys.rs
 
 use std::process::Command;

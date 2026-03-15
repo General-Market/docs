@@ -135,7 +135,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
       switch (settlementStep) {
         case 'approving': return 'Approving USDC on Settlement...'
         case 'depositing': return 'Locking USDC in SettlementBridgeCustody...'
-        case 'polling': return 'Waiting for issuers to credit your balance...'
+        case 'polling': return 'Waiting for oracles to credit your balance...'
         case 'done': return 'Deposit credited!'
         default: return ''
       }
@@ -268,7 +268,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
-                  Lock USDC on Settlement. Issuers credit your virtual balance on L3.
+                  Lock USDC on Settlement. Oracles credit your virtual balance on L3.
                 </p>
                 {isOnSettlement && (
                   <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>

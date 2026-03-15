@@ -6,7 +6,7 @@
 //! ## Architecture
 //!
 //! The AP's ONLY source of work is blockchain events - it does NOT communicate
-//! directly with Issuers. All coordination happens through on-chain events:
+//! directly with Oracles. All coordination happens through on-chain events:
 //!
 //! - `TradeRequest` events trigger CEX trade execution
 //! - `WithdrawalRequest` events trigger CEX withdrawals

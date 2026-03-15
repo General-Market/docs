@@ -5,18 +5,18 @@ import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { ISSUER_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { ORACLE_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-const ISSUER_REGISTRY_ADDRESS = (
-  process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
+const ORACLE_REGISTRY_ADDRESS = (
+  process.env.NEXT_PUBLIC_ORACLE_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
 
 export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error'
 
@@ -48,8 +48,8 @@ export interface UseClaimReturn {
 }
 
 /**
- * Fetch a BLS-signed balance proof for a tick range from issuer nodes.
- * Uses the Next.js proxy first (avoids CORS), then falls back to direct issuer URLs.
+ * Fetch a BLS-signed balance proof for a tick range from oracle nodes.
+ * Uses the Next.js proxy first (avoids CORS), then falls back to direct oracle URLs.
  */
 async function fetchClaimProof(
   batchId: bigint,
@@ -80,8 +80,8 @@ async function fetchClaimProof(
     errors.push(`proxy: ${(e as Error).message}`)
   }
 
-  // Fallback: try direct issuer URLs
-  for (const url of VISION_ISSUER_URLS) {
+  // Fallback: try direct oracle URLs
+  for (const url of VISION_ORACLE_URLS) {
     try {
       const res = await fetch(`${url}${path}`)
       if (res.ok) {
@@ -101,15 +101,15 @@ async function fetchClaimProof(
     }
   }
 
-  throw new Error(`Failed to fetch claim proof from all issuers: ${errors.join('; ')}`)
+  throw new Error(`Failed to fetch claim proof from all oracles: ${errors.join('; ')}`)
 }
 
 /**
  * Hook to claim rewards from a Vision batch without fully withdrawing.
  *
  * Flow:
- * 1. Fetch BLS-signed balance proof from issuer node (with tick range)
- * 2. Read referenceNonce from IssuerRegistry on-chain
+ * 1. Fetch BLS-signed balance proof from oracle node (with tick range)
+ * 2. Read referenceNonce from OracleRegistry on-chain
  * 3. Call Vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSignature, referenceNonce, signersBitmask)
  *
  * Tick range: from lastClaimedTick+1 to current resolved tick.
@@ -124,13 +124,13 @@ export function useClaim(): UseClaimReturn {
 
   const claimHandled = useRef(false)
 
-  // Read latest snapshot nonce from IssuerRegistry (for BLS verification)
+  // Read latest snapshot nonce from OracleRegistry (for BLS verification)
   const { data: lastSnapshotNonce } = useReadContract({
-    address: ISSUER_REGISTRY_ADDRESS,
-    abi: ISSUER_REGISTRY_ABI,
+    address: ORACLE_REGISTRY_ADDRESS,
+    abi: ORACLE_REGISTRY_ABI,
     functionName: 'lastSnapshotNonce',
     chainId: indexL3.id,
-    query: { enabled: ISSUER_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: ORACLE_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 
   // --- Claim tx ---

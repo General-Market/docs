@@ -15,7 +15,7 @@ import { posthog } from '@/lib/posthog'
 
 // ── System status types (previously in useSystemStatusSSE.ts) ──
 
-export interface IssuerNodeSSE {
+export interface OracleNodeSSE {
   id: number
   addr: string
   ip: string
@@ -44,14 +44,14 @@ export interface VaultAssetSSE {
 
 export interface SystemSnapshot {
   is_healthy: boolean
-  active_issuers: number
-  total_issuers: number
+  active_oracles: number
+  total_oracles: number
   total_orders: number
   last_cycle_number: number
   pending_orders: number
   l3_block_number: number
   avg_fill_time_seconds: number
-  nodes: IssuerNodeSSE[]
+  nodes: OracleNodeSSE[]
   recent_orders: RecentOrderSSE[]
   vault_assets: VaultAssetSSE[]
   vault_usd_total: number

@@ -53,7 +53,7 @@ Each rebalance incurs trading fees and gas. Frequent rebalancing in volatile mar
 
 ### Price Feed Risk
 
-ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be wrong. The issuer nodes enforce a 0.1% price tolerance. This catches most deviations. Not all.
+ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggregated by the data-node. If a price feed is stale or manipulated, the NAV computation will be wrong. The oracle nodes enforce a 0.1% price tolerance. This catches most deviations. Not all.
 
 ---
 
@@ -61,7 +61,7 @@ ITP NAV depends on price feeds from CoinGecko, Binance, and other sources aggreg
 
 ### BLS Consensus Dependency
 
-All ITP operations require BLS multi-signature consensus from the issuer set. If fewer than 2/3 of issuers are online, nothing processes. The protocol does not halt. It waits. Your money waits with it.
+All ITP operations require BLS multi-signature consensus from the oracle set. If fewer than 2/3 of oracles are online, nothing processes. The protocol does not halt. It waits. Your money waits with it.
 
 ### Contract Bugs
 
@@ -159,7 +159,7 @@ Every row in this table is a way to lose money. The severity column tells you ho
 | Concentration risk | Medium | Use equal-weight or capped strategies |
 | Delistings | Medium | Prefer large-cap assets, monitor holdings |
 | No auto-rebalance | Medium | Set reminders, check weight drift periodically |
-| Price feed staleness | Low | Issuer 0.1% tolerance catches most issues |
+| Price feed staleness | Low | Oracle 0.1% tolerance catches most issues |
 | Contract bug | Low | Limited to deposited amount |
 | Lending liquidation | **High** | Monitor health factor, keep buffer above 1.5x |
 | Bridge risk | Medium | Prefer native assets where possible |

@@ -52,7 +52,7 @@ ERRORS=0
 WARNINGS=0
 
 # Validate core contracts
-CORE_CONTRACTS="Index IssuerRegistry Vision L3_WUSDC L3BridgeProxy CollateralRegistry"
+CORE_CONTRACTS="Index OracleRegistry Vision L3_WUSDC L3BridgeProxy CollateralRegistry"
 echo -e "\n${BLUE}Core contracts:${NC}"
 for NAME in $CORE_CONTRACTS; do
     ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT'))['contracts'].get('$NAME',''))" 2>/dev/null)

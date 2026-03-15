@@ -1,8 +1,8 @@
-# Normalize Issuer Processing — Kill the Central Bottleneck
+# Normalize Oracle Processing — Kill the Central Bottleneck
 
 ## Problem
 
-The issuer main loop has a **centralized sequential bottleneck**: `run_cycle()` runs synchronously every tick, blocking everything. It bundles price consensus + batch consensus into one call. When it fails (~14% of cycles), all other work (buy, sell, create, L3-native, rebalance) is skipped entirely.
+The oracle main loop has a **centralized sequential bottleneck**: `run_cycle()` runs synchronously every tick, blocking everything. It bundles price consensus + batch consensus into one call. When it fails (~14% of cycles), all other work (buy, sell, create, L3-native, rebalance) is skipped entirely.
 
 Each task already has its own BLS consensus internally. There's no reason any of them should wait for an unrelated price update to finish.
 
@@ -64,7 +64,7 @@ Security audit found 30 findings (3 CRITICAL, 9 HIGH). These 6 must be fixed bef
 
 ### Step 1. FlagGuard — panic-safe task spawning [C2]
 
-**File:** `issuer/src/main.rs`
+**File:** `oracle/src/main.rs`
 
 Add a drop guard so task panics always reset the flag:
 
@@ -97,7 +97,7 @@ Also upgrade all flag operations: `Acquire` for loads, `Release` for stores (fix
 
 ### Step 2. Dedicated price consensus state [C1, H3]
 
-**Files:** `issuer/src/consensus/protocol.rs`, `issuer/src/main.rs`
+**Files:** `oracle/src/consensus/protocol.rs`, `oracle/src/main.rs`
 
 `run_price_cycle` and bridge tasks share `self.state` and `self.aggregator`. Concurrent execution corrupts round state, equivocation detection, and WAL.
 
@@ -126,7 +126,7 @@ price_aggregator: RwLock<SignatureAggregator>, // NEW — only used by run_price
 
 ### Step 3. Separate follower protocol for price-only [H1, H2]
 
-**File:** `issuer/src/consensus/protocol.rs`
+**File:** `oracle/src/consensus/protocol.rs`
 
 Currently both `run_price_cycle` and `run_cycle` delegate to the same `run_follower_protocol`. A malicious leader can send a `BatchProposal` to price-only followers.
 
@@ -153,7 +153,7 @@ Add `ConsensusResult::PriceAgreed { cycle_number, aggregated_signature, signer_c
 
 ### Step 4. Route `send_transaction` through NonceManager [H6]
 
-**File:** `issuer/src/chain/writer.rs`
+**File:** `oracle/src/chain/writer.rs`
 
 `send_transaction()` bypasses `NonceManager`. Two concurrent tasks calling it get the same nonce.
 
@@ -181,7 +181,7 @@ Delete the old implementation (lines 572-624) that directly calls `self.client.s
 
 ### Step 5. Watchdog safety + consecutive failure counter [H5, M4]
 
-**File:** `issuer/src/main.rs`
+**File:** `oracle/src/main.rs`
 
 Watchdog resets orders being actively processed. Price disagreement has no circuit breaker.
 
@@ -213,24 +213,24 @@ Watchdog resets orders being actively processed. Price disagreement has no circu
 
 ---
 
-## Phase 2B — Upgrade MirrorIssuerRegistry to Full IIssuerRegistry
+## Phase 2B — Upgrade MirrorOracleRegistry to Full IOracleRegistry
 
-**Core decision:** No code duplication. ITPNAVOracle uses the **exact same** `BLSVerifier._verifyBLS()` code path as BridgeProxy, ArbBridgeCustody, and Investment. That means MirrorIssuerRegistry must implement `IIssuerRegistry` — storing individual pubkeys, snapshots, and supporting `verifyBLSMultiPairing`. 2/3 threshold, not all-issuers.
+**Core decision:** No code duplication. ITPNAVOracle uses the **exact same** `BLSVerifier._verifyBLS()` code path as BridgeProxy, ArbBridgeCustody, and Investment. That means MirrorOracleRegistry must implement `IOracleRegistry` — storing individual pubkeys, snapshots, and supporting `verifyBLSMultiPairing`. 2/3 threshold, not all-oracles.
 
-### Step 7. Upgrade MirrorIssuerRegistry to implement IIssuerRegistry
+### Step 7. Upgrade MirrorOracleRegistry to implement IOracleRegistry
 
-**File:** `contracts/src/registry/MirrorIssuerRegistry.sol`
+**File:** `contracts/src/registry/MirrorOracleRegistry.sol`
 
-Current MirrorIssuerRegistry stores only the aggregated pubkey. For multi-pairing, it needs individual pubkeys per issuer, snapshots, and `verifyBLSMultiPairing`.
+Current MirrorOracleRegistry stores only the aggregated pubkey. For multi-pairing, it needs individual pubkeys per oracle, snapshots, and `verifyBLSMultiPairing`.
 
 **New storage:**
 
 ```solidity
-contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initializable, UUPSUpgradeable {
-    // Individual issuer pubkeys (issuer_id => G2 pubkey 128 bytes)
-    mapping(uint256 => bytes) private _issuerPubkeys;
+contract MirrorOracleRegistry is IMirrorOracleRegistry, IOracleRegistry, Initializable, UUPSUpgradeable {
+    // Individual oracle pubkeys (oracle_id => G2 pubkey 128 bytes)
+    mapping(uint256 => bytes) private _oraclePubkeys;
 
-    // Active issuer bitmask (bit i = issuer i is active)
+    // Active oracle bitmask (bit i = oracle i is active)
     uint256 public activeBitmask;
 
     // Snapshots for BLSVerifier historical lookups
@@ -249,7 +249,7 @@ contract MirrorIssuerRegistry is IMirrorIssuerRegistry, IIssuerRegistry, Initial
 
 ```solidity
 function sync(
-    bytes[] calldata issuerPubkeys,    // individual G2 pubkeys in ID order
+    bytes[] calldata oraclePubkeys,    // individual G2 pubkeys in ID order
     uint256 newActiveBitmask,
     uint256 newActiveCount,
     uint256 newThreshold,
@@ -264,7 +264,7 @@ function sync(
 - First sync (no individual keys stored yet): use `BLSLib.verifyBLS(aggregatedPubkey, ...)` against the bootstrap aggregated key (TOFU)
 - Subsequent syncs: use multi-pairing via own `verifyBLSMultiPairing(signersBitmask, messageHash, blsSignature)` with 2/3 threshold — same as everything else
 
-**Implement IIssuerRegistry methods:**
+**Implement IOracleRegistry methods:**
 
 | Method | Implementation |
 |--------|---------------|
@@ -273,22 +273,22 @@ function sync(
 | `verifyBLSMultiPairing(bitmask, hash, sig)` | Decode bitmask → fetch pubkeys → call `BLSLib.verifyBLSMulti(pubkeys, hash, sig)` |
 | `incrementMissedCounts(bitmask)` | Iterate bits, increment `_missedCounts[i]` |
 | `getActiveBitmask()` | Return `activeBitmask` |
-| `activeIssuerCount()` | Return `activeCount` |
+| `activeOracleCount()` | Return `activeCount` |
 | `getAggregatedPubkey()` | Compute from individual keys or return cached |
 | `registryNonce()` | Return `registryNonce` |
-| `getIssuerPubkeys(ids)` | Return `_issuerPubkeys[id]` for each |
-| `decodeBitmap(bitmask)` | Same as L3 IssuerRegistry |
+| `getOraclePubkeys(ids)` | Return `_oraclePubkeys[id]` for each |
+| `decodeBitmap(bitmask)` | Same as L3 OracleRegistry |
 
-Methods NOT needed (N/A for mirror): `addIssuer`, `removeIssuer`, `requestKeyRotation`, `approveRotation`, `executeRotation`, `getIssuers`, `isActiveIssuer`, `getActiveIssuerEndpoints`, `updateIssuerIp`, `consensusPaused`, `setConsensusPaused`.
+Methods NOT needed (N/A for mirror): `addOracle`, `removeOracle`, `requestKeyRotation`, `approveRotation`, `executeRotation`, `getOracles`, `isActiveOracle`, `getActiveOracleEndpoints`, `updateOracleIp`, `consensusPaused`, `setConsensusPaused`.
 
 **Checklist:**
-- [ ] Add new storage fields to MirrorIssuerRegistry
-- [ ] Implement `IIssuerRegistry` view methods
+- [ ] Add new storage fields to MirrorOracleRegistry
+- [ ] Implement `IOracleRegistry` view methods
 - [ ] Implement `verifyBLSMultiPairing` using `BLSLib.verifyBLSMulti`
 - [ ] Update `sync()` to accept individual pubkeys + use multi-pairing (with TOFU fallback for first sync)
 - [ ] Create snapshot on each `sync()`: `_snapshots[nonce] = RegistrySnapshot(activeBitmask, activeCount, block.number)`
 - [ ] Add `setAuthorizedMissedCountCaller(address, bool)` admin function
-- [ ] Update `IMirrorIssuerRegistry` interface to include new methods
+- [ ] Update `IMirrorOracleRegistry` interface to include new methods
 - [ ] Storage gap adjustment for upgrade safety
 
 ---
@@ -312,8 +312,8 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
     uint256 public lastUpdated;
     uint256 public lastCycleNumber;
 
-    constructor(address _issuerRegistry, address _itpAddress, uint256 _initialPrice) {
-        __BLSVerifier_init(_issuerRegistry);   // <-- points to MirrorIssuerRegistry
+    constructor(address _oracleRegistry, address _itpAddress, uint256 _initialPrice) {
+        __BLSVerifier_init(_oracleRegistry);   // <-- points to MirrorOracleRegistry
         itpAddress = _itpAddress;
         currentPrice = _initialPrice;
         lastUpdated = block.timestamp;
@@ -370,7 +370,7 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
 - Adds `referenceNonce` parameter (for snapshot-based verification)
 - Adds `MAX_DEVIATION_BPS` (10% circuit breaker)
 - Adds `MAX_CYCLE_GAP` (prevents unbounded cycle skip)
-- No more `IMirrorIssuerRegistry` import — BLSVerifier reads from `IIssuerRegistry` internally
+- No more `IMirrorOracleRegistry` import — BLSVerifier reads from `IOracleRegistry` internally
 
 **Checklist:**
 - [ ] Rewrite ITPNAVOracle inheriting BLSVerifier
@@ -384,7 +384,7 @@ contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
 
 ### Step 9. Fix Rust-side hash + P2P messages
 
-**Files:** `issuer/src/bridge/types.rs`, `issuer/src/consensus/messages.rs`, `issuer/src/consensus/protocol.rs`
+**Files:** `oracle/src/bridge/types.rs`, `oracle/src/consensus/messages.rs`, `oracle/src/consensus/protocol.rs`
 
 The Rust hash must match the new Solidity hash exactly: `keccak256(abi.encode(chainId, address(this), itpAddress, price, timestamp, cycleNumber))`.
 
@@ -468,7 +468,7 @@ P2PMessage::SetItpNavProposal {
 
 ### Step 10. Wire price task to oracle submission
 
-**Files:** `issuer/src/main.rs`, `issuer/src/consensus/protocol.rs`
+**Files:** `oracle/src/main.rs`, `oracle/src/consensus/protocol.rs`
 
 After `run_price_cycle` returns `PriceAgreed`, the leader submits to `ITPNAVOracle.updatePrice()`.
 
@@ -529,7 +529,7 @@ if !price_active.load(Ordering::Acquire) {
 ```
 
 **Checklist:**
-- [ ] Add `oracle_address`, `itp_address`, `chain_id` to issuer config / CLI args
+- [ ] Add `oracle_address`, `itp_address`, `chain_id` to oracle config / CLI args
 - [ ] Pass `chain_writer` to `run_price_update`
 - [ ] `run_price_cycle` leader path collects real BLS signature + bitmask (not dummy)
 - [ ] After `PriceAgreed`, build calldata and submit via `chain_writer.send_transaction`
@@ -541,14 +541,14 @@ if !price_active.load(Ordering::Acquire) {
 
 **Files:** `contracts/script/DeployMorphoE2E.s.sol`, `deployments/morpho-e2e.json`
 
-Replace `MockMorphoOracle` with real `MirrorIssuerRegistry` + `ITPNAVOracle`.
+Replace `MockMorphoOracle` with real `MirrorOracleRegistry` + `ITPNAVOracle`.
 
 **Deploy flow:**
 
 ```
-1. Deploy MirrorIssuerRegistry (UUPS proxy)
+1. Deploy MirrorOracleRegistry (UUPS proxy)
 2. Initialize with:
-   - Individual issuer pubkeys from L3 IssuerRegistry
+   - Individual oracle pubkeys from L3 OracleRegistry
    - activeBitmask from L3
    - threshold = ceil(2*activeCount/3)
    - admin = deployer
@@ -563,29 +563,29 @@ Replace `MockMorphoOracle` with real `MirrorIssuerRegistry` + `ITPNAVOracle`.
 ```
 
 **Checklist:**
-- [ ] Update `DeployMorphoE2E.s.sol` to deploy MirrorIssuerRegistry + ITPNAVOracle
-- [ ] Read issuer pubkeys from L3 IssuerRegistry in deploy script
+- [ ] Update `DeployMorphoE2E.s.sol` to deploy MirrorOracleRegistry + ITPNAVOracle
+- [ ] Read oracle pubkeys from L3 OracleRegistry in deploy script
 - [ ] Register oracle as authorized missed count caller
 - [ ] Update `morpho-e2e.json` with new addresses
 - [ ] Update `frontend/lib/contracts/morpho-deployment.json`
 
 ---
 
-### Step 12. Issuer-side MirrorIssuerRegistry sync
+### Step 12. Oracle-side MirrorOracleRegistry sync
 
-**File:** `issuer/src/consensus/protocol.rs` (or new `issuer/src/registry_sync/`)
+**File:** `oracle/src/consensus/protocol.rs` (or new `oracle/src/registry_sync/`)
 
-Issuers must sync MirrorIssuerRegistry when the L3 IssuerRegistry state changes.
+Oracles must sync MirrorOracleRegistry when the L3 OracleRegistry state changes.
 
 **Trigger:** On L3 `registryNonce` change (detected by existing `RegistrySyncHandler`)
 
 **Flow:**
-1. Detect L3 nonce > MirrorIssuerRegistry nonce
-2. Read individual pubkeys + activeBitmask + activeCount from L3 IssuerRegistry
+1. Detect L3 nonce > MirrorOracleRegistry nonce
+2. Read individual pubkeys + activeBitmask + activeCount from L3 OracleRegistry
 3. Leader proposes sync via P2P consensus
 4. Followers verify L3 state matches proposal
 5. Leader aggregates BLS signatures
-6. Leader calls `MirrorIssuerRegistry.sync(pubkeys, bitmask, count, threshold, nonce, sig, refNonce, bitmask)` on the chain where Morpho lives
+6. Leader calls `MirrorOracleRegistry.sync(pubkeys, bitmask, count, threshold, nonce, sig, refNonce, bitmask)` on the chain where Morpho lives
 
 **Checklist:**
 - [ ] Add sync detection to RegistrySyncHandler (compare L3 nonce vs mirror nonce)
@@ -593,7 +593,7 @@ Issuers must sync MirrorIssuerRegistry when the L3 IssuerRegistry state changes.
 - [ ] Add `build_mirror_registry_sync_calldata` to `types.rs`
 - [ ] Add P2P messages for mirror sync consensus
 - [ ] Leader submits sync tx after BLS aggregation
-- [ ] Test: L3 issuer add → mirror auto-syncs → oracle accepts new signer set
+- [ ] Test: L3 oracle add → mirror auto-syncs → oracle accepts new signer set
 
 ---
 
@@ -603,7 +603,7 @@ Issuers must sync MirrorIssuerRegistry when the L3 IssuerRegistry state changes.
 - [ ] `cargo build --release` — Rust compiles clean
 - [ ] Cross-language hash parity test passes
 - [ ] `./stop.sh && ./start.sh --vision` — system starts with real oracle
-- [ ] Verify issuer logs show `Oracle price updated` every cycle
+- [ ] Verify oracle logs show `Oracle price updated` every cycle
 - [ ] `cd frontend && npx playwright test --config=e2e/playwright.config.ts` — all tests pass
 - [ ] Morpho E2E test (`10-morpho-oracle-health.spec.ts`) passes with real oracle
 - [ ] Commit and `git push mono main`
@@ -614,21 +614,21 @@ Issuers must sync MirrorIssuerRegistry when the L3 IssuerRegistry state changes.
 
 | File | Phase | Change |
 |------|-------|--------|
-| `issuer/src/main.rs` | 2A | FlagGuard, Acquire/Release ordering, consecutive failure counter, watchdog safety |
-| `issuer/src/consensus/protocol.rs` | 2A+2B | Dedicated price state, price-only follower, PriceAgreed variant, real BLS sig |
-| `issuer/src/consensus/messages.rs` | 2A+2B | P2P message routing by round_type, add timestamp/cycleNumber/oracle to NAV messages |
-| `issuer/src/consensus/equivocation.rs` | 2A | Add `round_type` to DetectorKey |
-| `issuer/src/p2p/wal.rs` | 2A | Key entries by `(round_type, cycle_number)` |
-| `issuer/src/chain/writer.rs` | 2A | Route `send_transaction` through `submit_tx` / NonceManager |
-| `issuer/src/bridge/orchestrator.rs` | 2A | Add `last_touched: Instant` to order status |
-| `issuer/src/bridge/types.rs` | 2B | New `build_nav_oracle_hash`, `build_update_price_calldata`, delete old hash fns |
-| `issuer/src/api/nav_sign.rs` | 2B | Update to use `build_nav_oracle_hash` |
-| `contracts/src/registry/MirrorIssuerRegistry.sol` | 2B | Implement IIssuerRegistry, individual pubkeys, snapshots, verifyBLSMultiPairing |
-| `contracts/src/interfaces/IMirrorIssuerRegistry.sol` | 2B | Add IIssuerRegistry methods |
+| `oracle/src/main.rs` | 2A | FlagGuard, Acquire/Release ordering, consecutive failure counter, watchdog safety |
+| `oracle/src/consensus/protocol.rs` | 2A+2B | Dedicated price state, price-only follower, PriceAgreed variant, real BLS sig |
+| `oracle/src/consensus/messages.rs` | 2A+2B | P2P message routing by round_type, add timestamp/cycleNumber/oracle to NAV messages |
+| `oracle/src/consensus/equivocation.rs` | 2A | Add `round_type` to DetectorKey |
+| `oracle/src/p2p/wal.rs` | 2A | Key entries by `(round_type, cycle_number)` |
+| `oracle/src/chain/writer.rs` | 2A | Route `send_transaction` through `submit_tx` / NonceManager |
+| `oracle/src/bridge/orchestrator.rs` | 2A | Add `last_touched: Instant` to order status |
+| `oracle/src/bridge/types.rs` | 2B | New `build_nav_oracle_hash`, `build_update_price_calldata`, delete old hash fns |
+| `oracle/src/api/nav_sign.rs` | 2B | Update to use `build_nav_oracle_hash` |
+| `contracts/src/registry/MirrorOracleRegistry.sol` | 2B | Implement IOracleRegistry, individual pubkeys, snapshots, verifyBLSMultiPairing |
+| `contracts/src/interfaces/IMirrorOracleRegistry.sol` | 2B | Add IOracleRegistry methods |
 | `contracts/src/oracle/ITPNAVOracle.sol` | 2B | Inherit BLSVerifier, add referenceNonce, deviation bounds, cycle gap, abi.encode hash |
 | `contracts/src/interfaces/IITPNAVOracle.sol` | 2B | Update updatePrice signature |
 | `contracts/src/libraries/ErrorsLib.sol` | 2B | Add E098, E099 |
-| `contracts/script/DeployMorphoE2E.s.sol` | 2B | Deploy MirrorIssuerRegistry + ITPNAVOracle |
+| `contracts/script/DeployMorphoE2E.s.sol` | 2B | Deploy MirrorOracleRegistry + ITPNAVOracle |
 | `deployments/morpho-e2e.json` | 2B | New addresses |
 | `frontend/lib/contracts/morpho-deployment.json` | 2B | New addresses |
 
@@ -637,5 +637,5 @@ Issuers must sync MirrorIssuerRegistry when the L3 IssuerRegistry state changes.
 1. Unit: `build_nav_oracle_hash` Rust output == `keccak256(abi.encode(...))` Solidity output
 2. E2E: Price task pushes BLS-signed price → `oracle.price()` returns fresh value
 3. E2E: Morpho market uses real oracle for borrow/liquidation calculations
-4. E2E: 1 issuer offline → oracle still updates (2/3 threshold)
-5. E2E: L3 issuer add → MirrorIssuerRegistry auto-syncs → oracle accepts new set
+4. E2E: 1 oracle offline → oracle still updates (2/3 threshold)
+5. E2E: L3 oracle add → MirrorOracleRegistry auto-syncs → oracle accepts new set

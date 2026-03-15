@@ -228,7 +228,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
       color: sys.isLoading ? 'text-text-muted' : sys.isHealthy ? 'text-color-up' : 'text-color-down',
       fontSize: 'text-[18px]',
     },
-    { label: t('stats.active_issuers'), value: `${sys.activeIssuers} / ${sys.totalIssuers}` },
+    { label: t('stats.active_oracles'), value: `${sys.activeOracles} / ${sys.totalOracles}` },
     {
       label: t('stats.avg_fill_speed'),
       value: sys.avgFillTimeSeconds > 0
@@ -272,11 +272,11 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
       {/* Content area */}
       <div className="py-5 pb-10">
 
-        {/* ISSUER NETWORK — BLS Consensus Nodes */}
+        {/* ORACLE NETWORK — BLS Consensus Nodes */}
         <div className="section-bar">
           <div>
-            <div className="section-bar-title">{t('issuer_network.section_title')}</div>
-            <div className="section-bar-value">{t('issuer_network.section_subtitle')}</div>
+            <div className="section-bar-title">{t('oracle_network.section_title')}</div>
+            <div className="section-bar-value">{t('oracle_network.section_subtitle')}</div>
           </div>
         </div>
 
@@ -284,21 +284,21 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         <div className="grid grid-cols-1 md:grid-cols-3 border border-border-light" style={{ margin: '20px 0' }}>
           {activeNodes.length === 0 && (
             sys.isLoading ? <NodeGridSkeleton /> : (
-              <div className="col-span-full px-5 py-8 text-center text-[13px] text-text-muted">{t('issuer_network.no_nodes')}</div>
+              <div className="col-span-full px-5 py-8 text-center text-[13px] text-text-muted">{t('oracle_network.no_nodes')}</div>
             )
           )}
           {activeNodes.map((node, idx) => (
             <div key={node.id} className={`px-5 py-4 ${idx < activeNodes.length - 1 ? 'border-r border-border-light' : ''}`}>
               <div className="text-[13px] font-extrabold text-black mb-2">
-                <span className="text-color-up">●</span> {t('issuer_network.issuer_label', { name: NODE_NAMES[idx] || node.id })}
+                <span className="text-color-up">●</span> {t('oracle_network.oracle_label', { name: NODE_NAMES[idx] || node.id })}
               </div>
               <div>
                 {[
                   // Show address only if it's a real hex address, otherwise show node ID
-                  { label: t('issuer_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
-                  { label: t('issuer_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
-                  { label: t('issuer_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
-                  { label: t('issuer_network.node_details.status'), value: t('issuer_network.status_active'), color: 'text-color-up' },
+                  { label: t('oracle_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
+                  { label: t('oracle_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
+                  { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
+                  { label: t('oracle_network.node_details.status'), value: t('oracle_network.status_active'), color: 'text-color-up' },
                   { label: 'Uptime', value: formatUptime(node.registeredAt), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
@@ -307,7 +307,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   </div>
                 ))}
                 <div className="flex justify-between items-center py-[3px]">
-                  <span className="text-[11px] text-text-muted font-medium">{t('issuer_network.node_details.ap_vault')}</span>
+                  <span className="text-[11px] text-text-muted font-medium">{t('oracle_network.node_details.ap_vault')}</span>
                   <LiveValue
                     value={vault.totalUsdValue || sys.vaultUsdValue}
                     format={formatUsdCompact}
@@ -492,7 +492,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                     {order.fillTimeSeconds != null ? formatFillTime(order.fillTimeSeconds) : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
-                    {order.status === 'filled' ? `${sys.activeIssuers}/${sys.totalIssuers}` : '—'}
+                    {order.status === 'filled' ? `${sys.activeOracles}/${sys.totalOracles}` : '—'}
                   </td>
                   <td className={`px-4 py-3 border-b border-border-light font-bold ${order.status === 'filled' ? 'text-color-up' : 'text-color-warning'}`}>
                     {order.status === 'filled' ? t('recent_activity.status_confirmed') : t('recent_activity.status_pending')}

@@ -17,7 +17,7 @@
 //! - `POST /vision/bitmap` - Player submits bitmap
 //! - `GET /vision/balance/:batch_id/:player` - BLS-signed balance proof
 //! - `GET /vision/reveal/:batch_id/:tick_id` - Published bitmaps after reveal window
-//! - `GET /vision/markets` - Issuer-curated market whitelist
+//! - `GET /vision/markets` - Oracle-curated market whitelist
 
 use std::sync::Arc;
 
@@ -48,7 +48,7 @@ pub struct VisionState {
     pub config: VisionConfig,
     /// Optional P2P broadcast channel for bitmap gossip.
     /// When Some, a BitmapGossip message is broadcast to peers on every
-    /// accepted bitmap so all issuers converge on the same bitmap set.
+    /// accepted bitmap so all oracles converge on the same bitmap set.
     pub broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
     // TODO: Add TickResolver when Task 3.6 is complete
     // pub resolver: Arc<TickResolver>,
@@ -171,7 +171,7 @@ pub struct BalanceResponse {
     pub balance: String,
     pub stake_per_tick: String,
     /// BLS signature (hex-encoded, 128 chars = 64 bytes G1 point).
-    /// Empty string if proof not yet generated (issuer just started, tick not resolved).
+    /// Empty string if proof not yet generated (oracle just started, tick not resolved).
     pub bls_sig: String,
     /// Signer bitmap (decimal string, uint256). Bit at node_index is set.
     pub signer_bitmap: String,
@@ -185,7 +185,7 @@ pub struct RevealedBitmap {
     pub hash: String,
 }
 
-/// A market in the issuer-curated whitelist.
+/// A market in the oracle-curated whitelist.
 #[derive(Debug, Serialize)]
 pub struct MarketInfo {
     pub market_id: String,
@@ -684,7 +684,7 @@ async fn submit_bitmap(
                 tracing::warn!(error = %e, "Failed to persist bitmap to DB");
             }
 
-            // Gossip to peers so all issuers converge on the same bitmap set.
+            // Gossip to peers so all oracles converge on the same bitmap set.
             if let Some(ref tx) = state.broadcast_tx {
                 let gossip_msg = P2PMessage::BitmapGossip {
                     batch_id: req.batch_id,
@@ -901,9 +901,9 @@ async fn get_reveals(
 // GET /vision/markets
 // ---------------------------------------------------------------------------
 
-/// Get the issuer-curated market whitelist.
+/// Get the oracle-curated market whitelist.
 ///
-/// Returns the set of markets (price feeds) that this issuer supports
+/// Returns the set of markets (price feeds) that this oracle supports
 /// for Vision prediction batches. Batch creators must select from this
 /// list when creating new batches.
 async fn markets(

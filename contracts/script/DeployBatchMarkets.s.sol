@@ -18,7 +18,7 @@ import {Morpho} from "@morpho-blue/Morpho.sol";
 ///        CURATOR_RATE_IRM      — CuratorRateIRM address (already deployed + enabled)
 ///        METAMORPHO_VAULT      — MetaMorpho vault address
 ///        SETTLEMENT_USDC              — Loan token (USDC)
-///        MIRROR_REGISTRY       — MirrorIssuerRegistry for oracle constructor
+///        MIRROR_REGISTRY       — MirrorOracleRegistry for oracle constructor
 ///        BATCH_MARKET_COUNT    — Number of ITP markets to create (1-indexed)
 ///        ITP_<i>_ADDRESS       — ITP token address (i = 0..count-1)
 ///        ITP_<i>_LLTV          — LLTV in WAD (e.g. 770000000000000000 for 77%)

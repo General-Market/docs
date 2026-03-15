@@ -63,7 +63,7 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m024).execute(pool).await?;
     let m025 = include_str!("../migrations/025_create_market_prices_latest.sql");
     sqlx::raw_sql(m025).execute(pool).await?;
-    let m026 = include_str!("../migrations/026_create_issuer_health_snapshots.sql");
+    let m026 = include_str!("../migrations/026_create_oracle_health_snapshots.sql");
     sqlx::raw_sql(m026).execute(pool).await?;
     let m027 = include_str!("../migrations/027_scaling_indexes.sql");
     sqlx::raw_sql(m027).execute(pool).await?;

@@ -1,11 +1,11 @@
 [package]
-name = "issuer"
+name = "oracle"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "issuer"
+name = "oracle"
 path = "src/main.rs"
 
 [[bin]]

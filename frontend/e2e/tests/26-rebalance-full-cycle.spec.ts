@@ -3,12 +3,12 @@
  * Verifies the complete rebalance cycle:
  * 1. Read current ITP weights and NAV
  * 2. Request rebalance with new weights
- * 3. Wait for issuer consensus on L3
+ * 3. Wait for oracle consensus on L3
  * 4. Verify NAV preserved within tolerance
  * 5. Verify new weights match requested weights
  *
  * Known limitation: if any ITP asset has no contract code on L3 (e.g. codeless
- * mock token), issuers cannot fetch prices and rebalance consensus will stall.
+ * mock token), oracles cannot fetch prices and rebalance consensus will stall.
  * In that case, we verify the request was submitted and clean up the stale event.
  */
 import { test, expect } from '@playwright/test';
@@ -47,7 +47,7 @@ test.describe('Rebalance Full Cycle', () => {
     // NAV must be non-zero for the test to be meaningful
     expect(navBefore).toBeGreaterThan(0n);
 
-    // 2. Check if all assets have contract code — if any is codeless, issuers
+    // 2. Check if all assets have contract code — if any is codeless, oracles
     // cannot compute prices and rebalance will stall
     const codelessAssets: string[] = [];
     for (const asset of stateBefore.assets) {
@@ -67,7 +67,7 @@ test.describe('Rebalance Full Cycle', () => {
       return;
     }
 
-    // 3. Start block miner (issuers need Settlement blocks for event confirmation)
+    // 3. Start block miner (oracles need Settlement blocks for event confirmation)
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {

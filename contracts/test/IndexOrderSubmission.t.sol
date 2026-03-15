@@ -6,7 +6,7 @@ import "../src/core/Investment.sol";
 import "../src/mocks/MockERC20.sol";
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
@@ -16,7 +16,7 @@ contract IndexOrderSubmissionTest is TestHelper {
     Investment public index;
     MockERC20 public usdc;
     Governance public governance;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
 
     address public user = address(0x1);
     address public admin = address(this);
@@ -43,10 +43,10 @@ contract IndexOrderSubmissionTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Deploy IssuerRegistry with real BLS keys and wire to Index
-        issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, address(this));
-        index.setIssuerRegistry(address(issuerRegistry));
+        // Deploy OracleRegistry with real BLS keys and wire to Index
+        oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, address(this));
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Create test ITP using helper function
         uint256[] memory weights = new uint256[](1);
@@ -433,7 +433,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         orderIds[0] = orderId;
         uint256 cycleNum = 1;
         bytes32 batchMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, orderIds));
-        index.confirmBatch(cycleNum, orderIds, signWithTestIssuers(batchMsg), 3, 7);
+        index.confirmBatch(cycleNum, orderIds, signWithTestOracles(batchMsg), 3, 7);
 
         // Fill the order with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -445,7 +445,7 @@ contract IndexOrderSubmissionTest is TestHelper {
             txHash: keccak256("test_tx")
         });
         bytes32 fillMsg = keccak256(abi.encode(block.chainid, address(index), cycleNum, fills));
-        index.confirmFills(cycleNum, fills, signWithTestIssuers(fillMsg), 3, 7);
+        index.confirmFills(cycleNum, fills, signWithTestOracles(fillMsg), 3, 7);
     }
 
     // Helper to get user shares (reads internal _userShares via storage slot)
@@ -509,14 +509,14 @@ contract IndexOrderSubmissionTest is TestHelper {
 
     // ============ Access Control Tests ============
 
-    function test_setIssuerRegistry_onlyOnce() public {
-        // IssuerRegistry already set in setUp, so second call should revert
+    function test_setOracleRegistry_onlyOnce() public {
+        // OracleRegistry already set in setUp, so second call should revert
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E062_AlreadyInitialized.selector));
-        index.setIssuerRegistry(address(0x5678));
+        index.setOracleRegistry(address(0x5678));
     }
 
-    function test_setIssuerRegistry_revertsForNonAdmin() public {
-        // Deploy a fresh Index without IssuerRegistry set
+    function test_setOracleRegistry_revertsForNonAdmin() public {
+        // Deploy a fresh Index without OracleRegistry set
         Investment impl2 = new Investment();
         ERC1967Proxy proxy2 = new ERC1967Proxy(
             address(impl2),
@@ -527,7 +527,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         address adminAddr = governance.admin();
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E061_Unauthorized.selector, user, adminAddr));
         vm.prank(user);
-        freshIndex.setIssuerRegistry(address(0x1234));
+        freshIndex.setOracleRegistry(address(0x1234));
     }
 
     // ============ Fuzz Tests ============
@@ -567,59 +567,59 @@ contract IndexOrderSubmissionTest is TestHelper {
 
     // ============ submitOrderFor Tests ============
 
-    function _setupIssuerRegistry() internal returns (IssuerRegistry registry, address issuerAddr) {
+    function _setupOracleRegistry() internal returns (OracleRegistry registry, address oracleAddr) {
         // Use the registry already wired in setUp
-        registry = issuerRegistry;
+        registry = oracleRegistry;
 
-        // Register an issuer
-        issuerAddr = address(0xC0D3);
-        registerIssuer(registry, address(this), issuerAddr, bytes32(0), 10);
+        // Register an oracle
+        oracleAddr = address(0xC0D3);
+        registerOracle(registry, address(this), oracleAddr, bytes32(0), 10);
 
-        // Fund the issuer with USDC and approve
-        usdc.mint(issuerAddr, 1000e18);
-        vm.prank(issuerAddr);
+        // Fund the oracle with USDC and approve
+        usdc.mint(oracleAddr, 1000e18);
+        vm.prank(oracleAddr);
         usdc.approve(address(index), type(uint256).max);
     }
 
     function test_submitOrderFor_happyPath() public {
-        (, address issuerAddr) = _setupIssuerRegistry();
+        (, address oracleAddr) = _setupOracleRegistry();
         address beneficiary = address(0xBEEF);
         uint256 deadline = block.timestamp + 1 hours;
 
-        vm.prank(issuerAddr);
+        vm.prank(oracleAddr);
         uint256 orderId = index.submitOrderFor(beneficiary, itpId, TypesLib.Side.BUY, 10e18, 1e18, 1, deadline);
 
-        // Order user should be the beneficiary, not the issuer
+        // Order user should be the beneficiary, not the oracle
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
         assertEq(order.user, beneficiary);
         assertEq(order.amount, 10e18);
         assertEq(uint8(order.side), uint8(TypesLib.Side.BUY));
 
-        // USDC should have been taken from the issuer (payer), not the beneficiary
-        assertEq(usdc.balanceOf(issuerAddr), 990e18);
+        // USDC should have been taken from the oracle (payer), not the beneficiary
+        assertEq(usdc.balanceOf(oracleAddr), 990e18);
     }
 
-    function test_submitOrderFor_revertsForNonIssuer() public {
-        _setupIssuerRegistry();
-        address nonIssuer = address(0xBAD);
+    function test_submitOrderFor_revertsForNonOracle() public {
+        _setupOracleRegistry();
+        address nonOracle = address(0xBAD);
         uint256 deadline = block.timestamp + 1 hours;
 
-        vm.prank(nonIssuer);
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E097_NotActiveIssuer.selector, nonIssuer));
+        vm.prank(nonOracle);
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E097_NotActiveOracle.selector, nonOracle));
         index.submitOrderFor(address(0xBEEF), itpId, TypesLib.Side.BUY, 10e18, 1e18, 1, deadline);
     }
 
     function test_submitOrderFor_revertsForZeroBeneficiary() public {
-        (, address issuerAddr) = _setupIssuerRegistry();
+        (, address oracleAddr) = _setupOracleRegistry();
         uint256 deadline = block.timestamp + 1 hours;
 
-        vm.prank(issuerAddr);
+        vm.prank(oracleAddr);
         vm.expectRevert(ErrorsLib.E098_ZeroBeneficiary.selector);
         index.submitOrderFor(address(0), itpId, TypesLib.Side.BUY, 10e18, 1e18, 1, deadline);
     }
 
-    function test_submitOrderFor_revertsWithNoIssuerRegistry() public {
-        // Don't set issuer registry — default is address(0)
+    function test_submitOrderFor_revertsWithNoOracleRegistry() public {
+        // Don't set oracle registry — default is address(0)
         // Need a fresh Index (setUp already sets registry on the main one)
         MockERC20 usdc2 = new MockERC20("USDC2", "USDC2", 18);
         Investment impl2 = new Investment();
@@ -637,17 +637,17 @@ contract IndexOrderSubmissionTest is TestHelper {
         p[0] = 1e18;
         index2.createITP("T", "T", w, a, p, type(uint256).max);
 
-        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E097_NotActiveIssuer.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E097_NotActiveOracle.selector, address(this)));
         index2.submitOrderFor(address(0xBEEF), bytes32(uint256(1)), TypesLib.Side.BUY, 10e18, 1e18, 1, block.timestamp + 1 hours);
     }
 
     function test_submitOrderFor_sharesGoToBeneficiaryAfterFill() public {
-        (, address issuerAddr) = _setupIssuerRegistry();
+        (, address oracleAddr) = _setupOracleRegistry();
         address beneficiary = address(0xBEEF);
         uint256 deadline = block.timestamp + 1 hours;
 
-        // Submit order via issuer for beneficiary
-        vm.prank(issuerAddr);
+        // Submit order via oracle for beneficiary
+        vm.prank(oracleAddr);
         uint256 orderId = index.submitOrderFor(beneficiary, itpId, TypesLib.Side.BUY, 100e18, 1e18, 1, deadline);
 
         // Confirm batch with real BLS signature
@@ -655,7 +655,7 @@ contract IndexOrderSubmissionTest is TestHelper {
         orderIds[0] = orderId;
         uint256 cycleNum2 = 2;
         bytes32 batchMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, orderIds));
-        index.confirmBatch(cycleNum2, orderIds, signWithTestIssuers(batchMsg2), 3, 7);
+        index.confirmBatch(cycleNum2, orderIds, signWithTestOracles(batchMsg2), 3, 7);
 
         // Confirm fill with real BLS signature
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
@@ -667,9 +667,9 @@ contract IndexOrderSubmissionTest is TestHelper {
             txHash: bytes32(0)
         });
         bytes32 fillMsg2 = keccak256(abi.encode(block.chainid, address(index), cycleNum2, fills));
-        index.confirmFills(cycleNum2, fills, signWithTestIssuers(fillMsg2), 3, 7);
+        index.confirmFills(cycleNum2, fills, signWithTestOracles(fillMsg2), 3, 7);
 
-        // Verify shares went to beneficiary, not issuer
+        // Verify shares went to beneficiary, not oracle
         // shares = (100e18 * 1e18) / 1e18 = 100e18
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
         assertEq(order.user, beneficiary);

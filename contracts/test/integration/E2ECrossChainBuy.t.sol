@@ -14,7 +14,7 @@ import "../../src/mocks/MockERC20.sol";
 import "../../src/mocks/MockBitgetVault.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -22,7 +22,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2ECrossChainBuyTest - End-to-End Cross-Chain Buy Integration Test (Story 6.12)
 /// @notice Tests the full cross-chain buy flow:
-///         buyITPFromSettlement on Settlement -> issuers process -> ITP minted on L3
+///         buyITPFromSettlement on Settlement -> oracles process -> ITP minted on L3
 /// @dev Uses vm.chainId() switching pattern from BridgeIntegrationTest and
 ///      order-to-mint patterns from E2EOrderToMint
 contract E2ECrossChainBuyTest is TestHelper {
@@ -36,7 +36,7 @@ contract E2ECrossChainBuyTest is TestHelper {
 
     // Settlement contracts
     SettlementBridgeCustody public settlementBridge;
-    IssuerRegistry public mockRegistry;
+    OracleRegistry public mockRegistry;
     MockERC20 public settlementUsdc;
 
     // ============ TEST ACCOUNTS ============
@@ -76,11 +76,11 @@ contract E2ECrossChainBuyTest is TestHelper {
         l3Usdc = new MockERC20("USDC", "USDC", 18);
         governance = deployGovernance(admin);
 
-        // Deploy real issuer registry via UUPS proxy (shared)
-        mockRegistry = deployIssuerRegistry(address(governance));
+        // Deploy real oracle registry via UUPS proxy (shared)
+        mockRegistry = deployOracleRegistry(address(governance));
 
-        // Register 3 real BLS test issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(mockRegistry, admin);
+        // Register 3 real BLS test oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(mockRegistry, admin);
 
         // Deploy Index as UUPS proxy
         Investment impl = new Investment();
@@ -90,8 +90,8 @@ contract E2ECrossChainBuyTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Wire IssuerRegistry to Index (required for BLS verification)
-        index.setIssuerRegistry(address(mockRegistry));
+        // Wire OracleRegistry to Index (required for BLS verification)
+        index.setOracleRegistry(address(mockRegistry));
 
         // Create test ITP with single asset (USDC, 100% weight)
         address[] memory assets = new address[](1);
@@ -158,7 +158,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         vm.chainId(L3_CHAIN_ID);
     }
 
-    /// @dev Admin submits matching order on L3 Index (simulating issuer behavior)
+    /// @dev Admin submits matching order on L3 Index (simulating oracle behavior)
     function _submitOrderOnL3(
         uint256 amount,
         uint256 limitPrice,
@@ -195,13 +195,13 @@ contract E2ECrossChainBuyTest is TestHelper {
     /// @dev Confirm batch on L3
     function _confirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        index.confirmBatch(cycleNumber, orderIds, signWithTestIssuers(message), 3, 7);
+        index.confirmBatch(cycleNumber, orderIds, signWithTestOracles(message), 3, 7);
     }
 
     /// @dev Confirm fills on L3
     function _confirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        index.confirmFills(cycleNumber, fills, signWithTestIssuers(message), 3, 7);
+        index.confirmFills(cycleNumber, fills, signWithTestOracles(message), 3, 7);
     }
 
     // ============ SIGNING HELPERS ============
@@ -209,31 +209,31 @@ contract E2ECrossChainBuyTest is TestHelper {
     /// @notice Sign Index.confirmBatch
     function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign Index.confirmFills
     function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign Index.setItpNav
     function _signSetItpNav(address indexAddr, bytes32 _itpId, uint256 nav) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, indexAddr, "setItpNav", _itpId, nav));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign BLSCustody.proposeWhitelist
     function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign BLSCustody.execute
     function _signExecute(address custodyAddr, address target, bytes memory data, uint256 nonceValue) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, target, data, nonceValue));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign CollateralRegistry.recordCollateralMove (uses internal auto-incrementing nonce)
@@ -247,7 +247,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         uint256 colRegNonce
     ) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, colRegAddr, _itpId, fromChain, toChain, amount, txType, colRegNonce));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign BridgeProxy.completeCreateItp
@@ -261,13 +261,13 @@ contract E2ECrossChainBuyTest is TestHelper {
         bytes32 weightsHash = keccak256(abi.encodePacked(weights));
         bytes32 assetsHash = keccak256(abi.encodePacked(assets));
         bytes32 message = keccak256(abi.encodePacked(block.chainid, bridgeProxAddr, creationAdmin, creationNonce, weightsHash, assetsHash));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign BridgeProxy.mintBridgedShares
     function _signMintBridgedShares(address bridgeProxAddr, bytes32 _itpId, address user, uint256 amount, uint256 orderId) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, bridgeProxAddr, "mintBridgedShares", _itpId, user, amount, orderId));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ TASK 1.3: HAPPY PATH (AC #1, #2, #3, #4, #5) ============
@@ -301,7 +301,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(settlementUsdc.balanceOf(user1), userSettlementUsdcBefore - orderAmount6Dec, "User USDC should decrease");
         assertEq(settlementUsdc.balanceOf(address(settlementBridge)), custodySettlementUsdcBefore + orderAmount6Dec, "Custody USDC should increase");
 
-        // === AC2: Issuers observe event and process on L3 ===
+        // === AC2: Oracles observe event and process on L3 ===
 
         // Verify getCrossChainOrder returns 18-decimal internal amount
         TypesLib.CrossChainOrder memory ccOrder = settlementBridge.getCrossChainOrder(settlementOrderId);
@@ -312,7 +312,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(ccOrder.deadline, deadline, "Order deadline mismatch");
         assertGt(ccOrder.createdAt, 0, "Order createdAt should be set");
 
-        // Switch to L3 — simulate issuer routing order to user1
+        // Switch to L3 — simulate oracle routing order to user1
         vm.chainId(L3_CHAIN_ID);
 
         // Fund user1 with L3 USDC for order escrow (18 decimals on L3)
@@ -320,7 +320,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         vm.prank(user1);
         l3Usdc.approve(address(index), type(uint256).max);
 
-        // User1 submits matching order on L3 (issuer routes to user address)
+        // User1 submits matching order on L3 (oracle routes to user address)
         uint256 l3OrderId = _submitOrderOnL3AsUser(user1, orderAmount18Dec, limitPrice, 1);
 
         // Verify limitPrice continuity across chains
@@ -376,7 +376,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(settlementOrder1, 1);
         assertEq(settlementOrder2, 2);
 
-        // Simulate issuers processing on L3 — all in single batch (18-decimal amounts)
+        // Simulate oracles processing on L3 — all in single batch (18-decimal amounts)
         uint256 l3Order1 = _submitOrderOnL3(50e18, 1e18, 1);
         uint256 l3Order2 = _submitOrderOnL3(100e18, 1e18, 1);
         uint256 l3Order3 = _submitOrderOnL3(200e18, 1e18, 0);
@@ -536,7 +536,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         // Set NAV to $2 on L3 so limit price validation passes
         {
             bytes32 navMessage = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, uint256(2e18)));
-            index.setItpNav(itpId, 2e18, signWithTestIssuers(navMessage), 3, 7);
+            index.setItpNav(itpId, 2e18, signWithTestOracles(navMessage), 3, 7);
         }
 
         // Submit matching order on L3 at $2 limit (18-decimal amount)
@@ -777,7 +777,7 @@ contract E2ECrossChainBuyTest is TestHelper {
         assertEq(settlementOrderId, 0);
         assertEq(settlementUsdc.balanceOf(address(settlementBridge)), orderAmount6Dec);
 
-        // ====== STEP 2: Issuer submits order on L3 ======
+        // ====== STEP 2: Oracle submits order on L3 ======
         vm.chainId(L3_CHAIN_ID);
         l3Usdc.mint(user1, orderAmount18Dec);
         vm.prank(user1);

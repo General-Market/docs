@@ -1,7 +1,7 @@
-# Issuer Code Simplification — Remove Duplicates
+# Oracle Code Simplification — Remove Duplicates
 
 **Date**: 2026-02-28
-**Goal**: Eliminate duplicated code patterns across the issuer codebase. Estimated 15-20% reduction in total LOC.
+**Goal**: Eliminate duplicated code patterns across the oracle codebase. Estimated 15-20% reduction in total LOC.
 
 ---
 

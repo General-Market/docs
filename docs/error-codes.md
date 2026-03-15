@@ -149,7 +149,7 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Description** | Order was only partially filled |
 | **Parameters** | `orderId: uint256/u128` - the order; `requested: uint256/u128` - original amount; `filled: uint256/u128` - amount actually filled |
 | **Triggering Condition** | Available liquidity was insufficient to fully fill the order |
-| **Components** | `Index.sol`, AP fill reporter, issuer netting |
+| **Components** | `Index.sol`, AP fill reporter, oracle netting |
 | **Resolution** | Remainder is automatically refunded. The filled portion is processed normally |
 
 ---
@@ -444,17 +444,17 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Components** | `Index.sol` |
 | **Resolution** | Wait until the deadline passes, or the order may be filled before then |
 
-### E035 - IssuerRegistryNotSet
+### E035 - OracleRegistryNotSet
 
 | Field | Value |
 |-------|-------|
 | **Code** | E035 |
-| **Name** | `E035_IssuerRegistryNotSet` |
-| **Description** | IssuerRegistry not configured |
+| **Name** | `E035_OracleRegistryNotSet` |
+| **Description** | OracleRegistry not configured |
 | **Parameters** | None |
-| **Triggering Condition** | Batch submission attempted before IssuerRegistry is configured |
+| **Triggering Condition** | Batch submission attempted before OracleRegistry is configured |
 | **Components** | `Index.sol` |
-| **Resolution** | Admin must set the IssuerRegistry address via `setIssuerRegistry()` |
+| **Resolution** | Admin must set the OracleRegistry address via `setOracleRegistry()` |
 
 ### E036 - FillCycleMismatch
 
@@ -544,17 +544,17 @@ These errors exist in both Solidity (`ErrorsLib.sol`) and Rust (`common/src/erro
 | **Components** | `BLSCustody.sol` |
 | **Resolution** | Wait until `unlockTime` has passed |
 
-### E043 - ZeroIssuerRegistry
+### E043 - ZeroOracleRegistry
 
 | Field | Value |
 |-------|-------|
 | **Code** | E043 |
-| **Name** | `E043_ZeroIssuerRegistry` |
-| **Description** | Zero address not allowed for issuer registry |
+| **Name** | `E043_ZeroOracleRegistry` |
+| **Description** | Zero address not allowed for oracle registry |
 | **Parameters** | None |
-| **Triggering Condition** | Setting issuer registry to `address(0)` |
+| **Triggering Condition** | Setting oracle registry to `address(0)` |
 | **Components** | `BLSCustody.sol` |
-| **Resolution** | Provide a valid non-zero IssuerRegistry address |
+| **Resolution** | Provide a valid non-zero OracleRegistry address |
 
 ### E044 - StandardUpgradePending
 
@@ -835,7 +835,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Chain read error (RPC query failure) |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | RPC call to read on-chain state fails (network timeout, node error) |
-| **Components** | AP event monitor, issuer chain reader, common RPC client |
+| **Components** | AP event monitor, oracle chain reader, common RPC client |
 | **Resolution** | Check RPC endpoint connectivity and node health |
 
 ### INFRA-002 - ChainWrite
@@ -847,7 +847,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Chain write error (transaction submission failure) |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Transaction submission fails (nonce issues, gas estimation, signing) |
-| **Components** | Issuer chain writer, AP fill reporter |
+| **Components** | Oracle chain writer, AP fill reporter |
 | **Resolution** | Check wallet balance, nonce state, and gas price settings |
 
 ### INFRA-003 - TransactionFailed
@@ -859,7 +859,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Transaction failed on-chain |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Transaction was mined but reverted |
-| **Components** | Issuer chain writer |
+| **Components** | Oracle chain writer |
 | **Resolution** | Check transaction revert reason in explorer. Likely a contract-level error (E001-E064) |
 
 ### INFRA-004 - BlsSigning
@@ -871,7 +871,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | BLS signing error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | BLS private key operation fails |
-| **Components** | Issuer consensus module |
+| **Components** | Oracle consensus module |
 | **Resolution** | Check BLS key configuration and key file integrity |
 
 ### INFRA-005 - BlsVerification
@@ -883,8 +883,8 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | BLS verification failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | BLS signature verification on received message fails |
-| **Components** | Issuer consensus module |
-| **Resolution** | Verify the signing issuer's public key is registered correctly |
+| **Components** | Oracle consensus module |
+| **Resolution** | Verify the signing oracle's public key is registered correctly |
 
 ### INFRA-006 - SignatureAggregation
 
@@ -895,7 +895,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | Signature aggregation failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Combining multiple BLS signatures into an aggregate fails |
-| **Components** | Issuer consensus module |
+| **Components** | Oracle consensus module |
 | **Resolution** | Verify all individual signatures are valid before aggregation |
 
 ### INFRA-007 - P2PConnection
@@ -906,8 +906,8 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Name** | `P2PConnection` |
 | **Description** | P2P connection error |
 | **Parameters** | `message: String` - error details |
-| **Triggering Condition** | Failed to establish or maintain connection to a peer issuer |
-| **Components** | Issuer P2P networking |
+| **Triggering Condition** | Failed to establish or maintain connection to a peer oracle |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check peer address, port, and firewall settings |
 
 ### INFRA-008 - P2PBroadcast
@@ -919,7 +919,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | P2P broadcast failed |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Failed to send a message to one or more peers |
-| **Components** | Issuer P2P networking |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check peer connectivity and network configuration |
 
 ### INFRA-009 - P2PReceive
@@ -931,7 +931,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | P2P message receive error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Error receiving or deserializing a peer message |
-| **Components** | Issuer P2P networking |
+| **Components** | Oracle P2P networking |
 | **Resolution** | Check message format compatibility between peers |
 
 ### INFRA-010 - ApClient
@@ -943,7 +943,7 @@ These errors are defined in `common/src/error.rs` and cover system-level failure
 | **Description** | AP client error |
 | **Parameters** | `message: String` - error details |
 | **Triggering Condition** | Internal AP client communication failure |
-| **Components** | Issuer AP client |
+| **Components** | Oracle AP client |
 | **Resolution** | Check AP service availability and endpoint configuration |
 
 ### INFRA-011 - Authentication
@@ -1086,7 +1086,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "cycle_number": 12345,
   "message": "Failed to submit batch transaction",
   "error": "nonce too low",
-  "target": "issuer::chain::writer"
+  "target": "oracle::chain::writer"
 }
 ```
 
@@ -1100,7 +1100,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "peer_id": "0xabc123",
   "message": "Failed to connect to peer",
   "error": "connection refused",
-  "target": "issuer::consensus::p2p"
+  "target": "oracle::consensus::p2p"
 }
 ```
 
@@ -1128,7 +1128,7 @@ All services use the `tracing` crate with JSON output. Error codes appear as str
   "orders_processed": 15,
   "orders_refunded": 0,
   "message": "Cycle completed successfully",
-  "target": "issuer::cycle"
+  "target": "oracle::cycle"
 }
 ```
 

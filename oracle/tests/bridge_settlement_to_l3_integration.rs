@@ -3,7 +3,7 @@
 //! Tests the full bridge flow with 3 nodes:
 //! 1. Leader proposes bridge for CrossChainOrder
 //! 2. Followers validate and sign
-//! 3. Threshold reached → execute bridge (mint L3Usdc to IssuerCustody L3)
+//! 3. Threshold reached → execute bridge (mint L3Usdc to OracleCustody L3)
 //!
 //! Uses mock chain reader providing order data and MockChain for L3 writes.
 
@@ -17,10 +17,10 @@ use tokio::sync::RwLock;
 use common::bls::BLSKeyPair;
 use common::mocks::MockChainBuilder;
 use common::types::PeerId;
-use issuer::bridge::{
+use oracle::bridge::{
     BridgeConfig, BridgeError, BridgeOrchestrator, BridgeOrderStatus, CrossChainOrderReader,
 };
-use issuer::chain::{CrossChainOrder, CrossChainOrderData};
+use oracle::chain::{CrossChainOrder, CrossChainOrderData};
 
 /// Mock implementation of CrossChainOrderReader for testing
 struct MockCrossChainOrderReader {
@@ -54,7 +54,7 @@ impl CrossChainOrderReader for MockCrossChainOrderReader {
 /// Create a test BridgeConfig
 fn test_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11u8; 20]),
+        oracle_custody_l3: Address::from([0x11u8; 20]),
         l3_usdc_address: Address::from([0x22u8; 20]),
         settlement_custody_address: Address::from([0x33u8; 20]),
         settlement_chain_id: 42161,
@@ -64,7 +64,7 @@ fn test_config() -> BridgeConfig {
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Settlement config
-        issuer_custody_settlement: Address::from([0x55u8; 20]),
+        oracle_custody_settlement: Address::from([0x55u8; 20]),
         settlement_usdc_address: Address::from([0x66u8; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77u8; 20]),
@@ -522,7 +522,7 @@ async fn test_l3_usdc_mint_transaction_format() {
     let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
 
     // Create a minimal bridge result
-    let bridge_result = issuer::bridge::BridgeResult {
+    let bridge_result = oracle::bridge::BridgeResult {
         aggregated_signature: common::types::BLSSignature(vec![0u8; 64]),
         signer_bitmap: U256::from(3), // bits 0 and 1 set
         signature_count: 2,
@@ -660,7 +660,7 @@ async fn test_replay_protection() {
 
     // Create and execute first bridge
     let proposal = orchestrator.propose_bridge_settlement_to_l3(&order).unwrap();
-    let bridge_result = issuer::bridge::BridgeResult {
+    let bridge_result = oracle::bridge::BridgeResult {
         aggregated_signature: common::types::BLSSignature(vec![0u8; 64]),
         signer_bitmap: U256::from(3),
         signature_count: 2,

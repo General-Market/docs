@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Vision} from "../src/vision/Vision.sol";
 import {IVision} from "../src/interfaces/IVision.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import {Governance} from "../src/Governance.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./helpers/TestHelper.sol";
@@ -16,7 +16,7 @@ import "./helpers/TestHelper.sol";
 contract VisionBatchTest is TestHelper {
     Vision public vision;
     MockERC20 public usdc;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
 
     // Default test params
@@ -30,17 +30,17 @@ contract VisionBatchTest is TestHelper {
         // Deploy mock tokens
         usdc = new MockERC20("USDC", "USDC", 18);
 
-        // Deploy governance and issuer registry for BLS verification
+        // Deploy governance and oracle registry for BLS verification
         governance = deployGovernance(address(this));
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
-        // Register test issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(issuerRegistry, address(this));
+        // Register test oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(oracleRegistry, address(this));
 
         // Deploy Vision
         vision = new Vision(
             address(usdc),
-            address(issuerRegistry),
+            address(oracleRegistry),
             address(this) // feeCollector
         );
     }
@@ -62,7 +62,7 @@ contract VisionBatchTest is TestHelper {
             tickDuration,
             lockOffset
         ));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signUpdateConfig(
@@ -80,7 +80,7 @@ contract VisionBatchTest is TestHelper {
             lockOffset,
             tickDuration
         ));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _createBatch() internal returns (uint256 batchId) {
@@ -437,7 +437,7 @@ contract VisionBatchTest is TestHelper {
             block.chainid, address(vision), "CREATE_BATCH",
             sourceId, configHash, TICK_DURATION, zeroLock
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         uint256 batchId = vision.createBatch(
             sourceId, configHash, TICK_DURATION, zeroLock,
@@ -556,7 +556,7 @@ contract VisionBatchTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.TooManyBatches.selector);
         vision.createBatch(

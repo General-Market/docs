@@ -15,7 +15,7 @@ from framework.core import (
 )
 from framework.chain import (
     Executor,
-    discover_issuers,
+    discover_oracles,
     fetch_batch_config,
     fetch_batches,
     fetch_markets,
@@ -35,9 +35,9 @@ log = logging.getLogger("vision-bot")
 DECIMALS = 18
 
 
-def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
+def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
     """One poll cycle: join new batches, then check existing positions."""
-    issuer_urls = issuer_urls_fn()
+    oracle_urls = oracle_urls_fn()
     batches = fetch_batches(cfg["vision_api"], executor=executor)
 
     for batch in batches:
@@ -138,7 +138,7 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
         executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
         time.sleep(2)  # initial wait for block confirmation
-        submit_bitmap(issuer_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
+        submit_bitmap(oracle_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
 
         tracker.on_join(batch_id, deposit_wei, bitmap, bets)
         risk.record_join(batch_id, deposit_wei)
@@ -172,10 +172,10 @@ def main():
 
     executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr)
     risk = RiskCheck(cfg["max_batches"], cfg["max_exposure"] * 10**DECIMALS)
-    issuer_urls_fn = lambda: discover_issuers(
-        cfg["issuer_discovery"], cfg["issuer_urls"], executor.w3
+    oracle_urls_fn = lambda: discover_oracles(
+        cfg["oracle_discovery"], cfg["oracle_urls"], executor.w3
     )
-    tracker = Tracker(executor, cfg, issuer_urls_fn)
+    tracker = Tracker(executor, cfg, oracle_urls_fn)
 
     # Startup info
     log.info("Vision Bot starting")
@@ -212,14 +212,14 @@ def main():
 
     # Run
     if "--once" in sys.argv:
-        run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed)
+        run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed)
         feed.close()
         return
 
     try:
         while True:
             try:
-                run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed)
+                run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed)
             except Exception as e:
                 log.error("Cycle error: %s", e)
             time.sleep(cfg["poll_interval"])

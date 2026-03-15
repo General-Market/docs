@@ -3,7 +3,7 @@
 use super::{BootstrapError, ExecutionComponents};
 use crate::execution::crosschain_orchestrator::{CrossChainOrchestrator, CrossChainOrchestratorConfig};
 use crate::execution::swap_orchestrator::{SwapOrchestrator, SwapOrchestratorConfig};
-use crate::{CustodyWriter, CustodyWriterConfig, IssuerConfig, RoutingConfig};
+use crate::{CustodyWriter, CustodyWriterConfig, OracleConfig, RoutingConfig};
 use common::integrations::oneinch::{
     CachedQuoteClient, FusionPlusClient, FusionPlusConfig, OneInchConfig, OneInchQuoteClient,
     SwapCalldataBuilder,
@@ -13,14 +13,14 @@ use tracing::{info, warn};
 
 /// Builder for execution-related components
 pub struct ExecutionBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     node_id: u32,
     cached_client: &'a Option<Arc<CachedQuoteClient<OneInchQuoteClient>>>,
 }
 
 impl<'a> ExecutionBuilder<'a> {
     pub fn new(
-        config: &'a IssuerConfig,
+        config: &'a OracleConfig,
         node_id: u32,
         cached_client: &'a Option<Arc<CachedQuoteClient<OneInchQuoteClient>>>,
     ) -> Self {

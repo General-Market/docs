@@ -1,0 +1,115 @@
+<h2>Per-Batch Tick Resolution Bars</h2>
+<p class="subtitle">One row per batch. Each cell = one tick. Green = profited, red = lost. ROI on the right.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Vision Tab — Batch Resolution History</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 13px; color: #1a1a1a;">
+
+    <!-- Header -->
+    <div style="padding: 20px 24px; border-bottom: 1px solid #e5e5e5;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1a1a1a, #666); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 18px;">M</div>
+        <div>
+          <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em;">0xABC...1234</div>
+          <div style="font-size: 11px; color: #999; margin-top: 2px;">Joined Mar 2026 · Last active 2h ago</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 32px;">
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">P&L</span><span style="font-weight: 700; color: #16a34a; font-size: 16px; font-family: monospace;">+$1,247.80</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">ROI</span><span style="font-weight: 700; color: #16a34a; font-size: 16px; font-family: monospace;">+24.3%</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Win Rate</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">62.1%</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Volume</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">$5,130</span></div>
+        <div><span style="color: #999; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; display: block;">Batches</span><span style="font-weight: 700; font-size: 16px; font-family: monospace;">47</span></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; border-bottom: 1px solid #e5e5e5;">
+      <div style="padding: 12px 24px; font-weight: 700; font-size: 13px; border-bottom: 3px solid #1a1a1a;">Vision</div>
+      <div style="padding: 12px 24px; font-weight: 600; font-size: 13px; color: #999; border-bottom: 3px solid transparent;">Index</div>
+    </div>
+
+    <script>
+      function makeTickBar(container, label, status, ticks, winRate, deposited, balance) {
+        const pnl = balance - deposited;
+        const roi = ((balance - deposited) / deposited * 100).toFixed(1);
+        const positive = pnl >= 0;
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:0;padding:10px 24px;border-bottom:1px solid #f0f0f0;';
+
+        // Batch name + status
+        const info = document.createElement('div');
+        info.style.cssText = 'width:140px;flex-shrink:0;';
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;';
+        nameEl.textContent = label;
+        const badge = document.createElement('span');
+        badge.style.cssText = status === 'ACTIVE'
+          ? 'font-size:9px;font-weight:600;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:2px;'
+          : 'font-size:9px;font-weight:600;background:#f0f0f0;color:#999;padding:1px 5px;border-radius:2px;';
+        badge.textContent = status;
+        nameEl.appendChild(badge);
+        info.appendChild(nameEl);
+        const meta = document.createElement('div');
+        meta.style.cssText = 'font-size:10px;color:#999;margin-top:2px;';
+        meta.textContent = `${ticks} ticks · $${deposited} in`;
+        info.appendChild(meta);
+        row.appendChild(info);
+
+        // Tick bar
+        const barWrap = document.createElement('div');
+        barWrap.style.cssText = 'flex:1;display:flex;gap:1px;min-width:0;align-items:center;';
+        const maxCells = Math.min(ticks, 80);
+        for (let i = 0; i < maxCells; i++) {
+          const cell = document.createElement('div');
+          const won = Math.random() < winRate;
+          const intensity = 0.5 + Math.random() * 0.5;
+          cell.style.cssText = `height:16px;flex:1;min-width:2px;border-radius:1px;background:${won ? '#22c55e' : '#ef4444'};opacity:${intensity};`;
+          cell.title = `Tick ${i + 1}`;
+          barWrap.appendChild(cell);
+        }
+        row.appendChild(barWrap);
+
+        // ROI
+        const roiEl = document.createElement('div');
+        roiEl.style.cssText = `width:72px;flex-shrink:0;text-align:right;font-size:14px;font-family:monospace;font-weight:800;color:${positive ? '#16a34a' : '#dc2626'};`;
+        roiEl.textContent = `${positive ? '+' : ''}${roi}%`;
+        row.appendChild(roiEl);
+
+        container.appendChild(row);
+      }
+    </script>
+
+    <!-- Column headers -->
+    <div style="display:flex;align-items:center;padding:8px 24px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+      <div style="width:140px;flex-shrink:0;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#999;">Batch</div>
+      <div style="flex:1;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#999;">Tick History</div>
+      <div style="width:72px;flex-shrink:0;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#999;">ROI</div>
+    </div>
+
+    <div id="batch-rows">
+      <script>
+        const br = document.getElementById('batch-rows');
+        makeTickBar(br, 'Crypto #4',   'ACTIVE', 142, 0.68, 200, 245.80);
+        makeTickBar(br, 'Stocks #2',   'ACTIVE', 67,  0.47, 200, 180.20);
+        makeTickBar(br, 'Weather #1',  'ACTIVE', 31,  0.58, 50,  52.10);
+        makeTickBar(br, 'Crypto #3',   'EXITED', 210, 0.64, 200, 287);
+        makeTickBar(br, 'Transit #1',  'EXITED', 85,  0.41, 50,  32);
+        makeTickBar(br, 'Stocks #1',   'EXITED', 156, 0.59, 100, 143);
+        makeTickBar(br, 'Crypto #2',   'EXITED', 320, 0.62, 150, 221);
+        makeTickBar(br, 'Crypto #1',   'EXITED', 480, 0.55, 100, 112);
+        makeTickBar(br, 'Weather #0',  'EXITED', 90,  0.38, 30,  18);
+        makeTickBar(br, 'Transit #0',  'EXITED', 44,  0.52, 25,  27);
+      </script>
+    </div>
+
+    <!-- Legend -->
+    <div style="padding: 12px 24px 24px; display: flex; align-items: center; gap: 8px; font-size: 10px; color: #999;">
+      <div style="width:14px;height:14px;border-radius:1px;background:#22c55e;"></div><span>Profitable tick</span>
+      <div style="width:14px;height:14px;border-radius:1px;background:#ef4444;margin-left:8px;"></div><span>Losing tick</span>
+      <span style="margin-left:12px;">Oldest → Newest · Intensity = magnitude</span>
+    </div>
+
+  </div>
+</div>

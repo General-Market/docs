@@ -12,13 +12,13 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 ///
 /// Required environment variables:
 ///   PRIVATE_KEY - Deployer private key
-///   ISSUER_REGISTRY - IssuerRegistry address on this chain
+///   ORACLE_REGISTRY - OracleRegistry address on this chain
 ///
 /// Optional environment variables:
 ///   ADMIN_ADDRESS - Admin address (defaults to deployer)
 ///
 /// Example:
-///   PRIVATE_KEY=0x... ISSUER_REGISTRY=0x... forge script scripts/deploy/DeployBridgeProxy.s.sol \
+///   PRIVATE_KEY=0x... ORACLE_REGISTRY=0x... forge script scripts/deploy/DeployBridgeProxy.s.sol \
 ///     --rpc-url https://arb1.arbitrum.io/rpc --broadcast --verify
 contract DeployBridgeProxy is Script {
     function run() public returns (
@@ -39,15 +39,15 @@ contract DeployBridgeProxy is Script {
         // Admin can be different from deployer
         address admin = vm.envOr("ADMIN_ADDRESS", deployer);
 
-        // IssuerRegistry is required
-        address issuerRegistry = vm.envAddress("ISSUER_REGISTRY");
-        require(issuerRegistry != address(0), "ISSUER_REGISTRY not set");
+        // OracleRegistry is required
+        address oracleRegistry = vm.envAddress("ORACLE_REGISTRY");
+        require(oracleRegistry != address(0), "ORACLE_REGISTRY not set");
 
         console.log("=== BridgeProxy Deployment ===");
         console.log("Chain ID:", block.chainid);
         console.log("Deployer:", deployer);
         console.log("Admin:", admin);
-        console.log("IssuerRegistry:", issuerRegistry);
+        console.log("OracleRegistry:", oracleRegistry);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -60,7 +60,7 @@ contract DeployBridgeProxy is Script {
         // Initialize with zero factory address first
         bytes memory initData = abi.encodeWithSelector(
             BridgeProxy.initialize.selector,
-            issuerRegistry,
+            oracleRegistry,
             address(0), // Factory will be set after deployment
             admin
         );
@@ -82,7 +82,7 @@ contract DeployBridgeProxy is Script {
         // Verify deployment
         BridgeProxy bridgeProxy = BridgeProxy(proxy);
         require(bridgeProxy.owner() == admin, "Owner not set correctly");
-        require(address(bridgeProxy.issuerRegistry()) == issuerRegistry, "IssuerRegistry not set correctly");
+        require(address(bridgeProxy.oracleRegistry()) == oracleRegistry, "OracleRegistry not set correctly");
         require(address(bridgeProxy.bridgedItpFactory()) == factory, "Factory not set correctly");
         require(!bridgeProxy.paused(), "Should not be paused initially");
 
@@ -108,9 +108,9 @@ contract DeployBridgeProxy is Script {
         // Default Anvil private key (first account)
         uint256 anvilKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
-        // For local testing, we may not have an IssuerRegistry deployed
+        // For local testing, we may not have an OracleRegistry deployed
         // Deploy a mock or use address(0) for testing
-        address mockRegistry = vm.envOr("ISSUER_REGISTRY", address(0x1)); // Placeholder
+        address mockRegistry = vm.envOr("ORACLE_REGISTRY", address(0x1)); // Placeholder
 
         vm.startBroadcast(anvilKey);
 

@@ -6,7 +6,7 @@
   },
   "stats": {
     "consensus_status": "합의 상태",
-    "active_issuers": "활성 발행자",
+    "active_oracles": "활성 발행자",
     "avg_fill_speed": "평균 체결 속도",
     "orders_total": "총 주문 수",
     "l3_block": "L3 블록"
@@ -16,10 +16,10 @@
     "healthy": "● 정상",
     "offline": "● 오프라인"
   },
-  "issuer_network": {
+  "oracle_network": {
     "section_title": "발행자 네트워크",
     "section_subtitle": "BLS 합의 노드",
-    "issuer_label": "발행자 {name}",
+    "oracle_label": "발행자 {name}",
     "node_details": {
       "address": "주소",
       "bls_pubkey": "BLS 공개키",
@@ -93,7 +93,7 @@
     "label": "Performance",
     "consensus_threshold": "Consensus Threshold",
     "bls_required": "BLS signatures required",
-    "active_issuers": "Active Issuers",
+    "active_oracles": "Active Oracles",
     "processing_orders": "Processing orders",
     "network": "Network",
     "orbit_chain": "Orbit chain"

@@ -23,7 +23,7 @@ use common::types::{BLSSignature, PeerId};
 pub struct SignedConsensusResult {
     /// Aggregated BLS signature
     pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
+    /// Bitmap of signers (bit i = oracle i signed)
     pub signer_bitmap: U256,
     /// Number of signatures collected
     pub signature_count: usize,
@@ -32,8 +32,8 @@ pub struct SignedConsensusResult {
 /// Bridge orchestrator configuration
 #[derive(Debug, Clone)]
 pub struct BridgeConfig {
-    /// IssuerCustody L3 address (destination for bridged L3Usdc)
-    pub issuer_custody_l3: Address,
+    /// OracleCustody L3 address (destination for bridged L3Usdc)
+    pub oracle_custody_l3: Address,
     /// L3Usdc contract address
     pub l3_usdc_address: Address,
     /// SettlementBridgeCustody address (for order verification)
@@ -44,32 +44,32 @@ pub struct BridgeConfig {
     pub l3_chain_id: u64,
     /// Index contract address on L3 (for submitOrder calls) - Story 7.3
     pub index_address: Address,
-    /// Minimum signatures required (typically 2/3 of issuers, e.g., 2 of 3)
+    /// Minimum signatures required (typically 2/3 of oracles, e.g., 2 of 3)
     pub min_signatures: usize,
     /// Proposal timeout in milliseconds
     pub proposal_timeout_ms: u64,
     /// Signing timeout in milliseconds
     pub sign_timeout_ms: u64,
-    /// IssuerCustody Settlement address (destination for bridged-back SettlementUSDC) - Story 7.5
-    pub issuer_custody_settlement: Address,
+    /// OracleCustody Settlement address (destination for bridged-back SettlementUSDC) - Story 7.5
+    pub oracle_custody_settlement: Address,
     /// SettlementUSDC contract address (USDC token on Settlement) - Story 7.5
     pub settlement_usdc_address: Address,
     /// MockBitgetVault address for AP trading (Story 7.6)
     pub bitget_vault: Address,
-    /// Issuer signer address (for bridge mint recipient in local E2E)
+    /// Oracle signer address (for bridge mint recipient in local E2E)
     pub signer_address: Address,
     /// CollateralRegistry contract address on L3 (8-step bridge Step 3)
     pub collateral_registry: Address,
     /// BridgeProxy contract address on Settlement (8-step bridge Step 8)
     pub bridge_proxy: Address,
-    /// MirrorIssuerRegistry address on Settlement (for follower validation)
+    /// MirrorOracleRegistry address on Settlement (for follower validation)
     pub mirror_registry_address: Option<Address>,
 }
 
 impl Default for BridgeConfig {
     fn default() -> Self {
         Self {
-            issuer_custody_l3: Address::zero(),
+            oracle_custody_l3: Address::zero(),
             l3_usdc_address: Address::zero(),
             settlement_custody_address: Address::zero(),
             settlement_chain_id: 42161, // Settlement chain mainnet
@@ -78,7 +78,7 @@ impl Default for BridgeConfig {
             min_signatures: 2,
             proposal_timeout_ms: 500,
             sign_timeout_ms: 300,
-            issuer_custody_settlement: Address::zero(), // Story 7.5
+            oracle_custody_settlement: Address::zero(), // Story 7.5
             settlement_usdc_address: Address::zero(),   // Story 7.5
             bitget_vault: Address::zero(),       // Story 7.6
             signer_address: Address::zero(),
@@ -173,7 +173,7 @@ pub struct SellSubmitOrderResult {
     pub l3_order_id: Option<U256>,
     /// Aggregated BLS signature
     pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
+    /// Bitmap of signers (bit i = oracle i signed)
     pub signer_bitmap: U256,
     /// Number of signatures collected
     pub signature_count: usize,
@@ -252,7 +252,7 @@ pub struct SubmitOrderProposal {
 pub struct SubmitOrderResult {
     /// Aggregated BLS signature
     pub aggregated_signature: BLSSignature,
-    /// Bitmap of signers (bit i = issuer i signed)
+    /// Bitmap of signers (bit i = oracle i signed)
     pub signer_bitmap: U256,
     /// Number of signatures collected
     pub signature_count: usize,
@@ -282,7 +282,7 @@ pub struct SignatureCollector {
     pub order_id: U256,
     /// Collected signatures: (signer_index, signature)
     signatures: Vec<(u8, BLSSignature)>,
-    /// Bitmap of signers (bit i = issuer i signed)
+    /// Bitmap of signers (bit i = oracle i signed)
     signer_bitmap: U256,
     /// Timestamp when collection started
     started_at: Instant,
@@ -845,7 +845,7 @@ pub struct BridgeL3ToSettlementProposal {
     pub order_ids: Vec<U256>,
     /// Total USDC amount to bridge (18 decimals)
     pub total_amount: U256,
-    /// Destination: IssuerCustody on Settlement
+    /// Destination: OracleCustody on Settlement
     pub destination: Address,
     /// Leader's BLS signature on the bridge hash
     pub leader_signature: BLSSignature,
@@ -1112,7 +1112,7 @@ pub fn build_mint_bridged_shares_calldata(
 ///
 /// Layout (variable size):
 /// - chain_id: 32 bytes (Settlement chain ID)
-/// - custody_address: 32 bytes (IssuerCustody Settlement)
+/// - custody_address: 32 bytes (OracleCustody Settlement)
 /// - cycle_number: 32 bytes
 /// - order_count: 32 bytes
 /// - order_ids: 32 bytes each
@@ -1800,10 +1800,10 @@ pub fn build_update_price_calldata(
 }
 
 // ============================================================================
-// MirrorIssuerRegistry Sync (Step 12)
+// MirrorOracleRegistry Sync (Step 12)
 // ============================================================================
 
-/// Build the message hash for MirrorIssuerRegistry.sync() BLS consensus.
+/// Build the message hash for MirrorOracleRegistry.sync() BLS consensus.
 ///
 /// Must match Solidity:
 /// ```solidity
@@ -1812,7 +1812,7 @@ pub fn build_update_price_calldata(
 ///     block.chainid,
 ///     address(this),
 ///     nonce,
-///     keccak256(abi.encode(issuerPubkeys, issuerIds)),
+///     keccak256(abi.encode(oraclePubkeys, oracleIds)),
 ///     newActiveBitmask,
 ///     newActiveCount,
 ///     newThreshold
@@ -1822,20 +1822,20 @@ pub fn build_mirror_registry_sync_hash(
     chain_id: u64,
     mirror_registry_address: Address,
     nonce: u64,
-    issuer_pubkeys: &[Vec<u8>],
-    issuer_ids: &[u64],
+    oracle_pubkeys: &[Vec<u8>],
+    oracle_ids: &[u64],
     active_bitmask: U256,
     active_count: u64,
     threshold: u64,
 ) -> H256 {
     use ethers::abi::Token;
 
-    // Inner hash: keccak256(abi.encode(issuerPubkeys, issuerIds))
+    // Inner hash: keccak256(abi.encode(oraclePubkeys, oracleIds))
     let pubkeys_token = Token::Array(
-        issuer_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
+        oracle_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
     );
     let ids_token = Token::Array(
-        issuer_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
+        oracle_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
     );
     let inner_encoded = ethers::abi::encode(&[pubkeys_token, ids_token]);
     let inner_hash = ethers::utils::keccak256(&inner_encoded);
@@ -1855,13 +1855,13 @@ pub fn build_mirror_registry_sync_hash(
     H256::from_slice(&ethers::utils::keccak256(&encoded))
 }
 
-/// Build calldata for MirrorIssuerRegistry.sync().
+/// Build calldata for MirrorOracleRegistry.sync().
 ///
 /// Function signature:
 /// `sync(bytes[],uint256[],uint256,uint256,uint256,uint256,bytes,uint256,uint256)`
 pub fn build_mirror_registry_sync_calldata(
-    issuer_pubkeys: &[Vec<u8>],
-    issuer_ids: &[u64],
+    oracle_pubkeys: &[Vec<u8>],
+    oracle_ids: &[u64],
     active_bitmask: U256,
     active_count: u64,
     threshold: u64,
@@ -1876,10 +1876,10 @@ pub fn build_mirror_registry_sync_calldata(
         b"sync(bytes[],uint256[],uint256,uint256,uint256,uint256,bytes,uint256,uint256)"
     )[..4];
     let pubkeys_token = Token::Array(
-        issuer_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
+        oracle_pubkeys.iter().map(|pk| Token::Bytes(pk.clone())).collect()
     );
     let ids_token = Token::Array(
-        issuer_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
+        oracle_ids.iter().map(|id| Token::Uint(U256::from(*id))).collect()
     );
     let encoded = ethers::abi::encode(&[
         pubkeys_token,
@@ -1896,10 +1896,10 @@ pub fn build_mirror_registry_sync_calldata(
 }
 
 // ============================================================================
-// Asset Trades (Issuer Decomposition + Cross-ITP Netting)
+// Asset Trades (Oracle Decomposition + Cross-ITP Netting)
 // ============================================================================
 
-/// Per-asset trade after issuer decomposition and cross-ITP netting
+/// Per-asset trade after oracle decomposition and cross-ITP netting
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssetTrade {
     /// ERC20 token address to trade

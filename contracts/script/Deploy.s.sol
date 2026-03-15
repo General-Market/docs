@@ -14,7 +14,7 @@ contract Deploy is Script {
     address public itpAddress;
     address public blsCustodyAddress;
     address public collateralRegistryAddress;
-    address public issuerRegistryAddress;
+    address public oracleRegistryAddress;
     address public bridgeAddress;
 
     function run() external {
@@ -78,9 +78,9 @@ contract Deploy is Script {
         collateralRegistryAddress = address(new CollateralRegistryPlaceholder());
         console.log("  CollateralRegistry:", collateralRegistryAddress);
 
-        // Deploy IssuerRegistry placeholder
-        issuerRegistryAddress = address(new IssuerRegistryPlaceholder());
-        console.log("  IssuerRegistry:", issuerRegistryAddress);
+        // Deploy OracleRegistry placeholder
+        oracleRegistryAddress = address(new OracleRegistryPlaceholder());
+        console.log("  OracleRegistry:", oracleRegistryAddress);
 
         // Deploy Bridge placeholder
         bridgeAddress = address(new BridgePlaceholder());
@@ -112,7 +112,7 @@ contract Deploy is Script {
             '    "ITP": "', vm.toString(itpAddress), '",\n',
             '    "BLSCustody": "', vm.toString(blsCustodyAddress), '",\n',
             '    "CollateralRegistry": "', vm.toString(collateralRegistryAddress), '",\n',
-            '    "IssuerRegistry": "', vm.toString(issuerRegistryAddress), '",\n',
+            '    "OracleRegistry": "', vm.toString(oracleRegistryAddress), '",\n',
             '    "Bridge": "', vm.toString(bridgeAddress), '"\n',
             '  }\n',
             '}'
@@ -184,13 +184,13 @@ contract CollateralRegistryPlaceholder {
     }
 }
 
-/// @notice Minimal placeholder for IssuerRegistry contract
+/// @notice Minimal placeholder for OracleRegistry contract
 /// @dev Full implementation in Stories 2.12-2.13
-contract IssuerRegistryPlaceholder {
-    uint256 public issuerCount;
+contract OracleRegistryPlaceholder {
+    uint256 public oracleCount;
 
-    function registerIssuer(address, bytes32, bytes calldata) external returns (uint256) {
-        return ++issuerCount;
+    function registerOracle(address, bytes32, bytes calldata) external returns (uint256) {
+        return ++oracleCount;
     }
 }
 

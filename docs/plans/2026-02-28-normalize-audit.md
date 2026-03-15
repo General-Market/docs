@@ -1,6 +1,6 @@
-# Normalize Issuer Processing — Security Audit
+# Normalize Oracle Processing — Security Audit
 
-3 independent cynical researchers audited Phase 1 (done) + Phase 2 (planned) of the normalize-issuer-processing refactor. 31 raw findings, 30 unique after dedup.
+3 independent cynical researchers audited Phase 1 (done) + Phase 2 (planned) of the normalize-oracle-processing refactor. 31 raw findings, 30 unique after dedup.
 
 **Status key:** OPEN / FIXED
 
@@ -49,16 +49,16 @@ let _guard = FlagGuard(flag);
 
 ---
 
-### C3. ITPNAVOracle uses single-pairing BLS (requires ALL issuers), incompatible with threshold subset signing [OPEN]
+### C3. ITPNAVOracle uses single-pairing BLS (requires ALL oracles), incompatible with threshold subset signing [OPEN]
 
 **File:** `ITPNAVOracle.sol:90-101`
 **Researcher:** R3-F1
 
-Oracle calls `BLSLib.verifyBLS(aggPubkey, messageHash, blsSignature)` — single-pairing against the FULL aggregated key. This requires ALL issuers to sign. If even one is offline, `updatePrice()` always reverts.
+Oracle calls `BLSLib.verifyBLS(aggPubkey, messageHash, blsSignature)` — single-pairing against the FULL aggregated key. This requires ALL oracles to sign. If even one is offline, `updatePrice()` always reverts.
 
 Rest of the system (BridgeProxy, ArbBridgeCustody, Investment) uses `BLSVerifier._verifyBLS()` with multi-pairing + threshold. These are fundamentally incompatible verification models.
 
-**Fix:** Make `ITPNAVOracle` inherit `BLSVerifier` and use multi-pairing verification with threshold from `MirrorIssuerRegistry` (which needs to store individual pubkeys, not just the aggregate).
+**Fix:** Make `ITPNAVOracle` inherit `BLSVerifier` and use multi-pairing verification with threshold from `MirrorOracleRegistry` (which needs to store individual pubkeys, not just the aggregate).
 
 ---
 
@@ -155,12 +155,12 @@ Rust encodes `timestamp` (u64) and `cycle_number` (u64) as 32-byte U256. Solidit
 
 ---
 
-### H8. MirrorIssuerRegistry `sync()` requires ALL issuers (no subset support) [OPEN]
+### H8. MirrorOracleRegistry `sync()` requires ALL oracles (no subset support) [OPEN]
 
-**File:** `MirrorIssuerRegistry.sol:137-146`
+**File:** `MirrorOracleRegistry.sol:137-146`
 **Researcher:** R3-F3
 
-Same single-pairing problem as C3. If one issuer goes permanently offline, key rotation on MirrorIssuerRegistry is impossible. Registry frozen → oracle frozen → Morpho frozen.
+Same single-pairing problem as C3. If one oracle goes permanently offline, key rotation on MirrorOracleRegistry is impossible. Registry frozen → oracle frozen → Morpho frozen.
 
 **Fix:** Store individual pubkeys, use multi-pairing verification with threshold.
 
@@ -212,7 +212,7 @@ Both `run_price_cycle` and `run_cycle` GC the WAL, retaining only their own `cyc
 **File:** `protocol.rs:558-619`
 **Researcher:** R2-F6
 
-During issuer set changes, up to 3 nodes can be valid leaders for the same cycle (under count, count-1, count+1). Byzantine node exploits this window to push manipulated prices.
+During oracle set changes, up to 3 nodes can be valid leaders for the same cycle (under count, count-1, count+1). Byzantine node exploits this window to push manipulated prices.
 
 **Fix:** Require quorum of votes before acting on proposal, or narrow the +/-1 window to only accept within seconds of a registry update.
 
@@ -234,7 +234,7 @@ Old: 3 disagreements → EmergencyPause. New: disagreement → `Failed`, try nex
 **File:** `protocol.rs:836,2542`
 **Researcher:** R2-F8
 
-During rolling deployment, updated nodes produce new-format hashes, non-updated nodes reject them. Every Nth cycle fails (where N = num_issuers).
+During rolling deployment, updated nodes produce new-format hashes, non-updated nodes reject them. Every Nth cycle fails (where N = num_oracles).
 
 **Fix:** Add `hash_version` field to `PriceProposal`. Leaders use old format until all nodes upgraded (verified via registry flag).
 
@@ -267,15 +267,15 @@ Hash is `keccak256(abi.encodePacked(itpAddress, price, timestamp, cycleNumber))`
 **File:** `ITPNAVOracle.sol:115-122`
 **Researcher:** R3-F7
 
-If issuers go down >24h, `price()` reverts. Morpho calls `price()` on every operation → all borrow/repay/liquidate frozen. Bad debt accumulates.
+If oracles go down >24h, `price()` reverts. Morpho calls `price()` on every operation → all borrow/repay/liquidate frozen. Bad debt accumulates.
 
 **Fix:** Longer staleness period (72h), or emergency admin price push with timelock.
 
 ---
 
-### M9. MirrorIssuerRegistry admin can upgrade unilaterally (no timelock) [OPEN]
+### M9. MirrorOracleRegistry admin can upgrade unilaterally (no timelock) [OPEN]
 
-**File:** `MirrorIssuerRegistry.sol:209-215`
+**File:** `MirrorOracleRegistry.sol:209-215`
 **Researcher:** R3-F8
 
 `_authorizeUpgrade` only checks `msg.sender == admin`. Admin key compromise → new impl returns malicious aggregated pubkey → control all oracles → drain Morpho.
@@ -363,10 +363,10 @@ All-zero or 0xFE/0xFF-prefixed PeerIds bypass leader checks. No timeout → inde
 
 ### L4. TOFU bootstrap — `initialize()` trusts deployer for initial pubkey [OPEN]
 
-**File:** `MirrorIssuerRegistry.sol:71-99`
+**File:** `MirrorOracleRegistry.sol:71-99`
 **Researcher:** R3-F11
 
-No verification that initial pubkey matches L3 IssuerRegistry. Deployment bug → wrong pubkey → registry permanently stuck.
+No verification that initial pubkey matches L3 OracleRegistry. Deployment bug → wrong pubkey → registry permanently stuck.
 
 **Fix:** Post-deployment cross-check via L3 cross-chain message.
 
@@ -408,6 +408,6 @@ The system has **two fundamentally incompatible BLS verification models**:
 
 1. **BLSVerifier** (BridgeProxy, ArbBridgeCustody, Investment): Multi-pairing with individual pubkeys, threshold enforcement, liveness tracking. Mature.
 
-2. **BLSLib.verifyBLS** (ITPNAVOracle, MirrorIssuerRegistry): Single-pairing against aggregated key. No threshold, no bitmask validation, requires ALL issuers. Broken for production.
+2. **BLSLib.verifyBLS** (ITPNAVOracle, MirrorOracleRegistry): Single-pairing against aggregated key. No threshold, no bitmask validation, requires ALL oracles. Broken for production.
 
-Phase 2 MUST NOT ship until the oracle/registry migrate to multi-pairing. Otherwise, a single offline issuer freezes all price updates → Morpho markets freeze → bad debt accumulates.
+Phase 2 MUST NOT ship until the oracle/registry migrate to multi-pairing. Otherwise, a single offline oracle freezes all price updates → Morpho markets freeze → bad debt accumulates.

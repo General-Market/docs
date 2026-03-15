@@ -1,7 +1,7 @@
 //! 1inch Quote Cache for reducing API calls
 //!
 //! Provides a TTL-based caching layer for 1inch quote API calls.
-//! Multiple orders in the same issuer cycle (1 second) reuse cached quotes,
+//! Multiple orders in the same oracle cycle (1 second) reuse cached quotes,
 //! reducing API calls by 60-80%.
 //!
 //! # Architecture

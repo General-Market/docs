@@ -934,12 +934,12 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update([*accepted as u8]);
         }
 
-        // ── MirrorIssuerRegistry sync (Step 12) ────────────────
+        // ── MirrorOracleRegistry sync (Step 12) ────────────────
         P2PMessage::MirrorSyncProposal {
             leader_id,
             nonce,
-            issuer_pubkeys,
-            issuer_ids,
+            oracle_pubkeys,
+            oracle_ids,
             active_bitmask,
             active_count,
             threshold,
@@ -951,10 +951,10 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
             h.update(b"MirrorSyncProposal");
             h.update(leader_id);
             h.update(nonce.to_le_bytes());
-            for pk in issuer_pubkeys {
+            for pk in oracle_pubkeys {
                 h.update(pk);
             }
-            for id in issuer_ids {
+            for id in oracle_ids {
                 h.update(id.to_le_bytes());
             }
             let mut buf = [0u8; 32];

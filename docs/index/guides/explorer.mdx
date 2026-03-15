@@ -1,0 +1,584 @@
+---
+title: "Explorer"
+description: "Monitor system health, data source status, consensus metrics, and leaderboard rankings"
+---
+
+# Explorer
+
+The explorer shows you what the system is doing. Most of the time, it is working. When it is not, you will know before anyone tells you.
+
+Real-time consensus health, order throughput, peer-to-peer connectivity, ITP fund metrics, Vision batch activity, and chain performance -- all in one place. The dashboard does not interpret. It reports.
+
+```
++-----------------------------------------------------------------------+
+|  EXPLORER                                                             |
+|                                                                       |
+|  +----------+ +----------+ +----------+ +----------+ +------+ +-----+|
+|  | Network  | | Quorum   | | Consensus| |   Avg    | |Pending| |Peers||
+|  | Healthy  | |   Met    | |  Rounds  | | Consens. | |Orders | |  3  ||
+|  |    OK    | |   YES    | |  12,847  | |  340ms   | |   0   | |     ||
+|  +----------+ +----------+ +----------+ +----------+ +------+ +-----+|
+|                                                                       |
+|  [Consensus] [Orders] [Price Feeds] [P2P] [Cycles] [ITP] [Vision]... |
+|  =========                                                            |
+|                                                                       |
+|  +-------------------------------+ +-------------------------------+  |
+|  |  Quorum Status        (chart) | |  Network Health       (chart) |  |
+|  |                               | |                               |  |
+|  |  Met -----____-------____---- | |  OK ========================  |  |
+|  |  Not                          | |  Deg                          |  |
+|  +-------------------------------+ +-------------------------------+  |
+|  +-------------------------------+ +-------------------------------+  |
+|  |  Consensus Rounds/min (chart) | |  Consensus Success %  (chart) |  |
+|  |        .  ..  .               | |  100%  =====================  |  |
+|  |  .... .  ..  .. ....          | |   90%                         |  |
+|  +-------------------------------+ +-------------------------------+  |
++-----------------------------------------------------------------------+
+```
+
+---
+
+## Page Layout
+
+Three layers stacked vertically. The most important information is at the top. This is not an accident.
+
+```
++===================================================================+
+|  1. SUMMARY BAR  --  six stat cards across the top                |
++===================================================================+
+|  2. TAB ROW  --  nine tabs + time-range picker (1h 6h 24h 7d 30d)|
++===================================================================+
+|  3. CHART GRID  --  2-column grid of chart cards for active tab   |
++===================================================================+
+```
+
+The summary bar stays visible. Clicking a tab swaps the chart grid. The time-range buttons control how much history the charts display. More history reveals more patterns. Whether those patterns predict anything is a separate question.
+
+### Summary Bar
+
+Six cards. Six numbers. The network's vital signs:
+
+```
++-----------+-----------+---------------+-------------+----------+--------+
+|  Network  |  Quorum   |   Consensus   |     Avg     | Pending  | Peers  |
+|  Status   |  Status   |    Rounds     |  Consensus  |  Orders  |        |
+|           |           |    (total)    |   (ms)      |          |        |
+| [Healthy] |   [Met]   |   [12,847]    |   [340ms]   |   [0]    |  [3]   |
++-----------+-----------+---------------+-------------+----------+--------+
+     |            |                           |
+     |            |                           +-- Red if > 2000ms
+     |            +-- Green = Met, Red = Lost
+     +-- Green = Healthy, Yellow = Degraded, Red = Unhealthy
+```
+
+- **Network** -- the worst status across all oracle nodes. If any node is unhealthy, this turns red. The system is as healthy as its sickest component.
+- **Quorum** -- whether >= 2/3 of oracles are online and signing. If lost, the system stops processing orders. Everything queues. Nothing settles.
+- **Consensus Rounds** -- cumulative total since the network started. A number that should only grow.
+- **Avg Consensus** -- mean time to reach consensus. Turns red above 2000ms. The machines are disagreeing.
+- **Pending Orders** -- buy/sell orders waiting. Zero is ideal. Anything else means the system is behind.
+- **Connected Peers** -- oracle nodes visible on the P2P network. Three is healthy. Two is surviving. One is not enough.
+
+### Tab Navigation
+
+```
+ Consensus | Orders | Price Feeds | P2P Network | Cycles | ITP & NAV | Vision | System Health | Chain & Gas
+ =========
+                                                                                       [1h] [6h] [24h] [7d] [30d]
+                                                                                                  ====
+                                                                                              [Refresh]
+```
+
+Nine tabs. Each one is a different lens on the same system. The time range selector applies to all tabs (default: 24h).
+
+---
+
+## Consensus Tab
+
+The most important tab. It tells you whether the BLS multi-signature pipeline is working. If this tab looks healthy, everything else is secondary. If it does not, nothing else matters.
+
+```
++-------------------------------+-------------------------------+
+|      QUORUM STATUS            |      NETWORK HEALTH           |
+|                               |                               |
+|  Met  ------____--------____  |  Healthy ==================== |
+|  Not                          |  Degraded                     |
+|       step chart (area)       |  Unhealthy                    |
+|                               |       step chart (area)       |
++-------------------------------+-------------------------------+
+|      CONSENSUS ROUNDS/MIN     |     CONSENSUS SUCCESS RATE    |
+|                               |                               |
+|       .  ..  .                |  100%  =====================  |
+|  .... .  ..  .. ....          |   90%                         |
+|       line chart (delta)      |       area chart (%)          |
++-------------------------------+-------------------------------+
+|      AVG CONSENSUS DURATION   |     SIGNATURES COLLECTED      |
+|                               |                               |
+|       ____/--\___/--          |       ___/---\___/---          |
+|       line chart (ms)         |       area chart (absolute)   |
++-------------------------------+-------------------------------+
+|      FAILED ROUNDS            |                               |
+|                               |                               |
+|  0  ========================  |                               |
+|       line chart (delta)      |                               |
++-------------------------------+-------------------------------+
+```
+
+### How to Read Consensus Status
+
+**Quorum Status** tracks whether enough oracles are online to sign. BLS consensus requires at least 2/3 of registered oracles. The step chart shows Met (1) vs Not Met (0) over time. Binary. No ambiguity.
+
+```
+  Quorum Met    ======+          +====+         +==========
+                      |          |    |         |
+  Quorum Lost         +==========+    +=========+
+
+                      ^          ^
+                      |          |
+               Oracle went    Oracle came
+                offline        back online
+```
+
+<Warning>
+When quorum is lost, **no orders can be processed**. Everything queues. Nothing settles. Check the P2P tab to identify which peer dropped. The system does not guess who is right. It waits until enough nodes agree.
+</Warning>
+
+**Network Health** shows the worst status across all nodes:
+- **Healthy (1)** -- all oracle nodes are responding normally
+- **Degraded (2)** -- at least one node is slow or partially unresponsive
+- **Unhealthy (3)** -- at least one node is fully unresponsive
+
+**Consensus Rounds/min** shows the rate of new consensus rounds. Computed as a delta between snapshots. A healthy network runs rounds continuously. A flat line at zero means the engine has stalled. Silence in a distributed system is never good news.
+
+**Consensus Success Rate** is the ratio of successful rounds to total rounds per interval. Sustained dips below 100% mean instability. The system is trying and failing.
+
+**Avg Consensus Duration** is the mean time for a round to complete. Normal is below 500ms. Above 2000ms means something is struggling. The machines are patient. The users are not.
+
+**Signatures Collected** shows BLS signatures gathered at each snapshot. A direct measure of signing activity.
+
+**Failed Rounds** shows failed consensus rounds per interval. Non-zero values mean rounds timed out or could not reach agreement. Occasional spikes during deployments are normal. Sustained failures require intervention.
+
+---
+
+## Orders Tab
+
+The Orders tab tracks buy/sell order flow. Every order enters the system as a request and leaves as a settlement. The time between the two is visible here.
+
+```
++-------------------------------+-------------------------------+
+|      PENDING ORDERS           |     ORDERS PROCESSED/MIN      |
+|                               |                               |
+|       __/\__                  |       .  . . .                |
+|  0  ==      ===========       |  .... .  . . . ....           |
+|       area chart (absolute)   |       line chart (delta)      |
++-------------------------------+-------------------------------+
+|      AVG CYCLE DURATION       |                               |
+|                               |                               |
+|       ____/--\___/--          |                               |
+|       line chart (ms)         |                               |
++-------------------------------+-------------------------------+
+```
+
+### What to Look For
+
+Three symptoms. Each tells a different story.
+
+- **Pending Orders > 0 for extended periods** -- orders are queuing faster than the system processes them. Check the Consensus tab. If rounds are failing, that is your answer.
+- **Orders Processed/min dropping to zero** while pending orders exist -- a stall. The consensus engine or settlement bridge is blocked. Something is wrong.
+- **Avg Cycle Duration rising** -- each oracle processing loop takes longer. All order types are affected. The system is laboring.
+
+```
+  Normal flow:
+  +---------+     +----------+     +---------+     +--------+
+  |  User   | --> | Pending  | --> | Consens. | --> | Settle |
+  |  Order  |     |  Queue   |     |  Round   |     | On-chain|
+  +---------+     +----------+     +---------+     +--------+
+       |               |               |               |
+       |               v               v               v
+       |          pending_order    orders_proc.    consensus
+       |            _count         _last_60s     _rounds_total
+       |
+       +-- If this number grows while others flatline = stall
+```
+
+---
+
+## Price Feeds Tab
+
+One chart: **Consensus Duration Trend**. A proxy for how long it takes oracles to agree on prices. Agreement on price is not agreement on value. But it is sufficient for the protocol.
+
+```
++-------------------------------+
+|  CONSENSUS DURATION TREND     |
+|                               |
+|       Current: 340ms          |
+|       ____/--\___/--\_        |
+|       line chart (ms)         |
++-------------------------------+
+```
+
+Each oracle aggregates prices independently from CoinGecko, Binance, and other sources. The consensus round compares these feeds (0.1% tolerance). If prices take longer to converge, consensus duration rises.
+
+<Tip>
+A spike in price feed consensus time usually means volatile markets. The oracles are seeing different prices from different sources. They negotiate until they agree. In calm markets, agreement is trivial. In chaos, it takes effort.
+</Tip>
+
+---
+
+## P2P Network Tab
+
+The P2P tab monitors the gossip layer between oracle nodes. The oracles must talk to each other constantly. This tab shows whether they are.
+
+```
++-------------------------------+-------------------------------+
+|      CONNECTED PEERS          |   MESSAGES SENT / RECEIVED    |
+|                               |                               |
+|  3  ========================  |  Sent ----  Recv ....         |
+|  2                            |                               |
+|  1                            |       ____/---\___            |
+|       area chart (count)      |       line chart (delta)      |
++-------------------------------+-------------------------------+
+|      PEER HEALTH              |                               |
+|                               |                               |
+|  [===== Healthy =====]        |                               |
+|  [== Unhealthy ==]            |                               |
+|       stacked area chart      |                               |
++-------------------------------+-------------------------------+
+```
+
+### Peer Metrics
+
+**Connected Peers** is the total number of oracle nodes visible on the network. Each oracle maintains direct connections to all others. A drop means a node went offline or lost connectivity. In a three-node network, every node matters.
+
+```
+  Normal:   Oracle-1 <---> Oracle-2 <---> Oracle-3
+            3 peers        3 peers        3 peers
+
+  Degraded: Oracle-1 <---> Oracle-2       Oracle-3 (offline)
+            2 peers        2 peers        0 peers
+```
+
+**Messages Sent / Received** shows gossip volume per interval. Sent and received should track each other. A divergence means messages are being dropped. Information lost in transit.
+
+**Peer Health** splits peers into healthy and unhealthy. Unhealthy peers respond, but with errors or latency. The stacked area chart reveals degradation before failure. The warning comes before the collapse, which is the entire point of monitoring.
+
+---
+
+## Cycles Tab
+
+The oracle processing loop. Each cycle reads orders, fetches prices, runs consensus, and submits transactions. This tab measures how long each iteration takes.
+
+```
++-------------------------------+-------------------------------+
+|      CYCLE DURATION           |     SLOW CYCLE ALERTS         |
+|                               |                               |
+|       ____/--\___/--          |           0                   |
+|       line chart (ms)         |     out of 287 snapshots      |
+|                               |       (big number card)       |
++-------------------------------+-------------------------------+
+|      ORDERS PER CYCLE         |                               |
+|                               |                               |
+|       .  . . .                |                               |
+|  .... .  . . . ....           |                               |
+|       line chart              |                               |
++-------------------------------+-------------------------------+
+```
+
+Each oracle runs a continuous loop:
+1. Reads pending orders
+2. Fetches prices
+3. Runs consensus
+4. Submits signed transactions
+
+**Cycle Duration** -- how long each iteration takes. Normal is below 1000ms. Above 2000ms is "slow". The word "slow" is clinical. The impact is not.
+
+**Slow Cycle Alerts** -- how many snapshots had average cycle duration above 2000ms. Zero is ideal. A high number relative to total snapshots means the network is overloaded. The system is doing its best. Its best is insufficient.
+
+**Orders Per Cycle** -- orders processed per cycle (orders_processed_last_60s / 12, since cycles run roughly every 5 seconds). A rising trend means increasing load. Load has no ceiling. Capacity does.
+
+---
+
+## ITP & NAV Tab
+
+Fund metrics. The numbers that matter to anyone with money in the system.
+
+```
++-------------------------------+-------------------------------+
+|      PENDING ORDER VOLUME     |     LIVE ITP METRICS          |
+|                               |                               |
+|       __/\__                  |  Fund    | NAV   | AUM  |#Ast |
+|  0  ==      ===========       |  --------|-------|------|-----|
+|       area chart              |  ITP-1   | $1.03 | $52K | 100 |
+|                               |  ITP-2   | $0.98 | $12K |  25 |
++-------------------------------+-------------------------------+
+```
+
+### Pending Order Volume
+
+Queue depth of ITP buy/sell orders over time. A pipeline activity proxy. Sustained high values mean orders are not settling fast enough. Demand exceeds throughput.
+
+### Live ITP Metrics
+
+A table refreshed every 30 seconds. On-chain data for each ITP. The numbers are real. They are also 30 seconds old.
+
+| Column | Meaning |
+|--------|---------|
+| **Fund** | ITP name and symbol |
+| **NAV** | Net Asset Value per share -- computed as `sum(qty[i] * price[i]) / 1e18` |
+| **AUM** | Assets Under Management in USD |
+| **Assets** | Number of underlying tokens in the basket |
+
+<Tip>
+NAV starts at $1.00 at creation. A NAV of $1.05 means the basket gained 5%. A NAV of $0.95 means it lost 5%. The number does not judge. It measures.
+</Tip>
+
+---
+
+## Vision Tab
+
+The prediction market engine. Batches open. Players enter. Markets resolve. This tab shows the machinery behind it.
+
+```
++-------------------------------+-------------------------------+
+|      BATCH VOLUME             |     BATCH POOL STATS          |
+|                               |                               |
+|  +--------+ +------+ +-----+ |  Total TVL         Avg Players|
+|  | Active | |Paused| |Total| |  $15.2K               3.2    |
+|  |   42   | |  3   | |Play.| |                               |
+|  |        | |      | | 128 | |  [===== Ryanair =====]  $4.1K|
+|  +--------+ +------+ +-----+ |  [==== TfL ====]        $3.2K|
+|                               |  [=== UEFA ===]         $2.8K|
+|  45 total batches             |       horizontal bar chart    |
+|  [====== Active 93% ======]  |                               |
+|  [= Paused 7% =]             |                               |
++-------------------------------+-------------------------------+
+|      BATCHES BY SOURCE        |     NETWORK ACTIVITY          |
+|                               |                               |
+|  [======= Ryanair =======] 8 |       ___/---\___/---          |
+|  [====== TfL ======]       6 |       area chart               |
+|  [===== UEFA =====]        5 |  Orders processed per 60s     |
+|  [==== RATP ====]           4 |                               |
+|       horizontal bar chart    |                               |
++-------------------------------+-------------------------------+
+```
+
+### Batch Volume
+
+Active vs paused batches. Total player count. The ratio tells you how alive the prediction market is.
+
+### Batch Pool Stats
+
+Total TVL across all Vision pools. Average players per batch. A horizontal bar chart ranks the top 5 data sources by TVL. The money concentrates where the conviction is.
+
+### Batches by Source
+
+How many batches each data source runs. Sources with more batches have more active markets. Popularity is not equally distributed. It never is.
+
+### Network Activity
+
+Orders processed per 60 seconds. A proxy for Vision settlement throughput. Flat at zero means nothing is settling. The engine is idle.
+
+---
+
+## System Health Tab
+
+The summary view. If you only check one tab, make it this one. The charts here duplicate data from the Consensus tab but are arranged for a single glance.
+
+```
++-------------------------------+-------------------------------+
+|      NETWORK STATUS           |     QUORUM HISTORY            |
+|                               |                               |
+|  Healthy ==================   |  Met  ------____--------____  |
+|  Degraded                     |  Lost                         |
+|  Unhealthy                    |       step chart (area)       |
+|       step chart (area)       |                               |
++-------------------------------+-------------------------------+
+|      CONSENSUS SUCCESS RATE   |     ERROR RATE                |
+|                               |                               |
+|  100%  =====================  |  0  ========================  |
+|   90%                         |       line chart (delta)      |
+|       line chart (%)          |                               |
++-------------------------------+-------------------------------+
+```
+
+### Interpreting the Health Trifecta
+
+```
+  All three green = system fully operational
+  +----------------+---------------+-------------------+
+  | Network Status | Quorum Status | Success Rate      |
+  +================+===============+===================+
+  | Healthy        | Met           | 95-100%           |  <-- Normal
+  | Degraded       | Met           | 80-95%            |  <-- Watch
+  | Unhealthy      | Met           | < 80%             |  <-- Investigate
+  | Any            | Lost          | (irrelevant)      |  <-- URGENT
+  +----------------+---------------+-------------------+
+```
+
+<Warning>
+**Quorum Lost** is the highest-severity state. No transactions process. ITP buys/sells and Vision settlements halt. The network is running. It is just running in place.
+</Warning>
+
+---
+
+## Chain & Gas Tab
+
+On-chain operational metrics. The cost of existence on the blockchain.
+
+```
++-------------------------------+-------------------------------+
+|      CONSENSUS THROUGHPUT     |     MESSAGE VOLUME            |
+|                               |                               |
+|       ___/---\___/---         |  Sent ----  Recv ....         |
+|       area chart (delta)      |       ____/---\___            |
+|  Consensus rounds per interv. |       line chart (delta)      |
++-------------------------------+-------------------------------+
+|      ORDER PIPELINE           |     CYCLE PERFORMANCE         |
+|                               |                               |
+|  Processed ===                |       ____/--\___/--          |
+|  Pending   ---                |       line chart (ms)         |
+|       area chart (overlay)    |                               |
++-------------------------------+-------------------------------+
+```
+
+### Consensus Throughput
+
+Consensus rounds completed per snapshot interval. The raw engine speed. Higher is better. Lower is concerning. Zero is an emergency.
+
+### Message Volume
+
+P2P messages sent and received per interval. Sent is solid, received is dashed. They should track. A gap between them is information that never arrived.
+
+### Order Pipeline
+
+Overlays two series on the same chart:
+- **Processed / 60s** (solid area) -- orders that completed consensus
+- **Pending** (dashed area) -- orders waiting in queue
+
+```
+  Healthy pipeline:
+  Processed  ============================   (high, steady)
+  Pending    ====                           (low, near zero)
+
+  Backlogged pipeline:
+  Processed  ========                       (flat or declining)
+  Pending    ==========================     (growing)
+                                        ^
+                                        |
+                              Something is blocking settlement
+```
+
+### Cycle Performance
+
+Average cycle duration in milliseconds. The same metric as the Cycles tab, shown here for correlation. Rising cycle times plus rising pending orders equals a system under load. The equation is simple. The fix is not.
+
+---
+
+## Data Model
+
+All data flows through a single pipeline. The architecture is deliberately simple. Complexity in the data pipeline would mean complexity in the diagnosis.
+
+```
+  +----------+     +-----------+     +------------+     +-----------+
+  | Oracle   |     | Data Node |     | Frontend   |     | Explorer  |
+  | Nodes    | --> | (Rust)    | --> | API Route  | --> | Dashboard |
+  | (3x VPS) |     | /explorer |     | /api/expl. |     | (React)   |
+  +----------+     | /health   |     | /health    |     +-----------+
+                   +-----------+     +------------+
+                        |                  |
+                        |                  +-- Whitelists 15 fields
+                        |                      per snapshot, strips
+                        |                      everything else
+                        |
+                        +-- Aggregates per-node metrics into a
+                            single AggregatedSnapshot per poll
+```
+
+### Snapshot Fields
+
+Each aggregated snapshot contains exactly these fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `poll_batch_ts` | string | Timestamp of this snapshot |
+| `quorum_met` | boolean | Whether 2/3+ oracles are online |
+| `worst_status` | string | `healthy`, `degraded`, or `unhealthy` |
+| `consensus_rounds_total` | number | Cumulative consensus rounds (counter) |
+| `consensus_success_total` | number | Cumulative successful rounds (counter) |
+| `consensus_failed_total` | number | Cumulative failed rounds (counter) |
+| `signatures_collected` | number | BLS signatures gathered |
+| `avg_consensus_time_ms` | number | Mean consensus round duration |
+| `avg_cycle_duration_ms` | number | Mean oracle cycle duration |
+| `orders_processed_last_60s` | number | Orders settled in last 60 seconds |
+| `pending_order_count` | number | Orders waiting in queue |
+| `total_peers` | number | Connected P2P nodes |
+| `p2p_messages_received` | number | Cumulative messages received (counter) |
+| `p2p_messages_sent` | number | Cumulative messages sent (counter) |
+| `total_peers_healthy` | number | Peers in healthy state |
+| `total_peers_unhealthy` | number | Peers in unhealthy state |
+
+Counter fields (`*_total`, `p2p_messages_*`) are cumulative. The dashboard computes deltas between consecutive snapshots to show rates. Negative deltas (from oracle restarts) are clamped to zero. The system forgets its previous incarnation.
+
+### Polling & Refresh
+
+- The dashboard polls every **60 seconds** automatically
+- Click **Refresh** to force an immediate poll
+- Changing the time range triggers a fresh data load
+- Each API call has a **15-second timeout** and a **5 MB response size limit**. The constraints exist because data without limits becomes noise.
+
+---
+
+## Diagnostic Playbook
+
+When something looks wrong, follow this tree. It will not tell you why something broke. It will tell you where to look.
+
+```
+  START
+    |
+    v
+  Is quorum met?
+    |
+    +-- NO ----> How many peers are connected?
+    |               |
+    |               +-- 0-1 peers --> Multiple oracles are down.
+    |               |                 SSH to VPS, check Docker containers.
+    |               |
+    |               +-- 2 peers ---> One oracle is down. Identify which
+    |                                one from peer health, restart it.
+    |
+    +-- YES ---> Is success rate < 95%?
+                    |
+                    +-- YES --> Check avg consensus duration.
+                    |              |
+                    |              +-- > 2000ms --> Network congestion or
+                    |              |                oracle overload.
+                    |              |                Check cycle duration.
+                    |              |
+                    |              +-- < 500ms ---> Fast but failing.
+                    |                               Likely a price feed
+                    |                               disagreement. Check
+                    |                               Price Feeds tab.
+                    |
+                    +-- NO ---> Are pending orders growing?
+                                   |
+                                   +-- YES --> Orders queueing but consensus
+                                   |           is healthy. Settlement bridge
+                                   |           or chain RPC may be slow.
+                                   |           Check Chain & Gas tab.
+                                   |
+                                   +-- NO ---> System is healthy.
+```
+
+---
+
+## What Traders Should Know
+
+You do not need to watch the Explorer. But when your order is taking longer than expected, the Explorer will tell you why. The system is transparent. Transparency does not make the wait shorter. It makes it comprehensible.
+
+| Situation | Impact on You |
+|-----------|---------------|
+| Quorum lost | Buy/sell orders **will not process** until quorum is restored. Your order sits in the queue. |
+| High pending orders | Your order may take longer than usual to settle. Nothing is lost -- just delayed. |
+| Consensus duration spike | Prices may update slightly slower. Not a problem unless sustained above 5 seconds. |
+| Peer count drops | Reduced redundancy. If it drops to quorum threshold, one more failure means orders halt. |
+| Failed rounds increasing | Some consensus attempts are failing. Orders still process on successful rounds, just slower. |
+| Vision batch paused | That specific prediction market is not accepting new entries. Other markets are unaffected. |

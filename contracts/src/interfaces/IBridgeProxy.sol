@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./IIssuerRegistry.sol";
+import "./IOracleRegistry.sol";
 import "./IBridgedItpFactory.sol";
 
 /// @title IBridgeProxy - Cross-chain ITP creation and token bridging
@@ -55,8 +55,8 @@ interface IBridgeProxy {
     /// @notice Maximum symbol length
     function MAX_SYMBOL_LENGTH() external view returns (uint256);
 
-    /// @notice IssuerRegistry for BLS key lookup
-    function issuerRegistry() external view returns (IIssuerRegistry);
+    /// @notice OracleRegistry for BLS key lookup
+    function oracleRegistry() external view returns (IOracleRegistry);
 
     /// @notice Factory for deploying BridgedITP tokens
     function bridgedItpFactory() external view returns (IBridgedItpFactory);
@@ -128,7 +128,7 @@ interface IBridgeProxy {
         ItpMetadata calldata metadata
     ) external returns (uint256 nonce);
 
-    /// @notice Complete ITP creation with BLS signature from issuers
+    /// @notice Complete ITP creation with BLS signature from oracles
     /// @dev Atomically creates ITP on L3 via indexContract.createITP() and deploys BridgedITP
     /// @param nonce Request nonce from requestCreateItp
     /// @param orbitItpId The L3 ITP identifier
@@ -255,8 +255,8 @@ interface IBridgeProxy {
         address deployer
     ) external returns (address bridgedItpAddress);
 
-    /// @notice Update IssuerRegistry address
-    function setIssuerRegistry(address _issuerRegistry) external;
+    /// @notice Update OracleRegistry address
+    function setOracleRegistry(address _oracleRegistry) external;
 
     /// @notice Update BridgedItpFactory address
     function setBridgedItpFactory(address _bridgedItpFactory) external;

@@ -17,7 +17,7 @@ Decentralized Index Token Product (ITP) platform on Arbitrum Orbit L3.
 ./start.sh
 
 # Or with options
-./start.sh --issuers 5        # Run 5 issuer nodes
+./start.sh --oracles 5        # Run 5 oracle nodes
 ./start.sh --skip-deploy      # Skip contract deployment
 ./start.sh --no-tail          # Don't tail logs after startup
 ./start.sh --help             # Show all options
@@ -31,7 +31,7 @@ Decentralized Index Token Product (ITP) platform on Arbitrum Orbit L3.
 | Service | Port | Description |
 |---------|------|-------------|
 | Anvil | 8545 | Local chain (chain ID 111222333) |
-| Issuer 1-N | 9001-900N | Issuer nodes (consensus, batching) |
+| Oracle 1-N | 9001-900N | Oracle nodes (consensus, batching) |
 | AP | 9100 | Authorized Participant (mock Bitget) |
 
 ### Docker Alternative
@@ -52,18 +52,18 @@ docker-compose down
 
 ### CLI Reference
 
-#### Issuer Node
+#### Oracle Node
 
 ```bash
-issuer --node-id <ID>        # Required: issuer ID (1-20)
-issuer --port <PORT>         # Optional: P2P listen port (default 9000 + node_id)
-issuer --rpc <URL>           # Optional: chain RPC (default http://localhost:8545)
-issuer --config <PATH>       # Optional: config file path
-issuer --log-level <LEVEL>   # Optional: trace/debug/info/warn/error
-issuer --log-dir <DIR>       # Optional: log output directory
-issuer --json-logs           # Optional: output JSON formatted logs
-issuer --version             # Show version info
-issuer --help                # Show help
+oracle --node-id <ID>        # Required: oracle ID (1-20)
+oracle --port <PORT>         # Optional: P2P listen port (default 9000 + node_id)
+oracle --rpc <URL>           # Optional: chain RPC (default http://localhost:8545)
+oracle --config <PATH>       # Optional: config file path
+oracle --log-level <LEVEL>   # Optional: trace/debug/info/warn/error
+oracle --log-dir <DIR>       # Optional: log output directory
+oracle --json-logs           # Optional: output JSON formatted logs
+oracle --version             # Show version info
+oracle --help                # Show help
 ```
 
 #### AP (Authorized Participant)
@@ -85,7 +85,7 @@ ap --help                    # Show help
 All logs are written to the `./logs/` directory:
 
 - `anvil.log` - Local chain logs
-- `issuer-{N}.log` - Issuer node logs
+- `oracle-{N}.log` - Oracle node logs
 - `ap.log` - AP service logs
 - `deploy.log` - Contract deployment logs
 
@@ -102,7 +102,7 @@ After running `start.sh`, deployed contract addresses are saved to `deployments/
     "ITP": "0x...",
     "BLSCustody": "0x...",
     "CollateralRegistry": "0x...",
-    "IssuerRegistry": "0x...",
+    "OracleRegistry": "0x...",
     "Bridge": "0x..."
   }
 }
@@ -119,7 +119,7 @@ index/
 │   ├── src/interfaces/      # Contract interfaces
 │   ├── src/libraries/       # Shared libraries
 │   └── script/Deploy.s.sol  # Deployment script
-├── issuer/                  # Rust issuer node
+├── oracle/                  # Rust oracle node
 │   └── src/main.rs          # Binary entry point
 ├── ap/                      # Rust AP/Keeper service
 │   └── src/main.rs          # Binary entry point

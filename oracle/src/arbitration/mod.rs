@@ -49,7 +49,7 @@ pub struct ArbitrationSubsystem {
     p2p: Arc<dyn P2PTransport>,
     chain_writer: Arc<EthersChainWriter>,
     bls_keypair: BLSKeyPair,
-    issuer_index: u8,
+    oracle_index: u8,
     rpc_url: String,
 }
 
@@ -60,7 +60,7 @@ impl ArbitrationSubsystem {
         p2p: Arc<dyn P2PTransport>,
         chain_writer: Arc<EthersChainWriter>,
         bls_keypair: BLSKeyPair,
-        issuer_index: u8,
+        oracle_index: u8,
         rpc_url: String,
     ) -> Self {
         Self {
@@ -69,7 +69,7 @@ impl ArbitrationSubsystem {
             p2p,
             chain_writer,
             bls_keypair,
-            issuer_index,
+            oracle_index,
             rpc_url,
         }
     }
@@ -123,7 +123,7 @@ impl ArbitrationSubsystem {
             self.config.clone(),
             self.p2p.clone(),
             self.bls_keypair.clone(),
-            self.issuer_index,
+            self.oracle_index,
         );
 
         let settlement_contract = self.config.settlement_contract;

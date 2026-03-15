@@ -1,6 +1,6 @@
--- 026_create_issuer_health_snapshots.sql
+-- 026_create_oracle_health_snapshots.sql
 
-CREATE TABLE issuer_health_snapshots (
+CREATE TABLE oracle_health_snapshots (
     id              BIGSERIAL PRIMARY KEY,
     node_id         INTEGER NOT NULL CHECK (node_id >= 0),
     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -38,8 +38,8 @@ CREATE TABLE issuer_health_snapshots (
 );
 
 -- C5: Primary query index — GROUP BY poll_batch_ts for aggregation
-CREATE INDEX idx_issuer_health_batch_time
-    ON issuer_health_snapshots (poll_batch_ts DESC);
+CREATE INDEX idx_oracle_health_batch_time
+    ON oracle_health_snapshots (poll_batch_ts DESC);
 
-CREATE INDEX idx_issuer_health_node_time
-    ON issuer_health_snapshots (node_id, fetched_at DESC);
+CREATE INDEX idx_oracle_health_node_time
+    ON oracle_health_snapshots (node_id, fetched_at DESC);

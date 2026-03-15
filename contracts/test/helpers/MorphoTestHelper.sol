@@ -6,7 +6,7 @@ import {Morpho, Id, MarketParams, Position, Market} from "@morpho-blue/Morpho.so
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 import {CuratorRateIRM} from "../../src/irm/CuratorRateIRM.sol";
-import {MirrorIssuerRegistry} from "../../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../../src/mocks/MockERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -25,7 +25,7 @@ abstract contract MorphoTestHelper is TestHelper {
     AdaptiveCurveIrm public irm;
     CuratorRateIRM public curatorIrm;
     ITPNAVOracle public oracle;
-    MirrorIssuerRegistry public mirrorRegistry;
+    MirrorOracleRegistry public mirrorRegistry;
     MockERC20 public itp;
     MockERC20 public usdc;
     MarketParams public marketParams;
@@ -65,14 +65,14 @@ abstract contract MorphoTestHelper is TestHelper {
         itp = new MockERC20("Index Token Product", "ITP", 18);
         usdc = new MockERC20("USD Coin", "USDC", 6);
 
-        // 2. Deploy MirrorIssuerRegistry (UUPS proxy) with real BLS aggregated pubkey
+        // 2. Deploy MirrorOracleRegistry (UUPS proxy) with real BLS aggregated pubkey
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
-        MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry mirrorImpl = new MirrorOracleRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (aggPubkey, 2, 3, mirrorAdmin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (aggPubkey, 2, 3, mirrorAdmin))
         );
-        mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
+        mirrorRegistry = MirrorOracleRegistry(address(mirrorProxy));
 
         // 2b. Sync mirror registry with individual pubkeys + snapshot (TOFU bootstrap)
         _syncMirrorRegistry(mirrorRegistry);
@@ -82,7 +82,7 @@ abstract contract MorphoTestHelper is TestHelper {
         vm.prank(mirrorAdmin);
         mirrorRegistry.setAuthorizedMissedCountCaller(address(oracle), true);
         bytes32 navHash1 = keccak256(abi.encode(block.chainid, address(oracle), address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
-        bytes memory sig1 = signWithTestIssuers(navHash1);
+        bytes memory sig1 = signWithTestOracles(navHash1);
         oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 1, 0x07);
 
         // 4. Deploy Morpho Blue core
@@ -176,14 +176,14 @@ abstract contract MorphoTestHelper is TestHelper {
         itp = new MockERC20("Index Token Product", "ITP", 18);
         usdc = new MockERC20("USD Coin", "USDC", 6);
 
-        // 2. Deploy MirrorIssuerRegistry (UUPS proxy) with real BLS aggregated pubkey
+        // 2. Deploy MirrorOracleRegistry (UUPS proxy) with real BLS aggregated pubkey
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
-        MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry mirrorImpl = new MirrorOracleRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (aggPubkey, 2, 3, mirrorAdmin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (aggPubkey, 2, 3, mirrorAdmin))
         );
-        mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
+        mirrorRegistry = MirrorOracleRegistry(address(mirrorProxy));
 
         // 2b. Sync mirror registry with individual pubkeys + snapshot (TOFU bootstrap)
         _syncMirrorRegistry(mirrorRegistry);
@@ -193,7 +193,7 @@ abstract contract MorphoTestHelper is TestHelper {
         vm.prank(mirrorAdmin);
         mirrorRegistry.setAuthorizedMissedCountCaller(address(oracle), true);
         bytes32 navHash1 = keccak256(abi.encode(block.chainid, address(oracle), address(itp), ORACLE_PRICE, block.timestamp, uint256(1)));
-        bytes memory sig1 = signWithTestIssuers(navHash1);
+        bytes memory sig1 = signWithTestOracles(navHash1);
         oracle.updatePrice(ORACLE_PRICE, block.timestamp, 1, sig1, 1, 0x07);
 
         // 4. Deploy Morpho Blue core
@@ -236,9 +236,9 @@ abstract contract MorphoTestHelper is TestHelper {
 
     // ============ MIRROR REGISTRY SYNC HELPER ============
 
-    /// @notice Sync a MirrorIssuerRegistry with individual pubkeys and create a snapshot (TOFU bootstrap)
+    /// @notice Sync a MirrorOracleRegistry with individual pubkeys and create a snapshot (TOFU bootstrap)
     /// @dev Uses seeds 0,1,2 for individual keys. First sync verifies against aggregated pubkey.
-    function _syncMirrorRegistry(MirrorIssuerRegistry registry) internal {
+    function _syncMirrorRegistry(MirrorOracleRegistry registry) internal {
         bytes[] memory pubkeys = new bytes[](3);
         uint256[] memory ids = new uint256[](3);
         for (uint8 i = 0; i < 3; i++) {
@@ -258,7 +258,7 @@ abstract contract MorphoTestHelper is TestHelper {
                 uint256(2)  // threshold
             )
         );
-        bytes memory syncSig = signWithTestIssuers(syncHash);
+        bytes memory syncSig = signWithTestOracles(syncHash);
         registry.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
     }
 }

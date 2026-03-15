@@ -15,7 +15,7 @@ use tracing::{debug, error, info, warn, trace};
 use common::bindings;
 use common::error::Error;
 use common::traits::{ChainEvent, ChainReader, EventFilter, EventStream, PendingRebalance};
-use common::types::{Issuer, ITPCore, LimitOrder, OrderStatus, Price, Side};
+use common::types::{Oracle, ITPCore, LimitOrder, OrderStatus, Price, Side};
 
 // Generate contract bindings for Index.sol
 abigen!(
@@ -36,14 +36,14 @@ abigen!(
     ]"#
 );
 
-// Generate contract bindings for IssuerRegistry.sol
-// Note: getIssuer/getIssuers return structs which require special ABI handling;
-// those are decoded manually via raw eth_call (see get_issuer_registry).
+// Generate contract bindings for OracleRegistry.sol
+// Note: getOracle/getOracles return structs which require special ABI handling;
+// those are decoded manually via raw eth_call (see get_oracle_registry).
 abigen!(
-    IssuerRegistryContract,
+    OracleRegistryContract,
     r#"[
         function getAggregatedPubkey() external view returns (bytes)
-        function activeIssuerCount() external view returns (uint256)
+        function activeOracleCount() external view returns (uint256)
         function registryNonce() external view returns (uint256)
         function consensusPaused() external view returns (bool)
     ]"#
@@ -56,8 +56,8 @@ pub struct ContractAddresses {
     pub index: Address,
     /// Governance.sol contract address
     pub governance: Address,
-    /// IssuerRegistry.sol contract address
-    pub issuer_registry: Address,
+    /// OracleRegistry.sol contract address
+    pub oracle_registry: Address,
 }
 
 impl Default for ContractAddresses {
@@ -66,7 +66,7 @@ impl Default for ContractAddresses {
             // Default to zero addresses - must be configured for production
             index: Address::zero(),
             governance: Address::zero(),
-            issuer_registry: Address::zero(),
+            oracle_registry: Address::zero(),
         }
     }
 }
@@ -109,7 +109,7 @@ const REORG_BUFFER: u64 = 10;
 /// ChainReader implementation using ethers-rs
 ///
 /// Connects to the Index L3 chain via RPC and provides methods to read
-/// on-chain state including orders, ITPs, prices, and issuers.
+/// on-chain state including orders, ITPs, prices, and oracles.
 ///
 /// Uses incremental scanning with block cursors and settled-order caches
 /// to avoid O(N) full-history scans every cycle.
@@ -183,9 +183,9 @@ impl<M: Middleware> EthersChainReader<M> {
         IndexContract::new(self.config.contracts.index, self.provider.clone())
     }
 
-    /// Get the IssuerRegistry contract instance
-    fn issuer_registry_contract(&self) -> IssuerRegistryContract<M> {
-        IssuerRegistryContract::new(self.config.contracts.issuer_registry, self.provider.clone())
+    /// Get the OracleRegistry contract instance
+    fn oracle_registry_contract(&self) -> OracleRegistryContract<M> {
+        OracleRegistryContract::new(self.config.contracts.oracle_registry, self.provider.clone())
     }
 
     /// Convert contract order status to our OrderStatus enum
@@ -482,22 +482,22 @@ where
         Ok(prices)
     }
 
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error> {
         debug!(
-            contract = ?self.config.contracts.issuer_registry,
-            "Fetching issuer registry via getActiveIssuerEndpoints()"
+            contract = ?self.config.contracts.oracle_registry,
+            "Fetching oracle registry via getActiveOracleEndpoints()"
         );
 
-        // Call getActiveIssuerEndpoints() which returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
-        // This only returns active issuers and preserves on-chain IDs.
-        let selector = &ethers::utils::keccak256("getActiveIssuerEndpoints()")[..4];
+        // Call getActiveOracleEndpoints() which returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+        // This only returns active oracles and preserves on-chain IDs.
+        let selector = &ethers::utils::keccak256("getActiveOracleEndpoints()")[..4];
         let call_data = ethers::types::Bytes::from(selector.to_vec());
         let tx = ethers::types::TransactionRequest::new()
-            .to(self.config.contracts.issuer_registry)
+            .to(self.config.contracts.oracle_registry)
             .data(call_data);
 
         let result = self.provider.call(&tx.into(), None).await
-            .map_err(|e| Error::ChainRead(format!("Failed to call getActiveIssuerEndpoints: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to call getActiveOracleEndpoints: {}", e)))?;
 
         // Decode ABI: returns (uint256[], bytes32[], bytes[])
         let return_type = vec![
@@ -507,7 +507,7 @@ where
         ];
 
         let tokens = ethers::abi::decode(&return_type, &result)
-            .map_err(|e| Error::ChainRead(format!("Failed to decode getActiveIssuerEndpoints response: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("Failed to decode getActiveOracleEndpoints response: {}", e)))?;
 
         let ids = match tokens.get(0) {
             Some(ethers::abi::Token::Array(arr)) => arr.clone(),
@@ -524,12 +524,12 @@ where
 
         if ids.len() != ips.len() || ids.len() != pubkeys.len() {
             return Err(Error::ChainRead(format!(
-                "getActiveIssuerEndpoints array length mismatch: ids={}, ips={}, pubkeys={}",
+                "getActiveOracleEndpoints array length mismatch: ids={}, ips={}, pubkeys={}",
                 ids.len(), ips.len(), pubkeys.len()
             )));
         }
 
-        let mut issuers = Vec::with_capacity(ids.len());
+        let mut oracles = Vec::with_capacity(ids.len());
         for i in 0..ids.len() {
             let id = ids[i].clone().into_uint().unwrap_or_default().as_u64();
             let ip_bytes = ips[i].clone().into_fixed_bytes().unwrap_or_default();
@@ -538,7 +538,7 @@ where
             let mut ip_h256 = [0u8; 32];
             ip_h256.copy_from_slice(&ip_bytes);
 
-            issuers.push(Issuer {
+            oracles.push(Oracle {
                 id,
                 addr: Address::zero(),
                 ip: ip_h256.into(),
@@ -548,8 +548,8 @@ where
             });
         }
 
-        debug!(count = issuers.len(), "Fetched issuer registry successfully");
-        Ok(issuers)
+        debug!(count = oracles.len(), "Fetched oracle registry successfully");
+        Ok(oracles)
     }
 
     async fn get_last_processed_cycle(&self) -> Result<u64, Error> {
@@ -853,23 +853,23 @@ where
         })
     }
 
-    async fn get_active_issuer_count(&self) -> Result<u64, Error> {
-        let contract = self.issuer_registry_contract();
+    async fn get_active_oracle_count(&self) -> Result<u64, Error> {
+        let contract = self.oracle_registry_contract();
         let result = contract
-            .active_issuer_count()
+            .active_oracle_count()
             .call()
             .await
             .map_err(|e| {
-                Error::ChainRead(format!("Failed to fetch activeIssuerCount: {}", e))
+                Error::ChainRead(format!("Failed to fetch activeOracleCount: {}", e))
             })?;
 
         let count = result.as_u64();
-        debug!(active_issuer_count = count, "Fetched activeIssuerCount from IssuerRegistry");
+        debug!(active_oracle_count = count, "Fetched activeOracleCount from OracleRegistry");
         Ok(count)
     }
 
     async fn get_registry_nonce(&self) -> Result<u64, Error> {
-        let contract = self.issuer_registry_contract();
+        let contract = self.oracle_registry_contract();
         let result = contract
             .registry_nonce()
             .call()
@@ -879,12 +879,12 @@ where
             })?;
 
         let nonce = result.as_u64();
-        debug!(registry_nonce = nonce, "Fetched registryNonce from IssuerRegistry");
+        debug!(registry_nonce = nonce, "Fetched registryNonce from OracleRegistry");
         Ok(nonce)
     }
 
     async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error> {
-        let contract = self.issuer_registry_contract();
+        let contract = self.oracle_registry_contract();
         let result = contract
             .get_aggregated_pubkey()
             .call()
@@ -893,12 +893,12 @@ where
                 Error::ChainRead(format!("Failed to fetch getAggregatedPubkey: {}", e))
             })?;
 
-        debug!(aggregated_pubkey_len = result.len(), "Fetched aggregated pubkey from IssuerRegistry");
+        debug!(aggregated_pubkey_len = result.len(), "Fetched aggregated pubkey from OracleRegistry");
         Ok(result.to_vec())
     }
 
     async fn is_consensus_paused(&self) -> Result<bool, Error> {
-        let contract = self.issuer_registry_contract();
+        let contract = self.oracle_registry_contract();
         contract.consensus_paused().call().await
             .map_err(|e| Error::ChainRead(format!("Failed to fetch consensusPaused: {}", e)))
     }
@@ -1006,7 +1006,7 @@ mod tests {
         let addresses = ContractAddresses::default();
         assert_eq!(addresses.index, Address::zero());
         assert_eq!(addresses.governance, Address::zero());
-        assert_eq!(addresses.issuer_registry, Address::zero());
+        assert_eq!(addresses.oracle_registry, Address::zero());
     }
 
     #[test]
@@ -1053,10 +1053,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mock_chain_get_issuer_registry() {
+    async fn test_mock_chain_get_oracle_registry() {
         let mock = MockChainBuilder::new().build();
-        let issuers = mock.get_issuer_registry().await.unwrap();
-        assert!(issuers.is_empty());
+        let oracles = mock.get_oracle_registry().await.unwrap();
+        assert!(oracles.is_empty());
     }
 
     #[tokio::test]

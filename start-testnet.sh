@@ -6,7 +6,7 @@
 #   - L3 RPC: http://142.132.164.24/ (Orbit chain on VPS 2, chain ID 111222333)
 #   - PostgreSQL: VPS 2 (data-node runs there via deploy.sh)
 #   - Contracts: deployed to VPS L3
-#   - Issuers + AP: run locally, point to VPS RPC
+#   - Oracles + AP: run locally, point to VPS RPC
 #   - Frontend: runs locally, points to VPS services
 #
 # Usage:
@@ -55,12 +55,12 @@ AP_KEY=${AP_KEY:-0x582978b132648fe53de139c6b9297040a2757616cac9a2fd17aa167bdc6fa
 VISION_BOT_KEY=${VISION_BOT_KEY:-0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82}
 VISION_BOT2_KEY=${VISION_BOT2_KEY:-0x47c99abed3324a2707c28affff1267e45918ec8c3f20b8aa892f8b25f3f12a69}
 
-# Issuer keys
-ISSUER_1_KEY="${ISSUER_1_KEY:-0x355faf10c89b4aa1c96964b4d7b38ed5844eea436bd1ae8029cb073d3d3355ff}"
-ISSUER_2_KEY="${ISSUER_2_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
-ISSUER_3_KEY="${ISSUER_3_KEY:-0xd518d48628681d00fe0b35ff9cca3e354e8197eab2ab4b010e1274eccc3e8775}"
+# Oracle keys
+ORACLE_1_KEY="${ORACLE_1_KEY:-0x355faf10c89b4aa1c96964b4d7b38ed5844eea436bd1ae8029cb073d3d3355ff}"
+ORACLE_2_KEY="${ORACLE_2_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
+ORACLE_3_KEY="${ORACLE_3_KEY:-0xd518d48628681d00fe0b35ff9cca3e354e8197eab2ab4b010e1274eccc3e8775}"
 
-ISSUER_COUNT=3
+ORACLE_COUNT=3
 SKIP_DEPLOY=false
 NO_TAIL=false
 NO_TEST=false
@@ -85,10 +85,10 @@ export BITGET_READONLY_API_SECRET="${BITGET_PK:-${BITGET_READONLY_API_SECRET}}"
 export BITGET_READONLY_PASSPHRASE="${BITGET_PASS:-${BITGET_READONLY_PASSPHRASE}}"
 
 # Unset production contract addresses (read from deployment file instead)
-unset ISSUER_INDEX_ADDRESS ISSUER_GOVERNANCE_ADDRESS ISSUER_ISSUER_REGISTRY_ADDRESS
-unset ISSUER_COLLATERAL_REGISTRY_ADDRESS ISSUER_BLS_CUSTODY_ADDRESS ISSUER_L3_BRIDGE_CUSTODY_ADDRESS
-unset ISSUER_BRIDGE_PROXY_ADDRESS ISSUER_BITGET_VAULT ISSUER_SETTLEMENT_CUSTODY
-unset ISSUER_RPC_URL ISSUER_SETTLEMENT_RPC_URL ISSUER_SETTLEMENT_CHAIN_ID ISSUER_LOG_LEVEL
+unset ORACLE_INDEX_ADDRESS ORACLE_GOVERNANCE_ADDRESS ORACLE_ORACLE_REGISTRY_ADDRESS
+unset ORACLE_COLLATERAL_REGISTRY_ADDRESS ORACLE_BLS_CUSTODY_ADDRESS ORACLE_L3_BRIDGE_CUSTODY_ADDRESS
+unset ORACLE_BRIDGE_PROXY_ADDRESS ORACLE_BITGET_VAULT ORACLE_SETTLEMENT_CUSTODY
+unset ORACLE_RPC_URL ORACLE_SETTLEMENT_RPC_URL ORACLE_SETTLEMENT_CHAIN_ID ORACLE_LOG_LEVEL
 
 # Add Foundry to PATH
 if ! command -v forge &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
@@ -144,10 +144,10 @@ for cmd in forge python3 curl; do
     fi
 done
 
-# Build Rust binaries (issuers + AP run locally)
-if [ ! -f "target/release/issuer" ] || [ ! -f "target/release/ap" ]; then
-    echo -e "${YELLOW}Building Rust binaries (issuer + ap)...${NC}"
-    cargo build --release -p issuer -p ap
+# Build Rust binaries (oracles + AP run locally)
+if [ ! -f "target/release/oracle" ] || [ ! -f "target/release/ap" ]; then
+    echo -e "${YELLOW}Building Rust binaries (oracle + ap)...${NC}"
+    cargo build --release -p oracle -p ap
 fi
 
 echo -e "  ${GREEN}Prerequisites OK${NC}"
@@ -169,7 +169,7 @@ mkdir -p logs deployments data
 
 # ── Step 2: Cleanup local processes ───────────────────────────
 echo -e "${BLUE}[2/$TOTAL_STEPS] Cleaning up local processes...${NC}"
-pkill -f 'target/release/issuer' 2>/dev/null || true
+pkill -f 'target/release/oracle' 2>/dev/null || true
 pkill -f 'target/release/ap' 2>/dev/null || true
 # Don't kill local data-node — VPS handles it
 for port in 9001 9002 9003 9100; do
@@ -291,7 +291,7 @@ NEXT_PUBLIC_AP_URL=http://localhost:9100
 NEXT_PUBLIC_DATA_NODE_URL=$DATA_NODE_URL
 NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}
 NEXT_PUBLIC_VISION_API_URL=http://localhost:10001
-NEXT_PUBLIC_ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
+NEXT_PUBLIC_ORACLE_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
 ENVEOF
 echo -e "  ${GREEN}Frontend synced (pointing to VPS)${NC}"
 
@@ -312,65 +312,65 @@ else
     echo -e "  ${YELLOW}Data-node not yet healthy (may be starting up)${NC}"
 fi
 
-# ── Step 7: Launch Issuers (locally, pointing to VPS) ─────────
-echo -e "${BLUE}[7/$TOTAL_STEPS] Starting $ISSUER_COUNT issuers (local → VPS L3)...${NC}"
+# ── Step 7: Launch Oracles (locally, pointing to VPS) ─────────
+echo -e "${BLUE}[7/$TOTAL_STEPS] Starting $ORACLE_COUNT oracles (local → VPS L3)...${NC}"
 
-# Build issuer args
-ISSUER_ARGS="--cycle-duration-ms 1000 --min-cycle-gap-ms 50 --consensus-timeout-ms 800"
-ISSUER_ARGS="$ISSUER_ARGS --no-tls --test-key-seeds --signature-threshold 2 --num-issuers $ISSUER_COUNT"
-ISSUER_ARGS="$ISSUER_ARGS --registry-sync --ntp-server \"\""
-ISSUER_ARGS="$ISSUER_ARGS --deployment-file $DEPLOYMENT_FILE"
-ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file data/symbol-map.json"
-ISSUER_ARGS="$ISSUER_ARGS --data-node-url $DATA_NODE_URL"
+# Build oracle args
+ORACLE_ARGS="--cycle-duration-ms 1000 --min-cycle-gap-ms 50 --consensus-timeout-ms 800"
+ORACLE_ARGS="$ORACLE_ARGS --no-tls --test-key-seeds --signature-threshold 2 --num-oracles $ORACLE_COUNT"
+ORACLE_ARGS="$ORACLE_ARGS --registry-sync --ntp-server \"\""
+ORACLE_ARGS="$ORACLE_ARGS --deployment-file $DEPLOYMENT_FILE"
+ORACLE_ARGS="$ORACLE_ARGS --symbol-map-file data/symbol-map.json"
+ORACLE_ARGS="$ORACLE_ARGS --data-node-url $DATA_NODE_URL"
 
 # Vision args
 if [ "$VISION_ENABLED" = true ] && [ -n "$VISION_ADDR" ] && [ "$VISION_ADDR" != "" ]; then
-    ISSUER_ARGS="$ISSUER_ARGS --vision-enabled"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://max@142.132.164.24:5432/index_prices"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url $DATA_NODE_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 60"
-    ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-enabled"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-address $VISION_ADDR"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-database-url postgres://max@142.132.164.24:5432/index_prices"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-data-node-url $DATA_NODE_URL"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-rpc-ws-url $RPC_URL"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-reveal-window-secs 60"
+    ORACLE_ARGS="$ORACLE_ARGS --vision-tick-poll-interval-ms 500"
 fi
 
-BINARY="./target/release/issuer"
-ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
+BINARY="./target/release/oracle"
+ORACLE_KEYS=("$ORACLE_1_KEY" "$ORACLE_2_KEY" "$ORACLE_3_KEY")
 
-for i in $(seq 1 $ISSUER_COUNT); do
+for i in $(seq 1 $ORACLE_COUNT); do
     PORT=$((9000 + i))
     KEY_IDX=$((i - 1))
 
-    # Build peer list (all other issuers)
+    # Build peer list (all other oracles)
     PEERS=""
-    for j in $(seq 1 $ISSUER_COUNT); do
+    for j in $(seq 1 $ORACLE_COUNT); do
         if [ $j -ne $i ]; then
             [ -n "$PEERS" ] && PEERS="$PEERS,"
             PEERS="${PEERS}127.0.0.1:$((9000 + j))"
         fi
     done
 
-    ISSUER_NODE_ID=$i \
-    ISSUER_PRIVATE_KEY="${ISSUER_KEYS[$KEY_IDX]}" \
-    ISSUER_PEERS="$PEERS" \
-    ISSUER_RPC_URL="$RPC_URL" \
-    ISSUER_SETTLEMENT_RPC_URL="$RPC_URL" \
-    ISSUER_SETTLEMENT_CHAIN_ID="$CHAIN_ID" \
+    ORACLE_NODE_ID=$i \
+    ORACLE_PRIVATE_KEY="${ORACLE_KEYS[$KEY_IDX]}" \
+    ORACLE_PEERS="$PEERS" \
+    ORACLE_RPC_URL="$RPC_URL" \
+    ORACLE_SETTLEMENT_RPC_URL="$RPC_URL" \
+    ORACLE_SETTLEMENT_CHAIN_ID="$CHAIN_ID" \
     $BINARY \
         --node-id $i \
         --port $PORT \
         --bls-key-seed-index $KEY_IDX \
         --bridge-proxy "$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('BridgeProxy', ''))" 2>/dev/null)" \
         --wal-path "logs/consensus-$i.wal" \
-        $ISSUER_ARGS \
-        > "logs/issuer-$i.log" 2>&1 &
-    ISSUER_PID=$!
-    echo $ISSUER_PID >> .pids
-    echo "issuer-$i:$ISSUER_PID" >> .pids.info
-    echo -e "  Issuer $i on port $PORT (PID: $ISSUER_PID)"
+        $ORACLE_ARGS \
+        > "logs/oracle-$i.log" 2>&1 &
+    ORACLE_PID=$!
+    echo $ORACLE_PID >> .pids
+    echo "oracle-$i:$ORACLE_PID" >> .pids.info
+    echo -e "  Oracle $i on port $PORT (PID: $ORACLE_PID)"
 done
 
-echo -e "  ${GREEN}All $ISSUER_COUNT issuers started${NC}"
+echo -e "  ${GREEN}All $ORACLE_COUNT oracles started${NC}"
 
 # ── Step 8: Launch AP (locally, pointing to VPS) ──────────────
 echo -e "${BLUE}[8/$TOTAL_STEPS] Starting AP (local → VPS L3)...${NC}"
@@ -423,7 +423,7 @@ echo -e "╚══════════════════════�
 echo ""
 echo -e "  ${CYAN}Chain:${NC}      $RPC_URL (ID: $CHAIN_ID)"
 echo -e "  ${CYAN}Data-node:${NC}  $DATA_NODE_URL"
-echo -e "  ${CYAN}Issuers:${NC}    localhost:9001-900$ISSUER_COUNT"
+echo -e "  ${CYAN}Oracles:${NC}    localhost:9001-900$ORACLE_COUNT"
 echo -e "  ${CYAN}AP:${NC}         localhost:9100"
 echo -e "  ${CYAN}Frontend:${NC}   http://localhost:3000"
 echo -e "  ${CYAN}Explorer:${NC}   http://142.132.164.24/ (GET requests)"
@@ -442,7 +442,7 @@ fi
 echo ""
 
 echo -e "  ${YELLOW}Logs:${NC}"
-echo "    tail -f logs/issuer-1.log    # Issuer consensus"
+echo "    tail -f logs/oracle-1.log    # Oracle consensus"
 echo "    tail -f logs/ap.log          # AP keeper"
 echo "    ssh $VPS_HOST 'tail -f ~/index/logs/data-node.log'  # Data-node"
 echo ""
@@ -452,6 +452,6 @@ echo "    ./deploy.sh --stop           # Stop VPS data-node"
 echo ""
 
 if [ "$NO_TAIL" != true ]; then
-    echo -e "${CYAN}Tailing issuer + AP logs (Ctrl+C to stop)...${NC}"
-    tail -f logs/issuer-1.log logs/ap.log 2>/dev/null
+    echo -e "${CYAN}Tailing oracle + AP logs (Ctrl+C to stop)...${NC}"
+    tail -f logs/oracle-1.log logs/ap.log 2>/dev/null
 fi

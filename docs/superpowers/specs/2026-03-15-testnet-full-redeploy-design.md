@@ -12,8 +12,8 @@ Six gaps prevent a clean fresh redeploy:
 2. **ITP vault deployment never runs.** `testnet.sh` calls token deploy + ITP create but never calls `Deploy107ITPs_Vaults.s.sol`. ITPs exist on-chain but are untradeable.
 3. **Vision swarm requires separate manual script.** The 10 bots need `deploy-swarm.sh` run independently with pre-generated `swarm.env`.
 4. **Database holds stale state.** On fresh deploy, PostgreSQL still has `vision_last_resolved`, `vision_reference_prices`, `signed_batch_configs`, `trades`, `itp_snapshots` from the previous deployment — batch IDs and contract addresses that no longer exist on-chain.
-5. **No gas verification.** The deployer needs gas for ~1800+ txs (621 deploys + 621 mints + 96 ITP creates + 96 vault deploys + Vision batches). Current script sends 10 GM to issuers/AP but never checks deployer balance or whether 10 GM is sufficient for the expanded workload. Swarm bots get USDC but no GM for gas.
-6. **`symbol-map.json` uses stale addresses.** Built from `assets.json` which has Bitget mainnet addresses — on fresh L3, the MockERC20 addresses differ. The issuers and data-node need the map to resolve symbols to on-chain tokens.
+5. **No gas verification.** The deployer needs gas for ~1800+ txs (621 deploys + 621 mints + 96 ITP creates + 96 vault deploys + Vision batches). Current script sends 10 GM to oracles/AP but never checks deployer balance or whether 10 GM is sufficient for the expanded workload. Swarm bots get USDC but no GM for gas.
+6. **`symbol-map.json` uses stale addresses.** Built from `assets.json` which has Bitget mainnet addresses — on fresh L3, the MockERC20 addresses differ. The oracles and data-node need the map to resolve symbols to on-chain tokens.
 
 ## Design
 
@@ -60,7 +60,7 @@ If insufficient, print the deficit and exit. On Orbit L3, the deployer is the ch
 
 **Expanded gas distribution (step 4):**
 
-Current: 10 GM to issuers + AP.
+Current: 10 GM to oracles + AP.
 New: also fund the 10 swarm bot wallets with 1 GM each (read addresses from `docker/testnet/vision-swarm/addresses.json`). Bots need gas for Vision `placeBet` transactions, not just USDC.
 
 **Post-funding verification:**
@@ -80,9 +80,9 @@ vps_be_ssh "psql -U max -d index_prices -c '
 
 This clears Vision-specific state that references old batch IDs and config hashes. General tables (`prices`, `klines`, `coingecko_*`) are fine to keep — they hold market data independent of contract addresses. `trades` and `itp_snapshots` reference old contract state but the data-node handles missing contracts gracefully (it re-polls from `--from-block`).
 
-The `--from-block` arg in issuer startup already points to current block number (`cast block-number`), so issuers won't try to replay old events.
+The `--from-block` arg in oracle startup already points to current block number (`cast block-number`), so oracles won't try to replay old events.
 
-WAL cleanup already happens in `_start_issuers_docker` (`rm -f logs/consensus-*.wal`).
+WAL cleanup already happens in `_start_oracles_docker` (`rm -f logs/consensus-*.wal`).
 
 ### 5. Modify `testnet.sh` `cmd_deploy`
 
@@ -96,7 +96,7 @@ New deployment order (renumbered):
 | 3 | Core contracts | `DeployFullSystemE2E` |
 | 3b | Settlement (Sonic) | `DeployFullSystemE2E` |
 | **3c** | **DB reset (Vision tables)** | `psql TRUNCATE` via SSH |
-| 4 | Fund gas (issuers + AP + **swarm bots**) | cast sends + **balance verify** |
+| 4 | Fund gas (oracles + AP + **swarm bots**) | cast sends + **balance verify** |
 | 5 | Morpho | `DeployMorphoE2E` |
 | 6 | Vision + batches | `DeployVision` + `DeployAllVisionBatches` |
 | 7 | Fund USDC | existing cast sends |

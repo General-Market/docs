@@ -1,17 +1,17 @@
 //! RegistryStateChanged Event Types (Story 8.4)
 //!
 //! This module provides types for parsing and validating RegistryStateChanged events
-//! from the L3 IssuerRegistry contract.
+//! from the L3 OracleRegistry contract.
 //!
 //! Events:
 //! - `RegistryStateChanged(uint256 indexed nonce, uint256 activeCount, bytes32 stateHash)`
 //!
 //! This event is emitted when:
-//! - A new issuer is added
-//! - An issuer is removed
+//! - A new oracle is added
+//! - An oracle is removed
 //! - A key rotation is executed
 //!
-//! Used by issuers to sync their local state with the on-chain registry
+//! Used by oracles to sync their local state with the on-chain registry
 //! and serve signed proofs via GET /api/registry-sync endpoint.
 
 use ethers::types::{H256, Log, U256};
@@ -29,14 +29,14 @@ use thiserror::Error;
 /// - data[32-64]: stateHash (bytes32)
 pub const REGISTRY_STATE_CHANGED_SIGNATURE: &str = "RegistryStateChanged(uint256,uint256,bytes32)";
 
-/// Parsed RegistryStateChanged event from L3 IssuerRegistry
+/// Parsed RegistryStateChanged event from L3 OracleRegistry
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegistryStateChangedEvent {
     /// Monotonically increasing nonce for replay protection
     pub nonce: u64,
-    /// Number of currently active issuers
+    /// Number of currently active oracles
     pub active_count: u64,
-    /// keccak256 of all active issuer pubkeys concatenated in order
+    /// keccak256 of all active oracle pubkeys concatenated in order
     pub state_hash: H256,
     /// Block number where event was emitted
     pub block_number: u64,

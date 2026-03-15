@@ -14,7 +14,7 @@
 //! Persists state to `vision_deposit_orders` / `vision_withdraw_orders` for crash recovery.
 //! On restart: recovers from DB state, checks on-chain idempotency keys.
 //!
-//! Follows the pattern of `issuer/src/bridge/orchestrator.rs`.
+//! Follows the pattern of `oracle/src/bridge/orchestrator.rs`.
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -501,7 +501,7 @@ impl VisionDepositWatcher {
                         }
                         Some(OpResult::Permanent { reason }) => {
                             self.ops_queue.clear_result("credit", order_id);
-                            // Check on-chain — maybe it was already processed by another issuer
+                            // Check on-chain — maybe it was already processed by another oracle
                             if self.is_deposit_processed_on_l3(order_id).await == Some(true) {
                                 info!(order_id, reason, "creditBalance permanent error but already processed on L3, advancing");
                                 if let Some(d) = self.pending_deposits.get_mut(&order_id) {

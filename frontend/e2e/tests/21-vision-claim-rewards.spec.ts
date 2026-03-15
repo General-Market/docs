@@ -25,7 +25,7 @@ import {
   oppositeBets,
 } from '../helpers/vision-api'
 
-import { VISION_API as ISSUER_API, FRONTEND_URL as ENV_FRONTEND_URL } from '../env'
+import { VISION_API as ORACLE_API, FRONTEND_URL as ENV_FRONTEND_URL } from '../env'
 
 test.describe('Vision Claim Rewards', () => {
   test('balance proof is fetchable via proxy after tick resolution', async () => {
@@ -54,12 +54,12 @@ test.describe('Vision Claim Rewards', () => {
     const pos1 = await getPosition(batchId, PLAYER1)
     expect(pos1.stakePerTick).toBeGreaterThan(0n)
 
-    // 2. Wait for at least one tick resolution (~30s tick + issuer processing)
+    // 2. Wait for at least one tick resolution (~30s tick + oracle processing)
     console.log('Waiting for tick resolution (~45s)...')
     await new Promise(r => setTimeout(r, 45_000))
 
-    // 3. Fetch balance proof via direct issuer API (E2E test = non-browser, no CORS)
-    const proofUrl = `${ISSUER_API}/vision/balance/${batchId}/${PLAYER1}`
+    // 3. Fetch balance proof via direct oracle API (E2E test = non-browser, no CORS)
+    const proofUrl = `${ORACLE_API}/vision/balance/${batchId}/${PLAYER1}`
     let proofRes: Response
     try {
       proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
@@ -120,7 +120,7 @@ test.describe('Vision Claim Rewards', () => {
       expect(res.status).toBeLessThan(500)
       if (res.ok) {
         const data = await res.json()
-        expect(data.totalCount).toBe(3) // 3 issuers
+        expect(data.totalCount).toBe(3) // 3 oracles
         console.log(`Bitmap fan-out: ${data.acceptedCount}/${data.totalCount} accepted`)
       } else {
         // Expected — bitmap hash won't match any on-chain commitment

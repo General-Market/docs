@@ -158,9 +158,9 @@ test.describe('Vision', () => {
     expect(p2BalBefore - p2BalAfter).toBeGreaterThanOrEqual(deposit)
     expect(visionBalAfter - visionBalBefore).toBeGreaterThanOrEqual(deposit * 2n)
 
-    // 8. Verify bitmaps were submitted to issuers
+    // 8. Verify bitmaps were submitted to oracles
     if (p1Result.bitmapAccepted < 2 || p2Result.bitmapAccepted < 2) {
-      console.log(`Bitmap acceptance: P1=${p1Result.bitmapAccepted}/3, P2=${p2Result.bitmapAccepted}/3 (issuers may not be indexing vision events)`)
+      console.log(`Bitmap acceptance: P1=${p1Result.bitmapAccepted}/3, P2=${p2Result.bitmapAccepted}/3 (oracles may not be indexing vision events)`)
     } else {
       expect(p1Result.bitmapAccepted).toBeGreaterThanOrEqual(2)
       expect(p2Result.bitmapAccepted).toBeGreaterThanOrEqual(2)

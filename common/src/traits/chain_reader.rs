@@ -5,7 +5,7 @@ use futures::stream::BoxStream;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
-use crate::types::{Issuer, ITPCore, LimitOrder, Price};
+use crate::types::{Oracle, ITPCore, LimitOrder, Price};
 
 /// Filter for blockchain events
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,7 +66,7 @@ pub enum ChainEvent {
         tx_hash: [u8; 32],
         log_index: u64,
     },
-    /// Per-asset trade request from issuer decomposition + cross-ITP netting
+    /// Per-asset trade request from oracle decomposition + cross-ITP netting
     AssetTradeRequest {
         cycle_number: u64,
         asset: [u8; 20],
@@ -129,15 +129,15 @@ pub trait ChainReader: Send + Sync {
     /// Get current prices for all assets
     async fn get_prices(&self) -> Result<Vec<Price>, Error>;
 
-    /// Get all registered issuers
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error>;
+    /// Get all registered oracles
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error>;
 
     /// Subscribe to blockchain events matching the filter
     async fn subscribe_events(&self, filter: EventFilter) -> Result<EventStream, Error>;
 
     /// Get the last processed cycle number from the Index contract
     ///
-    /// Used by issuers to auto-discover the next available cycle on restart.
+    /// Used by oracles to auto-discover the next available cycle on restart.
     /// Returns 0 if no cycles have been processed yet.
     ///
     /// Default implementation returns 0 for backwards compatibility.
@@ -170,31 +170,31 @@ pub trait ChainReader: Send + Sync {
 
     /// Get ITP inventory state for asset decomposition.
     ///
-    /// Returns per-share asset quantities and NAV, used by issuers to decompose
+    /// Returns per-share asset quantities and NAV, used by oracles to decompose
     /// ITP-level orders into per-asset trades for cross-ITP netting.
     async fn get_itp_inventory_state(&self, itp_id: [u8; 32]) -> Result<ItpInventoryState, Error> {
         let _ = itp_id;
         Err(Error::NotFound("get_itp_inventory_state not implemented".to_string()))
     }
 
-    /// Get the number of currently active issuers from IssuerRegistry.activeIssuerCount().
+    /// Get the number of currently active oracles from OracleRegistry.activeOracleCount().
     ///
-    /// Used to compute the BFT threshold without relying on CLI `--num-issuers`.
+    /// Used to compute the BFT threshold without relying on CLI `--num-oracles`.
     /// Default implementation returns an error for backwards compatibility.
-    async fn get_active_issuer_count(&self) -> Result<u64, Error> {
-        Err(Error::ChainRead("get_active_issuer_count not implemented".to_string()))
+    async fn get_active_oracle_count(&self) -> Result<u64, Error> {
+        Err(Error::ChainRead("get_active_oracle_count not implemented".to_string()))
     }
 
-    /// Get the registry nonce from IssuerRegistry.registryNonce().
+    /// Get the registry nonce from OracleRegistry.registryNonce().
     ///
-    /// Incremented on every state change (add/remove issuer, key rotation).
+    /// Incremented on every state change (add/remove oracle, key rotation).
     /// Used for sync tracking and replay protection.
     /// Default implementation returns an error for backwards compatibility.
     async fn get_registry_nonce(&self) -> Result<u64, Error> {
         Err(Error::ChainRead("get_registry_nonce not implemented".to_string()))
     }
 
-    /// Get the aggregated BLS public key from IssuerRegistry.getAggregatedPubkey().
+    /// Get the aggregated BLS public key from OracleRegistry.getAggregatedPubkey().
     ///
     /// Returns the precomputed aggregated G2 pubkey stored on-chain.
     /// Default implementation returns an error for backwards compatibility.
@@ -202,7 +202,7 @@ pub trait ChainReader: Send + Sync {
         Err(Error::ChainRead("get_aggregated_pubkey not implemented".to_string()))
     }
 
-    /// Check if consensus is paused on-chain (IssuerRegistry.consensusPaused()).
+    /// Check if consensus is paused on-chain (OracleRegistry.consensusPaused()).
     ///
     /// Used at cycle start to skip consensus during deployment ceremonies.
     /// Default implementation returns false for backwards compatibility.

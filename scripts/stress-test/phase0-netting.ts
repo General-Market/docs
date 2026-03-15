@@ -1,7 +1,7 @@
 /**
  * Phase 0: Netting Correctness Tests
  *
- * Verifies the issuer netting engine correctly cancels opposing orders.
+ * Verifies the oracle netting engine correctly cancels opposing orders.
  * - 0a: Intra-ITP netting (same asset, same ITP)
  * - 0b: Cross-ITP netting (same asset, different ITPs)
  * - 0c: Partial netting (unequal amounts)
@@ -58,10 +58,10 @@ async function test0a(): Promise<NettingResult> {
     // Just mint shares by calling createITP + direct manipulation.
     //
     // For now, the seller needs shares on L3. Let's submit a buy order for the seller first,
-    // then after it fills, the seller can sell. But that requires the full issuer cycle.
+    // then after it fills, the seller can sell. But that requires the full oracle cycle.
     //
     // Alternative: Since this is a stress test of the netting engine, we actually want
-    // both orders to go through the issuer simultaneously. Let's submit both and wait.
+    // both orders to go through the oracle simultaneously. Let's submit both and wait.
     log('Funding seller with USDC (to simulate selling, needs shares)...');
 
     // Give the seller shares by having them buy first, OR use the deployer to credit shares.
@@ -89,12 +89,12 @@ async function test0a(): Promise<NettingResult> {
     );
     log(`  Setup buy order #${setupOrderId} submitted, waiting for fill...`);
 
-    // Wait for issuer to process
+    // Wait for oracle to process
     try {
       await pollOrderStatus(setupOrderId, OrderStatus.FILLED, 120_000);
       log('  Setup buy filled. Seller now has shares.');
     } catch {
-      log('  Setup buy not filled within timeout — issuer may not be running.');
+      log('  Setup buy not filled within timeout — oracle may not be running.');
       log('  Proceeding with test anyway (will verify what we can).');
     }
 
@@ -105,7 +105,7 @@ async function test0a(): Promise<NettingResult> {
       return {
         test: '0a',
         passed: false,
-        details: 'Could not give seller shares — issuer not processing orders. Ensure issuers are running.',
+        details: 'Could not give seller shares — oracle not processing orders. Ensure oracles are running.',
         durationMs: t.stop().ms,
       };
     }
@@ -260,7 +260,7 @@ async function test0b(): Promise<NettingResult> {
       await pollOrderStatus(setupId, OrderStatus.FILLED, 120_000);
       log('  Seller now has ITP-B shares.');
     } catch {
-      log('  Setup order not filled — issuer may not be processing these ITPs yet.');
+      log('  Setup order not filled — oracle may not be processing these ITPs yet.');
     }
 
     const sellerShares = await getUserShares(itpB, seller);
@@ -268,7 +268,7 @@ async function test0b(): Promise<NettingResult> {
       return {
         test: '0b',
         passed: false,
-        details: 'Could not give seller ITP-B shares. Issuer may not handle newly created ITPs.',
+        details: 'Could not give seller ITP-B shares. Oracle may not handle newly created ITPs.',
         durationMs: t.stop().ms,
       };
     }
@@ -311,7 +311,7 @@ async function test0b(): Promise<NettingResult> {
       `Buy(A): ${buyFilled ? 'FILLED' : buyOrder.status}`,
       `Sell(B): ${sellFilled ? 'FILLED' : sellOrder.status}`,
       `AssetTradeRequests: ${assetTradeLogs.length}`,
-      `T2/T3 overlap should show reduced net volume (check issuer logs)`,
+      `T2/T3 overlap should show reduced net volume (check oracle logs)`,
     ].join(', ');
 
     return {
@@ -477,7 +477,7 @@ async function test0d(): Promise<NettingResult> {
     const details = [
       `Buy: ${buyFilled ? 'FILLED' : buyOrder.status}`,
       `AssetTradeRequests: ${assetTradeLogs.length}`,
-      'Rebalance sell should partially offset user buy (check issuer logs)',
+      'Rebalance sell should partially offset user buy (check oracle logs)',
     ].join(', ');
 
     return {

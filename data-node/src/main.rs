@@ -20,7 +20,7 @@ mod dl_backfill;
 mod dl_collector;
 mod fng_client;
 mod fng_collector;
-mod issuer_health_collector;
+mod oracle_health_collector;
 mod itp_collector;
 mod kline_collector;
 mod liquidity_collector;
@@ -2321,18 +2321,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     }
 
-    // Issuer health collector
-    if let Some(ref urls_str) = args.issuer_health_urls {
+    // Oracle health collector
+    if let Some(ref urls_str) = args.oracle_health_urls {
         let urls: Vec<String> = urls_str.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
         if !urls.is_empty() {
-            issuer_health_collector::validate_issuer_urls(&urls);
+            oracle_health_collector::validate_oracle_urls(&urls);
             let node_count = urls.len();
             let pool_clone = pool.clone();
-            let interval = args.issuer_health_poll_interval;
+            let interval = args.oracle_health_poll_interval;
             tokio::spawn(async move {
-                issuer_health_collector::run_issuer_health_collector(pool_clone, urls, interval).await;
+                oracle_health_collector::run_oracle_health_collector(pool_clone, urls, interval).await;
             });
-            info!(node_count, poll_secs = args.issuer_health_poll_interval, "Issuer health collector spawned");
+            info!(node_count, poll_secs = args.oracle_health_poll_interval, "Oracle health collector spawned");
         }
     }
 
@@ -2462,7 +2462,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         orderbook_cache,
         price_broadcast: broadcast_hub.clone(),
         vision_batch_cache: Arc::new(crate::vision_batch_cache::VisionBatchCache::new(
-            std::env::var("ISSUER_URL").unwrap_or_else(|_| "http://localhost:8100".to_string()),
+            std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string()),
             format!("http://{}:{}", args.bind, args.port),
         )),
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
@@ -2488,10 +2488,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("orders",       1, chain_pollers::poll_user_orders_once);
     spawn_poller!("positions",    3, chain_pollers::poll_user_positions_once);
     spawn_poller!("cost_basis",   5, chain_pollers::poll_user_cost_basis_once);
-    // Backend chain state pollers (for issuer/AP HTTP endpoints)
+    // Backend chain state pollers (for oracle/AP HTTP endpoints)
     spawn_poller!("pending_orders",     1, chain_pollers::poll_pending_orders_once);
     spawn_poller!("batched_orders",     2, chain_pollers::poll_batched_orders_once);
-    spawn_poller!("issuer_registry",   10, chain_pollers::poll_issuer_registry_once);
+    spawn_poller!("oracle_registry",   10, chain_pollers::poll_oracle_registry_once);
     spawn_poller!("cycle_metadata",     2, chain_pollers::poll_cycle_metadata_once);
     spawn_poller!("registry_metadata", 10, chain_pollers::poll_registry_metadata_once);
     spawn_poller!("settlement_state",   2, chain_pollers::poll_settlement_state_once);
@@ -2499,7 +2499,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("system_snapshot",    5, chain_pollers::poll_system_snapshot_once);
     spawn_poller!("aum_ranking",       60, chain_pollers::poll_aum_ranking_once);
     spawn_poller!("user_cache_eviction", 300, chain_pollers::poll_user_cache_eviction_once);
-    info!("Chain pollers started (NAV=60s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=60s, UserCacheEviction=300s)");
+    info!("Chain pollers started (NAV=60s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, OracleRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=60s, UserCacheEviction=300s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {

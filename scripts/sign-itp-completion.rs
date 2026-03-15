@@ -83,6 +83,6 @@ fn main() {
     seed[1] = 0x42;
 
     // This requires the common crate's BLS implementation
-    // Run this as a cargo test in the issuer crate instead
-    println!("Run 'cargo test test_sign_itp_completion -- --nocapture' in issuer/");
+    // Run this as a cargo test in the oracle crate instead
+    println!("Run 'cargo test test_sign_itp_completion -- --nocapture' in oracle/");
 }

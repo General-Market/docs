@@ -44,10 +44,10 @@ interface IFeeRegistry {
     // ============ FEE RATE MANAGEMENT ============
 
     /// @notice Set the fee rate for an ITP
-    /// @dev Requires BLS signature from issuer consensus
+    /// @dev Requires BLS signature from oracle consensus
     /// @param itpId The ITP identifier
     /// @param feeRate Fee rate in basis points (max 1000 = 10%)
-    /// @param blsSignature BLS signature from issuer consensus
+    /// @param blsSignature BLS signature from oracle consensus
     function setFeeRate(bytes32 itpId, uint256 feeRate, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Get the current fee rate for an ITP
@@ -58,12 +58,12 @@ interface IFeeRegistry {
     // ============ FEE RECORDING ============
 
     /// @notice Record a fee charge for a user
-    /// @dev Requires BLS signature from issuer consensus
+    /// @dev Requires BLS signature from oracle consensus
     /// @param user Address of the user being charged
     /// @param itpId The ITP identifier
     /// @param feeAmount Fee amount (18 decimals)
     /// @param feeType Type of fee being charged
-    /// @param blsSignature BLS signature from issuer consensus
+    /// @param blsSignature BLS signature from oracle consensus
     function recordFeeCharge(
         address user,
         bytes32 itpId,
@@ -95,9 +95,9 @@ interface IFeeRegistry {
     // ============ FEE DISTRIBUTION ============
 
     /// @notice Set the fee split ratio between deployer and protocol
-    /// @dev Requires BLS signature from issuer consensus
+    /// @dev Requires BLS signature from oracle consensus
     /// @param deployerShareBps Deployer share in basis points (default 7000 = 70%)
-    /// @param blsSignature BLS signature from issuer consensus
+    /// @param blsSignature BLS signature from oracle consensus
     function setFeeSplit(uint256 deployerShareBps, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Claim accumulated fees for an ITP
@@ -142,9 +142,9 @@ interface IFeeRegistry {
 
     // ============ ADMIN FUNCTIONS ============
 
-    /// @notice Set the IssuerRegistry for BLS verification
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
-    function setIssuerRegistry(address issuerRegistry_) external;
+    /// @notice Set the OracleRegistry for BLS verification
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
+    function setOracleRegistry(address oracleRegistry_) external;
 
     /// @notice Transfer admin role to a new address
     /// @param newAdmin The new admin address

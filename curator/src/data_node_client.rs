@@ -4,7 +4,7 @@
 //! data-node already caches. Falls back to direct RPC when not configured.
 //!
 //! Supported endpoints:
-//! - `GET /chain/l3/active-issuer-count` -> `{ "active_issuer_count": u64 }`
+//! - `GET /chain/l3/active-oracle-count` -> `{ "active_oracle_count": u64 }`
 //! - `GET /chain/l3/aggregated-pubkey`   -> `{ "pubkey": "0x..." }`
 //! - `GET /chain/l3/consensus-paused`    -> `{ "paused": bool }`
 //! - `GET /chain/l3/last-cycle`          -> `{ "cycle": u64 }`
@@ -31,8 +31,8 @@ pub struct DataNodeClient {
 }
 
 #[derive(Deserialize)]
-struct ActiveIssuerCountResponse {
-    active_issuer_count: u64,
+struct ActiveOracleCountResponse {
+    active_oracle_count: u64,
 }
 
 #[derive(Deserialize)]
@@ -64,12 +64,12 @@ impl DataNodeClient {
         }
     }
 
-    /// GET /chain/l3/active-issuer-count
-    pub async fn get_active_issuer_count(&self) -> Result<u64, DataNodeError> {
-        let url = format!("{}/chain/l3/active-issuer-count", self.base_url);
-        debug!(url = %url, "Fetching active issuer count from data-node");
+    /// GET /chain/l3/active-oracle-count
+    pub async fn get_active_oracle_count(&self) -> Result<u64, DataNodeError> {
+        let url = format!("{}/chain/l3/active-oracle-count", self.base_url);
+        debug!(url = %url, "Fetching active oracle count from data-node");
 
-        let resp: ActiveIssuerCountResponse = self
+        let resp: ActiveOracleCountResponse = self
             .client
             .get(&url)
             .send()
@@ -79,7 +79,7 @@ impl DataNodeClient {
             .await
             .map_err(|e| DataNodeError::Parse(format!("{}: {}", url, e)))?;
 
-        Ok(resp.active_issuer_count)
+        Ok(resp.active_oracle_count)
     }
 
     /// GET /chain/l3/aggregated-pubkey
@@ -146,10 +146,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_active_issuer_count_response() {
-        let json = r#"{"active_issuer_count": 3}"#;
-        let resp: ActiveIssuerCountResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(resp.active_issuer_count, 3);
+    fn test_parse_active_oracle_count_response() {
+        let json = r#"{"active_oracle_count": 3}"#;
+        let resp: ActiveOracleCountResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.active_oracle_count, 3);
     }
 
     #[test]

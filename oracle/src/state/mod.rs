@@ -1,18 +1,18 @@
-//! State module for Index L3 Issuer
+//! State module for Index L3 Oracle
 //!
-//! Provides state reconstruction and management for issuer nodes.
+//! Provides state reconstruction and management for oracle nodes.
 //! Implements the stateless design pattern (NFR19) where nodes reconstruct
 //! their state from on-chain data on startup.
 //!
 //! # Components
 //!
-//! - [`types`]: State types including `IssuerState`, `ITPState`, and `Checkpoint`
+//! - [`types`]: State types including `OracleState`, `ITPState`, and `Checkpoint`
 //! - [`reconstruction`]: `StateReconstructor` for rebuilding state from chain
 //!
 //! # Usage
 //!
 //! ```ignore
-//! use issuer::state::{StateReconstructor, ReconstructorConfig, IssuerState};
+//! use oracle::state::{StateReconstructor, ReconstructorConfig, OracleState};
 //!
 //! let config = ReconstructorConfig {
 //!     rpc_url: "http://localhost:8545".to_string(),
@@ -28,4 +28,4 @@ pub mod reconstruction;
 pub mod types;
 
 pub use reconstruction::{ReconstructionStats, ReconstructorConfig, StateReconstructor};
-pub use types::{chains, Checkpoint, ITPState, IssuerState};
+pub use types::{chains, Checkpoint, ITPState, OracleState};

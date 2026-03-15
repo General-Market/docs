@@ -172,7 +172,7 @@ impl TickResolver {
             }
 
             // Prices are already i128 scaled by 1e8 — no conversion needed.
-            // All arithmetic is integer — deterministic across issuers.
+            // All arithmetic is integer — deterministic across oracles.
             let start_price_scaled = start_price;
             let end_price_scaled = end_price;
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/core/BLSCustody.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/mocks/MockERC20.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
@@ -12,12 +12,12 @@ import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title IssuerCustodySettlement.t.sol - Tests for Story 7.7
-/// @notice Tests for IssuerCustody Settlement (BLS-controlled custody for SettlementUSDC)
+/// @title OracleCustodySettlement.t.sol - Tests for Story 7.7
+/// @notice Tests for OracleCustody Settlement (BLS-controlled custody for SettlementUSDC)
 /// @dev Verifies BLS-signed transfers to MockBitgetVault and whitelist enforcement
-contract IssuerCustodySettlementTest is TestHelper {
-    BLSCustody public issuerCustodySettlement;
-    IssuerRegistry public issuerRegistry;
+contract OracleCustodySettlementTest is TestHelper {
+    BLSCustody public oracleCustodySettlement;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
     MockERC20 public settlementUsdc;
 
@@ -25,12 +25,12 @@ contract IssuerCustodySettlementTest is TestHelper {
     address public user1 = address(0x111);
 
     function setUp() public {
-        // Deploy real governance and issuer registry via UUPS proxy
+        // Deploy real governance and oracle registry via UUPS proxy
         governance = deployGovernance(address(this));
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
-        // Register 3 real BLS test issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(issuerRegistry, address(this));
+        // Register 3 real BLS test oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(oracleRegistry, address(this));
 
         // Deploy mock SettlementUSDC token
         settlementUsdc = new MockERC20("Settlement USDC", "SettlementUSDC", 6);
@@ -38,16 +38,16 @@ contract IssuerCustodySettlementTest is TestHelper {
         // Deploy mock BitgetVault (just use a simple address for testing)
         mockBitgetVault = address(0xb17637B17637b17637B17637B17637B17637b176);
 
-        // Deploy IssuerCustody Settlement as UUPS proxy (using BLSCustody)
+        // Deploy OracleCustody Settlement as UUPS proxy (using BLSCustody)
         BLSCustody impl = new BLSCustody();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(BLSCustody.initialize, (address(issuerRegistry)))
+            abi.encodeCall(BLSCustody.initialize, (address(oracleRegistry)))
         );
-        issuerCustodySettlement = BLSCustody(address(proxy));
+        oracleCustodySettlement = BLSCustody(address(proxy));
 
         // Fund custody with SettlementUSDC for testing
-        settlementUsdc.mint(address(issuerCustodySettlement), 1_000_000e6);
+        settlementUsdc.mint(address(oracleCustodySettlement), 1_000_000e6);
     }
 
     // ============ TASK 5.4/5.5: BLS-SIGNED TRANSFER TO MOCKBITGETVAULT ============
@@ -64,8 +64,8 @@ contract IssuerCustodySettlementTest is TestHelper {
         );
 
         // Execute BLS-signed transfer
-        bytes memory transferSig = _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 0);
-        (bool success, ) = issuerCustodySettlement.execute(
+        bytes memory transferSig = _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 0);
+        (bool success, ) = oracleCustodySettlement.execute(
             address(settlementUsdc),
             transferData,
             transferSig,
@@ -74,7 +74,7 @@ contract IssuerCustodySettlementTest is TestHelper {
 
         assertTrue(success, "Transfer should succeed");
         assertEq(settlementUsdc.balanceOf(mockBitgetVault), 100_000e6, "MockBitgetVault should receive SettlementUSDC");
-        assertEq(settlementUsdc.balanceOf(address(issuerCustodySettlement)), 900_000e6, "Custody balance should decrease");
+        assertEq(settlementUsdc.balanceOf(address(oracleCustodySettlement)), 900_000e6, "Custody balance should decrease");
     }
 
     function test_transferToMockBitgetVault_emitsExecutedEvent() public {
@@ -89,7 +89,7 @@ contract IssuerCustodySettlementTest is TestHelper {
         vm.expectEmit(true, false, false, true);
         emit EventsLib.Executed(address(settlementUsdc), transferData, 0);
 
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_multipleTransfersWithDifferentNonces() public {
@@ -102,14 +102,14 @@ contract IssuerCustodySettlementTest is TestHelper {
         );
 
         // Execute multiple transfers with different nonces — each nonce needs its own signature
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 1), 1, 3, 7);
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 2), 2, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 1), 1, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 2), 2, 3, 7);
 
         assertEq(settlementUsdc.balanceOf(mockBitgetVault), 30_000e6, "MockBitgetVault should receive 3 transfers");
-        assertTrue(issuerCustodySettlement.isNonceUsed(0));
-        assertTrue(issuerCustodySettlement.isNonceUsed(1));
-        assertTrue(issuerCustodySettlement.isNonceUsed(2));
+        assertTrue(oracleCustodySettlement.isNonceUsed(0));
+        assertTrue(oracleCustodySettlement.isNonceUsed(1));
+        assertTrue(oracleCustodySettlement.isNonceUsed(2));
     }
 
     // ============ TASK 5.6: UNAUTHORIZED TRANSFER FAILS ============
@@ -125,7 +125,7 @@ contract IssuerCustodySettlementTest is TestHelper {
 
         // Should revert because settlementUsdc is not whitelisted — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(settlementUsdc)));
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_revertsOnNonceReuse() public {
@@ -138,11 +138,11 @@ contract IssuerCustodySettlementTest is TestHelper {
         );
 
         // First execution succeeds
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 0), 0, 3, 7);
 
         // Second execution with same nonce fails — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E025_NonceAlreadyUsed.selector, 0));
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     function test_transferToMockBitgetVault_revertsWithInvalidBLSSignature() public {
@@ -155,9 +155,9 @@ contract IssuerCustodySettlementTest is TestHelper {
         );
 
         // Sign over the wrong message hash — BLS verification will fail
-        bytes memory invalidSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory invalidSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(abi.encodeWithSelector(BLSVerifier.BLSVerifier__InvalidSignature.selector));
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, invalidSig, 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, invalidSig, 0, 3, 7);
     }
 
     // ============ TASK 5.7: WHITELIST ENFORCEMENT ============
@@ -172,17 +172,17 @@ contract IssuerCustodySettlementTest is TestHelper {
         bytes memory data = abi.encodeWithSignature("someFunction()");
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, randomTarget));
-        issuerCustodySettlement.execute(randomTarget, data, new bytes(64), 0, 3, 7); // reverts before BLS check
+        oracleCustodySettlement.execute(randomTarget, data, new bytes(64), 0, 3, 7); // reverts before BLS check
     }
 
     function test_whitelistEnforcement_cannotCallNonWhitelistedToken() public {
         // Only whitelist MockBitgetVault, NOT settlementUsdc
-        issuerCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodySettlement), mockBitgetVault), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(oracleCustodySettlement), mockBitgetVault), 3, 7);
         vm.warp(block.timestamp + 2 days + 1);
-        issuerCustodySettlement.activateWhitelist(mockBitgetVault);
+        oracleCustodySettlement.activateWhitelist(mockBitgetVault);
 
         // settlementUsdc is NOT whitelisted
-        assertFalse(issuerCustodySettlement.isWhitelisted(address(settlementUsdc)));
+        assertFalse(oracleCustodySettlement.isWhitelisted(address(settlementUsdc)));
 
         address anyRecipient = address(0xEEEeEeeeEEeEEeEEeEEEEEEeEEeEEeeeeEee1111);
 
@@ -195,68 +195,68 @@ contract IssuerCustodySettlementTest is TestHelper {
 
         // This should fail because settlementUsdc is not whitelisted as a call target — reverts before BLS check
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E026_TargetNotWhitelisted.selector, address(settlementUsdc)));
-        issuerCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
+        oracleCustodySettlement.execute(address(settlementUsdc), transferData, new bytes(64), 0, 3, 7);
     }
 
     // ============ INITIALIZATION AND SETUP TESTS ============
 
     function test_initialization() public view {
-        assertEq(address(issuerCustodySettlement.issuerRegistry()), address(issuerRegistry));
-        assertEq(issuerCustodySettlement.nonce(), 0);
+        assertEq(address(oracleCustodySettlement.oracleRegistry()), address(oracleRegistry));
+        assertEq(oracleCustodySettlement.nonce(), 0);
     }
 
     function test_usesAggregatedBLSKey() public view {
-        // Verify custody uses IssuerRegistry for BLS key
-        address registryAddr = address(issuerCustodySettlement.issuerRegistry());
-        assertEq(registryAddr, address(issuerRegistry), "Should use provided IssuerRegistry");
+        // Verify custody uses OracleRegistry for BLS key
+        address registryAddr = address(oracleCustodySettlement.oracleRegistry());
+        assertEq(registryAddr, address(oracleRegistry), "Should use provided OracleRegistry");
     }
 
     function test_whitelistProposal_succeeds() public {
-        issuerCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodySettlement), mockBitgetVault), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(oracleCustodySettlement), mockBitgetVault), 3, 7);
 
-        (uint256 proposedAt, uint256 activatedAt) = issuerCustodySettlement.getWhitelistStatus(mockBitgetVault);
+        (uint256 proposedAt, uint256 activatedAt) = oracleCustodySettlement.getWhitelistStatus(mockBitgetVault);
         assertGt(proposedAt, 0, "Proposal timestamp should be set");
         assertEq(activatedAt, 0, "Should not be activated yet");
-        assertFalse(issuerCustodySettlement.isWhitelisted(mockBitgetVault), "Should not be whitelisted yet");
+        assertFalse(oracleCustodySettlement.isWhitelisted(mockBitgetVault), "Should not be whitelisted yet");
     }
 
     function test_whitelistActivation_afterTimelock() public {
-        issuerCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodySettlement), mockBitgetVault), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(oracleCustodySettlement), mockBitgetVault), 3, 7);
 
         // Fast forward past 2-day timelock
         vm.warp(block.timestamp + 2 days + 1);
 
-        issuerCustodySettlement.activateWhitelist(mockBitgetVault);
+        oracleCustodySettlement.activateWhitelist(mockBitgetVault);
 
-        assertTrue(issuerCustodySettlement.isWhitelisted(mockBitgetVault), "Should be whitelisted after activation");
+        assertTrue(oracleCustodySettlement.isWhitelisted(mockBitgetVault), "Should be whitelisted after activation");
     }
 
     function test_whitelistActivation_failsBeforeTimelock() public {
-        issuerCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodySettlement), mockBitgetVault), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(oracleCustodySettlement), mockBitgetVault), 3, 7);
 
         // Only fast forward 1 day (need 2 days)
         vm.warp(block.timestamp + 1 days);
 
         vm.expectRevert();
-        issuerCustodySettlement.activateWhitelist(mockBitgetVault);
+        oracleCustodySettlement.activateWhitelist(mockBitgetVault);
     }
 
     // ============ INTEGRATION TEST: FULL FLOW ============
 
     function test_fullFlow_bridgeReceiptToVaultRelease() public {
         // Simulate the flow from vital-test.md:
-        // 1. IssuerCustody Settlement receives SettlementUSDC (simulated by minting in setUp)
-        assertEq(settlementUsdc.balanceOf(address(issuerCustodySettlement)), 1_000_000e6);
+        // 1. OracleCustody Settlement receives SettlementUSDC (simulated by minting in setUp)
+        assertEq(settlementUsdc.balanceOf(address(oracleCustodySettlement)), 1_000_000e6);
 
         // 2. Whitelist MockBitgetVault (with timelock)
-        issuerCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(issuerCustodySettlement), mockBitgetVault), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(mockBitgetVault, _signProposeWhitelist(address(oracleCustodySettlement), mockBitgetVault), 3, 7);
         vm.warp(2 days + 2);
-        issuerCustodySettlement.activateWhitelist(mockBitgetVault);
+        oracleCustodySettlement.activateWhitelist(mockBitgetVault);
 
         // 3. Also whitelist the settlementUsdc token as transfer target
-        issuerCustodySettlement.proposeWhitelist(address(settlementUsdc), _signProposeWhitelist(address(issuerCustodySettlement), address(settlementUsdc)), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(address(settlementUsdc), _signProposeWhitelist(address(oracleCustodySettlement), address(settlementUsdc)), 3, 7);
         vm.warp(4 days + 3);
-        issuerCustodySettlement.activateWhitelist(address(settlementUsdc));
+        oracleCustodySettlement.activateWhitelist(address(settlementUsdc));
 
         // 4. BLS-signed transfer to MockBitgetVault for AP trading
         bytes memory transferData = abi.encodeWithSignature(
@@ -265,8 +265,8 @@ contract IssuerCustodySettlementTest is TestHelper {
             500_000e6
         );
 
-        bytes memory execSig = _signExecute(address(issuerCustodySettlement), address(settlementUsdc), transferData, 0);
-        (bool success, ) = issuerCustodySettlement.execute(
+        bytes memory execSig = _signExecute(address(oracleCustodySettlement), address(settlementUsdc), transferData, 0);
+        (bool success, ) = oracleCustodySettlement.execute(
             address(settlementUsdc),
             transferData,
             execSig,
@@ -275,25 +275,25 @@ contract IssuerCustodySettlementTest is TestHelper {
 
         assertTrue(success, "Transfer to MockBitgetVault should succeed");
         assertEq(settlementUsdc.balanceOf(mockBitgetVault), 500_000e6, "MockBitgetVault should receive SettlementUSDC");
-        assertEq(settlementUsdc.balanceOf(address(issuerCustodySettlement)), 500_000e6, "Custody should have remaining balance");
+        assertEq(settlementUsdc.balanceOf(address(oracleCustodySettlement)), 500_000e6, "Custody should have remaining balance");
     }
 
-    // ============ BOTH CUSTODY CONTRACTS USE SAME ISSUER REGISTRY (AC#7) ============
+    // ============ BOTH CUSTODY CONTRACTS USE SAME ORACLE REGISTRY (AC#7) ============
 
-    function test_sameIssuerRegistryAsL3() public {
+    function test_sameOracleRegistryAsL3() public {
         // Deploy a second custody (simulating L3 custody)
         BLSCustody impl2 = new BLSCustody();
         ERC1967Proxy proxy2 = new ERC1967Proxy(
             address(impl2),
-            abi.encodeCall(BLSCustody.initialize, (address(issuerRegistry)))
+            abi.encodeCall(BLSCustody.initialize, (address(oracleRegistry)))
         );
-        BLSCustody issuerCustodyL3 = BLSCustody(address(proxy2));
+        BLSCustody oracleCustodyL3 = BLSCustody(address(proxy2));
 
-        // Both should use the same IssuerRegistry
+        // Both should use the same OracleRegistry
         assertEq(
-            address(issuerCustodySettlement.issuerRegistry()),
-            address(issuerCustodyL3.issuerRegistry()),
-            "Both custody contracts should use the same IssuerRegistry"
+            address(oracleCustodySettlement.oracleRegistry()),
+            address(oracleCustodyL3.oracleRegistry()),
+            "Both custody contracts should use the same OracleRegistry"
         );
     }
 
@@ -307,26 +307,26 @@ contract IssuerCustodySettlementTest is TestHelper {
         uint256 nonceValue
     ) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, target, data, nonceValue));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign a BLSCustody.proposeWhitelist call with real BLS signature
     function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _whitelistTarget(address target) internal {
         // Whitelist both the target contract AND the settlementUsdc token
-        issuerCustodySettlement.proposeWhitelist(address(settlementUsdc), _signProposeWhitelist(address(issuerCustodySettlement), address(settlementUsdc)), 3, 7);
+        oracleCustodySettlement.proposeWhitelist(address(settlementUsdc), _signProposeWhitelist(address(oracleCustodySettlement), address(settlementUsdc)), 3, 7);
         vm.warp(2 days + 2);
-        issuerCustodySettlement.activateWhitelist(address(settlementUsdc));
+        oracleCustodySettlement.activateWhitelist(address(settlementUsdc));
 
         // Also whitelist the target if different from settlementUsdc
         if (target != address(settlementUsdc)) {
-            issuerCustodySettlement.proposeWhitelist(target, _signProposeWhitelist(address(issuerCustodySettlement), target), 3, 7);
+            oracleCustodySettlement.proposeWhitelist(target, _signProposeWhitelist(address(oracleCustodySettlement), target), 3, 7);
             vm.warp(4 days + 3);
-            issuerCustodySettlement.activateWhitelist(target);
+            oracleCustodySettlement.activateWhitelist(target);
         }
     }
 }

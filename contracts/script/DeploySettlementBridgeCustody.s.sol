@@ -8,7 +8,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 /// @title DeploySettlementBridgeCustody - Deploy SettlementBridgeCustody contract for cross-chain ITP purchases
 /// @notice Deploys SettlementBridgeCustody as UUPS proxy for handling cross-chain orders from Settlement
 /// @dev Story 7.8: SettlementBridgeCustody locks user's SettlementUSDC when buying ITP from Settlement
-///      Issuers observe CrossChainOrderCreated events and process via BLS consensus
+///      Oracles observe CrossChainOrderCreated events and process via BLS consensus
 contract DeploySettlementBridgeCustody is Script {
     // Deployed addresses
     address public settlementBridgeCustodyProxy;
@@ -18,8 +18,8 @@ contract DeploySettlementBridgeCustody is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        // Required: IssuerRegistry address
-        address issuerRegistryProxy = vm.envAddress("ISSUER_REGISTRY");
+        // Required: OracleRegistry address
+        address oracleRegistryProxy = vm.envAddress("ORACLE_REGISTRY");
         // Required: SettlementUSDC token address (USDC on "mock Settlement")
         address settlementUsdc = vm.envAddress("SETTLEMENT_USDC");
         // Required: Index contract address on L3
@@ -31,19 +31,19 @@ contract DeploySettlementBridgeCustody is Script {
         console2.log("Chain ID:", block.chainid);
         console2.log("Deployer:", deployer);
         console2.log("Balance:", deployer.balance);
-        console2.log("IssuerRegistry:", issuerRegistryProxy);
+        console2.log("OracleRegistry:", oracleRegistryProxy);
         console2.log("SettlementUSDC:", settlementUsdc);
         console2.log("L3 Index:", l3Index);
         console2.log("");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        _deploySettlementBridgeCustody(issuerRegistryProxy, settlementUsdc, l3Index);
+        _deploySettlementBridgeCustody(oracleRegistryProxy, settlementUsdc, l3Index);
 
         vm.stopBroadcast();
 
         // Post-deploy verification
-        _verify(issuerRegistryProxy, settlementUsdc, l3Index);
+        _verify(oracleRegistryProxy, settlementUsdc, l3Index);
 
         // Save deployment output
         _saveDeployment(deployer);
@@ -55,7 +55,7 @@ contract DeploySettlementBridgeCustody is Script {
         console2.log("SettlementBridgeCustody:", settlementBridgeCustodyProxy);
     }
 
-    function _deploySettlementBridgeCustody(address issuerRegistryProxy, address settlementUsdc, address l3Index) internal {
+    function _deploySettlementBridgeCustody(address oracleRegistryProxy, address settlementUsdc, address l3Index) internal {
         console2.log("Deploying SettlementBridgeCustody...");
 
         SettlementBridgeCustody impl = new SettlementBridgeCustody();
@@ -64,20 +64,20 @@ contract DeploySettlementBridgeCustody is Script {
 
         ERC1967Proxy proxy = new ERC1967Proxy(
             settlementBridgeCustodyImpl,
-            abi.encodeCall(SettlementBridgeCustody.initialize, (issuerRegistryProxy, settlementUsdc, l3Index, address(0)))
+            abi.encodeCall(SettlementBridgeCustody.initialize, (oracleRegistryProxy, settlementUsdc, l3Index, address(0)))
         );
         settlementBridgeCustodyProxy = address(proxy);
         console2.log("  Proxy:", settlementBridgeCustodyProxy);
         console2.log("");
     }
 
-    function _verify(address issuerRegistryProxy, address settlementUsdc, address l3Index) internal view {
+    function _verify(address oracleRegistryProxy, address settlementUsdc, address l3Index) internal view {
         console2.log("Verifying deployment...");
 
         SettlementBridgeCustody custody = SettlementBridgeCustody(settlementBridgeCustodyProxy);
         require(
-            address(custody.issuerRegistry()) == issuerRegistryProxy,
-            "SettlementBridgeCustody: issuerRegistry mismatch"
+            address(custody.oracleRegistry()) == oracleRegistryProxy,
+            "SettlementBridgeCustody: oracleRegistry mismatch"
         );
         require(
             address(custody.usdc()) == settlementUsdc,
@@ -89,7 +89,7 @@ contract DeploySettlementBridgeCustody is Script {
         );
         require(custody.currentOrderId() == 0, "SettlementBridgeCustody: orderId should be 0");
 
-        console2.log("  SettlementBridgeCustody issuerRegistry:", address(custody.issuerRegistry()));
+        console2.log("  SettlementBridgeCustody oracleRegistry:", address(custody.oracleRegistry()));
         console2.log("  SettlementBridgeCustody usdc:", address(custody.usdc()));
         console2.log("  SettlementBridgeCustody l3Index:", custody.l3IndexContract());
         console2.log("  SettlementBridgeCustody currentOrderId:", custody.currentOrderId());

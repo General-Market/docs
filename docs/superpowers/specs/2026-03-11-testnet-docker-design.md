@@ -6,18 +6,18 @@ Replace nohup/pgrep process management with Docker Compose for all testnet servi
 
 ## Architecture
 
-Per-service Docker Compose stacks, one per service (issuers grouped since they form a P2P mesh):
+Per-service Docker Compose stacks, one per service (oracles grouped since they form a P2P mesh):
 
 ```
 docker/testnet/
 ├── sonic-proxy/     Dockerfile + docker-compose.yml
 ├── data-node/       Dockerfile + docker-compose.yml
-├── issuer/          Dockerfile + docker-compose.yml  (3 issuers)
+├── oracle/          Dockerfile + docker-compose.yml  (3 oracles)
 ├── curator/         Dockerfile + docker-compose.yml
 └── ap/              Dockerfile + docker-compose.yml
 ```
 
-**VPS 1** runs: sonic-proxy, data-node, issuer (×3), curator
+**VPS 1** runs: sonic-proxy, data-node, oracle (×3), curator
 **VPS 2** runs: ap (L3 Orbit stays in its existing separate Docker setup)
 
 ## Image Strategy
@@ -43,7 +43,7 @@ Bind-mounted from VPS filesystem:
 - `data-node/.env` (API keys) → mounted read-only
 - `deployments/*.json` (contract addresses) → mounted read-only
 - `data/symbol-map.json` → mounted read-only
-- `/tmp/issuer-key-N.txt` (private keys) → mounted read-only
+- `/tmp/oracle-key-N.txt` (private keys) → mounted read-only
 - `envs/testnet/.env` → not mounted (frontend only)
 
 ## Health Checks & Restart
@@ -53,7 +53,7 @@ Every service gets a health check and `restart: unless-stopped`:
 | Service | Health Check |
 |---------|-------------|
 | data-node | `curl -sf http://localhost:8200/health` |
-| issuer-N | `curl -sf http://localhost:1000N/health` |
+| oracle-N | `curl -sf http://localhost:1000N/health` |
 | sonic-proxy | `curl -sf http://localhost:8547/` (POST eth_blockNumber) |
 | curator | process alive (no HTTP endpoint) |
 | ap | process alive (no HTTP endpoint) |
@@ -109,8 +109,8 @@ Becomes a thin wrapper:
 `testnet.sh start` brings up services sequentially:
 1. sonic-proxy (settlement RPC dependency)
 2. data-node (price data dependency)
-3. issuers (need data-node + sonic-proxy)
-4. curator (needs issuers)
+3. oracles (need data-node + sonic-proxy)
+4. curator (needs oracles)
 5. ap (on VPS 2, needs data-node reachable)
 
 ## Migration

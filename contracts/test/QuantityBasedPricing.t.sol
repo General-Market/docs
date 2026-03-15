@@ -10,7 +10,7 @@ import {Governance} from "../src/Governance.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 
 /// @title QuantityBasedPricing.t.sol - Tests for ITP quantity-based NAV pricing
 /// @notice Verifies: ITP starts at $1, NAV moves with price changes, rebalance preserves NAV
@@ -42,11 +42,11 @@ contract QuantityBasedPricingTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Setup IssuerRegistry with real BLS keys
-        IssuerRegistry registry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(registry, admin);
+        // Setup OracleRegistry with real BLS keys
+        OracleRegistry registry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(registry, admin);
         vm.prank(admin);
-        index.setIssuerRegistry(address(registry));
+        index.setOracleRegistry(address(registry));
 
         btcAddr = makeAddr("BTC");
         ethAddr = makeAddr("ETH");
@@ -55,7 +55,7 @@ contract QuantityBasedPricingTest is TestHelper {
 
     function _signSetItpNav(bytes32 itpId, uint256 nav) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, nav));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signRebalance(
@@ -67,7 +67,7 @@ contract QuantityBasedPricingTest is TestHelper {
         address[] memory quoteTokens
     ) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "rebalance", itpId, removeIndices, addAssets, newWeights, prices, quoteTokens));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // ============ ITP CREATION: NAV STARTS AT $1 ============

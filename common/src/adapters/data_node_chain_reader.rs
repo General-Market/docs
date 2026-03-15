@@ -15,7 +15,7 @@ use crate::error::Error;
 use crate::traits::{
     ChainReader, EventFilter, EventStream, ItpInventoryState, PendingRebalance,
 };
-use crate::types::{ITPCore, Issuer, LimitOrder, OrderStatus, Price, Side};
+use crate::types::{ITPCore, Oracle, LimitOrder, OrderStatus, Price, Side};
 
 /// Chain reader that fetches L3 state from data-node HTTP API.
 pub struct DataNodeChainReader {
@@ -40,7 +40,7 @@ struct CachedOrder {
 }
 
 #[derive(Deserialize)]
-struct CachedIssuer {
+struct CachedOracle {
     address: String,
     endpoint: String,
     bls_pubkey: String,
@@ -165,9 +165,9 @@ impl ChainReader for DataNodeChainReader {
         Ok(vec![])
     }
 
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
-        let issuers: Vec<CachedIssuer> = self.get_json("/chain/l3/issuer-registry").await?;
-        Ok(issuers
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error> {
+        let oracles: Vec<CachedOracle> = self.get_json("/chain/l3/oracle-registry").await?;
+        Ok(oracles
             .into_iter()
             .enumerate()
             .map(|(i, c)| {
@@ -179,7 +179,7 @@ impl ChainReader for DataNodeChainReader {
                 let ep_bytes = c.endpoint.as_bytes();
                 let len = ep_bytes.len().min(32);
                 ip_bytes[..len].copy_from_slice(&ep_bytes[..len]);
-                Issuer {
+                Oracle {
                     id: i as u64,  // on-chain IDs are 0-based
                     addr,
                     ip: H256::from(ip_bytes),
@@ -290,8 +290,8 @@ impl ChainReader for DataNodeChainReader {
         })
     }
 
-    async fn get_active_issuer_count(&self) -> Result<u64, Error> {
-        let resp: CountResp = self.get_json("/chain/l3/active-issuer-count").await?;
+    async fn get_active_oracle_count(&self) -> Result<u64, Error> {
+        let resp: CountResp = self.get_json("/chain/l3/active-oracle-count").await?;
         Ok(resp.count)
     }
 

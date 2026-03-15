@@ -28,7 +28,7 @@ GET /sse/stream?topics=system,nav,balances,orders&address=0xABC...
 
 | Topic | Event Type | Data | Interval |
 |-------|-----------|------|----------|
-| `system` | `system-status` | issuers, orders, block numbers, health | 2s |
+| `system` | `system-status` | oracles, orders, block numbers, health | 2s |
 | `nav` | `itp-nav` | NAV/share, total supply, AUM | 1s |
 | `prices` | `market-prices` | all asset prices | 1s |
 | `balances` | `user-balances` | USDC, ITP shares, bridged ITP | 1s |

@@ -6,7 +6,7 @@
 use super::{BootstrapError, BootstrapParams, ChainComponents, P2PComponents};
 use crate::p2p::{OnChainPeerDiscovery, PeerDiscovery, StaticPeerDiscovery, TcpP2PTransport, TlsConfig};
 use common::traits::P2PTransport;
-use crate::{HeartbeatMetrics, HeartbeatMonitor, IssuerConfig, PeerHealthTracker};
+use crate::{HeartbeatMetrics, HeartbeatMonitor, OracleConfig, PeerHealthTracker};
 use common::types::PeerInfo;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -14,7 +14,7 @@ use tracing::{info, warn};
 
 /// Builder for P2P-related components
 pub struct P2PBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     params: &'a BootstrapParams,
     node_id: u32,
     peer_id: &'a [u8; 32],
@@ -23,7 +23,7 @@ pub struct P2PBuilder<'a> {
 
 impl<'a> P2PBuilder<'a> {
     pub fn new(
-        config: &'a IssuerConfig,
+        config: &'a OracleConfig,
         params: &'a BootstrapParams,
         node_id: u32,
         peer_id: &'a [u8; 32],
@@ -87,7 +87,7 @@ impl<'a> P2PBuilder<'a> {
                 _ => {
                     warn!(
                         self.node_id,
-                        "TLS certificate paths not configured (set ISSUER_TLS_CERT_PATH, ISSUER_TLS_KEY_PATH, ISSUER_TLS_CA_PATH). Running without TLS."
+                        "TLS certificate paths not configured (set ORACLE_TLS_CERT_PATH, ORACLE_TLS_KEY_PATH, ORACLE_TLS_CA_PATH). Running without TLS."
                     );
                     None
                 }
@@ -142,11 +142,11 @@ impl<'a> P2PBuilder<'a> {
 
         match onchain_discovery.discover_peers().await {
             Ok(peers) if !peers.is_empty() => {
-                info!(self.node_id, count = peers.len(), "Discovered peers from IssuerRegistry");
+                info!(self.node_id, count = peers.len(), "Discovered peers from OracleRegistry");
                 peers
             }
             Ok(_) => {
-                info!(self.node_id, "No peers found in IssuerRegistry, standalone mode");
+                info!(self.node_id, "No peers found in OracleRegistry, standalone mode");
                 vec![]
             }
             Err(e) => {

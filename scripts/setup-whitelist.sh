@@ -10,9 +10,9 @@ set -euo pipefail
 # IMPORTANT:
 #   - Whitelist activation requires a SEPARATE call to activateWhitelist() after 2 days.
 #   - proposeWhitelist() requires BLS signature verification. With an empty aggregated
-#     pubkey (Phase 1 / fresh IssuerRegistry), verification is skipped.
-#   - If IssuerRegistry has a non-empty aggregated pubkey, set SKIP_WHITELIST=true
-#     and propose whitelist via the issuer network's BLS-signed transaction.
+#     pubkey (Phase 1 / fresh OracleRegistry), verification is skipped.
+#   - If OracleRegistry has a non-empty aggregated pubkey, set SKIP_WHITELIST=true
+#     and propose whitelist via the oracle network's BLS-signed transaction.
 #
 # SECURITY: This script passes private keys via --private-key CLI argument,
 # which may be visible in process listings (ps aux). For production deployments,

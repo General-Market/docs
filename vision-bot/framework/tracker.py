@@ -14,15 +14,15 @@ log = logging.getLogger("vision-bot")
 class Tracker:
     """Tracks active positions, PnL, and handles auto-claim/withdraw."""
 
-    def __init__(self, executor, config: dict, issuer_urls_fn):
+    def __init__(self, executor, config: dict, oracle_urls_fn):
         """
         executor: framework.chain.Executor instance
         config: flat dict from config.toml (keys: auto_claim, auto_withdraw, claim_above, withdraw_below, pnl_file)
-        issuer_urls_fn: callable that returns list[str] of issuer URLs
+        oracle_urls_fn: callable that returns list[str] of oracle URLs
         """
         self._executor = executor
         self._config = config
-        self._issuer_urls_fn = issuer_urls_fn
+        self._oracle_urls_fn = oracle_urls_fn
         self._positions: dict[int, dict] = {}  # batch_id -> position info
         self._history: list[dict] = []  # completed positions
         self._load_history()
@@ -45,7 +45,7 @@ class Tracker:
     def check_all(self):
         """
         Called each poll cycle. For each active position:
-        1. Fetch balance from issuer API
+        1. Fetch balance from oracle API
         2. Compute PnL
         3. If auto_claim and profitable enough -> try claim
         4. If auto_withdraw and balance too low -> try withdraw
@@ -93,7 +93,7 @@ class Tracker:
         If present: call executor.claim_rewards()
         If absent: log and skip
         """
-        urls = self._issuer_urls_fn()
+        urls = self._oracle_urls_fn()
         if not urls:
             return
         try:
@@ -124,7 +124,7 @@ class Tracker:
 
     def _try_withdraw(self, batch_id: int, pos: dict) -> bool:
         """Same pattern as claim but calls executor.withdraw(). Returns True if withdrawn."""
-        urls = self._issuer_urls_fn()
+        urls = self._oracle_urls_fn()
         if not urls:
             return False
         try:
@@ -151,8 +151,8 @@ class Tracker:
             return False
 
     def _fetch_balance(self, batch_id: int) -> int | None:
-        """GET /vision/balance/{batch_id}/{player} from first issuer."""
-        urls = self._issuer_urls_fn()
+        """GET /vision/balance/{batch_id}/{player} from first oracle."""
+        urls = self._oracle_urls_fn()
         if not urls:
             return None
         try:

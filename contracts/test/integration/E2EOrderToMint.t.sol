@@ -7,7 +7,7 @@ import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -50,10 +50,10 @@ contract E2EOrderToMintTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Deploy IssuerRegistry, register real BLS test issuers, wire to Index
-        IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, admin);
-        index.setIssuerRegistry(address(issuerRegistry));
+        // Deploy OracleRegistry, register real BLS test oracles, wire to Index
+        OracleRegistry oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, admin);
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Create test ITP with single asset (simplified for E2E)
         address[] memory assets = new address[](1);
@@ -91,22 +91,22 @@ contract E2EOrderToMintTest is TestHelper {
 
     function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signRefundExpiredOrder(uint256 orderId) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), "refund", orderId));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signSetItpNav(bytes32 _itpId, uint256 nav) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), "setItpNav", _itpId, nav));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ HELPERS ============
@@ -167,7 +167,7 @@ contract E2EOrderToMintTest is TestHelper {
         TypesLib.LimitOrder memory order = index.getOrder(orderId);
         assertEq(uint8(order.status), uint8(TypesLib.OrderStatus.PENDING));
 
-        // --- AC2: Issuers batch the order via BLS consensus ---
+        // --- AC2: Oracles batch the order via BLS consensus ---
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;
 
@@ -185,7 +185,7 @@ contract E2EOrderToMintTest is TestHelper {
         order = index.getOrder(orderId);
         assertEq(uint8(order.status), uint8(TypesLib.OrderStatus.BATCHED));
 
-        // --- AC4: Issuers verify fill and confirm on-chain ---
+        // --- AC4: Oracles verify fill and confirm on-chain ---
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
             orderId: orderId,
@@ -311,12 +311,12 @@ contract E2EOrderToMintTest is TestHelper {
 
     /// @notice Tests that an order with strict slippage tier (0 = 0.3%) stores the tier
     ///         and completes the on-chain E2E path. Slippage enforcement is performed
-    ///         OFF-CHAIN by the issuer netting engine (issuer/src/slippage/mod.rs).
-    ///         On-chain confirmFills() trusts the issuer BLS consensus and does NOT
+    ///         OFF-CHAIN by the oracle netting engine (oracle/src/slippage/mod.rs).
+    ///         On-chain confirmFills() trusts the oracle BLS consensus and does NOT
     ///         re-validate slippage. This test verifies the on-chain path is functional
     ///         for tier-0 orders.
     function test_e2e_order_strict_slippage_tier_on_chain_path() public {
-        // Tier 0 = strict 0.3% slippage (enforced off-chain by issuers)
+        // Tier 0 = strict 0.3% slippage (enforced off-chain by oracles)
         uint256 orderId = _submitOrder(user1, 100e18, 1e18, 0);
 
         // Verify slippage tier is stored correctly in the order
@@ -328,7 +328,7 @@ contract E2EOrderToMintTest is TestHelper {
         orderIds[0] = orderId;
         _confirmBatch(1, orderIds);
 
-        // On-chain fill succeeds — issuers already validated slippage off-chain
+        // On-chain fill succeeds — oracles already validated slippage off-chain
         TypesLib.Fill[] memory fills = new TypesLib.Fill[](1);
         fills[0] = TypesLib.Fill({
             orderId: orderId,

@@ -2,7 +2,7 @@
 # stop.sh - Gracefully shut down Index blockchain local development environment
 #
 # Stops both L3 Anvil (port 8545) and Settlement Anvil (port 8546),
-# plus all issuers, AP, and vision bots.
+# plus all oracles, AP, and vision bots.
 # Does NOT stop: data-node, frontend.
 # Sends SIGTERM to all processes, waits for graceful shutdown, then SIGKILL if needed.
 
@@ -19,14 +19,14 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Ports to check for orphan processes (8545=L3 Anvil, 8546=Settlement Anvil, 9001-9020=issuers, 9100=AP)
+# Ports to check for orphan processes (8545=L3 Anvil, 8546=Settlement Anvil, 9001-9020=oracles, 9100=AP)
 # NOTE: data-node (8200) and frontend (3000) are intentionally NOT stopped
 PORTS_TO_CHECK="8545 8546 9100"
 for i in $(seq 1 20); do
     PORTS_TO_CHECK="$PORTS_TO_CHECK $((9000 + i))"
 done
 
-echo -e "${BLUE}Stopping Index blockchain services (L3 + Settlement + issuers + AP)...${NC}"
+echo -e "${BLUE}Stopping Index blockchain services (L3 + Settlement + oracles + AP)...${NC}"
 echo ""
 
 # Check if PIDs file exists
@@ -126,7 +126,7 @@ else
         # Flush all vision data (batch state, configs, settlements)
         # Only PRESERVE raw API price data: market_prices, market_assets, market_prices_latest, klines, coingecko
         #
-        # Issuer session state:
+        # Oracle session state:
         #   vision_tick_results, vision_positions, vision_bitmaps, vision_batches, vision_kv_store
         # Data-node state:
         #   vision_last_resolved, vision_reference_prices

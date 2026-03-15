@@ -1,0 +1,799 @@
+---
+title: "Adding a Data Source"
+description: "Developer guide for adding new data sources to Vision — from API integration to deployment"
+---
+
+# Adding a Data Source
+
+You want to add a new way to measure the world. Here is how. The world will not thank you.
+
+Every source follows the same pattern: implement a Rust trait, wire it into the data-node, deploy on-chain batch pools, register in the frontend. The wiring is mechanical. The hard part is deciding **what to track and how to split feeds** -- which numbers deserve to become markets, and which are better left unobserved.
+
+## Pipeline Overview
+
+```
+  ┌───────────────────────────────────────────────────────────────────────────────────────┐
+  │                          FULL PIPELINE: API TO FRONTEND                              │
+  └───────────────────────────────────────────────────────────────────────────────────────┘
+
+           EXTERNAL                        DATA NODE (Rust)                    ON-CHAIN
+           ~~~~~~~~                        ~~~~~~~~~~~~~~~~                   ~~~~~~~~
+
+    ┌──────────────────┐
+    │  Your API        │
+    │  (REST/JSON/XML) │
+    │                  │           ┌──────────────────────────────────────┐
+    │  GET /api/data   │──────────│  MarketDataSource trait impl         │
+    └──────────────────┘          │                                      │
+                                  │  ┌────────────┐   ┌──────────────┐  │
+                                  │  │fetch_assets│   │ fetch_prices │  │
+                                  │  │ "what to   │   │ "current     │  │
+                                  │  │  track"    │   │  values"     │  │
+                                  │  └─────┬──────┘   └──────┬───────┘  │
+                                  └────────┼─────────────────┼──────────┘
+                                           │                 │
+                                           ▼                 ▼
+                                  ┌──────────────────────────────────┐
+                                  │         SyncEngine               │
+                                  │                                  │
+                                  │  Calls fetch_assets() on start   │
+                                  │  Calls fetch_prices() every N s  │
+                                  │  Deduplicates unchanged values   │
+                                  └───────────────┬──────────────────┘
+                                                  │
+                                                  ▼
+                                  ┌──────────────────────────────────┐
+                                  │  BatchWriter  ──►  PostgreSQL   │
+                                  │  PriceBroadcastHub ──► WebSocket│
+                                  └───────────────┬──────────────────┘
+                                                  │
+                            ┌─────────────────────┼──────────────────────┐
+                            │                     │                      │
+                            ▼                     ▼                      ▼
+                  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+                  │  Vision API      │  │  Oracle Nodes    │  │  Frontend        │
+                  │  /api/vision/*   │  │  BLS-sign prices │  │  sources.ts      │
+                  │                  │  │  submit on-chain │  │  market-cats.ts  │
+                  └──────────────────┘  └──────────────────┘  └──────────────────┘
+```
+
+## Files You Will Touch
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────────┐
+  │                              FILE MAP                                           │
+  ├──────────────────────────────────────────────────────────────────────────────────┤
+  │                                                                                  │
+  │  BACKEND (Rust)                                                                  │
+  │  ~~~~~~~~~~~~~~                                                                  │
+  │  data-node/src/market_data/sources/{source}/                                     │
+  │  ├── mod.rs ........................ re-export the client struct                  │
+  │  └── client.rs ..................... MarketDataSource trait impl                  │
+  │                                                                                  │
+  │  data-node/src/config/{source}.json  static asset list (or [] for dynamic)       │
+  │  data-node/src/market_data/sources/mod.rs  pub mod + pub use                     │
+  │  data-node/src/main.rs ............. spawn_resilient() in run_serve()            │
+  │  data-node/src/api.rs .............. SOURCE_META table entry                     │
+  │                                                                                  │
+  │  (if API-key-gated)                                                              │
+  │  data-node/src/config.rs ........... CLI arg in ServeArgs                        │
+  │  start.sh .......................... pass env var as flag                         │
+  │                                                                                  │
+  │  CONTRACTS (Solidity)                                                            │
+  │  ~~~~~~~~~~~~~~~~~~~~                                                            │
+  │  contracts/script/DeployAllVisionBatches.s.sol                                   │
+  │    _getSourceNames() array + bump array size constants                           │
+  │                                                                                  │
+  │  FRONTEND (TypeScript)                                                           │
+  │  ~~~~~~~~~~~~~~~~~~~~~                                                           │
+  │  frontend/lib/vision/sources.ts .... VISION_SOURCES entry (S() helper)           │
+  │  frontend/lib/vision/market-categories.ts  PREFIX_MAP + CATEGORY_ORDER           │
+  │  frontend/components/domain/vision/VisionMarketsGrid.tsx  CATEGORY_GROUPS        │
+  │  frontend/components/domain/SourceDetailModal.tsx  SOURCE_META                   │
+  │  frontend/components/domain/SourceHealthTable.tsx  API_KEY_LINKS (if gated)      │
+  │  frontend/public/source-imgs/new-{source}.svg  logo file                        │
+  │                                                                                  │
+  └──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Step 0: Design Your Data Feed
+
+Before writing code, answer these questions. The code is the easy part -- the epistemology is hard.
+
+### What number changes and is fun to watch?
+
+```
+  ┌─────────────────┬──────────────────────────┬─────────────────────────────────┐
+  │  Source Type     │  Good Feeds              │  Bad Feeds                      │
+  ├─────────────────┼──────────────────────────┼─────────────────────────────────┤
+  │  Live events    │  Score per team           │  "Is the match over?" (bool)   │
+  │  Streaming      │  Viewer count right now   │  Total lifetime views (static) │
+  │  Social         │  Upvotes, comment count   │  Post text (not numeric)       │
+  │  Packages       │  Daily downloads          │  Total downloads (monotonic)   │
+  │  Prices         │  Spot price (live)        │  Historical price (stale)      │
+  │  Transport      │  Aircraft count           │  Aircraft tail number (static) │
+  │  Geophysical    │  Alert level, magnitude   │  Event location (never moves)  │
+  └─────────────────┴──────────────────────────┴─────────────────────────────────┘
+```
+
+### Static vs Dynamic Discovery
+
+```
+  ┌───────────────────────────────────────────────────────────────────────────────┐
+  │                                                                               │
+  │   STATIC                     DYNAMIC                    HYBRID                │
+  │   ~~~~~~                     ~~~~~~~                    ~~~~~~                │
+  │                                                                               │
+  │   ┌─────────────┐           ┌─────────────┐           ┌─────────────┐        │
+  │   │ config.json │           │     []      │           │ config.json │        │
+  │   │ [           │           │             │           │ [fixed...] │         │
+  │   │   "volcano1"│           │  fetch_assets()         │             │        │
+  │   │   "volcano2"│           │  discovers   │          │  + discover_│        │
+  │   │   ...       │           │  new items   │          │  upstream() │        │
+  │   │ ]           │           │  at runtime  │          │  finds more │        │
+  │   └─────────────┘           └─────────────┘           └─────────────┘        │
+  │                                                                               │
+  │   Best for:                  Best for:                 Best for:              │
+  │   - Stable lists             - Organic supply          - Curated base +      │
+  │   - Editorial control        - Changes hourly          - API extras          │
+  │   - No "list all" API        - Can't curate manually                         │
+  │                                                                               │
+  │   Examples:                  Examples:                 Examples:              │
+  │   Volcanoes, Flights,        Sports, HN, Twitch,      CoinGecko              │
+  │   Nuclear plants             Esports, Polymarket                              │
+  │                                                                               │
+  └───────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Sync Interval Decision Tree
+
+```
+  ┌───────────────────────────────────────────────────────────────────────────────┐
+  │                                                                               │
+  │   How fast does the underlying data change?                                   │
+  │                                                                               │
+  │        Live (scores, streams)  ──────────────►  1-5 min    (SyncEngine)       │
+  │        Market prices           ──────────────►  1 min      (SyncEngine)       │
+  │        Periodic readings       ──────────────►  5-10 min   (SyncEngine)       │
+  │        Daily/slow data         ──────────────►  30-60 min  (SyncEngine)       │
+  │        Known release schedule  ──────────────►  Use ScheduledSyncEngine       │
+  │                                                                               │
+  │   Rate limit budget check:                                                    │
+  │                                                                               │
+  │        requests_per_sync  x  syncs_per_hour  <  80% of API hourly limit      │
+  │        ~~~~~~~~~~~~~~~~~~    ~~~~~~~~~~~~~~      ~~~~~~~~~~~~~~~~~~~~~~~~     │
+  │                                                                               │
+  └───────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Step 1: Implement the MarketDataSource Trait
+
+Create the source directory:
+
+```
+data-node/src/market_data/sources/{source}/
+├── mod.rs       <-- always the same two-liner
+└── client.rs    <-- your implementation
+```
+
+### mod.rs
+
+```rust
+pub mod client;
+pub use client::MyMarketSource;
+```
+
+### client.rs — Minimal Skeleton
+
+```rust
+use anyhow::Result;
+use chrono::Utc;
+use rust_decimal::Decimal;
+use std::time::Duration;
+
+use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
+use crate::market_data::traits::{
+    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+};
+use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
+
+const ASSET_JSON: &str = include_str!("../../../config/my_source.json");
+const API_URL: &str = "https://api.example.com";
+
+pub struct MyMarketSource {
+    http: SourceHttpClient,
+}
+
+impl MyMarketSource {
+    pub fn from_env() -> Result<Self> {
+        let rate_limit = RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 100,
+                duration: Duration::from_secs(600),   // 100 req per 10 min
+            }],
+        };
+        let http = SourceHttpClient::new(rate_limit, RetryConfig::default());
+        Ok(Self { http })
+    }
+}
+
+#[async_trait::async_trait]
+impl MarketDataSource for MyMarketSource {
+    fn source_id(&self) -> &'static str { "my_source" }
+    fn display_name(&self) -> &'static str { "My Source Name" }
+    fn default_resolution(&self) -> &'static str { "deterministic" }
+    fn sync_interval(&self) -> Duration { Duration::from_secs(300) }
+
+    fn rate_limit_config(&self) -> RateLimitConfig {
+        RateLimitConfig {
+            windows: vec![RateWindow {
+                max_requests: 100,
+                duration: Duration::from_secs(600),
+            }],
+        }
+    }
+
+    async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
+        // Load from config JSON (static) or call API (dynamic)
+        load_assets_from_json(ASSET_JSON)
+    }
+
+    async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {
+        let now = Utc::now();
+        let mut results = Vec::new();
+
+        // Call your API, parse response, build PriceUpdate structs
+        for asset_id in asset_ids {
+            // ... your API logic here ...
+            results.push(PriceUpdate {
+                asset_id: asset_id.clone(),
+                symbol: "MY:thing".to_string(),
+                value: Decimal::from(42),
+                prev_close: None,
+                change_pct: None,
+                volume_24h: None,
+                market_cap: None,
+                fetched_at: now,
+            });
+        }
+
+        Ok(results)
+    }
+}
+```
+
+### Implementation Patterns
+
+Choose the pattern that matches your API shape:
+
+```
+  ┌─────────────────────────────────────────────────────────────────────────────────────┐
+  │                         IMPLEMENTATION PATTERNS                                     │
+  ├─────────────────────────────────────────────────────────────────────────────────────┤
+  │                                                                                     │
+  │  PATTERN A: Single Call -> Fan Out                                                  │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                  │
+  │                                                                                     │
+  │       GET /api/all-data  ─────►  1 response  ─────►  split into N assets            │
+  │                                                                                     │
+  │       1 API call for ALL assets. Parse each value from the bulk response.            │
+  │       Used by: Volcano, Flights, Weather Alerts                                     │
+  │                                                                                     │
+  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+  │                                                                                     │
+  │  PATTERN B: Grouped Fetches                                                         │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~                                                         │
+  │                                                                                     │
+  │       for each group (league/game/category):                                        │
+  │           GET /api/group/{id}  ─────►  parse items for that group                   │
+  │                                                                                     │
+  │       Calls = number of groups, NOT number of assets.                               │
+  │       Used by: Sports (12 leagues = 12 calls for 300 games)                         │
+  │                                                                                     │
+  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+  │                                                                                     │
+  │  PATTERN C: Batch IDs                                                               │
+  │  ~~~~~~~~~~~~~~~~~~~~                                                               │
+  │                                                                                     │
+  │       chunk asset_ids into batches of N:                                             │
+  │           GET /api/prices?ids=a,b,c,...  ─────►  parse batch                         │
+  │                                                                                     │
+  │       10,000 assets / 100 per batch = 100 requests.                                 │
+  │       Used by: CoinGecko, NPM, Twitch                                               │
+  │                                                                                     │
+  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+  │                                                                                     │
+  │  PATTERN D: Rolling Cursor                                                          │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~                                                          │
+  │                                                                                     │
+  │       ┌──── cursor ────┐                                                            │
+  │       │                │                                                            │
+  │       ▼                │                                                            │
+  │  [a][b][c][d][e][f][g][h]  <-- asset list                                           │
+  │       ^^^^^^^^^^^                                                                   │
+  │       batch_size=3                                                                  │
+  │                                                                                     │
+  │       Each sync fetches a slice, advances cursor, wraps at end.                     │
+  │       Used by: Finnhub (780 stocks, 55/batch, 5s interval)                          │
+  │                                                                                     │
+  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+  │                                                                                     │
+  │  PATTERN E: Scheduled Sync                                                          │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~                                                         │
+  │                                                                                     │
+  │       Uses ScheduledSyncEngine + ScheduledMarketDataSource trait.                   │
+  │       Sleeps until next_fetch_time(), with burst_mode() on event days.              │
+  │       Used by: FRED, ECB, BLS (data releases at known times)                        │
+  │                                                                                     │
+  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+  │                                                                                     │
+  │  PATTERN F: Full List Re-fetch                                                      │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                     │
+  │                                                                                     │
+  │       GET /api/markets?status=active  ─────►  hashmap<id, value>                    │
+  │       For each requested asset_id, look up in map.                                  │
+  │       The discovery endpoint IS the price endpoint.                                 │
+  │       Used by: Polymarket, Esports                                                  │
+  │                                                                                     │
+  └─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Asset ID Prefix Convention
+
+Every asset ID **must** be prefixed with the source name. The frontend uses this prefix for automatic categorization.
+
+```
+  ┌──────────────────────────────────────────────────────────────┐
+  │                ASSET ID FORMAT                               │
+  │                                                              │
+  │   {source_prefix}_{identifier}                               │
+  │   ~~~~~~~~~~~~~~~  ~~~~~~~~~~~~                              │
+  │                                                              │
+  │   github_         facebook_react      github_facebook_react  │
+  │   earthquake_     california          earthquake_california  │
+  │   db_trains_      berlin_hbf          db_trains_berlin_hbf   │
+  │   steam_          counter-strike-2    steam_counter-strike-2 │
+  │   mcbroken_       chicago             mcbroken_chicago       │
+  │                                                              │
+  │   The prefix MUST match what you put in PREFIX_MAP           │
+  │   (frontend/lib/vision/market-categories.ts)                 │
+  │                                                              │
+  └──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Step 2: Create the Config JSON
+
+**File:** `data-node/src/config/{source}.json`
+
+For **dynamic** sources (discovery at runtime): create an empty JSON array.
+
+```json
+[]
+```
+
+For **static** sources (curated list): populate the array.
+
+```json
+[
+  {
+    "asset_id": "mysource_thing_one",
+    "symbol": "MY:THING1",
+    "name": "Thing One",
+    "category": "transport",
+    "subcategory": "rail",
+    "api_ref": "thing-one-api-id",
+    "active": true
+  }
+]
+```
+
+Valid categories: `stocks`, `crypto`, `defi`, `macro`, `commodities`, `weather`, `onchain`, `sentiment`, `regulatory`, `geophysical`, `space`, `environment`, `transport`, `health`, `sports`, `defense`, `government`, `animals`.
+
+---
+
+## Step 3: Register in the Data Node
+
+Three files need changes:
+
+### 3a. Module declaration
+
+**File:** `data-node/src/market_data/sources/mod.rs`
+
+```rust
+// Module declaration (grouped with similar sources)
+pub mod my_source;
+
+// Re-export (at the bottom)
+pub use my_source::MyMarketSource;
+```
+
+### 3b. Spawn the sync engine
+
+**File:** `data-node/src/main.rs` — inside `run_serve()`
+
+The `SyncEngine` takes 4 parameters: `pool`, `source`, `broadcast_hub` (bh), and `price_writer` (pw) — all pre-initialized at the top of `run_serve()`.
+
+```rust
+// Always-on source (no API key needed)
+{
+    let pool_c = pool.clone();
+    let bh = broadcast_hub.clone();
+    let pw = price_writer.clone();
+    spawn_resilient("my_source", pw.clone(), move || {
+        let pool_c = pool_c.clone();
+        let bh = bh.clone();
+        let pw = pw.clone();
+        async move {
+            match market_data::sources::my_source::MyMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(
+                        pool_c, Box::new(source), bh, pw,
+                    );
+                    engine.run().await;
+                }
+                Err(e) => {
+                    tracing::error!("MySource init failed: {e}");
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                }
+            }
+        }
+    });
+    info!("MySource started");
+}
+```
+
+<Note>
+For schedule-aware sources (FRED, ECB, BLS), use `ScheduledSyncEngine` instead of `SyncEngine`. It uses `next_fetch_time()` and `burst_mode()` instead of a fixed interval.
+</Note>
+
+### 3c. SOURCE_META in api.rs
+
+**File:** `data-node/src/api.rs` — find the `SOURCE_META` array.
+
+```rust
+("my_source", "My Source Display Name", 300),  // sync interval in seconds
+```
+
+### 3d. (If API-key-gated) CLI arg + error tracking + start script
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │  Only if your API requires an API key. Skip this for open/free APIs.        │
+  └──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**data-node/src/config.rs** — add to `ServeArgs`:
+
+```rust
+/// My Source API key
+#[arg(long, env = "MY_SOURCE_API_KEY")]
+pub my_source_api_key: Option<String>,
+```
+
+**data-node/src/main.rs** — add to `record_not_started` block:
+
+```rust
+if args.my_source_api_key.is_none() {
+    tracker.record_not_started("my_source", "Missing --my-source-api-key");
+}
+```
+
+**start.sh** — add conditional flag:
+
+```bash
+${MY_SOURCE_API_KEY:+--my-source-api-key "$MY_SOURCE_API_KEY"}
+```
+
+---
+
+## Step 4: Add to Deployment Script
+
+**File:** `contracts/script/DeployAllVisionBatches.s.sol`
+
+Two changes:
+
+1. Add the source name to `_getSourceNames()`:
+
+```solidity
+names[N] = "my_source";
+```
+
+2. **Bump the array size** in both `_getSourceNames()` return type AND `_exportBatchMapping()` parameter:
+
+```solidity
+// Both must match the new count
+function _getSourceNames() internal pure returns (string[OLD+1] memory names) {
+// ...
+function _exportBatchMapping(string[OLD+1] memory sourceNames, ...
+```
+
+Without this, the source will not get an on-chain batch pool and markets cannot trade.
+
+---
+
+## Step 5: Add to Frontend Config
+
+### 5a. Prefix mapping
+
+**File:** `frontend/lib/vision/market-categories.ts`
+
+Add to `PREFIX_MAP`:
+
+```typescript
+['mysource_', 'my_source', 'My Source'],
+```
+
+Add to `CATEGORY_ORDER`:
+
+```typescript
+const CATEGORY_ORDER = [
+  'crypto', 'stocks', /* ... existing ... */, 'my_source', 'other',
+]
+```
+
+### 5b. Source registry entry
+
+**File:** `frontend/lib/vision/sources.ts`
+
+Add to `VISION_SOURCES` using the `S()` helper:
+
+```typescript
+S(
+  'my_source',             // id — matches source_id() in Rust
+  'My Source',             // display name
+  'Description here.',     // one-liner description
+  'transport',             // category (SourceCategory type)
+  '/source-imgs/new-mysource.svg',  // logo path
+  '#f5f5f5',               // background color for logo card
+  ['mysource_'],           // asset ID prefixes (must match PREFIX_MAP)
+  'Avg Delay',             // valueLabel — column header
+  'min',                   // valueUnit — shown in parentheses
+  // isPrice?  — set true if values are USD-denominated
+),
+```
+
+```
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │                     S() HELPER SIGNATURE                                 │
+  │                                                                          │
+  │   S(id, name, description, category, logo, brandBg,                      │
+  │     prefixes, valueLabel, valueUnit, isPrice?)                           │
+  │                                                                          │
+  │   id .............. unique string, matches Rust source_id()              │
+  │   name ............ display name in UI                                   │
+  │   description ..... one-liner shown on source card                       │
+  │   category ........ 'finance'|'economic'|'regulatory'|'tech'|            │
+  │                     'entertainment'|'geophysical'|'transport'|           │
+  │                     'nature'|'space'|'academic'                          │
+  │   logo ............ path to SVG/PNG in public/source-imgs/               │
+  │   brandBg ......... hex color for card background                        │
+  │   prefixes ........ array of asset ID prefix strings                     │
+  │   valueLabel ...... column header (e.g. 'Price', 'Viewers', 'Magnitude') │
+  │   valueUnit ....... unit label (e.g. 'USD', 'min', '%', '0-9')          │
+  │   isPrice ......... true = format with $ prefix                          │
+  │                                                                          │
+  └───────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5c. Source logo
+
+**File:** `frontend/public/source-imgs/new-{source}.svg` (or `.png`)
+
+<Warning>
+**Never create logos yourself.** Find the company's real logo from their press kit, brand assets page, or Wikipedia infobox. SVG preferred. Check that the logo is clearly visible against the `brandBg` color.
+</Warning>
+
+### 5d. Markets grid category
+
+**File:** `frontend/components/domain/vision/VisionMarketsGrid.tsx`
+
+Add source to the appropriate `CATEGORY_GROUPS` entry:
+
+```typescript
+{ id: 'transport', label: 'Transport', sources: [..., 'my_source'] },
+```
+
+If values are NOT denominated in dollars, also add to `COUNT_SOURCES`:
+
+```typescript
+const COUNT_SOURCES = new Set([..., 'my_source'])
+```
+
+### 5e. Source detail modal
+
+**File:** `frontend/components/domain/SourceDetailModal.tsx`
+
+Add to `SOURCE_META`:
+
+```typescript
+my_source: { valueLabel: 'Avg Delay', unit: 'min' },
+```
+
+### 5f. (If API-key-gated) Health table link
+
+**File:** `frontend/components/domain/SourceHealthTable.tsx`
+
+```typescript
+my_source: { url: 'https://example.com/api', label: 'My Source API' },
+```
+
+---
+
+## Step 6: Test the Source
+
+### Backend compile check
+
+```bash
+cd data-node && cargo check
+```
+
+### Unit tests
+
+```bash
+cd data-node && cargo test my_source
+```
+
+### Curl the actual API
+
+Before deploying, verify the API returns valid data:
+
+```bash
+curl -s "https://api.example.com/endpoint" | jq '.' | head -30
+```
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                       TEST FLOW                                              │
+  │                                                                              │
+  │   ┌─────────────┐    ┌───────────────┐    ┌──────────────┐                  │
+  │   │ curl the    │    │ cargo check   │    │ cargo test   │                  │
+  │   │ real API    │───►│ (compiles?)   │───►│ my_source    │                  │
+  │   │ manually    │    │               │    │              │                  │
+  │   └─────────────┘    └───────────────┘    └──────┬───────┘                  │
+  │                                                  │                          │
+  │                                                  ▼                          │
+  │                                           ┌──────────────┐                  │
+  │                                           │ npx tsc      │                  │
+  │                                           │ --noEmit     │                  │
+  │                                           │ (frontend    │                  │
+  │                                           │  compiles?)  │                  │
+  │                                           └──────┬───────┘                  │
+  │                                                  │                          │
+  │                                                  ▼                          │
+  │                                           ┌──────────────┐                  │
+  │                                           │ Run locally  │                  │
+  │                                           │ and check    │                  │
+  │                                           │ /sources UI  │                  │
+  │                                           └──────────────┘                  │
+  │                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Frontend compile check
+
+```bash
+cd frontend && npx tsc --noEmit
+```
+
+---
+
+## Common Pitfalls
+
+Every source developer makes the same mistakes. The mistakes are not difficult to avoid -- they are difficult to take seriously until they have bitten you.
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────────┐
+  │                         THINGS THAT WILL BITE YOU                                │
+  ├──────────────────────────────────────────────────────────────────────────────────┤
+  │                                                                                  │
+  │  1. RATE LIMITS                                                                  │
+  │  ~~~~~~~~~~~~~~                                                                  │
+  │     Community/free APIs go down without warning. The v6.db.transport.rest         │
+  │     community API returned 503s and timeouts constantly. DB's internal            │
+  │     IRIS-TTS API was far more reliable.                                           │
+  │                                                                                  │
+  │     Rule: Always test the actual API endpoint under sustained load before         │
+  │     shipping. Leave 10-20% rate limit headroom.                                  │
+  │                                                                                  │
+  │  2. PARTIAL DATA > NO DATA                                                       │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~                                                      │
+  │     If one API call in a batch fails, emit what you have. Never fake zeros       │
+  │     for missing data — just skip the failed asset. The sync engine handles       │
+  │     partial results gracefully.                                                  │
+  │                                                                                  │
+  │  3. ASSET ID PREFIX MISMATCH                                                     │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                     │
+  │     The prefix in your Rust code MUST match PREFIX_MAP in the frontend.          │
+  │     If Rust emits "gh_facebook_react" but PREFIX_MAP expects "github_",          │
+  │     the market shows up under "Other" with generic labels.                       │
+  │                                                                                  │
+  │  4. FORGOT TO BUMP ARRAY SIZES                                                  │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                                  │
+  │     DeployAllVisionBatches.s.sol has TWO array size constants that must           │
+  │     match. Miss one and the deploy script fails.                                 │
+  │                                                                                  │
+  │  5. LOGO CONTRAST                                                                │
+  │  ~~~~~~~~~~~~~~~~                                                                │
+  │     White logo on #f5f5f5 background = invisible. Dark logo on dark              │
+  │     background = invisible. Squint at the card — if the logo disappears,         │
+  │     fix the contrast by choosing a different brandBg color or logo variant.      │
+  │                                                                                  │
+  │  6. GROUP API CALLS BY KEY                                                       │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~                                                      │
+  │     Parse a group key from the asset_id (league, game, category) and make        │
+  │     one call per group, not per asset. Sports has 300 games but only             │
+  │     12 league fetches.                                                           │
+  │                                                                                  │
+  │  7. THE DATABASE IS GENERIC                                                      │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~                                                      │
+  │     No migrations needed. All sources share `market_assets` and                  │
+  │     `market_prices` tables with a `source` column. If your source compiles       │
+  │     and runs, data flows to the DB automatically.                                │
+  │                                                                                  │
+  │  8. FRONTEND IS GRACEFULLY DEGRADABLE                                            │
+  │  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                                           │
+  │     Missing frontend entries just mean assets show up under "Other" with         │
+  │     generic labels. Backend-only is fine for testing — add frontend polish       │
+  │     once the data pipeline is verified.                                          │
+  │                                                                                  │
+  └──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Checklist
+
+Copy this into your PR description and check off items as you go:
+
+```
+  ┌──────────────────────────────────────────────────────────────────────────────────┐
+  │                          NEW SOURCE CHECKLIST                                    │
+  ├──────────────────────────────────────────────────────────────────────────────────┤
+  │                                                                                  │
+  │  BACKEND                                                                         │
+  │  ~~~~~~~                                                                         │
+  │  [ ] data-node/src/market_data/sources/{source}/client.rs   MarketDataSource     │
+  │  [ ] data-node/src/market_data/sources/{source}/mod.rs      pub mod + pub use    │
+  │  [ ] data-node/src/config/{source}.json                     asset list or []     │
+  │  [ ] data-node/src/market_data/sources/mod.rs               module registration  │
+  │  [ ] data-node/src/main.rs                                  spawn_resilient()    │
+  │  [ ] data-node/src/api.rs                                   SOURCE_META entry    │
+  │                                                                                  │
+  │  IF API-KEY-GATED                                                                │
+  │  ~~~~~~~~~~~~~~~~                                                                │
+  │  [ ] data-node/src/config.rs                                CLI arg              │
+  │  [ ] data-node/src/main.rs                                  record_not_started() │
+  │  [ ] start.sh                                               conditional --flag   │
+  │                                                                                  │
+  │  CONTRACTS                                                                       │
+  │  ~~~~~~~~~                                                                       │
+  │  [ ] contracts/script/DeployAllVisionBatches.s.sol           _getSourceNames()    │
+  │      (bump BOTH array size constants)                                             │
+  │                                                                                  │
+  │  FRONTEND                                                                        │
+  │  ~~~~~~~~                                                                        │
+  │  [ ] frontend/public/source-imgs/new-{source}.svg           REAL company logo    │
+  │  [ ] frontend/lib/vision/market-categories.ts               PREFIX_MAP +         │
+  │                                                             CATEGORY_ORDER       │
+  │  [ ] frontend/lib/vision/sources.ts                         S() entry            │
+  │  [ ] frontend/components/.../VisionMarketsGrid.tsx           CATEGORY_GROUPS +    │
+  │                                                             COUNT_SOURCES        │
+  │  [ ] frontend/components/.../SourceDetailModal.tsx           SOURCE_META          │
+  │  [ ] frontend/components/.../SourceHealthTable.tsx           API_KEY_LINKS        │
+  │      (only if API-key-gated)                                                     │
+  │                                                                                  │
+  │  VERIFY                                                                          │
+  │  ~~~~~~                                                                          │
+  │  [ ] cargo check                                            backend compiles     │
+  │  [ ] cargo test {source}                                    unit tests pass      │
+  │  [ ] npx tsc --noEmit  (in frontend/)                       frontend compiles    │
+  │  [ ] curl the real API endpoint                             returns valid data   │
+  │                                                                                  │
+  └──────────────────────────────────────────────────────────────────────────────────┘
+```

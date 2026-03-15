@@ -1,6 +1,6 @@
 //! Common crate for Index L3 - shared traits and types
 //!
-//! This crate provides the core abstractions used by both the Issuer and AP services.
+//! This crate provides the core abstractions used by both the Oracle and AP services.
 //! Types match Solidity TypesLib.sol definitions for cross-language compatibility.
 
 pub mod adapters;

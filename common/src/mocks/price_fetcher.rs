@@ -1,6 +1,6 @@
 //! Mock price fetcher for testing
 //!
-//! Story 7.12: MockPriceFetcher moved from issuer to common/src/mocks for test-only use.
+//! Story 7.12: MockPriceFetcher moved from oracle to common/src/mocks for test-only use.
 
 use ethers::types::{Address, U256};
 use std::collections::HashMap;

@@ -176,9 +176,9 @@ library ErrorsLib {
     /// @param currentTime Current block timestamp
     error E034_OrderNotYetExpired(uint256 orderId, uint256 deadline, uint256 currentTime);
 
-    /// @notice E035: IssuerRegistry not configured (required for production)
-    /// @dev In production, issuerRegistry must be set for BLS verification
-    error E035_IssuerRegistryNotSet();
+    /// @notice E035: OracleRegistry not configured (required for production)
+    /// @dev In production, oracleRegistry must be set for BLS verification
+    error E035_OracleRegistryNotSet();
 
     // ============ UPGRADE ERRORS (Story 2.7 Code Review) ============
 
@@ -201,8 +201,8 @@ library ErrorsLib {
     /// @param currentTime Current block timestamp
     error E042_UpgradeTimelockActive(uint256 unlockTime, uint256 currentTime);
 
-    /// @notice E043: Zero address not allowed for issuer registry
-    error E043_ZeroIssuerRegistry();
+    /// @notice E043: Zero address not allowed for oracle registry
+    error E043_ZeroOracleRegistry();
 
     /// @notice E044: Cannot use emergency upgrade when standard upgrade pending
     error E044_StandardUpgradePending();
@@ -485,9 +485,9 @@ library ErrorsLib {
     /// @param maxStaleness Maximum allowed staleness in seconds
     error E096_StaleOraclePrice(uint256 lastUpdated, uint256 maxStaleness);
 
-    /// @notice E097: Caller is not a registered active issuer
+    /// @notice E097: Caller is not a registered active oracle
     /// @param caller The unauthorized caller address
-    error E097_NotActiveIssuer(address caller);
+    error E097_NotActiveOracle(address caller);
 
     /// @notice E098: Beneficiary address cannot be zero
     error E098_ZeroBeneficiary();
@@ -786,15 +786,15 @@ library ErrorsLib {
 
     // ============ MIRROR REGISTRY PHASE 2B ERRORS ============
 
-    /// @notice E135: Missing individual issuer pubkey (expected 128 bytes, got 0)
-    /// @param issuerId The issuer ID with missing pubkey
-    error E135_MissingIssuerPubkey(uint256 issuerId);
+    /// @notice E135: Missing individual oracle pubkey (expected 128 bytes, got 0)
+    /// @param oracleId The oracle ID with missing pubkey
+    error E135_MissingOraclePubkey(uint256 oracleId);
 
     /// @notice E136: Caller not authorized for incrementMissedCounts
     /// @param caller The unauthorized caller address
     error E136_NotAuthorizedMissedCountCaller(address caller);
 
-    /// @notice E137: Issuer pubkeys and IDs array length mismatch
+    /// @notice E137: Oracle pubkeys and IDs array length mismatch
     /// @param pubkeysLen Length of pubkeys array
     /// @param idsLen Length of IDs array
     error E137_PubkeysIdsLengthMismatch(uint256 pubkeysLen, uint256 idsLen);

@@ -6,7 +6,7 @@
   },
   "stats": {
     "consensus_status": "Consensus Status",
-    "active_issuers": "Active Issuers",
+    "active_oracles": "Active Oracles",
     "avg_fill_speed": "Avg Fill Speed",
     "orders_total": "Orders (total)",
     "l3_block": "L3 Block"
@@ -16,10 +16,10 @@
     "healthy": "\u25cf Healthy",
     "offline": "\u25cf Offline"
   },
-  "issuer_network": {
-    "section_title": "Issuer Network",
+  "oracle_network": {
+    "section_title": "Oracle Network",
     "section_subtitle": "BLS Consensus Nodes",
-    "issuer_label": "Issuer {name}",
+    "oracle_label": "Oracle {name}",
     "node_details": {
       "address": "Address",
       "bls_pubkey": "BLS Pubkey",
@@ -28,7 +28,7 @@
       "ap_vault": "AP Vault"
     },
     "status_active": "Active",
-    "no_nodes": "No issuer nodes registered yet."
+    "no_nodes": "No oracle nodes registered yet."
   },
   "fill_speed": {
     "section_title": "Fill Speed",
@@ -93,7 +93,7 @@
     "label": "Performance",
     "consensus_threshold": "Consensus Threshold",
     "bls_required": "BLS signatures required",
-    "active_issuers": "Active Issuers",
+    "active_oracles": "Active Oracles",
     "processing_orders": "Processing orders",
     "network": "Network",
     "orbit_chain": "Orbit chain"

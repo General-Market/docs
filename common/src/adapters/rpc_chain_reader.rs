@@ -13,16 +13,16 @@ use tracing::{debug, warn};
 
 use crate::error::Error;
 use crate::traits::{ChainEvent, ChainReader, EventFilter, EventStream};
-use crate::types::{ITPCore, Issuer, LimitOrder, OrderStatus, Price, Side};
+use crate::types::{ITPCore, Oracle, LimitOrder, OrderStatus, Price, Side};
 
-use super::abi::{IndexContract, IssuerRegistryContract};
+use super::abi::{IndexContract, OracleRegistryContract};
 use super::deployment_config::DeploymentConfig;
 
 /// RPC-based chain reader for real L3 contracts
 pub struct RpcChainReader {
     provider: Arc<Provider<Http>>,
     index_contract: IndexContract<Provider<Http>>,
-    issuer_registry: IssuerRegistryContract<Provider<Http>>,
+    oracle_registry: OracleRegistryContract<Provider<Http>>,
     index_address: Address,
     poll_interval: Duration,
 }
@@ -34,17 +34,17 @@ impl RpcChainReader {
         deployment: &DeploymentConfig,
     ) -> Result<Self, Error> {
         let index_address = deployment.index_address()?;
-        let issuer_registry_address = deployment.issuer_registry_address()?;
+        let oracle_registry_address = deployment.oracle_registry_address()?;
 
         let index_contract =
             IndexContract::new(index_address, provider.clone());
-        let issuer_registry =
-            IssuerRegistryContract::new(issuer_registry_address, provider.clone());
+        let oracle_registry =
+            OracleRegistryContract::new(oracle_registry_address, provider.clone());
 
         Ok(Self {
             provider,
             index_contract,
-            issuer_registry,
+            oracle_registry,
             index_address,
             poll_interval: Duration::from_millis(250),
         })
@@ -203,30 +203,30 @@ impl ChainReader for RpcChainReader {
     }
 
     async fn get_prices(&self) -> Result<Vec<Price>, Error> {
-        // Price fetching is handled by the issuer's PriceFetcher (Story 3.13),
+        // Price fetching is handled by the oracle's PriceFetcher (Story 3.13),
         // not by the AP. Return empty for now.
         Ok(vec![])
     }
 
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error> {
         let count: U256 = self
-            .issuer_registry
-            .active_issuer_count()
+            .oracle_registry
+            .active_oracle_count()
             .call()
             .await
-            .map_err(|e| Error::ChainRead(format!("activeIssuerCount call failed: {}", e)))?;
+            .map_err(|e| Error::ChainRead(format!("activeOracleCount call failed: {}", e)))?;
 
-        let mut issuers = Vec::new();
-        // On-chain issuer IDs are 0-based (0, 1, …, count-1)
+        let mut oracles = Vec::new();
+        // On-chain oracle IDs are 0-based (0, 1, …, count-1)
         for i in 0..count.as_u64() {
             match self
-                .issuer_registry
-                .get_issuer(U256::from(i))
+                .oracle_registry
+                .get_oracle(U256::from(i))
                 .call()
                 .await
             {
                 Ok(raw) => {
-                    issuers.push(Issuer {
+                    oracles.push(Oracle {
                         id: i,
                         addr: raw.0,
                         ip: H256::from(raw.1),
@@ -236,12 +236,12 @@ impl ChainReader for RpcChainReader {
                     });
                 }
                 Err(e) => {
-                    warn!(code = "INFRA-001", issuer_id = i, error = %e, "Failed to load issuer, skipping");
+                    warn!(code = "INFRA-001", oracle_id = i, error = %e, "Failed to load oracle, skipping");
                 }
             }
         }
 
-        Ok(issuers)
+        Ok(oracles)
     }
 
     async fn subscribe_events(&self, filter: EventFilter) -> Result<EventStream, Error> {

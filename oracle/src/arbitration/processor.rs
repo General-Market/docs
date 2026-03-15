@@ -53,8 +53,8 @@ pub struct ArbitrationProcessor {
     bls_signer: Bn254BLSSigner,
     /// BLS keypair for this node
     bls_keypair: BLSKeyPair,
-    /// This node's issuer index (for signer bitmap)
-    issuer_index: u8,
+    /// This node's oracle index (for signer bitmap)
+    oracle_index: u8,
     /// Monotonic nonce counter for reference_nonce in on-chain submissions
     next_reference_nonce: u64,
 }
@@ -64,7 +64,7 @@ impl ArbitrationProcessor {
         config: ArbitrationConfig,
         p2p: Arc<dyn P2PTransport>,
         bls_keypair: BLSKeyPair,
-        issuer_index: u8,
+        oracle_index: u8,
     ) -> Self {
         let price_fetcher = DataNodePriceFetcher::with_token(&config.data_node_url, config.data_node_token.clone());
         Self {
@@ -74,7 +74,7 @@ impl ArbitrationProcessor {
             p2p,
             bls_signer: Bn254BLSSigner::new(),
             bls_keypair,
-            issuer_index,
+            oracle_index,
             next_reference_nonce: 1,
         }
     }
@@ -193,7 +193,7 @@ impl ArbitrationProcessor {
 
         // Broadcast ArbitrationPriceProposal via P2P
         let mut leader_id = [0u8; 32];
-        leader_id[0] = self.issuer_index;
+        leader_id[0] = self.oracle_index;
         let msg = P2PMessage::ArbitrationPriceProposal {
             leader_id,
             bet_id,

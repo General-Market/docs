@@ -10,7 +10,7 @@ interface IIndex {
     // ============ ORDER FUNCTIONS ============
 
     /// @notice Submit a limit order for an ITP
-    /// @dev Order is queued for next cycle processing by issuers
+    /// @dev Order is queued for next cycle processing by oracles
     /// @param itpId The ITP identifier
     /// @param side BUY (0) or SELL (1)
     /// @param amount Order amount in USDC (18 decimals)
@@ -27,8 +27,8 @@ interface IIndex {
         uint256 deadline
     ) external returns (uint256 orderId);
 
-    /// @notice Submit a limit order on behalf of a user (issuer-only)
-    /// @dev Used by issuers in the cross-chain bridge flow to attribute shares to the original user
+    /// @notice Submit a limit order on behalf of a user (oracle-only)
+    /// @dev Used by oracles in the cross-chain bridge flow to attribute shares to the original user
     /// @param beneficiary The address that will receive ITP shares (original user)
     /// @param itpId The ITP identifier
     /// @param side BUY (0) or SELL (1)
@@ -48,11 +48,11 @@ interface IIndex {
     ) external returns (uint256 orderId);
 
     /// @notice Confirm a batch of orders included in a cycle
-    /// @dev Called by issuer consensus with BLS signature
+    /// @dev Called by oracle consensus with BLS signature
     /// @dev Message format: keccak256(abi.encode(chainid, this, cycleNumber, orderIds))
     /// @param cycleNumber The cycle number for this batch
     /// @param orderIds Array of order IDs included in the batch
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function confirmBatch(
         uint256 cycleNumber,
         uint256[] calldata orderIds,
@@ -60,11 +60,11 @@ interface IIndex {
     ) external;
 
     /// @notice Confirm order fills with execution prices
-    /// @dev Called by issuer consensus after trades are executed
+    /// @dev Called by oracle consensus after trades are executed
     /// @dev Message format: keccak256(abi.encode(chainid, this, cycleNumber, fills))
     /// @param cycleNumber The cycle number for these fills
     /// @param fills Array of fill data with prices and amounts
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function confirmFills(
         uint256 cycleNumber,
         TypesLib.Fill[] calldata fills,
@@ -75,7 +75,7 @@ interface IIndex {
     /// @dev Called when order deadline has passed without execution
     /// @dev Message format: keccak256(abi.encode(chainid, this, "refund", orderId))
     /// @param orderId The order to refund
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function refundExpiredOrder(
         uint256 orderId,
         bytes calldata blsSignature
@@ -125,7 +125,7 @@ interface IIndex {
     /// @param newWeights Weights for the final asset list
     /// @param prices Prices for the final asset list (for inventory computation)
     /// @param quoteTokens Quote token addresses for each asset
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function rebalance(
         bytes32 itpId,
         uint256[] calldata removeIndices,
@@ -199,10 +199,10 @@ interface IIndex {
 
     // ============ ITP NAV FUNCTIONS ============
 
-    /// @notice Set ITP NAV via BLS-verified push from issuers
+    /// @notice Set ITP NAV via BLS-verified push from oracles
     /// @param itpId The ITP identifier
     /// @param nav The NAV value (18 decimals)
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function setItpNav(bytes32 itpId, uint256 nav, bytes calldata blsSignature) external;
 
     // ============ STALENESS & VENUE FUNCTIONS (Story 7.17) ============
@@ -226,16 +226,16 @@ interface IIndex {
     /// @notice Update venue pool balance after bridge operations (BLS-signed)
     /// @param venueId The venue identifier
     /// @param newBalance The new balance
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function updateVenueBalance(uint256 venueId, uint256 newBalance, bytes calldata blsSignature) external;
 
-    // ============ ISSUER DECOMPOSITION FUNCTIONS ============
+    // ============ ORACLE DECOMPOSITION FUNCTIONS ============
 
-    /// @notice Emit per-asset trade instructions after issuer decomposition and cross-ITP netting
+    /// @notice Emit per-asset trade instructions after oracle decomposition and cross-ITP netting
     /// @dev No state changes — BLS-authenticated event emission only
     /// @param cycleNumber The cycle for which trades were decomposed
     /// @param trades Array of netted per-asset trades
-    /// @param blsSignature Aggregated BLS signature from issuers
+    /// @param blsSignature Aggregated BLS signature from oracles
     function emitAssetTrades(
         uint256 cycleNumber,
         TypesLib.AssetTrade[] calldata trades,

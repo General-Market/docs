@@ -161,7 +161,7 @@ MDX content is English-only for batch 1. The `generateMetadata()` function pulls
 **Content outline (~1,000 words):**
 - H1: Sealed Prediction Markets: Why Your Bets Should Be Private
 - The front-running problem in prediction markets (public orderbooks, MEV, whale watching)
-- How sealed commit-reveal works (hash on-chain, reveal to issuers, BLS settlement)
+- How sealed commit-reveal works (hash on-chain, reveal to oracles, BLS settlement)
 - Why this matters for AI agents (bots can't copy your strategy if they can't see your bets)
 - Parimutuel model: winners split losers' stakes, 0.3% fee on profit only
 - Comparison: order book (Polymarket/Kalshi) vs sealed parimutuel (Vision)

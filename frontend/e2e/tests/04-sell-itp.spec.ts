@@ -9,7 +9,7 @@ import { getL3UsdcBalance, getL3UserShares } from '../helpers/backend-api';
 
 test.describe('Sell ITP', () => {
   test('sell ITP shares', async ({ walletPage: page }) => {
-    test.setTimeout(240_000); // 4 min — issuer consensus can take 30-90s
+    test.setTimeout(240_000); // 4 min — oracle consensus can take 30-90s
 
     // 1. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
@@ -52,8 +52,8 @@ test.describe('Sell ITP', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 10_000 });
     await submitBtn.click();
 
-    // 8. Wait for real issuer consensus pipeline to fill the sell order.
-    // Direct L3: Index.submitOrder(SELL) → issuers batch + fill → L3_WUSDC proceeds.
+    // 8. Wait for real oracle consensus pipeline to fill the sell order.
+    // Direct L3: Index.submitOrder(SELL) → oracles batch + fill → L3_WUSDC proceeds.
     // Race: modal "Sell More" button OR backend shares decrease (whichever first).
     const fillDetected = await Promise.race([
       expect(sellModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 180_000 })

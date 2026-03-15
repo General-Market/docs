@@ -21,14 +21,14 @@ use super::metrics::P2PMetrics;
 use super::peer_scoring::PeerScorer;
 use super::tls::TlsConfig;
 
-/// Maximum total inbound connections (20 issuers + headroom for reconnections)
+/// Maximum total inbound connections (20 oracles + headroom for reconnections)
 const MAX_INBOUND_CONNECTIONS: usize = 30;
 
 /// Default per-IP connection limit (1 inbound + 1 outbound)
 const DEFAULT_MAX_PER_IP: usize = 2;
 
 /// Check if an IP address is loopback (127.x.x.x / ::1).
-/// Loopback IPs are exempt from per-IP limits because local dev runs N issuers
+/// Loopback IPs are exempt from per-IP limits because local dev runs N oracles
 /// on 127.0.0.1.
 fn is_loopback(ip: &std::net::IpAddr) -> bool {
     match ip {
@@ -37,7 +37,7 @@ fn is_loopback(ip: &std::net::IpAddr) -> bool {
     }
 }
 
-/// TCP-based P2P transport for issuer nodes
+/// TCP-based P2P transport for oracle nodes
 ///
 /// Implements the [`P2PTransport`] trait using TCP connections with optional TLS.
 /// Supports automatic reconnection with exponential backoff.
@@ -182,7 +182,7 @@ impl TcpP2PTransport {
                                 continue;
                             }
 
-                            // 2. Per-IP limit (skip for loopback — local dev runs N issuers on 127.0.0.1)
+                            // 2. Per-IP limit (skip for loopback — local dev runs N oracles on 127.0.0.1)
                             if max_per_ip > 0 && !is_loopback(&addr.ip()) {
                                 let ip_count = conns
                                     .values()

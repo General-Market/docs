@@ -24,7 +24,7 @@ Vision API routes are split across two proxy targets depending on the type of da
      +----------+           |               |              |
                             |               v              |
                             |     +---------+---------+    |
-                            |     | Issuer API        |    |
+                            |     | Oracle API        |    |
                             |     | (port 10001)      |    |
                             |     | Batch state,      |    |
                             |     | player balances,   |    |
@@ -50,11 +50,11 @@ Vision API routes are split across two proxy targets depending on the type of da
 ```
   Browser POSTs bitmap to /api/vision/bitmap (same-origin, no CORS)
 
-                   +-- POST --> Issuer 1 (10001) --> accepted
+                   +-- POST --> Oracle 1 (10001) --> accepted
                    |
-  /api/vision/ ----+-- POST --> Issuer 2 (10002) --> accepted
+  /api/vision/ ----+-- POST --> Oracle 2 (10002) --> accepted
   bitmap           |
-                   +-- POST --> Issuer 3 (10003) --> rejected (error)
+                   +-- POST --> Oracle 3 (10003) --> rejected (error)
 
   Response: { acceptedCount: 2, totalCount: 3, results: [...] }
 ```
@@ -67,7 +67,7 @@ All Vision endpoints are served under:
 https://generalmarket.io/api/vision
 ```
 
-Requests are proxied to the issuer node running Vision on port 10001, or to the data-node on port 8200 for snapshot data.
+Requests are proxied to the oracle node running Vision on port 10001, or to the data-node on port 8200 for snapshot data.
 
 ## Authentication
 
@@ -80,7 +80,7 @@ None. The Vision API is **public**. Player identity is determined by Ethereum ad
 | `GET` | [`/vision/batches`](/vision/api/batches#list-batches) | List all active batches |
 | `GET` | [`/vision/markets`](/vision/api/batches#list-markets) | List supported markets |
 | `GET` | [`/vision/batch/{id}/state`](/vision/api/state#get-batch-state) | Full state for a single batch |
-| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all issuers) |
+| `POST` | [`/vision/bitmap`](/vision/api/bitmap#submit-bitmap) | Submit a prediction bitmap (fan-out to all oracles) |
 | `GET` | [`/vision/balance/{batch_id}/{player}`](/vision/api/balance#get-player-balance) | Player balance with BLS proof |
 | `GET` | [`/vision/batch/{id}/history`](/vision/api/ticks#get-tick-history) | Tick result history for a batch |
 | `GET` | [`/vision/reveal/{batch_id}/{tick_id}`](/vision/api/ticks#get-revealed-bitmaps) | Revealed bitmaps after tick closes |
@@ -123,7 +123,7 @@ Common HTTP status codes:
 | `403` | Forbidden (e.g., reveal window not yet expired) |
 | `404` | Resource not found (batch or player does not exist) |
 | `500` | Internal server error (database failure) |
-| `502` | Upstream service (issuer or data-node) unavailable |
+| `502` | Upstream service (oracle or data-node) unavailable |
 
 ### Addresses
 

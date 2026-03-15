@@ -6,7 +6,7 @@
 //! # Architecture
 //!
 //! ```text
-//! Issuer Cycle → Price Fetching → OneInchRateLimitHandler
+//! Oracle Cycle → Price Fetching → OneInchRateLimitHandler
 //!                                     ├─ key rotation + retry
 //!                                     ├─ Creates temp OneInchQuoteClient per request
 //!                                     └─ (on total failure) → caller uses OnchainQuoteClient (Story 5.9)

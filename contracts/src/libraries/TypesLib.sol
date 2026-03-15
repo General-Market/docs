@@ -191,7 +191,7 @@ library TypesLib {
     }
 
     /// @notice Cross-chain order from Settlement to L3
-    /// @dev Stores order parameters for issuer nodes to process
+    /// @dev Stores order parameters for oracle nodes to process
     /// @param itpId The ITP to purchase
     /// @param user Address that submitted the order
     /// @param amount USDC amount (18 decimals)
@@ -210,7 +210,7 @@ library TypesLib {
     }
 
     /// @notice Pending mint data for crash recovery
-    /// @dev Stored when completeBuyOrder succeeds, queried on issuer restart
+    /// @dev Stored when completeBuyOrder succeeds, queried on oracle restart
     /// @param itpId The ITP being purchased
     /// @param user User who should receive BridgedITP shares
     /// @param amount Internal amount (18 decimals) from the original order
@@ -221,7 +221,7 @@ library TypesLib {
     }
 
     /// @notice Cross-chain sell order from Settlement
-    /// @dev Stores order parameters for issuer nodes to sell ITP on L3
+    /// @dev Stores order parameters for oracle nodes to sell ITP on L3
     /// @param itpId The ITP to sell
     /// @param user Address that submitted the sell order
     /// @param bridgedItpAddress The BridgedITP token address escrowed
@@ -245,14 +245,14 @@ library TypesLib {
         uint256 burnedAt;
     }
 
-    /// @notice Issuer node registration data
-    /// @dev Stored in IssuerRegistry
-    /// @param addr Issuer's Ethereum address for rewards/governance
+    /// @notice Oracle node registration data
+    /// @dev Stored in OracleRegistry
+    /// @param addr Oracle's Ethereum address for rewards/governance
     /// @param ip IP address for P2P communication
     /// @param blsPubkey BLS public key for signature aggregation
     /// @param status 0=inactive, 1=active, 2=suspended
     /// @param registeredAt Registration timestamp
-    struct Issuer {
+    struct Oracle {
         address addr;
         bytes32 ip;
         bytes blsPubkey;
@@ -260,15 +260,15 @@ library TypesLib {
         uint256 registeredAt;
     }
 
-    /// @notice Key rotation request for issuer
+    /// @notice Key rotation request for oracle
     /// @dev Tracks pending key rotations with approval state
-    /// @param issuerId Issuer requesting rotation
+    /// @param oracleId Oracle requesting rotation
     /// @param newPubkey Proposed new BLS public key
     /// @param requestedAt Timestamp of rotation request
     /// @param approvalCount Number of approvals received
     /// @param executed Whether rotation has been executed
     struct KeyRotation {
-        uint256 issuerId;
+        uint256 oracleId;
         bytes newPubkey;
         uint256 requestedAt;
         uint256 approvalCount;
@@ -322,10 +322,10 @@ library TypesLib {
         uint256 lastRebalance;
     }
 
-    // ============ ISSUER DECOMPOSITION STRUCTS ============
+    // ============ ORACLE DECOMPOSITION STRUCTS ============
 
-    /// @notice Netted per-asset trade from issuer decomposition (cycle-level, cross-ITP)
-    /// @dev Produced by issuers after decomposing ITP orders into per-asset amounts
+    /// @notice Netted per-asset trade from oracle decomposition (cycle-level, cross-ITP)
+    /// @dev Produced by oracles after decomposing ITP orders into per-asset amounts
     ///      and netting same assets across all ITPs in a cycle.
     /// @param asset ERC20 token address to trade
     /// @param side 0=BUY, 1=SELL (per-asset, can differ after cross-ITP netting)
@@ -343,12 +343,12 @@ library TypesLib {
     // ============ REGISTRY SNAPSHOT (Phase 2+3) ============
 
     /// @notice Registry state snapshot for BLS verification with historical state tracking
-    /// @dev Stored per-nonce in IssuerRegistry. BLSVerifier loads snapshot by referenceNonce.
-    /// @param activeCount Number of active issuers at snapshot time
-    /// @param stateHash keccak256 of all active issuer pubkeys concatenated
+    /// @dev Stored per-nonce in OracleRegistry. BLSVerifier loads snapshot by referenceNonce.
+    /// @param activeCount Number of active oracles at snapshot time
+    /// @param stateHash keccak256 of all active oracle pubkeys concatenated
     /// @param aggregatedPubkey Aggregated BLS G2 pubkey stored as 4x bytes32 (128 bytes total)
     /// @param blockNumber Block number when snapshot was created
-    /// @param activeBitmask Bitmask of active issuer IDs (bit i = issuer i is active)
+    /// @param activeBitmask Bitmask of active oracle IDs (bit i = oracle i is active)
     struct RegistrySnapshot {
         uint256 activeCount;
         bytes32 stateHash;

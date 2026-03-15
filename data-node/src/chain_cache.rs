@@ -51,9 +51,9 @@ pub struct CachedLimitOrder {
     pub status: u8,
 }
 
-/// Serialized issuer info
+/// Serialized oracle info
 #[derive(Clone, Serialize, Default)]
-pub struct CachedIssuer {
+pub struct CachedOracle {
     pub address: String,
     pub endpoint: String,
     pub bls_pubkey: String,
@@ -203,13 +203,13 @@ pub struct ChainCache {
     pub pending_orders_gen: Generation,
     pub batched_orders: RwLock<Vec<CachedLimitOrder>>,
     pub batched_orders_gen: Generation,
-    pub issuer_registry: RwLock<Vec<CachedIssuer>>,
-    pub issuer_registry_gen: Generation,
+    pub oracle_registry: RwLock<Vec<CachedOracle>>,
+    pub oracle_registry_gen: Generation,
     pub last_cycle: AtomicU64,
     pub next_order_id: AtomicU64,
     pub pending_rebalances: RwLock<Vec<CachedPendingRebalance>>,
     pub pending_rebalances_gen: Generation,
-    pub active_issuer_count: AtomicU64,
+    pub active_oracle_count: AtomicU64,
     pub aggregated_pubkey: RwLock<Vec<u8>>,
     pub aggregated_pubkey_gen: Generation,
     pub consensus_paused: AtomicBool,
@@ -252,13 +252,13 @@ impl ChainCache {
             pending_orders_gen: Generation::default(),
             batched_orders: RwLock::new(Vec::new()),
             batched_orders_gen: Generation::default(),
-            issuer_registry: RwLock::new(Vec::new()),
-            issuer_registry_gen: Generation::default(),
+            oracle_registry: RwLock::new(Vec::new()),
+            oracle_registry_gen: Generation::default(),
             last_cycle: AtomicU64::new(0),
             next_order_id: AtomicU64::new(0),
             pending_rebalances: RwLock::new(Vec::new()),
             pending_rebalances_gen: Generation::default(),
-            active_issuer_count: AtomicU64::new(0),
+            active_oracle_count: AtomicU64::new(0),
             aggregated_pubkey: RwLock::new(Vec::new()),
             aggregated_pubkey_gen: Generation::default(),
             consensus_paused: AtomicBool::new(false),

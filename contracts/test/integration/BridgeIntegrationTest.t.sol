@@ -6,7 +6,7 @@ import "../../src/custody/L3BridgeCustody.sol";
 import "../../src/custody/SettlementBridgeCustody.sol";
 import "../../src/registry/CollateralRegistry.sol";
 import "../../src/mocks/MockERC20.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -24,7 +24,7 @@ contract BridgeIntegrationTest is TestHelper {
     L3BridgeCustody public l3Bridge;
     SettlementBridgeCustody public settlementBridge;
     CollateralRegistry public collateralRegistry;
-    IssuerRegistry public mockRegistry;
+    OracleRegistry public mockRegistry;
     Governance public governance;
     MockERC20 public usdc;      // L3 USDC (18 decimals)
     MockERC20 public settlementUsdc;   // Settlement USDC (6 decimals, matches production)
@@ -60,10 +60,10 @@ contract BridgeIntegrationTest is TestHelper {
         // Deploy on L3 chain context
         vm.chainId(L3_CHAIN_ID);
 
-        // Deploy real governance and issuer registry, register real BLS test issuers
+        // Deploy real governance and oracle registry, register real BLS test oracles
         governance = deployGovernance(deployer);
-        mockRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(mockRegistry, deployer);
+        mockRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(mockRegistry, deployer);
         // L3 USDC uses 18 decimals (internal protocol standard)
         usdc = new MockERC20("L3USDC", "L3USDC", 18);
         // Settlement USDC uses 6 decimals (matches real USDC on Settlement)
@@ -110,7 +110,7 @@ contract BridgeIntegrationTest is TestHelper {
                 L3_CHAIN_ID,  // toChain=L3
                 10_000e18,    // initial collateral
                 TypesLib.TxType.BUY,
-                signWithTestIssuers(msg0)
+                signWithTestOracles(msg0)
             , 3, 7);
         }
     }
@@ -120,31 +120,31 @@ contract BridgeIntegrationTest is TestHelper {
     /// @dev Sign initiateBridge message (chainid = current, which should be L3_CHAIN_ID)
     function _signInitiateBridge(address custodyAddr, uint256 destChainId, uint256 amount, uint256 bridgeNonce) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, destChainId, amount, bridgeNonce));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @dev Sign completeBridge message (chainid = SETTLEMENT_CHAIN_ID)
     function _signCompleteBridge(address custodyAddr, TypesLib.ReleaseProof memory proof, uint256 amount, uint256 bridgeNonce) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(SETTLEMENT_CHAIN_ID, custodyAddr, proof, amount, bridgeNonce));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @dev Sign markReleased message (chainid = L3_CHAIN_ID)
     function _signMarkReleased(address custodyAddr, uint256 bridgeNonce, bytes32 destTxHash) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, bridgeNonce, destTxHash));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @dev Sign reverseLock message (chainid = L3_CHAIN_ID)
     function _signReverseLock(address custodyAddr, uint256 bridgeNonce, uint256 signerCount) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "reverse", bridgeNonce, signerCount));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @dev Sign recordCollateralMove message (auto-incrementing nonce)
     function _signRecordCollateralMove(address colRegAddr, bytes32 itpId, uint256 fromChain, uint256 toChain, uint256 amount, TypesLib.TxType txType, uint256 colRegNonce) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, colRegAddr, itpId, fromChain, toChain, amount, txType, colRegNonce));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ HELPERS ============
@@ -431,7 +431,7 @@ contract BridgeIntegrationTest is TestHelper {
         // markReleased should revert on reversed lock
         bytes32 destTxHash = keccak256("some_tx");
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        l3Bridge.markReleased(nonce, destTxHash, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        l3Bridge.markReleased(nonce, destTxHash, signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_timeout_reversalFailsBeforeTimeout() public {
@@ -447,7 +447,7 @@ contract BridgeIntegrationTest is TestHelper {
                 block.timestamp
             )
         );
-        l3Bridge.reverseLock(nonce, signWithTestIssuers(keccak256("irrelevant")), 15, 3, 7);
+        l3Bridge.reverseLock(nonce, signWithTestOracles(keccak256("irrelevant")), 15, 3, 7);
     }
 
     function test_timeout_reversalFailsWithInsufficientSigners() public {
@@ -456,7 +456,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Try with 14 signers (below REVERSAL_THRESHOLD of 15)
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E048_InsufficientSignerCount.selector, 14, 15));
-        l3Bridge.reverseLock(nonce, signWithTestIssuers(keccak256("irrelevant")), 14, 3, 7);
+        l3Bridge.reverseLock(nonce, signWithTestOracles(keccak256("irrelevant")), 14, 3, 7);
     }
 
     function test_timeout_reversalAt20Signers() public {
@@ -493,7 +493,7 @@ contract BridgeIntegrationTest is TestHelper {
 
         // Second reversal should fail
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E046_LockAlreadyReversed.selector, nonce));
-        l3Bridge.reverseLock(nonce, signWithTestIssuers(keccak256("irrelevant")), 15, 3, 7);
+        l3Bridge.reverseLock(nonce, signWithTestOracles(keccak256("irrelevant")), 15, 3, 7);
     }
 
     // ============================================================================
@@ -510,7 +510,7 @@ contract BridgeIntegrationTest is TestHelper {
         TypesLib.ReleaseProof memory proof = _buildProof(nonce);
         vm.chainId(SETTLEMENT_CHAIN_ID);
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E054_BridgeAlreadyCompleted.selector, L3_CHAIN_ID, nonce));
-        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        settlementBridge.completeBridge(L3_CHAIN_ID, BRIDGE_AMOUNT, nonce, proof, signWithTestOracles(keccak256("irrelevant")), 3, 7);
         vm.chainId(L3_CHAIN_ID);
     }
 
@@ -545,7 +545,7 @@ contract BridgeIntegrationTest is TestHelper {
         // Second markReleased fails
         bytes32 destTxHash = keccak256(abi.encode("settlement_completion_tx", nonce));
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E045_LockAlreadyReleased.selector, nonce));
-        l3Bridge.markReleased(nonce, destTxHash, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        l3Bridge.markReleased(nonce, destTxHash, signWithTestOracles(keccak256("irrelevant")), 3, 7);
     }
 
     function test_replay_sequentialNoncesWork() public {
@@ -643,7 +643,7 @@ contract BridgeIntegrationTest is TestHelper {
         l3Bridge.reverseLock(nonce, _signReverseLock(address(l3Bridge), nonce, 15), 15, 3, 7);
 
         // IMPORTANT: CollateralRegistry has no awareness of bridge lock state.
-        // The issuer application layer must NOT call recordCollateralMove for reversed bridges.
+        // The oracle application layer must NOT call recordCollateralMove for reversed bridges.
         // This test verifies the expected pattern: skip registry update on reversal.
         uint256 l3Col = collateralRegistry.getITPCollateralByChain(TEST_ITP_ID, L3_CHAIN_ID);
         assertEq(l3Col, 10_000e18); // No change
@@ -855,7 +855,7 @@ contract BridgeIntegrationTest is TestHelper {
     // ============================================================================
 
     /// @notice Documents that bridge contracts have no link to CollateralRegistry.
-    /// The issuer application layer is responsible for calling recordCollateralMove
+    /// The oracle application layer is responsible for calling recordCollateralMove
     /// after observing successful bridge events. This is an architecture decision,
     /// not a bug -- but callers must be aware of the consistency responsibility.
     function test_collateral_bridgeContractsDoNotCallRegistryDirectly() public {

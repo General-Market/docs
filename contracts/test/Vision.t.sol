@@ -5,7 +5,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Vision} from "../src/vision/Vision.sol";
 import {IVision} from "../src/interfaces/IVision.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import {Governance} from "../src/Governance.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./helpers/TestHelper.sol";
@@ -13,7 +13,7 @@ import "./helpers/TestHelper.sol";
 contract VisionTest is TestHelper {
     Vision public vision;
     MockERC20 public usdc;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     Governance public governance;
 
     address public creator;
@@ -32,17 +32,17 @@ contract VisionTest is TestHelper {
         // Deploy mock tokens (18 decimals — L3 USDC is 18 decimals)
         usdc = new MockERC20("USDC", "USDC", 18);
 
-        // Deploy governance and issuer registry for BLS verification
+        // Deploy governance and oracle registry for BLS verification
         governance = deployGovernance(address(this));
-        issuerRegistry = deployIssuerRegistry(address(governance));
+        oracleRegistry = deployOracleRegistry(address(governance));
 
-        // Register test issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(issuerRegistry, address(this));
+        // Register test oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(oracleRegistry, address(this));
 
         // Deploy Vision
         vision = new Vision(
             address(usdc),
-            address(issuerRegistry),
+            address(oracleRegistry),
             address(this) // feeCollector
         );
     }
@@ -59,7 +59,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(creator);
         batchId = vision.createBatch(
@@ -85,7 +85,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(creator);
         batchId = vision.createBatch(
@@ -144,7 +144,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(nonCreator);
         uint256 batchId2 = vision.createBatch(
@@ -179,7 +179,7 @@ contract VisionTest is TestHelper {
             uint256(0),
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.InvalidTickDuration.selector);
         vm.prank(creator);
@@ -197,7 +197,7 @@ contract VisionTest is TestHelper {
             badDuration,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.InvalidTickDuration.selector);
         vm.prank(creator);
@@ -216,7 +216,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             badLockOffset
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.InvalidLockOffset.selector);
         vm.prank(creator);
@@ -224,7 +224,7 @@ contract VisionTest is TestHelper {
     }
 
     function test_createBatch_revertInvalidBLS() public {
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong_message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong_message"));
 
         vm.expectRevert();
         vm.prank(creator);
@@ -254,7 +254,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         bytes32 bitmapHash = keccak256("bitmap1");
 
@@ -297,7 +297,7 @@ contract VisionTest is TestHelper {
             TICK_DURATION,
             LOCK_OFFSET
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(player1);
         uint256 batchId1 = vision.createBatchAndJoin(
@@ -511,7 +511,7 @@ contract VisionTest is TestHelper {
             toTick,
             newBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         // winnings = 13e18 - 10e18 = 3e18 (gross, no fee at claim — fee is deferred to withdraw)
         uint256 grossWinnings = 3e18;
@@ -547,7 +547,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "CLAIM", batchId, player,
             fromTick, toTick, newBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(player);
         vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -595,7 +595,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "CLAIM", batchId, player,
             uint256(1), uint256(5), newBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(player);
         vision.claimRewards(batchId, 1, 5, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -620,7 +620,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "CLAIM", batchId, player,
             uint256(1), uint256(5), newBalance1
         ));
-        bytes memory sig1 = signWithTestIssuers(msg1);
+        bytes memory sig1 = signWithTestOracles(msg1);
         vm.prank(player);
         vision.claimRewards(batchId, 1, 5, newBalance1, sig1, REF_NONCE, SIGNERS_BITMASK);
 
@@ -630,7 +630,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "CLAIM", batchId, player,
             uint256(6), uint256(10), newBalance2
         ));
-        bytes memory sig2 = signWithTestIssuers(msg2);
+        bytes memory sig2 = signWithTestOracles(msg2);
         vm.prank(player);
         vision.claimRewards(batchId, 6, 10, newBalance2, sig2, REF_NONCE, SIGNERS_BITMASK);
 
@@ -646,7 +646,7 @@ contract VisionTest is TestHelper {
         vm.prank(player);
         vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong"));
 
         vm.expectRevert();
         vm.prank(player);
@@ -667,7 +667,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         uint256 expectedFee = 4e18 * 30 / 10000;
         uint256 expectedPayout = finalBalance - expectedFee;
@@ -699,7 +699,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(player);
         vision.withdraw(batchId, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -728,7 +728,7 @@ contract VisionTest is TestHelper {
         vm.prank(player);
         vision.joinBatch(batchId, CONFIG_HASH, 10e18, 1e18, keccak256("bitmap"));
 
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong"));
 
         vm.expectRevert();
         vm.prank(player);
@@ -863,7 +863,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "WITHDRAW", batchId, player, finalBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.prank(player);
         vision.withdraw(batchId, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -894,7 +894,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "PAUSE", batchId
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectEmit(true, false, false, false);
         emit IVision.BatchPausedEvent(batchId);
@@ -909,7 +909,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "PAUSE", uint256(999)
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.BatchNotFound.selector);
         vision.pause(999, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -918,7 +918,7 @@ contract VisionTest is TestHelper {
     function test_pause_revertInvalidBLS() public {
         uint256 batchId = _createDefaultBatch();
 
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong"));
 
         vm.expectRevert();
         vision.pause(batchId, wrongSig, REF_NONCE, SIGNERS_BITMASK);
@@ -932,7 +932,7 @@ contract VisionTest is TestHelper {
         bytes32 pauseMsg = keccak256(abi.encode(
             block.chainid, address(vision), "PAUSE", batchId
         ));
-        bytes memory pauseSig = signWithTestIssuers(pauseMsg);
+        bytes memory pauseSig = signWithTestOracles(pauseMsg);
         vision.pause(batchId, pauseSig, REF_NONCE, SIGNERS_BITMASK);
 
         assertTrue(vision.getBatch(batchId).paused, "Should be paused");
@@ -940,7 +940,7 @@ contract VisionTest is TestHelper {
         bytes32 unpauseMsg = keccak256(abi.encode(
             block.chainid, address(vision), "UNPAUSE", batchId
         ));
-        bytes memory unpauseSig = signWithTestIssuers(unpauseMsg);
+        bytes memory unpauseSig = signWithTestOracles(unpauseMsg);
 
         vm.expectEmit(true, false, false, false);
         emit IVision.BatchUnpaused(batchId);
@@ -954,7 +954,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "UNPAUSE", uint256(999)
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.BatchNotFound.selector);
         vision.unpause(999, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -974,7 +974,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         uint256 expectedFee = 4e18 * 30 / 10000;
         uint256 expectedPayout = finalBalance - expectedFee;
@@ -1003,7 +1003,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, finalBalance
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectEmit(true, true, false, true);
         emit IVision.ForceWithdrawn(batchId, player, 7e18);
@@ -1021,7 +1021,7 @@ contract VisionTest is TestHelper {
         bytes32 message = keccak256(abi.encode(
             block.chainid, address(vision), "FORCE_WITHDRAW", batchId, player, uint256(10e18)
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.NotJoined.selector);
         vision.forceWithdraw(batchId, player, 10e18, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -1035,7 +1035,7 @@ contract VisionTest is TestHelper {
         bytes32 pauseMsg = keccak256(abi.encode(
             block.chainid, address(vision), "PAUSE", batchId
         ));
-        bytes memory pauseSig = signWithTestIssuers(pauseMsg);
+        bytes memory pauseSig = signWithTestOracles(pauseMsg);
         vision.pause(batchId, pauseSig, REF_NONCE, SIGNERS_BITMASK);
 
         address player = makeAddr("player1");
@@ -1112,7 +1112,7 @@ contract VisionTest is TestHelper {
             newLockOffset,
             newTickDuration
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vision.updateBatchConfig(batchId, CONFIG_HASH, newLockOffset, newTickDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
@@ -1156,7 +1156,7 @@ contract VisionTest is TestHelper {
             uint256(60), // lockOffset
             newTickDuration
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
         vision.updateBatchConfig(batchId, CONFIG_HASH, 60, newTickDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
         // Advance to next tick boundary (under OLD tickDuration)
@@ -1189,7 +1189,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
             batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
         // This should return without reverting (no-op path)
         vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, TICK_DURATION, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
@@ -1206,7 +1206,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
             batchId, CONFIG_HASH, LOCK_OFFSET, badDuration
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.InvalidTickDuration.selector);
         vision.updateBatchConfig(batchId, CONFIG_HASH, LOCK_OFFSET, badDuration, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -1220,7 +1220,7 @@ contract VisionTest is TestHelper {
             block.chainid, address(vision), "UPDATE_BATCH_CONFIG",
             batchId, CONFIG_HASH, TICK_DURATION, TICK_DURATION
         ));
-        bytes memory blsSig = signWithTestIssuers(message);
+        bytes memory blsSig = signWithTestOracles(message);
 
         vm.expectRevert(IVision.LockOffsetTooLarge.selector);
         vision.updateBatchConfig(batchId, CONFIG_HASH, TICK_DURATION, TICK_DURATION, blsSig, REF_NONCE, SIGNERS_BITMASK);

@@ -99,16 +99,16 @@ Created --> Running --> Paused (optional) --> Running
 
 1. **Created**: The batch is registered on-chain. Players can immediately join.
 2. **Running**: Ticks resolve at every `tickDuration` interval. Players can join, deposit, update bitmaps, and claim rewards.
-3. **Paused**: Issuers can pause a batch via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
-4. **Unpaused**: Issuers unpause the batch via BLS consensus. Normal operation resumes.
+3. **Paused**: Oracles can pause a batch via BLS consensus (e.g., if a price feed is unreliable). While paused, no new players can join. Existing players retain their positions.
+4. **Unpaused**: Oracles unpause the batch via BLS consensus. Normal operation resumes.
 
 <Info>
-Pausing and unpausing require BLS signatures from 2/3+ of registered issuers. This prevents any single party from disrupting a batch.
+Pausing and unpausing require BLS signatures from 2/3+ of registered oracles. This prevents any single party from disrupting a batch.
 </Info>
 
 ## Updating Markets
 
-A batch creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS issuer consensus -- the closest thing to democratic oversight a smart contract can offer:
+A batch creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS oracle consensus -- the closest thing to democratic oversight a smart contract can offer:
 
 ```solidity
 function updateBatchMarkets(
@@ -119,7 +119,7 @@ function updateBatchMarkets(
 ) external;
 ```
 
-The BLS signature must cover the batch ID, new market IDs, new resolution types, and the current tick number. This ensures issuers have reviewed and approved the change.
+The BLS signature must cover the batch ID, new market IDs, new resolution types, and the current tick number. This ensures oracles have reviewed and approved the change.
 
 ## Joining a Batch
 
@@ -166,7 +166,7 @@ struct Batch {
 | `tickDuration` | How often the batch resolves, in seconds. Must be between 1 second and 30 days (`MAX_TICK_DURATION`). |
 | `customThresholds` | Parallel array for resolution types that use custom thresholds (`UP_X`, `DOWN_X`, `FLAT_X`). Values are in basis points. |
 | `createdAtTick` | The tick number when the batch was created, computed as `block.timestamp / tickDuration`. |
-| `paused` | When `true`, no new players can join. Requires a BLS-signed issuer consensus to pause or unpause. |
+| `paused` | When `true`, no new players can join. Requires a BLS-signed oracle consensus to pause or unpause. |
 
 ### Batch Metadata
 

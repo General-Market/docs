@@ -55,8 +55,8 @@ const MAX_RETRIES: u32 = 5;
 /// Base delay between retries (doubles each attempt)
 const RETRY_BASE_DELAY: Duration = Duration::from_millis(1000);
 
-/// Number of issuer keypairs to generate
-const NUM_ISSUERS: usize = 20;
+/// Number of oracle keypairs to generate
+const NUM_ORACLES: usize = 20;
 
 /// Multisig threshold (11/20)
 const THRESHOLD: u16 = 11;
@@ -77,11 +77,11 @@ fn create_devnet_client() -> RpcClient {
 /// Generate 20 Ed25519 keypairs and convert them to solana-sdk Keypairs.
 ///
 /// Returns `(ed25519_keypairs, solana_keypairs)` where both vectors are aligned by index.
-fn generate_issuer_keypairs() -> (Vec<Ed25519Keypair>, Vec<Keypair>) {
-    let mut ed25519_keys = Vec::with_capacity(NUM_ISSUERS);
-    let mut solana_keys = Vec::with_capacity(NUM_ISSUERS);
+fn generate_oracle_keypairs() -> (Vec<Ed25519Keypair>, Vec<Keypair>) {
+    let mut ed25519_keys = Vec::with_capacity(NUM_ORACLES);
+    let mut solana_keys = Vec::with_capacity(NUM_ORACLES);
 
-    for _ in 0..NUM_ISSUERS {
+    for _ in 0..NUM_ORACLES {
         let ed_kp = Ed25519Keypair::generate();
 
         // Convert to solana-sdk Keypair: 64 bytes = 32 private + 32 public
@@ -206,10 +206,10 @@ async fn test_devnet_connection() {
 #[tokio::test]
 #[ignore]
 async fn test_keypair_generation_and_conversion() {
-    let (_ed_keys, sol_keys) = generate_issuer_keypairs();
+    let (_ed_keys, sol_keys) = generate_oracle_keypairs();
 
     // Verify we generated the right number of keys
-    assert_eq!(sol_keys.len(), NUM_ISSUERS);
+    assert_eq!(sol_keys.len(), NUM_ORACLES);
 
     // Verify all public keys are unique
     let mut pubkeys: Vec<Pubkey> = sol_keys.iter().map(|k| k.pubkey()).collect();
@@ -217,7 +217,7 @@ async fn test_keypair_generation_and_conversion() {
     pubkeys.dedup();
     assert_eq!(
         pubkeys.len(),
-        NUM_ISSUERS,
+        NUM_ORACLES,
         "All 20 keypairs should have unique public keys"
     );
 }
@@ -331,7 +331,7 @@ fn build_multisig_create_instruction(
 #[ignore]
 async fn test_squads_vault_creation() {
     let client = create_devnet_client();
-    let (_ed_keys, sol_keys) = generate_issuer_keypairs();
+    let (_ed_keys, sol_keys) = generate_oracle_keypairs();
 
     // Use first keypair as the creator
     let creator = &sol_keys[0];
@@ -414,9 +414,9 @@ async fn test_squads_vault_creation() {
     // Verify all 20 members are registered
     assert_eq!(
         multisig.members.len(),
-        NUM_ISSUERS,
+        NUM_ORACLES,
         "Should have {} members",
-        NUM_ISSUERS
+        NUM_ORACLES
     );
 
     // Verify each member pubkey is present
@@ -457,7 +457,7 @@ impl VaultTestContext {
     /// Airdrops SOL to creator and create_key.
     async fn setup() -> Self {
         let client = create_devnet_client();
-        let (_ed_keys, sol_keys) = generate_issuer_keypairs();
+        let (_ed_keys, sol_keys) = generate_oracle_keypairs();
 
         let creator = &sol_keys[0];
         let create_key = Keypair::new();
@@ -565,7 +565,7 @@ async fn test_proposal_lifecycle() {
     );
     assert!(!status.is_executed, "Proposal should not be executed yet");
 
-    // AC #4: Have 10 issuers approve - verify threshold NOT reached
+    // AC #4: Have 10 oracles approve - verify threshold NOT reached
     // Fund members 1..11 for approval transactions
     for i in 1..=11 {
         ctx.fund_member(i).await;
@@ -619,7 +619,7 @@ async fn test_proposal_lifecycle() {
         eprintln!("AC #4 verified: ThresholdNotReached with {} approvals", status_10.approval_count);
     }
 
-    // AC #3: Have 11th issuer approve - verify threshold IS reached
+    // AC #3: Have 11th oracle approve - verify threshold IS reached
     let approve_11 = squads
         .approve_proposal(&ctx.sol_keys[11], result.proposal_id)
         .await;
@@ -884,7 +884,7 @@ async fn test_jupiter_swap_via_squads() {
 
     eprintln!("Jupiter swap proposal created: {}", proposal.proposal_id);
 
-    // Have 11 issuers approve
+    // Have 11 oracles approve
     for i in 1..=11 {
         ctx.fund_member(i).await;
         tokio::time::sleep(Duration::from_millis(200)).await;

@@ -67,7 +67,7 @@ impl SymbolMap {
 
     /// Get all mapped assets in deterministic order (sorted by address).
     ///
-    /// CRITICAL: The ordering must be identical across all issuer processes.
+    /// CRITICAL: The ordering must be identical across all oracle processes.
     /// HashMap iteration order is non-deterministic, so we sort by address bytes.
     /// This ensures leader and follower agree on asset index → address mapping
     /// during price consensus.

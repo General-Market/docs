@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Morpho, Id, MarketParams, Market} from "@morpho-blue/Morpho.sol";
 import {MarketParamsLib} from "@morpho-blue/libraries/MarketParamsLib.sol";
 import {CuratorRateIRM} from "../src/irm/CuratorRateIRM.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -19,7 +19,7 @@ contract CuratorRateIRMTest is TestHelper {
     CuratorRateIRM public irm;
     Morpho public morpho;
     ITPNAVOracle public oracle;
-    MirrorIssuerRegistry public mirrorRegistry;
+    MirrorOracleRegistry public mirrorRegistry;
     MockERC20 public itp;
     MockERC20 public usdc;
     MarketParams public marketParams;
@@ -47,19 +47,19 @@ contract CuratorRateIRMTest is TestHelper {
 
         // Deploy mirror registry with the real aggregated pubkey for seeds 0,1,2
         bytes memory aggPubkey = blsAggPubkey("0,1,2");
-        MirrorIssuerRegistry mirrorImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry mirrorImpl = new MirrorOracleRegistry();
         ERC1967Proxy mirrorProxy = new ERC1967Proxy(
             address(mirrorImpl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (aggPubkey, 2, 3, address(this)))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (aggPubkey, 2, 3, address(this)))
         );
-        mirrorRegistry = MirrorIssuerRegistry(address(mirrorProxy));
+        mirrorRegistry = MirrorOracleRegistry(address(mirrorProxy));
 
         // Sync mirror registry with individual pubkeys and create a snapshot (TOFU bootstrap)
-        bytes[] memory issuerPubkeys = new bytes[](3);
-        uint256[] memory issuerIdList = new uint256[](3);
+        bytes[] memory oraclePubkeys = new bytes[](3);
+        uint256[] memory oracleIdList = new uint256[](3);
         for (uint8 i = 0; i < 3; i++) {
-            issuerPubkeys[i] = blsPubkey(i);
-            issuerIdList[i] = i;
+            oraclePubkeys[i] = blsPubkey(i);
+            oracleIdList[i] = i;
         }
         uint256 newActiveBitmask = 0x07;
         bytes32 syncHash = keccak256(
@@ -68,14 +68,14 @@ contract CuratorRateIRMTest is TestHelper {
                 block.chainid,
                 address(mirrorRegistry),
                 SYNC_NONCE,
-                keccak256(abi.encode(issuerPubkeys, issuerIdList)),
+                keccak256(abi.encode(oraclePubkeys, oracleIdList)),
                 newActiveBitmask,
                 uint256(3),
                 uint256(2)
             )
         );
-        bytes memory syncSig = signWithTestIssuers(syncHash);
-        mirrorRegistry.sync(issuerPubkeys, issuerIdList, newActiveBitmask, 3, 2, SYNC_NONCE, syncSig, 0, 0);
+        bytes memory syncSig = signWithTestOracles(syncHash);
+        mirrorRegistry.sync(oraclePubkeys, oracleIdList, newActiveBitmask, 3, 2, SYNC_NONCE, syncSig, 0, 0);
 
         // Deploy oracle
         oracle = new ITPNAVOracle(address(mirrorRegistry), address(itp), ORACLE_PRICE);
@@ -130,7 +130,7 @@ contract CuratorRateIRMTest is TestHelper {
         uint256 cycleNumber
     ) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(oracle), address(itp), newPrice, timestamp, cycleNumber));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ BASIC RATE TESTS ============

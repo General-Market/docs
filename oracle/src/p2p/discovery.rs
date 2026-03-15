@@ -1,8 +1,8 @@
 //! Peer discovery mechanisms for P2P transport
 //!
-//! Provides different strategies for discovering peer issuers:
+//! Provides different strategies for discovering peer oracles:
 //! - `StaticPeerDiscovery` - Read from config file (dev mode)
-//! - `OnChainPeerDiscovery` - Read from IssuerRegistry contract (production)
+//! - `OnChainPeerDiscovery` - Read from OracleRegistry contract (production)
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,7 +21,7 @@ use common::types::PeerInfo;
 pub trait PeerDiscovery: Send + Sync {
     /// Discover available peers
     ///
-    /// Returns a list of peer information for all known issuers.
+    /// Returns a list of peer information for all known oracles.
     async fn discover_peers(&self) -> Result<Vec<PeerInfo>, Error>;
 
     /// Get the refresh interval for periodic discovery
@@ -70,13 +70,13 @@ impl PeerDiscovery for StaticPeerDiscovery {
     }
 }
 
-/// On-chain peer discovery from IssuerRegistry contract
+/// On-chain peer discovery from OracleRegistry contract
 ///
-/// Reads active issuers from the blockchain and extracts their P2P connection info.
-/// The `ip` field in the IssuerRegistry is a `bytes32` that stores a UTF-8 string
+/// Reads active oracles from the blockchain and extracts their P2P connection info.
+/// The `ip` field in the OracleRegistry is a `bytes32` that stores a UTF-8 string
 /// of the form `"ip:port"` (e.g., `"127.0.0.1:9000"`), left-aligned and zero-padded.
 pub struct OnChainPeerDiscovery<R: ?Sized> {
-    /// Chain reader for querying the IssuerRegistry contract
+    /// Chain reader for querying the OracleRegistry contract
     chain_reader: Arc<R>,
     /// Cache of discovered peers
     cached_peers: Arc<RwLock<Vec<PeerInfo>>>,
@@ -112,9 +112,9 @@ impl<R: ChainReader + ?Sized + 'static> OnChainPeerDiscovery<R> {
 #[async_trait]
 impl<R: ChainReader + ?Sized + 'static> PeerDiscovery for OnChainPeerDiscovery<R> {
     async fn discover_peers(&self) -> Result<Vec<PeerInfo>, Error> {
-        // Query IssuerRegistry for all active issuers
-        let issuers = match self.chain_reader.get_issuer_registry().await {
-            Ok(issuers) => issuers,
+        // Query OracleRegistry for all active oracles
+        let oracles = match self.chain_reader.get_oracle_registry().await {
+            Ok(oracles) => oracles,
             Err(e) => {
                 warn!(error = %e, "On-chain peer discovery failed, returning cached peers");
                 return Ok(self.get_cached_peers().await);
@@ -122,25 +122,25 @@ impl<R: ChainReader + ?Sized + 'static> PeerDiscovery for OnChainPeerDiscovery<R
         };
 
         let mut peers = Vec::new();
-        for issuer in &issuers {
+        for oracle in &oracles {
             // Skip ourselves by address
             if let Some(our_addr) = self.our_address {
-                if issuer.addr == our_addr {
-                    debug!(addr = ?issuer.addr, "Skipping own address in discovery");
+                if oracle.addr == our_addr {
+                    debug!(addr = ?oracle.addr, "Skipping own address in discovery");
                     continue;
                 }
             }
 
             // Parse ip:port from the bytes32 ip field
-            let ip_str = issuer.ip_string();
+            let ip_str = oracle.ip_string();
             if ip_str.is_empty() {
-                warn!(addr = ?issuer.addr, "Issuer has empty IP field, skipping");
+                warn!(addr = ?oracle.addr, "Oracle has empty IP field, skipping");
                 continue;
             }
 
             let parts: Vec<&str> = ip_str.split(':').collect();
             if parts.len() != 2 {
-                warn!(addr = ?issuer.addr, ip = %ip_str, "Invalid IP:port format in IssuerRegistry, skipping");
+                warn!(addr = ?oracle.addr, ip = %ip_str, "Invalid IP:port format in OracleRegistry, skipping");
                 continue;
             }
 
@@ -148,7 +148,7 @@ impl<R: ChainReader + ?Sized + 'static> PeerDiscovery for OnChainPeerDiscovery<R
             let port = match parts[1].parse::<u16>() {
                 Ok(p) => p,
                 Err(_) => {
-                    warn!(addr = ?issuer.addr, ip = %ip_str, "Invalid port in IssuerRegistry, skipping");
+                    warn!(addr = ?oracle.addr, ip = %ip_str, "Invalid port in OracleRegistry, skipping");
                     continue;
                 }
             };
@@ -167,7 +167,7 @@ impl<R: ChainReader + ?Sized + 'static> PeerDiscovery for OnChainPeerDiscovery<R
             .filter(|p| p.peer_id == [0u8; 32] || p.peer_id != self.our_peer_id)
             .collect();
 
-        info!(count = filtered.len(), total_issuers = issuers.len(), "On-chain peer discovery complete");
+        info!(count = filtered.len(), total_oracles = oracles.len(), "On-chain peer discovery complete");
 
         // Update cache for fast access between refreshes
         self.update_cache(filtered.clone()).await;

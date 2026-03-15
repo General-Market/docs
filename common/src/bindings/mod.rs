@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub use crate::types::{
     // Enums
     ITPStatus,
-    IssuerStatus,
+    OracleStatus,
     OrderStatus,
     PriceSource,
     Side,
@@ -24,7 +24,7 @@ pub use crate::types::{
     CollateralMove,
     Fill,
     ITPCore,
-    Issuer,
+    Oracle,
     KeyRotation,
     LimitOrder,
     PendingLock,

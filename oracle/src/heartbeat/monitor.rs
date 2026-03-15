@@ -17,7 +17,7 @@ use super::metrics::HeartbeatMetrics;
 use super::tracker::PeerHealthTracker;
 use super::types::{KickVoteProposal, HEARTBEAT_INTERVAL};
 
-/// Heartbeat monitor for issuer node health tracking
+/// Heartbeat monitor for oracle node health tracking
 ///
 /// Manages periodic heartbeat sending and peer health monitoring.
 pub struct HeartbeatMonitor<P: P2PTransport + Send + Sync + 'static> {

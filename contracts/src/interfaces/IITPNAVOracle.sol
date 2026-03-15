@@ -12,14 +12,14 @@ interface IITPNAVOracle {
     function price() external view returns (uint256);
 
     /// @notice Update the ITP NAV price with a BLS-verified signature
-    /// @dev Permissionless — anyone can call with a valid BLS signature from the issuer network.
+    /// @dev Permissionless — anyone can call with a valid BLS signature from the oracle network.
     ///      Uses BLSVerifier._verifyBLS() internally (multi-pairing, 2/3 threshold, snapshot-based).
     /// @param newPrice The new NAV price (36 decimals)
-    /// @param timestamp The timestamp associated with the price (from issuer cycle)
-    /// @param cycleNumber The issuer cycle number (must be > lastCycleNumber)
+    /// @param timestamp The timestamp associated with the price (from oracle cycle)
+    /// @param cycleNumber The oracle cycle number (must be > lastCycleNumber)
     /// @param blsSignature Aggregated BLS signature (G1, 64 bytes)
     /// @param referenceNonce Registry snapshot nonce for BLS verification
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function updatePrice(
         uint256 newPrice,
         uint256 timestamp,

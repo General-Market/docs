@@ -200,7 +200,7 @@ test.describe('Leaderboard Per-Source', () => {
   test('leaderboard API accepts batch_id filter', async ({ page }) => {
     // Direct API test — verify the proxy passes batch_id through
     const response = await page.request.get('/api/vision/leaderboard?batch_id=1');
-    // On testnet, issuer may return 502 if no leaderboard data
+    // On testnet, oracle may return 502 if no leaderboard data
     const data = await response.json();
     expect(data).toHaveProperty('leaderboard');
     expect(Array.isArray(data.leaderboard)).toBe(true);

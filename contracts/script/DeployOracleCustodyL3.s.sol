@@ -5,39 +5,39 @@ import {Script, console2} from "forge-std/Script.sol";
 import {BLSCustody} from "../src/core/BLSCustody.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-/// @title DeployIssuerCustodyL3 - Deploy IssuerCustody contract on L3
-/// @notice Deploys BLSCustody as IssuerCustody L3 for holding L3Usdc after bridge from Settlement
-/// @dev Story 7.7: IssuerCustody L3 is a BLSCustody instance with Index contract whitelisted
-///      Uses existing IssuerRegistry for BLS verification
-contract DeployIssuerCustodyL3 is Script {
+/// @title DeployOracleCustodyL3 - Deploy OracleCustody contract on L3
+/// @notice Deploys BLSCustody as OracleCustody L3 for holding L3Usdc after bridge from Settlement
+/// @dev Story 7.7: OracleCustody L3 is a BLSCustody instance with Index contract whitelisted
+///      Uses existing OracleRegistry for BLS verification
+contract DeployOracleCustodyL3 is Script {
     // Deployed addresses
-    address public issuerCustodyL3Proxy;
-    address public issuerCustodyL3Impl;
+    address public oracleCustodyL3Proxy;
+    address public oracleCustodyL3Impl;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
-        // Required: IssuerRegistry address
-        address issuerRegistryProxy = vm.envAddress("ISSUER_REGISTRY");
+        // Required: OracleRegistry address
+        address oracleRegistryProxy = vm.envAddress("ORACLE_REGISTRY");
 
         console2.log("===========================================");
-        console2.log("IssuerCustody L3 DEPLOYMENT");
+        console2.log("OracleCustody L3 DEPLOYMENT");
         console2.log("===========================================");
         console2.log("Chain ID:", block.chainid);
         console2.log("Deployer:", deployer);
         console2.log("Balance:", deployer.balance);
-        console2.log("IssuerRegistry:", issuerRegistryProxy);
+        console2.log("OracleRegistry:", oracleRegistryProxy);
         console2.log("");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        _deployIssuerCustodyL3(issuerRegistryProxy);
+        _deployOracleCustodyL3(oracleRegistryProxy);
 
         vm.stopBroadcast();
 
         // Post-deploy verification
-        _verify(issuerRegistryProxy);
+        _verify(oracleRegistryProxy);
 
         // Save deployment output
         _saveDeployment(deployer);
@@ -46,36 +46,36 @@ contract DeployIssuerCustodyL3 is Script {
         console2.log("===========================================");
         console2.log("DEPLOYMENT COMPLETE");
         console2.log("===========================================");
-        console2.log("IssuerCustody L3:", issuerCustodyL3Proxy);
+        console2.log("OracleCustody L3:", oracleCustodyL3Proxy);
     }
 
-    function _deployIssuerCustodyL3(address issuerRegistryProxy) internal {
-        console2.log("Deploying IssuerCustody L3 (BLSCustody instance)...");
+    function _deployOracleCustodyL3(address oracleRegistryProxy) internal {
+        console2.log("Deploying OracleCustody L3 (BLSCustody instance)...");
 
         BLSCustody impl = new BLSCustody();
-        issuerCustodyL3Impl = address(impl);
-        console2.log("  Implementation:", issuerCustodyL3Impl);
+        oracleCustodyL3Impl = address(impl);
+        console2.log("  Implementation:", oracleCustodyL3Impl);
 
         ERC1967Proxy proxy = new ERC1967Proxy(
-            issuerCustodyL3Impl,
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            oracleCustodyL3Impl,
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
-        issuerCustodyL3Proxy = address(proxy);
-        console2.log("  Proxy:", issuerCustodyL3Proxy);
+        oracleCustodyL3Proxy = address(proxy);
+        console2.log("  Proxy:", oracleCustodyL3Proxy);
         console2.log("");
     }
 
-    function _verify(address issuerRegistryProxy) internal view {
+    function _verify(address oracleRegistryProxy) internal view {
         console2.log("Verifying deployment...");
 
-        BLSCustody custody = BLSCustody(issuerCustodyL3Proxy);
+        BLSCustody custody = BLSCustody(oracleCustodyL3Proxy);
         require(
-            address(custody.issuerRegistry()) == issuerRegistryProxy,
-            "IssuerCustody L3: issuerRegistry mismatch"
+            address(custody.oracleRegistry()) == oracleRegistryProxy,
+            "OracleCustody L3: oracleRegistry mismatch"
         );
-        require(custody.nonce() == 0, "IssuerCustody L3: nonce should be 0");
-        console2.log("  IssuerCustody L3 issuerRegistry:", address(custody.issuerRegistry()));
-        console2.log("  IssuerCustody L3 nonce:", custody.nonce());
+        require(custody.nonce() == 0, "OracleCustody L3: nonce should be 0");
+        console2.log("  OracleCustody L3 oracleRegistry:", address(custody.oracleRegistry()));
+        console2.log("  OracleCustody L3 nonce:", custody.nonce());
         console2.log("  Deployment verified successfully!");
         console2.log("");
     }
@@ -87,15 +87,15 @@ contract DeployIssuerCustodyL3 is Script {
             '  "deployer": "', vm.toString(deployer), '",\n',
             '  "timestamp": ', vm.toString(block.timestamp), ',\n',
             '  "contracts": {\n',
-            '    "IssuerCustodyL3": {\n',
-            '      "proxy": "', vm.toString(issuerCustodyL3Proxy), '",\n',
-            '      "implementation": "', vm.toString(issuerCustodyL3Impl), '"\n',
+            '    "OracleCustodyL3": {\n',
+            '      "proxy": "', vm.toString(oracleCustodyL3Proxy), '",\n',
+            '      "implementation": "', vm.toString(oracleCustodyL3Impl), '"\n',
             '    }\n',
             '  }\n',
             '}'
         );
 
-        string memory outputPath = vm.envOr("DEPLOYMENT_OUTPUT", string("../deployments/issuer-custody-l3.json"));
+        string memory outputPath = vm.envOr("DEPLOYMENT_OUTPUT", string("../deployments/oracle-custody-l3.json"));
         vm.writeFile(outputPath, json);
         console2.log("Addresses saved to:", outputPath);
     }

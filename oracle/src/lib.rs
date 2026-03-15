@@ -1,7 +1,7 @@
-//! Issuer node implementation for Index L3
+//! Oracle node implementation for Index L3
 //!
-//! This crate provides the issuer node implementation for the Index L3 network.
-//! The issuer node participates in order batching, BLS consensus, and trade execution.
+//! This crate provides the oracle node implementation for the Index L3 network.
+//! The oracle node participates in order batching, BLS consensus, and trade execution.
 
 pub mod abi;
 pub mod api;
@@ -33,7 +33,7 @@ pub use chain::{
     EthersChainWriter, GasConfig, ItpCreationRequest, NonceManager, RetryConfig, WriterContractAddresses,
 };
 pub use common;
-pub use config::{ConfigBuilder, ConfigError, IssuerConfig};
+pub use config::{ConfigBuilder, ConfigError, OracleConfig};
 pub use cycle::{CycleConfig, CycleManager, CyclePhase, CycleState, CycleTrigger, MIN_CYCLE_DURATION_MS};
 pub use netting::{
     allocate_rebalance_fills, bridge_netting, calculate_net_deltas, compute_rebalance_progress,
@@ -57,7 +57,7 @@ pub use slippage::{
     SourceFill,
 };
 pub use state::{
-    chains, Checkpoint, ITPState, IssuerState, ReconstructionStats, ReconstructorConfig,
+    chains, Checkpoint, ITPState, OracleState, ReconstructionStats, ReconstructorConfig,
     StateReconstructor,
 };
 pub use consensus::{

@@ -6,7 +6,7 @@
   },
   "stats": {
     "consensus_status": "共识状态",
-    "active_issuers": "活跃发行人",
+    "active_oracles": "活跃发行人",
     "avg_fill_speed": "平均成交速度",
     "orders_total": "订单 (总计)",
     "l3_block": "L3 区块"
@@ -16,10 +16,10 @@
     "healthy": "● 健康",
     "offline": "● 离线"
   },
-  "issuer_network": {
+  "oracle_network": {
     "section_title": "发行人网络",
     "section_subtitle": "BLS 共识节点",
-    "issuer_label": "发行人 {name}",
+    "oracle_label": "发行人 {name}",
     "node_details": {
       "address": "地址",
       "bls_pubkey": "BLS 公钥",
@@ -93,7 +93,7 @@
     "label": "Performance",
     "consensus_threshold": "Consensus Threshold",
     "bls_required": "BLS signatures required",
-    "active_issuers": "Active Issuers",
+    "active_oracles": "Active Oracles",
     "processing_orders": "Processing orders",
     "network": "Network",
     "orbit_chain": "Orbit chain"

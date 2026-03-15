@@ -73,7 +73,7 @@ export function generateReport(report: StressTestReport): { markdown: string; js
 
   // Phase 2: Relay Stress
   if (report.phases.relayStress) {
-    md += `## Phase 2: Issuer Relay Stress\n\n`;
+    md += `## Phase 2: Oracle Relay Stress\n\n`;
     md += `| Level | Requests | Send Time | Completion Time | Rate (req/s) | Health Stable | Breaking Point |\n`;
     md += `|-------|----------|-----------|-----------------|--------------|---------------|----------------|\n`;
     for (const r of report.phases.relayStress) {

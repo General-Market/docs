@@ -29,7 +29,7 @@
 ## Index -- Architecture
 - [System Architecture](https://generalmarket.io/docs/index/architecture/overview): Complete architecture overview — all components, chains, and data flows
 - [Contracts](https://generalmarket.io/docs/index/architecture/contracts): Smart contract design, BLS verification, NAV model
-- [Issuer Nodes](https://generalmarket.io/docs/index/architecture/issuer-nodes): Rust consensus layer, BLS signing, 1-second cycles
+- [Oracle Nodes](https://generalmarket.io/docs/index/architecture/oracle-nodes): Rust consensus layer, BLS signing, 1-second cycles
 - [Data Node](https://generalmarket.io/docs/index/architecture/data-node): Price feeds, market data serving
 - [Bridge Architecture](https://generalmarket.io/docs/index/architecture/bridge): Cross-chain bridge between L3 and Settlement, buy/sell flows, backing guarantees
 - [Curator Service](https://generalmarket.io/docs/index/architecture/curator): Oracle NAV collection, Morpho allocation, and health monitoring
@@ -69,7 +69,7 @@
 - [API Overview](https://generalmarket.io/docs/vision/api/overview): Base URL, authentication, common patterns
 - [Batches](https://generalmarket.io/docs/vision/api/batches): List and query active batches
 - [State](https://generalmarket.io/docs/vision/api/state): Batch state snapshots with player positions
-- [Bitmap](https://generalmarket.io/docs/vision/api/bitmap): Submit bitmap to issuers
+- [Bitmap](https://generalmarket.io/docs/vision/api/bitmap): Submit bitmap to oracles
 - [Balance](https://generalmarket.io/docs/vision/api/balance): BLS-signed balance proofs
 - [Ticks](https://generalmarket.io/docs/vision/api/ticks): Tick history and reveal endpoints
 - [Leaderboard](https://generalmarket.io/docs/vision/api/leaderboard): Player rankings and stats

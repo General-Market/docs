@@ -2,7 +2,7 @@
  * Phase 5: Combined Load (60s sustained)
  *
  * Runs all operations simultaneously at escalating rates.
- * Measures issuer cycle duration, fill latency percentiles, and health stability.
+ * Measures oracle cycle duration, fill latency percentiles, and health stability.
  */
 
 import {

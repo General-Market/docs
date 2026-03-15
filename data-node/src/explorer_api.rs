@@ -146,7 +146,7 @@ async fn health_history(
             COALESCE(SUM(p2p_messages_sent), 0)::BIGINT          AS p2p_messages_sent,
             COALESCE(SUM(peers_healthy), 0)::BIGINT              AS total_peers_healthy,
             COALESCE(SUM(peers_unhealthy), 0)::BIGINT            AS total_peers_unhealthy
-        FROM issuer_health_snapshots
+        FROM oracle_health_snapshots
         WHERE poll_batch_ts > NOW() - make_interval(secs => $1)
         GROUP BY poll_batch_ts
         ORDER BY poll_batch_ts ASC
@@ -203,7 +203,7 @@ async fn health_latest(
             COALESCE(SUM(peers_unhealthy), 0)::BIGINT            AS total_peers_unhealthy
         FROM (
             SELECT DISTINCT ON (node_id) *
-            FROM issuer_health_snapshots
+            FROM oracle_health_snapshots
             WHERE poll_batch_ts > NOW() - make_interval(secs => $1)
             ORDER BY node_id, poll_batch_ts DESC
         ) latest_per_node

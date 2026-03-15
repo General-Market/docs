@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../src/custody/SettlementBridgeCustody.sol";
 import "../src/mocks/MockERC20.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract SettlementBridgeCustodyTest is TestHelper {
     SettlementBridgeCustody public custody;
     SettlementBridgeCustody public implementation;
-    IssuerRegistry public mockRegistry;
+    OracleRegistry public mockRegistry;
     Governance public governance;
     MockERC20 public usdc;
 
@@ -59,9 +59,9 @@ contract SettlementBridgeCustodyTest is TestHelper {
         // Set Settlement chain ID for testing
         vm.chainId(SETTLEMENT_CHAIN_ID);
 
-        // Deploy real governance and issuer registry via UUPS proxy
+        // Deploy real governance and oracle registry via UUPS proxy
         governance = deployGovernance(address(this));
-        mockRegistry = deployIssuerRegistry(address(governance));
+        mockRegistry = deployOracleRegistry(address(governance));
         // CRITICAL: Deploy USDC with 6 decimals (real USDC format) for Settlement side
         usdc = new MockERC20("USDC", "USDC", 6);
 
@@ -76,8 +76,8 @@ contract SettlementBridgeCustodyTest is TestHelper {
 
         custody = SettlementBridgeCustody(address(proxy));
 
-        // Register 3 real BLS test issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(mockRegistry, address(this));
+        // Register 3 real BLS test oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(mockRegistry, address(this));
 
         // Fund custody contract for release tests (6-decimal amounts)
         usdc.mint(address(custody), 10_000_000 * 1e6); // 10M USDC
@@ -115,39 +115,39 @@ contract SettlementBridgeCustodyTest is TestHelper {
         uint256 nonce
     ) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(custody), proof, amount, nonce));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign a proposeUpgrade call with real BLS signature
     function _signProposeUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(custody), "proposeUpgrade", newImpl));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign a proposeEmergencyUpgrade call with real BLS signature
     function _signProposeEmergencyUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(custody), "proposeEmergencyUpgrade", newImpl));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     /// @notice Sign a cancelUpgrade call with real BLS signature
     function _signCancelUpgrade(address pendingImpl) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(custody), "cancelUpgrade", pendingImpl));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ INITIALIZATION TESTS ============
 
     function test_initialize_setsCorrectValues() public view {
-        assertEq(address(custody.issuerRegistry()), address(mockRegistry));
+        assertEq(address(custody.oracleRegistry()), address(mockRegistry));
         assertEq(address(custody.usdc()), address(usdc));
         assertEq(custody.l3IndexContract(), l3IndexAddr);
         assertEq(custody.crossChainOrderId(), 0);
     }
 
-    function test_initialize_revertsOnZeroIssuerRegistry() public {
+    function test_initialize_revertsOnZeroOracleRegistry() public {
         SettlementBridgeCustody impl = new SettlementBridgeCustody();
-        vm.expectRevert(ErrorsLib.E043_ZeroIssuerRegistry.selector);
+        vm.expectRevert(ErrorsLib.E043_ZeroOracleRegistry.selector);
         new ERC1967Proxy(
             address(impl),
             abi.encodeCall(SettlementBridgeCustody.initialize, (address(0), address(usdc), l3IndexAddr, address(0)))

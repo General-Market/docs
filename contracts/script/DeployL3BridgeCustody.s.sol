@@ -11,11 +11,11 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract DeployL3BridgeCustody is Script {
     function run() external returns (address proxy) {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        address issuerRegistry = vm.envAddress("ISSUER_REGISTRY");
+        address oracleRegistry = vm.envAddress("ORACLE_REGISTRY");
         address usdc = vm.envAddress("USDC");
 
         console.log("=== L3BridgeCustody Deployment ===");
-        console.log("IssuerRegistry:", issuerRegistry);
+        console.log("OracleRegistry:", oracleRegistry);
         console.log("USDC:", usdc);
 
         vm.startBroadcast(deployerKey);
@@ -27,7 +27,7 @@ contract DeployL3BridgeCustody is Script {
         // Initialize data
         bytes memory initData = abi.encodeWithSelector(
             L3BridgeCustody.initialize.selector,
-            issuerRegistry,
+            oracleRegistry,
             usdc
         );
 

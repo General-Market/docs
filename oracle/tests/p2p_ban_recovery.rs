@@ -8,7 +8,7 @@
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
-use issuer::p2p::peer_scoring::PeerScorer;
+use oracle::p2p::peer_scoring::PeerScorer;
 
 type PeerId = [u8; 32];
 
@@ -18,7 +18,7 @@ fn test_peer(n: u8) -> PeerId {
     id
 }
 
-/// Simulates the production startup race: 3 issuers start simultaneously,
+/// Simulates the production startup race: 3 oracles start simultaneously,
 /// each getting penalized for non-leader proposals and false equivocations.
 #[test]
 fn startup_cascade_ban_and_recovery() {

@@ -143,11 +143,11 @@ impl TradeRequestEvent {
     }
 }
 
-/// AssetTradeRequest event from Index.sol (issuer-driven per-asset trades)
+/// AssetTradeRequest event from Index.sol (oracle-driven per-asset trades)
 ///
 /// Event signature: `AssetTradeRequest(uint256 indexed cycleNumber, address indexed asset, uint8 side, uint256 usdcAmount, uint256 price, address quoteToken)`
 ///
-/// Emitted after issuers decompose ITP orders into per-asset amounts and net across all ITPs.
+/// Emitted after oracles decompose ITP orders into per-asset amounts and net across all ITPs.
 /// AP monitors this to execute one vault trade per asset — no on-chain state reads needed.
 /// quoteToken tells the AP which token to settle against (USDC or USDT).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

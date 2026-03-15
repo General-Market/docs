@@ -15,9 +15,9 @@ pub trait ChainWriter: Send + Sync {
     /// # Arguments
     /// * `cycle_number` - The cycle number this batch belongs to
     /// * `order_ids` - List of order IDs to include in the batch
-    /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `bls_signature` - Aggregated BLS signature from oracle quorum
     /// * `reference_nonce` - Reference nonce for replay protection
-    /// * `signers_bitmask` - Bitmask of signing issuer indices
+    /// * `signers_bitmask` - Bitmask of signing oracle indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction
@@ -35,9 +35,9 @@ pub trait ChainWriter: Send + Sync {
     /// # Arguments
     /// * `cycle_number` - The cycle number these fills belong to
     /// * `fills` - List of fill data
-    /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `bls_signature` - Aggregated BLS signature from oracle quorum
     /// * `reference_nonce` - Reference nonce for replay protection
-    /// * `signers_bitmask` - Bitmask of signing issuer indices
+    /// * `signers_bitmask` - Bitmask of signing oracle indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction
@@ -55,9 +55,9 @@ pub trait ChainWriter: Send + Sync {
     /// # Arguments
     /// * `dest_chain_id` - Destination chain ID
     /// * `amount` - Amount to bridge (18 decimals)
-    /// * `bls_signature` - Aggregated BLS signature from issuer quorum
+    /// * `bls_signature` - Aggregated BLS signature from oracle quorum
     /// * `reference_nonce` - Reference nonce for replay protection
-    /// * `signers_bitmask` - Bitmask of signing issuer indices
+    /// * `signers_bitmask` - Bitmask of signing oracle indices
     ///
     /// # Returns
     /// Transaction hash of the submitted transaction

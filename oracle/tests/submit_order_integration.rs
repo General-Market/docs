@@ -16,11 +16,11 @@ use common::mocks::MockChainBuilder;
 use common::traits::BLSSigner;
 use common::types::{BLSSignature, PeerId};
 
-use issuer::bridge::{
+use oracle::bridge::{
     build_submit_order_hash, BridgeConfig, BridgeOrchestrator, BridgeOrderStatus,
     OrderMapping, SubmitOrderProposal, SubmitOrderResult,
 };
-use issuer::chain::CrossChainOrder;
+use oracle::chain::CrossChainOrder;
 
 // ============================================================================
 // Test Helpers
@@ -321,7 +321,7 @@ fn test_submit_order_signature_aggregation() {
 /// Simulates the submit order proposal and signature collection flow
 #[tokio::test]
 async fn test_submit_order_consensus_flow_simulation() {
-    // Setup: 3 issuers
+    // Setup: 3 oracles
     let keypair1 = test_bls_keypair(1);
     let keypair2 = test_bls_keypair(2);
     let keypair3 = test_bls_keypair(3);
@@ -494,8 +494,8 @@ fn test_submit_order_invalid_slippage_tier() {
 // ============================================================================
 
 use async_trait::async_trait;
-use issuer::bridge::{BridgeError, CrossChainOrderReader};
-use issuer::chain::CrossChainOrderData;
+use oracle::bridge::{BridgeError, CrossChainOrderReader};
+use oracle::chain::CrossChainOrderData;
 
 /// Mock CrossChainOrderReader for testing
 struct MockCrossChainOrderReader {
@@ -525,7 +525,7 @@ impl CrossChainOrderReader for MockCrossChainOrderReader {
 
 fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11; 20]),
+        oracle_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
         settlement_custody_address: Address::from([0x33; 20]),
         settlement_chain_id: 42161,
@@ -535,7 +535,7 @@ fn test_bridge_config() -> BridgeConfig {
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Arb config
-        issuer_custody_settlement: Address::from([0x55; 20]),
+        oracle_custody_settlement: Address::from([0x55; 20]),
         settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),

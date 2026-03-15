@@ -5,7 +5,7 @@ import { VISION_API_URL } from '@/lib/config'
 import type { AgentRanking, LeaderboardResponse } from '@/hooks/useLeaderboard'
 
 /**
- * Fetches Vision leaderboard from the issuer API.
+ * Fetches Vision leaderboard from the oracle API.
  * Returns data in the same AgentRanking format as the ITP leaderboard.
  * Optionally filters by batchId for per-source leaderboards.
  */

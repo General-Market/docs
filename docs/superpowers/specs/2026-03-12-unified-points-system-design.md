@@ -27,8 +27,8 @@ Migrate Vision points from frontend-only estimation to server-authoritative data
 ### New state — fixed budget distribution
 The old formula (100 pts/tick/batch, uncapped) produces variable emission depending on batch count and tick durations. The new model uses a **fixed hourly budget of 48,000 pts** distributed proportionally.
 
-**Computation**: The data-node consumes tick resolution events from the issuer API. On each tick for each batch:
-1. Call issuer's `GET /vision/batch/{id}/state` to get player balances + TVL
+**Computation**: The data-node consumes tick resolution events from the oracle API. On each tick for each batch:
+1. Call oracle's `GET /vision/batch/{id}/state` to get player balances + TVL
 2. Compute each player's TVL share: `share_i = balance_i / batch_tvl`
 3. Compute per-tick budget: `tick_budget = 48,000 / total_ticks_per_hour` where `total_ticks_per_hour` = sum of `3600 / tick_duration` across all active batches
 4. Player points: `points_i = tick_budget × share_i`
@@ -36,7 +36,7 @@ The old formula (100 pts/tick/batch, uncapped) produces variable emission depend
 
 This ensures total Vision emission is always 48,000 pts/hr regardless of how many batches exist or their tick durations.
 
-**Data source**: The data-node does NOT have direct access to Vision player balances. It fetches batch state from the issuer's existing `/vision/batch/{id}/state` endpoint (already returns player list with balances). The data-node polls all active batch IDs from `/vision/batches`, then fetches state for each on a schedule matching tick durations.
+**Data source**: The data-node does NOT have direct access to Vision player balances. It fetches batch state from the oracle's existing `/vision/batch/{id}/state` endpoint (already returns player list with balances). The data-node polls all active batch IDs from `/vision/batches`, then fetches state for each on a schedule matching tick durations.
 
 ### Tick event detection
 - Data-node polls `/vision/batches` every 30s to get active batch list with `last_tick_id`
@@ -219,7 +219,7 @@ If the data-node is down for multiple hours, missed hourly distributions are **n
 
 ### `useVisionLeaderboard` on points page
 - Replace with new `usePointsLeaderboard` hook hitting `/points/leaderboard`
-- The per-source `TopPlayers` component continues to use the existing issuer leaderboard endpoint (unchanged)
+- The per-source `TopPlayers` component continues to use the existing oracle leaderboard endpoint (unchanged)
 
 ## Edge Cases
 

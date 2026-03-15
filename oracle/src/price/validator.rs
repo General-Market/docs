@@ -1,6 +1,6 @@
 //! Price validation for staleness and tolerance checks
 //!
-//! Provides validators for ensuring price freshness and agreement between issuers.
+//! Provides validators for ensuring price freshness and agreement between oracles.
 
 use common::types::{Price, PriceSource};
 use ethers::types::{Address, U256};

@@ -8,7 +8,7 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {IBridgeProxy} from "../interfaces/IBridgeProxy.sol";
 import {IBridgedItpFactory} from "../interfaces/IBridgedItpFactory.sol";
 import {IBridgedITP} from "../interfaces/IBridgedITP.sol";
-import {IIssuerRegistry} from "../interfaces/IIssuerRegistry.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {IIndex} from "../interfaces/IIndex.sol";
 import {BLSLib} from "../libraries/BLSLib.sol";
 import {BLSVerifier} from "../libraries/BLSVerifier.sol";
@@ -32,7 +32,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
 
     // ============ STORAGE ============
 
-    IIssuerRegistry public override issuerRegistry;
+    IOracleRegistry public override oracleRegistry;
     IBridgedItpFactory public override bridgedItpFactory;
     uint256 public override nextCreationNonce;
 
@@ -88,7 +88,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     // ============ INITIALIZER ============
 
     function initialize(
-        address _issuerRegistry,
+        address _oracleRegistry,
         address _bridgedItpFactory,
         address _owner
     ) external initializer {
@@ -96,8 +96,8 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         __UUPSUpgradeable_init();
         __Pausable_init();
 
-        issuerRegistry = IIssuerRegistry(_issuerRegistry);
-        __BLSVerifier_init(_issuerRegistry);
+        oracleRegistry = IOracleRegistry(_oracleRegistry);
+        __BLSVerifier_init(_oracleRegistry);
         bridgedItpFactory = IBridgedItpFactory(_bridgedItpFactory);
     }
 
@@ -194,7 +194,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         // Mark completed
         pending.completed = true;
 
-        // orbitItpId was created on L3 by the issuer before calling this function.
+        // orbitItpId was created on L3 by the oracle before calling this function.
         // Investment.sol only exists on L3 — BridgeProxy stores the mapping here on Settlement.
         if (orbitItpId == bytes32(0)) revert ErrorsLib.E072_CreationNotFound(nonce);
 
@@ -225,7 +225,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     // ============ REBALANCE FUNCTIONS (V2 - Asset Changes) ============
 
     /// @notice Request a rebalance (permissionless, event-only)
-    /// @dev Stores request and emits event for issuers to pick up
+    /// @dev Stores request and emits event for oracles to pick up
     /// @param itpId The ITP to rebalance
     /// @param removeIndices Indices of assets to remove (sorted descending)
     /// @param addAssets Addresses of assets to add
@@ -273,7 +273,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         // Verify BLS signature via BLSVerifier
         _verifyBLS(messageHash, blsSignature, referenceNonce, signersBitmask);
 
-        // Investment.sol only exists on L3 — issuer relays rebalance to L3 separately
+        // Investment.sol only exists on L3 — oracle relays rebalance to L3 separately
         emit RebalanceCompleted(itpId, 0);
     }
 
@@ -286,7 +286,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         // Update deployer on BridgeProxy
         itpDeployer[itpId] = newDeployer;
 
-        // Investment.sol only exists on L3 — issuer relays transferCreator to L3 separately
+        // Investment.sol only exists on L3 — oracle relays transferCreator to L3 separately
         emit DeployerTransferred(itpId, currentDeployer, newDeployer);
     }
 
@@ -390,7 +390,7 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
     // ============ CROSS-CHAIN SHARE BRIDGING ============
 
     /// @notice Mint BridgedITP shares after cross-chain buy order fill on L3
-    /// @dev Called by issuers after BLS consensus confirms the fill
+    /// @dev Called by oracles after BLS consensus confirms the fill
     /// @param itpId The L3 ITP identifier
     /// @param user The user who bought ITP via bridge
     /// @param amount Amount of shares to mint (18 decimals)
@@ -505,9 +505,9 @@ contract BridgeProxy is Initializable, UUPSUpgradeable, OwnableUpgradeable, Paus
         emit ItpCreated(orbitItpId, bridgedItpAddress, type(uint256).max, deployer);
     }
 
-    function setIssuerRegistry(address _issuerRegistry) external override onlyOwner {
-        issuerRegistry = IIssuerRegistry(_issuerRegistry);
-        __BLSVerifier_init(_issuerRegistry);
+    function setOracleRegistry(address _oracleRegistry) external override onlyOwner {
+        oracleRegistry = IOracleRegistry(_oracleRegistry);
+        __BLSVerifier_init(_oracleRegistry);
     }
 
     function setBridgedItpFactory(address _bridgedItpFactory) external override onlyOwner {

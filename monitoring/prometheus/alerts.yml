@@ -101,43 +101,43 @@ groups:
           summary: "Buffer balance CRITICAL (<$100) - Refill immediately"
           description: "Current buffer balance: ${{ $value }}. Operations at risk."
 
-  - name: index_issuer_health
+  - name: index_oracle_health
     rules:
-      # Issuer consensus time (from JSON exporter metrics)
+      # Oracle consensus time (from JSON exporter metrics)
       - alert: HighConsensusTime
-        expr: issuer_last_consensus_time_ms > 500
+        expr: oracle_last_consensus_time_ms > 500
         for: 1m
         labels:
           severity: warning
         annotations:
-          summary: "Issuer consensus time above WARNING threshold (>500ms)"
+          summary: "Oracle consensus time above WARNING threshold (>500ms)"
           description: "Current consensus time: {{ $value }}ms. Possible network issue."
 
       - alert: CriticalConsensusTime
-        expr: issuer_last_consensus_time_ms > 2000
+        expr: oracle_last_consensus_time_ms > 2000
         for: 30s
         labels:
           severity: critical
         annotations:
-          summary: "Issuer consensus time CRITICAL (>2s) - Network issue"
+          summary: "Oracle consensus time CRITICAL (>2s) - Network issue"
           description: "Current consensus time: {{ $value }}ms. Network investigation required."
 
-      # Issuers online — percentage-based thresholds that work for any cluster size
+      # Oracles online — percentage-based thresholds that work for any cluster size
       # (3-node local dev, 20-node production, etc.)
-      - alert: LowIssuersOnline
-        expr: count(up{job="issuer-nodes"} == 1) / count(up{job="issuer-nodes"}) < 0.9
+      - alert: LowOraclesOnline
+        expr: count(up{job="oracle-nodes"} == 1) / count(up{job="oracle-nodes"}) < 0.9
         for: 1m
         labels:
           severity: warning
         annotations:
-          summary: "Issuers online below 90% - quorum at risk"
-          description: "{{ $value | humanizePercentage }} of issuers online. Check node health."
+          summary: "Oracles online below 90% - quorum at risk"
+          description: "{{ $value | humanizePercentage }} of oracles online. Check node health."
 
-      - alert: CriticalIssuersOnline
-        expr: count(up{job="issuer-nodes"} == 1) / count(up{job="issuer-nodes"}) < 0.7
+      - alert: CriticalOraclesOnline
+        expr: count(up{job="oracle-nodes"} == 1) / count(up{job="oracle-nodes"}) < 0.7
         for: 30s
         labels:
           severity: critical
         annotations:
-          summary: "Issuers online below 70% - QUORUM RISK"
-          description: "{{ $value | humanizePercentage }} of issuers online. Quorum may be lost."
+          summary: "Oracles online below 70% - QUORUM RISK"
+          description: "{{ $value | humanizePercentage }} of oracles online. Quorum may be lost."

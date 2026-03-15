@@ -155,7 +155,7 @@ Address:        11px / 400 / mono                  /* Wallet addresses */
 - AP Balance card (keeper health, vault holdings)
 - Fill Speed chart
 - Inventory Bump chart
-- Stat cards: Consensus threshold, Active Issuers, Network status
+- Stat cards: Consensus threshold, Active Oracles, Network status
 
 ## Component Design Patterns (from V2)
 

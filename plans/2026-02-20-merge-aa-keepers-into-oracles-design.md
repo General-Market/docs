@@ -1,4 +1,4 @@
-# Merge AA Keepers into Index Issuers — Design
+# Merge AA Keepers into Index Oracles — Design
 
 **Date**: 2026-02-20
 **Status**: Approved
@@ -6,24 +6,24 @@
 
 ## Goal
 
-The 20-node issuer network gains betting arbitration as an additional responsibility. The AA keeper binary is eliminated. All AA domain logic (bilateral resolution, portfolio scoring, arbitration listening, market data for exit prices) is adapted to Index patterns and infrastructure.
+The 20-node oracle network gains betting arbitration as an additional responsibility. The AA keeper binary is eliminated. All AA domain logic (bilateral resolution, portfolio scoring, arbitration listening, market data for exit prices) is adapted to Index patterns and infrastructure.
 
 ## Decisions
 
 | Decision | Choice | Reason |
 |----------|--------|--------|
-| Merger approach | Modular subsystem (`issuer/src/arbitration/`) | Clean separation, testable independently, minimal disruption to existing issuer |
+| Merger approach | Modular subsystem (`oracle/src/arbitration/`) | Clean separation, testable independently, minimal disruption to existing oracle |
 | Cycle integration | Separate async task | Arbitration is event-driven (30s polling), doesn't block 1s trading cycle |
 | BLS implementation | Delete AA's `bls_bn254.rs`, use `common/src/bls/` | Index's is modular, Solidity-compatible, already proven |
 | P2P transport | Delete AA's HTTP API, use Index's TCP+TLS+MessagePack | Production-grade encryption, persistent connections, existing message routing |
 | Signature threshold | Configurable, default 2 (upgradable, not hardcoded) | Start with 2-of-N for parity with AA, upgrade path to higher threshold |
-| AA contracts | Keep CollateralVault, new resolution contract using IssuerRegistry BLS | Hybrid — vault logic unchanged, verification aligned with Index |
+| AA contracts | Keep CollateralVault, new resolution contract using OracleRegistry BLS | Hybrid — vault logic unchanged, verification aligned with Index |
 | Market data | Query data-node REST API (already merged) | AA market data providers already in data-node |
 
 ## Architecture
 
 ```
-issuer binary
+oracle binary
 ├── Existing: 1-second trading cycle (ITP orders, netting, fills, bridging)
 ├── NEW: Arbitration subsystem (async, event-driven)
 │   ├── Listens for ArbitrationRequested events from CollateralVault
@@ -63,7 +63,7 @@ Dispatched by `ConsensusMessageHandler` to the arbitration subsystem.
 ## Module Structure
 
 ```
-issuer/src/arbitration/
+oracle/src/arbitration/
 ├── mod.rs              — ArbitrationSubsystem (spawns listener + processor)
 ├── listener.rs         — ArbitrationListener (polls CollateralVault events)
 ├── processor.rs        — ArbitrationProcessor (runs consensus per bet)
@@ -88,17 +88,17 @@ issuer/src/arbitration/
 | `chain/retry.rs` | **DELETED** — use Index's | Already exists |
 | `http_api.rs` | **DELETED** | Replaced by P2P message variants |
 | `heartbeat/` | **DELETED** | Index's existing heartbeat |
-| `config.rs` | Merged into issuer config | New `[arbitration]` section |
+| `config.rs` | Merged into oracle config | New `[arbitration]` section |
 | `rpc.rs`, `discovery.rs` | **DELETED** | Index's chain reader + peer discovery |
 | `backend_client.rs` | `arbitration/market_data.rs` | Query data-node REST API instead |
 
 ## New Solidity Contract: ArbitrationSettlement
 
-Replaces `ResolutionDAOVoting`. Uses `IssuerRegistry` for BLS verification.
+Replaces `ResolutionDAOVoting`. Uses `OracleRegistry` for BLS verification.
 
 ```solidity
 contract ArbitrationSettlement {
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     CollateralVault public collateralVault;
     uint256 public signatureThreshold;  // configurable, default 2
 
@@ -106,10 +106,10 @@ contract ArbitrationSettlement {
         uint256 betId,
         bool creatorWins,
         bytes calldata aggregatedSignature,  // G1 point (64 bytes)
-        uint256 signerBitmap                  // bit i = issuer i signed
+        uint256 signerBitmap                  // bit i = oracle i signed
     ) external {
         // 1. Verify popcount(signerBitmap) >= signatureThreshold
-        // 2. Compute aggregated pubkey from IssuerRegistry for set bits
+        // 2. Compute aggregated pubkey from OracleRegistry for set bits
         // 3. Verify BLS pairing: e(sig, G2) == e(H(betId||winner), aggPubkey)
         // 4. Call collateralVault.settleBet(betId, creatorWins)
     }
@@ -141,12 +141,12 @@ Phase 3: If accepted (threshold votes), each signs keccak256(betId, winner)
 Phase 4: Aggregate BLS signatures (threshold = configurable, default 2)
          Submit via ChainWriter → ArbitrationSettlement.settleBet()
     ↓
-On-chain: IssuerRegistry BLS verification → CollateralVault settlement
+On-chain: OracleRegistry BLS verification → CollateralVault settlement
 ```
 
 ## Configuration Additions
 
-New fields in issuer config:
+New fields in oracle config:
 
 ```yaml
 arbitration:
@@ -173,10 +173,10 @@ ARBITRATION_DATA_NODE_URL=http://localhost:8200
 ## What Gets Deleted
 
 After merger, `AA/keeper/` becomes dead code:
-- All `keeper/src/` — replaced by `issuer/src/arbitration/`
-- `keeper/Cargo.toml` — dependencies absorbed into issuer/common
+- All `keeper/src/` — replaced by `oracle/src/arbitration/`
+- `keeper/Cargo.toml` — dependencies absorbed into oracle/common
 - Contract `ResolutionDAOVoting` — replaced by `ArbitrationSettlement`
-- Contract `KeeperRegistry` — replaced by `IssuerRegistry`
+- Contract `KeeperRegistry` — replaced by `OracleRegistry`
 - Contract `ResolutionDAO` (keeper discovery) — no longer needed
 
 **Preserved:** `CollateralVault` contract (unchanged).
@@ -186,6 +186,6 @@ After merger, `AA/keeper/` becomes dead code:
 The signature threshold is **not hardcoded**:
 - Stored on-chain in `ArbitrationSettlement.signatureThreshold`
 - Configurable via governance (`setThreshold()`)
-- Issuer config mirrors it for local validation
+- Oracle config mirrors it for local validation
 - Default: 2 (current AA parity)
 - Future: upgradable to higher values (e.g., 11/20) via governance

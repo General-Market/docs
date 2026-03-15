@@ -1,13 +1,13 @@
 #!/bin/bash
 # =============================================================================
-# Vital E2E Test: Full Buy + Sell Flow with Live Issuers, AP, Real Bitget Prices
+# Vital E2E Test: Full Buy + Sell Flow with Live Oracles, AP, Real Bitget Prices
 # =============================================================================
 #
 # Runs the complete money trail with submitOrderFor (shares go to original user):
 #   1. Deploy contracts (if not already running)
-#   2. Start 3 issuers + AP with real Bitget prices
+#   2. Start 3 oracles + AP with real Bitget prices
 #   3. Buy ITP via SettlementBridgeCustody (cross-chain bridge flow)
-#   4. Wait for fills + verify ITP shares minted TO USER (not issuer)
+#   4. Wait for fills + verify ITP shares minted TO USER (not oracle)
 #   5. Verify order.user == USER_ADDR (share attribution)
 #   6. Sell ITP via SettlementBridgeCustody (cross-chain sell from settlement chain)
 #   7. Wait for fills + verify USDC returned to user
@@ -71,10 +71,10 @@ check_fail() {
 cleanup() {
     echo ""
     echo "=== Cleaning up ==="
-    pkill -f 'target/release/issuer' 2>/dev/null || true
+    pkill -f 'target/release/oracle' 2>/dev/null || true
     pkill -f 'target/release/ap' 2>/dev/null || true
     # Don't kill Anvils — user might want to inspect state
-    echo "Issuers and AP stopped. Both Anvils left running (L3 :8545, Settlement :8546)."
+    echo "Oracles and AP stopped. Both Anvils left running (L3 :8545, Settlement :8546)."
 }
 
 trap cleanup EXIT
@@ -116,7 +116,7 @@ fi
 if [ "$SKIP_BUILD" = false ]; then
     echo ""
     echo "=== Step 1: Building binaries ==="
-    cargo build --release -p issuer -p ap 2>&1 | tail -5
+    cargo build --release -p oracle -p ap 2>&1 | tail -5
     echo "Build complete"
 else
     echo ""
@@ -135,7 +135,7 @@ if [ "$SKIP_DEPLOY" = false ]; then
         -vv 2>&1 | tail -20
     cd ..
 
-    # Copy forge deploy output to active-deployment.json (used by start-issuers.sh / start-ap.sh)
+    # Copy forge deploy output to active-deployment.json (used by start-oracles.sh / start-ap.sh)
     if [ -f "deployments/e2e-full-system.json" ]; then
         # Reshape forge output → active-deployment format (add rpc field)
         jq --arg rpc "$RPC" '. + {rpc: $rpc}' deployments/e2e-full-system.json > "$DEPLOYMENT_FILE"
@@ -239,17 +239,17 @@ fi
 
 echo "  ITP ID:           $ITP_ID"
 
-# ==== Fund issuer signers with ETH (needed for gas on fresh Anvil) ====
+# ==== Fund oracle signers with ETH (needed for gas on fresh Anvil) ====
 echo ""
-echo "=== Funding issuer signers with ETH for gas ==="
-# Custom issuer signer addresses (derived from keys in start-issuers.sh)
-ISSUER_1_ADDR="0xC0D3C9E530Ca6d71469Bb678e6592274154d9CaD"
-ISSUER_2_ADDR="0xC0d3ca67dA45613E7c5B2d55F09b00b3c99721F4"
-ISSUER_3_ADDR="0xC0D3C8DFd3445fD2e4Dfed9D11b5b7032B3BD1ac"
+echo "=== Funding oracle signers with ETH for gas ==="
+# Custom oracle signer addresses (derived from keys in start-oracles.sh)
+ORACLE_1_ADDR="0xC0D3C9E530Ca6d71469Bb678e6592274154d9CaD"
+ORACLE_2_ADDR="0xC0d3ca67dA45613E7c5B2d55F09b00b3c99721F4"
+ORACLE_3_ADDR="0xC0D3C8DFd3445fD2e4Dfed9D11b5b7032B3BD1ac"
 # Also fund the AP address
 AP_ADDR="0x20A85a164C64B603037F647eb0E0aDeEce0BE5AC"
 
-for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$USER_ADDR"; do
+for ADDR in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$USER_ADDR"; do
     ETH_BAL=$(cast balance "$ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0")
     if [ "$ETH_BAL" = "0" ]; then
         cast send "$ADDR" --value "10ether" --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
@@ -259,31 +259,31 @@ done
 
 # Also fund on settlement chain
 echo "  Funding signers on settlement chain..."
-for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR" "$USER_ADDR"; do
+for ADDR in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR" "$USER_ADDR"; do
     cast send "$ADDR" --value "10ether" --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC" >/dev/null 2>&1
 done
 echo "  All signers funded on both chains"
 
-# Register custom issuer signer addresses in IssuerRegistry (DeployFullSystemE2E registers Anvil accounts)
+# Register custom oracle signer addresses in OracleRegistry (DeployFullSystemE2E registers Anvil accounts)
 echo ""
-echo "=== Registering custom issuer signer addresses ==="
-ISSUER_REGISTRY=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
+echo "=== Registering custom oracle signer addresses ==="
+ORACLE_REGISTRY=$(jq -r '.contracts.OracleRegistry' "$DEPLOYMENT_FILE")
 # Dummy BLS pubkey (128 bytes = G2 point)
 DUMMY_BLS_PUBKEY="0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f80"
 DUMMY_IP="0x3132372e302e302e313a39303031000000000000000000000000000000000000"
 
-for ADDR in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR"; do
-    cast send "$ISSUER_REGISTRY" "addIssuer(address,bytes32,bytes)" "$ADDR" "$DUMMY_IP" "$DUMMY_BLS_PUBKEY" \
+for ADDR in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR"; do
+    cast send "$ORACLE_REGISTRY" "addOracle(address,bytes32,bytes)" "$ADDR" "$DUMMY_IP" "$DUMMY_BLS_PUBKEY" \
         --private-key "$DEPLOYER_KEY" --rpc-url "$RPC" >/dev/null 2>&1
-    echo "  Registered $ADDR in IssuerRegistry"
+    echo "  Registered $ADDR in OracleRegistry"
 done
 
-# Verify isActiveIssuer
-IS_ACTIVE=$(cast call "$ISSUER_REGISTRY" "isActiveIssuer(address)" "$ISSUER_1_ADDR" --rpc-url "$RPC" 2>/dev/null)
+# Verify isActiveOracle
+IS_ACTIVE=$(cast call "$ORACLE_REGISTRY" "isActiveOracle(address)" "$ORACLE_1_ADDR" --rpc-url "$RPC" 2>/dev/null)
 if [ "$IS_ACTIVE" = "0x0000000000000000000000000000000000000000000000000000000000000001" ]; then
-    echo "  Verified: isActiveIssuer($ISSUER_1_ADDR) = true"
+    echo "  Verified: isActiveOracle($ORACLE_1_ADDR) = true"
 else
-    echo "  WARNING: isActiveIssuer check returned: $IS_ACTIVE"
+    echo "  WARNING: isActiveOracle check returned: $IS_ACTIVE"
 fi
 
 # ==== Read ITP NAV for limit price bounds ====
@@ -340,7 +340,7 @@ echo "  Stable tokens registered for swapStable"
 echo ""
 echo "=== Step 3: Starting services ==="
 
-pkill -f 'target/release/issuer' 2>/dev/null || true
+pkill -f 'target/release/oracle' 2>/dev/null || true
 pkill -f 'target/release/ap' 2>/dev/null || true
 sleep 1
 
@@ -350,9 +350,9 @@ if [ -f "data/ap_block_tracker.json" ]; then
     rm -f data/ap_block_tracker.json
 fi
 
-# Start issuers
-./scripts/start-issuers.sh
-echo "Issuers starting..."
+# Start oracles
+./scripts/start-oracles.sh
+echo "Oracles starting..."
 
 # Start AP
 ./scripts/start-ap.sh
@@ -378,14 +378,14 @@ done
 
 if [ "$CONNECTED" = false ]; then
     echo -e "${YELLOW}WARNING: Services may not be fully connected. Continuing anyway...${NC}"
-    echo "  Issuer 1 health: $(curl -sf http://localhost:10001/health 2>/dev/null || echo 'unreachable')"
+    echo "  Oracle 1 health: $(curl -sf http://localhost:10001/health 2>/dev/null || echo 'unreachable')"
     echo "  AP health: $(curl -sf http://localhost:9100/health 2>/dev/null || echo 'unreachable')"
 fi
 
 # ==== Step 4: Buy Flow ====
 echo ""
 echo -e "${BOLD}=== Step 4: Buy Flow (Cross-Chain Bridge) ===${NC}"
-echo "  With submitOrderFor: shares will go to USER ($USER_ADDR), not issuer"
+echo "  With submitOrderFor: shares will go to USER ($USER_ADDR), not oracle"
 
 # Record pre-buy state (SETTLEMENT_USDC deployed to L3 in single-chain E2E; dual-chain deploy TODO)
 USER_SETTLEMENT_USDC_BEFORE=$(cast call "$SETTLEMENT_USDC" "balanceOf(address)" "$USER_ADDR" --rpc-url "$RPC" 2>/dev/null || echo "0x0")
@@ -453,9 +453,9 @@ for i in $(seq 1 90); do
 done
 
 if [ "$BUY_FILLED" = true ]; then
-    check_pass "ITP shares minted to USER (not issuer)"
+    check_pass "ITP shares minted to USER (not oracle)"
 else
-    check_fail "ITP shares minted to USER" "No shares on USER_ADDR after 90s. Check logs/issuer-1.log"
+    check_fail "ITP shares minted to USER" "No shares on USER_ADDR after 90s. Check logs/oracle-1.log"
 fi
 
 # ==== Step 5b: Verify order attribution ====
@@ -490,12 +490,12 @@ else
 fi
 
 # BLS consensus (check for signature threshold reached or fills confirmed)
-if grep -q "signature threshold reached\|Fills confirmed\|Batch confirmation completed" logs/issuer-1.log 2>/dev/null; then
-    check_pass "BLS consensus reached (issuer logs)"
-elif grep -q "Submit order consensus completed\|Bridge Settlement.*L3 consensus completed" logs/issuer-1.log 2>/dev/null; then
+if grep -q "signature threshold reached\|Fills confirmed\|Batch confirmation completed" logs/oracle-1.log 2>/dev/null; then
+    check_pass "BLS consensus reached (oracle logs)"
+elif grep -q "Submit order consensus completed\|Bridge Settlement.*L3 consensus completed" logs/oracle-1.log 2>/dev/null; then
     check_pass "Consensus completed (bridge pipeline)"
 else
-    check_fail "BLS consensus" "No consensus/signature/fill logs in issuer-1.log"
+    check_fail "BLS consensus" "No consensus/signature/fill logs in oracle-1.log"
 fi
 
 # NOTE: AP log checks moved to after sell flow — AP needs ~10s to complete on-chain settlement
@@ -644,7 +644,7 @@ else
         check_fail "On-chain settlement" "No settlement or ITP-level processing logs"
     fi
 
-    # AP uses USDC directly (no auto-swap — issuers control USDC/USDT via TradeRequests)
+    # AP uses USDC directly (no auto-swap — oracles control USDC/USDT via TradeRequests)
     if grep -q "On-chain settlement executed" logs/ap.log 2>/dev/null; then
         check_pass "AP trades directly with USDC (no auto-swap)"
     elif grep -q "USDC.*USDT swap" logs/ap.log 2>/dev/null; then
@@ -707,14 +707,14 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     echo -e "${GREEN}${BOLD}ALL CHECKS PASSED${NC}"
     echo ""
     echo "Log files:"
-    echo "  logs/issuer-1.log  logs/issuer-2.log  logs/issuer-3.log"
+    echo "  logs/oracle-1.log  logs/oracle-2.log  logs/oracle-3.log"
     echo "  logs/ap.log  logs/anvil-l3.log  logs/anvil-settlement.log"
     exit 0
 else
     echo -e "${RED}${BOLD}$FAIL_COUNT CHECK(S) FAILED${NC}"
     echo ""
     echo "Debug with:"
-    echo "  tail -100 logs/issuer-1.log | grep -iE 'error|fail|warn|BLS|fill|consensus|submitOrderFor'"
+    echo "  tail -100 logs/oracle-1.log | grep -iE 'error|fail|warn|BLS|fill|consensus|submitOrderFor'"
     echo "  tail -100 logs/ap.log | grep -iE 'error|fail|price|trade|swap|USDT|sell'"
     exit 1
 fi

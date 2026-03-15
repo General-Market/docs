@@ -120,7 +120,7 @@ pub enum P2PMessage {
     ItpCreationSign {
         /// Signer's peer ID (for connection identification and bitmap calculation)
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         /// Request nonce (identifies which proposal)
         nonce: U256,
@@ -154,7 +154,7 @@ pub enum P2PMessage {
     RebalanceRequestSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         /// Request nonce (identifies which proposal)
         nonce: U256,
@@ -190,7 +190,7 @@ pub enum P2PMessage {
     BridgeSettlementToL3Sign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Order ID being signed (identifies proposal)
         order_id: U256,
@@ -230,7 +230,7 @@ pub enum P2PMessage {
     SubmitOrderForUserSign {
         /// Signer's peer ID (for connection identification and bitmap calculation)
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap calculation)
+        /// Signer's index in the oracle set (for bitmap calculation)
         signer_index: u8,
         /// Settlement order ID (identifies which proposal this signature is for)
         settlement_order_id: U256,
@@ -262,7 +262,7 @@ pub enum P2PMessage {
     ConfirmBatchSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies which proposal)
         cycle_number: u64,
@@ -292,7 +292,7 @@ pub enum P2PMessage {
     ConfirmFillsSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies which proposal)
         cycle_number: u64,
@@ -312,7 +312,7 @@ pub enum P2PMessage {
         order_ids: Vec<U256>,
         /// Total USDC amount to bridge (18 decimals)
         total_amount: U256,
-        /// Destination: IssuerCustody on Settlement
+        /// Destination: OracleCustody on Settlement
         destination: Address,
         /// Registry snapshot nonce for historical BLS verification
         reference_nonce: u64,
@@ -326,7 +326,7 @@ pub enum P2PMessage {
     BridgeL3ToSettlementSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies proposal)
         cycle_number: u64,
@@ -360,7 +360,7 @@ pub enum P2PMessage {
     ReleaseToVaultSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies proposal)
         cycle_number: u64,
@@ -390,7 +390,7 @@ pub enum P2PMessage {
     RebalanceBatchSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies proposal)
         cycle_number: u64,
@@ -424,7 +424,7 @@ pub enum P2PMessage {
     UpdateWeightsSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// ITP identifier (identifies proposal)
         itp_id: H256,
@@ -462,7 +462,7 @@ pub enum P2PMessage {
     RebalanceSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// ITP identifier (identifies proposal)
         itp_id: H256,
@@ -498,7 +498,7 @@ pub enum P2PMessage {
     SubmitSellOrderSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap)
+        /// Signer's index in the oracle set (for bitmap)
         signer_index: u8,
         /// Arb sell order ID (identifies proposal)
         order_id: U256,
@@ -530,7 +530,7 @@ pub enum P2PMessage {
     CompleteSellOrderSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap)
+        /// Signer's index in the oracle set (for bitmap)
         signer_index: u8,
         /// Arb sell order ID (identifies proposal)
         order_id: U256,
@@ -558,7 +558,7 @@ pub enum P2PMessage {
     BurnSellOrderSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in the issuer set (for bitmap)
+        /// Signer's index in the oracle set (for bitmap)
         signer_index: u8,
         /// Arb sell order ID (identifies proposal)
         order_id: U256,
@@ -568,7 +568,7 @@ pub enum P2PMessage {
 
     /// Leader proposes emitting per-asset trades after cross-ITP netting
     /// Timeout: 500ms, Retry: 1
-    /// Issuer-driven per-asset settlement
+    /// Oracle-driven per-asset settlement
     AssetTradesProposal {
         /// Leader's peer ID
         leader_id: PeerId,
@@ -585,11 +585,11 @@ pub enum P2PMessage {
 
     /// Follower signs asset trades proposal
     /// Timeout: 300ms, Retry: 0
-    /// Issuer-driven per-asset settlement
+    /// Oracle-driven per-asset settlement
     AssetTradesSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Cycle number (identifies proposal)
         cycle_number: u64,
@@ -674,7 +674,7 @@ pub enum P2PMessage {
     SetItpNavSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// ITP identifier (identifies proposal)
         itp_id: H256,
@@ -706,7 +706,7 @@ pub enum P2PMessage {
     ArbitrationPriceVote {
         /// Voter's peer ID
         voter_id: PeerId,
-        /// Voter's index in issuer set (for bitmap)
+        /// Voter's index in oracle set (for bitmap)
         voter_index: u8,
         /// Bet ID (identifies proposal)
         bet_id: U256,
@@ -721,7 +721,7 @@ pub enum P2PMessage {
     ArbitrationResolutionSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in issuer set (for bitmap)
+        /// Signer's index in oracle set (for bitmap)
         signer_index: u8,
         /// Bet ID (identifies proposal)
         bet_id: U256,
@@ -774,14 +774,14 @@ pub enum P2PMessage {
         reject_reason: Option<String>,
     },
 
-    // ==================== MirrorIssuerRegistry Sync (Step 12) ====================
+    // ==================== MirrorOracleRegistry Sync (Step 12) ====================
 
-    /// Leader proposes MirrorIssuerRegistry sync
+    /// Leader proposes MirrorOracleRegistry sync
     MirrorSyncProposal {
         leader_id: PeerId,
         nonce: u64,
-        issuer_pubkeys: Vec<Vec<u8>>,
-        issuer_ids: Vec<u64>,
+        oracle_pubkeys: Vec<Vec<u8>>,
+        oracle_ids: Vec<u64>,
         active_bitmask: U256,
         active_count: u64,
         threshold: u64,
@@ -791,7 +791,7 @@ pub enum P2PMessage {
         leader_signature: BLSSignature,
     },
 
-    /// Follower signs MirrorIssuerRegistry sync
+    /// Follower signs MirrorOracleRegistry sync
     MirrorSyncSign {
         signer_id: PeerId,
         signer_index: u8,
@@ -802,7 +802,7 @@ pub enum P2PMessage {
     // ==================== Vision Tick Consensus (T-32) ====================
 
     /// Leader proposes tick resolution result for BLS consensus.
-    /// Vision tick resolution must be agreed upon by 2/3 of issuers.
+    /// Vision tick resolution must be agreed upon by 2/3 of oracles.
     VisionTickProposal {
         /// Leader's peer ID
         leader_id: PeerId,
@@ -824,7 +824,7 @@ pub enum P2PMessage {
     VisionTickSign {
         /// Signer's peer ID
         signer_id: PeerId,
-        /// Signer's index in the issuer set
+        /// Signer's index in the oracle set
         signer_index: u8,
         /// Batch ID (identifies which proposal)
         batch_id: u64,
@@ -909,7 +909,7 @@ pub enum P2PMessage {
     /// Gossip: notify peers that we have a bitmap for (batch_id, player).
     /// Recipients check if they already have the bitmap; if not, they send
     /// BitmapRequest. DoS-protected: only the player themselves or an
-    /// issuer that received the bitmap via the API should gossip it.
+    /// oracle that received the bitmap via the API should gossip it.
     BitmapGossip {
         batch_id: u64,
         player: Address,

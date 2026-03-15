@@ -67,8 +67,8 @@ const SELECTOR_REGISTRY_NONCE: [u8; 4] = [0x6b, 0x83, 0xc2, 0xdf];
 /// Selector for mirrorRegistry.activeCount() - keccak256("activeCount()")[:4]
 const SELECTOR_ACTIVE_COUNT: [u8; 4] = [0x43, 0xc7, 0x0c, 0x85];
 
-/// Selector for issuerRegistry.activeIssuerCount() - keccak256("activeIssuerCount()")[:4]
-const SELECTOR_ACTIVE_ISSUER_COUNT: [u8; 4] = [0x9f, 0x6e, 0x3a, 0x2d];
+/// Selector for oracleRegistry.activeOracleCount() - keccak256("activeOracleCount()")[:4]
+const SELECTOR_ACTIVE_ORACLE_COUNT: [u8; 4] = [0xbc, 0xa8, 0x6a, 0xf8];
 
 /// Selector for vault.totalAssets() - keccak256("totalAssets()")[:4]
 const SELECTOR_TOTAL_ASSETS: [u8; 4] = [0x01, 0xe1, 0xd1, 0x14];
@@ -195,7 +195,7 @@ pub struct OracleStatus {
 // Types - Mirror Sync Status (Task 4.1)
 // ============================================================================
 
-/// Sync status between L3 IssuerRegistry and MirrorIssuerRegistry
+/// Sync status between L3 OracleRegistry and MirrorOracleRegistry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MirrorSyncStatus {
     /// Registry nonce on L3
@@ -206,7 +206,7 @@ pub struct MirrorSyncStatus {
     pub nonce_gap: i64,
     /// Whether registries are in sync
     pub is_synced: bool,
-    /// Active issuer count on L3
+    /// Active oracle count on L3
     pub l3_active_count: u64,
     /// Active count on mirror
     pub mirror_active_count: u64,
@@ -325,7 +325,7 @@ pub enum MonitorError {
 pub struct HealthMonitor {
     /// Main chain provider (settlement/deployment chain)
     provider: Arc<Provider<Http>>,
-    /// L3 chain provider (for IssuerRegistry)
+    /// L3 chain provider (for OracleRegistry)
     l3_provider: Arc<Provider<Http>>,
     /// Morpho Blue contract address
     morpho_address: Address,
@@ -337,7 +337,7 @@ pub struct HealthMonitor {
     itp_addresses: Vec<Address>,
     /// Mirror registry address (on settlement chain)
     mirror_registry_address: Address,
-    /// L3 IssuerRegistry address
+    /// L3 OracleRegistry address
     l3_registry_address: Address,
     /// Market IDs to monitor
     market_ids: Vec<[u8; 32]>,
@@ -552,11 +552,11 @@ impl HealthMonitor {
     // Data-Node RPC Fallback Helpers
     // ========================================================================
 
-    /// Read L3 activeIssuerCount via direct RPC (fallback when data-node unavailable)
-    async fn rpc_read_l3_active_issuer_count(&self) -> u64 {
+    /// Read L3 activeOracleCount via direct RPC (fallback when data-node unavailable)
+    async fn rpc_read_l3_active_oracle_count(&self) -> u64 {
         let tx = TransactionRequest::new()
             .to(self.l3_registry_address)
-            .data(SELECTOR_ACTIVE_ISSUER_COUNT.to_vec());
+            .data(SELECTOR_ACTIVE_ORACLE_COUNT.to_vec());
 
         match tokio::time::timeout(
             self.rpc_timeout,
@@ -970,18 +970,18 @@ impl HealthMonitor {
 
         // Read active counts (L3) — use data-node if available, otherwise direct RPC
         let l3_active_count = if let Some(ref dn) = self.data_node_client {
-            match dn.get_active_issuer_count().await {
+            match dn.get_active_oracle_count().await {
                 Ok(count) => {
-                    debug!(count, "L3 active issuer count via data-node");
+                    debug!(count, "L3 active oracle count via data-node");
                     count
                 }
                 Err(e) => {
-                    warn!(error = %e, "Data-node activeIssuerCount failed, falling back to RPC");
-                    self.rpc_read_l3_active_issuer_count().await
+                    warn!(error = %e, "Data-node activeOracleCount failed, falling back to RPC");
+                    self.rpc_read_l3_active_oracle_count().await
                 }
             }
         } else {
-            self.rpc_read_l3_active_issuer_count().await
+            self.rpc_read_l3_active_oracle_count().await
         };
 
         // Read active counts (mirror)

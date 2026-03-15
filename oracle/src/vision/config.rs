@@ -39,9 +39,9 @@ pub struct VisionConfig {
 
     /// L3 chain ID for BLS hash domain separation. Default: 111222333 (Index L3).
     pub chain_id: u64,
-    /// Number of active issuers in the network. Default: 1 (single-issuer, no consensus).
-    pub num_issuers: usize,
-    /// This issuer's node index (0-based) for signer bitmap computation.
+    /// Number of active oracles in the network. Default: 1 (single-oracle, no consensus).
+    pub num_oracles: usize,
+    /// This oracle's node index (0-based) for signer bitmap computation.
     pub node_index: u8,
 
     // =========================================================================
@@ -83,7 +83,7 @@ impl Default for VisionConfig {
             snapshot_hmac_secret: None,
             // BLS tick consensus defaults
             chain_id: 111222333,
-            num_issuers: 1,
+            num_oracles: 1,
             node_index: 0,
             // Cross-chain deposit defaults
             settlement_rpc_url: "https://arb1.arbitrum.io/rpc".into(),

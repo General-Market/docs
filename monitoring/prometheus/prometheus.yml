@@ -1,5 +1,5 @@
 # Prometheus configuration for Index Protocol monitoring
-# Scrapes AP metrics (Prometheus format) and issuer health (via JSON exporter)
+# Scrapes AP metrics (Prometheus format) and oracle health (via JSON exporter)
 
 global:
   scrape_interval: 15s
@@ -22,18 +22,18 @@ scrape_configs:
         labels:
           service: "ap"
 
-  # Issuer Nodes - via JSON exporter (multi-target pattern)
-  # Prometheus passes each issuer URL to the single json-exporter instance
-  - job_name: "issuer-nodes"
+  # Oracle Nodes - via JSON exporter (multi-target pattern)
+  # Prometheus passes each oracle URL to the single json-exporter instance
+  - job_name: "oracle-nodes"
     scrape_interval: 5s
     metrics_path: /probe
     params:
       module: [default]
     static_configs:
       - targets:
-          - "http://issuer-1:9001/health"
-          - "http://issuer-2:9002/health"
-          - "http://issuer-3:9003/health"
+          - "http://oracle-1:9001/health"
+          - "http://oracle-2:9002/health"
+          - "http://oracle-3:9003/health"
     relabel_configs:
       # Pass the target URL as ?target= parameter to json-exporter
       - source_labels: [__address__]

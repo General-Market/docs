@@ -10,7 +10,7 @@
 #   4. Upgrade contracts (UUPS proxy)
 #   5. Redeploy immutable contracts
 #   6. Seed initial BLS snapshot
-#   7. Upload + restart issuer binaries
+#   7. Upload + restart oracle binaries
 #   8. Wait for /ready on all nodes
 #   9. Unpause consensus
 #  10. Monitor first 10 rounds
@@ -33,7 +33,7 @@ DEPLOYMENT_FILE="${DEPLOYMENT_FILE:-deployments/active-deployment.json}"
 RPC="${RPC_URL:-http://142.132.164.24/}"
 BASTION="bastion"  # See vps.md for connection details
 BASTION_USER="${BASTION_USER:-max}"
-ISSUER_BINARY="${ISSUER_BINARY:-./target/release/issuer}"
+ORACLE_BINARY="${ORACLE_BINARY:-./target/release/oracle}"
 MAX_WAIT_SECS=120
 ROLLBACK_BUDGET_SECS=1800  # 30 minutes
 DRY_RUN=false
@@ -93,7 +93,7 @@ check_prereqs() {
 
 # ==== Load deployment addresses ====
 load_addresses() {
-    ISSUER_REGISTRY=$(jq -r '.contracts.IssuerRegistry' "$DEPLOYMENT_FILE")
+    ORACLE_REGISTRY=$(jq -r '.contracts.OracleRegistry' "$DEPLOYMENT_FILE")
     INVESTMENT=$(jq -r '.contracts.Index // .contracts.Investment // empty' "$DEPLOYMENT_FILE")
     BLS_CUSTODY=$(jq -r '.contracts.BLSCustody // empty' "$DEPLOYMENT_FILE")
     SETTLEMENT_CUSTODY=$(jq -r '.contracts.SettlementBridgeCustody // empty' "$DEPLOYMENT_FILE")
@@ -102,7 +102,7 @@ load_addresses() {
     FEE_REGISTRY=$(jq -r '.contracts.FeeRegistry // empty' "$DEPLOYMENT_FILE")
 
     echo -e "${BLUE}Loaded addresses from $DEPLOYMENT_FILE${NC}"
-    echo "  IssuerRegistry:   $ISSUER_REGISTRY"
+    echo "  OracleRegistry:   $ORACLE_REGISTRY"
     echo "  Investment/Index:  $INVESTMENT"
     echo "  BLSCustody:        $BLS_CUSTODY"
     echo "  SettlementBridgeCustody:  $SETTLEMENT_CUSTODY"
@@ -127,12 +127,12 @@ confirm() {
     read -rp "  Press Enter to continue (Ctrl-C to abort)... "
 }
 
-# ==== Helper: get issuer health ports from known topology ====
-# Production: issuer nodes on ports 9001-9020, health on 10001-10020
-get_issuer_endpoints() {
+# ==== Helper: get oracle health ports from known topology ====
+# Production: oracle nodes on ports 9001-9020, health on 10001-10020
+get_oracle_endpoints() {
     # Read from deployment or use defaults
     local count
-    count=$(cast call "$ISSUER_REGISTRY" "activeIssuerCount()(uint256)" --rpc-url "$RPC" 2>/dev/null || echo "3")
+    count=$(cast call "$ORACLE_REGISTRY" "activeOracleCount()(uint256)" --rpc-url "$RPC" 2>/dev/null || echo "3")
     echo "$count"
 }
 
@@ -148,7 +148,7 @@ step_pause() {
     fi
 
     local paused
-    paused=$(cast call "$ISSUER_REGISTRY" "consensusPaused()(bool)" --rpc-url "$RPC")
+    paused=$(cast call "$ORACLE_REGISTRY" "consensusPaused()(bool)" --rpc-url "$RPC")
     echo "  Current consensusPaused: $paused"
 
     if [ "$paused" = "true" ]; then
@@ -156,9 +156,9 @@ step_pause() {
         return 0
     fi
 
-    confirm "Will call setConsensusPaused(true) on IssuerRegistry"
+    confirm "Will call setConsensusPaused(true) on OracleRegistry"
 
-    run_cmd cast send "$ISSUER_REGISTRY" \
+    run_cmd cast send "$ORACLE_REGISTRY" \
         "\"setConsensusPaused(bool)\"" true \
         --rpc-url "$RPC" \
         --private-key "$DEPLOYER_KEY"
@@ -224,7 +224,7 @@ step_seed_snapshot() {
 
     # Get current aggregated pubkey
     local current_pubkey
-    current_pubkey=$(cast call "$ISSUER_REGISTRY" "getAggregatedPubkey()(bytes)" --rpc-url "$RPC" 2>/dev/null || echo "")
+    current_pubkey=$(cast call "$ORACLE_REGISTRY" "getAggregatedPubkey()(bytes)" --rpc-url "$RPC" 2>/dev/null || echo "")
 
     if [ -z "$current_pubkey" ] || [ "$current_pubkey" = "0x" ]; then
         echo -e "  ${RED}WARNING: No aggregated pubkey found on-chain${NC}"
@@ -236,12 +236,12 @@ step_seed_snapshot() {
 
     # Get current registry nonce
     local nonce
-    nonce=$(cast call "$ISSUER_REGISTRY" "registryNonce()(uint256)" --rpc-url "$RPC")
+    nonce=$(cast call "$ORACLE_REGISTRY" "registryNonce()(uint256)" --rpc-url "$RPC")
     echo "  Current registry nonce: $nonce"
 
     confirm "Will call setAggregatedPubkey(currentPubkey, $nonce) to seed bootstrap snapshot"
 
-    cast send "$ISSUER_REGISTRY" \
+    cast send "$ORACLE_REGISTRY" \
         "setAggregatedPubkey(bytes,uint256)" "$current_pubkey" "$nonce" \
         --rpc-url "$RPC" \
         --private-key "$DEPLOYER_KEY"
@@ -255,7 +255,7 @@ step_wait_ready() {
     echo -e "${BOLD}=== Step 9: Wait for all /ready endpoints ===${NC}"
 
     if [ "$DRY_RUN" = true ]; then
-        echo -e "  ${YELLOW}[DRY-RUN] Would poll /ready on all issuer health ports${NC}"
+        echo -e "  ${YELLOW}[DRY-RUN] Would poll /ready on all oracle health ports${NC}"
         return 0
     fi
 
@@ -281,7 +281,7 @@ step_unpause() {
     fi
 
     local paused
-    paused=$(cast call "$ISSUER_REGISTRY" "consensusPaused()(bool)" --rpc-url "$RPC")
+    paused=$(cast call "$ORACLE_REGISTRY" "consensusPaused()(bool)" --rpc-url "$RPC")
     echo "  Current consensusPaused: $paused"
 
     if [ "$paused" = "false" ]; then
@@ -291,7 +291,7 @@ step_unpause() {
 
     confirm "Will call setConsensusPaused(false) — consensus will resume on ALL nodes"
 
-    cast send "$ISSUER_REGISTRY" \
+    cast send "$ORACLE_REGISTRY" \
         "setConsensusPaused(bool)" false \
         --rpc-url "$RPC" \
         --private-key "$DEPLOYER_KEY"
@@ -310,14 +310,14 @@ step_monitor() {
     fi
 
     echo "  Monitoring for 30 seconds..."
-    echo "  Check issuer logs for:"
+    echo "  Check oracle logs for:"
     echo "    - Consensus success messages"
     echo "    - No INFRA-020..023 error codes"
     echo "    - No BLS verification failures"
     echo ""
     echo -e "  ${YELLOW}Manual monitoring:${NC}"
     echo "    curl -s http://<node-ip>:10001/health | jq '.consensus'"
-    echo "    ssh -J $BASTION_USER@$BASTION max@<node-ip> 'tail -20 ~/issuer.log'"
+    echo "    ssh -J $BASTION_USER@$BASTION max@<node-ip> 'tail -20 ~/oracle.log'"
     echo ""
 
     confirm "Confirm 10+ successful rounds observed. If failing, proceed to rollback."
@@ -336,7 +336,7 @@ rollback() {
 
     # Step R1: Re-pause
     echo -e "${BOLD}[R1] Re-pausing consensus...${NC}"
-    run_cmd cast send "$ISSUER_REGISTRY" \
+    run_cmd cast send "$ORACLE_REGISTRY" \
         "\"setConsensusPaused(bool)\"" true \
         --rpc-url "$RPC" \
         --private-key "$DEPLOYER_KEY"
@@ -366,13 +366,13 @@ rollback() {
     # Step R6: Restart nodes with previous binary
     echo ""
     echo -e "${BOLD}[R6] Restart nodes with previous binary${NC}"
-    echo -e "  ${YELLOW}MANUAL STEP: Upload and restart previous issuer binary on all nodes${NC}"
+    echo -e "  ${YELLOW}MANUAL STEP: Upload and restart previous oracle binary on all nodes${NC}"
     confirm "Confirm all nodes restarted with previous binary"
 
     # Step R7: Unpause
     echo ""
     echo -e "${BOLD}[R7] Unpausing consensus...${NC}"
-    run_cmd cast send "$ISSUER_REGISTRY" \
+    run_cmd cast send "$ORACLE_REGISTRY" \
         "\"setConsensusPaused(bool)\"" false \
         --rpc-url "$RPC" \
         --private-key "$DEPLOYER_KEY"
@@ -416,8 +416,8 @@ main() {
     echo ""
     echo -e "${BOLD}=== Steps 4-5: Contract upgrades ===${NC}"
     echo -e "  ${YELLOW}MANUAL STEPS:${NC}"
-    echo "    4. Upgrade proxies: IssuerRegistry, Investment, BLSCustody, etc."
-    echo "       forge script script/UpgradeIssuerRegistry.s.sol --rpc-url $RPC --broadcast"
+    echo "    4. Upgrade proxies: OracleRegistry, Investment, BLSCustody, etc."
+    echo "       forge script script/UpgradeOracleRegistry.s.sol --rpc-url $RPC --broadcast"
     echo "    5. Redeploy immutable contracts: ITPNAVOracle, Vision, etc."
     echo "       - Re-register ITPNAVOracle in Morpho market"
     echo "       - Update deployment JSONs with new addresses"
@@ -430,9 +430,9 @@ main() {
     echo ""
     echo -e "${BOLD}=== Steps 7-8: Upload binary + restart nodes ===${NC}"
     echo -e "  ${YELLOW}MANUAL STEPS:${NC}"
-    echo "    7. Build: cargo build --release -p issuer"
-    echo "    8. Upload: scp -J $BASTION_USER@$BASTION $ISSUER_BINARY max@<node>:~/issuer"
-    echo "    8. Restart: ssh -J $BASTION_USER@$BASTION max@<node> 'sudo systemctl restart issuer'"
+    echo "    7. Build: cargo build --release -p oracle"
+    echo "    8. Upload: scp -J $BASTION_USER@$BASTION $ORACLE_BINARY max@<node>:~/oracle"
+    echo "    8. Restart: ssh -J $BASTION_USER@$BASTION max@<node> 'sudo systemctl restart oracle'"
     echo "       (sequential restarts are fine — nodes won't cycle while paused)"
     confirm "Confirm all nodes restarted with new binary"
 

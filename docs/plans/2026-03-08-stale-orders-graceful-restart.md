@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Prevent stale bridge orders from causing a WorkDriven feedback loop that desyncs all issuers, and ensure ALL order types resume processing after restart without manual intervention.
+**Goal:** Prevent stale bridge orders from causing a WorkDriven feedback loop that desyncs all oracles, and ensure ALL order types resume processing after restart without manual intervention.
 
 **Architecture:** (A) Clean up orchestrator status on ALL failure paths — L3-native AND cross-chain sell, batch AND fills. (B) Fix sell order watchdog tracking gap + terminal statuses + stale reset for ALL sell variants (including SellFilled) + remove_seen_sell_order. (C) Initialize BLSCustody nonces from on-chain state on startup. (D) Replace Settlement 5000-block event window with non-blocking ID-based startup scan injected into restructured match arms (fires even when event scan returns empty). (E) Reduce watchdog threshold. (F) Route all status writes through watchdog (SharesBridged, SellCompleted).
 
@@ -21,7 +21,7 @@ When on-chain txs revert, the error paths in `run_l3_native_order_processing()` 
 
 **CRITICAL caveat:** The cleanup must NOT be placed unconditionally at line 3022 (end of outer `Err` arm). That position runs AFTER the E021 success path (line 3005 sets `Filled`), overwriting successful fills with `Failed`. Cleanup must be placed inside each specific failure branch.
 
-Orders stuck in `SubmittedOnL3`/`Batched` → `has_in_flight_orders()` always true → WorkDriven every 50ms → all issuers desync.
+Orders stuck in `SubmittedOnL3`/`Batched` → `has_in_flight_orders()` always true → WorkDriven every 50ms → all oracles desync.
 
 ### Bug 2: Sell orders missing from watchdog
 
@@ -55,8 +55,8 @@ Cross-chain orders discovered via `CrossChainOrderCreated` events. On restart, c
 
 ### Leader failover in 2-node-down scenario
 
-- **Regular cycles** (`run_cycle`): `cycle_number % num_issuers` — rotates naturally each second
-- **Bridge/L3-native**: `calculate_bridge_leader_with_failover` — rotates every 5s: `leader = (cycle + attempt) % num_issuers`
+- **Regular cycles** (`run_cycle`): `cycle_number % num_oracles` — rotates naturally each second
+- **Bridge/L3-native**: `calculate_bridge_leader_with_failover` — rotates every 5s: `leader = (cycle + attempt) % num_oracles`
 - **2 nodes down**: 1/3 signers, threshold = 2/3 → consensus fails. With Task 1 fix: sets `Failed` → no feedback loop → waits. When nodes restart: 3/3 → succeeds immediately.
 
 ### What happens when followers reject
@@ -81,7 +81,7 @@ Cross-chain orders discovered via `CrossChainOrderCreated` events. On restart, c
 ### Task 1: Clean up orchestrator on ALL failure paths (L3-native + cross-chain sell)
 
 **Files:**
-- Modify: `issuer/src/main.rs` (L3-native: lines 2974, 3014, 3018; Cross-chain sell: lines 2291, 2333, 2338)
+- Modify: `oracle/src/main.rs` (L3-native: lines 2974, 3014, 3018; Cross-chain sell: lines 2291, 2333, 2338)
 
 **CRITICAL: Do NOT place cleanup at line 3022.** That position is unconditional inside the outer `Err(e)` arm and runs AFTER the E021 success path. If E021 fills succeed (line 3005 sets `Filled`), cleanup at 3022 would overwrite them to `Failed`.
 
@@ -116,7 +116,7 @@ At line 2974, fills confirmation failed AFTER batch succeeded on-chain:
                     // Cleanup: batch succeeded but fills failed → set Failed so WorkDriven stops
                     let orch = orchestrator.write().await;
                     for oid in &order_ids {
-                        orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                        orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                     }
                     drop(orch);
                 }
@@ -136,7 +136,7 @@ At line 2974, fills confirmation failed AFTER batch succeeded on-chain:
                         // Cleanup: E021 retry fills also failed → set Failed
                         let orch = orchestrator.write().await;
                         for oid in &order_ids {
-                            orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                            orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                         }
                         drop(orch);
                     }
@@ -159,7 +159,7 @@ At line 2974, fills confirmation failed AFTER batch succeeded on-chain:
                 // Cleanup: non-E021 batch failure → set Failed
                 let orch = orchestrator.write().await;
                 for oid in &order_ids {
-                    orch.set_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                    orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                 }
                 drop(orch);
             }
@@ -202,7 +202,7 @@ Phase B batch:
                             // Cleanup: sell fills failed → set Failed so WorkDriven stops
                             let orch = orchestrator.write().await;
                             for oid in &submitted_sell_orders {
-                                orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                                orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                             }
                             drop(orch);
                         }
@@ -222,7 +222,7 @@ Phase B batch:
                                 // Cleanup: E021 retry fills also failed → set Failed
                                 let orch = orchestrator.write().await;
                                 for oid in &submitted_sell_orders {
-                                    orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                                    orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                                 }
                                 drop(orch);
                             }
@@ -242,7 +242,7 @@ Phase B batch:
                     // Cleanup: non-E021 sell batch failure → set Failed
                     let orch = orchestrator.write().await;
                     for oid in &submitted_sell_orders {
-                        orch.set_sell_order_status(*oid, issuer::BridgeOrderStatus::Failed).await;
+                        orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
                     }
                     drop(orch);
                 }
@@ -250,14 +250,14 @@ Phase B batch:
 
 **Step 7: Verify compilation**
 
-Run: `cargo check --bin issuer`
+Run: `cargo check --bin oracle`
 Expected: compiles with no errors
 
 **Step 8: Commit**
 
 ```bash
-git add issuer/src/main.rs
-git commit -m "fix(issuer): clean up orchestrator status on all failure paths (L3-native + sell)
+git add oracle/src/main.rs
+git commit -m "fix(oracle): clean up orchestrator status on all failure paths (L3-native + sell)
 
 Six error paths left orders stuck forever:
 - L3-native: fills failure (2974), E021 retry fills (3014), non-E021 batch (3018)
@@ -272,8 +272,8 @@ feedback loop."
 ### Task 2: Fix watchdog for sell orders + terminal statuses + stale reset
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs` (lines 372-374, 286-293, 397-408, 4921-4926)
-- Modify: `issuer/src/bridge/watchdog.rs` (lines 45, 68-70)
+- Modify: `oracle/src/bridge/orchestrator.rs` (lines 372-374, 286-293, 397-408, 4921-4926)
+- Modify: `oracle/src/bridge/watchdog.rs` (lines 45, 68-70)
 
 **Step 1: Add watchdog recording to `set_sell_order_status`**
 
@@ -394,9 +394,9 @@ for (order_id, status) in &stale_orders {
         "Resetting stale order"
     );
     if matches!(status,
-        issuer::bridge::BridgeOrderStatus::SellPending |
-        issuer::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
-        issuer::bridge::BridgeOrderStatus::SellFilled
+        oracle::bridge::BridgeOrderStatus::SellPending |
+        oracle::bridge::BridgeOrderStatus::SellSubmittedOnL3 |
+        oracle::bridge::BridgeOrderStatus::SellFilled
     ) {
         orch.reset_stale_sell_order(order_id).await;
         // Clear from seen_sell_orders dedup so event scan re-discovers it.
@@ -412,8 +412,8 @@ for (order_id, status) in &stale_orders {
         orch.reset_stale_order(order_id).await;
         // Clear from seen_orders dedup so event scan re-discovers it
         if matches!(status,
-            issuer::bridge::BridgeOrderStatus::Pending |
-            issuer::bridge::BridgeOrderStatus::BridgedToL3
+            oracle::bridge::BridgeOrderStatus::Pending |
+            oracle::bridge::BridgeOrderStatus::BridgedToL3
         ) {
             if let Some(ref settlement_reader) = settlement_reader_for_task {
                 let chain_id = settlement_reader.chain_id();
@@ -426,13 +426,13 @@ for (order_id, status) in &stale_orders {
 
 **Step 7: Verify compilation**
 
-Run: `cargo check --bin issuer`
+Run: `cargo check --bin oracle`
 
 **Step 8: Commit**
 
 ```bash
-git add issuer/src/bridge/orchestrator.rs issuer/src/bridge/watchdog.rs issuer/src/main.rs
-git commit -m "fix(issuer): complete watchdog overhaul for sell orders + terminal statuses
+git add oracle/src/bridge/orchestrator.rs oracle/src/bridge/watchdog.rs oracle/src/main.rs
+git commit -m "fix(oracle): complete watchdog overhaul for sell orders + terminal statuses
 
 - set_sell_order_status() now calls watchdog.record_status_change()
 - mark_sell_order_processed() and mark_orders_shares_bridged() routed through
@@ -448,8 +448,8 @@ git commit -m "fix(issuer): complete watchdog overhaul for sell orders + termina
 ### Task 3: Initialize BLSCustody nonces from on-chain state on startup
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs` (add init method, ~line 2098)
-- Modify: `issuer/src/main.rs` (call after orchestrator creation)
+- Modify: `oracle/src/bridge/orchestrator.rs` (add init method, ~line 2098)
+- Modify: `oracle/src/main.rs` (call after orchestrator creation)
 
 **Step 1: Add `init_custody_nonce` method to BridgeOrchestrator**
 
@@ -476,7 +476,7 @@ After `BridgeOrchestrator` creation and before main loop (~line 662). Only L3 BL
 // Initialize L3 custody nonces from on-chain state to avoid E025 after restart
 if let Some(ref orchestrator) = bridge_orchestrator_for_task {
     let orch = orchestrator.read().await;
-    let custody_addr = orch.config().issuer_custody_l3;
+    let custody_addr = orch.config().oracle_custody_l3;
     drop(orch);
     if !custody_addr.is_zero() {
         // Create one-off L3 provider for nonce() call
@@ -501,13 +501,13 @@ if let Some(ref orchestrator) = bridge_orchestrator_for_task {
 
 **Step 3: Verify compilation**
 
-Run: `cargo check --bin issuer`
+Run: `cargo check --bin oracle`
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/bridge/orchestrator.rs issuer/src/main.rs
-git commit -m "fix(issuer): initialize BLSCustody nonces from on-chain state on startup
+git add oracle/src/bridge/orchestrator.rs oracle/src/main.rs
+git commit -m "fix(oracle): initialize BLSCustody nonces from on-chain state on startup
 
 After restart, custody_nonces starts empty → claim_custody_nonce returns 0 →
 E025_NonceAlreadyUsed reverts. Now reads BLSCustody.nonce() on startup to
@@ -520,7 +520,7 @@ bridgeCompleted nonce scheme)."
 ### Task 4: Reduce watchdog threshold and verify `Failed` excluded
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs`
+- Modify: `oracle/src/bridge/orchestrator.rs`
 
 **Step 1: Add `SellFilled` to `has_in_flight_orders()` and verify `Failed` excluded**
 
@@ -560,13 +560,13 @@ watchdog: RwLock::new(super::watchdog::StaleOrderWatchdog::new(
 
 **Step 3: Verify compilation**
 
-Run: `cargo check --bin issuer`
+Run: `cargo check --bin oracle`
 
 **Step 4: Commit**
 
 ```bash
-git add issuer/src/bridge/orchestrator.rs
-git commit -m "fix(issuer): reduce watchdog stale threshold from 30s to 10s"
+git add oracle/src/bridge/orchestrator.rs
+git commit -m "fix(oracle): reduce watchdog stale threshold from 30s to 10s"
 ```
 
 ---
@@ -575,10 +575,10 @@ git commit -m "fix(issuer): reduce watchdog stale threshold from 30s to 10s"
 
 **Files:**
 - Modify: `common/src/types/settlement.rs` — add `CrossChainSellOrderData` struct
-- Modify: `issuer/src/chain/settlement_trait.rs` — add `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` to `SettlementReader` trait
-- Modify: `issuer/src/chain/settlement_reader.rs` — implement `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` methods
-- Modify: `issuer/src/chain/data_node_settlement_reader.rs` — stub implementations for trait compliance
-- Modify: `issuer/src/main.rs` — run ID scan on startup, inject into processing pipeline
+- Modify: `oracle/src/chain/settlement_trait.rs` — add `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` to `SettlementReader` trait
+- Modify: `oracle/src/chain/settlement_reader.rs` — implement `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` methods
+- Modify: `oracle/src/chain/data_node_settlement_reader.rs` — stub implementations for trait compliance
+- Modify: `oracle/src/main.rs` — run ID scan on startup, inject into processing pipeline
 
 **CRITICAL design decisions (from security audit):**
 1. Do NOT register startup orders in orchestrator before the main loop — `Pending` orders are only processed by the event-scan pipeline, which skips orders already in the orchestrator (`get_order_status().is_some() → continue`). Registering them directly creates permanently stuck orders that also trigger WorkDriven.
@@ -943,7 +943,7 @@ if let Some(ref settlement_reader) = settlement_reader_for_task {
                 {
                     let orch_write = orchestrator.write().await;
                     for sell_order in &new_sell_orders {
-                        orch_write.set_sell_order_status(sell_order.order_id, issuer::BridgeOrderStatus::SellPending).await;
+                        orch_write.set_sell_order_status(sell_order.order_id, oracle::BridgeOrderStatus::SellPending).await;
                         orch_write.set_sell_order_amount(sell_order.order_id, sell_order.amount).await; // CRITICAL: don't omit
                         orch_write.set_sell_order_itp_id(sell_order.order_id, sell_order.itp_id).await;
                     }
@@ -982,13 +982,13 @@ new_sell_orders.dedup_by_key(|o| o.order_id);
 
 **Step 9: Verify compilation**
 
-Run: `cargo check --bin issuer`
+Run: `cargo check --bin oracle`
 
 **Step 10: Commit**
 
 ```bash
-git add common/src/types/settlement.rs issuer/src/chain/settlement_reader.rs issuer/src/main.rs
-git commit -m "feat(issuer): ID-based Settlement order scan on startup (replaces block window)
+git add common/src/types/settlement.rs oracle/src/chain/settlement_reader.rs oracle/src/main.rs
+git commit -m "feat(oracle): ID-based Settlement order scan on startup (replaces block window)
 
 On restart, the event-scan cursor resets → only covers last 5000 blocks (~83 min).
 Orders older than that are permanently lost. New approach: iterate all order IDs
@@ -1014,19 +1014,19 @@ git push mono main
 **Step 2: SSH to VPS and pull + build**
 
 ```bash
-ssh index-maker/prod/be "cd /home/max/index && git pull && export PATH=\$HOME/.cargo/bin:\$PATH && cargo build --release -p issuer 2>&1 | tail -5"
+ssh index-maker/prod/be "cd /home/max/index && git pull && export PATH=\$HOME/.cargo/bin:\$PATH && cargo build --release -p oracle 2>&1 | tail -5"
 ```
 
-**Step 3: Restart issuers**
+**Step 3: Restart oracles**
 
 ```bash
-ssh index-maker/prod/be "cd /home/max/index && ./restart-issuers.sh"
+ssh index-maker/prod/be "cd /home/max/index && ./restart-oracles.sh"
 ```
 
 **Step 4: Verify no WorkDriven feedback loop**
 
 ```bash
-ssh index-maker/prod/be "tail -100 /home/max/index/logs/issuer-1.log | grep -E 'batch|fill|stale|Failed|WorkDriven|seed|custody nonce|Injecting startup'"
+ssh index-maker/prod/be "tail -100 /home/max/index/logs/oracle-1.log | grep -E 'batch|fill|stale|Failed|WorkDriven|seed|custody nonce|Injecting startup'"
 ```
 
 Verify:
@@ -1039,12 +1039,12 @@ Verify:
 **Step 5: Verify startup seeding**
 
 ```bash
-ssh index-maker/prod/be "cd /home/max/index && ./restart-issuers.sh && sleep 5 && head -50 logs/issuer-1.log | grep -i 'scan\|unfilled\|custody nonce\|Injecting'"
+ssh index-maker/prod/be "cd /home/max/index && ./restart-oracles.sh && sleep 5 && head -50 logs/oracle-1.log | grep -i 'scan\|unfilled\|custody nonce\|Injecting'"
 ```
 
 **Step 6: Verify restart picks up pending orders**
 
-With orders pending on-chain, restart issuers and verify they're processed on the next cycle.
+With orders pending on-chain, restart oracles and verify they're processed on the next cycle.
 
 ---
 
@@ -1055,7 +1055,7 @@ With orders pending on-chain, restart issuers and verify they're processed on th
 | `refundExpiredBuyOrder` | HIGH | SettlementBridgeCustody has `refundSellOrder` but NO `refundExpiredBuyOrder`. Expired buy orders with locked USDC cannot be refunded. Needs contract change. |
 | `emitAssetTrades` dedup | LOW | `Investment.sol` has no on-chain dedup for `emitAssetTrades()`. Double-call for same cycle emits duplicate events. Add `assetTradesEmitted[cycleNumber]` flag. |
 | `known_order_ids` compaction | MEDIUM | `Vec<U256>` in `reader.rs` only grows (line 123). After thousands of orders, `get_pending_orders()` and `get_batched_orders()` iterate ALL IDs doing RPC calls. Move settled IDs to a `HashSet` and skip them. |
-| Graceful shutdown | LOW | `restart-issuers.sh` sends SIGKILL after only 2s (line 60). Increase to 10-15s to allow graceful shutdown and in-flight tx completion. |
+| Graceful shutdown | LOW | `restart-oracles.sh` sends SIGKILL after only 2s (line 60). Increase to 10-15s to allow graceful shutdown and in-flight tx completion. |
 | Vision 1000-block window | MEDIUM | Vision deposit watcher has same block-window issue as Settlement. Apply same ID-based scan pattern. |
 | Cross-chain buy post-processing cleanup | LOW | `run_cross_chain_buy_post_processing` has failure paths without `Failed` cleanup. Timer-based retry mitigates. Sell-side equivalent fixed in Task 1. Buy post-processing is already a recovery path — less critical. |
 
@@ -1065,12 +1065,12 @@ With orders pending on-chain, restart issuers and verify they're processed on th
 
 | File | Changes |
 |------|---------|
-| `issuer/src/main.rs` | Task 1: set `Failed` on 3 failure branches. Task 2: route stale sell orders. Task 3: init custody nonces. Task 5: startup ID scan + injection |
-| `issuer/src/bridge/orchestrator.rs` | Task 2: sell watchdog + `reset_stale_sell_order` + route direct writes through watchdog. Task 3: `init_custody_nonce()`. Task 4: watchdog threshold 30s→10s |
-| `issuer/src/bridge/watchdog.rs` | Task 2: add all terminal statuses to skip list + cleanup |
-| `issuer/src/chain/settlement_trait.rs` | Task 5: add `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` to trait |
-| `issuer/src/chain/settlement_reader.rs` | Task 5: implement `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` |
-| `issuer/src/chain/data_node_settlement_reader.rs` | Task 5: stub implementations for trait compliance |
+| `oracle/src/main.rs` | Task 1: set `Failed` on 3 failure branches. Task 2: route stale sell orders. Task 3: init custody nonces. Task 5: startup ID scan + injection |
+| `oracle/src/bridge/orchestrator.rs` | Task 2: sell watchdog + `reset_stale_sell_order` + route direct writes through watchdog. Task 3: `init_custody_nonce()`. Task 4: watchdog threshold 30s→10s |
+| `oracle/src/bridge/watchdog.rs` | Task 2: add all terminal statuses to skip list + cleanup |
+| `oracle/src/chain/settlement_trait.rs` | Task 5: add `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` to trait |
+| `oracle/src/chain/settlement_reader.rs` | Task 5: implement `get_cross_chain_sell_order()` + `get_all_unfilled_orders()` |
+| `oracle/src/chain/data_node_settlement_reader.rs` | Task 5: stub implementations for trait compliance |
 | `common/src/types/settlement.rs` | Task 5: `CrossChainSellOrderData` struct |
 
 ## Self-Healing Matrix (complete)

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use common::integrations::bitget::BitgetReadOnlyClientImpl;
 use common::integrations::bitget::BitgetReadOnlyConfig;
 use ethers::types::Address;
-use issuer::price::{BitgetPriceFetcher, PriceFetcher, SymbolMap};
+use oracle::price::{BitgetPriceFetcher, PriceFetcher, SymbolMap};
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -138,7 +138,7 @@ async fn test_rate_limit_429_response() {
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert!(
-        matches!(error, issuer::price::PriceFetchError::FetchFailed { .. }),
+        matches!(error, oracle::price::PriceFetchError::FetchFailed { .. }),
         "Expected FetchFailed error for rate limit, got: {:?}",
         error
     );
@@ -167,7 +167,7 @@ async fn test_authentication_error_401() {
     let error = result.unwrap_err();
     // Authentication errors are mapped to FetchFailed
     assert!(
-        matches!(error, issuer::price::PriceFetchError::FetchFailed { .. }),
+        matches!(error, oracle::price::PriceFetchError::FetchFailed { .. }),
         "Expected FetchFailed error for auth failure, got: {:?}",
         error
     );
@@ -200,7 +200,7 @@ async fn test_network_timeout() {
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert!(
-        matches!(error, issuer::price::PriceFetchError::FetchFailed { .. }),
+        matches!(error, oracle::price::PriceFetchError::FetchFailed { .. }),
         "Expected FetchFailed error for timeout, got: {:?}",
         error
     );
@@ -228,7 +228,7 @@ async fn test_invalid_json_response() {
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert!(
-        matches!(error, issuer::price::PriceFetchError::FetchFailed { .. }),
+        matches!(error, oracle::price::PriceFetchError::FetchFailed { .. }),
         "Expected FetchFailed error for invalid JSON, got: {:?}",
         error
     );
@@ -330,7 +330,7 @@ async fn test_ticker_not_found_empty_response() {
     assert!(
         matches!(
             error,
-            issuer::price::PriceFetchError::PriceNotAvailable { .. }
+            oracle::price::PriceFetchError::PriceNotAvailable { .. }
         ),
         "Expected PriceNotAvailable error for empty ticker data, got: {:?}",
         error
@@ -365,7 +365,7 @@ async fn test_bitget_api_error_response() {
     assert!(
         matches!(
             error,
-            issuer::price::PriceFetchError::PriceNotAvailable { .. }
+            oracle::price::PriceFetchError::PriceNotAvailable { .. }
         ),
         "Expected PriceNotAvailable for Bitget API not found error, got: {:?}",
         error
@@ -443,7 +443,7 @@ async fn test_server_error_500() {
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert!(
-        matches!(error, issuer::price::PriceFetchError::FetchFailed { .. }),
+        matches!(error, oracle::price::PriceFetchError::FetchFailed { .. }),
         "Expected FetchFailed error for server error, got: {:?}",
         error
     );
@@ -687,7 +687,7 @@ async fn test_e2e_partial_failure_handling() {
     );
 
     // Verify both error messages reference the failing eth asset
-    if let Err(issuer::price::PriceFetchError::FetchFailed { asset, .. }) = batch_result {
+    if let Err(oracle::price::PriceFetchError::FetchFailed { asset, .. }) = batch_result {
         assert_eq!(asset, eth, "Error should reference the failing eth asset");
     }
 }

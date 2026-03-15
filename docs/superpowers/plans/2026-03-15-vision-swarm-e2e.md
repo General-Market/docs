@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deploy 10 vision-bots on VPS testnet, let them join all 45 batches with random predictions, then verify the entire pipeline — data-node → issuers → BLS consensus → tick resolution → frontend display → economic invariants.
+**Goal:** Deploy 10 vision-bots on VPS testnet, let them join all 45 batches with random predictions, then verify the entire pipeline — data-node → oracles → BLS consensus → tick resolution → frontend display → economic invariants.
 
 **Architecture:** Docker Compose on VPS with 10 Python bot instances sharing a config but using unique private keys. A new Playwright E2E test (`40-vision-swarm.spec.ts`) SSHes into VPS to fund wallets, deploy the swarm, then polls on-chain state and verifies frontend rendering + protocol solvency. Testnet only — no local Anvil path.
 
@@ -240,8 +240,8 @@ STAKE_PER_TICK=1
 MAX_BATCHES=50
 MAX_EXPOSURE=5000
 POLL_INTERVAL=30
-ISSUER_DISCOVERY=static
-ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
+ORACLE_DISCOVERY=static
+ORACLE_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003
 ```
 
 Note: `STAKE_PER_TICK=1` (integer, not `0.1`) to avoid `ValueError` in `core.py` env var parsing when TOML fallback fails. The config.toml sets `stake = 0.1` as float, which is used when TOML parsing succeeds.
@@ -277,8 +277,8 @@ const shared = [
   'MAX_BATCHES=50',
   'MAX_EXPOSURE=5000',
   'POLL_INTERVAL=30',
-  'ISSUER_DISCOVERY=static',
-  'ISSUER_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003',
+  'ORACLE_DISCOVERY=static',
+  'ORACLE_URLS=http://localhost:10001,http://localhost:10002,http://localhost:10003',
 ].join('\n');
 require('fs').writeFileSync(
   'docker/testnet/vision-swarm/swarm.env',
@@ -333,8 +333,8 @@ rpc_url = "http://142.132.164.24/"
 vision_api = "http://localhost:10001"
 data_node = "http://localhost:8200"
 
-issuer_discovery = "static"
-issuer_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
+oracle_discovery = "static"
+oracle_urls = ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
 
 batch_ids = []
 ```
@@ -854,7 +854,7 @@ export async function checkDataNodeHealth(): Promise<boolean> {
   }
 }
 
-export function checkIssuerHealthViaSSH(port: number): boolean {
+export function checkOracleHealthViaSSH(port: number): boolean {
   try {
     sshExec(`curl -sf http://localhost:${port}/health`, 5_000);
     return true;
@@ -1044,7 +1044,7 @@ import {
   verifySolvency,
   verifyBatchConservation,
   checkDataNodeHealth,
-  checkIssuerHealthViaSSH,
+  checkOracleHealthViaSSH,
   checkL3Rpc,
   pollUntil,
   botLogs,
@@ -1063,7 +1063,7 @@ const FAST_BATCHES = BATCH_ENTRIES
   .filter((b) => b.tickDuration <= 300)
   .map((b) => b.batchId);
 
-const ISSUER_PORTS = [10001, 10002, 10003];
+const ORACLE_PORTS = [10001, 10002, 10003];
 const ZERO_HASH = ("0x" + "0".repeat(64)) as Hex;
 
 test.describe.configure({ mode: "serial" });
@@ -1076,8 +1076,8 @@ test("Stage 1: infrastructure health", async () => {
   expect(l3, "L3 RPC unreachable").toBe(true);
   expect(dataNode, "Data node unreachable").toBe(true);
 
-  for (const port of ISSUER_PORTS) {
-    expect(checkIssuerHealthViaSSH(port), `Issuer :${port} unreachable`).toBe(true);
+  for (const port of ORACLE_PORTS) {
+    expect(checkOracleHealthViaSSH(port), `Oracle :${port} unreachable`).toBe(true);
   }
 });
 

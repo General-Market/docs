@@ -1,14 +1,14 @@
 //! State reconstruction builder
 
 use super::{BootstrapError, BootstrapParams};
-use crate::{ContractAddresses, IssuerConfig, IssuerState, ReconstructorConfig, StateReconstructor};
+use crate::{ContractAddresses, OracleConfig, OracleState, ReconstructorConfig, StateReconstructor};
 use common::traits::ChainReader;
 use std::sync::Arc;
 use tracing::{info, warn};
 
-/// Builder for issuer state (reconstruction or fresh)
+/// Builder for oracle state (reconstruction or fresh)
 pub struct StateBuilder<'a> {
-    config: &'a IssuerConfig,
+    config: &'a OracleConfig,
     params: &'a BootstrapParams,
     contract_addresses: &'a ContractAddresses,
     target_chain_id: u64,
@@ -16,7 +16,7 @@ pub struct StateBuilder<'a> {
 
 impl<'a> StateBuilder<'a> {
     pub fn new(
-        config: &'a IssuerConfig,
+        config: &'a OracleConfig,
         params: &'a BootstrapParams,
         contract_addresses: &'a ContractAddresses,
         target_chain_id: u64,
@@ -29,17 +29,17 @@ impl<'a> StateBuilder<'a> {
         }
     }
 
-    pub async fn build(self, _chain_reader: &Arc<dyn ChainReader>) -> Result<IssuerState, BootstrapError> {
+    pub async fn build(self, _chain_reader: &Arc<dyn ChainReader>) -> Result<OracleState, BootstrapError> {
         let node_id = self.config.node_id.unwrap_or(0);
 
         let mut state = if self.params.skip_reconstruction {
             info!(node_id, "Skipping state reconstruction (--skip-reconstruction)");
-            IssuerState::new()
+            OracleState::new()
         } else if !self.params.mock_chain {
             self.reconstruct_state(node_id).await
         } else {
             info!(node_id, "Mock mode: skipping state reconstruction");
-            IssuerState::new()
+            OracleState::new()
         };
 
         // Set observation period
@@ -52,13 +52,13 @@ impl<'a> StateBuilder<'a> {
             current_cycle = %state.current_cycle,
             observation_cycles = state.observation_cycles_remaining,
             can_participate = state.can_participate(),
-            "Issuer state ready"
+            "Oracle state ready"
         );
 
         Ok(state)
     }
 
-    async fn reconstruct_state(&self, node_id: u32) -> IssuerState {
+    async fn reconstruct_state(&self, node_id: u32) -> OracleState {
         info!(node_id, "Starting state reconstruction...");
 
         let rpc_url = self.config.effective_rpc_url();
@@ -76,7 +76,7 @@ impl<'a> StateBuilder<'a> {
         self.reconstruct_from_chain(node_id, &rpc_url).await
     }
 
-    async fn try_load_checkpoint(&self, node_id: u32) -> Option<IssuerState> {
+    async fn try_load_checkpoint(&self, node_id: u32) -> Option<OracleState> {
         match StateReconstructor::<ethers::providers::Provider<ethers::providers::Http>>::load_checkpoint(&self.params.checkpoint_path) {
             Ok(Some(cp)) => {
                 info!(
@@ -105,7 +105,7 @@ impl<'a> StateBuilder<'a> {
         }
     }
 
-    async fn reconstruct_from_chain(&self, node_id: u32, rpc_url: &str) -> IssuerState {
+    async fn reconstruct_from_chain(&self, node_id: u32, rpc_url: &str) -> OracleState {
         let collateral_registry_addr = self.config.collateral_registry_address.as_ref()
             .and_then(|addr| addr.parse::<ethers::types::Address>().ok());
 
@@ -147,13 +147,13 @@ impl<'a> StateBuilder<'a> {
                     }
                     Err(e) => {
                         warn!(code = "INFRA-001", node_id, error = %e, "State reconstruction failed, using empty state");
-                        IssuerState::new()
+                        OracleState::new()
                     }
                 }
             }
             Err(e) => {
                 warn!(code = "INFRA-001", node_id, error = %e, "Failed to create StateReconstructor");
-                IssuerState::new()
+                OracleState::new()
             }
         }
     }

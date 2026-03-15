@@ -1,6 +1,6 @@
 # Only allow binaries and proxy script into Docker context
 *
-!target/release/issuer
+!target/release/oracle
 !target/release/data-node
 !target/release/ap
 !target/release/curator

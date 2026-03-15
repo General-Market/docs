@@ -158,7 +158,7 @@
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
       "id": 5,
-      "title": "Issuer Consensus",
+      "title": "Oracle Consensus",
       "type": "row"
     },
     {
@@ -198,7 +198,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "max(issuer_last_consensus_time_ms)",
+          "expr": "max(oracle_last_consensus_time_ms)",
           "legendFormat": "consensus time",
           "refId": "A"
         }
@@ -237,12 +237,12 @@
         },
         "textMode": "auto"
       },
-      "title": "Issuers Online",
+      "title": "Oracles Online",
       "type": "stat",
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "count(up{job=\"issuer-nodes\"} == 1)",
+          "expr": "count(up{job=\"oracle-nodes\"} == 1)",
           "legendFormat": "online",
           "refId": "A"
         }
@@ -287,8 +287,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "issuer_is_leader",
-          "legendFormat": "Issuer {{ instance }}",
+          "expr": "oracle_is_leader",
+          "legendFormat": "Oracle {{ instance }}",
           "refId": "A"
         }
       ]
@@ -603,8 +603,8 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "${datasource}" },
-          "expr": "issuer_last_consensus_time_ms",
-          "legendFormat": "Issuer {{ instance }}",
+          "expr": "oracle_last_consensus_time_ms",
+          "legendFormat": "Oracle {{ instance }}",
           "refId": "A"
         }
       ]
@@ -639,10 +639,10 @@
           "text": "3",
           "value": "3"
         },
-        "description": "Number of issuer nodes",
+        "description": "Number of oracle nodes",
         "hide": 0,
-        "label": "Issuer Count",
-        "name": "issuer_count",
+        "label": "Oracle Count",
+        "name": "oracle_count",
         "options": [
           { "selected": false, "text": "3", "value": "3" },
           { "selected": false, "text": "5", "value": "5" },
@@ -659,10 +659,10 @@
           "text": "9001",
           "value": "9001"
         },
-        "description": "Starting port for issuer nodes",
+        "description": "Starting port for oracle nodes",
         "hide": 0,
-        "label": "Issuer Start Port",
-        "name": "issuer_start_port",
+        "label": "Oracle Start Port",
+        "name": "oracle_start_port",
         "options": [
           { "selected": true, "text": "9001", "value": "9001" }
         ],

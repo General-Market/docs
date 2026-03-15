@@ -11,15 +11,15 @@
 When a leader achieves price consensus (3/3 agree), the batch signing phase times out with only 2/3 signatures. The `--consensus-timeout-ms 150` CLI flag divides 150ms evenly across 4 phases = 37.5ms each. The last phase (batch signing) gets `150 - 3*37 = 39ms`. With P2P roundtrip + BLS verification taking 30-50ms locally, the 39ms window is too tight.
 
 ### Root Cause
-`issuer/src/bootstrap/consensus.rs:156-163` — evenly distributes the total timeout across 4 phases. The batch signing phase needs the most time (collect from N-1 peers) but gets the same allocation as proposal phases (which are just broadcasts).
+`oracle/src/bootstrap/consensus.rs:156-163` — evenly distributes the total timeout across 4 phases. The batch signing phase needs the most time (collect from N-1 peers) but gets the same allocation as proposal phases (which are just broadcasts).
 
-Default timeouts in `issuer/src/consensus/state.rs:155-165` are 200+150+200+250 = 800ms total, heavily weighted toward batch signing (250ms). But `--consensus-timeout-ms 150` overrides this to 37+37+37+39ms.
+Default timeouts in `oracle/src/consensus/state.rs:155-165` are 200+150+200+250 = 800ms total, heavily weighted toward batch signing (250ms). But `--consensus-timeout-ms 150` overrides this to 37+37+37+39ms.
 
 ### Fix
-Change the distribution in `issuer/src/bootstrap/consensus.rs` to weight batch signing higher:
+Change the distribution in `oracle/src/bootstrap/consensus.rs` to weight batch signing higher:
 
 ```
-File: issuer/src/bootstrap/consensus.rs (lines 156-163)
+File: oracle/src/bootstrap/consensus.rs (lines 156-163)
 
 Current:
   let per_phase = total_ms / 4;
@@ -47,12 +47,12 @@ Fix:
 For `--consensus-timeout-ms 150`: batch signing gets 76ms instead of 39ms — double the window.
 
 ### Files
-- `issuer/src/bootstrap/consensus.rs` — change timeout distribution (lines 156-163)
+- `oracle/src/bootstrap/consensus.rs` — change timeout distribution (lines 156-163)
 
 ### Test
-- Start 3 issuers with `--consensus-timeout-ms 150 --cycle-duration-ms 200`
-- Check `grep "signer_count=3" logs/issuer-1.log` appears
-- Check `grep "not enough signatures" logs/issuer-1.log | tail -5` shows count=3 (not 1 or 2)
+- Start 3 oracles with `--consensus-timeout-ms 150 --cycle-duration-ms 200`
+- Check `grep "signer_count=3" logs/oracle-1.log` appears
+- Check `grep "not enough signatures" logs/oracle-1.log | tail -5` shows count=3 (not 1 or 2)
 
 ---
 
@@ -64,13 +64,13 @@ A pending ITP creation request (nonce=1, from E2E test) retries every consensus 
 ### Root Cause
 1. **Misleading log**: `main.rs:1207-1208` logs `Ok(result)` as "succeeded" even when `result.signature_count == 0`
 2. **No skip/cancel mechanism**: The code re-fetches all pending requests from chain every cycle (`arbitrum_reader.get_all_pending_requests()`) and retries them all. There's no TTL, max-retry, or admin cancel.
-3. **Why consensus fails**: The ITP creation leader election rotates per cycle (`cycle % num_issuers`). When the leader tries to collect signatures, the same batch-signing timeout (Bug 1) applies. With the current tight timeouts, followers can't respond in time.
+3. **Why consensus fails**: The ITP creation leader election rotates per cycle (`cycle % num_oracles`). When the leader tries to collect signatures, the same batch-signing timeout (Bug 1) applies. With the current tight timeouts, followers can't respond in time.
 
 ### Fix (two parts)
 
 **Part A — Fix the misleading log and skip zero-signature results:**
 ```
-File: issuer/src/main.rs (lines 1207-1210)
+File: oracle/src/main.rs (lines 1207-1210)
 
 Current:
   Ok(result) => {
@@ -92,7 +92,7 @@ Fix:
 
 **Part B — Add max-age skip for stale requests:**
 ```
-File: issuer/src/main.rs (inside the for request in pending_requests loop, before run_itp_creation_phase)
+File: oracle/src/main.rs (inside the for request in pending_requests loop, before run_itp_creation_phase)
 
 Add:
   // Skip requests older than 1 hour to avoid infinite retry of stale E2E requests
@@ -107,11 +107,11 @@ Add:
 This requires `request.created_at` to be available in `ItpCreationRequest`. Check if it exists; if not, use the `request.nonce` to track first-seen time in a local `HashMap<U256, Instant>` and skip if seen for more than N minutes.
 
 ### Files
-- `issuer/src/main.rs` — fix log level and add staleness skip (lines 1203-1257)
-- Possibly `issuer/src/chain/arbitrum_reader.rs` — check if `created_at` is parsed from on-chain data
+- `oracle/src/main.rs` — fix log level and add staleness skip (lines 1203-1257)
+- Possibly `oracle/src/chain/arbitrum_reader.rs` — check if `created_at` is parsed from on-chain data
 
 ### Test
-- After fix, `grep "ITP creation consensus succeeded" logs/issuer-2.log` should no longer spam signer_count=0
+- After fix, `grep "ITP creation consensus succeeded" logs/oracle-2.log` should no longer spam signer_count=0
 - Stale nonce=1 request should show "Skipping stale ITP creation request" after 1h
 
 ---
@@ -122,7 +122,7 @@ This requires `request.created_at` to be available in `ItpCreationRequest`. Chec
 Tick resolution for batch 1 (pumpfun, 256 markets) shows `cancelled=256`. The resolver cancels any market with no price data. The engine's `fetch_market_prices()` queries `/vision/snapshot?source=hackernews&limit=10000` — **hardcoded to hackernews**. Pumpfun markets have `source=pumpfun` in the DB, so zero matches are found.
 
 ### Root Cause
-`issuer/src/vision/engine.rs:113` — the snapshot source filter is hardcoded:
+`oracle/src/vision/engine.rs:113` — the snapshot source filter is hardcoded:
 ```rust
 let url = format!("{}/vision/snapshot?source=hackernews&limit=10000", data_node_url);
 ```
@@ -134,7 +134,7 @@ Pass the source_id from the batch config through to `fetch_market_prices()`. The
 
 **Step 1 — Add source_id to the config cache return:**
 ```
-File: issuer/src/vision/engine.rs
+File: oracle/src/vision/engine.rs
 
 Change ConfigCache::get_or_fetch return type to include source_id:
   Currently returns: Vec<MarketConfig>
@@ -149,7 +149,7 @@ In get_or_fetch body (line 56-64):
 
 **Step 2 — Pass source_id to fetch_market_prices:**
 ```
-File: issuer/src/vision/engine.rs
+File: oracle/src/vision/engine.rs
 
 Change function signature (line 105):
   async fn fetch_market_prices(
@@ -170,7 +170,7 @@ Change line 113:
 The batch engine uses IDs like `"pumpfun"`, `"stocks"`, `"crypto"` etc. The data-node `market_assets` table uses the collector's `source_id()` which may differ (e.g., `"finnhub"` not `"stocks"`). Need a reverse mapping:
 
 ```
-File: issuer/src/vision/engine.rs (new constant)
+File: oracle/src/vision/engine.rs (new constant)
 
 const SOURCE_ID_TO_SNAPSHOT: &[(&str, &str)] = &[
     ("crypto", "coingecko"),
@@ -203,12 +203,12 @@ fn resolve_snapshot_source(batch_source_id: &str) -> &str {
 **Alternative (simpler):** Remove the source filter entirely and fetch ALL active market prices. The engine already filters by `batch_market_ids` (line 148: `if !batch_ids.contains(&market_id)`). This is simpler but fetches more data (~5000 rows vs ~256). For a local system this is fine; for production, the source filter is better.
 
 ### Files
-- `issuer/src/vision/engine.rs` — parameterize source in fetch_market_prices, add source mapping
-- `issuer/src/vision/batch_config_orchestrator.rs` — ensure `RecommendedBatch.source_id` is returned
+- `oracle/src/vision/engine.rs` — parameterize source in fetch_market_prices, add source mapping
+- `oracle/src/vision/batch_config_orchestrator.rs` — ensure `RecommendedBatch.source_id` is returned
 
 ### Test
-- After fix: `grep "Tick resolved.*batch_id=1" logs/issuer-1.log` should show `up=X down=Y` instead of `cancelled=256`
-- `grep "matched_markets" logs/issuer-1.log` should show non-zero matches
+- After fix: `grep "Tick resolved.*batch_id=1" logs/oracle-1.log` should show `up=X down=Y` instead of `cancelled=256`
+- `grep "matched_markets" logs/oracle-1.log` should show non-zero matches
 
 ---
 
@@ -224,7 +224,7 @@ The deploy script (`DeployAllVisionBatches.s.sol`) creates 5 E2E test batches wi
 Ignore E2E test batch errors silently instead of logging WARN every 500ms.
 
 ```
-File: issuer/src/vision/engine.rs (lines 358-366, the config fetch error handler)
+File: oracle/src/vision/engine.rs (lines 358-366, the config fetch error handler)
 
 Current:
   Err(e) => {
@@ -251,10 +251,10 @@ Fix — Downgrade to debug for known-missing configs:
 Add a `known_missing: RwLock<HashSet<H256>>` to `ConfigCache` to track hashes that already 404'd.
 
 ### Files
-- `issuer/src/vision/engine.rs` — add missing-config dedup to ConfigCache, downgrade log level
+- `oracle/src/vision/engine.rs` — add missing-config dedup to ConfigCache, downgrade log level
 
 ### Test
-- After fix: `grep "WARN.*Failed to fetch market config" logs/issuer-1.log | wc -l` should be ~5 (one per batch) instead of thousands
+- After fix: `grep "WARN.*Failed to fetch market config" logs/oracle-1.log | wc -l` should be ~5 (one per batch) instead of thousands
 
 ---
 

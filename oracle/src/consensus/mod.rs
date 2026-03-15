@@ -1,6 +1,6 @@
-//! Consensus module for BLS-based agreement between issuers
+//! Consensus module for BLS-based agreement between oracles
 //!
-//! Implements the consensus protocol for Index L3 issuers:
+//! Implements the consensus protocol for Index L3 oracles:
 //! - Price consensus: Leader proposes prices, followers vote
 //! - Batch consensus: Leader proposes batch, followers sign
 //! - Signature aggregation: BFT 2/3+1 threshold for batch approval

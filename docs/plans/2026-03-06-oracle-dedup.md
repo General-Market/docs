@@ -1,8 +1,8 @@
-# Issuer Crate Deduplication Plan
+# Oracle Crate Deduplication Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Eliminate ~800-1,200 LOC of verified copy-paste duplication in the issuer crate across 3 areas: SignatureCollector trios (orchestrator.rs), consensus signature collection loops (protocol.rs), and simple calldata builders (types.rs).
+**Goal:** Eliminate ~800-1,200 LOC of verified copy-paste duplication in the oracle crate across 3 areas: SignatureCollector trios (orchestrator.rs), consensus signature collection loops (protocol.rs), and simple calldata builders (types.rs).
 
 **Architecture:** Extract a generic `SignatureCollectionManager<K>` that replaces 16 hand-written trios with one generic impl. Extract a `collect_signatures_generic()` helper in protocol.rs for the polling loop. Extract a `build_simple_calldata()` helper for the AbiEncoder-based calldata pattern.
 
@@ -17,8 +17,8 @@
 This is the biggest win (~400-600 LOC). Currently 16 trios of `start_*_collection` / `add_*_signature` / `check_*_threshold` in `bridge/orchestrator.rs` repeat the same logic with different key types (`U256`, `u64`, `H256`) and different HashMap field names.
 
 **Files:**
-- Create: `issuer/src/bridge/signature_manager.rs`
-- Modify: `issuer/src/bridge/mod.rs` (add module)
+- Create: `oracle/src/bridge/signature_manager.rs`
+- Modify: `oracle/src/bridge/mod.rs` (add module)
 
 **Step 1: Create the generic SignatureCollectionManager**
 
@@ -30,7 +30,7 @@ All 16 trios share this exact logic:
 The key types are `U256` (order IDs), `u64` (cycle numbers), or `H256` (ITP IDs). All results are `SignedConsensusResult` (except `SubmitOrderResult` which extends it — handle separately).
 
 ```rust
-// issuer/src/bridge/signature_manager.rs
+// oracle/src/bridge/signature_manager.rs
 
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -185,7 +185,7 @@ impl<K: Eq + Hash + Clone + Debug + Send + Sync> SignatureCollectionManager<K> {
 
 **Step 2: Register module**
 
-In `issuer/src/bridge/mod.rs`, add:
+In `oracle/src/bridge/mod.rs`, add:
 ```rust
 pub mod signature_manager;
 pub use signature_manager::SignatureCollectionManager;
@@ -193,13 +193,13 @@ pub use signature_manager::SignatureCollectionManager;
 
 **Step 3: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -5`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -5`
 Expected: zero errors (new code, not wired in yet)
 
 **Step 4: Commit**
 
 ```
-feat(issuer): add generic SignatureCollectionManager
+feat(oracle): add generic SignatureCollectionManager
 ```
 
 ---
@@ -209,7 +209,7 @@ feat(issuer): add generic SignatureCollectionManager
 Replace the 15 `RwLock<HashMap<K, SignatureCollector>>` fields in `BridgeOrchestrator` with `SignatureCollectionManager<K>` instances. Keep `SubmitOrderResult` special-cased (it has an extra `l3_order_id` field).
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs`
+- Modify: `oracle/src/bridge/orchestrator.rs`
 
 **Step 1: Replace HashMap fields with managers**
 
@@ -294,13 +294,13 @@ Each trio goes from ~80 lines to ~15 lines of delegation.
 
 **Step 4: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -10`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -10`
 Expected: zero errors
 
 **Step 5: Commit**
 
 ```
-refactor(issuer): wire SignatureCollectionManager for bridge trio
+refactor(oracle): wire SignatureCollectionManager for bridge trio
 ```
 
 ---
@@ -310,7 +310,7 @@ refactor(issuer): wire SignatureCollectionManager for bridge trio
 Repeat the Task 2 pattern for the remaining 13 trios. Do them in batches of 3-4 to keep commits reviewable.
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs`
+- Modify: `oracle/src/bridge/orchestrator.rs`
 
 **Step 1: Migrate cycle-keyed trios (batch, fills, l3_to_arb, release)**
 
@@ -324,13 +324,13 @@ Functions to replace:
 
 **Step 2: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -10`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -10`
 Expected: zero errors
 
 **Step 3: Commit**
 
 ```
-refactor(issuer): migrate batch/fills/l3_to_arb/release to SignatureCollectionManager
+refactor(oracle): migrate batch/fills/l3_to_arb/release to SignatureCollectionManager
 ```
 
 **Step 4: Migrate remaining cycle-keyed trios (rebalance_batch, asset_trades, collateral_move, mint_shares, complete_buy)**
@@ -347,7 +347,7 @@ Functions to replace:
 **Step 6: Commit**
 
 ```
-refactor(issuer): migrate remaining cycle-keyed trios to SignatureCollectionManager
+refactor(oracle): migrate remaining cycle-keyed trios to SignatureCollectionManager
 ```
 
 **Step 7: Migrate H256-keyed trios (update_weights, nav) and U256-keyed (sell_bridge, complete_sell)**
@@ -363,7 +363,7 @@ Functions to replace:
 **Step 9: Commit**
 
 ```
-refactor(issuer): migrate H256-keyed and sell trios to SignatureCollectionManager
+refactor(oracle): migrate H256-keyed and sell trios to SignatureCollectionManager
 ```
 
 ---
@@ -373,7 +373,7 @@ refactor(issuer): migrate H256-keyed and sell trios to SignatureCollectionManage
 After all trios are migrated, remove the old `RwLock<HashMap<K, SignatureCollector>>` fields that are no longer used.
 
 **Files:**
-- Modify: `issuer/src/bridge/orchestrator.rs`
+- Modify: `oracle/src/bridge/orchestrator.rs`
 
 **Step 1: Remove old fields from struct definition**
 
@@ -387,18 +387,18 @@ Clean up any `use` statements for `RwLock`, `HashMap` if they're no longer neede
 
 **Step 4: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -10`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -10`
 Expected: zero errors
 
 **Step 5: Verify warning count dropped**
 
-Run: `cargo build -p issuer 2>&1 | grep -c "warning"`
+Run: `cargo build -p oracle 2>&1 | grep -c "warning"`
 Expected: fewer warnings than before
 
 **Step 6: Commit**
 
 ```
-refactor(issuer): remove dead HashMap fields replaced by SignatureCollectionManager
+refactor(oracle): remove dead HashMap fields replaced by SignatureCollectionManager
 ```
 
 ---
@@ -408,7 +408,7 @@ refactor(issuer): remove dead HashMap fields replaced by SignatureCollectionMana
 The `collect_*_signatures` functions in `consensus/protocol.rs` repeat the same polling loop 16+ times. Extract a generic helper.
 
 **Files:**
-- Modify: `issuer/src/consensus/protocol.rs`
+- Modify: `oracle/src/consensus/protocol.rs`
 
 **Step 1: Add a generic collection helper method**
 
@@ -493,7 +493,7 @@ async fn collect_bridge_signatures(
 
 **Step 3: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -10`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -10`
 
 If lifetime issues arise, fall back to a macro approach:
 
@@ -542,7 +542,7 @@ Each function drops from ~40-70 lines to ~3 lines.
 **Step 6: Commit**
 
 ```
-refactor(issuer): extract generic signature collection loop in protocol.rs
+refactor(oracle): extract generic signature collection loop in protocol.rs
 ```
 
 ---
@@ -552,7 +552,7 @@ refactor(issuer): extract generic signature collection loop in protocol.rs
 10 of the 19 `build_*_calldata` functions use the same AbiEncoder pattern. Extract a helper.
 
 **Files:**
-- Modify: `issuer/src/bridge/types.rs`
+- Modify: `oracle/src/bridge/types.rs`
 
 **Step 1: Add a calldata helper function**
 
@@ -583,7 +583,7 @@ pub fn build_erc20_approve_calldata(spender: Address, amount: U256) -> Vec<u8> {
 
 **Step 3: Build and verify**
 
-Run: `cargo build -p issuer 2>&1 | grep "^error" | head -5`
+Run: `cargo build -p oracle 2>&1 | grep "^error" | head -5`
 Expected: zero errors
 
 **Step 4: Migrate remaining simple calldata functions**
@@ -606,7 +606,7 @@ Do NOT touch the complex `Function + Token + encode_input` calldata builders (`b
 **Step 6: Commit**
 
 ```
-refactor(issuer): extract build_calldata helper for simple ABI-encoded calldatas
+refactor(oracle): extract build_calldata helper for simple ABI-encoded calldatas
 ```
 
 ---
@@ -617,28 +617,28 @@ refactor(issuer): extract build_calldata helper for simple ABI-encoded calldatas
 
 **Step 1: Full build**
 
-Run: `cargo build -p issuer 2>&1 | tail -5`
+Run: `cargo build -p oracle 2>&1 | tail -5`
 Expected: zero errors
 
 **Step 2: Count warnings before/after**
 
 The starting warning count was 29 (after dead code cleanup). Verify it hasn't increased:
 
-Run: `cargo build -p issuer 2>&1 | grep -c "warning"`
+Run: `cargo build -p oracle 2>&1 | grep -c "warning"`
 Expected: <= 29
 
 **Step 3: Run tests**
 
-Run: `cargo test -p issuer 2>&1 | tail -20`
+Run: `cargo test -p oracle 2>&1 | tail -20`
 Expected: all existing tests pass
 
 **Step 4: Verify LOC reduction**
 
-Run: `wc -l issuer/src/bridge/orchestrator.rs`
+Run: `wc -l oracle/src/bridge/orchestrator.rs`
 Expected: significant reduction (was ~5,500+ lines, target ~4,500-5,000)
 
 **Step 5: Commit**
 
 ```
-refactor(issuer): issuer crate deduplication complete
+refactor(oracle): oracle crate deduplication complete
 ```

@@ -132,8 +132,8 @@ def load_config(path=None):
         "rpc_url": "http://localhost:8545",
         "vision_api": "http://localhost:10001",
         "data_node": "http://localhost:8200",
-        "issuer_discovery": "static",
-        "issuer_urls": ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"],
+        "oracle_discovery": "static",
+        "oracle_urls": ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"],
         "pnl_file": "pnl.json",
         "batch_ids": [],  # empty = join any, e.g. [1, 3, 7]
     }
@@ -162,7 +162,7 @@ def load_config(path=None):
         "VISION_API_URL": "vision_api",
         "DATA_NODE_URL": "data_node",
         "PNL_FILE": "pnl_file",
-        "ISSUER_DISCOVERY": "issuer_discovery",
+        "ORACLE_DISCOVERY": "oracle_discovery",
     }
     for env_key, conf_key in env_map.items():
         if env_key in os.environ:
@@ -176,9 +176,9 @@ def load_config(path=None):
                 defaults[conf_key] = int(val)
             else:
                 defaults[conf_key] = val
-    # ISSUER_URLS: comma-separated list of URLs
-    if "ISSUER_URLS" in os.environ:
-        defaults["issuer_urls"] = [u.strip() for u in os.environ["ISSUER_URLS"].split(",") if u.strip()]
+    # ORACLE_URLS: comma-separated list of URLs
+    if "ORACLE_URLS" in os.environ:
+        defaults["oracle_urls"] = [u.strip() for u in os.environ["ORACLE_URLS"].split(",") if u.strip()]
     # BATCH_IDS: comma-separated list of ints
     if "BATCH_IDS" in os.environ:
         defaults["batch_ids"] = [int(x.strip()) for x in os.environ["BATCH_IDS"].split(",") if x.strip()]

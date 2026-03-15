@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import "../src/registry/AssetPairRegistry.sol";
 import "../src/interfaces/IAssetPairRegistry.sol";
 import "../src/libraries/TypesLib.sol";
@@ -13,7 +13,7 @@ import "../src/libraries/TypesLib.sol";
 contract AssetPairRegistryTest is TestHelper {
     AssetPairRegistry public registry;
     Governance governance;
-    IssuerRegistry issuerReg;
+    OracleRegistry oracleReg;
 
     address public admin = address(0x1);
     address public user = address(0x2);
@@ -27,10 +27,10 @@ contract AssetPairRegistryTest is TestHelper {
 
     function setUp() public {
         governance = deployGovernance(admin);
-        issuerReg = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerReg, admin);
+        oracleReg = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleReg, admin);
 
-        registry = new AssetPairRegistry(admin, address(issuerReg));
+        registry = new AssetPairRegistry(admin, address(oracleReg));
     }
 
     // ============ BLS SIGNING HELPERS ============
@@ -40,7 +40,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("PROPOSE_ASSET", block.chainid, address(registry), asset, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signDelistAsset(address asset) internal returns (bytes memory) {
@@ -48,7 +48,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("DELIST_ASSET", block.chainid, address(registry), asset, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signEmergencyRemoveAsset(address asset) internal returns (bytes memory) {
@@ -56,7 +56,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("EMERGENCY_REMOVE_ASSET", block.chainid, address(registry), asset, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signProposePair(address asset, bytes32 source, address quote, uint256 chainId) internal returns (bytes memory) {
@@ -64,7 +64,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("PROPOSE_PAIR", block.chainid, address(registry), asset, source, quote, chainId, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signDelistPair(bytes32 pairId) internal returns (bytes memory) {
@@ -72,7 +72,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("DELIST_PAIR", block.chainid, address(registry), pairId, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signCancelAssetProposal(address asset) internal returns (bytes memory) {
@@ -80,7 +80,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("CANCEL_ASSET_PROPOSAL", block.chainid, address(registry), asset, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signCancelPairProposal(bytes32 pairId) internal returns (bytes memory) {
@@ -88,7 +88,7 @@ contract AssetPairRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode("CANCEL_PAIR_PROPOSAL", block.chainid, address(registry), pairId, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ CONSTRUCTOR TESTS ============
@@ -99,7 +99,7 @@ contract AssetPairRegistryTest is TestHelper {
 
     function test_constructor_revertsOnZeroAddress() public {
         vm.expectRevert(AssetPairRegistry.ZeroAddress.selector);
-        new AssetPairRegistry(address(0), address(issuerReg));
+        new AssetPairRegistry(address(0), address(oracleReg));
     }
 
     // ============ PROPOSE ASSET TESTS ============

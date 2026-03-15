@@ -5,17 +5,17 @@ import "forge-std/Script.sol";
 import "forge-std/console.sol";
 
 import "../src/vision/Vision.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title DeployVision - Deploy Vision.sol (P2Pool prediction market) on L3
 /// @notice Deploys Vision contract on L3 (Index Orbit chain).
 ///         Vision uses dual-balance architecture with real + virtual balances.
 ///         USDC is L3 USDC (18 decimals). No L3BridgeCustody needed — withdrawToSettlement
-///         is a virtual debit, and issuers release from SettlementBridgeCustody on Settlement.
+///         is a virtual debit, and oracles release from SettlementBridgeCustody on Settlement.
 ///
 /// Required env vars:
-///   - ISSUER_REGISTRY: address of IssuerRegistry on L3 (for BLS verification)
+///   - ORACLE_REGISTRY: address of OracleRegistry on L3 (for BLS verification)
 ///   - USDC_ADDRESS: address of L3 USDC token (18 decimals)
 ///   - FEE_COLLECTOR: (optional) fee collector address; defaults to deployer
 contract DeployVision is DeployBLSHelper {
@@ -28,7 +28,7 @@ contract DeployVision is DeployBLSHelper {
         address deployer = vm.addr(deployerPrivateKey);
 
         // Read required addresses from env
-        address issuerRegistry = vm.envAddress("ISSUER_REGISTRY");
+        address oracleRegistry = vm.envAddress("ORACLE_REGISTRY");
         address usdcAddress = vm.envAddress("USDC_ADDRESS");
         address feeCollector = vm.envOr("FEE_COLLECTOR", deployer);
 
@@ -37,7 +37,7 @@ contract DeployVision is DeployBLSHelper {
         console.log("===========================================");
         console.log("Chain ID:", block.chainid);
         console.log("Deployer:", deployer);
-        console.log("IssuerRegistry:", issuerRegistry);
+        console.log("OracleRegistry:", oracleRegistry);
         console.log("USDC:", usdcAddress);
         console.log("Fee Collector:", feeCollector);
         console.log("");
@@ -45,13 +45,13 @@ contract DeployVision is DeployBLSHelper {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy Vision contract
-        Vision vision = new Vision(usdcAddress, issuerRegistry, feeCollector);
+        Vision vision = new Vision(usdcAddress, oracleRegistry, feeCollector);
         visionAddress = address(vision);
         console.log("  Vision deployed:", visionAddress);
 
         // Authorize Vision for incrementMissedCounts (non-signer liveness tracking)
-        IssuerRegistry(issuerRegistry).setAuthorizedMissedCountCaller(visionAddress, true);
-        console.log("  IssuerRegistry: authorized Vision for incrementMissedCounts");
+        OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(visionAddress, true);
+        console.log("  OracleRegistry: authorized Vision for incrementMissedCounts");
 
         vm.stopBroadcast();
 

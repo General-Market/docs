@@ -185,7 +185,7 @@ rsync -az --delete -e "$RSYNC_SSH" \
     --include 'Cargo.lock' \
     --include 'assets.json' \
     --include 'data-node/***' \
-    --include 'issuer/***' \
+    --include 'oracle/***' \
     --include 'ap/***' \
     --include 'curator/***' \
     --include 'common/***' \

@@ -5,7 +5,7 @@ import { parseUnits } from 'viem';
 
 test.describe('Buy ITP', () => {
   test('full buy flow: mint USDC if needed, approve, buy, wait for fill', async ({ walletPage: page }) => {
-    test.setTimeout(300_000); // 5 min — issuer consensus can take 30-90s, parallel load slows it further
+    test.setTimeout(300_000); // 5 min — oracle consensus can take 30-90s, parallel load slows it further
 
     // 1. Ensure user has enough L3 USDC (mint directly via RPC, not browser button)
     const usdcBalance = await getL3UsdcBalance(TEST_ADDRESS);
@@ -72,7 +72,7 @@ test.describe('Buy ITP', () => {
     await submitBtn.click();
 
     // 9. Wait for buy tx to be confirmed (stepper enters "Process" phase)
-    // Direct L3 path: order goes to Index.submitOrder, issuers batch + fill on L3
+    // Direct L3 path: order goes to Index.submitOrder, oracles batch + fill on L3
     // UI micro-step text: "Batching order..." then "Executing trades..."
     await expect(page.getByText(/Batching order|Executing trades/)).toBeVisible({ timeout: 60_000 });
 
@@ -81,7 +81,7 @@ test.describe('Buy ITP', () => {
     const orderId = l3OrderIdText ? parseInt(l3OrderIdText.match(/#(\d+)/)?.[1] || '0') || null : null;
     console.log(`Buy test: orderId=${orderId}`);
 
-    // 11. Wait for real issuer consensus pipeline to fill the order.
+    // 11. Wait for real oracle consensus pipeline to fill the order.
     // Race: modal "Buy More" button OR backend order status change (whichever first).
     const fillDetected = await Promise.race([
       expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 210_000 })

@@ -32,7 +32,7 @@ use tracing::{debug, info, warn, error};
 /// On-chain trade settlement configuration for E2E testing (Story 6.17)
 ///
 /// When both --mock-bitget and --bitget-vault are set, the AP executes trades
-/// on-chain via MockBitgetVault. Asset info comes from issuer-emitted
+/// on-chain via MockBitgetVault. Asset info comes from oracle-emitted
 /// AssetTradeRequest events — AP reads NO on-chain state for trade decisions.
 #[derive(Clone)]
 struct OnChainSettlement {
@@ -799,7 +799,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
                 quote_token = ?quote_token,
                 settlement_rpc = %settlement_rpc_display,
                 data_node = ?config.data_node_url,
-                "On-chain settlement enabled (issuer-driven AssetTradeRequest events)"
+                "On-chain settlement enabled (oracle-driven AssetTradeRequest events)"
             );
 
             // Resolve MockUSDT address from config (Story 7.18)
@@ -967,7 +967,7 @@ async fn process_events(
                     );
 
                     // TradeRequest is ITP-level. On-chain settlement is now driven by
-                    // AssetTradeRequest events emitted after issuer decomposition + netting.
+                    // AssetTradeRequest events emitted after oracle decomposition + netting.
                     // We still place mock orders and verify fills for the ITP-level trade.
                     let pair = trade.pair_id.to_string();
                     let side = trade.side;
@@ -1089,7 +1089,7 @@ async fn process_events(
                     });
                 }
                 APEvent::AssetTradeRequest(asset_trade) => {
-                    // Issuer-driven per-asset trade after cross-ITP netting.
+                    // Oracle-driven per-asset trade after cross-ITP netting.
                     // All trade info comes from the event — AP reads NO on-chain state.
                     info!(
                         cycle = asset_trade.cycle_number,
@@ -1123,7 +1123,7 @@ async fn process_events(
                             let asset_addr = Address::from(asset_trade.asset);
                             let quote = settlement.quote_token;
 
-                            // Compute asset amount from issuer-provided price
+                            // Compute asset amount from oracle-provided price
                             // asset_amount = usdc_amount * 1e18 / price
                             let asset_amount = if asset_trade.price.is_zero() {
                                 // TODO: add metrics counter for zero-price trades
@@ -1196,7 +1196,7 @@ async fn process_events(
                                 }
                             }
 
-                            // Respect issuer-directed quoteToken per asset pair.
+                            // Respect oracle-directed quoteToken per asset pair.
                             // Decimal mismatch fixed in MockBitgetVault.executeTrade() directly.
                             let event_qt = EthAddress::from(asset_trade.quote_token);
                             let needs_swap = !event_qt.is_zero() && event_qt != quote;
@@ -1213,7 +1213,7 @@ async fn process_events(
                                             from = ?quote,
                                             to = ?effective_quote,
                                             tx_hash = ?tx,
-                                            "Pre-trade stablecoin swap (issuer-directed)"
+                                            "Pre-trade stablecoin swap (oracle-directed)"
                                         );
                                     }
                                     Err(e) => {
@@ -1229,26 +1229,26 @@ async fn process_events(
                                 // BUY: use ask price for asset amount (buyer pays the ask)
                                 let adj_amount = if let Some(ask) = live_ask {
                                     if ask.is_zero() {
-                                        warn!("ask price is zero for asset, using issuer price fallback");
+                                        warn!("ask price is zero for asset, using oracle price fallback");
                                         asset_amount
                                     } else {
                                         asset_trade.usdc_amount.checked_mul(scale).unwrap_or_default() / ask
                                     }
                                 } else {
-                                    asset_amount // fallback to issuer price
+                                    asset_amount // fallback to oracle price
                                 };
                                 (effective_quote, asset_addr, asset_trade.usdc_amount, adj_amount)
                             } else {
                                 // SELL: use bid price for USDC return (seller gets the bid)
                                 let adj_usdc = if let Some(bid) = live_bid {
                                     if bid.is_zero() {
-                                        warn!("bid price is zero for asset, using issuer price fallback");
+                                        warn!("bid price is zero for asset, using oracle price fallback");
                                         asset_trade.usdc_amount
                                     } else {
                                         asset_amount.checked_mul(bid).unwrap_or_default() / scale
                                     }
                                 } else {
-                                    asset_trade.usdc_amount // fallback to issuer price
+                                    asset_trade.usdc_amount // fallback to oracle price
                                 };
                                 (asset_addr, effective_quote, asset_amount, adj_usdc)
                             };
@@ -1281,7 +1281,7 @@ async fn process_events(
                                                     from = ?effective_quote,
                                                     to = ?quote,
                                                     tx_hash = ?swap_tx,
-                                                    "Post-trade stablecoin swap (issuer-directed)"
+                                                    "Post-trade stablecoin swap (oracle-directed)"
                                                 );
                                             }
                                             Err(e) => {

@@ -15,7 +15,7 @@ pub const DEFAULT_QUEUE_CAPACITY: usize = 10_000;
 pub enum APEvent {
     /// Trade request from blockchain (ITP-level)
     TradeRequest(TradeRequestEvent),
-    /// Per-asset trade request from issuer decomposition + cross-ITP netting
+    /// Per-asset trade request from oracle decomposition + cross-ITP netting
     AssetTradeRequest(AssetTradeRequestEvent),
     /// Withdrawal request from blockchain
     WithdrawalRequest(WithdrawalRequestEvent),

@@ -1,68 +1,68 @@
-//! Issuer types for Index L3
+//! Oracle types for Index L3
 //!
 //! Matches Solidity TypesLib.sol definitions for cross-language compatibility.
 
 use ethers::types::{Address, Bytes, H256, U256};
 use serde::{Deserialize, Serialize};
 
-/// Issuer status values
-/// Maps to Solidity Issuer.status field
+/// Oracle status values
+/// Maps to Solidity Oracle.status field
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum IssuerStatus {
-    /// Issuer is not active
+pub enum OracleStatus {
+    /// Oracle is not active
     Inactive = 0,
-    /// Issuer is actively participating
+    /// Oracle is actively participating
     Active = 1,
-    /// Issuer is temporarily suspended
+    /// Oracle is temporarily suspended
     Suspended = 2,
 }
 
-impl IssuerStatus {
+impl OracleStatus {
     /// Fallible conversion from u8. Returns error for invalid values.
     pub fn try_from_u8(value: u8) -> Result<Self, super::EnumConversionError> {
         match value {
-            0 => Ok(IssuerStatus::Inactive),
-            1 => Ok(IssuerStatus::Active),
-            2 => Ok(IssuerStatus::Suspended),
+            0 => Ok(OracleStatus::Inactive),
+            1 => Ok(OracleStatus::Active),
+            2 => Ok(OracleStatus::Suspended),
             _ => Err(super::EnumConversionError {
-                enum_name: "IssuerStatus",
+                enum_name: "OracleStatus",
                 invalid_value: value,
             }),
         }
     }
 }
 
-impl From<u8> for IssuerStatus {
-    /// Converts u8 to IssuerStatus. Defaults to Inactive for invalid values.
-    /// For fallible conversion, use `IssuerStatus::try_from_u8()`.
+impl From<u8> for OracleStatus {
+    /// Converts u8 to OracleStatus. Defaults to Inactive for invalid values.
+    /// For fallible conversion, use `OracleStatus::try_from_u8()`.
     fn from(value: u8) -> Self {
-        IssuerStatus::try_from_u8(value).unwrap_or(IssuerStatus::Inactive)
+        OracleStatus::try_from_u8(value).unwrap_or(OracleStatus::Inactive)
     }
 }
 
-impl From<IssuerStatus> for u8 {
-    fn from(status: IssuerStatus) -> Self {
+impl From<OracleStatus> for u8 {
+    fn from(status: OracleStatus) -> Self {
         status as u8
     }
 }
 
-impl From<U256> for IssuerStatus {
+impl From<U256> for OracleStatus {
     fn from(value: U256) -> Self {
         let val: u64 = value.as_u64();
         (val as u8).into()
     }
 }
 
-/// Issuer node registration data
-/// Maps to TypesLib.Issuer
+/// Oracle node registration data
+/// Maps to TypesLib.Oracle
 ///
-/// Stored in IssuerRegistry contract.
+/// Stored in OracleRegistry contract.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Issuer {
-    /// On-chain issuer ID (1-based index in IssuerRegistry)
+pub struct Oracle {
+    /// On-chain oracle ID (1-based index in OracleRegistry)
     pub id: u64,
-    /// Issuer's Ethereum address for rewards/governance
+    /// Oracle's Ethereum address for rewards/governance
     pub addr: Address,
     /// IP address for P2P communication (packed bytes32)
     pub ip: H256,
@@ -74,15 +74,15 @@ pub struct Issuer {
     pub registered_at: U256,
 }
 
-impl Issuer {
+impl Oracle {
     /// Get status as enum
-    pub fn status_enum(&self) -> IssuerStatus {
-        IssuerStatus::from(self.status)
+    pub fn status_enum(&self) -> OracleStatus {
+        OracleStatus::from(self.status)
     }
 
-    /// Check if issuer is active
+    /// Check if oracle is active
     pub fn is_active(&self) -> bool {
-        self.status_enum() == IssuerStatus::Active
+        self.status_enum() == OracleStatus::Active
     }
 
     /// Convert IP bytes32 to string (for display/logging)
@@ -93,15 +93,15 @@ impl Issuer {
     }
 }
 
-/// Key rotation request for issuer
+/// Key rotation request for oracle
 /// Maps to TypesLib.KeyRotation
 ///
 /// Tracks pending key rotations with approval state.
 /// Requires 10/19 approval threshold + safe period.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyRotation {
-    /// Issuer requesting rotation
-    pub issuer_id: U256,
+    /// Oracle requesting rotation
+    pub oracle_id: U256,
     /// Proposed new BLS public key
     pub new_pubkey: Bytes,
     /// Timestamp of rotation request
@@ -145,11 +145,11 @@ pub struct PendingRebalance {
     pub cycle_number: U256,
 }
 
-/// Constants for issuer operations
-pub mod issuer_constants {
+/// Constants for oracle operations
+pub mod oracle_constants {
     /// Key rotation approval threshold (10/19)
     pub const KEY_ROTATION_THRESHOLD: u8 = 10;
-    /// Total issuers for threshold calculation (minus self)
+    /// Total oracles for threshold calculation (minus self)
     pub const KEY_ROTATION_TOTAL: u8 = 19;
     /// Safe period for key rotation (10 cycles)
     pub const KEY_ROTATION_SAFE_PERIOD: u64 = 10;

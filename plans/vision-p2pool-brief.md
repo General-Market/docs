@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────┐
-│              ISSUER NODES (BLS)             │
+│              ORACLE NODES (BLS)             │
 │  Govern the global market registry          │
 │  Auto-update markets (polymarket, twitch..) │
 │  Store per tick:                            │
@@ -23,7 +23,7 @@
 │    "eth_usd_10m"  → ETH/USD, 10-min ticks  │
 │    "aapl_close"   → AAPL daily close        │
 │                                             │
-│  Dynamic markets (issuers auto-update):     │
+│  Dynamic markets (oracles auto-update):     │
 │    "poly_*"       → new polymarket markets  │
 │    "twitch_*"     → live twitch streams     │
 │    "weather_*"    → active weather stations │
@@ -67,7 +67,7 @@ ID   Name      Meaning                         Win %
 
 ```
 Tick N resolves:
-  Issuers check: was market X's price updated since tick opened?
+  Oracles check: was market X's price updated since tick opened?
 
   YES → resolve normally
   NO  → market X CANCELLED for this tick only
@@ -103,12 +103,12 @@ Tick 7 pool: Carol + Dave + Eve           (3 players)
 
 Pool size fluctuates. More players in a tick = bigger pot.
 
-## Issuer Tick Resolution
+## Oracle Tick Resolution
 
-Issuers compute everything per tick. They only store two things:
+Oracles compute everything per tick. They only store two things:
 
 ```
-Per tick, issuers store:
+Per tick, oracles store:
   1. Resolution of each market  (uint8 result per market_id)
   2. Balance of each player     (USDC remaining after tick)
 
@@ -270,24 +270,24 @@ Timeline:
 
   ──[tick N]──────[tick N ends]──[10 min reveal]──[final]──
        │              │                │              │
-       │  bitmaps     │  issuers       │  all bitmaps │  BLS-sign
+       │  bitmaps     │  oracles       │  all bitmaps │  BLS-sign
        │  private     │  resolve       │  published   │  balances
        │              │  prices        │  anyone can  │
        │              │                │  verify hash │
 
 Rules:
-  - Issuers publish all bitmaps they hold for that tick
+  - Oracles publish all bitmaps they hold for that tick
   - Anyone can verify: keccak256(published_bitmap) == on-chain hash
   - If a player's bitmap is NOT revealed within 10 minutes:
     → treated as "did not bet" for that tick
     → no payout, no loss (stake refunded for that tick)
-  - Issuers have the bitmap (received pre-tick), so reveal is automatic
-    unless issuer nodes are down
+  - Oracles have the bitmap (received pre-tick), so reveal is automatic
+    unless oracle nodes are down
 
 Why:
   - Pre-tick: sealed → anti-copy, strategy privacy, bot competitive edge
   - Post-tick: revealed → transparency, verifiability, dispute resolution
-  - 10-min window: gives issuers time to gossip and publish
+  - 10-min window: gives oracles time to gossip and publish
   - Non-revealed = void: prevents selective reveal (only reveal if you won)
 ```
 
@@ -345,12 +345,12 @@ user's responsibility.
 
 ```
 Flow:
-  1. User sends bitmap to issuer nodes (REST/P2P)
-  2. Issuers store bitmap, verify hash, gossip to peers
+  1. User sends bitmap to oracle nodes (REST/P2P)
+  2. Oracles store bitmap, verify hash, gossip to peers
   3. User submits keccak256(bitmap) on-chain (commitment proof)
-  4. Issuers verify: stored bitmap hash == on-chain hash
+  4. Oracles verify: stored bitmap hash == on-chain hash
   5. During tick: bitmaps private (anti-copy, strategy protection)
-  6. After tick resolves: 10-min reveal — issuers publish all bitmaps
+  6. After tick resolves: 10-min reveal — oracles publish all bitmaps
   7. Anyone verifies hash(bitmap) == on-chain hash
   8. Non-revealed within 10 min → void (treated as did not bet)
 
@@ -368,8 +368,8 @@ joinBatch() stores:
   - player address        → already in msg.sender
   - start tick, duration  → 1 slot  (20K gas)
 
-No event emitted — issuers already have the bitmap.
-If dispute: any issuer holding the bitmap can prove it matches the on-chain hash.
+No event emitted — oracles already have the bitmap.
+If dispute: any oracle holding the bitmap can prove it matches the on-chain hash.
 ```
 
 ## Example: Tick 5 Resolution (Side Matching)
@@ -450,7 +450,7 @@ SOL (up_30, +2% below threshold):
 
 Each market resolves independently with its own side matching.
 10-min reveal: all bitmaps published, hashes verified.
-Final balances BLS-signed by issuers.
+Final balances BLS-signed by oracles.
 ```
 
 ## Entry Flow
@@ -460,7 +460,7 @@ User joins anytime:
   ├── picks: batch_id
   ├── deposits: any amount of USDC
   ├── sets: fixed USDC stake per tick (e.g. 2 USDC)
-  ├── sends: bitmap to issuer nodes (REST/P2P)
+  ├── sends: bitmap to oracle nodes (REST/P2P)
   └── sends: bitmap hash on-chain (commitment proof, ~40K gas)
               plays until deposit runs out
               no upfront tick count validation
@@ -675,20 +675,20 @@ User lands on page
 |---|---|
 | **Model** | Sealed parimutuel P2Pool with side matching — compete within your batch |
 | **Lifecycle** | Perpetual rolling — anyone joins anytime, plays until deposit runs out |
-| **Markets** | Global dynamic registry, governed by issuer nodes |
+| **Markets** | Global dynamic registry, governed by oracle nodes |
 | **Batches** | Permissionless, no creator fees, market updates only after tick resolves |
 | **Resolution** | uint8 type per market: up_0, up_30, down_x, flat_x, etc. |
 | **Scale** | 100k+ bets per bitmap (100 markets × 1000 ticks = 12.5 KB) |
 | **Collateral** | USDC deposit, stake per tick (set at join), side-matched per market |
 | **Whale safety** | Per-market side matching — excess refunded, max loss = opposing capital |
 | **Privacy** | Bitmaps sealed during tick, 10-min reveal after resolution |
-| **Entry** | Bitmap to issuers + 1 tx: deposit + stake config + hash (~40K gas) |
+| **Entry** | Bitmap to oracles + 1 tx: deposit + stake config + hash (~40K gas) |
 | **Early mult** | `1 + min(t, tick_dur)² / tick_dur²` — capped at 2.0, pre-commit = max weight |
-| **Stale prices** | Issuer cancels sub-market for that tick, bettors refunded per market |
+| **Stale prices** | Oracle cancels sub-market for that tick, bettors refunded per market |
 | **All losers** | Everyone refunded their share for that sub-market |
-| **Claim** | Verified against issuer BLS aggregated signature |
+| **Claim** | Verified against oracle BLS aggregated signature |
 | **Protocol fee** | 0.3% on all withdrawals (claims + exits) |
-| **Exit** | `withdraw()` anytime; `pause()` + `forceWithdraw()` by issuers |
+| **Exit** | `withdraw()` anytime; `pause()` + `forceWithdraw()` by oracles |
 | **Target users** | Quant funds, market makers, bots — with strategy preset UX for humans |
 
 ## Contracts
@@ -704,22 +704,22 @@ BatchRegistry (on-chain)
 PoolVault (on-chain)
   - joinBatch(batchId, stakePerTick, bitmapHash) + deposit
       ^ stores hash + stake config (2 slots)
-  - claimRewards(batchId, tickRange, issuerBLSSig)
-      ^ player collects BLS sigs from issuers, aggregates, submits tx
-      ^ verified against issuer BLS aggregated pubkey
+  - claimRewards(batchId, tickRange, oracleBLSSig)
+      ^ player collects BLS sigs from oracles, aggregates, submits tx
+      ^ verified against oracle BLS aggregated pubkey
       ^ 0.3% protocol fee deducted on withdrawal
   - withdraw(batchId)
       ^ player exits, claims remaining balance
       ^ 0.3% protocol fee deducted
-  - pause(batchId) — issuer-only
+  - pause(batchId) — oracle-only
       ^ freezes all activity on a batch
-  - forceWithdraw(batchId, player) — issuer-only
+  - forceWithdraw(batchId, player) — oracle-only
       ^ returns player's remaining balance (minus fee)
       ^ emergency use: stuck funds, malicious batches
 
 BotRegistry → stays (peer discovery)
 
-Market Registry (off-chain JSON, issuer-governed)
+Market Registry (off-chain JSON, oracle-governed)
   - All available markets with id, spec, source, resolution method
-  - Issuers sign updates via BLS consensus
+  - Oracles sign updates via BLS consensus
 ```

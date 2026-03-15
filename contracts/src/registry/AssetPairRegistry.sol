@@ -8,7 +8,7 @@ import "../libraries/BLSVerifier.sol";
 
 /// @title AssetPairRegistry - Global asset and trading pair whitelist
 /// @notice Manages which assets and pairs can be used in ITPs
-/// @dev All modifications require BLS signature from issuer consensus
+/// @dev All modifications require BLS signature from oracle consensus
 /// @custom:security-contact security@indexprotocol.com
 contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     // ============ ERRORS ============
@@ -57,10 +57,10 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
     /// @notice Timelock period for pair activation (2 days)
     uint256 public constant PAIR_TIMELOCK = 2 days;
 
-    /// @notice Standard BLS threshold (11/20 issuers)
+    /// @notice Standard BLS threshold (11/20 oracles)
     uint256 public constant STANDARD_THRESHOLD = 11;
 
-    /// @notice Emergency BLS threshold (15/20 issuers)
+    /// @notice Emergency BLS threshold (15/20 oracles)
     uint256 public constant EMERGENCY_THRESHOLD = 15;
 
     // ============ STORAGE ============
@@ -102,13 +102,13 @@ contract AssetPairRegistry is IAssetPairRegistry, BLSVerifier {
 
     // ============ CONSTRUCTOR ============
 
-    /// @notice Initialize the AssetPairRegistry with an admin and issuer registry
+    /// @notice Initialize the AssetPairRegistry with an admin and oracle registry
     /// @param _admin The admin address for configuration operations
-    /// @param _issuerRegistry The IssuerRegistry address for BLS verification
-    constructor(address _admin, address _issuerRegistry) {
+    /// @param _oracleRegistry The OracleRegistry address for BLS verification
+    constructor(address _admin, address _oracleRegistry) {
         if (_admin == address(0)) revert ZeroAddress();
         admin = _admin;
-        __BLSVerifier_init(_issuerRegistry);
+        __BLSVerifier_init(_oracleRegistry);
     }
 
     // ============ ASSET MANAGEMENT ============

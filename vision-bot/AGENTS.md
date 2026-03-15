@@ -365,7 +365,7 @@ def join_batch(batch_id, market_count):
     return bitmap_hex, "0x" + bitmap_hash.hex()
 ```
 
-### Step 6: Submit Bitmap to Issuers
+### Step 6: Submit Bitmap to Oracles
 
 Must happen AFTER on-chain join is confirmed. Wait a few seconds for chain indexer to detect the join event.
 
@@ -414,13 +414,13 @@ def update_bitmap(batch_id, new_predictions):
     })
     sign_and_send(tx)
 
-    # 2. Submit new bitmap to issuers
+    # 2. Submit new bitmap to oracles
     submit_bitmap(batch_id, bitmap_hex, "0x" + new_hash.hex())
 ```
 
 ### Step 8: Claim Rewards
 
-Requires BLS-signed balance proof from issuers. The claim flow:
+Requires BLS-signed balance proof from oracles. The claim flow:
 
 ```python
 def check_balance(batch_id):
@@ -435,7 +435,7 @@ def check_balance(batch_id):
 # In production, also returns bls_signature for on-chain claim.
 ```
 
-On-chain claim requires aggregated BLS signatures from 2/3+ issuers:
+On-chain claim requires aggregated BLS signatures from 2/3+ oracles:
 
 ```python
 # When BLS proofs are available:

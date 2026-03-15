@@ -65,10 +65,10 @@ Two wallet transactions execute:
 
 ### 4c. Bitmap Reveal
 
-After the on-chain commitment confirms, the frontend submits the actual bitmap bytes to all issuer nodes via `POST /p2pool/bitmap`. Each issuer verifies that `keccak256(bitmap)` matches the on-chain commitment before accepting the bitmap.
+After the on-chain commitment confirms, the frontend submits the actual bitmap bytes to all oracle nodes via `POST /p2pool/bitmap`. Each oracle verifies that `keccak256(bitmap)` matches the on-chain commitment before accepting the bitmap.
 
 <Warning>
-The bitmap must be revealed to issuers before the next tick resolves. If issuer nodes do not receive the bitmap, the player's bets cannot be scored.
+The bitmap must be revealed to oracles before the next tick resolves. If oracle nodes do not receive the bitmap, the player's bets cannot be scored.
 </Warning>
 
 ## Step 5: Monitor Results
@@ -85,7 +85,7 @@ After winning ticks resolve, claim accumulated winnings:
 
 1. Click **Claim** on the batch view
 2. Select the tick range to claim (e.g., ticks 5–10)
-3. The frontend fetches a BLS-signed balance proof from the issuer network
+3. The frontend fetches a BLS-signed balance proof from the oracle network
 4. Submit the proof on-chain via `claimRewards(batchId, fromTick, toTick, newBalance, blsSignature)`
 5. The Vision contract verifies the BLS signature and updates the player's on-chain balance
 
@@ -106,12 +106,12 @@ The additional USDC is added to the player's balance immediately.
 To exit a batch entirely:
 
 1. Click **Withdraw** on the batch view
-2. The frontend fetches a BLS-signed final balance proof from the issuer network
+2. The frontend fetches a BLS-signed final balance proof from the oracle network
 3. Submit the proof on-chain via `withdraw(batchId, finalBalance, blsSignature)`
 4. The Vision contract verifies the BLS signature, transfers the final USDC balance to the player's wallet, and removes the player from the batch
 
 <Info>
-Withdrawal requires a BLS balance proof because the player's balance includes off-chain tick resolutions that haven't been claimed yet. The issuer network computes the final balance including all pending winnings and losses.
+Withdrawal requires a BLS balance proof because the player's balance includes off-chain tick resolutions that haven't been claimed yet. The oracle network computes the final balance including all pending winnings and losses.
 </Info>
 
 ## Updating Bets
@@ -120,6 +120,6 @@ To change bet directions without leaving the batch:
 
 1. Adjust UP/DOWN selections in the betting interface
 2. Click **Update Bitmap**
-3. The frontend encodes a new bitmap, submits a new `keccak256` hash on-chain via `updateBitmap(batchId, newBitmapHash)`, and reveals the new bitmap to issuers
+3. The frontend encodes a new bitmap, submits a new `keccak256` hash on-chain via `updateBitmap(batchId, newBitmapHash)`, and reveals the new bitmap to oracles
 
 The updated bets take effect starting from the next tick.

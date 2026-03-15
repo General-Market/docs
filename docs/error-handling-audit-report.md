@@ -27,7 +27,7 @@ This audit reviewed error handling across all Index L3 components for consistenc
 | L3BridgeCustody.sol | `contracts/src/custody/L3BridgeCustody.sol` | Audited, clean |
 | ArbBridgeCustody.sol | `contracts/src/custody/ArbBridgeCustody.sol` | Pre-existing compile error (Story 2-10) |
 | CollateralRegistry.sol | `contracts/src/registry/CollateralRegistry.sol` | Audited, clean |
-| IssuerRegistry.sol | `contracts/src/registry/IssuerRegistry.sol` | Audited, clean |
+| OracleRegistry.sol | `contracts/src/registry/OracleRegistry.sol` | Audited, clean |
 | FeeRegistry.sol | `contracts/src/registry/FeeRegistry.sol` | Audited, clean |
 | AssetPairRegistry.sol | `contracts/src/registry/AssetPairRegistry.sol` | Audited, clean |
 | ErrorsLib.sol | `contracts/src/libraries/ErrorsLib.sol` | Extended with E061-E064 |
@@ -41,7 +41,7 @@ This audit reviewed error handling across all Index L3 components for consistenc
 | `common/src/integrations/` | 5+ | Audited, error codes added to logs |
 | `ap/src/` (all modules) | 15+ | Audited, fixes applied |
 | `ap/src/error.rs` | 1 | Audited, clean |
-| `issuer/src/` (all modules) | 10+ | Audited, error codes added to logs |
+| `oracle/src/` (all modules) | 10+ | Audited, error codes added to logs |
 
 ### Documentation
 
@@ -66,7 +66,7 @@ This audit reviewed error handling across all Index L3 components for consistenc
 | **New Errors Added** | E061_Unauthorized, E062_AlreadyInitialized, E063_MintFailed, E064_StringTooLong |
 
 **Locations fixed:**
-- `setIssuerRegistry()` - admin check + already-set check
+- `setOracleRegistry()` - admin check + already-set check
 - `setITPVault()` - admin check + ITP existence check
 - `setFeeRegistry()` - admin check
 - `_processFill()` - mint failure check
@@ -99,7 +99,7 @@ This audit reviewed error handling across all Index L3 components for consistenc
 | Field | Value |
 |-------|-------|
 | **Severity** | MEDIUM |
-| **Component** | All Rust crates (ap/, issuer/, common/) |
+| **Component** | All Rust crates (ap/, oracle/, common/) |
 | **Description** | 153 out of 156 `error!()`/`warn!()` calls lacked structured error code fields |
 | **Impact** | Log aggregation tools couldn't filter/group by error code |
 | **Fix** | Added `code = "EXXX"` or `code = "INFRA-XXX"` fields to all applicable log statements |
@@ -119,9 +119,9 @@ This audit reviewed error handling across all Index L3 components for consistenc
 - `ap/src/external/bitget/auth.rs` (SystemTime, HMAC)
 - `ap/src/external/bitget/client.rs` (HTTP client init)
 - `ap/src/queue/mod.rs` (RwLock documentation)
-- `issuer/src/main.rs` (node_id, signal handlers, from_block)
-- `issuer/src/chain/writer.rs` (ABI encoding)
-- `issuer/src/netting/rebalance.rs` (i256 conversion)
+- `oracle/src/main.rs` (node_id, signal handlers, from_block)
+- `oracle/src/chain/writer.rs` (ABI encoding)
+- `oracle/src/netting/rebalance.rs` (i256 conversion)
 
 ### Issue 6: Missing Error Documentation
 
@@ -145,7 +145,7 @@ These issues were found during the audit but pre-date Story 6.15:
 | `ap/src/main.rs:490` - `trade.user` field doesn't exist | `ap/src/main.rs` | Pre-existing compilation error in binary |
 | `common/src/adapters/rpc_chain_reader.rs` test errors | `common/src/adapters/` | ITPStatus import / TxHash type issues |
 | 7 pre-existing test failures in common crate | `common/src/` (price_math, rate_limit) | Timing-dependent and math precision issues |
-| 1 pre-existing test failure in issuer crate | `issuer/src/slippage/` | `test_tier_filtering_at_boundary` boundary logic |
+| 1 pre-existing test failure in oracle crate | `oracle/src/slippage/` | `test_tier_filtering_at_boundary` boundary logic |
 
 ---
 
@@ -165,7 +165,7 @@ These issues were found during the audit but pre-date Story 6.15:
 | `cargo check` | Pre-existing error in `ap` binary (trade.user field). Library code compiles clean. |
 | `cargo test -p ap --lib` | **295 passed, 0 failed** |
 | `cargo test -p common --lib` | **368 passed, 7 failed** (all pre-existing) |
-| `cargo test -p issuer --lib` | **347 passed, 1 failed** (pre-existing) |
+| `cargo test -p oracle --lib` | **347 passed, 1 failed** (pre-existing) |
 
 **Conclusion:** No regressions introduced by Story 6.15 changes. All failures are pre-existing.
 
@@ -194,7 +194,7 @@ These issues were found during the audit but pre-date Story 6.15:
 | Crate | Total error!/warn! calls | With error code | Coverage |
 |-------|--------------------------|-----------------|----------|
 | `ap/` | ~50 | ~50 | ~100% |
-| `issuer/` | ~70 | ~70 | ~100% |
+| `oracle/` | ~70 | ~70 | ~100% |
 | `common/` | ~36 | ~36 | ~100% |
 | **Total** | **~156** | **~156** | **~100%** |
 

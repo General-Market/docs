@@ -92,7 +92,7 @@ const REBALANCE_FUZZ: FuzzVector[] = [
   {
     label: 'rebalance:weights-dont-sum',
     // requestRebalance on BridgeProxy is event-only — no weight validation at request time.
-    // Issuers reject bad weights when relaying to L3 Index.rebalance (E014_InvalidWeightSum).
+    // Oracles reject bad weights when relaying to L3 Index.rebalance (E014_InvalidWeightSum).
     shouldRevert: false,
     overrides: { badWeightSum: true },
   },

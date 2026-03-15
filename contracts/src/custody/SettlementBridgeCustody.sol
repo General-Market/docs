@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import "../interfaces/IBridge.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
 import "../libraries/DecimalLib.sol";
@@ -53,8 +53,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     // ============ STORAGE ============
 
-    /// @notice Reference to IssuerRegistry for BLS key verification
-    IIssuerRegistry public issuerRegistry;
+    /// @notice Reference to OracleRegistry for BLS key verification
+    IOracleRegistry public oracleRegistry;
 
     /// @notice USDC token contract
     IERC20 public usdc;
@@ -105,14 +105,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     uint256 public visionReserve;
 
     /// @notice Pending mints: orderId => mint data needed for crash recovery
-    /// @dev Written in completeBuyOrder, queried by issuers on restart to find un-minted orders
+    /// @dev Written in completeBuyOrder, queried by oracles on restart to find un-minted orders
     mapping(uint256 => TypesLib.PendingMint) public pendingMints;
 
     /// @notice Admin address for registry updates and emergency operations
     address public custodyAdmin;
 
     /// @notice Storage gap for future upgrades
-    /// @dev Used: issuerRegistry, usdc, l3Index, bridgeCompleted, crossChainOrderId,
+    /// @dev Used: oracleRegistry, usdc, l3Index, bridgeCompleted, crossChainOrderId,
     ///      crossChainOrders, pendingUpgradeImpl, pendingUpgradeProposedAt, pendingUpgradeIsEmergency,
     ///      bridgeProxy, crossChainSellOrders, visionDeposits, withdrawProcessed, visionReserve,
     ///      pendingMints, custodyAdmin = 16 slots
@@ -121,14 +121,14 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     // ============ INITIALIZER ============
 
     /// @notice Initialize the SettlementBridgeCustody contract
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
     /// @param usdc_ Address of the USDC token contract
     /// @param l3Index_ Address of the L3 Investment contract
     /// @param bridgeProxy_ Address of the BridgeProxy contract (set at deploy, BLS-gated after)
-    function initialize(address issuerRegistry_, address usdc_, address l3Index_, address bridgeProxy_) external initializer {
+    function initialize(address oracleRegistry_, address usdc_, address l3Index_, address bridgeProxy_) external initializer {
         __UUPSUpgradeable_init();
-        if (issuerRegistry_ == address(0)) {
-            revert ErrorsLib.E043_ZeroIssuerRegistry();
+        if (oracleRegistry_ == address(0)) {
+            revert ErrorsLib.E043_ZeroOracleRegistry();
         }
         if (usdc_ == address(0)) {
             revert ErrorsLib.E050_ZeroUSDCAddress();
@@ -136,8 +136,8 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         if (l3Index_ == address(0)) {
             revert ErrorsLib.E056_ZeroL3IndexAddress();
         }
-        issuerRegistry = IIssuerRegistry(issuerRegistry_);
-        __BLSVerifier_init(issuerRegistry_);
+        oracleRegistry = IOracleRegistry(oracleRegistry_);
+        __BLSVerifier_init(oracleRegistry_);
         usdc = IERC20(usdc_);
         l3Index = l3Index_;
         custodyAdmin = msg.sender;
@@ -146,12 +146,12 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         }
     }
 
-    /// @notice Update the issuer registry used for BLS verification
+    /// @notice Update the oracle registry used for BLS verification
     /// @dev Admin-only, allows fixing registry pointer without full upgrade
-    function setIssuerRegistry(address newRegistry) external {
-        if (msg.sender != custodyAdmin) revert ErrorsLib.E043_ZeroIssuerRegistry();
-        if (newRegistry == address(0)) revert ErrorsLib.E043_ZeroIssuerRegistry();
-        issuerRegistry = IIssuerRegistry(newRegistry);
+    function setOracleRegistry(address newRegistry) external {
+        if (msg.sender != custodyAdmin) revert ErrorsLib.E043_ZeroOracleRegistry();
+        if (newRegistry == address(0)) revert ErrorsLib.E043_ZeroOracleRegistry();
+        oracleRegistry = IOracleRegistry(newRegistry);
         __BLSVerifier_init(newRegistry);
     }
 
@@ -166,7 +166,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     /// @param amount Amount in 18-decimal internal format
     /// @param nonce Unique nonce for this bridge operation
     /// @param proof Proof of the lock on source chain
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function completeBridge(
         uint256 sourceChainId,
         uint256 amount,
@@ -313,7 +313,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Store pending mint data BEFORE deleting order — crash recovery anchor.
-        // Issuers query this on restart to find CBO'd orders that still need minting.
+        // Oracles query this on restart to find CBO'd orders that still need minting.
         pendingMints[orderId] = TypesLib.PendingMint({
             itpId: order.itpId,
             user: order.user,
@@ -398,7 +398,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     /// @notice Set the BridgeProxy address (one-time setup)
     /// @param bridgeProxy_ Address of the BridgeProxy contract
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function setBridgeProxy(address bridgeProxy_, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (bridgeProxy_ == address(0)) {
             revert ErrorsLib.E118_ZeroBridgeProxy();
@@ -736,7 +736,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     /// @notice Propose a standard upgrade (7-day timelock)
     /// @param newImpl New implementation address
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function proposeUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -756,7 +756,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
 
     /// @notice Propose an emergency upgrade (24-hour timelock, 17/20 threshold)
     /// @param newImpl New implementation address
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function proposeEmergencyUpgrade(address newImpl, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (newImpl == address(0)) {
             revert ErrorsLib.E038_ZeroImplementation();
@@ -801,7 +801,7 @@ contract SettlementBridgeCustody is Initializable, UUPSUpgradeable, BLSVerifier,
     }
 
     /// @notice Cancel a pending upgrade
-    /// @param blsSignature BLS signature from issuers
+    /// @param blsSignature BLS signature from oracles
     function cancelUpgrade(bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external {
         if (pendingUpgradeImpl == address(0)) {
             revert ErrorsLib.E040_NoPendingUpgrade();

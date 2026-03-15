@@ -1,7 +1,7 @@
 //! Configuration for the Curator service
 //!
 //! Supports three operational modes:
-//! - Oracle Collector Mode (default): Collects BLS NAV signatures from issuers
+//! - Oracle Collector Mode (default): Collects BLS NAV signatures from oracles
 //! - Allocation Bot Mode (--allocation-mode): Rebalances vault supply across markets
 //! - Health Monitor Mode (--health-monitor-mode): Monitors protocol health
 
@@ -64,10 +64,10 @@ pub struct CuratorArgs {
     // ========================================================================
     // Oracle Collector Mode Args
     // ========================================================================
-    /// Comma-separated list of issuer HTTP endpoints
+    /// Comma-separated list of oracle HTTP endpoints
     /// e.g., http://localhost:9001,http://localhost:9002,http://localhost:9003
     #[arg(long, default_value = "")]
-    pub issuer_urls: String,
+    pub oracle_urls: String,
 
     /// ITPNAVOracle contract address (hex)
     #[arg(long, default_value = "")]
@@ -108,7 +108,7 @@ pub struct CuratorArgs {
     // ========================================================================
     // Health Monitor Mode Args
     // ========================================================================
-    /// L3 RPC endpoint (port 8545 in dual-chain setup, for IssuerRegistry reads) — required for health monitor mode
+    /// L3 RPC endpoint (port 8545 in dual-chain setup, for OracleRegistry reads) — required for health monitor mode
     #[arg(long, default_value = "")]
     pub l3_rpc_url: String,
 
@@ -116,7 +116,7 @@ pub struct CuratorArgs {
     #[arg(long, default_value = "")]
     pub mirror_registry_address: String,
 
-    /// L3 IssuerRegistry address — required for health monitor mode
+    /// L3 OracleRegistry address — required for health monitor mode
     #[arg(long, default_value = "")]
     pub l3_registry_address: String,
 
@@ -202,7 +202,7 @@ impl std::fmt::Debug for CuratorArgs {
             .field("private_key", &self.private_key.as_ref().map(|_| "[REDACTED]"))
             .field("private_key_file", &self.private_key_file)
             .field("log_level", &self.log_level)
-            .field("issuer_urls", &self.issuer_urls)
+            .field("oracle_urls", &self.oracle_urls)
             .field("oracle_address", &self.oracle_address)
             .field("itp_address", &self.itp_address)
             .field("update_interval_secs", &self.update_interval_secs)
@@ -232,7 +232,7 @@ impl std::fmt::Debug for CuratorArgs {
 /// Resolved configuration for Oracle Collector mode
 #[derive(Clone)]
 pub struct CuratorConfig {
-    pub issuer_urls: Vec<String>,
+    pub oracle_urls: Vec<String>,
     pub oracle_address: Address,
     pub itp_address: Address,
     pub rpc_url: String,
@@ -246,7 +246,7 @@ pub struct CuratorConfig {
 impl std::fmt::Debug for CuratorConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CuratorConfig")
-            .field("issuer_urls", &self.issuer_urls)
+            .field("oracle_urls", &self.oracle_urls)
             .field("oracle_address", &self.oracle_address)
             .field("itp_address", &self.itp_address)
             .field("rpc_url", &self.rpc_url)
@@ -261,15 +261,15 @@ impl std::fmt::Debug for CuratorConfig {
 impl CuratorConfig {
     /// Build config from parsed CLI args
     pub fn from_args(args: CuratorArgs) -> Result<Self, String> {
-        let issuer_urls: Vec<String> = args
-            .issuer_urls
+        let oracle_urls: Vec<String> = args
+            .oracle_urls
             .split(',')
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
 
-        if issuer_urls.is_empty() {
-            return Err("At least one issuer URL is required".to_string());
+        if oracle_urls.is_empty() {
+            return Err("At least one oracle URL is required".to_string());
         }
 
         let oracle_address: Address = args
@@ -285,7 +285,7 @@ impl CuratorConfig {
         let private_key = args.effective_private_key()?;
 
         Ok(Self {
-            issuer_urls,
+            oracle_urls,
             oracle_address,
             itp_address,
             rpc_url: args.rpc_url,

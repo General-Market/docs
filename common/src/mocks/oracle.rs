@@ -1,7 +1,7 @@
-//! MockIssuer implementation for testing consensus operations
+//! MockOracle implementation for testing consensus operations
 //!
 //! Provides mock BLS signing and consensus simulation for testing
-//! without a real issuer network.
+//! without a real oracle network.
 
 use std::sync::Arc;
 
@@ -43,9 +43,9 @@ pub enum ConsensusResult {
     Timeout,
 }
 
-/// Internal state for MockIssuer
+/// Internal state for MockOracle
 #[derive(Debug)]
-struct MockIssuerState {
+struct MockOracleState {
     /// This node's ID
     node_id: PeerId,
     /// BLS keypair (simplified as bytes)
@@ -61,15 +61,15 @@ struct MockIssuerState {
     current_cycle: u64,
 }
 
-/// Mock implementation of issuer consensus
+/// Mock implementation of oracle consensus
 ///
 /// Supports single-node mode (always leader, auto-approve) and
 /// multi-node simulation for integration tests.
-pub struct MockIssuer {
-    state: Arc<RwLock<MockIssuerState>>,
+pub struct MockOracle {
+    state: Arc<RwLock<MockOracleState>>,
 }
 
-impl MockIssuer {
+impl MockOracle {
     /// Generate a deterministic BLS keypair from a seed
     fn generate_keypair(seed: u64) -> (Vec<u8>, BLSPublicKey) {
         // Simplified mock keypair - in production would use real BLS
@@ -159,8 +159,8 @@ impl MockIssuer {
     }
 
     /// Elect leader deterministically from last signature
-    pub fn elect_leader(last_sig: &BLSSignature, num_issuers: usize) -> usize {
-        if num_issuers == 0 {
+    pub fn elect_leader(last_sig: &BLSSignature, num_oracles: usize) -> usize {
+        if num_oracles == 0 {
             return 0;
         }
 
@@ -170,7 +170,7 @@ impl MockIssuer {
             hash = hash.wrapping_add((*byte as u64).wrapping_mul(i as u64 + 1));
         }
 
-        (hash as usize) % num_issuers
+        (hash as usize) % num_oracles
     }
 
     /// Get the node's public key
@@ -218,7 +218,7 @@ impl MockIssuer {
     }
 }
 
-impl BLSSigner for MockIssuer {
+impl BLSSigner for MockOracle {
     fn sign(&self, private_key: &[u8], message: &[u8]) -> Result<BLSSignature, Error> {
         Ok(self.sign_internal(private_key, message))
     }
@@ -252,9 +252,9 @@ impl BLSSigner for MockIssuer {
     }
 }
 
-/// Create a network of mock issuers for integration testing
-pub fn create_issuer_network(count: usize) -> Vec<MockIssuer> {
-    let mut issuers = Vec::new();
+/// Create a network of mock oracles for integration testing
+pub fn create_oracle_network(count: usize) -> Vec<MockOracle> {
+    let mut oracles = Vec::new();
     let mut peer_ids = Vec::new();
 
     // Generate peer IDs
@@ -264,25 +264,25 @@ pub fn create_issuer_network(count: usize) -> Vec<MockIssuer> {
         peer_ids.push(peer_id);
     }
 
-    // Create issuers with knowledge of all peers
+    // Create oracles with knowledge of all peers
     for i in 0..count {
-        let issuer = MockIssuerBuilder::new()
+        let oracle = MockOracleBuilder::new()
             .with_node_id(peer_ids[i])
             .with_peers(peer_ids.clone())
             .single_node_mode(false)
             .build();
-        issuers.push(issuer);
+        oracles.push(oracle);
     }
 
-    issuers
+    oracles
 }
 
-/// Simulate a consensus round among issuers
+/// Simulate a consensus round among oracles
 pub async fn simulate_consensus_round(
-    issuers: &[MockIssuer],
+    oracles: &[MockOracle],
     proposal: &BatchProposal,
 ) -> ConsensusResult {
-    if issuers.is_empty() {
+    if oracles.is_empty() {
         return ConsensusResult::InsufficientSignatures {
             collected: 0,
             required: 1,
@@ -292,19 +292,19 @@ pub async fn simulate_consensus_round(
     let mut signatures = Vec::new();
     let mut signers = Vec::new();
 
-    // Collect signatures from all issuers
-    for issuer in issuers {
-        match issuer.sign_batch(proposal).await {
+    // Collect signatures from all oracles
+    for oracle in oracles {
+        match oracle.sign_batch(proposal).await {
             Ok(sig) => {
                 signatures.push(sig);
-                signers.push(issuer.node_id().await);
+                signers.push(oracle.node_id().await);
             }
             Err(_) => continue,
         }
     }
 
     // Check if we have enough signatures (2/3 + 1)
-    let required = (issuers.len() * 2 / 3) + 1;
+    let required = (oracles.len() * 2 / 3) + 1;
     if signatures.len() < required {
         return ConsensusResult::InsufficientSignatures {
             collected: signatures.len(),
@@ -313,7 +313,7 @@ pub async fn simulate_consensus_round(
     }
 
     // Aggregate signatures
-    if let Some(first) = issuers.first() {
+    if let Some(first) = oracles.first() {
         match first.aggregate_signatures(signatures).await {
             Ok(aggregated) => ConsensusResult::Success {
                 aggregated_signature: aggregated,
@@ -332,15 +332,15 @@ pub async fn simulate_consensus_round(
     }
 }
 
-/// Builder for MockIssuer
-pub struct MockIssuerBuilder {
+/// Builder for MockOracle
+pub struct MockOracleBuilder {
     node_id: Option<PeerId>,
     bls_keypair: Option<(Vec<u8>, BLSPublicKey)>,
     peers: Vec<PeerId>,
     single_node_mode: bool,
 }
 
-impl MockIssuerBuilder {
+impl MockOracleBuilder {
     /// Create a new builder with defaults
     pub fn new() -> Self {
         Self {
@@ -375,8 +375,8 @@ impl MockIssuerBuilder {
         self
     }
 
-    /// Build the MockIssuer
-    pub fn build(self) -> MockIssuer {
+    /// Build the MockOracle
+    pub fn build(self) -> MockOracle {
         // Generate node ID if not provided
         let node_id = self.node_id.unwrap_or_else(|| {
             let mut id = [0u8; 32];
@@ -388,10 +388,10 @@ impl MockIssuerBuilder {
         // Generate keypair if not provided
         let (private_key, public_key) = self.bls_keypair.unwrap_or_else(|| {
             let seed = u64::from_le_bytes(node_id[0..8].try_into().unwrap_or([0; 8]));
-            MockIssuer::generate_keypair(seed)
+            MockOracle::generate_keypair(seed)
         });
 
-        let state = MockIssuerState {
+        let state = MockOracleState {
             node_id,
             bls_private_key: private_key,
             bls_public_key: public_key,
@@ -401,13 +401,13 @@ impl MockIssuerBuilder {
             current_cycle: 0,
         };
 
-        MockIssuer {
+        MockOracle {
             state: Arc::new(RwLock::new(state)),
         }
     }
 }
 
-impl Default for MockIssuerBuilder {
+impl Default for MockOracleBuilder {
     fn default() -> Self {
         Self::new()
     }
@@ -430,38 +430,38 @@ mod tests {
 
     #[tokio::test]
     async fn test_single_node_batch_proposal_and_signing() {
-        let issuer = MockIssuerBuilder::new().single_node_mode(true).build();
+        let oracle = MockOracleBuilder::new().single_node_mode(true).build();
 
         // Should always be leader in single-node mode
-        assert!(issuer.is_leader(0).await);
-        assert!(issuer.is_leader(1).await);
-        assert!(issuer.is_leader(100).await);
+        assert!(oracle.is_leader(0).await);
+        assert!(oracle.is_leader(1).await);
+        assert!(oracle.is_leader(100).await);
 
         // Propose a batch
         let fills = vec![create_test_fill(1), create_test_fill(2)];
-        let proposal = issuer.propose_batch(vec![1, 2], fills).await.unwrap();
+        let proposal = oracle.propose_batch(vec![1, 2], fills).await.unwrap();
 
         assert_eq!(proposal.order_ids, vec![1, 2]);
         assert!(!proposal.proposer_signature.0.is_empty());
 
         // Sign the batch
-        let signature = issuer.sign_batch(&proposal).await.unwrap();
+        let signature = oracle.sign_batch(&proposal).await.unwrap();
         assert!(!signature.0.is_empty());
     }
 
     #[tokio::test]
     async fn test_proposed_batches_tracking() {
-        let issuer = MockIssuerBuilder::new().single_node_mode(true).build();
+        let oracle = MockOracleBuilder::new().single_node_mode(true).build();
 
         // Initially empty
-        assert!(issuer.proposed_batches().await.is_empty());
+        assert!(oracle.proposed_batches().await.is_empty());
 
         // Propose multiple batches
-        let _ = issuer.propose_batch(vec![1], vec![create_test_fill(1)]).await;
-        let _ = issuer.propose_batch(vec![2, 3], vec![create_test_fill(2), create_test_fill(3)]).await;
+        let _ = oracle.propose_batch(vec![1], vec![create_test_fill(1)]).await;
+        let _ = oracle.propose_batch(vec![2, 3], vec![create_test_fill(2), create_test_fill(3)]).await;
 
         // Should capture all proposals
-        let batches = issuer.proposed_batches().await;
+        let batches = oracle.proposed_batches().await;
         assert_eq!(batches.len(), 2);
         assert_eq!(batches[0].order_ids, vec![1]);
         assert_eq!(batches[1].order_ids, vec![2, 3]);
@@ -473,14 +473,14 @@ mod tests {
         let sig1 = BLSSignature(vec![1, 2, 3, 4, 5]);
         let sig2 = BLSSignature(vec![1, 2, 3, 4, 5]);
 
-        let leader1 = MockIssuer::elect_leader(&sig1, 19);
-        let leader2 = MockIssuer::elect_leader(&sig2, 19);
+        let leader1 = MockOracle::elect_leader(&sig1, 19);
+        let leader2 = MockOracle::elect_leader(&sig2, 19);
 
         assert_eq!(leader1, leader2);
 
         // Different signatures should (usually) produce different leaders
         let sig3 = BLSSignature(vec![5, 4, 3, 2, 1]);
-        let leader3 = MockIssuer::elect_leader(&sig3, 19);
+        let leader3 = MockOracle::elect_leader(&sig3, 19);
 
         // Not guaranteed but highly likely to be different
         let _ = leader3; // Just verify it doesn't panic
@@ -488,16 +488,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_multi_node_consensus_round() {
-        let issuers = create_issuer_network(3);
+        let oracles = create_oracle_network(3);
 
         // Create a proposal
-        let proposal = issuers[0]
+        let proposal = oracles[0]
             .propose_batch(vec![1, 2, 3], vec![create_test_fill(1)])
             .await
             .unwrap();
 
         // Run consensus
-        let result = simulate_consensus_round(&issuers, &proposal).await;
+        let result = simulate_consensus_round(&oracles, &proposal).await;
 
         match result {
             ConsensusResult::Success { aggregated_signature, signers } => {
@@ -510,36 +510,36 @@ mod tests {
 
     #[tokio::test]
     async fn test_bls_signer_trait() {
-        let issuer = MockIssuerBuilder::new().build();
+        let oracle = MockOracleBuilder::new().build();
 
         let private_key = vec![1u8; 32];
         let message = b"test message";
 
         // Sign
-        let signature = BLSSigner::sign(&issuer, &private_key, message).unwrap();
+        let signature = BLSSigner::sign(&oracle, &private_key, message).unwrap();
         assert!(!signature.0.is_empty());
 
         // Verify (mock always returns true)
         let public_key = BLSPublicKey(vec![2u8; 48]);
-        let valid = BLSSigner::verify(&issuer, &public_key, message, &signature).unwrap();
+        let valid = BLSSigner::verify(&oracle, &public_key, message, &signature).unwrap();
         assert!(valid);
 
         // Aggregate
-        let sig2 = BLSSigner::sign(&issuer, &private_key, b"another message").unwrap();
-        let aggregated = BLSSigner::aggregate_signatures(&issuer, vec![signature, sig2]).unwrap();
+        let sig2 = BLSSigner::sign(&oracle, &private_key, b"another message").unwrap();
+        let aggregated = BLSSigner::aggregate_signatures(&oracle, vec![signature, sig2]).unwrap();
         assert!(!aggregated.0.is_empty());
     }
 
     #[tokio::test]
     async fn test_multi_node_leader_rotation() {
-        let issuers = create_issuer_network(3);
+        let oracles = create_oracle_network(3);
 
         // Different cycles should have different leaders
         let mut leaders = vec![];
         for i in 0..6 {
-            for issuer in &issuers {
-                if issuer.is_leader(i).await {
-                    leaders.push((i, issuer.node_id().await));
+            for oracle in &oracles {
+                if oracle.is_leader(i).await {
+                    leaders.push((i, oracle.node_id().await));
                 }
             }
         }

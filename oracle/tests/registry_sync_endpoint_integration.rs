@@ -4,7 +4,7 @@
 //! - RegistrySyncHandler processes events and updates cache
 //! - HTTP endpoint returns 404 when no state available
 //! - Multiple events with increasing nonce update to latest
-//! - 3-issuer BLS signature aggregation and verification
+//! - 3-oracle BLS signature aggregation and verification
 //! - Endpoint JSON response format validation
 //!
 //! **GAP (Code Review):** These tests validate domain logic (cache, signing,
@@ -16,9 +16,9 @@
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
 use common::mocks::MockChainBuilder;
 use common::traits::{BLSSigner, ChainReader};
-use common::types::{BLSPublicKey, BLSSignature, Issuer};
+use common::types::{BLSPublicKey, BLSSignature, Oracle};
 use ethers::types::{Address, Bytes, H256, U256};
-use issuer::registry_sync::{
+use oracle::registry_sync::{
     build_registry_sync_message_hash, compute_aggregated_pubkey, compute_threshold,
     new_registry_sync_cache, sign_registry_sync_message, RegistrySyncState,
 };
@@ -35,14 +35,14 @@ fn test_mirror_address() -> Address {
     Address::from([0xAB; 20])
 }
 
-/// Create a test issuer with a deterministic BLS keypair
-fn create_test_issuer(id: u8, active: bool) -> (Issuer, BLSKeyPair) {
+/// Create a test oracle with a deterministic BLS keypair
+fn create_test_oracle(id: u8, active: bool) -> (Oracle, BLSKeyPair) {
     let mut seed = [0u8; 32];
     seed[0] = id;
     seed[1] = 0x42;
     let keypair = BLSKeyPair::from_seed(&seed).expect("valid seed");
 
-    let issuer = Issuer {
+    let oracle = Oracle {
         id: id as u64,
         addr: Address::from([id; 20]),
         ip: H256::from([id; 32]),
@@ -51,19 +51,19 @@ fn create_test_issuer(id: u8, active: bool) -> (Issuer, BLSKeyPair) {
         registered_at: U256::from(1000),
     };
 
-    (issuer, keypair)
+    (oracle, keypair)
 }
 
-/// Simulate an issuer producing a signed registry sync proof
+/// Simulate an oracle producing a signed registry sync proof
 fn produce_sync_proof(
     keypair: &BLSKeyPair,
-    issuers: &[Issuer],
+    oracles: &[Oracle],
     nonce: u64,
     state_hash: H256,
-    issuer_id: u8,
+    oracle_id: u8,
 ) -> RegistrySyncState {
-    let aggregated_pubkey = compute_aggregated_pubkey(issuers).unwrap();
-    let active_count = issuers.iter().filter(|i| i.is_active()).count() as u64;
+    let aggregated_pubkey = compute_aggregated_pubkey(oracles).unwrap();
+    let active_count = oracles.iter().filter(|i| i.is_active()).count() as u64;
     let threshold = compute_threshold(active_count);
     let message_hash =
         build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), nonce, &aggregated_pubkey, active_count, threshold);
@@ -76,44 +76,44 @@ fn produce_sync_proof(
         threshold,
         state_hash,
         bls_signature,
-        issuer_id,
+        oracle_id,
     )
 }
 
 // ============================================================================
-// Task 9.2: Start issuer with mock chain, trigger event, verify JSON response
+// Task 9.2: Start oracle with mock chain, trigger event, verify JSON response
 // ============================================================================
 
 #[tokio::test]
 async fn test_registry_sync_handler_processes_event_and_updates_cache() {
-    // Setup: 3 active issuers
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, _kp2) = create_test_issuer(2, true);
-    let (issuer3, _kp3) = create_test_issuer(3, true);
+    // Setup: 3 active oracles
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, _kp2) = create_test_oracle(2, true);
+    let (oracle3, _kp3) = create_test_oracle(3, true);
 
-    let issuers = vec![issuer1.clone(), issuer2.clone(), issuer3.clone()];
+    let oracles = vec![oracle1.clone(), oracle2.clone(), oracle3.clone()];
 
-    // Create mock chain with issuers
+    // Create mock chain with oracles
     let mock_chain = MockChainBuilder::new()
-        .with_issuers(issuers.clone())
+        .with_oracles(oracles.clone())
         .build();
 
-    // Verify mock chain returns issuers
-    let registry = mock_chain.get_issuer_registry().await.unwrap();
+    // Verify mock chain returns oracles
+    let registry = mock_chain.get_oracle_registry().await.unwrap();
     assert_eq!(registry.len(), 3);
     assert!(registry.iter().all(|i| i.is_active()));
 
-    // Simulate: issuer 1 produces a sync proof (as if event was processed)
+    // Simulate: oracle 1 produces a sync proof (as if event was processed)
     let nonce = 1u64;
     let state_hash = H256::from([0xAA; 32]);
-    let state = produce_sync_proof(&kp1, &issuers, nonce, state_hash, 0);
+    let state = produce_sync_proof(&kp1, &oracles, nonce, state_hash, 0);
 
     // Validate the state
     assert!(state.validate().is_ok());
     assert_eq!(state.nonce, 1);
     assert_eq!(state.active_count, 3);
     assert_eq!(state.threshold, 3); // 2/3*3 + 1 = 3
-    assert_eq!(state.issuer_id, 0);
+    assert_eq!(state.oracle_id, 0);
     assert_eq!(state.aggregated_pubkey.len(), 128);
     assert_eq!(state.bls_signature.len(), 64);
 
@@ -122,7 +122,7 @@ async fn test_registry_sync_handler_processes_event_and_updates_cache() {
     assert_eq!(json["nonce"], 1);
     assert_eq!(json["activeCount"], 3);
     assert_eq!(json["threshold"], 3);
-    assert_eq!(json["issuerId"], 0);
+    assert_eq!(json["oracleId"], 0);
 
     let agg_pubkey_hex = json["aggregatedPubkey"].as_str().unwrap();
     assert!(agg_pubkey_hex.starts_with("0x"));
@@ -174,9 +174,9 @@ async fn test_cache_with_state_returns_some() {
     let cache = new_registry_sync_cache();
 
     // Populate cache
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let issuers = vec![issuer1];
-    let state = produce_sync_proof(&kp1, &issuers, 1, H256::from([0xAA; 32]), 0);
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let oracles = vec![oracle1];
+    let state = produce_sync_proof(&kp1, &oracles, 1, H256::from([0xAA; 32]), 0);
 
     {
         let mut guard = cache.write().await;
@@ -196,17 +196,17 @@ async fn test_cache_with_state_returns_some() {
 
 #[tokio::test]
 async fn test_multiple_events_cache_returns_latest_nonce() {
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, _kp2) = create_test_issuer(2, true);
-    let (issuer3, _kp3) = create_test_issuer(3, true);
-    let issuers = vec![issuer1, issuer2, issuer3];
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, _kp2) = create_test_oracle(2, true);
+    let (oracle3, _kp3) = create_test_oracle(3, true);
+    let oracles = vec![oracle1, oracle2, oracle3];
 
     let cache = new_registry_sync_cache();
 
     // Simulate processing 3 events with increasing nonces
     for nonce in 1..=3u64 {
         let state_hash = H256::from([nonce as u8; 32]);
-        let state = produce_sync_proof(&kp1, &issuers, nonce, state_hash, 0);
+        let state = produce_sync_proof(&kp1, &oracles, nonce, state_hash, 0);
 
         // Only update if nonce is higher (mimics RegistrySyncHandler logic)
         let mut guard = cache.write().await;
@@ -232,20 +232,20 @@ async fn test_multiple_events_cache_returns_latest_nonce() {
 
 #[tokio::test]
 async fn test_older_nonce_does_not_overwrite_cache() {
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let issuers = vec![issuer1];
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let oracles = vec![oracle1];
 
     let cache = new_registry_sync_cache();
 
     // Set nonce=5
-    let state5 = produce_sync_proof(&kp1, &issuers, 5, H256::from([0x55; 32]), 0);
+    let state5 = produce_sync_proof(&kp1, &oracles, 5, H256::from([0x55; 32]), 0);
     {
         let mut guard = cache.write().await;
         *guard = Some(state5);
     }
 
     // Try to update with nonce=3 (older)
-    let state3 = produce_sync_proof(&kp1, &issuers, 3, H256::from([0x33; 32]), 0);
+    let state3 = produce_sync_proof(&kp1, &oracles, 3, H256::from([0x33; 32]), 0);
     {
         let mut guard = cache.write().await;
         if let Some(ref current) = *guard {
@@ -263,24 +263,24 @@ async fn test_older_nonce_does_not_overwrite_cache() {
 }
 
 // ============================================================================
-// Task 9.5: Collect signatures from 3 issuers, aggregate, verify
+// Task 9.5: Collect signatures from 3 oracles, aggregate, verify
 // ============================================================================
 
 #[tokio::test]
-async fn test_three_issuers_produce_consistent_sync_proofs() {
-    // Setup 3 active issuers
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, kp2) = create_test_issuer(2, true);
-    let (issuer3, kp3) = create_test_issuer(3, true);
-    let issuers = vec![issuer1, issuer2, issuer3];
+async fn test_three_oracles_produce_consistent_sync_proofs() {
+    // Setup 3 active oracles
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, kp2) = create_test_oracle(2, true);
+    let (oracle3, kp3) = create_test_oracle(3, true);
+    let oracles = vec![oracle1, oracle2, oracle3];
 
     let nonce = 5u64;
     let state_hash = H256::from([0xBB; 32]);
 
-    // Each issuer produces a sync proof
-    let state1 = produce_sync_proof(&kp1, &issuers, nonce, state_hash, 0);
-    let state2 = produce_sync_proof(&kp2, &issuers, nonce, state_hash, 1);
-    let state3 = produce_sync_proof(&kp3, &issuers, nonce, state_hash, 2);
+    // Each oracle produces a sync proof
+    let state1 = produce_sync_proof(&kp1, &oracles, nonce, state_hash, 0);
+    let state2 = produce_sync_proof(&kp2, &oracles, nonce, state_hash, 1);
+    let state3 = produce_sync_proof(&kp3, &oracles, nonce, state_hash, 2);
 
     // AC7: All 3 should have matching nonce, activeCount, threshold, aggregatedPubkey
     assert_eq!(state1.nonce, state2.nonce);
@@ -292,9 +292,9 @@ async fn test_three_issuers_produce_consistent_sync_proofs() {
     assert_eq!(state1.aggregated_pubkey, state2.aggregated_pubkey);
     assert_eq!(state2.aggregated_pubkey, state3.aggregated_pubkey);
 
-    // Different issuer IDs
-    assert_ne!(state1.issuer_id, state2.issuer_id);
-    assert_ne!(state2.issuer_id, state3.issuer_id);
+    // Different oracle IDs
+    assert_ne!(state1.oracle_id, state2.oracle_id);
+    assert_ne!(state2.oracle_id, state3.oracle_id);
 
     // Different signatures (same message, different keys)
     assert_ne!(state1.bls_signature, state2.bls_signature);
@@ -303,19 +303,19 @@ async fn test_three_issuers_produce_consistent_sync_proofs() {
 
 #[tokio::test]
 async fn test_aggregate_signatures_verify_against_aggregated_pubkey() {
-    // Setup 3 active issuers
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, kp2) = create_test_issuer(2, true);
-    let (issuer3, kp3) = create_test_issuer(3, true);
-    let issuers = vec![issuer1, issuer2, issuer3];
+    // Setup 3 active oracles
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, kp2) = create_test_oracle(2, true);
+    let (oracle3, kp3) = create_test_oracle(3, true);
+    let oracles = vec![oracle1, oracle2, oracle3];
 
     let nonce = 5u64;
     let state_hash = H256::from([0xBB; 32]);
 
-    // Each issuer produces a sync proof
-    let state1 = produce_sync_proof(&kp1, &issuers, nonce, state_hash, 0);
-    let state2 = produce_sync_proof(&kp2, &issuers, nonce, state_hash, 1);
-    let state3 = produce_sync_proof(&kp3, &issuers, nonce, state_hash, 2);
+    // Each oracle produces a sync proof
+    let state1 = produce_sync_proof(&kp1, &oracles, nonce, state_hash, 0);
+    let state2 = produce_sync_proof(&kp2, &oracles, nonce, state_hash, 1);
+    let state3 = produce_sync_proof(&kp3, &oracles, nonce, state_hash, 2);
 
     // AC8: Aggregate individual BLS signatures
     let signer = Bn254BLSSigner::new();
@@ -341,24 +341,24 @@ async fn test_aggregate_signatures_verify_against_aggregated_pubkey() {
         .unwrap();
     assert!(
         valid,
-        "Aggregated BLS signature from 3 issuers should verify against aggregated pubkey"
+        "Aggregated BLS signature from 3 oracles should verify against aggregated pubkey"
     );
 }
 
 #[tokio::test]
 async fn test_aggregate_signatures_partial_threshold() {
-    // Setup 3 active issuers, but only aggregate 2/3
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, kp2) = create_test_issuer(2, true);
-    let (issuer3, _kp3) = create_test_issuer(3, true);
-    let issuers = vec![issuer1, issuer2, issuer3];
+    // Setup 3 active oracles, but only aggregate 2/3
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, kp2) = create_test_oracle(2, true);
+    let (oracle3, _kp3) = create_test_oracle(3, true);
+    let oracles = vec![oracle1, oracle2, oracle3];
 
     let nonce = 1u64;
     let state_hash = H256::from([0xCC; 32]);
 
-    // Only 2 of 3 issuers sign
-    let state1 = produce_sync_proof(&kp1, &issuers, nonce, state_hash, 0);
-    let state2 = produce_sync_proof(&kp2, &issuers, nonce, state_hash, 1);
+    // Only 2 of 3 oracles sign
+    let state1 = produce_sync_proof(&kp1, &oracles, nonce, state_hash, 0);
+    let state2 = produce_sync_proof(&kp2, &oracles, nonce, state_hash, 1);
 
     let signer = Bn254BLSSigner::new();
     let sig1 = BLSSignature(state1.bls_signature.clone());
@@ -396,24 +396,24 @@ async fn test_aggregate_signatures_partial_threshold() {
 // ============================================================================
 
 #[tokio::test]
-async fn test_compute_aggregated_pubkey_matches_across_issuers() {
-    // Verify all issuers compute the same aggregated pubkey
-    let (issuer1, _kp1) = create_test_issuer(1, true);
-    let (issuer2, _kp2) = create_test_issuer(2, true);
-    let (issuer3, _kp3) = create_test_issuer(3, true);
-    let issuers = vec![issuer1, issuer2, issuer3];
+async fn test_compute_aggregated_pubkey_matches_across_oracles() {
+    // Verify all oracles compute the same aggregated pubkey
+    let (oracle1, _kp1) = create_test_oracle(1, true);
+    let (oracle2, _kp2) = create_test_oracle(2, true);
+    let (oracle3, _kp3) = create_test_oracle(3, true);
+    let oracles = vec![oracle1, oracle2, oracle3];
 
-    let agg1 = compute_aggregated_pubkey(&issuers).unwrap();
-    let agg2 = compute_aggregated_pubkey(&issuers).unwrap();
+    let agg1 = compute_aggregated_pubkey(&oracles).unwrap();
+    let agg2 = compute_aggregated_pubkey(&oracles).unwrap();
     assert_eq!(agg1, agg2, "Aggregated pubkey should be deterministic");
     assert_eq!(agg1.len(), 128, "G2 point should be 128 bytes");
 }
 
 #[tokio::test]
 async fn test_sync_state_serde_roundtrip() {
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let issuers = vec![issuer1];
-    let state = produce_sync_proof(&kp1, &issuers, 1, H256::from([0xDD; 32]), 0);
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let oracles = vec![oracle1];
+    let state = produce_sync_proof(&kp1, &oracles, 1, H256::from([0xDD; 32]), 0);
 
     // Serialize to JSON
     let json_str = serde_json::to_string(&state).unwrap();
@@ -425,25 +425,25 @@ async fn test_sync_state_serde_roundtrip() {
 }
 
 #[tokio::test]
-async fn test_mock_chain_provides_issuers_for_aggregation() {
-    // Verify the full flow: MockChain -> get_issuer_registry -> compute_aggregated_pubkey
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let (issuer2, _kp2) = create_test_issuer(2, true);
+async fn test_mock_chain_provides_oracles_for_aggregation() {
+    // Verify the full flow: MockChain -> get_oracle_registry -> compute_aggregated_pubkey
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let (oracle2, _kp2) = create_test_oracle(2, true);
 
     let mock_chain = MockChainBuilder::new()
-        .with_issuers(vec![issuer1.clone(), issuer2.clone()])
+        .with_oracles(vec![oracle1.clone(), oracle2.clone()])
         .build();
 
-    // Fetch issuers from mock chain (simulates what RegistrySyncHandler does)
-    let issuers = mock_chain.get_issuer_registry().await.unwrap();
-    assert_eq!(issuers.len(), 2);
+    // Fetch oracles from mock chain (simulates what RegistrySyncHandler does)
+    let oracles = mock_chain.get_oracle_registry().await.unwrap();
+    assert_eq!(oracles.len(), 2);
 
     // Compute aggregated pubkey from chain data
-    let agg_pubkey = compute_aggregated_pubkey(&issuers).unwrap();
+    let agg_pubkey = compute_aggregated_pubkey(&oracles).unwrap();
     assert_eq!(agg_pubkey.len(), 128);
 
     // Build and sign message
-    let active_count = issuers.iter().filter(|i| i.is_active()).count() as u64;
+    let active_count = oracles.iter().filter(|i| i.is_active()).count() as u64;
     let threshold = compute_threshold(active_count);
     let message_hash =
         build_registry_sync_message_hash(TEST_CHAIN_ID, test_mirror_address(), 1, &agg_pubkey, active_count, threshold);
@@ -467,9 +467,9 @@ async fn test_concurrent_cache_access() {
     let cache = new_registry_sync_cache();
 
     // Populate initial state
-    let (issuer1, kp1) = create_test_issuer(1, true);
-    let issuers = vec![issuer1];
-    let state = produce_sync_proof(&kp1, &issuers, 1, H256::from([0xEE; 32]), 0);
+    let (oracle1, kp1) = create_test_oracle(1, true);
+    let oracles = vec![oracle1];
+    let state = produce_sync_proof(&kp1, &oracles, 1, H256::from([0xEE; 32]), 0);
     {
         let mut guard = cache.write().await;
         *guard = Some(state);

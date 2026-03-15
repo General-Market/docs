@@ -4,7 +4,7 @@
 
 **Goal:** Prevent minting ITP shares beyond what the AP actually holds, with always-on cache and graceful sell-only recovery.
 
-**Architecture:** Mock AP exposes HMAC-signed token holdings via SSE → Data-node relays via SSE → Issuer `backing/` module maintains an always-warm cache. Both leader and followers check `can_sign_fill()` (O(1) cache lookup) before signing `confirmFills` (NOT `confirmBatch`). Per-token deficit cap of $10 USD. Fail-closed on SSE disconnect (except sells). Fixed-point U256 arithmetic throughout — no f64 for financial amounts.
+**Architecture:** Mock AP exposes HMAC-signed token holdings via SSE → Data-node relays via SSE → Oracle `backing/` module maintains an always-warm cache. Both leader and followers check `can_sign_fill()` (O(1) cache lookup) before signing `confirmFills` (NOT `confirmBatch`). Per-token deficit cap of $10 USD. Fail-closed on SSE disconnect (except sells). Fixed-point U256 arithmetic throughout — no f64 for financial amounts.
 
 **Tech Stack:** Rust, Axum SSE (server), reqwest (SSE client), tokio, ethers, U256 fixed-point, rust_decimal, HMAC-SHA256
 
@@ -54,7 +54,7 @@
 - R4-C1: `build_snapshot()` now sets `session_id: self.session_id.clone()` in returned struct. `HoldingsTracker::new()` generates UUID.
 - R4-C2: `ApHoldingsRelay::new()` initializes `last_session_id: Arc::new(RwLock::new(String::new()))`.
 - R4-C3: Test `make_signed_snapshot` uses 4-field HMAC format (`session_id|seq|ts|holdings`) and includes `session_id` in struct.
-- R4-H1: Issuer `ApHoldingsSnapshot` struct now includes `session_id: String` for defense-in-depth HMAC.
+- R4-H1: Oracle `ApHoldingsSnapshot` struct now includes `session_id: String` for defense-in-depth HMAC.
 - R4-H2: `simulate_fill` negative-holdings deficit uses `checked_add` (matching `compute_deficit_status` and `recompute_blocked`).
 - R4-H3: HMAC verification uses `mac.verify_slice()` (constant-time) instead of hex string `!=` comparison.
 - R4-H4: `side` field removed from Fill struct (was contradicted by R3-H5). Leader determines side from `BridgeOrchestrator::get_order_limit_price()`. L3-native orders must call `set_order_limit_price` before fills.
@@ -331,17 +331,17 @@ git commit -m "feat(ap): add HMAC-signed holdings tracker with SSE broadcast"
 - Modify: `data-node/src/api.rs` (add `/sse/ap-holdings` relay + REST debug endpoint)
 - Test: `data-node/src/ap_holdings.rs` (inline `#[cfg(test)]`)
 
-Data-node subscribes to AP's SSE holdings stream, validates HMAC, caches latest snapshot, re-broadcasts to issuers.
+Data-node subscribes to AP's SSE holdings stream, validates HMAC, caches latest snapshot, re-broadcasts to oracles.
 
 **Step 1: Write AP holdings relay with HMAC validation and tests**
 
 Create `data-node/src/ap_holdings.rs`:
 
 ```rust
-//! Relays AP token holdings from AP → data-node → issuers.
+//! Relays AP token holdings from AP → data-node → oracles.
 //!
 //! Validates HMAC on each snapshot, enforces monotonic sequence numbers,
-//! and rejects stale data. Re-broadcasts to issuer subscribers.
+//! and rejects stale data. Re-broadcasts to oracle subscribers.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -633,7 +633,7 @@ mod tests {
 
 **Step 2: Run tests, wire into main + API, compile, commit**
 
-Same wiring as before — data-node relays to issuers via `/sse/ap-holdings`.
+Same wiring as before — data-node relays to oracles via `/sse/ap-holdings`.
 
 ```bash
 cargo test -p data-node ap_holdings
@@ -644,21 +644,21 @@ git commit -m "feat(data-node): relay HMAC-validated AP holdings via SSE"
 
 ---
 
-### Task 3: Issuer — Backing Cache Module (U256 Fixed-Point)
+### Task 3: Oracle — Backing Cache Module (U256 Fixed-Point)
 
 **Files:**
-- Create: `issuer/src/backing/mod.rs`
-- Create: `issuer/src/backing/cache.rs`
-- Create: `issuer/src/backing/sse_client.rs`
-- Create: `issuer/src/backing/types.rs`
-- Modify: `issuer/src/lib.rs` (add `pub mod backing;`)
-- Test: `issuer/src/backing/cache.rs` (inline `#[cfg(test)]`)
+- Create: `oracle/src/backing/mod.rs`
+- Create: `oracle/src/backing/cache.rs`
+- Create: `oracle/src/backing/sse_client.rs`
+- Create: `oracle/src/backing/types.rs`
+- Modify: `oracle/src/lib.rs` (add `pub mod backing;`)
+- Test: `oracle/src/backing/cache.rs` (inline `#[cfg(test)]`)
 
 **CRITICAL FIX (C4, C8): All financial amounts use U256 18-decimal fixed-point, not f64.**
 
 **Step 1: Write types**
 
-Create `issuer/src/backing/types.rs`:
+Create `oracle/src/backing/types.rs`:
 
 ```rust
 //! Types for the backing enforcement system.
@@ -681,7 +681,7 @@ pub const REBALANCE_TIMEOUT_MS: u64 = 300_000;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApHoldingsSnapshot {
     pub holdings: HashMap<String, String>,
-    pub session_id: String, // R4-H1: needed for defense-in-depth HMAC re-verification at issuer
+    pub session_id: String, // R4-H1: needed for defense-in-depth HMAC re-verification at oracle
     pub seq: u64,
     pub timestamp_ms: u64,
     pub hmac: String,
@@ -725,7 +725,7 @@ pub enum BackingStatus {
 
 **Step 2: Write cache with U256 arithmetic and simulate_fill**
 
-Create `issuer/src/backing/cache.rs`:
+Create `oracle/src/backing/cache.rs`:
 
 Key changes from v1:
 - **All amounts are U256 (18 decimals)** — no f64 for holdings, required, prices, deficit
@@ -1363,10 +1363,10 @@ pub use types::{ApHoldingsSnapshot, BackingStatus};
 **Step 5: Tests, compile, commit**
 
 ```bash
-cargo test -p issuer backing
-cargo build -p issuer
-git add issuer/src/backing/
-git commit -m "feat(issuer): backing cache with U256 fixed-point and simulate_fill"
+cargo test -p oracle backing
+cargo build -p oracle
+git add oracle/src/backing/
+git commit -m "feat(oracle): backing cache with U256 fixed-point and simulate_fill"
 ```
 
 ---
@@ -1375,7 +1375,7 @@ git commit -m "feat(issuer): backing cache with U256 fixed-point and simulate_fi
 
 **Files:**
 - Modify: `common/src/traits/chain_reader.rs` (add `total_supply: U256` to `ItpInventoryState`)
-- Modify: `issuer/src/chain/reader.rs` (stop discarding `_total_supply`)
+- Modify: `oracle/src/chain/reader.rs` (stop discarding `_total_supply`)
 
 **Step 1: Add totalSupply to ItpInventoryState**
 
@@ -1394,7 +1394,7 @@ And add `total_supply` to the returned struct.
 **Step 2: Compile + commit**
 
 ```bash
-cargo build -p issuer
+cargo build -p oracle
 git commit -m "fix: include totalSupply in ItpInventoryState (was discarded)"
 ```
 
@@ -1403,9 +1403,9 @@ git commit -m "fix: include totalSupply in ItpInventoryState (was discarded)"
 ### Task 5: On-Chain State Listener (Event-Driven + Poll Hybrid, H2)
 
 **Files:**
-- Create: `issuer/src/backing/on_chain.rs`
-- Create: `issuer/src/backing/chain_adapter.rs`
-- Modify: `issuer/src/backing/mod.rs`
+- Create: `oracle/src/backing/on_chain.rs`
+- Create: `oracle/src/backing/chain_adapter.rs`
+- Modify: `oracle/src/backing/mod.rs`
 
 **Key fix (H2):** Use event-driven updates for `confirmFills` (subscribe to data-node SSE `fill-confirmed` events) AND a 5-second poll as fallback. When a `fill-confirmed` event arrives, immediately re-read the ITP state and update the cache.
 
@@ -1416,8 +1416,8 @@ git commit -m "fix: include totalSupply in ItpInventoryState (was discarded)"
 The `ChainReaderAdapter` reads `getITPState` atomically (inventory + totalSupply in one call, fixing C9) and does the multiplication in U256 space before any conversion.
 
 ```bash
-cargo test -p issuer backing
-git commit -m "feat(issuer): event-driven on-chain listener with symbol mapping fail-closed"
+cargo test -p oracle backing
+git commit -m "feat(oracle): event-driven on-chain listener with symbol mapping fail-closed"
 ```
 
 ---
@@ -1425,8 +1425,8 @@ git commit -m "feat(issuer): event-driven on-chain listener with symbol mapping 
 ### Task 6: Consensus Integration — Gate `confirmFills`, Not `confirmBatch` (C1)
 
 **Files:**
-- Modify: `issuer/src/consensus/protocol.rs`
-- Modify: `issuer/src/main.rs` (wire BackingCache + R5-H8: L3-native order side registration)
+- Modify: `oracle/src/consensus/protocol.rs`
+- Modify: `oracle/src/main.rs` (wire BackingCache + R5-H8: L3-native order side registration)
 
 **R5-H8: Order side registration for ALL order types.** The backing check determines side from
 `BridgeOrchestrator::get_order_limit_price(order_id)`. This MUST be called for every order type:
@@ -1524,8 +1524,8 @@ For L3-native orders: `run_l3_native_order_processing` must call
 `run_fills_confirm_phase` so the backing check can determine side.
 
 ```bash
-cargo build -p issuer
-git commit -m "feat(issuer): gate confirmFills with backing check, simulate_fill, fail-closed"
+cargo build -p oracle
+git commit -m "feat(oracle): gate confirmFills with backing check, simulate_fill, fail-closed"
 ```
 
 ---
@@ -1533,7 +1533,7 @@ git commit -m "feat(issuer): gate confirmFills with backing check, simulate_fill
 ### Task 7: Integration Test
 
 **Files:**
-- Create: `issuer/tests/backing_integration.rs`
+- Create: `oracle/tests/backing_integration.rs`
 
 Tests:
 1. Fully backed → fills signed
@@ -1548,16 +1548,16 @@ Tests:
 10. Invalid HMAC → snapshot rejected
 
 ```bash
-cargo test -p issuer backing_integration
-git commit -m "test(issuer): comprehensive backing enforcement integration tests"
+cargo test -p oracle backing_integration
+git commit -m "test(oracle): comprehensive backing enforcement integration tests"
 ```
 
 ---
 
 ### Task 8: Config + Documentation
 
-- Add `ISSUER_BACKING_HMAC_KEY` and `AP_HOLDINGS_HMAC_KEY` env vars
-- Add `ISSUER_BACKING_DATA_NODE_URL` config field
+- Add `ORACLE_BACKING_HMAC_KEY` and `AP_HOLDINGS_HMAC_KEY` env vars
+- Add `ORACLE_BACKING_DATA_NODE_URL` config field
 - Update CLAUDE.md with backing enforcement invariants
 
 ```bash
@@ -1590,7 +1590,7 @@ git commit -m "docs: document backing enforcement system and config"
 | H6: Clamp-to-zero | Allow negative balances | 1 |
 | H7: Unmapped symbol | Unmapped asset = fail-closed | 5 |
 | H8: Zero totalSupply free pass | simulate_fill handles first mint | 3, 6 |
-| H9: Single point of trust | Defense-in-depth: HMAC + per-issuer validation | 1, 2, 3 |
+| H9: Single point of trust | Defense-in-depth: HMAC + per-oracle validation | 1, 2, 3 |
 
 ### Round 2 (3 CRITICAL, 6 HIGH)
 

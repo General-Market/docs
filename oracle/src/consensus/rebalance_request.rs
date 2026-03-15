@@ -6,7 +6,7 @@
 //! ## Flow
 //!
 //! 1. Deployer calls `BridgeProxy.requestRebalance()` on Settlement chain
-//! 2. Issuers detect `RebalanceRequested` event (or poll pending requests)
+//! 2. Oracles detect `RebalanceRequested` event (or poll pending requests)
 //! 3. Leader broadcasts `RebalanceRequestProposal` with weightsHash
 //! 4. Followers verify and sign
 //! 5. Leader aggregates signatures (threshold)
@@ -109,7 +109,7 @@ impl Default for RebalanceRequestConfig {
 pub struct RebalanceRequestResult {
     /// Request nonce
     pub nonce: U256,
-    /// Bitmap of issuer IDs that signed
+    /// Bitmap of oracle IDs that signed
     pub signer_bitmap: U256,
     /// Aggregated G2 public key of signers (128 bytes)
     pub aggregated_pubkey: Vec<u8>,

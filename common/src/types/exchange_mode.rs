@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// Exchange mode controlling which Bitget client implementation is used.
 ///
-/// Resolved once at startup from CLI/env/config. All components (AP, issuer)
+/// Resolved once at startup from CLI/env/config. All components (AP, oracle)
 /// read this to construct appropriate client instances.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

@@ -1,0 +1,38 @@
+{
+  "GeneralInsiders": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralGridDown": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralSkyWatch": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralTaxReceipt": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralGlitch": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralMarket": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  }
+}

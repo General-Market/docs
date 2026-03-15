@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import "../interfaces/IBLSCustody.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "../libraries/BLSVerifier.sol";
 import "../libraries/ErrorsLib.sol";
 import "../libraries/EventsLib.sol";
@@ -52,9 +52,9 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
 
     // ============ STORAGE ============
 
-    /// @notice Reference to IssuerRegistry for BLS key verification
-    /// @dev Legacy public accessor. Verification uses _blsIssuerRegistry from BLSVerifier.
-    IIssuerRegistry public issuerRegistry;
+    /// @notice Reference to OracleRegistry for BLS key verification
+    /// @dev Legacy public accessor. Verification uses _blsOracleRegistry from BLSVerifier.
+    IOracleRegistry public oracleRegistry;
 
     /// @notice Nonce bitmap for replay protection (supports non-sequential nonces)
     /// @dev Each bit represents whether a nonce has been used
@@ -88,14 +88,14 @@ contract BLSCustody is Initializable, UUPSUpgradeable, BLSVerifier, IBLSCustody 
     // ============ INITIALIZER ============
 
     /// @notice Initialize the BLSCustody contract
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
-    function initialize(address issuerRegistry_) external initializer {
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
+    function initialize(address oracleRegistry_) external initializer {
         __UUPSUpgradeable_init();
-        if (issuerRegistry_ == address(0)) {
-            revert ErrorsLib.E043_ZeroIssuerRegistry();
+        if (oracleRegistry_ == address(0)) {
+            revert ErrorsLib.E043_ZeroOracleRegistry();
         }
-        issuerRegistry = IIssuerRegistry(issuerRegistry_);
-        __BLSVerifier_init(issuerRegistry_);
+        oracleRegistry = IOracleRegistry(oracleRegistry_);
+        __BLSVerifier_init(oracleRegistry_);
     }
 
     // ============ EXECUTION ============

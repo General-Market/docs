@@ -9,7 +9,7 @@ mod bitget;
 mod bitget_read_only;
 mod chain;
 mod error;
-mod issuer;
+mod oracle;
 mod p2p;
 mod price_fetcher;
 
@@ -17,6 +17,6 @@ pub use bitget::*;
 pub use bitget_read_only::*;
 pub use chain::*;
 pub use error::*;
-pub use issuer::*;
+pub use oracle::*;
 pub use p2p::*;
 pub use price_fetcher::*;

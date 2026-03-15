@@ -16,7 +16,7 @@ use common::mocks::MockChainBuilder;
 use common::traits::BLSSigner;
 use common::types::{BLSSignature, PeerId};
 
-use issuer::bridge::{
+use oracle::bridge::{
     build_confirm_batch_hash, build_confirm_fills_hash, BatchProposal, BatchResult,
     BridgeConfig, BridgeError, BridgeOrchestrator, BridgeOrderStatus, Fill, FillsProposal,
     FillsResult,
@@ -43,7 +43,7 @@ fn test_bls_keypair(seed: u64) -> BLSKeyPair {
 
 fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11; 20]),
+        oracle_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
         settlement_custody_address: Address::from([0x33; 20]),
         settlement_chain_id: 42161,
@@ -53,7 +53,7 @@ fn test_bridge_config() -> BridgeConfig {
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Arb config
-        issuer_custody_settlement: Address::from([0x55; 20]),
+        oracle_custody_settlement: Address::from([0x55; 20]),
         settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),
@@ -233,8 +233,8 @@ fn test_batch_signature_aggregation() {
 // ============================================================================
 
 use async_trait::async_trait;
-use issuer::bridge::CrossChainOrderReader;
-use issuer::chain::CrossChainOrderData;
+use oracle::bridge::CrossChainOrderReader;
+use oracle::chain::CrossChainOrderData;
 
 struct MockCrossChainOrderReader;
 
@@ -829,7 +829,7 @@ async fn test_orchestrator_fills_deduplication() {
 
 #[tokio::test]
 async fn test_full_batch_consensus_flow() {
-    // Setup: 3 issuers
+    // Setup: 3 oracles
     let keypair1 = test_bls_keypair(1);
     let keypair2 = test_bls_keypair(2);
     let keypair3 = test_bls_keypair(3);
@@ -894,7 +894,7 @@ async fn test_full_batch_consensus_flow() {
 
 #[tokio::test]
 async fn test_full_fills_consensus_flow() {
-    // Setup: 3 issuers
+    // Setup: 3 oracles
     let keypair1 = test_bls_keypair(1);
     let keypair2 = test_bls_keypair(2);
     let keypair3 = test_bls_keypair(3);

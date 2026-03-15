@@ -31,7 +31,7 @@ Tick N+1 starts
 
 - **Multiplier** — all stakes weighted equally, no early-entry advantage
 - **Lock window** — `lockOffset = 0`, players can submit/change bets anytime
-- **Manual batch registration** — issuers auto-detect new batches from chain events
+- **Manual batch registration** — oracles auto-detect new batches from chain events
 - **vision-batches.json** — frontend uses live API data only
 - **Static batch IDs** — frontend matches batches by sourceId from proxy, not hardcoded IDs
 - **Hardcoded `VISION_SOURCES`** — source metadata (name, logo, description, category) loaded from data-node API
@@ -45,7 +45,7 @@ Tick N+1 starts
 - Bitmap UP/DOWN per market
 - `stakePerTick` — fixed amount at risk each active tick
 - Per-batch tick duration (varies by source category, set per config update)
-- **Commit-reveal bitmap model** — player commits hash on-chain before revealing to issuers (bet privacy preserved)
+- **Commit-reveal bitmap model** — player commits hash on-chain before revealing to oracles (bet privacy preserved)
 
 ---
 
@@ -84,7 +84,7 @@ Tick N+1 starts
 
 PLAYER BETTING FLOW (tick N):
 
-  Player                        Frontend              Issuer              Vision.sol
+  Player                        Frontend              Oracle              Vision.sol
     │                              │                     │                     │
     │  1. View markets             │                     │                     │
     │─────────────────────────────→│                     │                     │
@@ -99,7 +99,7 @@ PLAYER BETTING FLOW (tick N):
     │                              │                     │  stores bitmapHash  │
     │                              │                     │←── ChainListener ───│
     │                              │                     │                     │
-    │  4. Reveal bitmap to issuers │                     │                     │
+    │  4. Reveal bitmap to oracles │                     │                     │
     │─────── POST /vision/bitmap ─→│                     │                     │
     │                              │── fan-out ─────────→│                     │
     │                              │                     │  verify hash match  │
@@ -111,7 +111,7 @@ PLAYER BETTING FLOW (tick N):
 
 TICK RESOLUTION:
 
-  Issuer Engine
+  Oracle Engine
     │
     ├─ Tick N ends
     ├─ Fetch start/end prices from data-node
@@ -120,12 +120,12 @@ TICK RESOLUTION:
     │    ├─ Decode bitmap → UP/DOWN per market
     │    └─ Compare to price movement → win/lose
     ├─ Parimutuel matching (weighted by multiplier)
-    ├─ BLS sign tick result (3 issuers co-sign)
+    ├─ BLS sign tick result (3 oracles co-sign)
     └─ Player claims via claimRewards() + BLS proof
 
 CONFIG RESOLUTION (how frontend/bots know what markets are in a batch):
 
-  Data-node                         Issuer                       Vision.sol
+  Data-node                         Oracle                       Vision.sol
     │                                  │                              │
     │  1. Generate recommended config  │                              │
     │     (markets, order, thresholds) │                              │
@@ -153,7 +153,7 @@ CONFIG RESOLUTION (how frontend/bots know what markets are in a batch):
 CONFIG UPDATES (every 120s):
 
   Config Orchestrator
-    ├─ GET /batches/recommended (data-node generates config, issuer reads)
+    ├─ GET /batches/recommended (data-node generates config, oracle reads)
     ├─ If config hash changed → BLS consensus
     │    ├─ Push configHash on-chain via updateBatchConfig()
     │    └─ POST /batches/signed to data-node (signed config for storage)
@@ -179,8 +179,8 @@ CONFIG UPDATES (every 120s):
 │  2. GET /batches/recommended returns new source                      │
 │  3. Config orchestrator sees no on-chain batch for this source       │
 │  4. Orchestrator proposes createBatchAndJoin() via BLS consensus     │
-│  5. Issuers detect BatchCreated event → auto-register batch          │
-│  6. Batch appears in issuer API → frontend shows it                  │
+│  5. Oracles detect BatchCreated event → auto-register batch          │
+│  6. Batch appears in oracle API → frontend shows it                  │
 │                                                                      │
 │  ✅ Adding a source = data-node config only, zero deploys             │
 └─────────────────────────────────────────────────────────────────────┘
@@ -196,9 +196,9 @@ CONFIG UPDATES (every 120s):
 │  ✅ Zero hardcoded sources in frontend                                │
 └─────────────────────────────────────────────────────────────────────┘
 
-CONFIG RESOLUTION (data-node generates, issuer signs, data-node stores):
+CONFIG RESOLUTION (data-node generates, oracle signs, data-node stores):
 
-  Data-node                         Issuer                       Vision.sol
+  Data-node                         Oracle                       Vision.sol
     │                                  │                              │
     │  1. Generate recommended config  │                              │
     │  2. GET /batches/recommended ←───│                              │
@@ -245,7 +245,7 @@ PLAYER BETTING FLOW (tick N — betting for tick N+1):
     │─────── updateBitmap(hash) ───┼─────────────────────┼────────────────────→│
     │                              │                     │  stores bitmapHash  │
     │                              │                     │                     │
-    │  4. Reveal bitmap IMMEDIATELY to issuers           │      Issuer         │
+    │  4. Reveal bitmap IMMEDIATELY to oracles           │      Oracle         │
     │─────── POST /vision/bitmap ─→│                     │        │            │
     │                              │── fan-out ──────────┼───────→│            │
     │                              │                     │  verify hash match  │
@@ -268,19 +268,19 @@ PLAYER BETTING FLOW (tick N — betting for tick N+1):
     │  ... bot keeps bets private ...                    │                     │
     │  ... waits until closer to tick boundary ...       │                     │
     │                                                    │                     │
-    │  3. Reveal bitmap to issuers (LATER, before tick boundary)   Issuer     │
-    │─────── POST /vision/bitmap (direct to each issuer) ─────────→│         │
+    │  3. Reveal bitmap to oracles (LATER, before tick boundary)   Oracle     │
+    │─────── POST /vision/bitmap (direct to each oracle) ─────────→│         │
     │                                                    │  verify hash match  │
     │                                                    │  store in PENDING   │
     │                                                    │                     │
 
   Key difference: frontend reveals via Next.js proxy (fan-out), bot reveals
-  directly to each issuer endpoint. Both commit hash on-chain first.
+  directly to each oracle endpoint. Both commit hash on-chain first.
 
     ✅ NO LOCK — can change anytime during tick
     ✅ No submit = sit out next tick (balance safe)
     ✅ Reveal can happen anytime between commit and tick boundary
-    ⚠ No reveal before tick boundary = sit out (hash on-chain but issuer has no bitmap data)
+    ⚠ No reveal before tick boundary = sit out (hash on-chain but oracle has no bitmap data)
 
 TWO-SLOT BITMAP MODEL (per player per batch):
 
@@ -303,7 +303,7 @@ TWO-SLOT BITMAP MODEL (per player per batch):
 
 TICK RESOLUTION:
 
-  Issuer Engine
+  Oracle Engine
     │
     ├─ Tick N ends
     ├─ Fetch start/end prices from data-node
@@ -313,7 +313,7 @@ TICK RESOLUTION:
     │    └─ Compare to price movement → win/lose
     ├─ Players without active bitmap → SIT OUT
     ├─ Parimutuel matching (flat weighting)
-    ├─ BLS sign tick result (3 issuers co-sign)
+    ├─ BLS sign tick result (3 oracles co-sign)
     │
     │  TICK BOUNDARY (deterministic order):
     │  1. Resolution + BLS signing + publish
@@ -325,10 +325,10 @@ TICK RESOLUTION:
 CONFIG UPDATES (every tick, fully automatic):
 
   Config Orchestrator
-    ├─ GET /batches/recommended (data-node generates configs, issuer reads)
+    ├─ GET /batches/recommended (data-node generates configs, oracle reads)
     ├─ New source with no batch?
     │    ├─ BLS consensus on createBatchAndJoin()
-    │    ├─ Push on-chain → issuers detect BatchCreated event
+    │    ├─ Push on-chain → oracles detect BatchCreated event
     │    └─ POST /batches/signed to data-node (signed config for storage)
     ├─ Config hash changed for existing batch?
     │    ├─ BLS consensus on updateBatchConfig()
@@ -342,12 +342,12 @@ CONFIG UPDATES (every tick, fully automatic):
 
 ### Bet Privacy (Commit-Reveal)
 
-The commit-reveal scheme ensures **issuers cannot see your bets before they're committed on-chain**:
+The commit-reveal scheme ensures **oracles cannot see your bets before they're committed on-chain**:
 
 ```
 1. Data-node generates batch config (market list, order, thresholds)
-2. Issuer fetches recommendation, BLS consensus, pushes configHash on-chain
-3. Issuer posts signed config to data-node for storage (POST /batches/signed)
+2. Oracle fetches recommendation, BLS consensus, pushes configHash on-chain
+3. Oracle posts signed config to data-node for storage (POST /batches/signed)
 4. Frontend/bot fetches signed config from data-node (GET /batches/signed or /batches/config/{hash})
    → now knows: bit 0 = market A, bit 1 = market B, ...
 5. Player picks UP/DOWN per market, encodes bitmap
@@ -355,23 +355,23 @@ The commit-reveal scheme ensures **issuers cannot see your bets before they're c
 7. Player calls updateBitmap(batchId, bitmapHash) on Vision.sol
    → hash is now immutably committed on-chain
    → nobody can see the actual bets yet (only the hash)
-8. Player reveals bitmap bytes to issuers
+8. Player reveals bitmap bytes to oracles
    → Frontend: reveals IMMEDIATELY via POST /vision/bitmap (fan-out through proxy)
-   → Vision-bot: reveals LATER, directly to each issuer, closer to tick boundary
-   → issuers verify: keccak256(revealed) == on-chain hash
+   → Vision-bot: reveals LATER, directly to each oracle, closer to tick boundary
+   → oracles verify: keccak256(revealed) == on-chain hash
    → if mismatch: reject (player can't change bets after commit)
    → if no reveal before tick boundary: player sits out (hash exists but no bitmap data)
 ```
 
 **What this prevents:**
-- Issuers seeing bets before commit → front-running impossible
+- Oracles seeing bets before commit → front-running impossible
 - Players changing bets after seeing price movements → hash locks the commitment
-- Issuers submitting fake bitmaps → hash must match on-chain commitment
+- Oracles submitting fake bitmaps → hash must match on-chain commitment
 - Config manipulation → configHash on-chain, config data verifiable by anyone
 
 **Reveal timing strategies:**
-- **Frontend (immediate):** Commit + reveal in same user flow. Simpler UX, bets are visible to issuers sooner. Issuers can't act on them (BLS consensus + commit-reveal prevents front-running).
-- **Vision-bot (delayed):** Commit hash early, reveal just before tick boundary. Maximizes bet privacy — other participants (including other bots monitoring issuer APIs) cannot see the bot's positions until the last moment. The on-chain hash locks the bet regardless of reveal timing.
+- **Frontend (immediate):** Commit + reveal in same user flow. Simpler UX, bets are visible to oracles sooner. Oracles can't act on them (BLS consensus + commit-reveal prevents front-running).
+- **Vision-bot (delayed):** Commit hash early, reveal just before tick boundary. Maximizes bet privacy — other participants (including other bots monitoring oracle APIs) cannot see the bot's positions until the last moment. The on-chain hash locks the bet regardless of reveal timing.
 
 Both strategies are equally safe. The commit-reveal scheme guarantees bets can't be changed after commit. Delayed reveal is an optimization for competitive privacy, not a security difference.
 
@@ -379,37 +379,37 @@ Both strategies are equally safe. The commit-reveal scheme guarantees bets can't
 
 | Layer | Protection | Attack prevented |
 |-------|-----------|-----------------|
-| **Deposits** | On-chain (Vision.sol), player's wallet tx | Issuers can't deposit/withdraw for you |
-| **Bitmap commit** | On-chain hash (player's wallet tx) | Issuers can't change your bets |
+| **Deposits** | On-chain (Vision.sol), player's wallet tx | Oracles can't deposit/withdraw for you |
+| **Bitmap commit** | On-chain hash (player's wallet tx) | Oracles can't change your bets |
 | **Bitmap reveal** | keccak256 verification | Player can't change bets after commit |
-| **Tick resolution** | BLS consensus (3 issuers must agree) | Single issuer can't manipulate outcomes |
+| **Tick resolution** | BLS consensus (3 oracles must agree) | Single oracle can't manipulate outcomes |
 | **Payouts (claimRewards)** | BLS-signed proof verified on-chain | Fake payouts rejected by contract |
 | **Withdrawals** | On-chain, player's wallet tx | Only player can withdraw their funds |
 | **Batch config** | configHash on-chain, data on data-node | Config data verifiable against on-chain hash |
 | **Sit-out** | No active bitmap → balance unchanged | Not betting = no risk |
 
-### What Issuers Control vs What Players Control
+### What Oracles Control vs What Players Control
 
 ```
 PLAYER controls (on-chain, trustless):
 ├─ Deposit USDC into Vision balance
 ├─ Join a batch (stakePerTick, initial bitmap hash)
 ├─ Update bitmap hash (commit new bets)
-├─ Claim rewards (with BLS proof from issuers)
+├─ Claim rewards (with BLS proof from oracles)
 └─ Withdraw funds
 
-ISSUERS control (off-chain, BLS consensus required):
+ORACLES control (off-chain, BLS consensus required):
 ├─ Tick resolution (price fetching, outcome computation)
 ├─ Balance proof generation (BLS-signed)
 ├─ Batch creation (new sources from data-node)
 ├─ Config updates (markets, tickDuration)
 └─ Config orchestration (when to update, what markets)
 
-ISSUERS CANNOT:
+ORACLES CANNOT:
 ├─ Move player funds (deposits/withdrawals are player-only)
 ├─ Change player bets (bitmap hash committed on-chain by player)
 ├─ Forge payouts (BLS sig verified on-chain against registered keys)
-├─ Act alone (BLS requires threshold of issuers to agree)
+├─ Act alone (BLS requires threshold of oracles to agree)
 └─ See bets before commit (hash committed before reveal)
 ```
 
@@ -417,7 +417,7 @@ ISSUERS CANNOT:
 
 ## Changes by Layer
 
-### 1. Issuer — Resolver (`issuer/src/vision/resolver.rs`)
+### 1. Oracle — Resolver (`oracle/src/vision/resolver.rs`)
 
 **Remove multiplier calculation.** Currently the resolver computes a multiplier based on:
 - How early in the tick the player submitted (time-based)
@@ -450,7 +450,7 @@ At tick resolution:
 3. Flip: `active_bitmaps = pending_bitmaps`, `pending_bitmaps = cleared`
 4. Config promotion (if pending) — new config applies to FUTURE submissions only
 
-**Deterministic slot assignment.** When a bitmap is received, it goes to `pending_bitmaps` for `current_tick_id + 1`. The `current_tick_id` is derived from the chain — all issuers agree on it via BLS-signed tick resolution. Bitmaps received AFTER the flip (new tick started) go to the new `pending_bitmaps` for `new_tick_id + 1`.
+**Deterministic slot assignment.** When a bitmap is received, it goes to `pending_bitmaps` for `current_tick_id + 1`. The `current_tick_id` is derived from the chain — all oracles agree on it via BLS-signed tick resolution. Bitmaps received AFTER the flip (new tick started) go to the new `pending_bitmaps` for `new_tick_id + 1`.
 
 **Ordering at tick boundary (CRITICAL — order matters for safety):**
 1. Resolution: resolve tick N using `active_bitmaps` (each decoded with its own `config_hash`)
@@ -464,11 +464,11 @@ Config promotion happens AFTER bitmap flip. This means:
 - Config updates only affect bitmaps submitted AFTER the promotion
 - No market-order scrambling is possible
 
-**Bitmap set hash in BLS message.** The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs in active set)`. This ensures all issuers agree on which bitmaps are active before resolution. If any issuer has a different active set, BLS consensus fails — preventing silent divergence.
+**Bitmap set hash in BLS message.** The BLS consensus message includes `bitmap_set_hash = keccak256(sorted list of (player, bitmap_hash) pairs in active set)`. This ensures all oracles agree on which bitmaps are active before resolution. If any oracle has a different active set, BLS consensus fails — preventing silent divergence.
 
-**Cross-issuer bitmap gossip.** Before resolution, issuers exchange "bitmap inventory" messages listing `(player, bitmap_hash)` pairs in their active set. If an issuer is missing a bitmap (e.g., player's reveal didn't reach it), it requests the missing bitmap from peers. Resolution proceeds only with the INTERSECTION of bitmaps confirmed by all issuers. This prevents a single missed reveal from breaking consensus.
+**Cross-oracle bitmap gossip.** Before resolution, oracles exchange "bitmap inventory" messages listing `(player, bitmap_hash)` pairs in their active set. If an oracle is missing a bitmap (e.g., player's reveal didn't reach it), it requests the missing bitmap from peers. Resolution proceeds only with the INTERSECTION of bitmaps confirmed by all oracles. This prevents a single missed reveal from breaking consensus.
 
-**Trust assumption (threshold model):** With 2-of-3 BLS threshold, two colluding issuers can selectively exclude any player from resolution (by claiming they don't have the bitmap). This is inherent to ANY threshold consensus system — a quorum of malicious actors can censor participants. Mitigations: (1) the `bitmap_set_hash` in BLS messages makes exclusion auditable (anyone can compare the signed set against the on-chain committed hashes), (2) a monitoring service can flag when a player's committed bitmap is excluded from resolution despite all issuers having received it, (3) long-term: increase issuer set size beyond 3 to make collusion harder.
+**Trust assumption (threshold model):** With 2-of-3 BLS threshold, two colluding oracles can selectively exclude any player from resolution (by claiming they don't have the bitmap). This is inherent to ANY threshold consensus system — a quorum of malicious actors can censor participants. Mitigations: (1) the `bitmap_set_hash` in BLS messages makes exclusion auditable (anyone can compare the signed set against the on-chain committed hashes), (2) a monitoring service can flag when a player's committed bitmap is excluded from resolution despite all oracles having received it, (3) long-term: increase oracle set size beyond 3 to make collusion harder.
 
 **DB persistence for crash recovery.** The `vision_bitmaps` table must include:
 - `slot` column: `'pending'` or `'active'`
@@ -492,14 +492,14 @@ CREATE TABLE vision_batch_state (
 );
 ```
 
-**Remove multiplier types.** Delete `issuer/src/vision/multiplier.rs` entirely. Remove `PlayerMultiplier` from `types.rs`. Remove `join_timestamp` and `num_committed_ticks` from `PlayerPosition` (these only serve the multiplier). Remove all `use super::multiplier` imports.
+**Remove multiplier types.** Delete `oracle/src/vision/multiplier.rs` entirely. Remove `PlayerMultiplier` from `types.rs`. Remove `join_timestamp` and `num_committed_ticks` from `PlayerPosition` (these only serve the multiplier). Remove all `use super::multiplier` imports.
 
-### 2. Issuer — Config Orchestrator (`issuer/src/vision/batch_config_orchestrator.rs`)
+### 2. Oracle — Config Orchestrator (`oracle/src/vision/batch_config_orchestrator.rs`)
 
 **Run every tick** (currently runs on a 120s interval). For each batch:
 1. Query data-node: `GET /batches/recommended` (bulk endpoint, returns all sources)
 2. For each source, if config hash differs from current batch config → propose update
-3. BLS consensus among issuers on new config
+3. BLS consensus among oracles on new config
 4. Call `updateBatchConfig()` on-chain
 5. Lazy promotion at next tick boundary (already in contract)
 
@@ -523,7 +523,7 @@ CREATE TABLE vision_batch_state (
 - `UNKNOWN_ASSET_TOLERANCE = 0.05` (max 5% unknown assets)
 - Exact match on `resolution_type` per market (not just `threshold_bps`)
 
-### 3. Issuer — Tick Engine (`issuer/src/vision/engine.rs`)
+### 3. Oracle — Tick Engine (`oracle/src/vision/engine.rs`)
 
 **Remove multiplier from PnL calculation.** The `TickResolver` currently:
 1. Computes time-based multiplier per player
@@ -544,13 +544,13 @@ Change to:
 
 **Remove degraded-mode balance application.** Currently `engine.rs` falls back to applying balances directly when `TickConsensus::create_proposal()` fails. This MUST be removed — in degraded mode, skip the tick entirely and retry next cycle. Never apply balance changes without BLS consensus. Log a CRITICAL alert.
 
-**Fixed-point price conversion.** The data-node MUST return prices as integer-scaled values (price * 1e8 as string) in the snapshot response. Issuers parse directly to `u128`, never going through `f64`. This eliminates non-deterministic float-to-integer rounding that can cause BLS consensus failure across issuers on different hardware. Add a `price_scale` field to the snapshot response (default `100000000` = 1e8). Current `(start_price * 1e8) as u128` in `resolver.rs` is non-deterministic — replace with integer parsing.
+**Fixed-point price conversion.** The data-node MUST return prices as integer-scaled values (price * 1e8 as string) in the snapshot response. Oracles parse directly to `u128`, never going through `f64`. This eliminates non-deterministic float-to-integer rounding that can cause BLS consensus failure across oracles on different hardware. Add a `price_scale` field to the snapshot response (default `100000000` = 1e8). Current `(start_price * 1e8) as u128` in `resolver.rs` is non-deterministic — replace with integer parsing.
 
-### 4. Issuer — Batch Auto-Detection from Chain Events
+### 4. Oracle — Batch Auto-Detection from Chain Events
 
-**Current flow:** Issuers know about batches from their startup config or manual registration. The config orchestrator checks for config updates but doesn't discover new batches.
+**Current flow:** Oracles know about batches from their startup config or manual registration. The config orchestrator checks for config updates but doesn't discover new batches.
 
-**New flow:** Issuers auto-detect new batches from `BatchCreated` events on Vision.sol. The `ChainListener` already processes Vision events — add handling for `BatchCreated`:
+**New flow:** Oracles auto-detect new batches from `BatchCreated` events on Vision.sol. The `ChainListener` already processes Vision events — add handling for `BatchCreated`:
 
 1. `ChainListener` receives `BatchCreated(batchId, sourceId, configHash, tickDuration)` event
 2. Calls `tick_scheduler.on_batch_created(batchId, sourceId, configHash, tickDuration)`
@@ -558,23 +558,23 @@ Change to:
 4. Config orchestrator automatically includes the new batch in its next check cycle
 5. Tick engine starts resolving ticks for the new batch
 
-**No manual registration needed.** Deploy a batch on-chain → issuers pick it up automatically → it appears on the frontend via the batches API.
+**No manual registration needed.** Deploy a batch on-chain → oracles pick it up automatically → it appears on the frontend via the batches API.
 
-**Who creates batches?** The config orchestrator. When the data-node's `GET /batches/recommended` returns a source that has no on-chain batch yet, the orchestrator proposes `createBatchAndJoin()` via BLS consensus. This means: add a source to the data-node → orchestrator creates the batch → issuers detect it → frontend shows it. Fully automatic pipeline.
+**Who creates batches?** The config orchestrator. When the data-node's `GET /batches/recommended` returns a source that has no on-chain batch yet, the orchestrator proposes `createBatchAndJoin()` via BLS consensus. This means: add a source to the data-node → orchestrator creates the batch → oracles detect it → frontend shows it. Fully automatic pipeline.
 
 ### 5. Contract — Vision.sol (minor changes)
 
 **Two contract changes required:**
 
-1. **Add `tickDuration` parameter to `updateBatchConfig()`.** Currently the function only accepts `configHash` and `lockOffset`. The spec requires dynamic tick pacing where each config update can change the tick duration. Add `tickDuration` as a parameter, store it in the batch struct, emit it in the `BatchConfigUpdated` event. Issuers read `tickDuration` from the event to schedule the next tick.
+1. **Add `tickDuration` parameter to `updateBatchConfig()`.** Currently the function only accepts `configHash` and `lockOffset`. The spec requires dynamic tick pacing where each config update can change the tick duration. Add `tickDuration` as a parameter, store it in the batch struct, emit it in the `BatchConfigUpdated` event. Oracles read `tickDuration` from the event to schedule the next tick.
 
 2. **Add `MAX_BATCHES` constant.** Prevent unbounded batch creation: `uint256 public constant MAX_BATCHES = 200;` and `require(nextBatchId < MAX_BATCHES, "TooManyBatches")` in `createBatch()`.
 
 **Unchanged:**
-- Bitmap commit-reveal stays the same (player calls `updateBitmap()` on-chain, reveals to issuers)
+- Bitmap commit-reveal stays the same (player calls `updateBitmap()` on-chain, reveals to oracles)
 - `lockOffset = 0`: Set via `updateBatchConfig()` for all 43 batches (one-time config push)
 - `_requireNotLocked` check in `updateBitmap()`: becomes a no-op when `lockOffset = 0`
-- Bitmap hash on-chain: still stores player's latest `bitmapHash`. The issuer decides whether it's "pending" or "active" — the contract doesn't distinguish.
+- Bitmap hash on-chain: still stores player's latest `bitmapHash`. The oracle decides whether it's "pending" or "active" — the contract doesn't distinguish.
 
 **Fresh deploy**: All batches are created with `lockOffset = 0` from the start via `DeployAllVisionBatches.s.sol`. No migration needed — full redeploy wipes previous state. Setting `lockOffset = 0` also removes the lock guard from `updateBatchConfig` itself — config updates can land anytime during a tick. This is intentional since there's no lock window anymore.
 
@@ -583,7 +583,7 @@ Change to:
 **Delete `frontend/lib/contracts/vision-batches.json`.**
 
 All batch data comes from live API:
-- `useBatches()` hook → `GET /api/vision/batches` → issuer API
+- `useBatches()` hook → `GET /api/vision/batches` → oracle API
 - Proxy already deduplicates to latest batch per source via configHash
 
 **Update `BatchEntryPanel.tsx`:**
@@ -610,8 +610,8 @@ All batch data comes from live API:
 **BatchEntryPanel changes:**
 - Always open for submissions (no "locked" disabled state)
 - Header: "Set predictions for next tick" (not "Enter Batch")
-- Submit flow: player commits `bitmapHash` on-chain (`updateBitmap()`) → reveals bitmap bytes to issuers (`POST /vision/bitmap`). Commit-reveal preserved.
-- **Config freshness check before submit:** Before calling `updateBitmap()`, re-fetch the latest config from `GET /batches/signed` and compare `configHash` to the one used for bitmap encoding. If mismatch (config updated between last poll and submit), re-encode the bitmap against the new config before sending the transaction. This prevents committed hashes with unresolvable bitmaps. The issuer stores the `config_hash` with each pending bitmap to ensure correct decoding.
+- Submit flow: player commits `bitmapHash` on-chain (`updateBitmap()`) → reveals bitmap bytes to oracles (`POST /vision/bitmap`). Commit-reveal preserved.
+- **Config freshness check before submit:** Before calling `updateBitmap()`, re-fetch the latest config from `GET /batches/signed` and compare `configHash` to the one used for bitmap encoding. If mismatch (config updated between last poll and submit), re-encode the bitmap against the new config before sending the transaction. This prevents committed hashes with unresolvable bitmaps. The oracle stores the `config_hash` with each pending bitmap to ensure correct decoding.
 - After submit: "Your bets are set for tick N+1" confirmation
 - Show active status: "You have active bets on tick N" when participating
 - Show sit-out status: "No bets set — sitting out this tick" when player didn't submit
@@ -633,7 +633,7 @@ All batch data comes from live API:
 - `frontend/e2e/helpers/vision-api.ts` — scans static file for unjoined batches (has fallback to on-chain scan, update to use only that)
 - `contracts/script/DeployAllVisionBatches.s.sol` — generates the file (keep for deploy, but frontend stops reading it)
 
-The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the issuer API response: issuers already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
+The API proxy route (`/api/vision/batches`) still needs configHash→source mapping. Move this to the oracle API response: oracles already know which source each batch belongs to (from `source_id` field). The proxy just passes it through — no static file needed.
 
 ### 10. Data-node — Changes
 
@@ -641,8 +641,8 @@ The API proxy route (`/api/vision/batches`) still needs configHash→source mapp
 - `GET /batches/recommended` — returns unsigned recommended configs per source. Data-node generates these every 60s from collected market data. **Now returns integer-scaled prices** (price * 1e8 as string) instead of floats, plus a `price_scale` field.
 - `GET /batches/config/{hash}` — resolves configHash to full config (market list, order). Lookup chain: memory → DB → deploy-hash reverse.
 - `GET /batches/signed` — returns BLS-signed configs (latest per source). Frontend polls this every 15s.
-- `POST /batches/signed` — stores signed config from issuer (after BLS consensus). **Add BLS signature verification on ingestion**: verify that `keccak256(abi.encode(config_body))` matches the claimed `configHash`, and that the BLS signature over that hash is valid against the registered issuer aggregate pubkey. This turns the admin token into defense-in-depth rather than the sole trust boundary. Use per-issuer admin tokens and rotate periodically.
-- `POST /batches/replicate` — follower issuers replicate signed configs.
+- `POST /batches/signed` — stores signed config from oracle (after BLS consensus). **Add BLS signature verification on ingestion**: verify that `keccak256(abi.encode(config_body))` matches the claimed `configHash`, and that the BLS signature over that hash is valid against the registered oracle aggregate pubkey. This turns the admin token into defense-in-depth rather than the sole trust boundary. Use per-oracle admin tokens and rotate periodically.
+- `POST /batches/replicate` — follower oracles replicate signed configs.
 
 **HMAC hard-fail.** In `engine.rs`, when `snapshot_hmac_secret` is configured and the response header `x-snapshot-hmac` is missing, this MUST be an error (reject snapshot), not a warning. A missing HMAC on a supposedly authenticated channel means MITM or compromise.
 
@@ -668,7 +668,7 @@ When a new config is promoted at a tick boundary:
 
 This means the data-node controls tick pacing per source. If a source wants faster ticks (e.g., during high-activity periods), the data-node returns a shorter `tickDuration` in the recommended config. The change takes effect at the next tick boundary.
 
-**Issuer engine** already computes `next_tick_time` from `batch.tickDuration`. No change needed — it naturally picks up the new duration after config promotion.
+**Oracle engine** already computes `next_tick_time` from `batch.tickDuration`. No change needed — it naturally picks up the new duration after config promotion.
 
 **Frontend timer** already reads `tickDuration` from the batch API response and computes countdown. No change needed — it naturally shows the correct countdown for the current tick.
 
@@ -734,51 +734,51 @@ Replace with:
 
 **Full redeploy — no backward compatibility, no migration.**
 
-All contracts, issuers, and DB are deployed fresh. Previous bitmaps are wiped. No dual-mode / `activation_tick_id` mechanism needed.
+All contracts, oracles, and DB are deployed fresh. Previous bitmaps are wiped. No dual-mode / `activation_tick_id` mechanism needed.
 
 1. **Deploy data-node** — lock removal, /sources/registry, integer prices, BLS verification
-2. **Stop all issuers + wipe vision DB tables** (vision_bitmaps, vision_batch_state)
+2. **Stop all oracles + wipe vision DB tables** (vision_bitmaps, vision_batch_state)
 3. **Deploy fresh contracts** — `DeployAllVisionBatches.s.sol` creates all batches with `lockOffset=0`
-4. **Deploy new issuers** — continuous-only mode, fresh DB migration on startup
+4. **Deploy new oracles** — continuous-only mode, fresh DB migration on startup
 5. **Deploy frontend** — remove static deps, multiplier UI, add next-tick UX
 
 **First tick:** All batches start fresh with no active bitmaps. Players must submit new bitmaps to participate. This is safe — balances unchanged.
 
 **Fix i64 overflow in `apply_tick_balances_with_db`.** The current `pb.new_balance.as_u128() as i64` silently overflows for balances > i64::MAX (possible with 18-decimal USDC). Store balance as `TEXT`/`NUMERIC` in DB, matching the approach in `store_balance_proof` which already uses `balance.to_string()`.
 
-**Rollback plan**: Redeploy previous contract + issuer + frontend versions. Full revert since no backward-compatible state to preserve.
+**Rollback plan**: Redeploy previous contract + oracle + frontend versions. Full revert since no backward-compatible state to preserve.
 
 ---
 
 ## Testing
 
-- **Issuer unit tests**: Resolver without multiplier, bitmap flip logic, sit-out handling
-- **Issuer unit tests**: `multiplier.rs` tests deleted — verify no regressions in resolver
+- **Oracle unit tests**: Resolver without multiplier, bitmap flip logic, sit-out handling
+- **Oracle unit tests**: `multiplier.rs` tests deleted — verify no regressions in resolver
 - **Integration test**: Full tick lifecycle — submit pending, resolve, flip, verify sit-out
 - **Integration test**: Fresh deploy — first tick has no active bitmaps, all players sit out safely
 - **Integration test**: All players sit out — verify no payouts, no panics, balances unchanged
 - **Integration test**: Concurrent bitmap submission during tick flip — verify correct slot assignment
 - **Config orchestrator**: Mock data-node `GET /batches/recommended` returns new config → verify on-chain update
 - **Deploy script**: Run DeployAllVisionBatches against local Anvil — verify all batches get `lockOffset = 0`
-- **Batch auto-detection**: Deploy new batch on-chain → issuers pick up `BatchCreated` event → batch appears in API
-- **Auto-creation pipeline**: Add source to data-node → orchestrator creates batch → issuers detect → frontend shows
+- **Batch auto-detection**: Deploy new batch on-chain → oracles pick up `BatchCreated` event → batch appears in API
+- **Auto-creation pipeline**: Add source to data-node → orchestrator creates batch → oracles detect → frontend shows
 - **E2E**: Player submits bet, waits for tick, verifies payout without multiplier
 - **Frontend**: Verify no references to vision-batches.json, multiplier UI gone, continuous betting UX works
 - **Frontend**: Verify `tick.ts` functions work without static config (use live API data only)
 - **Frontend**: Source grid loads entirely from data-node — no hardcoded sources, new sources appear automatically
 - **Data-node**: `GET /sources/registry` returns all sources with metadata, categories
 - **Tick scheduling**: Config update with different `tickDuration` → verify next tick uses new duration
-- **Crash recovery**: Kill issuer mid-tick, restart, verify pending/active slots restored correctly from DB
+- **Crash recovery**: Kill oracle mid-tick, restart, verify pending/active slots restored correctly from DB
 - **Config/bitmap desync**: Submit bitmap under config C1, update config to C2 before resolution → verify bitmap decoded with C1 (its stored `config_hash`)
-- **Cross-issuer gossip**: One issuer misses a bitmap reveal → gossip fills the gap → consensus succeeds
-- **Bitmap set hash**: Issuers with different active sets → BLS consensus fails (correct behavior)
+- **Cross-oracle gossip**: One oracle misses a bitmap reveal → gossip fills the gap → consensus succeeds
+- **Bitmap set hash**: Oracles with different active sets → BLS consensus fails (correct behavior)
 - **Batch creation cap**: Attempt to create batch beyond `MAX_BATCHES` → reverts
-- **HMAC hard-fail**: Remove HMAC header from data-node response → issuer rejects snapshot (not just warn)
-- **Fixed-point prices**: Verify all issuers produce identical `u128` prices from same integer-scaled data-node response
+- **HMAC hard-fail**: Remove HMAC header from data-node response → oracle rejects snapshot (not just warn)
+- **Fixed-point prices**: Verify all oracles produce identical `u128` prices from same integer-scaled data-node response
 - **Degraded mode**: Force proposal failure → verify NO balance changes applied (tick skipped)
 - **i64 overflow**: Player with balance > i64::MAX → verify DB stores correctly, crash recovery preserves balance
 - **First-tick skip**: New batch first tick → verify resolution skipped, reference prices established
-- **Fresh deploy**: Stop issuers, wipe DB, deploy new contracts + issuers, verify continuous mode works from first tick
+- **Fresh deploy**: Stop oracles, wipe DB, deploy new contracts + oracles, verify continuous mode works from first tick
 
 ---
 
@@ -794,11 +794,11 @@ Findings from multi-round cross-referenced security review by 5 independent revi
 
 **Remaining risk:** LOW. A bot with superior price prediction models has an edge, but this is true with any prediction market. The lock window only prevented _observing_ current tick prices — it didn't prevent _predicting_ next tick prices.
 
-### Config Promotion Timing Mismatch (contract vs issuer)
+### Config Promotion Timing Mismatch (contract vs oracle)
 
-**Problem:** Contract promotes config lazily (triggered by user interactions). Issuer promotes via events. If no user interacts, contract and issuer can desync.
+**Problem:** Contract promotes config lazily (triggered by user interactions). Oracle promotes via events. If no user interacts, contract and oracle can desync.
 
-**Mitigation:** Issuers accept bitmaps for BOTH the current AND pending config hashes during the transition window. Each bitmap stores its `config_hash`. The resolver uses the bitmap's stored `config_hash` to decode, not the "current" config. This makes the timing of on-chain promotion irrelevant — the bitmap always gets decoded correctly.
+**Mitigation:** Oracles accept bitmaps for BOTH the current AND pending config hashes during the transition window. Each bitmap stores its `config_hash`. The resolver uses the bitmap's stored `config_hash` to decode, not the "current" config. This makes the timing of on-chain promotion irrelevant — the bitmap always gets decoded correctly.
 
 ### First-Tick Reference Price Manipulation
 
@@ -808,9 +808,9 @@ Findings from multi-round cross-referenced security review by 5 independent revi
 
 ### Data-Node Downtime
 
-**Problem:** If data-node is unavailable, issuers can't fetch snapshots → ticks don't resolve → players can't claim.
+**Problem:** If data-node is unavailable, oracles can't fetch snapshots → ticks don't resolve → players can't claim.
 
-**Mitigation:** Each issuer already has its own data-node instance. Add retry with exponential backoff (3 attempts, 5s/15s/45s). If all retries fail for a tick, skip the tick (balances unchanged, no PnL applied). Players who were active simply sit out that tick. On recovery, the next tick resolves normally. No funds are at risk — only temporarily idle.
+**Mitigation:** Each oracle already has its own data-node instance. Add retry with exponential backoff (3 attempts, 5s/15s/45s). If all retries fail for a tick, skip the tick (balances unchanged, no PnL applied). Players who were active simply sit out that tick. On recovery, the next tick resolves normally. No funds are at risk — only temporarily idle.
 
 ---
 
@@ -819,11 +819,11 @@ Findings from multi-round cross-referenced security review by 5 independent revi
 | Component | Deleted |
 |-----------|---------|
 | `vision-batches.json` | Frontend dependency removed (file kept for deploy scripts) |
-| Multiplier math | Issuer resolver, frontend display |
-| `multiplier.rs` | Entire file deleted (`issuer/src/vision/multiplier.rs`) |
+| Multiplier math | Oracle resolver, frontend display |
+| `multiplier.rs` | Entire file deleted (`oracle/src/vision/multiplier.rs`) |
 | `PlayerMultiplier` type | Removed from `types.rs` |
 | `join_timestamp`, `num_committed_ticks` | Removed from `PlayerPosition` in `types.rs` |
-| Lock window logic | Issuer, frontend timer/UI |
+| Lock window logic | Oracle, frontend timer/UI |
 | `is_in_lock_period()` | Dead code in `batch_config_orchestrator.rs` |
 | `getMultiplier()` | `frontend/lib/vision/tick.ts` |
 | Lock countdown | SourceDetail, BatchEntryPanel, NextBatches |
@@ -833,7 +833,7 @@ Findings from multi-round cross-referenced security review by 5 independent revi
 | `SOURCE_CATEGORIES` / `getCategoryCounts()` | `frontend/lib/vision/source-categories.ts` — from API |
 | `PREFIX_MAP` / `BARE_CRYPTO` / `CATEGORY_ORDER` | `frontend/lib/vision/market-categories.ts` — from API |
 | `CATEGORY_GROUPS` / `SOURCE_DISPLAY_OVERRIDES` | `VisionMarketsGrid.tsx` — from API |
-| Manual batch registration | Issuers auto-detect from `BatchCreated` chain events |
+| Manual batch registration | Oracles auto-detect from `BatchCreated` chain events |
 | Early-entry incentive | Entire concept removed |
 
 ## What Stays

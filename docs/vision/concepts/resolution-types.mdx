@@ -62,7 +62,7 @@ flowchart TD
 
 ## Storage
 
-Resolution types are stored as raw `uint8` values on-chain. The Solidity enum defines the first 8 types; extended types (8-13) are handled by the issuer resolver:
+Resolution types are stored as raw `uint8` values on-chain. The Solidity enum defines the first 8 types; extended types (8-13) are handled by the oracle resolver:
 
 ```solidity
 // IVision.sol — first 8 types
@@ -70,12 +70,12 @@ enum ResolutionType {
     UP_0, UP_30, UP_X, DOWN_0, DOWN_30, DOWN_X, FLAT_0, FLAT_X
 }
 // Types 8-13 (UP_300, UP_3000, DOWN_300, DOWN_3000, FLAT_300, FLAT_3000)
-// are stored as uint8 and resolved by the issuer
+// are stored as uint8 and resolved by the oracle
 ```
 
 ## How Resolution Works
 
-At tick resolution, the issuer computes the percentage change for each market. The arithmetic is simple. The consequences are not:
+At tick resolution, the oracle computes the percentage change for each market. The arithmetic is simple. The consequences are not:
 
 ```
 pct_change = (end_price - start_price) / start_price * 100

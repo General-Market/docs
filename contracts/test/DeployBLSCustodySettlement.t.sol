@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/Governance.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/core/BLSCustody.sol";
 import "../src/interfaces/IBLSCustody.sol";
 import "../src/libraries/ErrorsLib.sol";
@@ -13,30 +13,30 @@ import "./helpers/TestHelper.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployBLSCustodySettlementTest - Deployment validation tests for Story 6.5
-/// @notice Tests the full Settlement deployment chain: Governance -> IssuerRegistry -> BLSCustody
-/// @dev Uses real IssuerRegistry with real BLS test keys
+/// @notice Tests the full Settlement deployment chain: Governance -> OracleRegistry -> BLSCustody
+/// @dev Uses real OracleRegistry with real BLS test keys
 ///      for both whitelist tests and initialization chain tests
 contract DeployBLSCustodySettlementTest is TestHelper {
     // Real contracts (initialization chain)
     Governance public governance;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
 
     // BLSCustody with separate registry (for whitelist testing)
     BLSCustody public custody;
-    IssuerRegistry public mockRegistry;
+    OracleRegistry public mockRegistry;
 
     // BLSCustody with real registry (for initialization chain testing)
     BLSCustody public custodyReal;
 
     // Proxy addresses
     address public governanceProxy;
-    address public issuerRegistryProxy;
+    address public oracleRegistryProxy;
     address public blsCustodyProxy;
     address public blsCustodyRealProxy;
 
     // Implementation addresses
     address public governanceImpl;
-    address public issuerRegistryImpl;
+    address public oracleRegistryImpl;
     address public blsCustodyImpl;
 
     // Constants matching deployment script
@@ -64,39 +64,39 @@ contract DeployBLSCustodySettlementTest is TestHelper {
         governanceProxy = address(govProxy);
         governance = Governance(governanceProxy);
 
-        // Deploy IssuerRegistry (real)
-        IssuerRegistry irImpl = new IssuerRegistry();
-        issuerRegistryImpl = address(irImpl);
+        // Deploy OracleRegistry (real)
+        OracleRegistry irImpl = new OracleRegistry();
+        oracleRegistryImpl = address(irImpl);
         ERC1967Proxy irProxy = new ERC1967Proxy(
-            issuerRegistryImpl,
-            abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
+            oracleRegistryImpl,
+            abi.encodeCall(OracleRegistry.initialize, (governanceProxy))
         );
-        issuerRegistryProxy = address(irProxy);
-        issuerRegistry = IssuerRegistry(issuerRegistryProxy);
+        oracleRegistryProxy = address(irProxy);
+        oracleRegistry = OracleRegistry(oracleRegistryProxy);
 
-        // Deploy BLSCustody with real IssuerRegistry (for init chain tests)
+        // Deploy BLSCustody with real OracleRegistry (for init chain tests)
         BLSCustody custodyImplReal = new BLSCustody();
         ERC1967Proxy custodyRealProxy = new ERC1967Proxy(
             address(custodyImplReal),
-            abi.encodeCall(BLSCustody.initialize, (issuerRegistryProxy))
+            abi.encodeCall(BLSCustody.initialize, (oracleRegistryProxy))
         );
         blsCustodyRealProxy = address(custodyRealProxy);
         custodyReal = BLSCustody(blsCustodyRealProxy);
 
-        // ===== Deploy BLSCustody with separate IssuerRegistry for whitelist tests =====
-        // Separate IssuerRegistry for whitelist tests, BLS verification uses real BLS keys
-        IssuerRegistry mockRegImpl = new IssuerRegistry();
+        // ===== Deploy BLSCustody with separate OracleRegistry for whitelist tests =====
+        // Separate OracleRegistry for whitelist tests, BLS verification uses real BLS keys
+        OracleRegistry mockRegImpl = new OracleRegistry();
         ERC1967Proxy mockRegProxy = new ERC1967Proxy(
             address(mockRegImpl),
-            abi.encodeCall(IssuerRegistry.initialize, (governanceProxy))
+            abi.encodeCall(OracleRegistry.initialize, (governanceProxy))
         );
-        mockRegistry = IssuerRegistry(address(mockRegProxy));
+        mockRegistry = OracleRegistry(address(mockRegProxy));
 
-        // Register 3 real BLS test issuers in both registries and set aggregated pubkeys
-        // Must stop startPrank — registerTestIssuersWithBLS uses vm.prank internally
+        // Register 3 real BLS test oracles in both registries and set aggregated pubkeys
+        // Must stop startPrank — registerTestOraclesWithBLS uses vm.prank internally
         vm.stopPrank();
-        registerTestIssuersWithBLS(mockRegistry, deployer);
-        registerTestIssuersWithBLS(issuerRegistry, deployer);
+        registerTestOraclesWithBLS(mockRegistry, deployer);
+        registerTestOraclesWithBLS(oracleRegistry, deployer);
         vm.startPrank(deployer);
 
         BLSCustody custodyImpl = new BLSCustody();
@@ -120,7 +120,7 @@ contract DeployBLSCustodySettlementTest is TestHelper {
     /// @notice Sign a BLSCustody.proposeWhitelist call with real BLS signature
     function _signProposeWhitelist(address custodyAddr, address target) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, custodyAddr, "proposeWhitelist", target));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ AC #1: UUPS PROXY DEPLOYMENT ============
@@ -133,12 +133,12 @@ contract DeployBLSCustodySettlementTest is TestHelper {
 
     function test_realChain_allProxiesDeployed() public view {
         assertGt(governanceProxy.code.length, 0, "Governance proxy should have code");
-        assertGt(issuerRegistryProxy.code.length, 0, "IssuerRegistry proxy should have code");
+        assertGt(oracleRegistryProxy.code.length, 0, "OracleRegistry proxy should have code");
         assertGt(blsCustodyRealProxy.code.length, 0, "BLSCustody real proxy should have code");
     }
 
-    function test_proxyDelegation_issuerRegistryReturnsCorrectValue() public view {
-        address registryAddr = address(custody.issuerRegistry());
+    function test_proxyDelegation_oracleRegistryReturnsCorrectValue() public view {
+        address registryAddr = address(custody.oracleRegistry());
         assertEq(registryAddr, address(mockRegistry), "Proxy should delegate to implementation");
     }
 
@@ -153,22 +153,22 @@ contract DeployBLSCustodySettlementTest is TestHelper {
 
     // ============ AC #2: INITIALIZATION STATE ============
 
-    function test_initialization_realChain_issuerRegistrySet() public view {
-        address registryAddr = address(custodyReal.issuerRegistry());
-        assertEq(registryAddr, issuerRegistryProxy, "IssuerRegistry should be set to real proxy");
+    function test_initialization_realChain_oracleRegistrySet() public view {
+        address registryAddr = address(custodyReal.oracleRegistry());
+        assertEq(registryAddr, oracleRegistryProxy, "OracleRegistry should be set to real proxy");
     }
 
-    function test_initialization_issuerRegistryIsValid() public view {
-        uint256 activeCount = issuerRegistry.activeIssuerCount();
-        assertEq(activeCount, 3, "Should have 3 test issuers registered");
+    function test_initialization_oracleRegistryIsValid() public view {
+        uint256 activeCount = oracleRegistry.activeOracleCount();
+        assertEq(activeCount, 3, "Should have 3 test oracles registered");
     }
 
     function test_initialization_governanceAdminCorrect() public view {
         assertEq(governance.admin(), deployer, "Governance admin should be deployer");
     }
 
-    function test_initialization_issuerRegistryGovernanceCorrect() public view {
-        assertEq(address(issuerRegistry.governance()), governanceProxy, "IssuerRegistry governance should match");
+    function test_initialization_oracleRegistryGovernanceCorrect() public view {
+        assertEq(address(oracleRegistry.governance()), governanceProxy, "OracleRegistry governance should match");
     }
 
     function test_initialization_cannotReinitialize() public {
@@ -237,24 +237,24 @@ contract DeployBLSCustodySettlementTest is TestHelper {
         custody.execute(nonWhitelisted, "", "", 0, 3, 7);
     }
 
-    // ============ ISSUER REGISTRY INTEGRATION ============
+    // ============ ORACLE REGISTRY INTEGRATION ============
 
-    function test_issuerRegistry_canAddIssuers() public {
-        uint256 countBefore = issuerRegistry.activeIssuerCount();
+    function test_oracleRegistry_canAddOracles() public {
+        uint256 countBefore = oracleRegistry.activeOracleCount();
         // Real BLS G2 pubkey from deterministic seed via FFI (use seed 10 to avoid collision with seeds 0,1,2)
         bytes memory testPubkey = blsPubkey(10);
-        address issuerAddr = address(0x1001);
+        address oracleAddr = address(0x1001);
         // Generate Proof of Possession
-        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(issuerRegistry), issuerAddr, testPubkey));
+        bytes32 popMsg = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(oracleRegistry), oracleAddr, testPubkey));
         bytes memory popSig = blsSign(vm.toString(uint256(10)), popMsg);
         vm.prank(deployer);
-        issuerRegistry.addIssuer(issuerAddr, bytes32(uint256(1)), testPubkey, popSig);
-        assertEq(issuerRegistry.activeIssuerCount(), countBefore + 1);
+        oracleRegistry.addOracle(oracleAddr, bytes32(uint256(1)), testPubkey, popSig);
+        assertEq(oracleRegistry.activeOracleCount(), countBefore + 1);
     }
 
     function test_blsCustody_readsAggregatedPubkey() public view {
         // G2 aggregated pubkey must be set (128 bytes for G2 point)
-        bytes memory aggregatedPubkey = issuerRegistry.getAggregatedPubkey();
+        bytes memory aggregatedPubkey = oracleRegistry.getAggregatedPubkey();
         assertEq(aggregatedPubkey.length, 128, "Aggregated pubkey should be 128 bytes (G2 point)");
     }
 
@@ -263,14 +263,14 @@ contract DeployBLSCustodySettlementTest is TestHelper {
     function test_fullDeploymentFlow() public {
         // 1. Verify all contracts deployed
         assertGt(governanceProxy.code.length, 0);
-        assertGt(issuerRegistryProxy.code.length, 0);
+        assertGt(oracleRegistryProxy.code.length, 0);
         assertGt(blsCustodyProxy.code.length, 0);
         assertGt(blsCustodyRealProxy.code.length, 0);
 
         // 2. Verify real initialization chain
         assertEq(governance.admin(), deployer);
-        assertEq(address(issuerRegistry.governance()), governanceProxy);
-        assertEq(address(custodyReal.issuerRegistry()), issuerRegistryProxy);
+        assertEq(address(oracleRegistry.governance()), governanceProxy);
+        assertEq(address(custodyReal.oracleRegistry()), oracleRegistryProxy);
 
         // 3. Verify whitelist proposals exist (mock registry custody)
         (uint256 routerProposedAt, ) = custody.getWhitelistStatus(ONEINCH_ROUTER_V6);
@@ -293,7 +293,7 @@ contract DeployBLSCustodySettlementTest is TestHelper {
     }
 
     function test_blsCustody_mockRegistry_readsAggregatedPubkey() public view {
-        // Real aggregated G2 pubkey is 128 bytes, set via registerTestIssuersWithBLS
+        // Real aggregated G2 pubkey is 128 bytes, set via registerTestOraclesWithBLS
         bytes memory aggPubkey = mockRegistry.getAggregatedPubkey();
         assertEq(aggPubkey.length, 128, "Mock registry should return 128-byte aggregated pubkey");
     }

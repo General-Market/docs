@@ -7,7 +7,7 @@ import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
 import "../../src/registry/FeeRegistry.sol";
 import "../../src/interfaces/IFeeRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
@@ -16,7 +16,7 @@ import "../../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2EEfficiency - Per-Asset Spread Decomposition & Fee Recording Tests
-/// @notice Models the full issuer pipeline: per-asset bid/ask from Bitget spreads, NAV from
+/// @notice Models the full oracle pipeline: per-asset bid/ask from Bitget spreads, NAV from
 ///         on-chain inventory quantities, FeeRegistry integration, self-funded pool (no usdc.mint hacks).
 /// @dev Real BLS signatures via FFI (bls-tool). Every intermediate balance is asserted.
 contract E2EEfficiencyTest is TestHelper {
@@ -26,7 +26,7 @@ contract E2EEfficiencyTest is TestHelper {
     ITP public itpVault;
     FeeRegistry public feeRegistry;
     address public feeRegistryProxy;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
 
     address public user1 = makeAddr("user1");
     address public user2 = makeAddr("user2");
@@ -66,9 +66,9 @@ contract E2EEfficiencyTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, admin);
-        index.setIssuerRegistry(address(issuerRegistry));
+        oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, admin);
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Deploy FeeRegistry UUPS proxy
         FeeRegistry feeRegistryImpl = new FeeRegistry();
@@ -79,8 +79,8 @@ contract E2EEfficiencyTest is TestHelper {
         feeRegistryProxy = address(feeProxy);
         feeRegistry = FeeRegistry(feeRegistryProxy);
 
-        // Wire FeeRegistry: set IssuerRegistry for BLS, authorize test contract + index
-        feeRegistry.setIssuerRegistry(address(issuerRegistry));
+        // Wire FeeRegistry: set OracleRegistry for BLS, authorize test contract + index
+        feeRegistry.setOracleRegistry(address(oracleRegistry));
         feeRegistry.setAuthorizedCaller(address(this), true);
         feeRegistry.setAuthorizedCaller(address(index), true);
 
@@ -117,7 +117,7 @@ contract E2EEfficiencyTest is TestHelper {
         {
             uint256 nonce = feeRegistry.getNonce();
             bytes32 msg_ = keccak256(abi.encode(block.chainid, feeRegistryProxy, "setFeeRate", itpId, uint256(50), nonce));
-            feeRegistry.setFeeRate(itpId, 50, signWithTestIssuers(msg_), 3, 7);
+            feeRegistry.setFeeRate(itpId, 50, signWithTestOracles(msg_), 3, 7);
         }
 
         // Verify inventory qty formula: qty[i] = (weight[i] * 1e18) / price[i]
@@ -140,15 +140,15 @@ contract E2EEfficiencyTest is TestHelper {
     // ============ SIGNING HELPERS ============
 
     function _signBatch(uint256 c, uint256[] memory ids) internal returns (bytes memory) {
-        return signWithTestIssuers(keccak256(abi.encode(block.chainid, address(index), c, ids)));
+        return signWithTestOracles(keccak256(abi.encode(block.chainid, address(index), c, ids)));
     }
 
     function _signFills(uint256 c, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
-        return signWithTestIssuers(keccak256(abi.encode(block.chainid, address(index), c, fills)));
+        return signWithTestOracles(keccak256(abi.encode(block.chainid, address(index), c, fills)));
     }
 
     function _signNav(bytes32 id, uint256 nav) internal returns (bytes memory) {
-        return signWithTestIssuers(keccak256(abi.encode(block.chainid, address(index), "setItpNav", id, nav)));
+        return signWithTestOracles(keccak256(abi.encode(block.chainid, address(index), "setItpNav", id, nav)));
     }
 
     function _signRebal(
@@ -159,12 +159,12 @@ contract E2EEfficiencyTest is TestHelper {
         uint256[] memory p,
         address[] memory qt
     ) internal returns (bytes memory) {
-        return signWithTestIssuers(keccak256(abi.encode(block.chainid, address(index), "rebalance", id, rm, add_, w, p, qt)));
+        return signWithTestOracles(keccak256(abi.encode(block.chainid, address(index), "rebalance", id, rm, add_, w, p, qt)));
     }
 
     // ============ NAV COMPUTATION HELPERS ============
 
-    /// @dev Compute midNAV from inventory + prices (replicates issuer's calculate_nav)
+    /// @dev Compute midNAV from inventory + prices (replicates oracle's calculate_nav)
     function _computeMidNav(uint256[] memory prices) internal view returns (uint256 nav) {
         (,,,,, uint256[] memory inventory) = index.getITPState(itpId);
         for (uint256 i = 0; i < inventory.length; i++) {
@@ -212,7 +212,7 @@ contract E2EEfficiencyTest is TestHelper {
             user, itpId, feeAmt, TypesLib.FeeType.TRADING, nonce
         ));
         feeRegistry.recordFeeCharge(
-            user, itpId, feeAmt, TypesLib.FeeType.TRADING, signWithTestIssuers(message)
+            user, itpId, feeAmt, TypesLib.FeeType.TRADING, signWithTestOracles(message)
         , 3, 7);
     }
 

@@ -23,8 +23,8 @@ flowchart TD
         E[Vision Contract]
     end
 
-    subgraph OffChain["Off-Chain (Issuers)"]
-        F[Issuer Nodes]
+    subgraph OffChain["Off-Chain (Oracles)"]
+        F[Oracle Nodes]
     end
 
     D -->|"joinBatch(bitmapHash)"| E
@@ -39,12 +39,12 @@ flowchart TD
 The lifecycle of a bot is the lifecycle of hope, compressed into code:
 
 1. **Registers** on the Vision contract (one-time, free, no collateral).
-2. **Polls** the issuer API for active batches.
+2. **Polls** the oracle API for active batches.
 3. **Generates predictions** -- UP or DOWN for each market in a batch.
 4. **Encodes** predictions into a packed bitmap and hashes it with keccak256.
 5. **Joins** the batch on-chain with a USDC deposit and the sealed bitmap hash.
-6. **Reveals** the actual bitmap bytes to issuer nodes off-chain.
-7. **Claims rewards** periodically using BLS-signed balance proofs from issuers.
+6. **Reveals** the actual bitmap bytes to oracle nodes off-chain.
+7. **Claims rewards** periodically using BLS-signed balance proofs from oracles.
 8. **Withdraws** remaining balance when exiting a batch.
 
 <Info>
@@ -56,7 +56,7 @@ Registration is **free**. Calling `registerBot()` costs only gas. No staking, no
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `RPC_URL` | Yes | -- | Arbitrum RPC endpoint |
-| `VISION_API_URL` | No | `https://generalmarket.io/api/vision` | Issuer Vision API base URL |
+| `VISION_API_URL` | No | `https://generalmarket.io/api/vision` | Oracle Vision API base URL |
 | `BOT_PRIVATE_KEY` | Yes | -- | Wallet private key (controls USDC deposits) |
 | `VISION_ADDRESS` | No | `0x0BFC626B583e93A5F793Bc2cAa195BDBB2ED9F20` | Vision contract address |
 | `DEPOSIT_AMOUNT` | No | `10` | USDC to deposit per batch (whole tokens) |

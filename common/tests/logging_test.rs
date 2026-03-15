@@ -4,7 +4,7 @@
 //! - init_logging() creates log files and writes valid JSON (AC #1)
 //! - JSON output contains required fields (AC #1, #2)
 //! - Log level filtering works correctly (AC #2)
-//! - Span context fields (cycle_number, issuer_id, order_id, itp_id) appear in output
+//! - Span context fields (cycle_number, oracle_id, order_id, itp_id) appear in output
 
 use common::logging::LogConfig;
 use std::path::PathBuf;
@@ -75,7 +75,7 @@ fn test_init_logging_creates_log_file() {
 }
 
 /// Test 6.2: JSON output contains all required fields
-/// Required: timestamp, level, cycle_number, issuer_id, order_id, itp_id, message
+/// Required: timestamp, level, cycle_number, oracle_id, order_id, itp_id, message
 #[test]
 fn test_json_output_contains_required_fields() {
     let buffer = Arc::new(Mutex::new(Vec::new()));
@@ -85,7 +85,7 @@ fn test_json_output_contains_required_fields() {
         let span = tracing::info_span!(
             "cycle",
             cycle_number = 42u64,
-            issuer_id = "0xabc123",
+            oracle_id = "0xabc123",
             order_id = 7u64,
             itp_id = 3u64,
         );
@@ -120,8 +120,8 @@ fn test_json_output_contains_required_fields() {
         "Log should contain cycle_number field"
     );
     assert!(
-        output.contains("issuer_id"),
-        "Log should contain issuer_id field"
+        output.contains("oracle_id"),
+        "Log should contain oracle_id field"
     );
     assert!(
         output.contains("order_id"),
@@ -134,7 +134,7 @@ fn test_json_output_contains_required_fields() {
 
     // Verify the actual values
     assert!(output.contains("42"), "cycle_number should be 42");
-    assert!(output.contains("0xabc123"), "issuer_id should be 0xabc123");
+    assert!(output.contains("0xabc123"), "oracle_id should be 0xabc123");
     assert!(output.contains("7"), "order_id should be 7");
     assert!(output.contains("3"), "itp_id should be 3");
 }
@@ -224,17 +224,17 @@ fn test_log_level_filtering_warn() {
 /// Test: LogConfig can be constructed for different components
 #[test]
 fn test_log_config_components() {
-    let issuer_config = LogConfig {
+    let oracle_config = LogConfig {
         level: "debug".to_string(),
         dir: PathBuf::from("/app/logs"),
         json_enabled: true,
-        component_name: "issuer-3".to_string(),
+        component_name: "oracle-3".to_string(),
         node_id: Some(3),
     };
 
-    assert_eq!(issuer_config.component_name, "issuer-3");
-    assert_eq!(issuer_config.node_id, Some(3));
-    assert!(issuer_config.json_enabled);
+    assert_eq!(oracle_config.component_name, "oracle-3");
+    assert_eq!(oracle_config.node_id, Some(3));
+    assert!(oracle_config.json_enabled);
 
     let ap_config = LogConfig {
         level: "info".to_string(),
@@ -259,7 +259,7 @@ fn test_nested_span_context() {
         let cycle_span = tracing::info_span!(
             "cycle",
             cycle_number = 10u64,
-            issuer_id = "0xdef456",
+            oracle_id = "0xdef456",
         );
         let _cycle_guard = cycle_span.enter();
 
@@ -277,7 +277,7 @@ fn test_nested_span_context() {
 
     // All span fields from the chain should be present
     assert!(output.contains("cycle_number"), "Should have cycle_number");
-    assert!(output.contains("issuer_id"), "Should have issuer_id");
+    assert!(output.contains("oracle_id"), "Should have oracle_id");
     assert!(output.contains("order_id"), "Should have order_id");
     assert!(output.contains("itp_id"), "Should have itp_id");
     assert!(output.contains("Fill allocated"), "Should have the message");

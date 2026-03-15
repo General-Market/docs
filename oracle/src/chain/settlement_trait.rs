@@ -21,7 +21,7 @@ use crate::consensus::ConsensusError;
 /// `DataNodeSettlementReader` implements it via data-node HTTP + SSE.
 ///
 /// Deduplication state (seen_orders, retry_counts) is per-implementation,
-/// since each issuer maintains its own processing state.
+/// since each oracle maintains its own processing state.
 #[async_trait]
 pub trait SettlementReader: Send + Sync {
     /// Settlement chain ID

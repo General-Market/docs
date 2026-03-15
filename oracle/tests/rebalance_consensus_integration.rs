@@ -17,10 +17,10 @@ use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::mocks::{MockChainBuilder, MockP2PNetworkBuilder};
 use common::traits::{BLSSigner, P2PTransport};
 use common::types::{BLSSignature, PeerId};
-use issuer::bridge::{BridgeConfig, BridgeError, BridgeOrchestrator, CrossChainOrderReader};
-use issuer::chain::CrossChainOrderData;
-use issuer::consensus::aggregator::calculate_threshold;
-use issuer::{
+use oracle::bridge::{BridgeConfig, BridgeError, BridgeOrchestrator, CrossChainOrderReader};
+use oracle::chain::CrossChainOrderData;
+use oracle::consensus::aggregator::calculate_threshold;
+use oracle::{
     ConsensusConfig, ConsensusProtocol, ConsensusTimeouts,
     InMemoryKeyRegistry, MockPriceFetcher, MockPriceFetcherBuilder,
 };
@@ -39,7 +39,7 @@ fn test_timeouts() -> ConsensusTimeouts {
 
 fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11u8; 20]),
+        oracle_custody_l3: Address::from([0x11u8; 20]),
         l3_usdc_address: Address::from([0x22u8; 20]),
         settlement_custody_address: Address::from([0x33u8; 20]),
         settlement_chain_id: 42161,
@@ -48,7 +48,7 @@ fn test_bridge_config() -> BridgeConfig {
         min_signatures: 2,
         proposal_timeout_ms: TEST_TIMEOUT_MS,
         sign_timeout_ms: TEST_TIMEOUT_MS,
-        issuer_custody_settlement: Address::from([0x55u8; 20]),
+        oracle_custody_settlement: Address::from([0x55u8; 20]),
         settlement_usdc_address: Address::from([0x66u8; 20]),
         bitget_vault: Address::from([0x77u8; 20]),
         signer_address: Address::from([0x88; 20]),
@@ -164,8 +164,8 @@ fn start_routers<P, C, K, F>(
 where
     P: P2PTransport + 'static,
     C: common::traits::ChainWriter + 'static,
-    K: issuer::KeyRegistry + 'static,
-    F: issuer::PriceFetcher + 'static,
+    K: oracle::KeyRegistry + 'static,
+    F: oracle::PriceFetcher + 'static,
 {
     let mut router_handles = Vec::new();
     for (protocol, p2p) in protocols.iter().zip(p2ps.iter()) {
@@ -336,7 +336,7 @@ async fn test_3node_update_weights_consensus() {
 
 #[tokio::test]
 async fn test_rebalance_batch_hash_deterministic() {
-    use issuer::bridge::build_rebalance_batch_hash;
+    use oracle::bridge::build_rebalance_batch_hash;
 
     let chain_id = 111222333u64;
     let index_address = Address::from([0x44u8; 20]);
@@ -359,7 +359,7 @@ async fn test_rebalance_batch_hash_deterministic() {
 
 #[tokio::test]
 async fn test_update_weights_hash_deterministic() {
-    use issuer::bridge::build_update_weights_hash;
+    use oracle::bridge::build_update_weights_hash;
 
     let chain_id = 111222333u64;
     let index_address = Address::from([0x44u8; 20]);

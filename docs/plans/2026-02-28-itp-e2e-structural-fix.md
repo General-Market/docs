@@ -1,12 +1,12 @@
-# ITP E2E Structural Fix — End-to-End Through Real Issuer Pipeline
+# ITP E2E Structural Fix — End-to-End Through Real Oracle Pipeline
 
 ## Context
 
-E2E tests 02-05 (buy, lending, sell, create ITP) fail because **transactions route to the wrong chain**. The frontend forces ALL writes to L3 via `useChainWriteContract`, but uses `buyITPFromArbitrum` / `sellITPFromArbitrum` on `ArbBridgeCustody` — a contract designed for the Arbitrum chain. This emits `CrossChainOrderCreated` on L3, but **issuers watch Arbitrum (port 8546) for these events**, not L3 (port 8545). Orders are never detected → never relayed → never filled.
+E2E tests 02-05 (buy, lending, sell, create ITP) fail because **transactions route to the wrong chain**. The frontend forces ALL writes to L3 via `useChainWriteContract`, but uses `buyITPFromArbitrum` / `sellITPFromArbitrum` on `ArbBridgeCustody` — a contract designed for the Arbitrum chain. This emits `CrossChainOrderCreated` on L3, but **oracles watch Arbitrum (port 8546) for these events**, not L3 (port 8545). Orders are never detected → never relayed → never filled.
 
 The test workarounds (Anvil impersonation via `mintBridgedItp`) also fail because they mint on Arb (port 8546) while the frontend reads balances from L3 (port 8545).
 
-**Goal**: Make buy/sell/create ITP work end-to-end through real issuer consensus. No Anvil impersonation. No manual minting. The decentralized pipeline must work autonomously.
+**Goal**: Make buy/sell/create ITP work end-to-end through real oracle consensus. No Anvil impersonation. No manual minting. The decentralized pipeline must work autonomously.
 
 ---
 
@@ -17,9 +17,9 @@ Frontend sends buyITPFromArbitrum() → L3 chain (port 8545)
                                        ↓
                       CrossChainOrderCreated emits on L3
                                        ↓
-              Issuers watch Arb (port 8546) for this event
+              Oracles watch Arb (port 8546) for this event
                                        ↓
-                    Issuers NEVER see event → order stuck forever
+                    Oracles NEVER see event → order stuck forever
 ```
 
 The secondary issue: `mintBridgedItp()` mints on Arb (8546), but `useUserState` reads from L3 (8545) → balance increase never detected.
@@ -30,7 +30,7 @@ The secondary issue: `mintBridgedItp()` mints on Arb (8546), but `useUserState` 
 
 Since the frontend already forces L3 for all operations, **use `Index.submitOrder()` on L3 directly** instead of the cross-chain `buyITPFromArbitrum()`. This is architecturally correct: users on L3 should call L3 contracts directly.
 
-The cross-chain path (`buyITPFromArbitrum` → Arb → issuer relay → L3) is for production users on Arbitrum mainnet. In the current setup (L3-primary), direct L3 orders are the right path.
+The cross-chain path (`buyITPFromArbitrum` → Arb → oracle relay → L3) is for production users on Arbitrum mainnet. In the current setup (L3-primary), direct L3 orders are the right path.
 
 ### Key Differences: Cross-Chain vs Direct L3
 
@@ -40,7 +40,7 @@ The cross-chain path (`buyITPFromArbitrum` → Arb → issuer relay → L3) is f
 | Chain | Arb (but sent to L3 → broken) | L3 (correct) |
 | USDC | ARB_USDC (6 decimals) | L3_WUSDC (18 decimals) |
 | Event | `CrossChainOrderCreated` (Arb) | `OrderSubmitted` (L3) |
-| Issuer detection | Arb event watcher | L3 cycle reads `_orders` |
+| Oracle detection | Arb event watcher | L3 cycle reads `_orders` |
 | Bridge steps | 6 micro-steps (bridge, relay, batch, fill, bridge-back, mint) | 3 micro-steps (batch, fill, done) |
 | Share delivery | BridgedITP minted on Arb | Direct shares on L3 (`_userShares`) |
 
@@ -75,7 +75,7 @@ const isOnL3 = chainId === indexL3.id
 4. **Simplify micro-step flow for L3**:
    - Remove BRIDGE_TO_L3, RELAY, BRIDGE_TO_ARB, COMPLETE_BRIDGE, MINT_SHARES
    - New flow: APPROVE → SUBMIT → BATCH → FILL → DONE
-   - The "Process" visible step becomes: "Issuers processing your order"
+   - The "Process" visible step becomes: "Oracles processing your order"
    - The "Deliver" visible step becomes: "Shares credited"
 
 5. **Balance detection for L3**: Instead of watching `BridgedITP` balance on Arb, watch `_userShares` on L3 via the existing `useItpShares` or `useReadContract` hook.
@@ -104,7 +104,7 @@ const isOnL3 = chainId === indexL3.id
 For sells on L3, the user sells their L3 shares (tracked in `_userShares[itpId][user]`). The sell order flow:
 1. User calls `Index.submitOrder(itpId, SELL, shares, minPrice, slippage, deadline)`
 2. Index contract deducts from `_userShares`
-3. Issuers batch and fill the sell
+3. Oracles batch and fill the sell
 4. User receives L3_WUSDC back
 
 The sell modal needs to show L3 share balance (not BridgedITP balance) and submit through Index.submitOrder.
@@ -135,8 +135,8 @@ The sell modal needs to show L3 share balance (not BridgedITP balance) and submi
 **Test 02 (Buy)**:
 1. Remove `mintBridgedItp` workaround (line 64)
 2. Modal will show L3_WUSDC balance and use `parseUnits(amount, 18)`
-3. Wait for `orderSubmittedBanner` ("Buy More") — should appear when issuers fill the order
-4. Increase timeout to 180s (issuer consensus takes ~30-90s)
+3. Wait for `orderSubmittedBanner` ("Buy More") — should appear when oracles fill the order
+4. Increase timeout to 180s (oracle consensus takes ~30-90s)
 5. Verify L3 shares increased after fill
 
 **Test 03 (Lending)**:
@@ -152,7 +152,7 @@ The sell modal needs to show L3 share balance (not BridgedITP balance) and submi
 
 **Test 05 (Create)**:
 1. Remove the try/catch around L3 ITP creation verification
-2. Create flow goes through BridgeProxy → issuers → Index.createITP on L3
+2. Create flow goes through BridgeProxy → oracles → Index.createITP on L3
 3. Wait for ITP count to increase with proper timeout (90s)
 
 ### Step 6: Add INDEX_ABI submitOrder to frontend ABI
@@ -185,16 +185,16 @@ The SSE hooks track orders by `order_id`. For direct L3 orders, the `order_id` c
 
 If data-node is not running (common in E2E), the fallback is direct L3 RPC polling of `Index.getOrder(orderId)` — this already exists in `backend-api.ts`.
 
-### Step 8: Issuer verification
+### Step 8: Oracle verification
 
-**No code changes needed** — issuers already monitor L3 Index contract state:
+**No code changes needed** — oracles already monitor L3 Index contract state:
 - They read `_orders` from L3 Index in every cycle
 - They batch and fill orders on L3
 - The direct L3 path means orders appear in L3 Index immediately (no Arb → L3 relay needed)
 
-Verify by checking issuer logs after a buy:
+Verify by checking oracle logs after a buy:
 ```bash
-grep -i "order\|batch\|fill" logs/issuer-1.log | tail -20
+grep -i "order\|batch\|fill" logs/oracle-1.log | tail -20
 ```
 
 ---
@@ -218,7 +218,7 @@ grep -i "order\|batch\|fill" logs/issuer-1.log | tail -20
 ## Verification
 
 1. Run `./stop.sh && ./start.sh --vision` to start fresh
-2. Wait for issuers to be healthy (check `logs/issuer-1.log` for "cycle" entries)
+2. Wait for oracles to be healthy (check `logs/oracle-1.log` for "cycle" entries)
 3. Run full E2E suite:
    ```bash
    cd frontend && npx playwright test --config=e2e/playwright.config.ts --reporter=list
@@ -237,4 +237,4 @@ grep -i "order\|batch\|fill" logs/issuer-1.log | tail -20
 - **L3_WUSDC is 18 decimals vs ARB_USDC 6 decimals** — Must change all amount parsing in buy modal. Off-by-12-decimals would be catastrophic. Test with small amounts first.
 - **Index.submitOrder needs USDC on L3** — start.sh already mints 50k L3_WUSDC for test user (line 344). Production users would need L3 USDC too.
 - **Sell path needs L3 shares** — `_userShares` storage is set by Index contract when fills happen. For tests, `mintL3Shares` helper already handles this.
-- **Issuer cycle timing** — Issuers run 200ms cycles. Order should be batched within 1-5s, filled within 5-30s. 180s timeout is generous.
+- **Oracle cycle timing** — Oracles run 200ms cycles. Order should be batched within 1-5s, filled within 5-30s. 180s timeout is generous.

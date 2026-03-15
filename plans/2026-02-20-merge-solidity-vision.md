@@ -66,10 +66,10 @@ contracts/src/vision/
        // Uses _verifyBLS() from mixin
    ```
 
-2. **IssuerRegistry integration**: Instead of standalone keeper BLS verification, use the shared `IssuerRegistry` for aggregated pubkey reads
+2. **OracleRegistry integration**: Instead of standalone keeper BLS verification, use the shared `OracleRegistry` for aggregated pubkey reads
    ```solidity
    // Add constructor param:
-   IIssuerRegistry public immutable issuerRegistry;
+   IOracleRegistry public immutable oracleRegistry;
    ```
 
 3. **Error codes**: Replace inline revert strings with `ErrorsLib` codes (E100+ range)
@@ -100,12 +100,12 @@ contracts/src/vision/
 
 1. **BLS pubkey format**: AA uses 128-byte G2 pubkeys. Index's `BLSVerifier` also uses G2. Verify compatibility.
    - AA: `bytes blsPubkey` (128 bytes, validated in contract)
-   - Index: `bytes` (128 bytes for G2 in `IssuerRegistry`)
+   - Index: `bytes` (128 bytes for G2 in `OracleRegistry`)
    - **Compatible** - same BN254 curve, same encoding
 
-2. **Key rotation**: AA has its own rotation (2-of-3 threshold). Index has `IssuerRegistry` with more sophisticated rotation (timelock + approval).
-   - **Decision needed**: Keep KeeperRegistry's own rotation for Vision keepers (separate set from Investment issuers) OR unify into IssuerRegistry.
-   - **Recommendation**: Keep separate. Keepers (2-of-3, lightweight) serve a different role than Issuers (11/20, heavy consensus). KeeperRegistry manages Vision-specific keeper set.
+2. **Key rotation**: AA has its own rotation (2-of-3 threshold). Index has `OracleRegistry` with more sophisticated rotation (timelock + approval).
+   - **Decision needed**: Keep KeeperRegistry's own rotation for Vision keepers (separate set from Investment oracles) OR unify into OracleRegistry.
+   - **Recommendation**: Keep separate. Keepers (2-of-3, lightweight) serve a different role than Oracles (11/20, heavy consensus). KeeperRegistry manages Vision-specific keeper set.
 
 3. **InvalidPubkey test failures**: Contract likely changed pubkey validation (now requires 128 bytes). Tests still send 64-byte dummy keys. Fix test fixtures.
 
@@ -137,17 +137,17 @@ The two stacks have different BLS models:
 
 | Aspect | Investment (Index) | Vision (AA) |
 |---|---|---|
-| **Signer set** | 20 Issuers | 3 Keepers |
+| **Signer set** | 20 Oracles | 3 Keepers |
 | **Threshold** | 11/20 (standard), 15/20 (emergency) | 2/3 (majority) |
-| **Key storage** | IssuerRegistry (aggregated G2) | KeeperRegistry (individual G2) |
+| **Key storage** | OracleRegistry (aggregated G2) | KeeperRegistry (individual G2) |
 | **Verification** | BLSVerifier mixin | Inline BLSLib calls |
 | **Curve** | BN254 (alt_bn128) | BN254 (alt_bn128) - **SAME** |
 
 **Unification plan:**
 1. **Share `BLSLib.sol`** - Same curve, same precompiles, one implementation
 2. **Share `BLSVerifier.sol` mixin** - Vision contracts inherit it
-3. **Keep registries separate** - `IssuerRegistry` for Investment, `KeeperRegistry` for Vision
-4. CollateralVault reads keeper pubkeys from `KeeperRegistry` (not IssuerRegistry)
+3. **Keep registries separate** - `OracleRegistry` for Investment, `KeeperRegistry` for Vision
+4. CollateralVault reads keeper pubkeys from `KeeperRegistry` (not OracleRegistry)
 5. Both registries live on L3, both use the same BLS library
 
 ---
@@ -251,4 +251,4 @@ These AA contracts are already deployed on L3. The merge creates new consolidate
 - **Tests migrated:** 6 test files
 - **Deploy scripts:** 2 new
 - **Shared infra changes:** TypesLib, ErrorsLib, EventsLib extensions (done in Investment plan)
-- **Key decision:** Keep KeeperRegistry separate from IssuerRegistry (recommended)
+- **Key decision:** Keep KeeperRegistry separate from OracleRegistry (recommended)

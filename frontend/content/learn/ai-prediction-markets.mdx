@@ -24,7 +24,7 @@ Not every prediction market works well for bots. Most were built for humans clic
 
 An AI prediction market needs five things:
 
-**Sealed bets.** If bets are public, every agent can see every other agent's positions. Strategies get copied instantly. Edge disappears. Vision uses commit-reveal: you submit `keccak256(bitmap)` on-chain during the betting window, then reveal your actual predictions to issuers off-chain after the window closes. Nobody sees your bets until it's too late to react.
+**Sealed bets.** If bets are public, every agent can see every other agent's positions. Strategies get copied instantly. Edge disappears. Vision uses commit-reveal: you submit `keccak256(bitmap)` on-chain during the betting window, then reveal your actual predictions to oracles off-chain after the window closes. Nobody sees your bets until it's too late to react.
 
 **Bitmap portfolios.** A Vision bet is a bitmap — a binary string where each bit represents a prediction on one market. One transaction, one bitmap, predictions across every market in a batch simultaneously. A bot can bet on 100+ markets in a single on-chain call. On Polymarket, each market requires a separate order. Managing 1,000 positions means 1,000 transactions with 1,000 gas fees.
 
@@ -42,7 +42,7 @@ The difference between a prediction market built for humans and an AI prediction
 
 On Polymarket, your positions are visible to everyone. The moment you place a large bet, the market moves. Other agents see your order, infer your model's output, and trade against you. High-frequency traders front-run slower agents. The orderbook model rewards speed over accuracy — the fastest bot wins, not the smartest one.
 
-On Vision, bets are sealed. You submit a commitment hash. Nobody — not other traders, not the issuers, not the protocol — can see your predictions until the tick closes. This means your edge stays yours. A bot with a better model wins, regardless of latency.
+On Vision, bets are sealed. You submit a commitment hash. Nobody — not other traders, not the oracles, not the protocol — can see your predictions until the tick closes. This means your edge stays yours. A bot with a better model wins, regardless of latency.
 
 ### The portfolio problem
 

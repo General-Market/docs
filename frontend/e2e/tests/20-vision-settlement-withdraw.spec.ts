@@ -85,7 +85,7 @@ test.describe('Vision Withdraw to Settlement', () => {
       await depositToVisionViaSettlement(PLAYER1, settlementAmount)
       await mineSettlementBlocks(5)
 
-      // Wait for issuers to credit virtual balance
+      // Wait for oracles to credit virtual balance
       const deadline = Date.now() + 120_000
       let virtualNow = virtualBalance
       while (Date.now() < deadline) {

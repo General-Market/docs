@@ -40,7 +40,7 @@ After deploying on testnet, `testnet.sh` syncs back to `envs/testnet/`.
 | **L3 (Orbit)** | **18** | Vision balances, TVL, PnL, leaderboard, batch pools, VisionReserve |
 | **Settlement** | **6** | Settlement USDC deposits, AP keeper balances, bridge custody |
 
-When formatting amounts: check which chain the value comes from. Issuer APIs return L3 values (18 dec). Settlement wallet reads return 6 dec.
+When formatting amounts: check which chain the value comes from. Oracle APIs return L3 values (18 dec). Settlement wallet reads return 6 dec.
 
 ## ITP Pricing Model (ETF)
 
@@ -67,7 +67,7 @@ NAV = sum(qty[i] * price[i]) / 1e18
 **Implementation locations:**
 - Contract: `Index.sol` — `createITP` (qty computation), `_getCurrentPrice` (NAV), `updateWeights` (rebalance)
 - Storage: `IndexStorage.sol` — `_itpInventory[itpId]`
-- Issuer: `nav.rs` — `calculate_nav()`, reads inventory via `getITPState`
+- Oracle: `nav.rs` — `calculate_nav()`, reads inventory via `getITPState`
 - Frontend: `useItpNav.ts` — inventory-first, weight fallback for legacy ITPs
 
 ## ITP Backing Invariant
@@ -86,11 +86,11 @@ NAV = sum(qty[i] * price[i]) / 1e18
 
 - No `aggregatedPubkey.length == 0` bypass paths
 - No `testMode` flags that bypass BLS
-- No `address(issuerRegistry) == address(0)` skip paths
+- No `address(oracleRegistry) == address(0)` skip paths
 - No `onlyOwner` admin functions that bypass BLS consensus
-- Local dev MUST use real BLS signing with test keys registered in IssuerRegistry
+- Local dev MUST use real BLS signing with test keys registered in OracleRegistry
 - Tests MUST use proper BLS test fixtures (precomputed signatures)
-- Deploy scripts MUST register issuer BLS keys and set aggregated pubkey
+- Deploy scripts MUST register oracle BLS keys and set aggregated pubkey
 
 If BLS verification is in the way, fix the BLS pipeline — don't bypass the check.
 
@@ -99,13 +99,13 @@ If BLS verification is in the way, fix the BLS pipeline — don't bypass the che
 Not a concern. Break interfaces, change function signatures, remove deprecated storage freely.
 
 
-## Issuers
+## Oracles
 
-Issuers **only run on VPS** — never locally. Don't create local issuer startup scripts, don't test issuers on localhost. All issuer infrastructure lives in `docker/testnet/issuer/` and runs via Docker Compose on the VPS.
+Oracles **only run on VPS** — never locally. Don't create local oracle startup scripts, don't test oracles on localhost. All oracle infrastructure lives in `docker/testnet/oracle/` and runs via Docker Compose on the VPS.
 
 - SSH to VPS: `ssh index-maker/prod/be`
-- Issuer logs: `docker logs issuer-1 --tail 100` (issuer-1, issuer-2, issuer-3)
-- Restart: `cd /home/max/index && docker compose -f docker/testnet/issuer/docker-compose.yml restart`
+- Oracle logs: `docker logs oracle-1 --tail 100` (oracle-1, oracle-2, oracle-3)
+- Restart: `cd /home/max/index && docker compose -f docker/testnet/oracle/docker-compose.yml restart`
 
 ## Contracts
 

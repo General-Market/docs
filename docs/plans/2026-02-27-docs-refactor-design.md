@@ -23,9 +23,9 @@ Create two files:
 | Page | Diagram Type | What It Shows |
 |------|-------------|---------------|
 | `vision/concepts/batches.mdx` | flowchart | Batch lifecycle: create → join → tick → resolve → claim |
-| `vision/concepts/bitmaps.mdx` | flowchart | Bitmap flow: predict → encode → hash → commit on-chain → reveal to issuers |
+| `vision/concepts/bitmaps.mdx` | flowchart | Bitmap flow: predict → encode → hash → commit on-chain → reveal to oracles |
 | `vision/concepts/ticks.mdx` | flowchart | Resolution cycle (replace ASCII): check due → filter players → fetch prices → match → BLS sign → submit |
-| `vision/concepts/balance-proofs.mdx` | sequence | BLS verification: issuer compute → sign → aggregate → on-chain verify → claim |
+| `vision/concepts/balance-proofs.mdx` | sequence | BLS verification: oracle compute → sign → aggregate → on-chain verify → claim |
 | `vision/concepts/fees.mdx` | flowchart | Fee flow: gross profit → 0.3% fee → net payout |
 | `vision/bots/overview.mdx` | flowchart | Bot architecture (replace ASCII): on-chain vs off-chain separation |
 
@@ -36,7 +36,7 @@ Create two files:
 | `index/concepts/itps.mdx` | flowchart | ITP lifecycle: create (weights→qty) → price (NAV) → buy/sell (mint/burn) → rebalance (new qty) |
 | `index/concepts/order-lifecycle.mdx` | stateDiagram | Order state machine (replace ASCII): pending → matched → confirmed → filled/cancelled |
 | `index/concepts/lending.mdx` | flowchart | Morpho flow: deposit ITP → vault → earn yield → withdraw |
-| `index/architecture/issuer-nodes.mdx` | flowchart | Consensus flow (replace ASCII): leader proposes → peers verify → BLS aggregate → on-chain |
+| `index/architecture/oracle-nodes.mdx` | flowchart | Consensus flow (replace ASCII): leader proposes → peers verify → BLS aggregate → on-chain |
 | `index/architecture/data-node.mdx` | flowchart | Data pipeline (replace ASCII): sources → collectors → aggregator → API |
 
 Format: Mermaid code blocks (```mermaid). Keep existing ASCII for simple inline examples (bitmap byte packing).
@@ -96,7 +96,7 @@ Format: Mermaid code blocks (```mermaid). Keep existing ASCII for simple inline 
 | T3 | Vision concepts (balance-proofs, fees, resolution-types) | 2 Mermaid diagrams + restructure |
 | T4 | Vision bots/overview | 1 Mermaid diagram (replace ASCII) |
 | T5 | Index concepts (itps, order-lifecycle, lending) | 3 Mermaid diagrams + restructure |
-| T6 | Index architecture (issuer-nodes, data-node) | 2 Mermaid diagrams (replace ASCII) |
+| T6 | Index architecture (oracle-nodes, data-node) | 2 Mermaid diagrams (replace ASCII) |
 
 ## Not In Scope
 - API reference pages (already practical-first with code examples)

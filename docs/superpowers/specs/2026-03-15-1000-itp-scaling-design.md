@@ -495,7 +495,7 @@ Steps 2 and 3 can deploy independently. Step 1 must precede step 2.
 | Vision WS broadcast overflow | vision_ws.rs:53 | `broadcast::channel(16)` drops silently when lagged | Increase capacity to 256, add resync mechanism |
 | Full `itp-nav` payload | api.rs:6209 | 1000 ITPs × 300B = 300KB per event × 4/sec = 1.2MB/s/client | Delta updates (covered) |
 
-### Issuer — Consensus & Recovery
+### Oracle — Consensus & Recovery
 
 | Issue | File:Line | Impact at 1000 ITPs | Fix |
 |-------|-----------|---------------------|-----|
@@ -561,10 +561,10 @@ Steps 2 and 3 can deploy independently. Step 1 must precede step 2.
 | 11 | `frontend/app/[locale]/index/page.tsx` | Limit SEO section to top 50 ITPs | P2 |
 | 12 | `data-node/src/vision_batch_cache.rs` | Parallel config fetches | P2 |
 | 13 | `data-node/src/vision_ws.rs` | Increase broadcast capacity, index subscriptions | P2 |
-| 14 | `issuer/src/consensus/protocol.rs` | Batch `setItpNav` consensus | P2 |
-| 15 | `issuer/src/state/reconstruction.rs` | Parallel startup hydration | P2 |
-| 16 | `issuer/src/delisting_watchdog.rs` | Read from data-node cache | P3 |
-| 17 | `issuer/src/vision/api.rs` | Precompute leaderboard, paginate batch state | P3 |
+| 14 | `oracle/src/consensus/protocol.rs` | Batch `setItpNav` consensus | P2 |
+| 15 | `oracle/src/state/reconstruction.rs` | Parallel startup hydration | P2 |
+| 16 | `oracle/src/delisting_watchdog.rs` | Read from data-node cache | P3 |
+| 17 | `oracle/src/vision/api.rs` | Precompute leaderboard, paginate batch state | P3 |
 | 18 | `data-node/src/batch_engine.rs` | Temporal pruning of batch_settlements | P3 |
 
 ---
@@ -575,6 +575,6 @@ Steps 2 and 3 can deploy independently. Step 1 must precede step 2.
 2. **Database** — add missing indexes (zero downtime, can run during deploy)
 3. **Data-node** — deploy event-driven cache + rewritten pollers + SSE deltas
 4. **Frontend** — deploy delta SSE handler + UI pagination
-5. **Issuer** — deploy parallel startup + batched consensus (can follow independently)
+5. **Oracle** — deploy parallel startup + batched consensus (can follow independently)
 
 Steps 2-4 can deploy in parallel. Step 1 must precede step 3.

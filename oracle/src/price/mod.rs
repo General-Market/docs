@@ -1,4 +1,4 @@
-//! Price fetching and validation module for Index L3 Issuer
+//! Price fetching and validation module for Index L3 Oracle
 //!
 //! This module provides:
 //! - `PriceFetcher` trait for fetching asset prices from various sources

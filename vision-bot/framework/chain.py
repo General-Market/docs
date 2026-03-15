@@ -1,7 +1,7 @@
 """
 Chain interaction layer for Vision bots.
 
-All on-chain reads/writes, issuer discovery, bitmap submission,
+All on-chain reads/writes, oracle discovery, bitmap submission,
 and data-node fetching live here.
 """
 
@@ -199,9 +199,9 @@ VISION_ABI = [
     },
 ]
 
-ISSUER_REGISTRY_ABI = [
+ORACLE_REGISTRY_ABI = [
     {
-        "name": "getActiveIssuerEndpoints",
+        "name": "getActiveOracleEndpoints",
         "type": "function",
         "stateMutability": "view",
         "inputs": [],
@@ -405,10 +405,10 @@ class Executor:
         return self.vision.functions.balanceOf(self.bot_addr).call()
 
 
-# ── Issuer discovery ───────────────────────────────────────────
+# ── Oracle discovery ───────────────────────────────────────────
 
 
-def discover_issuers(
+def discover_oracles(
     mode: str,
     static_urls: list[str],
     w3=None,
@@ -416,10 +416,10 @@ def discover_issuers(
     _cache: dict = {},
 ) -> list[str]:
     """
-    Return list of issuer endpoint URLs.
+    Return list of oracle endpoint URLs.
 
     mode="static": return static_urls directly.
-    mode="dynamic": call IssuerRegistry.getActiveIssuerEndpoints() on-chain,
+    mode="dynamic": call OracleRegistry.getActiveOracleEndpoints() on-chain,
                     cache for 5 min, fallback to static_urls on error.
     """
     if mode == "static":
@@ -435,9 +435,9 @@ def discover_issuers(
             raise RuntimeError("w3 not provided for dynamic discovery")
         registry = w3.eth.contract(
             address=Web3.to_checksum_address(registry_addr),
-            abi=ISSUER_REGISTRY_ABI,
+            abi=ORACLE_REGISTRY_ABI,
         )
-        raw_endpoints = registry.functions.getActiveIssuerEndpoints().call()
+        raw_endpoints = registry.functions.getActiveOracleEndpoints().call()
         # bytes32 -> trimmed UTF-8 string
         urls = []
         for ep in raw_endpoints:
@@ -446,10 +446,10 @@ def discover_issuers(
                 urls.append(url)
         _cache["urls"] = urls
         _cache["ts"] = now
-        logger.info("Discovered %d issuers from registry", len(urls))
+        logger.info("Discovered %d oracles from registry", len(urls))
         return urls
     except Exception as e:
-        logger.warning("Dynamic issuer discovery failed: %s — falling back to static", e)
+        logger.warning("Dynamic oracle discovery failed: %s — falling back to static", e)
         return static_urls
 
 
@@ -457,16 +457,16 @@ def discover_issuers(
 
 
 def submit_bitmap(
-    issuer_urls: list[str],
+    oracle_urls: list[str],
     player: str,
     batch_id: int,
     bitmap: bytes,
     bitmap_hash: bytes,
     retries: int = 3,
 ) -> int:
-    """POST /vision/bitmap to each issuer. Returns acceptance count."""
+    """POST /vision/bitmap to each oracle. Returns acceptance count."""
     accepted = 0
-    for url in issuer_urls:
+    for url in oracle_urls:
         for attempt in range(retries):
             try:
                 resp = requests.post(
@@ -496,7 +496,7 @@ def submit_bitmap(
                 if attempt < retries - 1:
                     time.sleep(1)
     logger.info(
-        "Bitmap submitted to %d/%d issuers", accepted, len(issuer_urls)
+        "Bitmap submitted to %d/%d oracles", accepted, len(oracle_urls)
     )
     return accepted
 
@@ -520,10 +520,10 @@ def load_batch_mapping() -> dict:
 
 def fetch_batches(api_url: str, executor=None) -> list[dict]:
     """
-    Get available batches. Tries issuer API first, then falls back to
+    Get available batches. Tries oracle API first, then falls back to
     vision-batches.json + on-chain reads.
     """
-    # Try issuer API
+    # Try oracle API
     try:
         resp = requests.get(f"{api_url}/vision/batches", timeout=10)
         if resp.ok:

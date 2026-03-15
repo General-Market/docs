@@ -5,13 +5,13 @@ import "../interfaces/IFeeRegistry.sol";
 import "../libraries/TypesLib.sol";
 import "../libraries/BLSLib.sol";
 import "../libraries/BLSVerifier.sol";
-import "../interfaces/IIssuerRegistry.sol";
+import "../interfaces/IOracleRegistry.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title FeeRegistry - Fee calculation and distribution for Index L3
 /// @notice Tracks trading fees, management fees, bridge costs, and gas costs per ITP
-/// @dev UUPS upgradeable. All fee movements require BLS signature from 11/20 issuers.
+/// @dev UUPS upgradeable. All fee movements require BLS signature from 11/20 oracles.
 /// @custom:security-contact security@indexprotocol.com
 contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifier {
     // ============ ERRORS ============
@@ -137,7 +137,7 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
     ///        _protocolClaimedFromTotal(3), deployerShareBps(4), _deprecated_aggregatedPubkey(5),
     ///        _deprecated_blsLibrary(6), _nonce(7), admin(8), authorizedCallers(9),
     ///        _itpDeployers(10) = 11 slots used
-    ///      BLSVerifier adds 1 slot (_blsIssuerRegistry) = 12 slots used
+    ///      BLSVerifier adds 1 slot (_blsOracleRegistry) = 12 slots used
     ///      Target: 50 total slots for upgradeability buffer
     ///      Gap: 50 - 12 = 38 slots
     uint256[38] private __gap;
@@ -175,10 +175,10 @@ contract FeeRegistry is IFeeRegistry, Initializable, UUPSUpgradeable, BLSVerifie
         emit AuthorizedCallerUpdated(_admin, true);
     }
 
-    /// @notice Set the IssuerRegistry for BLS verification (admin only, one-time setup)
-    /// @param issuerRegistry_ Address of the IssuerRegistry contract
-    function setIssuerRegistry(address issuerRegistry_) external onlyAdmin {
-        __BLSVerifier_init(issuerRegistry_);
+    /// @notice Set the OracleRegistry for BLS verification (admin only, one-time setup)
+    /// @param oracleRegistry_ Address of the OracleRegistry contract
+    function setOracleRegistry(address oracleRegistry_) external onlyAdmin {
+        __BLSVerifier_init(oracleRegistry_);
     }
 
     // ============ FEE RATE MANAGEMENT ============

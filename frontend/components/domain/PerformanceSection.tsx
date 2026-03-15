@@ -46,7 +46,7 @@ export function PerformanceSection({ expanded, onToggle }: PerformanceSectionPro
               <p className="text-xs text-text-muted mt-1">{t('performance.bls_required')}</p>
             </div>
             <div className="bg-card rounded-xl shadow-card border border-border-light p-6 text-center">
-              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">{t('performance.active_issuers')}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-2">{t('performance.active_oracles')}</p>
               <p className="text-3xl font-bold text-text-primary font-mono tabular-nums">3</p>
               <p className="text-xs text-text-muted mt-1">{t('performance.processing_orders')}</p>
             </div>

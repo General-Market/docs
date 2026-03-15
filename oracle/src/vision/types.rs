@@ -197,7 +197,7 @@ impl std::fmt::Display for DepositStatus {
     }
 }
 
-/// A pending cross-chain deposit order tracked by the issuer.
+/// A pending cross-chain deposit order tracked by the oracle.
 ///
 /// Persisted to `vision_deposit_orders` table for crash recovery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -246,7 +246,7 @@ impl std::fmt::Display for WithdrawStatus {
     }
 }
 
-/// A pending cross-chain withdraw order tracked by the issuer.
+/// A pending cross-chain withdraw order tracked by the oracle.
 ///
 /// Persisted to `vision_withdraw_orders` table for crash recovery.
 #[derive(Debug, Clone, Serialize, Deserialize)]

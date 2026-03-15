@@ -1,7 +1,7 @@
 //! Integration tests for the Health Monitor
 //!
 //! These tests verify the health monitor against a local anvil deployment
-//! with Morpho, MetaMorpho vault, ITPNAVOracle, and MirrorIssuerRegistry contracts.
+//! with Morpho, MetaMorpho vault, ITPNAVOracle, and MirrorOracleRegistry contracts.
 //!
 //! Prerequisites:
 //! - Anvil running with deployed contracts

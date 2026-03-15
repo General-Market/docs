@@ -1,15 +1,15 @@
 //! Integration tests for NAV signing endpoint (Story 8.3)
 //!
 //! Tests the full NAV signing flow including:
-//! - Single issuer response validation
-//! - 3-issuer consistency (same price/cycleNumber)
+//! - Single oracle response validation
+//! - 3-oracle consistency (same price/cycleNumber)
 //! - BLS signature aggregation
 //! - Aggregate signature verification
 
 use common::bls::{aggregate_pubkeys, BLSKeyPair, Bn254BLSSigner};
 use common::traits::BLSSigner;
 use ethers::types::{Address, U256};
-use issuer::api::{
+use oracle::api::{
     build_nav_message_hash, ItpInfo, ItpRegistryReader, MockNavCalculator, NavSignHandler,
 };
 use std::collections::HashMap;
@@ -63,7 +63,7 @@ fn test_itp_info() -> ItpInfo {
 }
 
 #[tokio::test]
-async fn test_single_issuer_returns_valid_signed_response() {
+async fn test_single_oracle_returns_valid_signed_response() {
     // Setup: ITP registry with one ITP
     let itp_address: Address = "0xaaaa111111111111111111111111111111111111"
         .parse()
@@ -82,19 +82,19 @@ async fn test_single_issuer_returns_valid_signed_response() {
         nav_calculator,
         registry,
         Some(keypair.clone()),
-        1, // issuer_id
+        1, // oracle_id
         42, // initial cycle
     );
 
     // Make request
-    let request = issuer::api::NavSignRequest { itp: itp_address };
+    let request = oracle::api::NavSignRequest { itp: itp_address };
     let response = handler.handle(&request).await.unwrap();
 
     // Verify response fields
     assert!(response.itp_address.contains("0xaaaa1111"));
     assert!(!response.price.is_empty());
     assert_eq!(response.cycle_number, 42);
-    assert_eq!(response.issuer_id, 1);
+    assert_eq!(response.oracle_id, 1);
     assert!(response.bls_signature.starts_with("0x"));
     assert!(response.pubkey.starts_with("0x"));
 
@@ -123,13 +123,13 @@ async fn test_single_issuer_returns_valid_signed_response() {
 }
 
 #[tokio::test]
-async fn test_three_issuers_return_matching_data() {
+async fn test_three_oracles_return_matching_data() {
     // Setup: ITP address for all handlers
     let itp_address: Address = "0xaaaa111111111111111111111111111111111111"
         .parse()
         .unwrap();
 
-    // Create 3 issuers with different keypairs
+    // Create 3 oracles with different keypairs
     let kp1 = BLSKeyPair::from_seed(&[1u8; 32]).unwrap();
     let kp2 = BLSKeyPair::from_seed(&[2u8; 32]).unwrap();
     let kp3 = BLSKeyPair::from_seed(&[3u8; 32]).unwrap();
@@ -159,9 +159,9 @@ async fn test_three_issuers_return_matching_data() {
         cycle_number,
     );
 
-    let request = issuer::api::NavSignRequest { itp: itp_address };
+    let request = oracle::api::NavSignRequest { itp: itp_address };
 
-    // Get responses from all 3 issuers
+    // Get responses from all 3 oracles
     let r1 = handler1.handle(&request).await.unwrap();
     let r2 = handler2.handle(&request).await.unwrap();
     let r3 = handler3.handle(&request).await.unwrap();
@@ -172,9 +172,9 @@ async fn test_three_issuers_return_matching_data() {
     assert_eq!(r1.cycle_number, r2.cycle_number);
     assert_eq!(r2.cycle_number, r3.cycle_number);
 
-    // Different issuer IDs
-    assert_ne!(r1.issuer_id, r2.issuer_id);
-    assert_ne!(r2.issuer_id, r3.issuer_id);
+    // Different oracle IDs
+    assert_ne!(r1.oracle_id, r2.oracle_id);
+    assert_ne!(r2.oracle_id, r3.oracle_id);
 
     // Different signatures (same message, different keys)
     assert_ne!(r1.bls_signature, r2.bls_signature);
@@ -217,7 +217,7 @@ async fn test_aggregate_signatures_verify_against_aggregated_pubkey() {
         cycle_number,
     );
 
-    let request = issuer::api::NavSignRequest { itp: itp_address };
+    let request = oracle::api::NavSignRequest { itp: itp_address };
 
     let r1 = handler1.handle(&request).await.unwrap();
     let r2 = handler2.handle(&request).await.unwrap();
@@ -264,7 +264,7 @@ async fn test_unknown_itp_returns_404() {
     let unknown_itp: Address = "0xdead000000000000000000000000000000000000"
         .parse()
         .unwrap();
-    let request = issuer::api::NavSignRequest { itp: unknown_itp };
+    let request = oracle::api::NavSignRequest { itp: unknown_itp };
 
     let result = handler.handle(&request).await;
     assert!(result.is_err());
@@ -287,7 +287,7 @@ async fn test_no_bls_keypair_returns_503() {
     // No BLS keypair
     let handler = NavSignHandler::new(nav_calculator, registry, None, 1, 42);
 
-    let request = issuer::api::NavSignRequest { itp: itp_address };
+    let request = oracle::api::NavSignRequest { itp: itp_address };
     let result = handler.handle(&request).await;
 
     assert!(result.is_err());
@@ -311,7 +311,7 @@ async fn test_concurrent_requests_return_identical_data() {
         42,
     ));
 
-    let request = issuer::api::NavSignRequest { itp: itp_address };
+    let request = oracle::api::NavSignRequest { itp: itp_address };
 
     // Spawn 10 concurrent requests
     let mut handles = vec![];
@@ -344,7 +344,7 @@ async fn test_concurrent_requests_return_identical_data() {
 /// AC2: Malformed ITP address returns HTTP 400 Bad Request
 #[tokio::test]
 async fn test_malformed_address_returns_400() {
-    use issuer::api::handle_nav_sign_request;
+    use oracle::api::handle_nav_sign_request;
 
     let itp_address: Address = "0xaaaa111111111111111111111111111111111111"
         .parse()

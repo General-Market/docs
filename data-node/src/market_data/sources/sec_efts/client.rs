@@ -31,7 +31,7 @@ const TRACKED_FORMS: &[(&str, &str, &str)] = &[
     ("10-K", "form10k", "Annual Report"),
     ("NPORT-P", "formnportp", "Fund Monthly Holdings"),
     ("3", "form3", "Initial Insider Ownership"),
-    ("6-K", "form6k", "Foreign Issuer Report"),
+    ("6-K", "form6k", "Foreign Oracle Report"),
     ("FWP", "formfwp", "Free Writing Prospectus"),
     ("13F-HR", "form13fhr", "Institutional Holdings"),
     ("ABS-EE", "formabsee", "Asset-Backed Securities"),

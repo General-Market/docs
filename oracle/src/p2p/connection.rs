@@ -490,7 +490,7 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // Single-phase rebalance consensus
         P2PMessage::RebalanceProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::RebalanceSign { signer_id, .. } => Some(*signer_id),
-        // Issuer-driven per-asset settlement
+        // Oracle-driven per-asset settlement
         P2PMessage::AssetTradesProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::AssetTradesSign { signer_id, .. } => Some(*signer_id),
         // Cross-chain sell flow
@@ -521,7 +521,7 @@ fn get_sender_id(message: &P2PMessage) -> Option<PeerId> {
         // NAV oracle (ITPNAVOracle on Settlement)
         P2PMessage::NavOracleProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::NavOracleSign { signer_id, .. } => Some(*signer_id),
-        // MirrorIssuerRegistry sync (Step 12)
+        // MirrorOracleRegistry sync (Step 12)
         P2PMessage::MirrorSyncProposal { leader_id, .. } => Some(*leader_id),
         P2PMessage::MirrorSyncSign { signer_id, .. } => Some(*signer_id),
         // Batch config orchestrator (independent from settlement cycle)

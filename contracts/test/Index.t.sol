@@ -9,7 +9,7 @@ import {Governance} from "../src/Governance.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title Index.t.sol - Tests for Index.sol ITP creation functionality
@@ -53,11 +53,11 @@ contract IndexTest is TestHelper {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
         index = Investment(address(proxy));
 
-        // Setup IssuerRegistry with real BLS keys for verification
-        IssuerRegistry issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, admin);
+        // Setup OracleRegistry with real BLS keys for verification
+        OracleRegistry oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, admin);
         vm.prank(admin);
-        index.setIssuerRegistry(address(issuerRegistry));
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Setup test environment
         vm.label(admin, "Admin");
@@ -825,7 +825,7 @@ contract IndexTest is TestHelper {
 
         // Update balance above threshold (no PoolRebalanceNeeded event)
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
-        bytes memory sig = signWithTestIssuers(msgHash);
+        bytes memory sig = signWithTestOracles(msgHash);
         index.updateVenueBalance(1, 500e18, sig, 3, 7);
 
         (,uint256 current,,uint256 lastRebalance) = index.venuePools(1);
@@ -842,7 +842,7 @@ contract IndexTest is TestHelper {
         emit EventsLib.PoolRebalanceNeeded(1, 950e18); // 1000 - 50
 
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(50e18)));
-        bytes memory sig = signWithTestIssuers(msgHash);
+        bytes memory sig = signWithTestOracles(msgHash);
         index.updateVenueBalance(1, 50e18, sig, 3, 7);
     }
 
@@ -854,7 +854,7 @@ contract IndexTest is TestHelper {
         emit EventsLib.PoolRebalanceNeeded(1, 1000e18);
 
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(0)));
-        bytes memory sig = signWithTestIssuers(msgHash);
+        bytes memory sig = signWithTestOracles(msgHash);
         index.updateVenueBalance(1, 0, sig, 3, 7);
 
         (,uint256 current,,) = index.venuePools(1);
@@ -867,7 +867,7 @@ contract IndexTest is TestHelper {
 
         // Set some balance
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "UPDATE_VENUE", uint256(1), uint256(500e18)));
-        bytes memory sig = signWithTestIssuers(msgHash);
+        bytes memory sig = signWithTestOracles(msgHash);
         index.updateVenueBalance(1, 500e18, sig, 3, 7);
 
         // Reconfigure pool - balance should be preserved

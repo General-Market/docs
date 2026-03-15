@@ -1,0 +1,366 @@
+[
+  [
+    "AERO",
+    "Mock AERO"
+  ],
+  [
+    "ARIAIP",
+    "Mock ARIAIP"
+  ],
+  [
+    "ASTER",
+    "Mock ASTER"
+  ],
+  [
+    "AVNT",
+    "Mock AVNT"
+  ],
+  [
+    "BB",
+    "Mock BB"
+  ],
+  [
+    "BICO",
+    "Mock BICO"
+  ],
+  [
+    "BIGTIME",
+    "Mock BIGTIME"
+  ],
+  [
+    "BLUE",
+    "Mock BLUE"
+  ],
+  [
+    "BTT",
+    "Mock BTT"
+  ],
+  [
+    "CELR",
+    "Mock CELR"
+  ],
+  [
+    "CREO",
+    "Mock CREO"
+  ],
+  [
+    "CRO",
+    "Mock CRO"
+  ],
+  [
+    "CVX",
+    "Mock CVX"
+  ],
+  [
+    "DBR",
+    "Mock DBR"
+  ],
+  [
+    "EIGEN",
+    "Mock EIGEN"
+  ],
+  [
+    "FF",
+    "Mock FF"
+  ],
+  [
+    "FRAX",
+    "Mock FRAX"
+  ],
+  [
+    "GHO",
+    "Mock GHO"
+  ],
+  [
+    "GNO",
+    "Mock GNO"
+  ],
+  [
+    "GNS",
+    "Mock GNS"
+  ],
+  [
+    "HTX",
+    "Mock HTX"
+  ],
+  [
+    "IP",
+    "Mock IP"
+  ],
+  [
+    "JST",
+    "Mock JST"
+  ],
+  [
+    "KAIA",
+    "Mock KAIA"
+  ],
+  [
+    "KAS",
+    "Mock KAS"
+  ],
+  [
+    "KITE",
+    "Mock KITE"
+  ],
+  [
+    "KUB",
+    "Mock KUB"
+  ],
+  [
+    "LDO",
+    "Mock LDO"
+  ],
+  [
+    "LIT",
+    "Mock LIT"
+  ],
+  [
+    "LRC",
+    "Mock LRC"
+  ],
+  [
+    "M",
+    "Mock M"
+  ],
+  [
+    "MANA",
+    "Mock MANA"
+  ],
+  [
+    "MASK",
+    "Mock MASK"
+  ],
+  [
+    "MBOX",
+    "Mock MBOX"
+  ],
+  [
+    "MYX",
+    "Mock MYX"
+  ],
+  [
+    "NEXO",
+    "Mock NEXO"
+  ],
+  [
+    "NFT",
+    "Mock NFT"
+  ],
+  [
+    "NMR",
+    "Mock NMR"
+  ],
+  [
+    "OSMO",
+    "Mock OSMO"
+  ],
+  [
+    "PAXG",
+    "Mock PAXG"
+  ],
+  [
+    "PENDLE",
+    "Mock PENDLE"
+  ],
+  [
+    "PENGU",
+    "Mock PENGU"
+  ],
+  [
+    "PI",
+    "Mock PI"
+  ],
+  [
+    "POL",
+    "Mock POL"
+  ],
+  [
+    "POWER",
+    "Mock POWER"
+  ],
+  [
+    "PRIME",
+    "Mock PRIME"
+  ],
+  [
+    "PROPS",
+    "Mock PROPS"
+  ],
+  [
+    "PUMP",
+    "Mock PUMP"
+  ],
+  [
+    "PUMPBTC",
+    "Mock PUMPBTC"
+  ],
+  [
+    "PYTH",
+    "Mock PYTH"
+  ],
+  [
+    "PYUSD",
+    "Mock PYUSD"
+  ],
+  [
+    "QNT",
+    "Mock QNT"
+  ],
+  [
+    "RLUSD",
+    "Mock RLUSD"
+  ],
+  [
+    "RPL",
+    "Mock RPL"
+  ],
+  [
+    "RSR",
+    "Mock RSR"
+  ],
+  [
+    "RUNE",
+    "Mock RUNE"
+  ],
+  [
+    "RWA",
+    "Mock RWA"
+  ],
+  [
+    "SAND",
+    "Mock SAND"
+  ],
+  [
+    "SD",
+    "Mock SD"
+  ],
+  [
+    "SDEX",
+    "Mock SDEX"
+  ],
+  [
+    "SKY",
+    "Mock SKY"
+  ],
+  [
+    "SOLO",
+    "Mock SOLO"
+  ],
+  [
+    "STABLE",
+    "Mock STABLE"
+  ],
+  [
+    "STETH",
+    "Mock STETH"
+  ],
+  [
+    "STRK",
+    "Mock STRK"
+  ],
+  [
+    "SUN",
+    "Mock SUN"
+  ],
+  [
+    "SUSHI",
+    "Mock SUSHI"
+  ],
+  [
+    "THE",
+    "Mock THE"
+  ],
+  [
+    "TIA",
+    "Mock TIA"
+  ],
+  [
+    "TLM",
+    "Mock TLM"
+  ],
+  [
+    "TRADOOR",
+    "Mock TRADOOR"
+  ],
+  [
+    "TUSD",
+    "Mock TUSD"
+  ],
+  [
+    "USD1",
+    "Mock USD1"
+  ],
+  [
+    "USDC",
+    "Mock USDC"
+  ],
+  [
+    "USDE",
+    "Mock USDE"
+  ],
+  [
+    "USDS",
+    "Mock USDS"
+  ],
+  [
+    "USUAL",
+    "Mock USUAL"
+  ],
+  [
+    "VELO",
+    "Mock VELO"
+  ],
+  [
+    "VET",
+    "Mock VET"
+  ],
+  [
+    "VIRTUAL",
+    "Mock VIRTUAL"
+  ],
+  [
+    "VOOI",
+    "Mock VOOI"
+  ],
+  [
+    "W",
+    "Mock W"
+  ],
+  [
+    "WBTC",
+    "Mock WBTC"
+  ],
+  [
+    "WEETH",
+    "Mock WEETH"
+  ],
+  [
+    "WLFI",
+    "Mock WLFI"
+  ],
+  [
+    "XAUT",
+    "Mock XAUT"
+  ],
+  [
+    "XDC",
+    "Mock XDC"
+  ],
+  [
+    "XTZ",
+    "Mock XTZ"
+  ],
+  [
+    "YGG",
+    "Mock YGG"
+  ],
+  [
+    "ZEC",
+    "Mock ZEC"
+  ],
+  [
+    "ZRO",
+    "Mock ZRO"
+  ]
+]

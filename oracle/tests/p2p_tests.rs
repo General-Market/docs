@@ -35,6 +35,6 @@
 #[test]
 fn p2p_module_exists() {
     // This test simply verifies that the test file exists
-    // Actual tests are in the issuer/src/p2p/*.rs modules
+    // Actual tests are in the oracle/src/p2p/*.rs modules
     assert!(true);
 }

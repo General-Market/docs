@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Fix all legitimate TODO items across frontend, data-node, and AP (issuer excluded per user request).
+**Goal:** Fix all legitimate TODO items across frontend, data-node, and AP (oracle excluded per user request).
 
 **Architecture:** Backend-first — add data-node endpoints/pollers, then wire frontend hooks to consume them. AP cleanup is independent.
 

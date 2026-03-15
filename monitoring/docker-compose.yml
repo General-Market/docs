@@ -1,7 +1,7 @@
 version: '3.8'
 
 # Index Protocol Monitoring Stack
-# Prometheus + Grafana + AlertManager + JSON Exporter for issuer health
+# Prometheus + Grafana + AlertManager + JSON Exporter for oracle health
 #
 # WARNING: This standalone compose exposes ports 9090, 9093, and 3000.
 # Do NOT run simultaneously with the root docker-compose.yml which also
@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
 
   # ============ JSON Exporter (multi-target) ============
-  # Single instance handles all issuer nodes via Prometheus relabel_configs
+  # Single instance handles all oracle nodes via Prometheus relabel_configs
   json-exporter:
     image: prometheuscommunity/json-exporter:v0.6.0
     container_name: index-json-exporter

@@ -10,7 +10,7 @@ import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 
 /// @title IndexProductionHardening.t.sol - Tests for Story 7.16
 /// @notice Tests BLS price updates, weighted NAV, minBuyAmount, queue depth monitoring
@@ -52,11 +52,11 @@ contract IndexProductionHardeningTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Setup IssuerRegistry with real BLS keys
-        IssuerRegistry registry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(registry, admin);
+        // Setup OracleRegistry with real BLS keys
+        OracleRegistry registry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(registry, admin);
         vm.prank(admin);
-        index.setIssuerRegistry(address(registry));
+        index.setOracleRegistry(address(registry));
 
         // Create single-asset ITP (100% BTC)
         {
@@ -96,22 +96,22 @@ contract IndexProductionHardeningTest is TestHelper {
 
     function _signSetItpNav(bytes32 itpId, uint256 nav) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "setItpNav", itpId, nav));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signRefund(uint256 orderId) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "refund", orderId));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // ============ NAV CALCULATION TESTS (AC #2) ============

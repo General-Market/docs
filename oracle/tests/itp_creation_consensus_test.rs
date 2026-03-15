@@ -1,7 +1,7 @@
 //! Integration tests for Story 6.24: Consensus-Integrated Bridge ITP Creation
 //!
 //! These tests verify that:
-//! - All issuers detect CreateItpRequested events via SettlementChainReader
+//! - All oracles detect CreateItpRequested events via SettlementChainReader
 //! - ITP creation goes through BLS consensus
 //! - Leader creates real L3 ITP via ChainWriter
 //! - Leader submits with aggregated BLS signature
@@ -10,9 +10,9 @@
 use common::bls::BLSKeyPair;
 use common::mocks::{MockChainBuilder, MockP2PNetworkBuilder};
 use ethers::types::{Address, H256, U256};
-use issuer::consensus::{ConsensusConfig, ConsensusProtocol, InMemoryKeyRegistry, ItpCreationConfig};
-use issuer::chain::events::ItpCreationRequest;
-use issuer::MockPriceFetcherBuilder;
+use oracle::consensus::{ConsensusConfig, ConsensusProtocol, InMemoryKeyRegistry, ItpCreationConfig};
+use oracle::chain::events::ItpCreationRequest;
+use oracle::MockPriceFetcherBuilder;
 use std::sync::Arc;
 
 fn test_peer_id(n: u8) -> [u8; 32] {
@@ -79,16 +79,16 @@ async fn test_real_l3_itp_creation() {
 /// Test that ITP creation proposals are properly signed by followers
 #[tokio::test]
 async fn test_consensus_itp_creation_signature() {
-    let num_issuers = 3u8;
+    let num_oracles = 3u8;
 
     // Create P2P network
     let (_network, nodes) = MockP2PNetworkBuilder::new()
-        .with_node_count(num_issuers as usize)
+        .with_node_count(num_oracles as usize)
         .build()
         .await;
 
     // Create key registry with test keys
-    let (key_registry, keypairs) = InMemoryKeyRegistry::generate_test_registry(num_issuers as usize);
+    let (key_registry, keypairs) = InMemoryKeyRegistry::generate_test_registry(num_oracles as usize);
     let key_registry = Arc::new(key_registry);
 
     // Create protocol for follower (index 1)
@@ -96,7 +96,7 @@ async fn test_consensus_itp_creation_signature() {
     let chain_writer = Arc::new(MockChainBuilder::new().build());
     let price_fetcher = Arc::new(MockPriceFetcherBuilder::new().build());
 
-    let follower_config = ConsensusConfig::new(follower_p2p.peer_id(), num_issuers, 1)
+    let follower_config = ConsensusConfig::new(follower_p2p.peer_id(), num_oracles, 1)
         .with_signature_threshold(2);
 
     let follower_protocol = ConsensusProtocol::new(
@@ -133,18 +133,18 @@ async fn test_insufficient_signatures() {
         min_signatures: 10, // Require more signatures than available
     };
 
-    let num_issuers = 3u8;
+    let num_oracles = 3u8;
     let (_network, nodes) = MockP2PNetworkBuilder::new()
-        .with_node_count(num_issuers as usize)
+        .with_node_count(num_oracles as usize)
         .build()
         .await;
 
-    let (key_registry, keypairs) = InMemoryKeyRegistry::generate_test_registry(num_issuers as usize);
+    let (key_registry, keypairs) = InMemoryKeyRegistry::generate_test_registry(num_oracles as usize);
     let leader_p2p = Arc::new(nodes.into_iter().next().unwrap());
     let chain_writer = Arc::new(MockChainBuilder::new().build());
     let price_fetcher = Arc::new(MockPriceFetcherBuilder::new().build());
 
-    let leader_config = ConsensusConfig::new(leader_p2p.peer_id(), num_issuers, 0)
+    let leader_config = ConsensusConfig::new(leader_p2p.peer_id(), num_oracles, 0)
         .with_signature_threshold(10); // Impossible threshold
 
     let leader_protocol = ConsensusProtocol::new(
@@ -166,7 +166,7 @@ async fn test_insufficient_signatures() {
 /// Test that BLS signature is correctly built for ITP creation
 #[tokio::test]
 async fn test_bls_signature_submitted() {
-    use issuer::consensus::itp_creation::{build_message_hash, compute_weights_hash, compute_assets_hash};
+    use oracle::consensus::itp_creation::{build_message_hash, compute_weights_hash, compute_assets_hash};
 
     let itp_config = create_test_itp_config();
     let request = create_test_itp_request(1);

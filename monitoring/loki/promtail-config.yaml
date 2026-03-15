@@ -30,7 +30,7 @@ scrape_configs:
             message: fields.message
             component: fields.component
             cycle_number: fields.cycle_number
-            issuer_id: fields.issuer_id
+            oracle_id: fields.oracle_id
             order_id: fields.order_id
             itp_id: fields.itp_id
 

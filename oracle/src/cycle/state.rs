@@ -1,4 +1,4 @@
-//! Cycle state tracking for the issuer node.
+//! Cycle state tracking for the oracle node.
 //!
 //! Maintains the current cycle number, phase, trigger, and timing information
 //! for coordinated order processing.

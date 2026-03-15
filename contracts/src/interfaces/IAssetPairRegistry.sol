@@ -3,18 +3,18 @@ pragma solidity ^0.8.20;
 
 /// @title IAssetPairRegistry - Global asset and trading pair whitelist interface
 /// @notice Manages which assets and trading pairs can be used in ITP creation and trading
-/// @dev All modifications require BLS signature from issuer consensus (11/20 standard, 15/20 emergency)
+/// @dev All modifications require BLS signature from oracle consensus (11/20 standard, 15/20 emergency)
 /// @dev Pairs are identified by pairId = keccak256(asset, source, quoteToken, chainId)
 interface IAssetPairRegistry {
     // ============ ASSET MANAGEMENT ============
 
     /// @notice Propose a new asset for whitelisting with BLS signature
-    /// @dev Requires 11/20 issuer threshold. Asset enters PENDING status with 2-day timelock.
+    /// @dev Requires 11/20 oracle threshold. Asset enters PENDING status with 2-day timelock.
     /// @dev Message format: keccak256(abi.encode("PROPOSE_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to propose
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function proposeAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Activate a pending asset after timelock period
@@ -23,33 +23,33 @@ interface IAssetPairRegistry {
     function activateAsset(address asset) external;
 
     /// @notice Delist an active asset (marks as DELISTING, not immediate removal)
-    /// @dev Requires 11/20 issuer threshold. Affected ITPs should be identified for forced rebalance.
+    /// @dev Requires 11/20 oracle threshold. Affected ITPs should be identified for forced rebalance.
     /// @dev Message format: keccak256(abi.encode("DELIST_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to delist
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function delistAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Emergency removal of an asset (immediate, for security situations)
-    /// @dev Requires 15/20 issuer threshold. Asset immediately becomes INACTIVE.
+    /// @dev Requires 15/20 oracle threshold. Asset immediately becomes INACTIVE.
     /// @dev Message format: keccak256(abi.encode("EMERGENCY_REMOVE_ASSET", chainid, this, asset, nonce))
     /// @param asset The asset address to remove
-    /// @param blsSignature Aggregated BLS signature from 15/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 15/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function emergencyRemoveAsset(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ PAIR MANAGEMENT ============
 
     /// @notice Propose a new trading pair for whitelisting
-    /// @dev Requires 11/20 issuer threshold. Asset must be ACTIVE. Pair enters PENDING status with 2-day timelock.
+    /// @dev Requires 11/20 oracle threshold. Asset must be ACTIVE. Pair enters PENDING status with 2-day timelock.
     /// @dev Message format: keccak256(abi.encode("PROPOSE_PAIR", chainid, this, asset, source, quoteToken, chainId, nonce))
     /// @param asset The asset address for this pair
     /// @param source The trading source (e.g., keccak256("BITGET"), keccak256("1INCH"))
     /// @param quoteToken The quote token address (e.g., USDC)
     /// @param chainId The chain ID where this pair is traded (0 for CEX)
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     function proposePair(
         address asset,
         bytes32 source,
@@ -66,32 +66,32 @@ interface IAssetPairRegistry {
     function activatePair(bytes32 pairId) external;
 
     /// @notice Delist a trading pair (marks as DELISTED)
-    /// @dev Requires 11/20 issuer threshold. Prevents new orders but existing orders can complete.
+    /// @dev Requires 11/20 oracle threshold. Prevents new orders but existing orders can complete.
     /// @dev Message format: keccak256(abi.encode("DELIST_PAIR", chainid, this, pairId, nonce))
     /// @param pairId The pair identifier to delist
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function delistPair(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ PROPOSAL CANCELLATION ============
 
     /// @notice Cancel a pending asset proposal during timelock period
-    /// @dev Requires 11/20 issuer threshold. Resets asset to INACTIVE status.
+    /// @dev Requires 11/20 oracle threshold. Resets asset to INACTIVE status.
     /// @dev Message format: keccak256(abi.encode("CANCEL_ASSET_PROPOSAL", chainid, this, asset, nonce))
     /// @param asset The asset address to cancel
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function cancelAssetProposal(address asset, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     /// @notice Cancel a pending pair proposal during timelock period
-    /// @dev Requires 11/20 issuer threshold. Resets pair to INACTIVE status.
+    /// @dev Requires 11/20 oracle threshold. Resets pair to INACTIVE status.
     /// @dev Message format: keccak256(abi.encode("CANCEL_PAIR_PROPOSAL", chainid, this, pairId, nonce))
     /// @param pairId The pair identifier to cancel
-    /// @param blsSignature Aggregated BLS signature from 11/20 issuers
+    /// @param blsSignature Aggregated BLS signature from 11/20 oracles
     /// @param referenceNonce The registry nonce at time of signing
-    /// @param signersBitmask Bitmask of which issuers signed
+    /// @param signersBitmask Bitmask of which oracles signed
     function cancelPairProposal(bytes32 pairId, bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask) external;
 
     // ============ VIEW FUNCTIONS ============

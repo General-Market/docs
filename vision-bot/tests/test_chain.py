@@ -1,11 +1,11 @@
-"""Tests for framework.chain — Executor, issuer discovery, bitmap submission, fetching."""
+"""Tests for framework.chain — Executor, oracle discovery, bitmap submission, fetching."""
 
 import pytest
 from unittest.mock import patch, MagicMock
 
 from framework.chain import (
     Executor,
-    discover_issuers,
+    discover_oracles,
     submit_bitmap,
     fetch_batches,
     fetch_markets,
@@ -47,14 +47,14 @@ class TestExecutorInit:
             )
 
 
-# ── discover_issuers ────────────────────────────────────────────
+# ── discover_oracles ────────────────────────────────────────────
 
 
-class TestDiscoverIssuers:
+class TestDiscoverOracles:
     def test_static_mode_returns_urls(self):
         """Static mode returns the provided URLs directly."""
-        urls = ["http://issuer1:10001", "http://issuer2:10002"]
-        result = discover_issuers(mode="static", static_urls=urls)
+        urls = ["http://oracle1:10001", "http://oracle2:10002"]
+        result = discover_oracles(mode="static", static_urls=urls)
         assert result == urls
 
     def test_dynamic_mode_falls_back_on_error(self):
@@ -62,8 +62,8 @@ class TestDiscoverIssuers:
         static = ["http://fallback:10001"]
         # Clear any cached state from previous test runs
         # __defaults__ = (w3=None, registry_addr='', _cache={})
-        discover_issuers.__defaults__[2].clear()
-        result = discover_issuers(
+        discover_oracles.__defaults__[2].clear()
+        result = discover_oracles(
             mode="dynamic",
             static_urls=static,
             w3=None,
@@ -78,17 +78,17 @@ class TestDiscoverIssuers:
 class TestSubmitBitmap:
     @patch("framework.chain.requests.post")
     def test_successful_submission(self, mock_post):
-        """Successful POST to all issuers returns correct acceptance count."""
+        """Successful POST to all oracles returns correct acceptance count."""
         mock_resp = MagicMock()
         mock_resp.ok = True
         mock_post.return_value = mock_resp
 
-        urls = ["http://issuer1:10001", "http://issuer2:10002"]
+        urls = ["http://oracle1:10001", "http://oracle2:10002"]
         bitmap = b"\xaa"
         bitmap_hash = b"\xbb" * 32
 
         count = submit_bitmap(
-            issuer_urls=urls,
+            oracle_urls=urls,
             player="0xABCD",
             batch_id=42,
             bitmap=bitmap,
@@ -100,7 +100,7 @@ class TestSubmitBitmap:
 
         # Verify payload of first call
         call_args = mock_post.call_args_list[0]
-        assert call_args[0][0] == "http://issuer1:10001/vision/bitmap"
+        assert call_args[0][0] == "http://oracle1:10001/vision/bitmap"
         payload = call_args[1]["json"]
         assert payload["player"] == "0xABCD"
         assert payload["batch_id"] == 42
@@ -122,7 +122,7 @@ class TestSubmitBitmap:
         mock_post.side_effect = [req.RequestException("timeout"), ok_resp]
 
         count = submit_bitmap(
-            issuer_urls=["http://issuer1:10001"],
+            oracle_urls=["http://oracle1:10001"],
             player="0xABCD",
             batch_id=1,
             bitmap=b"\xff",
@@ -153,13 +153,13 @@ class TestFetchBatches:
         }
         mock_get.return_value = mock_resp
 
-        result = fetch_batches("http://issuer:10001")
+        result = fetch_batches("http://oracle:10001")
         assert len(result) == 2
         assert result[0]["id"] == 1
         assert result[1]["market_count"] == 10
 
         mock_get.assert_called_once_with(
-            "http://issuer:10001/vision/batches", timeout=10
+            "http://oracle:10001/vision/batches", timeout=10
         )
 
 

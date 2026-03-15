@@ -7,8 +7,8 @@ import "../../src/core/ITP.sol";
 import "../../src/mocks/MockERC20.sol";
 import "../helpers/TestHelper.sol";
 import {Governance} from "../../src/Governance.sol";
-import "../../src/registry/IssuerRegistry.sol";
-import {IIssuerRegistry} from "../../src/interfaces/IIssuerRegistry.sol";
+import "../../src/registry/OracleRegistry.sol";
+import {IOracleRegistry} from "../../src/interfaces/IOracleRegistry.sol";
 import "../../src/libraries/TypesLib.sol";
 import "../../src/libraries/ErrorsLib.sol";
 import "../../src/libraries/EventsLib.sol";
@@ -17,14 +17,14 @@ import {BLSVerifier} from "../../src/libraries/BLSVerifier.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title E2EConsensus3Nodes - Multi-Node BLS Consensus Integration Test (Story 6.16)
-/// @notice Tests 3-issuer BLS verification, threshold mechanics, replay protection,
+/// @notice Tests 3-oracle BLS verification, threshold mechanics, replay protection,
 ///         and leader rotation determinism on-chain
-/// @dev Uses real BLS signatures via FFI (bls-tool). Test issuers use seeds 0,1,2.
+/// @dev Uses real BLS signatures via FFI (bls-tool). Test oracles use seeds 0,1,2.
 contract E2EConsensus3NodesTest is TestHelper {
     Investment public index;
     MockERC20 public usdc;
     Governance public governance;
-    IssuerRegistry public issuerRegistry;
+    OracleRegistry public oracleRegistry;
     ITP public itpVault;
 
     address public admin;
@@ -36,10 +36,10 @@ contract E2EConsensus3NodesTest is TestHelper {
     uint256 constant INITIAL_PRICE = 1e18;
     uint256 constant INITIAL_USDC = 100_000e18;
 
-    // 3 distinct issuer addresses (set by registerTestIssuersWithBLS in setUp)
-    address public issuer1;
-    address public issuer2;
-    address public issuer3;
+    // 3 distinct oracle addresses (set by registerTestOraclesWithBLS in setUp)
+    address public oracle1;
+    address public oracle2;
+    address public oracle3;
 
     function setUp() public {
         admin = address(this);
@@ -58,17 +58,17 @@ contract E2EConsensus3NodesTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Deploy real IssuerRegistry, register 3 BLS test issuers (seeds 0,1,2)
-        issuerRegistry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerRegistry, admin);
+        // Deploy real OracleRegistry, register 3 BLS test oracles (seeds 0,1,2)
+        oracleRegistry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleRegistry, admin);
 
-        // Record issuer addresses from the registry for test assertions
-        issuer1 = issuerRegistry.getIssuer(0).addr;
-        issuer2 = issuerRegistry.getIssuer(1).addr;
-        issuer3 = issuerRegistry.getIssuer(2).addr;
+        // Record oracle addresses from the registry for test assertions
+        oracle1 = oracleRegistry.getOracle(0).addr;
+        oracle2 = oracleRegistry.getOracle(1).addr;
+        oracle3 = oracleRegistry.getOracle(2).addr;
 
-        // Wire IssuerRegistry to Index (enables BLS verification path)
-        index.setIssuerRegistry(address(issuerRegistry));
+        // Wire OracleRegistry to Index (enables BLS verification path)
+        index.setOracleRegistry(address(oracleRegistry));
 
         // Create test ITP with single asset
         address[] memory assets = new address[](1);
@@ -103,21 +103,21 @@ contract E2EConsensus3NodesTest is TestHelper {
 
     function _signConfirmBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     function _signConfirmFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 message = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ HELPERS ============
 
-    /// @dev Generate a deterministic 128-byte test pubkey for a given issuer index
-    function _generateTestPubkey(uint8 issuerIdx) internal pure returns (bytes memory) {
+    /// @dev Generate a deterministic 128-byte test pubkey for a given oracle index
+    function _generateTestPubkey(uint8 oracleIdx) internal pure returns (bytes memory) {
         bytes memory pubkey = new bytes(128);
         for (uint256 i = 0; i < 128; i++) {
-            pubkey[i] = bytes1(uint8(uint256(issuerIdx) * 37 + i * 7 + 1)); // Deterministic fill, wraps via uint256
+            pubkey[i] = bytes1(uint8(uint256(oracleIdx) * 37 + i * 7 + 1)); // Deterministic fill, wraps via uint256
         }
         return pubkey;
     }
@@ -149,36 +149,36 @@ contract E2EConsensus3NodesTest is TestHelper {
     }
 
     /// @dev Helper to compute leader index from aggregated signature hash
-    function _computeLeaderIndex(bytes memory aggregatedSig, uint256 numIssuers)
+    function _computeLeaderIndex(bytes memory aggregatedSig, uint256 numOracles)
         internal
         pure
         returns (uint256)
     {
-        return uint256(keccak256(aggregatedSig)) % numIssuers;
+        return uint256(keccak256(aggregatedSig)) % numOracles;
     }
 
     // ============ TASK 1.1-1.4: SETUP VERIFICATION ============
 
-    function test_three_issuers_registered() public view {
-        // Verify 3 active issuers
-        assertEq(issuerRegistry.activeIssuerCount(), 3, "Should have 3 active issuers");
+    function test_three_oracles_registered() public view {
+        // Verify 3 active oracles
+        assertEq(oracleRegistry.activeOracleCount(), 3, "Should have 3 active oracles");
 
-        // Verify each issuer\'s details
-        TypesLib.Issuer memory i1 = issuerRegistry.getIssuer(0);
-        assertEq(i1.addr, issuer1, "Issuer 1 address");
-        assertEq(i1.status, 1, "Issuer 1 active");
-        assertEq(i1.blsPubkey.length, 128, "Issuer 1 pubkey length");
+        // Verify each oracle\'s details
+        TypesLib.Oracle memory i1 = oracleRegistry.getOracle(0);
+        assertEq(i1.addr, oracle1, "Oracle 1 address");
+        assertEq(i1.status, 1, "Oracle 1 active");
+        assertEq(i1.blsPubkey.length, 128, "Oracle 1 pubkey length");
 
-        TypesLib.Issuer memory i2 = issuerRegistry.getIssuer(1);
-        assertEq(i2.addr, issuer2, "Issuer 2 address");
+        TypesLib.Oracle memory i2 = oracleRegistry.getOracle(1);
+        assertEq(i2.addr, oracle2, "Oracle 2 address");
 
-        TypesLib.Issuer memory i3 = issuerRegistry.getIssuer(2);
-        assertEq(i3.addr, issuer3, "Issuer 3 address");
+        TypesLib.Oracle memory i3 = oracleRegistry.getOracle(2);
+        assertEq(i3.addr, oracle3, "Oracle 3 address");
     }
 
-    function test_issuer_registry_wired_to_index() public view {
-        // Verify IssuerRegistry is set on Index
-        bytes memory aggPubkey = issuerRegistry.getAggregatedPubkey();
+    function test_oracle_registry_wired_to_index() public view {
+        // Verify OracleRegistry is set on Index
+        bytes memory aggPubkey = oracleRegistry.getAggregatedPubkey();
         assertEq(aggPubkey.length, 128, "Aggregated pubkey should be 128 bytes");
     }
 
@@ -187,10 +187,10 @@ contract E2EConsensus3NodesTest is TestHelper {
         assertEq(itp.creator, admin, "ITP creator should be admin");
     }
 
-    // ============ TASK 1.5: THREE-ISSUER AGGREGATED SIGNATURE VERIFICATION ============
+    // ============ TASK 1.5: THREE-ORACLE AGGREGATED SIGNATURE VERIFICATION ============
 
     /// @notice Test that confirmBatch succeeds with real BLS verification
-    function test_three_issuer_aggregated_signature_verifies() public {
+    function test_three_oracle_aggregated_signature_verifies() public {
         uint256 orderId = _submitOrder(user1, 100e18, 1e18, 1);
 
         uint256[] memory orderIds = new uint256[](1);
@@ -233,7 +233,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         orderIds[0] = orderId;
 
         // Real sig over wrong message — BLS pairing will fail
-        bytes memory wrongSig = signWithTestIssuers(keccak256("wrong message"));
+        bytes memory wrongSig = signWithTestOracles(keccak256("wrong message"));
         vm.expectRevert(BLSVerifier.BLSVerifier__InvalidSignature.selector);
         index.confirmBatch(1, orderIds, wrongSig, 3, 7);
     }
@@ -259,19 +259,19 @@ contract E2EConsensus3NodesTest is TestHelper {
         bytes memory sig4 = abi.encodePacked(bytes32(uint256(0x1111)), bytes32(uint256(0x2222)));
         bytes memory sig5 = abi.encodePacked(bytes32(uint256(0x3333)), bytes32(uint256(0x4444)));
 
-        uint256 numIssuers = 3;
+        uint256 numOracles = 3;
 
-        uint256 leader1 = uint256(keccak256(sig1)) % numIssuers;
-        uint256 leader2 = uint256(keccak256(sig2)) % numIssuers;
-        uint256 leader3 = uint256(keccak256(sig3)) % numIssuers;
-        uint256 leader4 = uint256(keccak256(sig4)) % numIssuers;
-        uint256 leader5 = uint256(keccak256(sig5)) % numIssuers;
+        uint256 leader1 = uint256(keccak256(sig1)) % numOracles;
+        uint256 leader2 = uint256(keccak256(sig2)) % numOracles;
+        uint256 leader3 = uint256(keccak256(sig3)) % numOracles;
+        uint256 leader4 = uint256(keccak256(sig4)) % numOracles;
+        uint256 leader5 = uint256(keccak256(sig5)) % numOracles;
 
-        assertTrue(leader1 < numIssuers, "Leader 1 valid");
-        assertTrue(leader2 < numIssuers, "Leader 2 valid");
-        assertTrue(leader3 < numIssuers, "Leader 3 valid");
-        assertTrue(leader4 < numIssuers, "Leader 4 valid");
-        assertTrue(leader5 < numIssuers, "Leader 5 valid");
+        assertTrue(leader1 < numOracles, "Leader 1 valid");
+        assertTrue(leader2 < numOracles, "Leader 2 valid");
+        assertTrue(leader3 < numOracles, "Leader 3 valid");
+        assertTrue(leader4 < numOracles, "Leader 4 valid");
+        assertTrue(leader5 < numOracles, "Leader 5 valid");
 
         bool hasDifferentLeaders = (leader1 != leader2)
             || (leader1 != leader3)
@@ -279,7 +279,7 @@ contract E2EConsensus3NodesTest is TestHelper {
             || (leader1 != leader5);
         assertTrue(hasDifferentLeaders, "Leader rotation should produce different leaders");
 
-        uint256 leader1_again = uint256(keccak256(sig1)) % numIssuers;
+        uint256 leader1_again = uint256(keccak256(sig1)) % numOracles;
         assertEq(leader1, leader1_again, "Same signature must produce same leader");
     }
 
@@ -297,7 +297,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         batch2[0] = orderId2;
         vm.expectRevert(); // Replay protection revert (cycle already used)
         // Any sig — revert happens before BLS check
-        index.confirmBatch(1, batch2, signWithTestIssuers(keccak256("irrelevant")), 3, 7);
+        index.confirmBatch(1, batch2, signWithTestOracles(keccak256("irrelevant")), 3, 7);
 
         assertEq(
             uint8(index.getOrder(orderId1).status),
@@ -317,7 +317,7 @@ contract E2EConsensus3NodesTest is TestHelper {
         uint256 orderAmount = 200e18;
         uint256 fillPrice = 1e18;
 
-        assertEq(issuerRegistry.activeIssuerCount(), 3, "3 issuers active");
+        assertEq(oracleRegistry.activeOracleCount(), 3, "3 oracles active");
 
         uint256 orderId = _submitOrder(user1, orderAmount, 1e18, 1);
         assertEq(uint8(index.getOrder(orderId).status), uint8(TypesLib.OrderStatus.PENDING));
@@ -360,9 +360,9 @@ contract E2EConsensus3NodesTest is TestHelper {
         assertEq(itp.totalValue, orderAmount, "ITP totalValue matches");
     }
 
-    // ============ ADDITIONAL TESTS: MULTI-CYCLE WITH 3 ISSUERS ============
+    // ============ ADDITIONAL TESTS: MULTI-CYCLE WITH 3 ORACLES ============
 
-    function test_multi_cycle_with_three_issuers() public {
+    function test_multi_cycle_with_three_oracles() public {
         // Cycle 1
         uint256 orderId1 = _submitOrder(user1, 100e18, 1e18, 1);
         uint256[] memory batch1 = new uint256[](1);
@@ -400,13 +400,13 @@ contract E2EConsensus3NodesTest is TestHelper {
         assertEq(itp.totalSupply, totalExpected);
     }
 
-    function test_issuer_removal_reduces_count() public {
-        assertEq(issuerRegistry.activeIssuerCount(), 3);
+    function test_oracle_removal_reduces_count() public {
+        assertEq(oracleRegistry.activeOracleCount(), 3);
 
-        issuerRegistry.removeIssuer(1);
-        assertEq(issuerRegistry.activeIssuerCount(), 2, "Should have 2 active issuers after removal");
+        oracleRegistry.removeOracle(1);
+        assertEq(oracleRegistry.activeOracleCount(), 2, "Should have 2 active oracles after removal");
 
-        // Aggregated pubkey is unchanged by removeIssuer, so existing sig (seeds 0,1,2) still valid.
+        // Aggregated pubkey is unchanged by removeOracle, so existing sig (seeds 0,1,2) still valid.
         uint256 orderId = _submitOrder(user1, 50e18, 1e18, 1);
         uint256[] memory orderIds = new uint256[](1);
         orderIds[0] = orderId;

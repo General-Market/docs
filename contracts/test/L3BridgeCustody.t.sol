@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "forge-std/Test.sol";
 import "../src/custody/L3BridgeCustody.sol";
 import "../src/mocks/MockERC20.sol";
-import "../src/registry/IssuerRegistry.sol";
+import "../src/registry/OracleRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract L3BridgeCustodyTest is TestHelper {
     L3BridgeCustody public custody;
     L3BridgeCustody public implementation;
-    IssuerRegistry public mockRegistry;
+    OracleRegistry public mockRegistry;
     Governance public governance;
     MockERC20 public usdc;
 
@@ -33,9 +33,9 @@ contract L3BridgeCustodyTest is TestHelper {
     event LockReversed(uint256 indexed nonce);
 
     function setUp() public {
-        // Deploy real governance and issuer registry via UUPS proxy
+        // Deploy real governance and oracle registry via UUPS proxy
         governance = deployGovernance(address(this));
-        mockRegistry = deployIssuerRegistry(address(governance));
+        mockRegistry = deployOracleRegistry(address(governance));
         usdc = new MockERC20("USDC", "USDC", 18);
 
         // Deploy implementation
@@ -49,8 +49,8 @@ contract L3BridgeCustodyTest is TestHelper {
 
         custody = L3BridgeCustody(address(proxy));
 
-        // Register real BLS issuers and set aggregated pubkey
-        registerTestIssuersWithBLS(mockRegistry, address(this));
+        // Register real BLS oracles and set aggregated pubkey
+        registerTestOraclesWithBLS(mockRegistry, address(this));
 
         // Fund test accounts
         usdc.mint(alice, 10_000_000e18);
@@ -71,45 +71,45 @@ contract L3BridgeCustodyTest is TestHelper {
 
     function _signInitiateBridge(uint256 destChainId, uint256 amount, uint256 nonce) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), destChainId, amount, nonce));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signMarkReleased(uint256 nonce, bytes32 destTxHash) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), nonce, destTxHash));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signReverseLock(uint256 nonce, uint256 signerCount) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "reverse", nonce, signerCount));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signProposeUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "proposeUpgrade", newImpl));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signProposeEmergencyUpgrade(address newImpl) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "proposeEmergencyUpgrade", newImpl));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     function _signCancelUpgrade(address pendingImpl) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(custody), "cancelUpgrade", pendingImpl));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // ============ INITIALIZATION TESTS ============
 
     function test_initialize_setsCorrectValues() public view {
-        assertEq(address(custody.issuerRegistry()), address(mockRegistry));
+        assertEq(address(custody.oracleRegistry()), address(mockRegistry));
         assertEq(address(custody.usdc()), address(usdc));
         assertEq(custody.bridgeNonce(), 0);
     }
 
-    function test_initialize_revertsOnZeroIssuerRegistry() public {
+    function test_initialize_revertsOnZeroOracleRegistry() public {
         L3BridgeCustody impl = new L3BridgeCustody();
-        vm.expectRevert(ErrorsLib.E043_ZeroIssuerRegistry.selector);
+        vm.expectRevert(ErrorsLib.E043_ZeroOracleRegistry.selector);
         new ERC1967Proxy(
             address(impl),
             abi.encodeCall(L3BridgeCustody.initialize, (address(0), address(usdc)))

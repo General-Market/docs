@@ -1,8 +1,8 @@
 /**
- * Phase 2: Issuer Relay Stress
+ * Phase 2: Oracle Relay Stress
  *
  * Submits N requestCreateItp() on Settlement BridgeProxy simultaneously,
- * measures how long it takes issuers to process the backlog.
+ * measures how long it takes oracles to process the backlog.
  */
 
 import {
@@ -28,7 +28,7 @@ export interface Phase2Result {
 }
 
 export async function runPhase2(): Promise<Phase2Result[]> {
-  logSection('PHASE 2: ISSUER RELAY STRESS');
+  logSection('PHASE 2: ORACLE RELAY STRESS');
 
   // Deploy 3 test tokens for relay ITPs
   log('Deploying tokens for relay test...');

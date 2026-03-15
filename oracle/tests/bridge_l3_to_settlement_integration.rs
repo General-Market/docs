@@ -5,7 +5,7 @@
 //! 2. Followers validate proposal (orders must be in Batched status)
 //! 3. Followers sign proposal
 //! 4. Threshold reached → signatures aggregated
-//! 5. Execute bridge simulation (mint SettlementUSDC to IssuerCustody Settlement)
+//! 5. Execute bridge simulation (mint SettlementUSDC to OracleCustody Settlement)
 //!
 //! This is Step 5 of the vital-test.md "Buy ITP via Bridge" flow.
 
@@ -20,11 +20,11 @@ use common::mocks::MockChainBuilder;
 use common::traits::BLSSigner;
 use common::types::{BLSSignature, PeerId};
 
-use issuer::bridge::{
+use oracle::bridge::{
     build_bridge_l3_to_settlement_hash, BridgeConfig, BridgeError, BridgeL3ToSettlementProposal,
     BridgeL3ToSettlementResult, BridgeOrchestrator, BridgeOrderStatus, CrossChainOrderReader,
 };
-use issuer::chain::CrossChainOrderData;
+use oracle::chain::CrossChainOrderData;
 
 // ============================================================================
 // Test Helpers
@@ -79,7 +79,7 @@ fn test_bls_keypair(seed: u64) -> BLSKeyPair {
 
 fn test_bridge_config() -> BridgeConfig {
     BridgeConfig {
-        issuer_custody_l3: Address::from([0x11; 20]),
+        oracle_custody_l3: Address::from([0x11; 20]),
         l3_usdc_address: Address::from([0x22; 20]),
         settlement_custody_address: Address::from([0x33; 20]),
         settlement_chain_id: 42161,
@@ -89,7 +89,7 @@ fn test_bridge_config() -> BridgeConfig {
         proposal_timeout_ms: 500,
         sign_timeout_ms: 300,
         // Story 7.5: Bridge L3→Settlement config
-        issuer_custody_settlement: Address::from([0x55; 20]),
+        oracle_custody_settlement: Address::from([0x55; 20]),
         settlement_usdc_address: Address::from([0x66; 20]),
         // Story 7.6: Custody release to vault config
         bitget_vault: Address::from([0x77; 20]),
@@ -207,7 +207,7 @@ async fn test_leader_creates_l3_to_settlement_proposal_with_amount() {
     assert_eq!(proposal.cycle_number, cycle_number);
     assert_eq!(proposal.order_ids, order_ids);
     assert_eq!(proposal.total_amount, total_amount);
-    assert_eq!(proposal.destination, config.issuer_custody_settlement);
+    assert_eq!(proposal.destination, config.oracle_custody_settlement);
 
     // Verify signature is not empty
     assert!(!proposal.leader_signature.0.is_empty());
@@ -219,7 +219,7 @@ async fn test_leader_creates_l3_to_settlement_proposal_with_amount() {
         cycle_number,
         &order_ids,
         total_amount,
-        config.issuer_custody_settlement,
+        config.oracle_custody_settlement,
     );
     assert_eq!(proposal.message_hash, expected_hash);
 }
@@ -609,7 +609,7 @@ async fn test_full_3_node_l3_to_settlement_consensus() {
 
     assert_eq!(proposal.order_ids, order_ids);
     assert_eq!(proposal.total_amount, total_amount);
-    assert_eq!(proposal.destination, config.issuer_custody_settlement);
+    assert_eq!(proposal.destination, config.oracle_custody_settlement);
 
     // 2. Leader starts signature collection
     leader
@@ -865,7 +865,7 @@ async fn test_execute_validates_destination() {
         matches!(
             result,
             Err(BridgeError::InvalidDestination { expected, actual })
-            if expected == config.issuer_custody_settlement && actual == malicious_destination
+            if expected == config.oracle_custody_settlement && actual == malicious_destination
         ),
         "Expected InvalidDestination error but got: {:?}",
         result

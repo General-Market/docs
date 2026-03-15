@@ -170,7 +170,7 @@ interface IVision {
     /// @param lockOffset     seconds before tick end where betting closes
     /// @param blsSignature   aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask bitmask of signing issuers
+    /// @param signersBitmask bitmask of signing oracles
     /// @return batchId       the batch ID (new or existing)
     function createBatch(
         bytes32 sourceId,
@@ -194,7 +194,7 @@ interface IVision {
     /// @param lockOffset     seconds before tick end
     /// @param blsSignature   aggregated BLS signature (over create params)
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask bitmask of signing issuers
+    /// @param signersBitmask bitmask of signing oracles
     /// @param depositAmount  USDC amount to deposit
     /// @param stakePerTick   USDC staked per tick
     /// @param bitmapHash     keccak256 of the player's prediction bitmap
@@ -313,7 +313,7 @@ interface IVision {
         uint256 signersBitmask
     ) external;
 
-    // ============ ISSUER OPERATIONS ============
+    // ============ ORACLE OPERATIONS ============
 
     function pause(
         uint256 batchId,
@@ -340,14 +340,14 @@ interface IVision {
 
     // ============ DUAL-BALANCE OPERATIONS ============
 
-    /// @notice Credit virtual balance after cross-chain deposit (BLS-gated, issuers only)
+    /// @notice Credit virtual balance after cross-chain deposit (BLS-gated, oracles only)
     /// @dev No L3 USDC enters the contract. Backed by SettlementBridgeCustody on Settlement.
     /// @param user        User to credit
     /// @param amount      Amount in 18 decimals
     /// @param depositId   Cross-chain deposit ID (for idempotency)
     /// @param blsSignature Aggregated BLS signature
     /// @param referenceNonce BLSVerifier snapshot nonce
-    /// @param signersBitmask Bitmask of signing issuers
+    /// @param signersBitmask Bitmask of signing oracles
     function creditBalance(
         address user,
         uint256 amount,
@@ -365,7 +365,7 @@ interface IVision {
     /// @param amount Amount in 18 decimals
     function withdrawBalance(uint256 amount) external;
 
-    /// @notice Withdraw virtual balance back to Settlement via issuer bridge
+    /// @notice Withdraw virtual balance back to Settlement via oracle bridge
     /// @param amount Amount in 18 decimals
     function withdrawToSettlement(uint256 amount) external;
 

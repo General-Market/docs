@@ -1,4 +1,4 @@
-//! Cycle management module for Index L3 Issuer Node
+//! Cycle management module for Index L3 Oracle Node
 //!
 //! Implements the 1-second cycle structure with 5 phases:
 //! PROCESS_FILLS -> NETTING -> INVENTORY_CHECK -> GENERATE_BATCH -> SIGN_SUBMIT

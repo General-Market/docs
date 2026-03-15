@@ -1,6 +1,6 @@
 # Unified Security Audit — All Findings
 
-Merges the Feb-24 issuer audit (71 findings, 24 tasks) with the Feb-28 parallel consensus + Solidity audit (28 findings). Deduplicated and prioritized.
+Merges the Feb-24 oracle audit (71 findings, 24 tasks) with the Feb-28 parallel consensus + Solidity audit (28 findings). Deduplicated and prioritized.
 
 **Status key:** FIXED / PARTIAL / OPEN
 
@@ -10,7 +10,7 @@ Merges the Feb-24 issuer audit (71 findings, 24 tasks) with the Feb-28 parallel 
 
 ### C1. Task panic = flag stuck forever [OPEN] [NEW]
 
-**File:** `issuer/src/main.rs` (6 spawn sites)
+**File:** `oracle/src/main.rs` (6 spawn sites)
 
 If any spawned task panics, the `*_active` flag stays true forever. That pipeline permanently dead.
 
@@ -51,14 +51,14 @@ function mintBridgedShares(
 
 ---
 
-### C3. MirrorIssuerRegistry `sync()` rogue key [OPEN] [NEW]
+### C3. MirrorOracleRegistry `sync()` rogue key [OPEN] [NEW]
 
-**File:** `contracts/src/registry/MirrorIssuerRegistry.sol` (line 143)
+**File:** `contracts/src/registry/MirrorOracleRegistry.sol` (line 143)
 
 Uses aggregated key verification. Rogue key can take over entire Arb registry.
 
 **Short-term:** Make `sync()` admin-only until multi-pairing is implemented.
-**Long-term:** Store individual issuer pubkeys, use multi-pairing verification.
+**Long-term:** Store individual oracle pubkeys, use multi-pairing verification.
 
 ---
 
@@ -70,8 +70,8 @@ Three stacked issues: no chainId/address(this), uses aggregated key, no threshol
 
 ```solidity
 contract ITPNAVOracle is IITPNAVOracle, IOracle, BLSVerifier {
-    constructor(address _issuerRegistry, address _itpAddress, uint256 _initialPrice)
-        BLSVerifier(_issuerRegistry) { ... }
+    constructor(address _oracleRegistry, address _itpAddress, uint256 _initialPrice)
+        BLSVerifier(_oracleRegistry) { ... }
 
     function updatePrice(uint256 newPrice, uint256 timestamp, uint256 cycleNumber,
         bytes calldata blsSignature, uint256 referenceNonce, uint256 signersBitmask
@@ -131,7 +131,7 @@ function refundBuyOrder(uint256 orderId, bytes calldata blsSignature,
 
 ### H2. TOCTOU on L3-native bridge guard [OPEN] [NEW]
 
-**File:** `issuer/src/main.rs`
+**File:** `oracle/src/main.rs`
 
 Track L3 order IDs bidirectionally in BridgeOrchestrator. Cross-chain pipeline registers L3 order IDs. L3-native filter excludes mapped orders.
 
@@ -139,7 +139,7 @@ Track L3 order IDs bidirectionally in BridgeOrchestrator. Cross-chain pipeline r
 
 ### H3. Config update mid-bridge corrupts signer index [OPEN] [NEW]
 
-**File:** `issuer/src/consensus/protocol.rs`, `issuer/src/main.rs`
+**File:** `oracle/src/consensus/protocol.rs`, `oracle/src/main.rs`
 
 Pass frozen `ConfigSnapshot` to spawned bridge tasks instead of reading from live atomics.
 
@@ -147,12 +147,12 @@ Pass frozen `ConfigSnapshot` to spawned bridge tasks instead of reading from liv
 
 ### H4. Self-reported signer_index in bridge P2P + unbound P2P identity [OPEN] [MERGED: New + Old T6]
 
-**Files:** `issuer/src/consensus/messages.rs`, `issuer/src/p2p/`
+**Files:** `oracle/src/consensus/messages.rs`, `oracle/src/p2p/`
 
-Derive signer_index from transport-layer peer ID. Validate all bridge sign messages. Also bind P2P identity to TLS cert (old T6 — still not done, `tls.rs:139` hardcodes `"issuer.index.local"`).
+Derive signer_index from transport-layer peer ID. Validate all bridge sign messages. Also bind P2P identity to TLS cert (old T6 — still not done, `tls.rs:139` hardcodes `"oracle.index.local"`).
 
 ```rust
-let verified_index = extract_issuer_id(&from) as u8;
+let verified_index = extract_oracle_id(&from) as u8;
 if signer_index != verified_index {
     return Err(ConsensusError::InvalidSignerIndex);
 }
@@ -162,7 +162,7 @@ if signer_index != verified_index {
 
 ### H5. Zeroed/temp PeerIds bypass leader validation [OPEN] [NEW]
 
-**File:** `issuer/src/consensus/protocol.rs` (line 558-563)
+**File:** `oracle/src/consensus/protocol.rs` (line 558-563)
 
 ```rust
 if Self::is_zeroed_peer_id(sender_id) || Self::is_temp_peer_id(sender_id) {
@@ -265,7 +265,7 @@ Acquire both locks in same block.
 
 Check if ITP exists for nonce before creating on L3.
 
-### M10. `removeIssuerByVote` uses aggregated key [OPEN] [NEW]
+### M10. `removeOracleByVote` uses aggregated key [OPEN] [NEW]
 
 Use multi-pairing verification.
 
@@ -275,7 +275,7 @@ Add string operation discriminator to all packed-encoded hashes.
 
 ### M12. Threshold allows n=1 [OPEN] [NEW]
 
-Enforce minimum 3 issuers in `compute_threshold`. On-chain minimum active count check.
+Enforce minimum 3 oracles in `compute_threshold`. On-chain minimum active count check.
 
 ### M13. Price staleness bypass [OPEN] [Old T16]
 

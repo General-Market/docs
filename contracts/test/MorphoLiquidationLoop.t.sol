@@ -42,7 +42,7 @@ contract MorphoLiquidationLoopTest is MorphoTestHelper {
                 if (next > targetPrice) next = targetPrice;
             }
             bytes32 msgHash = keccak256(abi.encode(block.chainid, address(oracle), address(itp), next, block.timestamp, _nextCycleNumber));
-            bytes memory sig = signWithTestIssuers(msgHash);
+            bytes memory sig = signWithTestOracles(msgHash);
             // 0x07 = bitmap indicating signers 0,1,2 participated (binary 0b111 = 7)
             oracle.updatePrice(next, block.timestamp, _nextCycleNumber, sig, 1, 0x07);
             _nextCycleNumber++;

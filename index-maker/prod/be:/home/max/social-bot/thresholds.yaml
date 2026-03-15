@@ -1,0 +1,310 @@
+earthquake:
+  account: GeneralSkyWatch
+  dedup: "region+day"
+  rules:
+    - condition: "magnitude >= 7.0"
+      outcome: FEAR
+      context: [human_scale, comparison]
+    - condition: "magnitude >= 5.0 AND population_nearby >= 500000"
+      outcome: WATCH
+      context: [frequency, comparison]
+    - condition: "magnitude >= 5.0"
+      outcome: WATCH
+      context: [frequency, comparison]
+
+power_outages:
+  account: GeneralGridDown
+  dedup: "region+day"
+  rules:
+    - condition: "customers >= 500000"
+      outcome: FEAR
+      context: [human_scale, comparison]
+    - condition: "customers >= 50000"
+      outcome: WATCH
+      context: [frequency, delta]
+
+ioda:
+  account: GeneralGridDown
+  dedup: "region+day"
+  rules:
+    - condition: "connectivity <= 10"
+      outcome: RAGE
+      context: [frequency, human_scale]
+    - condition: "connectivity <= 50"
+      outcome: WATCH
+      context: [delta]
+
+spaceweather:
+  account: GeneralSkyWatch
+  dedup: "source+day"
+  rules:
+    - condition: "kp >= 8"
+      outcome: LOOK
+      context: [frequency, comparison]
+    - condition: "kp >= 7"
+      outcome: LOOK
+      context: [frequency]
+    - condition: "kp >= 6"
+      outcome: WATCH
+      context: [comparison]
+
+sec:
+  account: GeneralInsiders
+  dedup: "source+asset+week"
+  rules:
+    - condition: "trade_value >= 50000000"
+      outcome: MONEY
+      context: [comparison, frequency]
+    - condition: "trade_value >= 5000000"
+      outcome: MONEY
+      context: [frequency, comparison]
+    - condition: "trade_value >= 1000000"
+      outcome: WATCH
+      context: [frequency]
+
+wildfire:
+  account: GeneralSkyWatch
+  dedup: "region+day"
+  rules:
+    - condition: "hotspots_6h >= 2000"
+      outcome: FEAR
+      context: [human_scale, comparison]
+    - condition: "hotspots_6h >= 500"
+      outcome: WATCH
+      context: [comparison, trend]
+
+volcano:
+  account: GeneralSkyWatch
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 3"
+      outcome: FEAR
+      context: [human_scale, comparison]
+    - condition: "value >= 2"
+      outcome: WATCH
+      context: [frequency, comparison]
+
+weather_alerts:
+  account: GeneralSkyWatch
+  dedup: "region+day"
+  rules:
+    - condition: "value >= 4"
+      outcome: FEAR
+      context: [human_scale]
+    - condition: "value >= 3"
+      outcome: WATCH
+      context: [comparison]
+
+airnow:
+  account: GeneralSkyWatch
+  dedup: "region+day"
+  rules:
+    - condition: "aqi >= 300"
+      outcome: FEAR
+      context: [comparison]
+    - condition: "aqi >= 150"
+      outcome: WATCH
+      context: [comparison, delta]
+
+epidemic:
+  account: GeneralSkyWatch
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 3"
+      outcome: WATCH
+      context: [comparison, trend]
+
+finra:
+  account: GeneralInsiders
+  dedup: "source+asset+day"
+  rules:
+    - condition: "short_volume_pct >= 60"
+      outcome: MONEY
+      context: [comparison]
+    - condition: "short_volume_pct >= 50"
+      outcome: WATCH
+      context: [frequency]
+
+congress:
+  account: GeneralTaxReceipt
+  dedup: "source+asset+day"
+  rules:
+    - condition: "trade_value >= 500000"
+      outcome: RAGE
+      context: [frequency, comparison]
+    - condition: "trade_value >= 100000"
+      outcome: MONEY
+      context: [frequency]
+
+usa_spending:
+  account: GeneralTaxReceipt
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 500000000"
+      outcome: RAGE
+      context: [human_scale, comparison]
+    - condition: "value >= 100000000"
+      outcome: WATCH
+      context: [comparison]
+
+courtlistener:
+  account: GeneralTaxReceipt
+  dedup: "source+asset+day"
+  rules:
+    - condition: "value >= 1000000000"
+      outcome: MONEY
+      context: [comparison]
+    - condition: "value >= 100000000"
+      outcome: WATCH
+      context: [comparison]
+
+zillow:
+  account: GeneralTaxReceipt
+  dedup: "source+asset+month"
+  rules:
+    - condition: "change_pct >= 10"
+      outcome: MONEY
+      context: [trend, comparison]
+    - condition: "change_pct <= -10"
+      outcome: MONEY
+      context: [trend, comparison]
+
+fred_treasury:
+  account: GeneralTaxReceipt
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 5"
+      outcome: MONEY
+      context: [comparison]
+
+faa_delays:
+  account: GeneralGridDown
+  dedup: "source+asset+day"
+  rules:
+    - condition: "value >= 500"
+      outcome: WATCH
+      context: [comparison]
+    - condition: "value >= 100"
+      outcome: WATCH
+      context: [frequency]
+
+transit:
+  account: GeneralGridDown
+  dedup: "source+asset+day"
+  sources: ["mta_subway", "tfl_tube", "paris_metro", "db_trains", "ryanair", "sbb", "sncf"]
+  rules:
+    - condition: "value >= 4"
+      outcome: RAGE
+      context: [frequency]
+    - condition: "value >= 2"
+      outcome: WATCH
+      context: [frequency]
+
+cbp_border:
+  account: GeneralGridDown
+  dedup: "source+asset+day"
+  rules:
+    - condition: "wait_hours >= 3"
+      outcome: RAGE
+      context: [frequency, human_scale]
+    - condition: "wait_hours >= 2"
+      outcome: WATCH
+      context: [comparison]
+
+nrc_nuclear:
+  account: GeneralGridDown
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 2"
+      outcome: FEAR
+      context: [comparison, human_scale]
+    - condition: "value >= 1"
+      outcome: WATCH
+      context: [comparison]
+
+mcbroken:
+  account: GeneralGlitch
+  dedup: "region+day"
+  rules:
+    - condition: "city_pct >= 30"
+      outcome: WTF
+      context: [comparison]
+    - condition: "city_pct >= 15"
+      outcome: WTF
+      context: [comparison]
+
+queue_times:
+  account: GeneralGlitch
+  dedup: "source+asset+day"
+  rules:
+    - condition: "wait_min >= 200"
+      outcome: WTF
+      context: [comparison, human_scale]
+    - condition: "wait_min >= 120"
+      outcome: RAGE
+      context: [comparison]
+
+steam:
+  account: GeneralGlitch
+  dedup: "source+asset+week"
+  rules:
+    - condition: "value >= 500000"
+      outcome: RECORD
+      context: [comparison, human_scale]
+    - condition: "change_pct >= 200"
+      outcome: WTF
+      context: [comparison]
+
+twitch:
+  account: GeneralGlitch
+  dedup: "source+asset+day"
+  rules:
+    - condition: "value >= 500000"
+      outcome: RECORD
+      context: [comparison]
+    - condition: "change_pct >= 300"
+      outcome: WTF
+      context: [comparison, trend]
+
+reddit:
+  account: GeneralGlitch
+  dedup: "source+asset+week"
+  rules:
+    - condition: "change_pct >= 300"
+      outcome: WTF
+      context: [comparison]
+
+hackernews:
+  account: GeneralGlitch
+  dedup: "source+asset+day"
+  rules:
+    - condition: "value >= 1000"
+      outcome: WTF
+      context: [comparison]
+
+github_npm_pypi:
+  account: GeneralGlitch
+  dedup: "source+asset+week"
+  rules:
+    - condition: "change_pct >= 500"
+      outcome: WTF
+      context: [comparison]
+    - condition: "value >= 10000"
+      outcome: RECORD
+      context: [comparison]
+
+shelter:
+  account: GeneralGlitch
+  dedup: "region+week"
+  rules:
+    - condition: "change_pct >= 200"
+      outcome: WATCH
+      context: [comparison, human_scale]
+
+sports:
+  account: GeneralGlitch
+  dedup: "source+asset+day"
+  rules:
+    - condition: "change_pct >= 50"
+      outcome: WTF
+      context: [comparison]

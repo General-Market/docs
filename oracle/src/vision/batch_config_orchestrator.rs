@@ -1,7 +1,7 @@
 //! Batch config consensus — bridge orchestrator pattern.
 //!
 //! Runs as independent async task, separate from settlement cycle.
-//! Own timing, own leader rotation (round % num_issuers), own SignatureCollector.
+//! Own timing, own leader rotation (round % num_oracles), own SignatureCollector.
 //!
 //! Flow:
 //!   Leader: poll data-node -> propose composite hash -> collect BLS co-signs -> publish
@@ -223,7 +223,7 @@ impl BatchConfigOrchestrator {
             self.round += 1;
 
             // Determine leader for this round
-            // let is_leader = (self.round % num_issuers) == my_issuer_index;
+            // let is_leader = (self.round % num_oracles) == my_oracle_index;
             //
             // if is_leader {
             //     self.run_leader_round().await;

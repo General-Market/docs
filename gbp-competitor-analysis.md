@@ -138,7 +138,7 @@ Polymarket uses a public order book. That means:
 - Larger players copy winning strategies
 - Front-runners profit from your analysis
 
-Vision uses sealed bitmap commitments. Your bets are hashed on-chain before the tick opens. Nobody — not other players, not the protocol, not even the issuer nodes — can see your positions until after resolution.
+Vision uses sealed bitmap commitments. Your bets are hashed on-chain before the tick opens. Nobody — not other players, not the protocol, not even the oracle nodes — can see your positions until after resolution.
 
 It's the same reason sealed-bid auctions exist: your strategy stays private.
 

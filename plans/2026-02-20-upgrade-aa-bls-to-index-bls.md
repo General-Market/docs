@@ -25,7 +25,7 @@
 Index pattern:
 ```
 BLSLib.sol (pure library, stateless)
-    └─ BLSVerifier.sol (abstract mixin, reads aggregated pubkey from IssuerRegistry)
+    └─ BLSVerifier.sol (abstract mixin, reads aggregated pubkey from OracleRegistry)
         └─ Index.sol, BLSCustody.sol, BridgeProxy.sol, etc. (inherit mixin)
 ```
 
@@ -71,12 +71,12 @@ require(validSignatures >= threshold);
 
 **Option A: Keep per-keeper verification (simpler, but more gas)**
 - Just swap `BLSLib` import path to use Index's version
-- CollateralVault doesn't inherit `BLSVerifier` (it doesn't use IssuerRegistry)
+- CollateralVault doesn't inherit `BLSVerifier` (it doesn't use OracleRegistry)
 - Reads pubkeys from `KeeperRegistry` as before
 - Minimal code change, same gas profile
 
 **Option B: Switch to aggregated verification (less gas, more work)**
-- KeeperRegistry stores an aggregated G2 pubkey (like IssuerRegistry does)
+- KeeperRegistry stores an aggregated G2 pubkey (like OracleRegistry does)
 - CollateralVault inherits `BLSVerifier` variant that reads from KeeperRegistry
 - `settleByArbitration` takes a single aggregated signature
 - Requires off-chain aggregation by keepers before submitting
@@ -161,7 +161,7 @@ All Vision tests should pass with Index's BLS library.
 
 | Component | Why |
 |---|---|
-| `KeeperRegistry` architecture | Keepers are separate from Issuers — different trust model (2/3 vs 11/20) |
+| `KeeperRegistry` architecture | Keepers are separate from Oracles — different trust model (2/3 vs 11/20) |
 | `CollateralVault` settlement flow | Still verifies individual keeper signatures (3 keepers, not worth aggregating) |
 | BN254 curve | Both stacks already use the same curve |
 | G2 pubkey / G1 signature convention | Both stacks already use this convention |

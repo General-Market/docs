@@ -217,7 +217,7 @@ pub fn generate_aggregated_test_vectors() -> Vec<AggregatedTestVector> {
         });
     }
 
-    // Test with 20 signers (full issuer set)
+    // Test with 20 signers (full oracle set)
     {
         let message = b"aggregated_20_signers_full";
         let message_hash = ethers::utils::keccak256(message);

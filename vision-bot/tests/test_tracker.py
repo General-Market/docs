@@ -23,7 +23,7 @@ def make_tracker(config=None, pnl_file=None):
     elif "pnl_file" not in cfg:
         # Use a temp file so tests don't collide
         cfg["pnl_file"] = tempfile.mktemp(suffix=".json")
-    urls_fn = MagicMock(return_value=["http://issuer1:8080"])
+    urls_fn = MagicMock(return_value=["http://oracle1:8080"])
     return Tracker(executor, cfg, urls_fn), executor, urls_fn
 
 
@@ -237,7 +237,7 @@ def test_save_load_roundtrip(tmp_path):
 
     # Create new tracker loading from same file
     executor2 = make_mock_executor()
-    urls_fn2 = MagicMock(return_value=["http://issuer1:8080"])
+    urls_fn2 = MagicMock(return_value=["http://oracle1:8080"])
     tracker2 = Tracker(executor2, {"pnl_file": pnl_file}, urls_fn2)
 
     assert 42 in tracker2._positions

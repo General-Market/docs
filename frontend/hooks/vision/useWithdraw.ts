@@ -5,18 +5,18 @@ import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { ISSUER_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
+import { ORACLE_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { indexL3 } from '@/lib/wagmi'
 
 const VISION_ADDRESS = (
   process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-const ISSUER_REGISTRY_ADDRESS = (
-  process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
+const ORACLE_REGISTRY_ADDRESS = (
+  process.env.NEXT_PUBLIC_ORACLE_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
 ) as `0x${string}`
 
-import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
@@ -46,8 +46,8 @@ export interface UseWithdrawReturn {
 }
 
 /**
- * Fetch a BLS-signed balance proof from issuer nodes.
- * Uses the Next.js proxy first (avoids CORS), then falls back to direct issuer URLs.
+ * Fetch a BLS-signed balance proof from oracle nodes.
+ * Uses the Next.js proxy first (avoids CORS), then falls back to direct oracle URLs.
  */
 async function fetchBalanceProof(
   batchId: bigint,
@@ -74,8 +74,8 @@ async function fetchBalanceProof(
     errors.push(`proxy: ${(e as Error).message}`)
   }
 
-  // Fallback: try direct issuer URLs (works in non-browser contexts like E2E tests)
-  for (const url of VISION_ISSUER_URLS) {
+  // Fallback: try direct oracle URLs (works in non-browser contexts like E2E tests)
+  for (const url of VISION_ORACLE_URLS) {
     try {
       const res = await fetch(`${url}${path}`)
       if (res.ok) {
@@ -93,15 +93,15 @@ async function fetchBalanceProof(
     }
   }
 
-  throw new Error(`Failed to fetch balance proof from all issuers: ${errors.join('; ')}`)
+  throw new Error(`Failed to fetch balance proof from all oracles: ${errors.join('; ')}`)
 }
 
 /**
  * Hook to withdraw from a Vision batch.
  *
  * Flow:
- * 1. Fetch BLS-signed balance proof from issuer node (pre-generated at tick end)
- * 2. Read referenceNonce from IssuerRegistry on-chain
+ * 1. Fetch BLS-signed balance proof from oracle node (pre-generated at tick end)
+ * 2. Read referenceNonce from OracleRegistry on-chain
  * 3. Call Vision.withdraw(batchId, finalBalance, blsSignature, referenceNonce, signersBitmask)
  *
  * The contract verifies the BLS signature, deducts 0.3% fee on profit,
@@ -116,13 +116,13 @@ export function useWithdraw(): UseWithdrawReturn {
 
   const withdrawHandled = useRef(false)
 
-  // Read latest snapshot nonce from IssuerRegistry (for BLS verification)
+  // Read latest snapshot nonce from OracleRegistry (for BLS verification)
   const { data: lastSnapshotNonce } = useReadContract({
-    address: ISSUER_REGISTRY_ADDRESS,
-    abi: ISSUER_REGISTRY_ABI,
+    address: ORACLE_REGISTRY_ADDRESS,
+    abi: ORACLE_REGISTRY_ABI,
     functionName: 'lastSnapshotNonce',
     chainId: indexL3.id,
-    query: { enabled: ISSUER_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: ORACLE_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
 
   // --- Withdraw tx ---
@@ -171,7 +171,7 @@ export function useWithdraw(): UseWithdrawReturn {
 
     // Validate BLS proof before submitting
     if (!fetchedProof.blsSig || fetchedProof.blsSig === '' || fetchedProof.blsSig === '0x') {
-      setErrorMsg('Balance proof has empty BLS signature. The issuers may not have signed yet — try again in a few seconds.')
+      setErrorMsg('Balance proof has empty BLS signature. The oracles may not have signed yet — try again in a few seconds.')
       setStep('error')
       return
     }

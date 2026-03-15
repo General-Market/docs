@@ -10,7 +10,7 @@ import "../src/libraries/TypesLib.sol";
 import "../src/libraries/ErrorsLib.sol";
 import "../src/libraries/EventsLib.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 
 /// @title IndexBatchFillConfirmation.t.sol - Tests for Story 2.4
 /// @notice Tests for confirmBatch, confirmFills, and refundExpiredOrder
@@ -44,10 +44,10 @@ contract IndexBatchFillConfirmationTest is TestHelper {
         );
         index = Investment(address(proxy));
 
-        // Setup IssuerRegistry with real BLS keys for verification
-        IssuerRegistry registry = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(registry, address(this));
-        index.setIssuerRegistry(address(registry));
+        // Setup OracleRegistry with real BLS keys for verification
+        OracleRegistry registry = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(registry, address(this));
+        index.setOracleRegistry(address(registry));
 
         // Create test ITP
         uint256[] memory weights = new uint256[](1);
@@ -87,19 +87,19 @@ contract IndexBatchFillConfirmationTest is TestHelper {
     // Helper: sign a confirmBatch call
     function _signBatch(uint256 cycleNumber, uint256[] memory orderIds) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, orderIds));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // Helper: sign a confirmFills call
     function _signFills(uint256 cycleNumber, TypesLib.Fill[] memory fills) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), cycleNumber, fills));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // Helper: sign a refundExpiredOrder call
     function _signRefund(uint256 orderId) internal returns (bytes memory) {
         bytes32 msgHash = keccak256(abi.encode(block.chainid, address(index), "refund", orderId));
-        return signWithTestIssuers(msgHash);
+        return signWithTestOracles(msgHash);
     }
 
     // ============ CONFIRM BATCH TESTS ============

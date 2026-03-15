@@ -1,7 +1,7 @@
 //! Backend price fetcher implementation
 //!
 //! Fetches prices from the data-node backend service instead of Bitget directly.
-//! This is the primary price source for all issuer operations.
+//! This is the primary price source for all oracle operations.
 
 use async_trait::async_trait;
 use common::types::{Price, PriceSource};

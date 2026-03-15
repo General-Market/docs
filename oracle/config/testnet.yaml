@@ -1,12 +1,12 @@
-# Issuer Node Configuration - Index L3 Testnet
+# Oracle Node Configuration - Index L3 Testnet
 #
 # Configuration priority: CLI args > Environment variables > This file > Defaults
 #
 # For private keys, prefer using environment variables:
-#   ISSUER_PRIVATE_KEY=0x... (Ethereum signing key)
-#   ISSUER_BLS_KEY_PATH=/path/to/bls.key (BLS signing key file)
+#   ORACLE_PRIVATE_KEY=0x... (Ethereum signing key)
+#   ORACLE_BLS_KEY_PATH=/path/to/bls.key (BLS signing key file)
 
-# Node identity (1-20, unique per issuer)
+# Node identity (1-20, unique per oracle)
 node_id: 1
 
 # P2P listen port (default: 9000 + node_id)
@@ -22,7 +22,7 @@ bls_key_path: "./keys/bls-node1.key"
 # These can also be loaded from --deployment-file deployments/local.json
 index_address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
 governance_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-issuer_registry_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+oracle_registry_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 collateral_registry_address: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
 bls_custody_address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
 l3_bridge_custody_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
@@ -38,5 +38,5 @@ log_level: "info"
 log_dir: "./logs"
 json_logs: false
 
-# Private key file path (alternative to ISSUER_PRIVATE_KEY env var)
-# private_key_path: "./keys/issuer1.key"
+# Private key file path (alternative to ORACLE_PRIVATE_KEY env var)
+# private_key_path: "./keys/oracle1.key"

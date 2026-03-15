@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
-import {MirrorIssuerRegistry} from "../src/registry/MirrorIssuerRegistry.sol";
-import {IMirrorIssuerRegistry} from "../src/interfaces/IMirrorIssuerRegistry.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
+import {IMirrorOracleRegistry} from "../src/interfaces/IMirrorOracleRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import {ErrorsLib} from "../src/libraries/ErrorsLib.sol";
 import {EventsLib} from "../src/libraries/EventsLib.sol";
 import {BLSLib} from "../src/libraries/BLSLib.sol";
@@ -14,10 +14,10 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Governance} from "../src/Governance.sol";
 import "./helpers/TestHelper.sol";
 
-/// @title MirrorIssuerRegistry.t.sol - Tests for Story 8.2 (Phase 2B updated)
-/// @notice Tests for MirrorIssuerRegistry synced via BLS proofs with individual pubkeys
-contract MirrorIssuerRegistryTest is TestHelper {
-    MirrorIssuerRegistry public mirror;
+/// @title MirrorOracleRegistry.t.sol - Tests for Story 8.2 (Phase 2B updated)
+/// @notice Tests for MirrorOracleRegistry synced via BLS proofs with individual pubkeys
+contract MirrorOracleRegistryTest is TestHelper {
+    MirrorOracleRegistry public mirror;
     address public admin = address(this);
     address public user1 = address(0x1);
     address public user2 = address(0x2);
@@ -42,13 +42,13 @@ contract MirrorIssuerRegistryTest is TestHelper {
             mockSignature[i] = bytes1(uint8(i + 100));
         }
 
-        // Deploy MirrorIssuerRegistry as UUPS proxy
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        // Deploy MirrorOracleRegistry as UUPS proxy
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (validPubkey1, 2, 3, admin))
         );
-        mirror = MirrorIssuerRegistry(address(proxy));
+        mirror = MirrorOracleRegistry(address(proxy));
     }
 
     // ============ HELPERS ============
@@ -93,47 +93,47 @@ contract MirrorIssuerRegistryTest is TestHelper {
     // ============ TASK 11.3: INITIALIZE REVERT ON INVALID PUBKEY ============
 
     function test_initialize_revertsOnInvalidPubkeyLength() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
 
         // Try to initialize with 64-byte pubkey (should fail)
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (invalidPubkey, 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (invalidPubkey, 2, 3, admin))
         );
     }
 
     function test_initialize_revertsOnEmptyPubkey() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         bytes memory emptyPubkey = new bytes(0);
 
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (emptyPubkey, 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (emptyPubkey, 2, 3, admin))
         );
     }
 
     function test_initialize_revertsOnTooLongPubkey() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         bytes memory longPubkey = new bytes(256);
 
         vm.expectRevert(ErrorsLib.E091_InvalidAggPubkey.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (longPubkey, 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (longPubkey, 2, 3, admin))
         );
     }
 
     // ============ ZERO ADDRESS VALIDATION TESTS (HIGH-1 FIX) ============
 
     function test_initialize_revertsOnZeroAdmin() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
 
         vm.expectRevert(ErrorsLib.E092_ZeroAdmin.selector);
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 2, 3, address(0)))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (validPubkey1, 2, 3, address(0)))
         );
     }
 
@@ -145,22 +145,22 @@ contract MirrorIssuerRegistryTest is TestHelper {
     // ============ THRESHOLD VALIDATION TESTS (HIGH-3 FIX) ============
 
     function test_initialize_revertsOnZeroThreshold() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E093_InvalidThreshold.selector, 0, 3));
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 0, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (validPubkey1, 0, 3, admin))
         );
     }
 
     function test_initialize_revertsOnThresholdGreaterThanActiveCount() public {
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
 
         vm.expectRevert(abi.encodeWithSelector(ErrorsLib.E093_InvalidThreshold.selector, 5, 3));
         new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 5, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (validPubkey1, 5, 3, admin))
         );
     }
 
@@ -249,7 +249,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
     }
 
     // ============ TASK 11.4 & AC8: SYNC HAPPY PATH ============
-    // Note: Happy-path sync tests with BLS mocking are in MirrorIssuerRegistryIntegrationTest
+    // Note: Happy-path sync tests with BLS mocking are in MirrorOracleRegistryIntegrationTest
     // Unit tests here focus on validation error paths that don't require BLS verification
 
     // ============ TASK 11.8: VIEW FUNCTION TESTS ============
@@ -285,7 +285,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
 
     function test_setAdmin_revertsForNonAdmin() public {
         vm.prank(user1);
-        vm.expectRevert(MirrorIssuerRegistry.Unauthorized.selector);
+        vm.expectRevert(MirrorOracleRegistry.Unauthorized.selector);
         mirror.setAdmin(user2);
     }
 
@@ -295,7 +295,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
         assertEq(mirror.admin(), user1);
 
         // Original admin can no longer set admin
-        vm.expectRevert(MirrorIssuerRegistry.Unauthorized.selector);
+        vm.expectRevert(MirrorOracleRegistry.Unauthorized.selector);
         mirror.setAdmin(user2);
 
         // New admin can set admin
@@ -308,17 +308,17 @@ contract MirrorIssuerRegistryTest is TestHelper {
 
     function test_upgradeAuthorization_adminCanUpgrade() public {
         // Deploy new implementation
-        MirrorIssuerRegistry newImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry newImpl = new MirrorOracleRegistry();
 
         // Admin can upgrade
         mirror.upgradeToAndCall(address(newImpl), "");
     }
 
     function test_upgradeAuthorization_nonAdminCannotUpgrade() public {
-        MirrorIssuerRegistry newImpl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry newImpl = new MirrorOracleRegistry();
 
         vm.prank(user1);
-        vm.expectRevert(MirrorIssuerRegistry.Unauthorized.selector);
+        vm.expectRevert(MirrorOracleRegistry.Unauthorized.selector);
         mirror.upgradeToAndCall(address(newImpl), "");
     }
 
@@ -353,7 +353,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
 
     function test_constructor_disablesInitializers() public {
         // Deploy implementation directly (not via proxy)
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
 
         // Try to initialize directly - should fail
         vm.expectRevert(); // OZ Initializable error
@@ -361,7 +361,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
     }
 
     function test_interface_compliance() public view {
-        // Verify all IMirrorIssuerRegistry functions are callable
+        // Verify all IMirrorOracleRegistry functions are callable
         mirror.getAggregatedPubkey();
         mirror.aggregatedPubkey();
         mirror.threshold();
@@ -372,12 +372,12 @@ contract MirrorIssuerRegistryTest is TestHelper {
 
     function test_initialize_thresholdEqualsActiveCount_succeeds() public {
         // Edge case: threshold = activeCount should be valid
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (validPubkey1, 3, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (validPubkey1, 3, 3, admin))
         );
-        MirrorIssuerRegistry m = MirrorIssuerRegistry(address(proxy));
+        MirrorOracleRegistry m = MirrorOracleRegistry(address(proxy));
         assertEq(m.threshold(), 3);
         assertEq(m.activeCount(), 3);
     }
@@ -394,7 +394,7 @@ contract MirrorIssuerRegistryTest is TestHelper {
 
     function test_setAuthorizedMissedCountCaller_revertsForNonAdmin() public {
         vm.prank(user1);
-        vm.expectRevert(MirrorIssuerRegistry.Unauthorized.selector);
+        vm.expectRevert(MirrorOracleRegistry.Unauthorized.selector);
         mirror.setAuthorizedMissedCountCaller(user2, true);
     }
 
@@ -405,19 +405,19 @@ contract MirrorIssuerRegistryTest is TestHelper {
     }
 }
 
-/// @title MirrorIssuerRegistryIntegrationTest - Integration with L3 IssuerRegistry (Task 12)
-/// @notice Tests the full sync flow from L3 IssuerRegistry to MirrorIssuerRegistry
+/// @title MirrorOracleRegistryIntegrationTest - Integration with L3 OracleRegistry (Task 12)
+/// @notice Tests the full sync flow from L3 OracleRegistry to MirrorOracleRegistry
 /// @dev Uses new sync() signature with individual pubkeys. First sync is TOFU (aggregated key).
 ///      Subsequent syncs use multi-pairing with 2/3 threshold.
-contract MirrorIssuerRegistryIntegrationTest is TestHelper {
-    MirrorIssuerRegistry public mirror;
-    IssuerRegistry public l3Registry;
+contract MirrorOracleRegistryIntegrationTest is TestHelper {
+    MirrorOracleRegistry public mirror;
+    OracleRegistry public l3Registry;
     Governance public governance;
 
     address public admin = address(this);
-    address public issuer1 = address(0x1001);
-    address public issuer2 = address(0x1002);
-    address public issuer3 = address(0x1003);
+    address public oracle1 = address(0x1001);
+    address public oracle2 = address(0x1002);
+    address public oracle3 = address(0x1003);
 
     bytes public pubkey1;
     bytes public pubkey2;
@@ -429,23 +429,23 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         pubkey2 = generateTestPubkey(2);
         pubkey3 = generateTestPubkey(3);
 
-        // Deploy L3 IssuerRegistry
+        // Deploy L3 OracleRegistry
         governance = deployGovernance(admin);
-        l3Registry = deployIssuerRegistry(address(governance));
+        l3Registry = deployOracleRegistry(address(governance));
 
-        // Register 3 issuers on L3 using seeds 1,2,3
-        registerIssuer(l3Registry, admin, issuer1, bytes32("ip1"), 1);
-        registerIssuer(l3Registry, admin, issuer2, bytes32("ip2"), 2);
-        registerIssuer(l3Registry, admin, issuer3, bytes32("ip3"), 3);
+        // Register 3 oracles on L3 using seeds 1,2,3
+        registerOracle(l3Registry, admin, oracle1, bytes32("ip1"), 1);
+        registerOracle(l3Registry, admin, oracle2, bytes32("ip2"), 2);
+        registerOracle(l3Registry, admin, oracle3, bytes32("ip3"), 3);
 
-        // Deploy MirrorIssuerRegistry initialized with the aggregated pubkey of test issuers 0,1,2
-        // This allows sync() TOFU bootstrap to be signed with signWithTestIssuers()
-        MirrorIssuerRegistry impl = new MirrorIssuerRegistry();
+        // Deploy MirrorOracleRegistry initialized with the aggregated pubkey of test oracles 0,1,2
+        // This allows sync() TOFU bootstrap to be signed with signWithTestOracles()
+        MirrorOracleRegistry impl = new MirrorOracleRegistry();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(impl),
-            abi.encodeCall(MirrorIssuerRegistry.initialize, (blsAggPubkey("0,1,2"), 2, 3, admin))
+            abi.encodeCall(MirrorOracleRegistry.initialize, (blsAggPubkey("0,1,2"), 2, 3, admin))
         );
-        mirror = MirrorIssuerRegistry(address(proxy));
+        mirror = MirrorOracleRegistry(address(proxy));
     }
 
     // ============ HELPERS ============
@@ -476,13 +476,13 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
                 uint256(2)  // threshold
             )
         );
-        bytes memory syncSig = signWithTestIssuers(syncHash);
+        bytes memory syncSig = signWithTestOracles(syncHash);
         mirror.sync(pubkeys, ids, bitmask, 3, 2, 1, syncSig, 0, 0);
     }
 
-    function test_integration_l3RegistryHasIssuers() public view {
-        // Verify L3 registry has the expected issuers
-        assertEq(l3Registry.activeIssuerCount(), 3);
+    function test_integration_l3RegistryHasOracles() public view {
+        // Verify L3 registry has the expected oracles
+        assertEq(l3Registry.activeOracleCount(), 3);
     }
 
     function test_integration_mirrorInitializedWithMatchingState() public view {
@@ -492,16 +492,16 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertEq(mirror.registryNonce(), 0);
     }
 
-    function test_integration_l3AddIssuerEmitsEvent() public {
-        // Adding a 4th issuer on L3 should emit RegistryStateChanged
+    function test_integration_l3AddOracleEmitsEvent() public {
+        // Adding a 4th oracle on L3 should emit RegistryStateChanged
         bytes memory pubkey4 = generateTestPubkey(4);
-        address issuer4 = address(0x1004);
+        address oracle4 = address(0x1004);
 
         // Get current nonce from L3 registry
         uint256 currentNonce = l3Registry.registryNonce();
 
-        // Generate Proof of Possession for issuer4
-        bytes32 popMsg4 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), issuer4, pubkey4));
+        // Generate Proof of Possession for oracle4
+        bytes32 popMsg4 = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), oracle4, pubkey4));
         bytes memory popSig4 = blsSign(vm.toString(uint256(4)), popMsg4);
 
         // Expect RegistryStateChanged event
@@ -509,7 +509,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         emit EventsLib.RegistryStateChanged(currentNonce + 1, 4, bytes32(0));
 
         vm.prank(admin);
-        l3Registry.addIssuer(issuer4, bytes32("ip4"), pubkey4, popSig4);
+        l3Registry.addOracle(oracle4, bytes32("ip4"), pubkey4, popSig4);
 
         // Verify nonce incremented
         assertEq(l3Registry.registryNonce(), currentNonce + 1);
@@ -532,7 +532,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         uint256 l3Nonce = l3Registry.registryNonce();
         uint256 mirrorNonce = mirror.registryNonce();
 
-        // Initially, L3 has nonce from registering 3 issuers, mirror has 0
+        // Initially, L3 has nonce from registering 3 oracles, mirror has 0
         assertTrue(l3Nonce >= mirrorNonce);
     }
 
@@ -545,8 +545,8 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
     // ============ AC8: FULL SYNC FLOW TEST (TOFU BOOTSTRAP) ============
 
     function test_integration_fullSyncFlow_L3ToMirror() public {
-        // TOFU bootstrap sync: individual pubkeys for issuers 0,1,2
-        // Signed with signWithTestIssuers (verified against aggregated pubkey)
+        // TOFU bootstrap sync: individual pubkeys for oracles 0,1,2
+        // Signed with signWithTestOracles (verified against aggregated pubkey)
         (bytes[] memory pubkeys, uint256[] memory ids) = _buildSyncPubkeys();
         uint256 syncNonce = 1;
         uint256 newActiveCount = 3;
@@ -565,7 +565,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
                 newThreshold
             )
         );
-        bytes memory blsSignature = signWithTestIssuers(messageHash);
+        bytes memory blsSignature = signWithTestOracles(messageHash);
 
         mirror.sync(pubkeys, ids, newBitmask, newActiveCount, newThreshold, syncNonce, blsSignature, 0, 0);
 
@@ -588,12 +588,12 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertEq(mirror.registryNonce(), 1);
         assertEq(mirror.lastSnapshotNonce(), 1);
 
-        // Add issuer on L3
+        // Add oracle on L3
         bytes memory pubkey4_ = generateTestPubkey(4);
         bytes32 popMsg4_ = keccak256(abi.encode("INDEX_BLS_POP", block.chainid, address(l3Registry), address(0x1004), pubkey4_));
         bytes memory popSig4_ = blsSign(vm.toString(uint256(4)), popMsg4_);
         vm.prank(admin);
-        l3Registry.addIssuer(address(0x1004), bytes32("ip4"), pubkey4_, popSig4_);
+        l3Registry.addOracle(address(0x1004), bytes32("ip4"), pubkey4_, popSig4_);
 
         // Sync 2: multi-pairing (uses individual pubkeys stored from sync 1)
         (bytes[] memory pubkeys2, uint256[] memory ids2) = _buildSyncPubkeys();
@@ -613,8 +613,8 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
                 newThreshold2
             )
         );
-        // referenceNonce=1 (snapshot from sync 1), signersBitmask=0x07 (issuers 0,1,2)
-        mirror.sync(pubkeys2, ids2, newBitmask2, newActiveCount2, newThreshold2, 2, signWithTestIssuers(msg2), 1, 0x07);
+        // referenceNonce=1 (snapshot from sync 1), signersBitmask=0x07 (oracles 0,1,2)
+        mirror.sync(pubkeys2, ids2, newBitmask2, newActiveCount2, newThreshold2, 2, signWithTestOracles(msg2), 1, 0x07);
 
         assertEq(mirror.registryNonce(), 2);
         assertEq(mirror.activeCount(), 4);
@@ -622,7 +622,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         assertEq(mirror.lastSnapshotNonce(), 2);
     }
 
-    // ============ SNAPSHOT AND IISSUERREGISTRY TESTS ============
+    // ============ SNAPSHOT AND IORACLEREGISTRY TESTS ============
 
     function test_integration_snapshotStoredCorrectly() public {
         _doTofuSync();
@@ -639,7 +639,7 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
 
         // Build a message and sign it, then verify via verifyBLSMultiPairing
         bytes32 testMsg = keccak256("test message");
-        bytes memory sig = signWithTestIssuers(testMsg);
+        bytes memory sig = signWithTestOracles(testMsg);
 
         bool valid = mirror.verifyBLSMultiPairing(0x07, testMsg, sig);
         assertTrue(valid, "verifyBLSMultiPairing should succeed for valid sig");
@@ -651,14 +651,14 @@ contract MirrorIssuerRegistryIntegrationTest is TestHelper {
         // Authorize a caller
         mirror.setAuthorizedMissedCountCaller(admin, true);
 
-        // Increment missed counts for issuer 1 (bitmask = 0x02)
+        // Increment missed counts for oracle 1 (bitmask = 0x02)
         mirror.incrementMissedCounts(0x02);
-        assertEq(mirror.getMissedCount(1), 1, "Issuer 1 should have 1 missed count");
+        assertEq(mirror.getMissedCount(1), 1, "Oracle 1 should have 1 missed count");
 
-        // Increment again for issuers 0 and 2 (bitmask = 0x05)
+        // Increment again for oracles 0 and 2 (bitmask = 0x05)
         mirror.incrementMissedCounts(0x05);
-        assertEq(mirror.getMissedCount(0), 1, "Issuer 0 should have 1 missed count");
-        assertEq(mirror.getMissedCount(2), 1, "Issuer 2 should have 1 missed count");
-        assertEq(mirror.getMissedCount(1), 1, "Issuer 1 should still have 1 missed count");
+        assertEq(mirror.getMissedCount(0), 1, "Oracle 0 should have 1 missed count");
+        assertEq(mirror.getMissedCount(2), 1, "Oracle 2 should have 1 missed count");
+        assertEq(mirror.getMissedCount(1), 1, "Oracle 1 should still have 1 missed count");
     }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
 import "../src/vision/Vision.sol";
-import "../src/interfaces/IIssuerRegistry.sol";
+import "../src/interfaces/IOracleRegistry.sol";
 import "./helpers/DeployBLSHelper.sol";
 
 /// @title VisionBulkCreate - Ephemeral helper to create batches in bulk
@@ -42,7 +42,7 @@ contract VisionBulkCreate {
 ///
 ///         Requires:
 ///           - Vision contract deployed (reads from active-deployment.json or env VISION_ADDRESS)
-///           - IssuerRegistry with BLS keys registered (from DeployFullSystemE2E)
+///           - OracleRegistry with BLS keys registered (from DeployFullSystemE2E)
 ///           - bls-tool built (target/release/bls-tool)
 ///           - vision-recommended-configs.json generated from data-node API
 ///
@@ -55,7 +55,7 @@ contract VisionBulkCreate {
 ///   forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
 ///     --broadcast --slow --rpc-url http://localhost:8546
 contract DeployAllVisionBatches is DeployBLSHelper {
-    uint256 constant SIGNERS_BITMASK = 7;  // 0b111 = 3 issuers
+    uint256 constant SIGNERS_BITMASK = 7;  // 0b111 = 3 oracles
 
     function run() external {
         uint256 deployerKey = vm.envOr(
@@ -71,9 +71,9 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         }
         require(visionAddr != address(0), "Vision address not found");
 
-        // Read IssuerRegistry from Vision contract
-        address registryAddr = address(Vision(visionAddr).blsIssuerRegistry());
-        uint256 refNonce = IIssuerRegistry(registryAddr).lastSnapshotNonce();
+        // Read OracleRegistry from Vision contract
+        address registryAddr = address(Vision(visionAddr).blsOracleRegistry());
+        uint256 refNonce = IOracleRegistry(registryAddr).lastSnapshotNonce();
 
         // Read recommended configs from data-node generated JSON
         string memory configJson = vm.readFile("../deployments/vision-recommended-configs.json");
@@ -84,7 +84,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         console.log("VISION BULK BATCH DEPLOYMENT");
         console.log("===========================================");
         console.log("Vision:          ", visionAddr);
-        console.log("IssuerRegistry:  ", registryAddr);
+        console.log("OracleRegistry:  ", registryAddr);
         console.log("Reference nonce: ", refNonce);
         console.log("Sources from config:", count);
         console.log("");
@@ -122,7 +122,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
                 lockOffsets[i]
             ));
 
-            // Sign via FFI with test issuers (seeds 0,1,2)
+            // Sign via FFI with test oracles (seeds 0,1,2)
             blsSigs[i] = blsSign("0,1,2", messageHash);
         }
 

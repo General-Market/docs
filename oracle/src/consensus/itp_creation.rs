@@ -6,7 +6,7 @@
 //! ## Flow (Atomic)
 //!
 //! 1. User calls `BridgeProxy.requestCreateItp()` on Settlement chain
-//! 2. Issuers detect `CreateItpRequested` event
+//! 2. Oracles detect `CreateItpRequested` event
 //! 3. Leader broadcasts `ItpCreationProposal` with weightsHash + assetsHash
 //! 4. Followers verify and sign
 //! 5. Leader aggregates signatures (BFT >2/3 threshold)
@@ -16,7 +16,7 @@
 //! ## Design: STATELESS
 //!
 //! This handler maintains no state between cycles. All pending requests
-//! are queried fresh from the chain each cycle, making the issuer
+//! are queried fresh from the chain each cycle, making the oracle
 //! resilient to restarts.
 
 use ethers::types::{Address, H256, U256};
@@ -153,7 +153,7 @@ impl Default for ItpCreationConfig {
 pub struct ItpCreationResult {
     /// Request nonce
     pub nonce: U256,
-    /// Bitmap of issuer IDs that signed (bit i = issuer i signed)
+    /// Bitmap of oracle IDs that signed (bit i = oracle i signed)
     pub signer_bitmap: U256,
     /// Aggregated G2 public key of signers (128 bytes)
     pub aggregated_pubkey: Vec<u8>,

@@ -8,7 +8,7 @@ Shares can be minted on L3 without verifying the AP (Authorized Participant) act
 
 ```
 ┌─────────────┐  SSE (holdings)  ┌───────────┐  SSE (holdings)  ┌──────────────────┐
-│  Mock AP    │ ───────────────→ │ Data-Node │ ───────────────→ │  Issuer Node     │
+│  Mock AP    │ ───────────────→ │ Data-Node │ ───────────────→ │  Oracle Node     │
 │  (sidecar)  │                  │ (1..N)    │                  │                  │
 │             │                  │           │                  │ backing/ module  │
 │ spot balance│                  │  live AP   │                  │  ├ tracker.rs     │
@@ -24,7 +24,7 @@ Shares can be minted on L3 without verifying the AP (Authorized Participant) act
 Three layers:
 1. **Mock AP** — exposes token holdings via SSE stream (replaced by Bitget API later)
 2. **Data-node(s)** — subscribe to AP SSE, cache live holdings, re-broadcast via own SSE
-3. **Issuer `backing/` module** — subscribes to data-node SSE, maintains always-on cache, gates fill signing
+3. **Oracle `backing/` module** — subscribes to data-node SSE, maintains always-on cache, gates fill signing
 
 ## Backing Ledger
 

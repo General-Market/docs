@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./helpers/TestHelper.sol";
 import {Governance} from "../src/Governance.sol";
-import {IssuerRegistry} from "../src/registry/IssuerRegistry.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
 import "../src/registry/CollateralRegistry.sol";
 import "../src/libraries/TypesLib.sol";
 
@@ -12,7 +12,7 @@ import "../src/libraries/TypesLib.sol";
 contract CollateralRegistryTest is TestHelper {
     CollateralRegistry public registry;
     Governance governance;
-    IssuerRegistry issuerReg;
+    OracleRegistry oracleReg;
 
     address public admin = address(0x1);
     address public user = address(0x2);
@@ -45,10 +45,10 @@ contract CollateralRegistryTest is TestHelper {
 
     function setUp() public {
         governance = deployGovernance(admin);
-        issuerReg = deployIssuerRegistry(address(governance));
-        registerTestIssuersWithBLS(issuerReg, admin);
+        oracleReg = deployOracleRegistry(address(governance));
+        registerTestOraclesWithBLS(oracleReg, admin);
 
-        registry = new CollateralRegistry(admin, address(issuerReg));
+        registry = new CollateralRegistry(admin, address(oracleReg));
     }
 
     // ============ BLS SIGNING HELPER ============
@@ -64,7 +64,7 @@ contract CollateralRegistryTest is TestHelper {
         bytes32 message = keccak256(
             abi.encode(block.chainid, address(registry), itpId, fromChain, toChain, amount, txType, nonce)
         );
-        return signWithTestIssuers(message);
+        return signWithTestOracles(message);
     }
 
     // ============ CONSTRUCTOR TESTS ============
@@ -75,7 +75,7 @@ contract CollateralRegistryTest is TestHelper {
 
     function test_Constructor_RevertsOnZeroAddress() public {
         vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
-        new CollateralRegistry(address(0), address(issuerReg));
+        new CollateralRegistry(address(0), address(oracleReg));
     }
 
     // ============ AC2: BRIDGE TYPE - Updates Both Chains ============
@@ -429,7 +429,7 @@ contract CollateralRegistryTest is TestHelper {
         assertEq(registry.getNonce(), initialNonce + 1);
 
         // Compute expected message hash as specified in interface
-        // This is what off-chain issuers must produce for BLS signing
+        // This is what off-chain oracles must produce for BLS signing
         bytes32 expectedMessage = keccak256(
             abi.encode(
                 block.chainid, // Current chain ID

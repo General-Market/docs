@@ -6,7 +6,7 @@ use common::types::{CrossChainOrder, CrossChainSellOrderEvent, ItpCreationReques
 use crate::api::AppState;
 use crate::chain_cache::{
     NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
-    UserCostBasis, FillRecord, CachedLimitOrder, CachedIssuer,
+    UserCostBasis, FillRecord, CachedLimitOrder, CachedOracle,
 };
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
@@ -68,10 +68,10 @@ abigen!(
 );
 
 abigen!(
-    IssuerRegistryPoller,
+    OracleRegistryPoller,
     r#"[
-        function getActiveIssuerEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
-        function activeIssuerCount() external view returns (uint256)
+        function getActiveOracleEndpoints() external view returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
+        function activeOracleCount() external view returns (uint256)
         function registryNonce() external view returns (uint256)
         function aggregatedPubkey() external view returns (bytes)
         function consensusPaused() external view returns (bool)
@@ -630,15 +630,15 @@ pub async fn poll_batched_orders_once(state: &AppState) -> Result<(), Box<dyn st
     Ok(())
 }
 
-/// Poll the IssuerRegistry for active issuer endpoints + BLS pubkeys.
-pub async fn poll_issuer_registry_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let registry_addr = crate::api::deployment_addr(&state.deployment, "IssuerRegistry")?;
-    let registry = IssuerRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
+/// Poll the OracleRegistry for active oracle endpoints + BLS pubkeys.
+pub async fn poll_oracle_registry_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let registry_addr = crate::api::deployment_addr(&state.deployment, "OracleRegistry")?;
+    let registry = OracleRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
 
     // Returns (uint256[] ids, bytes32[] ips, bytes[] pubkeys)
-    let (ids, ips, pubkeys) = registry.get_active_issuer_endpoints().call().await?;
+    let (ids, ips, pubkeys) = registry.get_active_oracle_endpoints().call().await?;
 
-    let cached: Vec<CachedIssuer> = ids
+    let cached: Vec<CachedOracle> = ids
         .iter()
         .enumerate()
         .map(|(i, id)| {
@@ -648,17 +648,17 @@ pub async fn poll_issuer_registry_once(state: &AppState) -> Result<(), Box<dyn s
                 &ip_bytes[..ip_bytes.iter().position(|&b| b == 0).unwrap_or(ip_bytes.len())]
             ).to_string();
             let pubkey = pubkeys.get(i).map(|b| format!("0x{}", hex::encode(b))).unwrap_or_default();
-            CachedIssuer {
-                address: format!("issuer-{}", id),
+            CachedOracle {
+                address: format!("oracle-{}", id),
                 endpoint: ip_str,
                 bls_pubkey: pubkey,
             }
         })
         .collect();
 
-    let mut cache = state.chain_cache.issuer_registry.write().await;
+    let mut cache = state.chain_cache.oracle_registry.write().await;
     *cache = cached;
-    state.chain_cache.issuer_registry_gen.bump();
+    state.chain_cache.oracle_registry_gen.bump();
     Ok(())
 }
 
@@ -685,13 +685,13 @@ pub async fn poll_cycle_metadata_once(state: &AppState) -> Result<(), Box<dyn st
     Ok(())
 }
 
-/// Poll IssuerRegistry metadata: activeIssuerCount, aggregatedPubkey, consensusPaused.
+/// Poll OracleRegistry metadata: activeOracleCount, aggregatedPubkey, consensusPaused.
 pub async fn poll_registry_metadata_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let registry_addr = crate::api::deployment_addr(&state.deployment, "IssuerRegistry")?;
-    let registry = IssuerRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
+    let registry_addr = crate::api::deployment_addr(&state.deployment, "OracleRegistry")?;
+    let registry = OracleRegistryPoller::new(registry_addr, Arc::clone(&state.l3_provider));
 
     // Bind call builders to let-variables to extend their lifetimes
-    let c_active = registry.active_issuer_count();
+    let c_active = registry.active_oracle_count();
     let c_pubkey = registry.aggregated_pubkey();
     let c_paused = registry.consensus_paused();
     let (active_count, agg_pubkey, paused) = tokio::join!(
@@ -701,7 +701,7 @@ pub async fn poll_registry_metadata_once(state: &AppState) -> Result<(), Box<dyn
     );
 
     if let Ok(count) = active_count {
-        state.chain_cache.active_issuer_count.store(count.as_u64(), Ordering::Relaxed);
+        state.chain_cache.active_oracle_count.store(count.as_u64(), Ordering::Relaxed);
     }
     if let Ok(pk) = agg_pubkey {
         let mut cache = state.chain_cache.aggregated_pubkey.write().await;
@@ -719,8 +719,8 @@ pub async fn poll_registry_metadata_once(state: &AppState) -> Result<(), Box<dyn
 pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get confirmed block (latest - 10 for finality buffer).
     // IMPORTANT: confirmed_block is stored AFTER event caches are populated (end of function)
-    // to prevent race: issuer reads confirmed_block then queries events — if we store
-    // confirmed_block first, the issuer may see the new block height but get stale event data.
+    // to prevent race: oracle reads confirmed_block then queries events — if we store
+    // confirmed_block first, the oracle may see the new block height but get stale event data.
     let latest_block = state.settlement_provider.get_block_number().await?.as_u64();
     let confirmed = latest_block.saturating_sub(10);
 
@@ -861,7 +861,7 @@ pub async fn poll_settlement_state_once(state: &AppState) -> Result<(), Box<dyn 
     }
 
     // Store confirmed_block LAST — after all event caches are populated.
-    // This guarantees that when an issuer reads confirmed_block=N, all events
+    // This guarantees that when an oracle reads confirmed_block=N, all events
     // up to block N are already in the cache.
     state.chain_cache.settlement_confirmed_block.store(confirmed, Ordering::Relaxed);
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# vps-deploy.sh — Build, upload, and start data-node + issuers on VPS 1
+# vps-deploy.sh — Build, upload, and start data-node + oracles on VPS 1
 #
 # Runs locally on macOS. Cross-compiles for Linux x86_64, SCPs binaries
 # + config to VPS 1, sets up PostgreSQL tunnel to VPS 2, then starts services.
@@ -30,8 +30,8 @@ REMOTE_DIR="/home/max/index"
 RPC_URL="${RPC_URL:-http://142.132.164.24/}"
 CHAIN_ID="${CHAIN_ID:-111222333}"
 
-# Issuers
-ISSUER_COUNT="${ISSUER_COUNT:-3}"
+# Oracles
+ORACLE_COUNT="${ORACLE_COUNT:-3}"
 CYCLE_DURATION_MS="${CYCLE_DURATION_MS:-1000}"
 CONSENSUS_TIMEOUT_MS="${CONSENSUS_TIMEOUT_MS:-800}"
 LOG_LEVEL="${LOG_LEVEL:-info}"
@@ -75,7 +75,7 @@ while [[ $# -gt 0 ]]; do
         --logs) TAIL_LOGS=true; shift;;
         --status) STATUS_ONLY=true; shift;;
         --rpc) RPC_URL="$2"; shift 2;;
-        --issuers) ISSUER_COUNT="$2"; shift 2;;
+        --oracles) ORACLE_COUNT="$2"; shift 2;;
         --help|-h)
             echo "Usage: ./vps-deploy.sh [OPTIONS]"
             echo ""
@@ -85,12 +85,12 @@ while [[ $# -gt 0 ]]; do
             echo "  --logs          Tail remote logs"
             echo "  --status        Check service health"
             echo "  --rpc URL       Override RPC URL (default: $RPC_URL)"
-            echo "  --issuers N     Number of issuer nodes (default: 3)"
+            echo "  --oracles N     Number of oracle nodes (default: 3)"
             echo ""
             echo "Environment:"
             echo "  RPC_URL         Chain RPC endpoint"
             echo "  CHAIN_ID        Chain ID (default: 111222333)"
-            echo "  ISSUER_COUNT    Number of issuers (default: 3)"
+            echo "  ORACLE_COUNT    Number of oracles (default: 3)"
             echo "  LOG_LEVEL       Log level (default: info)"
             exit 0;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1;;
@@ -116,7 +116,7 @@ if [ "$STATUS_ONLY" = true ]; then
     echo -e "${BLUE}Checking services on VPS 1...${NC}"
     ssh_vps1 "
         echo '=== Processes ==='
-        ps aux | grep -E 'issuer|data-node' | grep -v grep || echo 'No services running'
+        ps aux | grep -E 'oracle|data-node' | grep -v grep || echo 'No services running'
         echo ''
         echo '=== Ports ==='
         ss -tlnp 2>/dev/null | grep -E '8200|900[0-9]|1000[0-9]' || echo 'No ports listening'
@@ -133,11 +133,11 @@ fi
 # ============ Main Deploy Flow ============
 echo -e "${CYAN}"
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║         VPS 1 DEPLOYMENT — DATA-NODE + ISSUERS              ║"
+echo "║         VPS 1 DEPLOYMENT — DATA-NODE + ORACLES              ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  RPC:     ${RPC_URL}"
-echo -e "  Issuers: ${ISSUER_COUNT}"
+echo -e "  Oracles: ${ORACLE_COUNT}"
 echo -e "  Target:  ${VPS1_USER}@${VPS1_IP} (via bastion)"
 echo ""
 
@@ -148,16 +148,16 @@ if [ "$SKIP_BUILD" = false ]; then
     # Check for cross-compilation tool
     if command -v cross &>/dev/null; then
         echo -e "  Using 'cross' (Docker-based cross-compilation)"
-        cross build --release --target "$LINUX_TARGET" -p issuer -p data-node
+        cross build --release --target "$LINUX_TARGET" -p oracle -p data-node
         BINARY_DIR="target/${LINUX_TARGET}/release"
     elif command -v cargo-zigbuild &>/dev/null || command -v cargo &>/dev/null; then
         # Try zigbuild if available, otherwise attempt native cross-compile
         if command -v cargo-zigbuild &>/dev/null; then
             echo -e "  Using 'cargo-zigbuild'"
-            cargo zigbuild --release --target "$LINUX_TARGET" -p issuer -p data-node
+            cargo zigbuild --release --target "$LINUX_TARGET" -p oracle -p data-node
         else
             echo -e "  Attempting native cross-compile (requires linker for $LINUX_TARGET)"
-            cargo build --release --target "$LINUX_TARGET" -p issuer -p data-node
+            cargo build --release --target "$LINUX_TARGET" -p oracle -p data-node
         fi
         BINARY_DIR="target/${LINUX_TARGET}/release"
     else
@@ -167,18 +167,18 @@ if [ "$SKIP_BUILD" = false ]; then
         echo "  cargo install cargo-zigbuild && brew install zig"
         echo ""
         echo "Or use --skip-build and build on VPS directly:"
-        echo "  ssh to VPS 1, git clone, cargo build --release -p issuer -p data-node"
+        echo "  ssh to VPS 1, git clone, cargo build --release -p oracle -p data-node"
         exit 1
     fi
 
     # Verify binaries exist
-    for bin in issuer data-node; do
+    for bin in oracle data-node; do
         if [ ! -f "$BINARY_DIR/$bin" ]; then
             echo -e "${RED}Binary not found: $BINARY_DIR/$bin${NC}"
             exit 1
         fi
     done
-    echo -e "  ${GREEN}Binaries built: issuer $(du -h "$BINARY_DIR/issuer" | cut -f1), data-node $(du -h "$BINARY_DIR/data-node" | cut -f1)${NC}"
+    echo -e "  ${GREEN}Binaries built: oracle $(du -h "$BINARY_DIR/oracle" | cut -f1), data-node $(du -h "$BINARY_DIR/data-node" | cut -f1)${NC}"
 else
     echo -e "${BLUE}[1/5] Skipping build (--skip-build)${NC}"
     # Look for existing binaries
@@ -199,7 +199,7 @@ rm -rf "$STAGING_DIR"
 mkdir -p "$STAGING_DIR/logs" "$STAGING_DIR/data" "$STAGING_DIR/deployments"
 
 # Binaries
-cp "$BINARY_DIR/issuer" "$STAGING_DIR/"
+cp "$BINARY_DIR/oracle" "$STAGING_DIR/"
 cp "$BINARY_DIR/data-node" "$STAGING_DIR/"
 
 # Deployment file
@@ -234,7 +234,7 @@ fi
 # ============ Generate remote start script ============
 cat > "$STAGING_DIR/start-remote.sh" << 'REMOTE_START'
 #!/bin/bash
-# start-remote.sh — Start data-node + issuers on VPS 1
+# start-remote.sh — Start data-node + oracles on VPS 1
 # Auto-generated by vps-deploy.sh
 
 set -e
@@ -259,7 +259,7 @@ fi
 # Defaults (overridable via env)
 RPC_URL="${RPC_URL:-${ORBIT_RPC_URL:-http://142.132.164.24/}}"
 CHAIN_ID="${CHAIN_ID:-${ORBIT_CHAIN_ID:-111222333}}"
-ISSUER_COUNT="${ISSUER_COUNT:-3}"
+ORACLE_COUNT="${ORACLE_COUNT:-3}"
 LOG_LEVEL="${LOG_LEVEL:-info}"
 CYCLE_DURATION_MS="${CYCLE_DURATION_MS:-1000}"
 CONSENSUS_TIMEOUT_MS="${CONSENSUS_TIMEOUT_MS:-800}"
@@ -267,12 +267,12 @@ DATABASE_URL="${DATABASE_URL:-postgres://localhost/index_prices}"
 DEPLOYMENT_FILE="${DEPLOYMENT_FILE:-deployments/active-deployment.json}"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║   INDEX — VPS 1 SERVICES (data-node + issuers)       ║${NC}"
+echo -e "${BLUE}║   INDEX — VPS 1 SERVICES (data-node + oracles)       ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo "  RPC:     $RPC_URL"
 echo "  Chain:   $CHAIN_ID"
-echo "  Issuers: $ISSUER_COUNT"
+echo "  Oracles: $ORACLE_COUNT"
 echo "  DB:      $DATABASE_URL"
 echo ""
 
@@ -318,13 +318,13 @@ else
     echo -e "  ${YELLOW}PostgreSQL not ready — data-node will be skipped${NC}"
 fi
 
-# ── Issuer keys ──
+# ── Oracle keys ──
 # Read from system.env or use defaults
-ISSUER_KEYS=(
+ORACLE_KEYS=(
     ""  # index 0 unused
-    "${ISSUER_1_PRIVATE_KEY:-}"
-    "${ISSUER_2_PRIVATE_KEY:-}"
-    "${ISSUER_3_PRIVATE_KEY:-}"
+    "${ORACLE_1_PRIVATE_KEY:-}"
+    "${ORACLE_2_PRIVATE_KEY:-}"
+    "${ORACLE_3_PRIVATE_KEY:-}"
 )
 
 # Contract addresses from deployment file or env
@@ -346,10 +346,10 @@ elif [ -f "$DEPLOYMENT_FILE" ] && command -v jq &>/dev/null; then
     MOCK_USDT=$(jq -r '.contracts.MOCK_USDT // empty' "$DEPLOYMENT_FILE")
 else
     # Fall back to env vars from system.env
-    BRIDGE_PROXY="${ISSUER_BRIDGE_PROXY_ADDRESS:-}"
-    BITGET_VAULT="${ISSUER_BITGET_VAULT:-}"
-    SETTLEMENT_CUSTODY="${ISSUER_SETTLEMENT_CUSTODY:-}"
-    BLS_CUSTODY="${ISSUER_BLS_CUSTODY_ADDRESS:-}"
+    BRIDGE_PROXY="${ORACLE_BRIDGE_PROXY_ADDRESS:-}"
+    BITGET_VAULT="${ORACLE_BITGET_VAULT:-}"
+    SETTLEMENT_CUSTODY="${ORACLE_SETTLEMENT_CUSTODY:-}"
+    BLS_CUSTODY="${ORACLE_BLS_CUSTODY_ADDRESS:-}"
     VISION_ADDR=""
     INDEX_ADDR="${INDEX_ADDRESS:-}"
     MOCK_USDT=""
@@ -401,82 +401,82 @@ else
     DATA_NODE_URL=""
 fi
 
-# ── Bitget credentials for issuers ──
+# ── Bitget credentials for oracles ──
 export BITGET_READONLY_API_KEY="${BITGET_READONLY_API_KEY:-${BITGET_PUB:-dummy}}"
 export BITGET_READONLY_API_SECRET="${BITGET_READONLY_API_SECRET:-${BITGET_PK:-dummysecretdummysecretdummysecret}}"
 export BITGET_READONLY_PASSPHRASE="${BITGET_READONLY_PASSPHRASE:-${BITGET_PASS:-dummypass}}"
 
 # ── Signature threshold ──
-SIG_THRESHOLD=$((ISSUER_COUNT * 2 / 3 + 1))
+SIG_THRESHOLD=$((ORACLE_COUNT * 2 / 3 + 1))
 if [ $SIG_THRESHOLD -lt 2 ]; then SIG_THRESHOLD=2; fi
-if [ $SIG_THRESHOLD -gt $ISSUER_COUNT ]; then SIG_THRESHOLD=$ISSUER_COUNT; fi
+if [ $SIG_THRESHOLD -gt $ORACLE_COUNT ]; then SIG_THRESHOLD=$ORACLE_COUNT; fi
 
-# ── Start issuers ──
-echo -e "${BLUE}Starting $ISSUER_COUNT issuers...${NC}"
+# ── Start oracles ──
+echo -e "${BLUE}Starting $ORACLE_COUNT oracles...${NC}"
 
-for i in $(seq 1 $ISSUER_COUNT); do
+for i in $(seq 1 $ORACLE_COUNT); do
     PORT=$((9000 + i))
     BLS_IDX=$((i - 1))
 
-    ISSUER_KEY="${ISSUER_KEYS[$i]:-}"
-    if [ -z "$ISSUER_KEY" ]; then
-        echo -e "  ${RED}No private key for issuer $i (set ISSUER_${i}_PRIVATE_KEY in system.env)${NC}"
+    ORACLE_KEY="${ORACLE_KEYS[$i]:-}"
+    if [ -z "$ORACLE_KEY" ]; then
+        echo -e "  ${RED}No private key for oracle $i (set ORACLE_${i}_PRIVATE_KEY in system.env)${NC}"
         continue
     fi
 
     # Write key to temp file
-    KEY_FILE="/tmp/issuer-key-$i.txt"
-    echo -n "$ISSUER_KEY" > "$KEY_FILE"
+    KEY_FILE="/tmp/oracle-key-$i.txt"
+    echo -n "$ORACLE_KEY" > "$KEY_FILE"
     chmod 600 "$KEY_FILE"
 
-    # Build peer list (all other issuers on localhost)
+    # Build peer list (all other oracles on localhost)
     PEER_LIST=""
-    for j in $(seq 1 $ISSUER_COUNT); do
+    for j in $(seq 1 $ORACLE_COUNT); do
         if [ $j -ne $i ]; then
             [ -n "$PEER_LIST" ] && PEER_LIST="$PEER_LIST,"
             PEER_LIST="${PEER_LIST}127.0.0.1:$((9000 + j))"
         fi
     done
 
-    ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms $CYCLE_DURATION_MS"
-    ISSUER_ARGS="$ISSUER_ARGS --min-cycle-gap-ms 50"
-    ISSUER_ARGS="$ISSUER_ARGS --consensus-timeout-ms $CONSENSUS_TIMEOUT_MS"
-    ISSUER_ARGS="$ISSUER_ARGS --no-tls"
-    ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
-    ISSUER_ARGS="$ISSUER_ARGS --signature-threshold $SIG_THRESHOLD --num-issuers $ISSUER_COUNT"
-    ISSUER_ARGS="$ISSUER_ARGS --registry-sync"
-    ISSUER_ARGS="$ISSUER_ARGS --log-level $LOG_LEVEL"
+    ORACLE_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
+    ORACLE_ARGS="$ORACLE_ARGS --cycle-duration-ms $CYCLE_DURATION_MS"
+    ORACLE_ARGS="$ORACLE_ARGS --min-cycle-gap-ms 50"
+    ORACLE_ARGS="$ORACLE_ARGS --consensus-timeout-ms $CONSENSUS_TIMEOUT_MS"
+    ORACLE_ARGS="$ORACLE_ARGS --no-tls"
+    ORACLE_ARGS="$ORACLE_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
+    ORACLE_ARGS="$ORACLE_ARGS --signature-threshold $SIG_THRESHOLD --num-oracles $ORACLE_COUNT"
+    ORACLE_ARGS="$ORACLE_ARGS --registry-sync"
+    ORACLE_ARGS="$ORACLE_ARGS --log-level $LOG_LEVEL"
 
-    [ -n "$BRIDGE_PROXY" ] && ISSUER_ARGS="$ISSUER_ARGS --bridge-proxy $BRIDGE_PROXY"
-    [ -n "$BITGET_VAULT" ] && ISSUER_ARGS="$ISSUER_ARGS --bitget-vault $BITGET_VAULT"
-    [ -n "$SETTLEMENT_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --settlement-custody $SETTLEMENT_CUSTODY"
-    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-settlement $BLS_CUSTODY"
-    [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
-    [ -f "$DEPLOYMENT_FILE" ] && ISSUER_ARGS="$ISSUER_ARGS --deployment-file $DEPLOYMENT_FILE"
-    ISSUER_ARGS="$ISSUER_ARGS --wal-path logs/consensus-$i.wal"
-    [ -f "data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file data/symbol-map.json"
-    [ -n "$DATA_NODE_URL" ] && ISSUER_ARGS="$ISSUER_ARGS --data-node-url $DATA_NODE_URL"
+    [ -n "$BRIDGE_PROXY" ] && ORACLE_ARGS="$ORACLE_ARGS --bridge-proxy $BRIDGE_PROXY"
+    [ -n "$BITGET_VAULT" ] && ORACLE_ARGS="$ORACLE_ARGS --bitget-vault $BITGET_VAULT"
+    [ -n "$SETTLEMENT_CUSTODY" ] && ORACLE_ARGS="$ORACLE_ARGS --settlement-custody $SETTLEMENT_CUSTODY"
+    [ -n "$BLS_CUSTODY" ] && ORACLE_ARGS="$ORACLE_ARGS --oracle-custody-settlement $BLS_CUSTODY"
+    [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ORACLE_ARGS="$ORACLE_ARGS --mock-usdt $MOCK_USDT"
+    [ -f "$DEPLOYMENT_FILE" ] && ORACLE_ARGS="$ORACLE_ARGS --deployment-file $DEPLOYMENT_FILE"
+    ORACLE_ARGS="$ORACLE_ARGS --wal-path logs/consensus-$i.wal"
+    [ -f "data/symbol-map.json" ] && ORACLE_ARGS="$ORACLE_ARGS --symbol-map-file data/symbol-map.json"
+    [ -n "$DATA_NODE_URL" ] && ORACLE_ARGS="$ORACLE_ARGS --data-node-url $DATA_NODE_URL"
 
     # Vision subsystem
     if [ -n "$VISION_ADDR" ] && [ "$DB_READY" = true ]; then
-        ISSUER_ARGS="$ISSUER_ARGS --vision-enabled"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-database-url $DATABASE_URL"
-        [ -n "$DATA_NODE_URL" ] && ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url $DATA_NODE_URL"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
+        ORACLE_ARGS="$ORACLE_ARGS --vision-enabled"
+        ORACLE_ARGS="$ORACLE_ARGS --vision-address $VISION_ADDR"
+        ORACLE_ARGS="$ORACLE_ARGS --vision-database-url $DATABASE_URL"
+        [ -n "$DATA_NODE_URL" ] && ORACLE_ARGS="$ORACLE_ARGS --vision-data-node-url $DATA_NODE_URL"
+        ORACLE_ARGS="$ORACLE_ARGS --vision-rpc-ws-url $RPC_URL"
     fi
 
-    export ISSUER_PRIVATE_KEY_PATH="$KEY_FILE"
-    export ISSUER_PEERS="$PEER_LIST"
-    export ISSUER_SETTLEMENT_RPC_URL="$RPC_URL"
-    export ISSUER_SETTLEMENT_CHAIN_ID="$CHAIN_ID"
+    export ORACLE_PRIVATE_KEY_PATH="$KEY_FILE"
+    export ORACLE_PEERS="$PEER_LIST"
+    export ORACLE_SETTLEMENT_RPC_URL="$RPC_URL"
+    export ORACLE_SETTLEMENT_CHAIN_ID="$CHAIN_ID"
 
-    nohup ./issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
-    ISSUER_PID=$!
-    echo $ISSUER_PID >> .pids
-    echo "issuer-$i:$ISSUER_PID" >> .pids.info
-    echo -e "  ${GREEN}Issuer $i on port $PORT (PID: $ISSUER_PID)${NC}"
+    nohup ./oracle $ORACLE_ARGS > logs/oracle-$i.log 2>&1 &
+    ORACLE_PID=$!
+    echo $ORACLE_PID >> .pids
+    echo "oracle-$i:$ORACLE_PID" >> .pids.info
+    echo -e "  ${GREEN}Oracle $i on port $PORT (PID: $ORACLE_PID)${NC}"
 done
 
 # ── Health check ──
@@ -492,12 +492,12 @@ if [ -n "$DATA_NODE_URL" ]; then
     fi
 fi
 
-for i in $(seq 1 $ISSUER_COUNT); do
+for i in $(seq 1 $ORACLE_COUNT); do
     HP=$((10000 + i))
     if curl -sf "http://localhost:$HP/health" > /dev/null 2>&1; then
-        echo -e "  issuer $i: ${GREEN}healthy${NC}"
+        echo -e "  oracle $i: ${GREEN}healthy${NC}"
     else
-        echo -e "  issuer $i: ${YELLOW}starting...${NC} (check logs/issuer-$i.log)"
+        echo -e "  oracle $i: ${YELLOW}starting...${NC} (check logs/oracle-$i.log)"
     fi
 done
 
@@ -550,7 +550,7 @@ if [ -f .pids ]; then
 fi
 
 # Kill any orphan processes
-pkill -f './issuer' 2>/dev/null || true
+pkill -f './oracle' 2>/dev/null || true
 pkill -f './data-node' 2>/dev/null || true
 
 echo -e "${GREEN}All services stopped${NC}"
@@ -567,7 +567,7 @@ ssh_vps1 "mkdir -p $REMOTE_DIR/logs $REMOTE_DIR/data $REMOTE_DIR/deployments"
 
 # Upload binaries (largest files first)
 echo -e "  Uploading binaries..."
-rsync_to_vps1 "$STAGING_DIR/issuer" "$STAGING_DIR/data-node" "${VPS1_USER}@${VPS1_IP}:${REMOTE_DIR}/"
+rsync_to_vps1 "$STAGING_DIR/oracle" "$STAGING_DIR/data-node" "${VPS1_USER}@${VPS1_IP}:${REMOTE_DIR}/"
 
 # Upload config files
 echo -e "  Uploading config..."
@@ -582,7 +582,7 @@ rsync_to_vps1 \
 [ -f "$STAGING_DIR/data/symbol-map.json" ] && rsync_to_vps1 "$STAGING_DIR/data/symbol-map.json" "${VPS1_USER}@${VPS1_IP}:${REMOTE_DIR}/data/"
 
 # Make binaries executable
-ssh_vps1 "chmod +x $REMOTE_DIR/issuer $REMOTE_DIR/data-node $REMOTE_DIR/start-remote.sh $REMOTE_DIR/stop-remote.sh"
+ssh_vps1 "chmod +x $REMOTE_DIR/oracle $REMOTE_DIR/data-node $REMOTE_DIR/start-remote.sh $REMOTE_DIR/stop-remote.sh"
 
 echo -e "  ${GREEN}Upload complete${NC}"
 
@@ -593,7 +593,7 @@ ssh_vps1 "cd $REMOTE_DIR && bash stop-remote.sh" 2>/dev/null || echo -e "  ${YEL
 # ============ STEP 5: Start services ============
 echo -e "${BLUE}[5/5] Starting services on VPS 1...${NC}"
 
-ssh_vps1 "cd $REMOTE_DIR && RPC_URL='$RPC_URL' CHAIN_ID='$CHAIN_ID' ISSUER_COUNT='$ISSUER_COUNT' LOG_LEVEL='$LOG_LEVEL' bash start-remote.sh"
+ssh_vps1 "cd $REMOTE_DIR && RPC_URL='$RPC_URL' CHAIN_ID='$CHAIN_ID' ORACLE_COUNT='$ORACLE_COUNT' LOG_LEVEL='$LOG_LEVEL' bash start-remote.sh"
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════════╗${NC}"

@@ -25,7 +25,7 @@ Vision contracts are deployed on the **Index L3** Arbitrum Orbit chain (chain ID
 │              ┌───────┴───────┐                  │
 │              │               │                  │
 │  ┌───────────────┐  ┌────────────────────────┐  │
-│  │  L3 WUSDC     │  │  IssuerRegistry        │  │
+│  │  L3 WUSDC     │  │  OracleRegistry        │  │
 │  │  (18 decimals)│  │  (BLS verification)    │  │
 │  └───────────────┘  └────────────────────────┘  │
 └─────────────────────────────────────────────────┘
@@ -43,7 +43,7 @@ Contract addresses are loaded from `deployments/vision-deployment.json` and may 
 | **Chain ID** | `111222333` |
 | **RPC Endpoint** | `http://142.132.164.24/` |
 | **Collateral Token** | WUSDC (18 decimals on L3) |
-| **Consensus** | BLS issuer consensus |
+| **Consensus** | BLS oracle consensus |
 
 ## Deployed Contracts
 
@@ -143,15 +143,15 @@ The Vision contract holds two immutable references set at deployment:
 | Reference | Description |
 |-----------|-------------|
 | `USDC` | The IERC20 token used for all deposits, stakes, and payouts. |
-| `issuerRegistry` | The IssuerRegistry contract that stores BLS public keys for signature verification. |
+| `oracleRegistry` | The OracleRegistry contract that stores BLS public keys for signature verification. |
 | `feeCollector` | The address authorized to call `collectFees()` and withdraw accumulated protocol fees. |
 
 These values are set in the constructor and cannot be changed after deployment:
 
 ```solidity
-constructor(address _usdc, address _issuerRegistry, address _feeCollector) {
+constructor(address _usdc, address _oracleRegistry, address _feeCollector) {
     USDC = IERC20(_usdc);
-    issuerRegistry = _issuerRegistry;
+    oracleRegistry = _oracleRegistry;
     feeCollector = _feeCollector;
 }
 ```

@@ -2,7 +2,7 @@
  * Phase 4: Rebalance Storm
  *
  * Triggers concurrent rebalances on multiple ITPs.
- * Measures latency, NAV preservation, and issuer cycle impact.
+ * Measures latency, NAV preservation, and oracle cycle impact.
  */
 
 import {
@@ -108,7 +108,7 @@ async function runTier(
     return { itpId, newWeights, assets: state.assets };
   });
 
-  // Fire all rebalances concurrently via BridgeProxy (let issuers process)
+  // Fire all rebalances concurrently via BridgeProxy (let oracles process)
   log('  Triggering concurrent rebalances...');
   const latencies: number[] = [];
 
@@ -122,7 +122,7 @@ async function runTier(
         const prices = await fetchPrices(plan.assets);
         await executeRebalance(plan.itpId, plan.newWeights, prices);
       } catch {
-        // Direct execution may fail if issuer processes it first — that's fine
+        // Direct execution may fail if oracle processes it first — that's fine
       }
 
       const elapsed = t.stop();

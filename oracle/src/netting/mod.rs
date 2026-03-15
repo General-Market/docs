@@ -14,7 +14,7 @@
 //!
 //! # Architecture
 //!
-//! The Netting Engine runs during Phase 2 of the Issuer Cycle (1-second cycles):
+//! The Netting Engine runs during Phase 2 of the Oracle Cycle (1-second cycles):
 //!
 //! ```text
 //! CYCLE N:

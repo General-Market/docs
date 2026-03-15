@@ -1,6 +1,6 @@
-//! BitgetReadOnlyClient trait for issuer fill verification
+//! BitgetReadOnlyClient trait for oracle fill verification
 //!
-//! This trait is used by issuers to independently verify AP fill claims
+//! This trait is used by oracles to independently verify AP fill claims
 //! by reading order and fill data directly from Bitget.
 
 use async_trait::async_trait;
@@ -91,7 +91,7 @@ pub struct BitgetOrderbook {
 
 /// Trait for read-only Bitget API operations
 ///
-/// Used by issuers to verify AP fill claims independently.
+/// Used by oracles to verify AP fill claims independently.
 /// This is separate from APClient which is used for order placement.
 #[async_trait]
 pub trait BitgetReadOnlyClient: Send + Sync {

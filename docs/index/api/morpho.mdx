@@ -559,15 +559,15 @@ When the health factor drops to 1.0, the position is exposed. Anyone can liquida
 
 ## ITP Collateral and NAV Oracle
 
-ITP shares are collateral. The oracle that prices them is BLS-verified and issuer-signed. If the oracle lies, liquidations break. So it does not lie.
+ITP shares are collateral. The oracle that prices them is BLS-verified and oracle-signed. If the oracle lies, liquidations break. So it does not lie.
 
 ```
   NAV ORACLE PIPELINE
   ====================
 
   +------------------+     +------------------+     +------------------+
-  |  Issuer Network  |     |  BLS Aggregation |     |  ITPNAVOracle    |
-  |  (3 issuers)     | --> |  (2/3 threshold) | --> |  (on-chain)      |
+  |  Oracle Network  |     |  BLS Aggregation |     |  ITPNAVOracle    |
+  |  (3 oracles)     | --> |  (2/3 threshold) | --> |  (on-chain)      |
   |                  |     |                  |     |                  |
   |  Each computes   |     |  Aggregated BLS  |     |  updatePrice()   |
   |  NAV from prices |     |  signature       |     |  - verify BLS    |

@@ -1,10 +1,10 @@
-# Issuer Network Hardening Plan (Unified)
+# Oracle Network Hardening Plan (Unified)
 
 **Origin**: 22-point comparison vs EigenLayer's consensus framework. Items: Reference Block Pattern (#1), Historical State Tracking (#2), Non-Signer Tracking (#3), Proof of Possession (#6), Global Key Uniqueness (#7), Key Separation (#8), plus P2P transport hardening.
 
-**Scope**: Contracts + Issuer Rust node + P2P transport + Operational infrastructure
+**Scope**: Contracts + Oracle Rust node + P2P transport + Operational infrastructure
 
-**Design invariant**: Issuers are stateless. Every piece of in-memory state MUST be reconstructable from on-chain data via a small number of RPC calls. No local disk persistence required for correctness (WAL is optional optimization).
+**Design invariant**: Oracles are stateless. Every piece of in-memory state MUST be reconstructable from on-chain data via a small number of RPC calls. No local disk persistence required for correctness (WAL is optional optimization).
 
 ---
 
@@ -35,8 +35,8 @@ The existing P2P layer is 1,818 lines across 5 files. The features we need are b
 ### Revisit Trigger
 
 Consider libp2p **only if**:
-- Network grows beyond 50 issuers (full mesh becomes impractical)
-- Issuers become untrusted/anonymous (need peer scoring at protocol level)
+- Network grows beyond 50 oracles (full mesh becomes impractical)
+- Oracles become untrusted/anonymous (need peer scoring at protocol level)
 - Nodes move behind NATs (need hole punching)
 - A production incident demonstrates that direct TCP is insufficient
 
@@ -69,23 +69,23 @@ Protocol           | broadcast()                  |
 
 ## Part B: Statelessness Contract
 
-Every piece of issuer node state MUST satisfy: **a freshly-started node can reconstruct it from current on-chain state via a small number of RPC calls (not event replay).**
+Every piece of oracle node state MUST satisfy: **a freshly-started node can reconstruct it from current on-chain state via a small number of RPC calls (not event replay).**
 
 | State | Source | RPC calls | Survives crash? |
 |-------|--------|-----------|-----------------|
-| Key registry (all issuers' BLS pubkeys) | `getActiveIssuerEndpoints()` | 1 | Rebuilt at boot |
-| `issuer_registry_index` (own on-chain ID) | `getActiveIssuerEndpoints()` -> match own BLS pubkey | 1 | Rebuilt at boot |
+| Key registry (all oracles' BLS pubkeys) | `getActiveOracleEndpoints()` | 1 | Rebuilt at boot |
+| `oracle_registry_index` (own on-chain ID) | `getActiveOracleEndpoints()` -> match own BLS pubkey | 1 | Rebuilt at boot |
 | `node_index` (dense index for LeaderElector) | Sort active IDs, find own position | 0 (derived) | Rebuilt at boot |
-| `num_issuers` / `threshold` | `activeIssuerCount()` + `compute_threshold()` | 1 | Rebuilt at boot |
+| `num_oracles` / `threshold` | `activeOracleCount()` + `compute_threshold()` | 1 | Rebuilt at boot |
 | `reference_nonce` (latest) | `lastSnapshotNonce()` (Phase C2) or `registryNonce()` (Phase -1) | 1 | Per-cycle ephemeral |
 | `VersionedKeyRegistry` (latest snapshot) | `getSnapshotAtNonce(lastSnapshotNonce)` (Phase C2) | 2 | Latest rebuilt at boot |
 | `VersionedKeyRegistry` (historical) | Not needed on restart — in-flight work abandoned | 0 | Acceptable loss |
 | `aggregatedPubkey` | `getAggregatedPubkey()` or from snapshot | 1 | Rebuilt at boot |
-| `activeBitmask` | Derived from `getActiveIssuerEndpoints()` or from snapshot | 1 | Rebuilt at boot |
-| `consensusPaused` | `IssuerRegistry.consensusPaused()` | 1 | On-chain |
+| `activeBitmask` | Derived from `getActiveOracleEndpoints()` or from snapshot | 1 | Rebuilt at boot |
+| `consensusPaused` | `OracleRegistry.consensusPaused()` | 1 | On-chain |
 | `SignatureAggregator` (in-flight sigs) | N/A — per-cycle ephemeral, reset each round | 0 | Acceptable loss |
-| `LeaderElector` | Pure function of `(node_index, num_issuers)` | 0 | Rebuilt at boot |
-| `issuerMissedCount` | On-chain mapping | 0 | On-chain |
+| `LeaderElector` | Pure function of `(node_index, num_oracles)` | 0 | Rebuilt at boot |
+| `oracleMissedCount` | On-chain mapping | 0 | On-chain |
 | Peer scores | N/A — reset on restart | 0 | Acceptable loss (permissioned network) |
 | WAL entries | Local file (optional optimization) | 0 | Best-effort replay |
 | Equivocation detector | N/A — per-session | 0 | Acceptable loss |
@@ -100,7 +100,7 @@ MUST be deployed before any hardening phase. These are infrastructure gaps that 
 
 **Problem**: Deployment ceremonies require pausing consensus on all nodes. No pause mechanism exists.
 
-**Implementation**: On-chain pause flag in IssuerRegistry.
+**Implementation**: On-chain pause flag in OracleRegistry.
 ```solidity
 bool public consensusPaused;
 
@@ -109,8 +109,8 @@ function setConsensusPaused(bool paused) external onlyAdmin {
     emit ConsensusPausedChanged(paused);
 }
 ```
-- `__gap` impact: 1 slot (IssuerRegistry `__gap` 34 -> 33 before other changes)
-- Issuer node: At cycle start in `run_consensus_cycle()`, check `IssuerRegistry.consensusPaused()` via RPC.
+- `__gap` impact: 1 slot (OracleRegistry `__gap` 34 -> 33 before other changes)
+- Oracle node: At cycle start in `run_consensus_cycle()`, check `OracleRegistry.consensusPaused()` via RPC.
   - If true: skip cycle, log, sleep 5s, retry.
   - **If RPC fails: treat as paused (fail-safe).** Log warning, sleep 5s, retry.
 - Alternative checked: file-based flag — rejected (requires SSH to 20 nodes).
@@ -120,42 +120,42 @@ function setConsensusPaused(bool paused) external onlyAdmin {
 **Problem**: Consensus hardening depends on `RegistrySyncHandler`. Flag not passed in any known config.
 
 **Implementation**:
-- At startup, if `num_issuers > 1` and `--registry-sync` is not set, refuse to start
-- Update production startup scripts + `start-issuers.sh`
+- At startup, if `num_oracles > 1` and `--registry-sync` is not set, refuse to start
+- Update production startup scripts + `start-oracles.sh`
 - Increase `initial_scan_blocks` from 10,000 to 86,400 (24-hour downtime tolerance at 1s blocks)
 
 ### -1c. Bootstrap from On-Chain State
 
-**Problem**: `num_issuers`, `threshold`, `node_index`, `issuer_registry_index` come from CLI flags. After issuer additions/removals, CLI values are stale. `node_index = (node_id - 1)` panics after any issuer removal.
+**Problem**: `num_oracles`, `threshold`, `node_index`, `oracle_registry_index` come from CLI flags. After oracle additions/removals, CLI values are stale. `node_index = (node_id - 1)` panics after any oracle removal.
 
 **Step 1: Extend ChainReader trait**:
 ```rust
 // common/src/traits/chain_reader.rs — add with default impls:
-async fn get_active_issuer_count(&self) -> Result<u64, Error>;
+async fn get_active_oracle_count(&self) -> Result<u64, Error>;
 async fn get_registry_nonce(&self) -> Result<u64, Error>;
 async fn get_aggregated_pubkey(&self) -> Result<Vec<u8>, Error>;
 ```
 
 **Step 2: Query active count + compute threshold**:
 ```rust
-let on_chain_active = chain_reader.get_active_issuer_count().await
-    .unwrap_or_else(|_| { warn!("Falling back to CLI"); self.params.num_issuers as u64 });
+let on_chain_active = chain_reader.get_active_oracle_count().await
+    .unwrap_or_else(|_| { warn!("Falling back to CLI"); self.params.num_oracles as u64 });
 let threshold = compute_threshold(on_chain_active as usize);  // BFT 67%
 ```
 
 **Step 3: Derive indices from chain** (replaces build_keys lines 68-69):
 ```rust
 async fn derive_indices_from_chain(&self) -> Result<(u8, u8), BootstrapError> {
-    let issuers = self.chain_reader.get_issuer_registry().await?;
+    let oracles = self.chain_reader.get_oracle_registry().await?;
     let my_bls_pubkey = /* load from bls_key_path */;
-    let my_issuer = issuers.iter()
+    let my_oracle = oracles.iter()
         .find(|i| i.bls_pubkey == my_bls_pubkey && i.status == 1)
-        .ok_or(BootstrapError::IssuerNotFound)?;
-    let issuer_registry_index = my_issuer.id as u8;
-    let node_index = issuers.iter()
-        .filter(|i| i.status == 1 && i.id < my_issuer.id)
+        .ok_or(BootstrapError::OracleNotFound)?;
+    let oracle_registry_index = my_oracle.id as u8;
+    let node_index = oracles.iter()
+        .filter(|i| i.status == 1 && i.id < my_oracle.id)
         .count() as u8;
-    Ok((issuer_registry_index, node_index))
+    Ok((oracle_registry_index, node_index))
 }
 ```
 
@@ -169,13 +169,13 @@ async fn derive_indices_from_chain(&self) -> Result<(u8, u8), BootstrapError> {
 ```rust
 async fn build_key_registry(&self) -> Option<Arc<InMemoryKeyRegistry>> {
     // 1. Chain-based bootstrap (production path)
-    if let Ok(issuers) = self.chain_reader.get_issuer_registry().await {
-        let active: Vec<_> = issuers.iter().filter(|i| i.status == 1).collect();
+    if let Ok(oracles) = self.chain_reader.get_oracle_registry().await {
+        let active: Vec<_> = oracles.iter().filter(|i| i.status == 1).collect();
         if !active.is_empty() {
             let mut registry = InMemoryKeyRegistry::new();
-            for issuer in &active {
-                let peer_id = generate_peer_id(issuer.id as u32);
-                if let Ok(pubkey) = BLSPublicKey::from_bytes(&issuer.bls_pubkey) {
+            for oracle in &active {
+                let peer_id = generate_peer_id(oracle.id as u32);
+                if let Ok(pubkey) = BLSPublicKey::from_bytes(&oracle.bls_pubkey) {
                     registry.register(peer_id, pubkey);
                 }
             }
@@ -200,7 +200,7 @@ Pruning: `prune_before(current_nonce.saturating_sub(256))` after each insert.
 Add `/ready` endpoint (separate from `/health`):
 ```rust
 GET /ready -> 200 if ALL:
-  - connected_peers >= compute_threshold(num_issuers) - 1
+  - connected_peers >= compute_threshold(num_oracles) - 1
   - BLS keypair loaded
   - Chain reader operational (last RPC success < 30s ago)
   - Registry sync caught up (if enabled)
@@ -248,13 +248,13 @@ Extend `pending_config_update` cell from `(u8, usize)` to:
 pub struct ConfigUpdate {
     pub active_count: u8,
     pub threshold: usize,
-    pub node_index: u8,          // dense index (0-based among active issuers)
-    pub issuer_registry_index: u8, // on-chain issuer ID (for bitmaps)
+    pub node_index: u8,          // dense index (0-based among active oracles)
+    pub oracle_registry_index: u8, // on-chain oracle ID (for bitmaps)
 }
 ```
-- `RegistrySyncHandler`: computes `node_index` = count of active issuers with on-chain ID < `self.issuer_id`
+- `RegistrySyncHandler`: computes `node_index` = count of active oracles with on-chain ID < `self.oracle_id`
 - `apply_pending_config_update()`: uses `update.node_index` for `LeaderElector::new()`
-- If this node IS the removed issuer: log ERROR, self-halt gracefully
+- If this node IS the removed oracle: log ERROR, self-halt gracefully
 - **Crash recovery**: bootstrap (Phase -1c) re-derives correct values from chain
 
 ### 0c. Fix `peer_id[0]` inconsistencies (bitmaps AND key registry)
@@ -264,13 +264,13 @@ Three different conventions exist:
 2. `RegistrySyncHandler.process_event()` -> `peer_id[0] = idx` (no +1) (registry_sync/mod.rs)
 3. `generate_test_registry_with_offset()` -> `peer_id[0] = offset + i + 1` (keys.rs)
 
-**Bitmap fix**: All bitmap computations use `config.issuer_registry_index`, NOT `peer_id[0]`.
+**Bitmap fix**: All bitmap computations use `config.oracle_registry_index`, NOT `peer_id[0]`.
 
 **Key registry fix**: `RegistrySyncHandler.process_event()` MUST use `generate_peer_id(idx as u32)` instead of raw `peer_id[0] = idx as u8`.
 
 ### 0d. Fix `abi.encode` vs `abi.encodePacked` mismatch in registry sync
 
-MirrorIssuerRegistry.sol (line 130) uses `abi.encode`. Rust uses `abi.encodePacked` (237 bytes). These produce different hashes — BLS verification fails.
+MirrorOracleRegistry.sol (line 130) uses `abi.encode`. Rust uses `abi.encodePacked` (237 bytes). These produce different hashes — BLS verification fails.
 
 **Fix**: Change Solidity to `abi.encodePacked` (matches current Rust). Phase C4 later changes BOTH to `abi.encode` with chain binding.
 
@@ -279,7 +279,7 @@ bytes32 messageHash = keccak256(
     abi.encodePacked("REGISTRY_SYNC", nonce, newAggPubkey, newActiveCount, newThreshold)
 );
 ```
-Update test files: MirrorIssuerRegistry.t.sol, MorphoPermissionlessLiquidation.t.sol, ITPNAVOracle.t.sol.
+Update test files: MirrorOracleRegistry.t.sol, MorphoPermissionlessLiquidation.t.sol, ITPNAVOracle.t.sol.
 
 ---
 
@@ -287,7 +287,7 @@ Update test files: MirrorIssuerRegistry.t.sol, MorphoPermissionlessLiquidation.t
 
 ### P1. Rate Limiting
 
-**File:** `issuer/src/p2p/rate_limit.rs` (new, ~60 lines)
+**File:** `oracle/src/p2p/rate_limit.rs` (new, ~60 lines)
 
 Token bucket per peer connection:
 ```rust
@@ -317,7 +317,7 @@ if !rate_bucket.try_consume() {
 In `transport.rs` `start_listener()`, atomic check-and-accept under single write lock:
 
 ```rust
-const MAX_INBOUND_CONNECTIONS: usize = 30; // 20 issuers + headroom
+const MAX_INBOUND_CONNECTIONS: usize = 30; // 20 oracles + headroom
 const DEFAULT_MAX_PER_IP: usize = 2;       // 1 inbound + 1 outbound
 
 // Loopback IPs (127.0.0.0/8, ::1) are ALWAYS exempt
@@ -333,7 +333,7 @@ const DEFAULT_MAX_PER_IP: usize = 2;       // 1 inbound + 1 outbound
 
 ### P3. Peer Scoring & Auto-Banning
 
-**File:** `issuer/src/p2p/peer_scoring.rs` (new, ~150 lines)
+**File:** `oracle/src/p2p/peer_scoring.rs` (new, ~150 lines)
 
 Uses `DashMap` for lock-free concurrent access from 20 reader_loops:
 
@@ -377,7 +377,7 @@ pub struct PeerScorer {
 ```rust
 fn verify_leader(&self, from: &PeerId, cycle_number: u64) -> bool {
     if is_temp_peer_id(from) || is_zeroed_peer_id(from) { return true; }
-    let leader_index = (cycle_number % self.config.num_issuers as u64) as usize;
+    let leader_index = (cycle_number % self.config.num_oracles as u64) as usize;
     let registry = self.peer_registry.read().await;
     if leader_index >= registry.len() { return true; } // Permissive during startup
     if is_zeroed_peer_id(&registry[leader_index]) { return true; }
@@ -389,10 +389,10 @@ fn verify_leader(&self, from: &PeerId, cycle_number: u64) -> bool {
 }
 ```
 
-**Dual-view tolerance** (from consensus-safety Phase 0d): During config propagation window (~5s), accept proposals from the leader according to EITHER old or new `num_issuers`:
+**Dual-view tolerance** (from consensus-safety Phase 0d): During config propagation window (~5s), accept proposals from the leader according to EITHER old or new `num_oracles`:
 ```rust
 fn is_valid_leader(&self, sender_id: &PeerId, cycle: u64) -> bool {
-    let current_count = self.leader_elector.read().num_issuers;
+    let current_count = self.leader_elector.read().num_oracles;
     let sender_index = self.get_dense_index(sender_id);
     if sender_index == (cycle % current_count as u64) as u8 { return true; }
     if current_count > 1 {
@@ -409,7 +409,7 @@ Applied to all `*Proposal` variants: `PriceProposal`, `BatchProposal`, `ItpCreat
 
 ### P5. Equivocation Detection
 
-**File:** `issuer/src/p2p/equivocation.rs` (new)
+**File:** `oracle/src/p2p/equivocation.rs` (new)
 
 Hash **semantic content** of messages (NOT BLS signature — prevents false positives on leader retries):
 
@@ -437,7 +437,7 @@ Applied to votes/signs ONLY (not proposals — proposals have legitimate retries
 
 ### P6. Write-Ahead Log (WAL)
 
-**File:** `issuer/src/p2p/wal.rs` (new, ~200 lines)
+**File:** `oracle/src/p2p/wal.rs` (new, ~200 lines)
 
 **CLI flag:** `--wal-path <PATH>` (default: `./consensus-{node_id}.wal`)
 
@@ -472,7 +472,7 @@ pub struct ConsensusWAL {
 
 ### P7. Observability
 
-**File:** `issuer/src/p2p/metrics.rs` (new, ~80 lines)
+**File:** `oracle/src/p2p/metrics.rs` (new, ~80 lines)
 
 ```rust
 pub struct P2PMetrics {
@@ -499,17 +499,17 @@ Exposed via `/health` JSON endpoint. Error codes: INFRA-020 through INFRA-023, C
 
 **P-INV-1. Leader proposes `reference_nonce`**: Leader selects from latest snapshot, includes in proposal. Followers validate (exists locally, within 256 of their latest), co-sign with it. Ensures all signers hash the same message.
 
-**P-INV-2. Leader constructs `signersBitmask`**: From `aggregator.get_signatures().keys()`, mapping PeerId -> `issuer_registry_index` bit. Griefing vector: malicious leader can exclude a legitimate signer. Detectable via on-chain event vs local log.
+**P-INV-2. Leader constructs `signersBitmask`**: From `aggregator.get_signatures().keys()`, mapping PeerId -> `oracle_registry_index` bit. Griefing vector: malicious leader can exclude a legitimate signer. Detectable via on-chain event vs local log.
 
-**P-INV-3. `issuerMissedCount` is advisory only**: Public, permissionless. NEVER for automated slashing. Governance dashboards only.
+**P-INV-3. `oracleMissedCount` is advisory only**: Public, permissionless. NEVER for automated slashing. Governance dashboards only.
 
 ### C1. Foundation — Proof of Possession (#6) + Key Uniqueness (#7)
 
-**Contract-only phase. No issuer node changes. No deployment ceremony needed (proxy upgrade).**
+**Contract-only phase. No oracle node changes. No deployment ceremony needed (proxy upgrade).**
 
-**Proof of Possession**: PoP with `abi.encode("INDEX_BLS_POP", block.chainid, address(this), issuerAddr, blsPubkey)`.
+**Proof of Possession**: PoP with `abi.encode("INDEX_BLS_POP", block.chainid, address(this), oracleAddr, blsPubkey)`.
 
-**Key Uniqueness**: `_pubkeyHashToIssuerId` stores `issuerId + 1` (sentinel collision fix for issuer ID 0).
+**Key Uniqueness**: `_pubkeyHashToOracleId` stores `oracleId + 1` (sentinel collision fix for oracle ID 0).
 
 ### C2. State + Accountability — Historical Tracking (#2), Reference Block (#1), Non-Signer Tracking (#3)
 
@@ -517,10 +517,10 @@ Exposed via `/health` JSON endpoint. Error codes: INFRA-020 through INFRA-023, C
 
 #### Contract changes
 
-**IssuerRegistry.sol**:
+**OracleRegistry.sol**:
 - `uint256 public lastSnapshotNonce` — `__gap` 1 slot
 - `mapping(uint256 => RegistrySnapshot) _nonceSnapshots` — `__gap` 1 slot
-- `mapping(uint256 => uint256) public issuerMissedCount` — `__gap` 1 slot
+- `mapping(uint256 => uint256) public oracleMissedCount` — `__gap` 1 slot
 - `getSnapshotAtNonce(uint256 nonce)` view
 - `getActiveBitmask()` view (for node bootstrap)
 - `incrementMissedCounts(uint256 nonSignersBitmask)` — public, advisory only
@@ -545,12 +545,12 @@ function _verifyBLS(
     uint256 referenceNonce,
     uint256 signersBitmask
 ) internal view {
-    uint256 latest = _blsIssuerRegistry.lastSnapshotNonce();
+    uint256 latest = _blsOracleRegistry.lastSnapshotNonce();
     uint256 minNonce = latest > 256 ? latest - 256 : 0;
     if (referenceNonce < minNonce) revert BLSVerifier__NonceTooOld();
     if (referenceNonce > latest) revert BLSVerifier__NonceFuture();
 
-    TypesLib.RegistrySnapshot memory snap = _blsIssuerRegistry.getSnapshotAtNonce(referenceNonce);
+    TypesLib.RegistrySnapshot memory snap = _blsOracleRegistry.getSnapshotAtNonce(referenceNonce);
     if (block.number - snap.blockNumber > 86400) revert BLSVerifier__SnapshotTooOld();
 
     uint256 nonSignersBitmask = snap.activeBitmask ^ signersBitmask;
@@ -560,7 +560,7 @@ function _verifyBLS(
 
     bytes memory pubkey = _fixedToPubkey(snap.aggregatedPubkey);
     BLSLib.verifyBLS(pubkey, messageHash, blsSignature);
-    _blsIssuerRegistry.incrementMissedCounts(nonSignersBitmask);
+    _blsOracleRegistry.incrementMissedCounts(nonSignersBitmask);
 }
 ```
 
@@ -581,18 +581,18 @@ function _verifyBLS(
 | `AssetPairRegistry.sol` | **No (redeploy)** | Enumerate | ~8 |
 | **Total** | | | **~55** |
 
-**`removeIssuerByVote()`**: NOT in BLSVerifier path. Add `referenceNonce` + `signersBitmask` directly.
+**`removeOracleByVote()`**: NOT in BLSVerifier path. Add `referenceNonce` + `signersBitmask` directly.
 
 **ITPNAVOracle.sol**: Immutable — REDEPLOY. New deployment calls `mirrorRegistry.getAggregatedPubkeyAtNonce(referenceNonce)`.
 
-**MirrorIssuerRegistry.sol**: `lastSnapshotNonce`, `_pubkeyAtNonce` mapping, `getAggregatedPubkeyAtNonce()` view. `__gap` 45 -> 43.
+**MirrorOracleRegistry.sol**: `lastSnapshotNonce`, `_pubkeyAtNonce` mapping, `getAggregatedPubkeyAtNonce()` view. `__gap` 45 -> 43.
 
-#### Issuer node changes
+#### Oracle node changes
 
 - `protocol.rs`: Leader includes `reference_nonce` in proposal (P-INV-1). Compute `signersBitmask` from aggregator (P-INV-2).
 - `chain/writer.rs`: All `build_*_tx` gain `reference_nonce: u64` + `signers_bitmask: U256`.
 - `keys.rs`: `VersionedKeyRegistry` with `BTreeMap<u64, KeySnapshot>`, pruning at 256-nonce window.
-- `aggregator.rs`: `non_signers_bitmask()` using `issuer_registry_index` (NOT `peer_id[0]`).
+- `aggregator.rs`: `non_signers_bitmask()` using `oracle_registry_index` (NOT `peer_id[0]`).
 
 #### Gas impact
 
@@ -604,7 +604,7 @@ function _verifyBLS(
 
 3-factor rotation request (ECDSA + old-key BLS + new-key PoP). 2-factor approval (ECDSA + BLS) with `abi.encode` + chain binding.
 
-MirrorIssuerRegistry `sync()` gains chain binding:
+MirrorOracleRegistry `sync()` gains chain binding:
 ```solidity
 bytes32 messageHash = keccak256(abi.encode(
     "REGISTRY_SYNC", block.chainid, address(this),
@@ -612,7 +612,7 @@ bytes32 messageHash = keccak256(abi.encode(
 ));
 ```
 
-Rust `build_registry_sync_message_hash()` updated to match. Handler must know MirrorIssuerRegistry chain ID + address (add to `RegistrySyncConfig`).
+Rust `build_registry_sync_message_hash()` updated to match. Handler must know MirrorOracleRegistry chain ID + address (add to `RegistrySyncConfig`).
 
 ---
 
@@ -653,7 +653,7 @@ Phase C2 (State + Accountability — SINGLE deployment ceremony):
   _verifyBLS gains (referenceNonce, signersBitmask) — ONE signature change
 
 Phase C3 (Key Architecture — contract-only + Rust update):
-  #8 Key Separation + MirrorIssuerRegistry chain binding
+  #8 Key Separation + MirrorOracleRegistry chain binding
 ```
 
 ### Dependencies
@@ -671,13 +671,13 @@ Phase P has no contract dependencies. Can be deployed independently via binary u
 **Pre-requisites**: Phase -1, 0, P, C1 all deployed and verified.
 
 **Happy path**:
-1. `IssuerRegistry.setConsensusPaused(true)`
+1. `OracleRegistry.setConsensusPaused(true)`
 2. Wait for all nodes to stop cycling
-3. UUPS upgrade: IssuerRegistry, MirrorIssuerRegistry, Investment, BLSCustody, ArbBridgeCustody, L3BridgeCustody, FeeRegistry, BridgeProxy
+3. UUPS upgrade: OracleRegistry, MirrorOracleRegistry, Investment, BLSCustody, ArbBridgeCustody, L3BridgeCustody, FeeRegistry, BridgeProxy
 4. Redeploy: ITPNAVOracle, Vision, CollateralRegistry, AssetPairRegistry
    - Re-register ITPNAVOracle in Morpho market
    - Run address checklist (grep old addresses, verify zero matches)
-5. Upload new issuer binary to all 20 nodes
+5. Upload new oracle binary to all 20 nodes
 6. Restart all nodes
 7. Wait for `/ready` 200
 8. `setConsensusPaused(false)`
@@ -691,10 +691,10 @@ Phase P has no contract dependencies. Can be deployed independently via binary u
 After any crash or restart:
 1. Load BLS keypair from file
 2. Query on-chain registry -> build `InMemoryKeyRegistry`
-3. Derive `issuer_registry_index` (BLS pubkey match) and `node_index` (dense index)
-4. Query `activeIssuerCount()` -> compute threshold
+3. Derive `oracle_registry_index` (BLS pubkey match) and `node_index` (dense index)
+4. Query `activeOracleCount()` -> compute threshold
 5. Query `registryNonce()` -> create bootstrap snapshot
-6. Construct `LeaderElector(node_index, num_issuers)`
+6. Construct `LeaderElector(node_index, num_oracles)`
 7. Start consensus from NEXT cycle boundary — current in-flight work abandoned
 8. (Optional) Replay WAL entries for current cycle
 9. `RegistrySyncHandler` scans from `current_block - 86,400`
@@ -705,12 +705,12 @@ After any crash or restart:
 
 No deployment ceremony needed. Rolling binary update:
 
-1. Deploy to 1 issuer. Monitor 24h for:
+1. Deploy to 1 oracle. Monitor 24h for:
    - INFRA-020 through INFRA-023 (unexpected triggers)
    - CONSENSUS-020/021 (false positives)
    - Cycle success rate (~100%)
    - WAL file growth (<1MB)
-2. If clean, deploy to remaining issuers in batches of 3-5.
+2. If clean, deploy to remaining oracles in batches of 3-5.
 
 **Quick disable** (no rebuild):
 - Rate limiting: `--p2p-rate-limit 999999`
@@ -766,7 +766,7 @@ Phase P (P2P hardening) and Phase -1/0 (infra + bugs) run in parallel tracks.
 | Equivocation only detected locally | Future: gossip evidence sharing |
 | WAL is best-effort | Not required for correctness (statelessness contract) |
 | No gossip redundancy | Full mesh at 20 nodes; threshold absorbs dropped connections |
-| No NAT traversal | All issuers on public IPs |
+| No NAT traversal | All oracles on public IPs |
 | No partition auto-recovery | Heuristic alerts; manual intervention for true splits |
 
 ---
@@ -777,10 +777,10 @@ Phase P (P2P hardening) and Phase -1/0 (infra + bugs) run in parallel tracks.
 
 | File | Phase | Notes |
 |------|-------|-------|
-| `contracts/src/registry/IssuerRegistry.sol` | -1a, C1, C2 | `__gap` 34 -> 29 (5 slots) |
-| `contracts/src/interfaces/IIssuerRegistry.sol` | -1a, C1, C2 | All changed/new signatures |
-| `contracts/src/registry/MirrorIssuerRegistry.sol` | 0d, C2, C3 | `__gap` 45 -> 43. encodePacked fix + chain binding |
-| `contracts/src/interfaces/IMirrorIssuerRegistry.sol` | C2 | New views |
+| `contracts/src/registry/OracleRegistry.sol` | -1a, C1, C2 | `__gap` 34 -> 29 (5 slots) |
+| `contracts/src/interfaces/IOracleRegistry.sol` | -1a, C1, C2 | All changed/new signatures |
+| `contracts/src/registry/MirrorOracleRegistry.sol` | 0d, C2, C3 | `__gap` 45 -> 43. encodePacked fix + chain binding |
+| `contracts/src/interfaces/IMirrorOracleRegistry.sol` | C2 | New views |
 | `contracts/src/libraries/BLSVerifier.sol` | C2 | `_verifyBLS` gains params. **NO `__gap`** |
 | `contracts/src/libraries/TypesLib.sol` | C2 | RegistrySnapshot struct |
 | `contracts/src/libraries/EventsLib.sol` | -1a, C2 | New events |
@@ -796,47 +796,47 @@ Phase P (P2P hardening) and Phase -1/0 (infra + bugs) run in parallel tracks.
 | `contracts/src/registry/FeeRegistry.sol` | C2 | ~4 functions |
 | `contracts/test/*.t.sol` | 0d, C2 | Hash construction updates |
 
-### Issuer Rust files
+### Oracle Rust files
 
 | File | Phase | Notes |
 |------|-------|-------|
-| `issuer/src/p2p/rate_limit.rs` | P1 | **NEW** ~60 lines |
-| `issuer/src/p2p/peer_scoring.rs` | P3 | **NEW** ~150 lines |
-| `issuer/src/p2p/wal.rs` | P6 | **NEW** ~200 lines |
-| `issuer/src/p2p/metrics.rs` | P7 | **NEW** ~80 lines |
-| `issuer/src/p2p/connection.rs` | P1, P3 | Rate limit + ban check pre-decode |
-| `issuer/src/p2p/transport.rs` | P2, P3 | Conn limits, scorer tick, disconnect |
-| `issuer/src/p2p/mod.rs` | P | Exports |
-| `issuer/src/consensus/protocol.rs` | 0, P4, P5, C2 | ConfigUpdate, leader check, equivocation, bitmask, reference nonce |
-| `issuer/src/consensus/aggregator.rs` | 0a, C2 | Delete calculate_threshold, non_signers_bitmask |
-| `issuer/src/consensus/keys.rs` | C2 | VersionedKeyRegistry with pruning |
-| `issuer/src/consensus/state.rs` | P5 | Add `Hash` derive to ConsensusPhase |
-| `issuer/src/consensus/messages.rs` | P4, P5 | content_hash, RejectedNonLeader |
-| `issuer/src/leader/election.rs` | 0b | Dense node_index from ConfigUpdate |
-| `issuer/src/chain/writer.rs` | C2 | All build_*_tx gain reference_nonce + signers_bitmask |
-| `issuer/src/chain/events/registry_sync.rs` | 0, C2 | ConfigUpdate cell |
-| `issuer/src/registry_sync/mod.rs` | 0, C3 | ConfigUpdate, peer_id fix, sync hash, scan window |
-| `issuer/src/bootstrap/consensus.rs` | -1c, -1d | Chain-based key registry + indices + threshold |
-| `issuer/src/bootstrap/p2p.rs` | P3, P6 | Thread PeerScorer, WAL config |
-| `issuer/src/bootstrap/types.rs` | -1c | generate_peer_id consistency |
-| `issuer/src/main.rs` | -1a, -1e, P6 | /ready endpoint, pause check, WAL open |
+| `oracle/src/p2p/rate_limit.rs` | P1 | **NEW** ~60 lines |
+| `oracle/src/p2p/peer_scoring.rs` | P3 | **NEW** ~150 lines |
+| `oracle/src/p2p/wal.rs` | P6 | **NEW** ~200 lines |
+| `oracle/src/p2p/metrics.rs` | P7 | **NEW** ~80 lines |
+| `oracle/src/p2p/connection.rs` | P1, P3 | Rate limit + ban check pre-decode |
+| `oracle/src/p2p/transport.rs` | P2, P3 | Conn limits, scorer tick, disconnect |
+| `oracle/src/p2p/mod.rs` | P | Exports |
+| `oracle/src/consensus/protocol.rs` | 0, P4, P5, C2 | ConfigUpdate, leader check, equivocation, bitmask, reference nonce |
+| `oracle/src/consensus/aggregator.rs` | 0a, C2 | Delete calculate_threshold, non_signers_bitmask |
+| `oracle/src/consensus/keys.rs` | C2 | VersionedKeyRegistry with pruning |
+| `oracle/src/consensus/state.rs` | P5 | Add `Hash` derive to ConsensusPhase |
+| `oracle/src/consensus/messages.rs` | P4, P5 | content_hash, RejectedNonLeader |
+| `oracle/src/leader/election.rs` | 0b | Dense node_index from ConfigUpdate |
+| `oracle/src/chain/writer.rs` | C2 | All build_*_tx gain reference_nonce + signers_bitmask |
+| `oracle/src/chain/events/registry_sync.rs` | 0, C2 | ConfigUpdate cell |
+| `oracle/src/registry_sync/mod.rs` | 0, C3 | ConfigUpdate, peer_id fix, sync hash, scan window |
+| `oracle/src/bootstrap/consensus.rs` | -1c, -1d | Chain-based key registry + indices + threshold |
+| `oracle/src/bootstrap/p2p.rs` | P3, P6 | Thread PeerScorer, WAL config |
+| `oracle/src/bootstrap/types.rs` | -1c | generate_peer_id consistency |
+| `oracle/src/main.rs` | -1a, -1e, P6 | /ready endpoint, pause check, WAL open |
 | `common/src/traits/chain_reader.rs` | -1c | 3 new trait methods |
-| `issuer/Cargo.toml` | P6 | Add `crc32fast` |
+| `oracle/Cargo.toml` | P6 | Add `crc32fast` |
 
 ### Scripts & config
 
 | File | Phase | Notes |
 |------|-------|-------|
 | `scripts/deploy-ceremony.sh` | -1f | **NEW** |
-| `scripts/start-issuers.sh` | -1b, P6 | --registry-sync, WAL path |
-| `start.sh` | P6 | WAL path in issuer loop |
+| `scripts/start-oracles.sh` | -1b, P6 | --registry-sync, WAL path |
+| `start.sh` | P6 | WAL path in oracle loop |
 
 ## UUPS Storage Gap Tracking
 
 | Contract | Current `__gap` | Slots consumed | New `__gap` | New vars |
 |----------|----------------|----------------|-------------|----------|
-| IssuerRegistry | 34 | 5 | 29 | consensusPaused, lastSnapshotNonce, _nonceSnapshots, _pubkeyHashToIssuerId, issuerMissedCount |
-| MirrorIssuerRegistry | 45 | 2 | 43 | lastSnapshotNonce, _pubkeyAtNonce |
+| OracleRegistry | 34 | 5 | 29 | consensusPaused, lastSnapshotNonce, _nonceSnapshots, _pubkeyHashToOracleId, oracleMissedCount |
+| MirrorOracleRegistry | 45 | 2 | 43 | lastSnapshotNonce, _pubkeyAtNonce |
 | BLSVerifier | 0 | 0 | **0 (FROZEN)** | Layout locked forever |
 | InvestmentStorage | 16 | 0 | 16 | No changes |
 
@@ -844,7 +844,7 @@ Phase P (P2P hardening) and Phase -1/0 (infra + bugs) run in parallel tracks.
 
 | Flag | Default | Purpose |
 |------|---------|---------|
-| `--wal-path <PATH>` | `./consensus-{node_id}.wal` | Per-issuer WAL file |
+| `--wal-path <PATH>` | `./consensus-{node_id}.wal` | Per-oracle WAL file |
 | `--wal-sync-mode <MODE>` | auto (none if cycle <500ms, else fdatasync) | WAL durability |
 | `--skip-wal-replay` | false | Emergency bypass |
 | `--p2p-rate-limit <N>` | 100 | Msgs/sec/peer |

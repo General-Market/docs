@@ -11,7 +11,7 @@ use common::{
         P2PTransport,
     },
     types::{
-        BLSPublicKey, BLSSignature, Fill, ITPCore, Issuer, LimitOrder, OrderId, OrderStatus,
+        BLSPublicKey, BLSSignature, Fill, ITPCore, Oracle, LimitOrder, OrderId, OrderStatus,
         P2PMessage, PeerId, PeerInfo, Price, Side, TxHash,
     },
 };
@@ -66,7 +66,7 @@ impl ChainReader for MockChainReader {
         }])
     }
 
-    async fn get_issuer_registry(&self) -> Result<Vec<Issuer>, Error> {
+    async fn get_oracle_registry(&self) -> Result<Vec<Oracle>, Error> {
         Ok(vec![])
     }
 
@@ -225,9 +225,9 @@ async fn test_chain_reader_trait() {
     let prices = reader.get_prices().await.unwrap();
     assert_eq!(prices.len(), 1);
 
-    // Test get_issuer_registry
-    let issuers = reader.get_issuer_registry().await.unwrap();
-    assert!(issuers.is_empty());
+    // Test get_oracle_registry
+    let oracles = reader.get_oracle_registry().await.unwrap();
+    assert!(oracles.is_empty());
 
     // Test subscribe_events
     let filter = EventFilter {
@@ -338,7 +338,7 @@ async fn test_ap_client_trait() {
 
 #[test]
 fn test_enum_try_from_valid() {
-    use common::types::{ITPStatus, IssuerStatus, PriceSource, TxType};
+    use common::types::{ITPStatus, OracleStatus, PriceSource, TxType};
 
     // Test valid conversions using try_from_u8
     assert_eq!(Side::try_from_u8(0).unwrap(), Side::Buy);
@@ -348,7 +348,7 @@ fn test_enum_try_from_valid() {
     assert_eq!(OrderStatus::try_from_u8(4).unwrap(), OrderStatus::Expired);
 
     assert_eq!(ITPStatus::try_from_u8(1).unwrap(), ITPStatus::Active);
-    assert_eq!(IssuerStatus::try_from_u8(2).unwrap(), IssuerStatus::Suspended);
+    assert_eq!(OracleStatus::try_from_u8(2).unwrap(), OracleStatus::Suspended);
     assert_eq!(PriceSource::try_from_u8(1).unwrap(), PriceSource::OneInch);
     assert_eq!(TxType::try_from_u8(3).unwrap(), TxType::Buy);
 }
