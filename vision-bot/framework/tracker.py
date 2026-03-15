@@ -63,12 +63,12 @@ class Tracker:
                 pos["pnl"] = balance - pos["deposited"]
 
             # Auto-claim check
-            claim_threshold = self._config.get("claim_above", 5) * 10**6
+            claim_threshold = self._config.get("claim_above", 5) * 10**18
             if self._config.get("auto_claim", True) and pos["pnl"] > claim_threshold:
                 self._try_claim(batch_id, pos)
 
             # Auto-withdraw check
-            withdraw_threshold = self._config.get("withdraw_below", 2) * 10**6
+            withdraw_threshold = self._config.get("withdraw_below", 2) * 10**18
             if self._config.get("auto_withdraw", True) and pos["balance"] < withdraw_threshold:
                 withdrawn = self._try_withdraw(batch_id, pos)
                 if withdrawn:

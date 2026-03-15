@@ -53,8 +53,8 @@ vssh "mkdir -p $REMOTE_DIR/$COMPOSE_DIR/pnl-data && chmod 777 $REMOTE_DIR/$COMPO
 
 # 4. Build on VPS
 echo "[4/6] Building docker images..."
-timeout 300 vssh "cd $REMOTE_DIR && docker compose -f $COMPOSE_DIR/docker-compose.yml build" || {
-  echo "ERROR: Docker build timed out or failed"
+vssh "cd $REMOTE_DIR && docker compose -f $COMPOSE_DIR/docker-compose.yml build" || {
+  echo "ERROR: Docker build failed"
   exit 1
 }
 
