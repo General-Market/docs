@@ -529,21 +529,34 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${GREEN}Funded deployer with 50k SETTLEMENT_USDC on Sonic${NC}"
     fi
 
-    # Phase 4: Deploy 107 ITP tokens
-    echo -e "${BLUE}[8/10] Deploying ITP tokens...${NC}"
+    # Phase: Deploy all Bitget tokens
+    echo -e "${BLUE}[8/14] Generating token deploy script...${NC}"
+    python3 scripts/deploy-all-tokens.py || { echo -e "${RED}Token generator failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Generated DeployAllTokens.s.sol (621 tokens)${NC}"
+
+    echo -e "${BLUE}[9/14] Deploying all 621 tokens + funding vault...${NC}"
     MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
-    rm -rf contracts/broadcast/Deploy107ITPs_Tokens.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Tokens.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/ contracts/cache/DeployAllTokens.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         MOCK_BITGET_VAULT="$MOCK_VAULT" \
-        forge script script/Deploy107ITPs_Tokens.s.sol:Deploy107ITPs_Tokens \
+        forge script script/DeployAllTokens.s.sol:DeployAllTokens \
         --broadcast --slow --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-itp-tokens.log 2>&1 || echo -e "  ${YELLOW}ITP tokens deploy had warnings — check logs/deploy-itp-tokens.log${NC}"
-    echo -e "  ${GREEN}ITP tokens deployed${NC}"
+        > logs/deploy-tokens.log 2>&1 || echo -e "  ${YELLOW}Token deploy had warnings — check logs/deploy-tokens.log${NC}"
+    echo -e "  ${GREEN}621 tokens deployed, vault funded${NC}"
 
-    # Phase 5: Create ITPs
-    echo -e "${BLUE}[9/10] Creating ITPs...${NC}"
+    # Update assets.json with fresh on-chain addresses
+    echo -e "${BLUE}[9b/14] Syncing fresh token addresses to assets.json...${NC}"
+    python3 scripts/sync-token-addresses.py || echo -e "  ${YELLOW}Address sync had warnings${NC}"
+    echo -e "  ${GREEN}Token addresses synced${NC}"
+
+    # Phase: Create ITPs
+    echo -e "${BLUE}[10/14] Generating ITP deploy scripts...${NC}"
+    python3 scripts/deploy-107-itps.py || { echo -e "${RED}ITP generator failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Generated ITP create + vault scripts${NC}"
+
+    echo -e "${BLUE}[11/14] Creating ITPs...${NC}"
     INDEX_ADDR_ITP=$(read_deployment_addr "Index")
     rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
@@ -555,7 +568,22 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         > logs/deploy-itp-create.log 2>&1 || echo -e "  ${YELLOW}ITP create had warnings — check logs/deploy-itp-create.log${NC}"
     echo -e "  ${GREEN}ITPs created${NC}"
 
-    # Sync deployment JSONs to envs/testnet/ so switch-env.sh testnet stays current
+    echo -e "${BLUE}[12/14] Deploying ITP vaults...${NC}"
+    L3_USDC=$(read_deployment_addr "L3_WUSDC")
+    rm -rf contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        ADMIN_KEY="$DEPLOYER_KEY" \
+        INDEX_ADDRESS="$INDEX_ADDR_ITP" \
+        L3_WUSDC="$L3_USDC" \
+        forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
+        --broadcast --slow --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --chain-id $CHAIN_ID) \
+        > logs/deploy-itp-vaults.log 2>&1 || echo -e "  ${YELLOW}ITP vault deploy had warnings — check logs/deploy-itp-vaults.log${NC}"
+    echo -e "  ${GREEN}ITP vaults deployed${NC}"
+
+    # Sync deployment files + token registries
+    echo -e "${BLUE}[13/14] Syncing deployment files + token registries...${NC}"
     if [ -d "envs/testnet" ]; then
         [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
         [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
@@ -572,7 +600,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     ./switch-env.sh testnet 2>/dev/null || true
 
     # Deploy frontend to Vercel with new contract addresses
-    echo -e "${BLUE}[10/10] Deploying frontend to Vercel...${NC}"
+    echo -e "${BLUE}[14/14] Deploying frontend to Vercel...${NC}"
     if command -v vercel &>/dev/null; then
         (cd frontend && vercel --prod --yes 2>&1 | tail -5) && \
             echo -e "  ${GREEN}Frontend deployed to Vercel${NC}" || \
