@@ -643,7 +643,7 @@ cmd_start() {
     echo -e "${CYAN}Starting all services on VPSes...${NC}"
 
     # Check L3
-    echo -e "${BLUE}[1/6] Checking L3 chain...${NC}"
+    echo -e "${BLUE}[1/8] Checking L3 chain...${NC}"
     VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
     [ "$VPS_CHAIN_ID" = "$CHAIN_ID" ] || { echo -e "  ${RED}L3 not reachable${NC}"; exit 1; }
     echo -e "  ${GREEN}L3 OK${NC}"
@@ -652,7 +652,7 @@ cmd_start() {
     _kill_old_processes
 
     # Sync files
-    echo -e "${BLUE}[2/6] Syncing files...${NC}"
+    echo -e "${BLUE}[2/8] Syncing files...${NC}"
     _sync_docker_files
     _sync_config_files
 
@@ -670,7 +670,7 @@ cmd_start() {
     echo -e "  ${GREEN}Files synced${NC}"
 
     # Start sonic-proxy
-    echo -e "${BLUE}[3/6] Starting sonic-proxy...${NC}"
+    echo -e "${BLUE}[3/8] Starting sonic-proxy...${NC}"
     if ! vps1_compose sonic-proxy up -d --build; then
         echo -e "  ${RED}sonic-proxy failed to start${NC}"; exit 1
     fi
@@ -678,12 +678,12 @@ cmd_start() {
     echo -e "  ${GREEN}sonic-proxy started${NC}"
 
     # Start data-node
-    echo -e "${BLUE}[4/6] Starting data-node...${NC}"
+    echo -e "${BLUE}[4/8] Starting data-node...${NC}"
     _start_data_node_docker
     echo -e "  ${GREEN}data-node started${NC}"
 
     # Start oracles (staggered)
-    echo -e "${BLUE}[5/6] Starting oracles...${NC}"
+    echo -e "${BLUE}[5/8] Starting oracles...${NC}"
     _start_oracles_docker
     echo -e "  ${GREEN}oracles started${NC}"
 
@@ -691,12 +691,70 @@ cmd_start() {
     _start_curator_docker
 
     # Start AP on VPS 2
-    echo -e "${BLUE}[6/7] Starting AP on VPS 2...${NC}"
+    echo -e "${BLUE}[6/8] Starting AP on VPS 2...${NC}"
     _start_ap_docker
 
     # Start itp-bot
-    echo -e "${BLUE}[7/7] Starting itp-bot...${NC}"
+    echo -e "${BLUE}[7/8] Starting itp-bot...${NC}"
     _start_itp_bot_docker
+
+    # Start vision swarm (optional — requires swarm.env)
+    echo -e "${BLUE}[8/8] Starting vision swarm...${NC}"
+    if [ -f "docker/testnet/vision-swarm/swarm.env" ]; then
+        # Stop existing swarm (prevents stale containers during rebuild)
+        vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/vision-swarm && docker compose down 2>/dev/null; true"
+
+        # Sync vision-bot source (not under docker/testnet/, needs explicit sync)
+        rsync -az --delete \
+            --exclude='.venv' --exclude='__pycache__' --exclude='tests' \
+            -e "$RSYNC_SSH_BE" \
+            "$SCRIPT_DIR/vision-bot/" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/vision-bot/"
+        # docker/testnet/vision-swarm/ already synced by _sync_docker_files in step [2/8]
+        # Sync deployment files
+        rsync -az -e "$RSYNC_SSH_BE" \
+            "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/deployments/vision-batches.json" \
+            "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/"
+
+        # Create pnl-data dir
+        vps_be_ssh "mkdir -p $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data && chmod 777 $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data"
+
+        # Build
+        vps_be_ssh "cd $VPS_BE_DIR && docker compose -f docker/testnet/vision-swarm/docker-compose.yml build" \
+            || { echo -e "  ${YELLOW}Swarm build failed — skipping${NC}"; }
+
+        # Fund bot wallets with gas + USDC
+        USDC_ADDR=$(read_deployment_addr "L3_WUSDC")
+        FUND_AMOUNT="100000000000000000000000"  # 100k USDC, 18 decimals
+        FUND_FAILURES=0
+        if [ -n "$USDC_ADDR" ] && [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
+            while IFS= read -r addr; do
+                addr=$(echo "$addr" | tr -d '", ')
+                [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
+                [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
+                # Gas (1 GM)
+                cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                    "$addr" --value 1ether > /dev/null 2>&1 || true
+                # USDC
+                if ! cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                    "$USDC_ADDR" "mint(address,uint256)" "$addr" "$FUND_AMOUNT" \
+                    > /dev/null 2>&1; then
+                    FUND_FAILURES=$((FUND_FAILURES + 1))
+                fi
+            done < "docker/testnet/vision-swarm/addresses.json"
+            if [ "$FUND_FAILURES" -gt 2 ]; then
+                echo -e "  ${YELLOW}WARNING: $FUND_FAILURES bot wallets failed to fund${NC}"
+            else
+                echo -e "  ${GREEN}Funded swarm wallets with gas + USDC${NC}"
+            fi
+        fi
+
+        # Start swarm
+        vps_be_ssh "cd $VPS_BE_DIR/docker/testnet/vision-swarm && set -a && source swarm.env && set +a && docker compose up -d" \
+            && echo -e "  ${GREEN}Vision swarm started (10 bots)${NC}" \
+            || echo -e "  ${YELLOW}Vision swarm failed to start${NC}"
+    else
+        echo -e "  ${YELLOW}Swarm skipped — docker/testnet/vision-swarm/swarm.env not found${NC}"
+    fi
 
     echo ""
     echo -e "${GREEN}All services started. Check status: ./testnet.sh status${NC}"
@@ -1129,7 +1187,7 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
-    for svc in itp-bot curator oracle data-node sonic-proxy; do
+    for svc in vision-swarm itp-bot curator oracle data-node sonic-proxy; do
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
