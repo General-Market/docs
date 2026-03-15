@@ -14,8 +14,8 @@ import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
-import { getBatchTickState, getMultiplier } from '@/lib/vision/tick'
-import { getSource, getBatchKey } from '@/lib/vision/sources'
+import { getBatchTickState } from '@/lib/vision/tick'
+import { getBatchKey } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
@@ -156,20 +156,18 @@ export default function BatchEntryPanel({
   const [stakeInput, setStakeInput] = useState('')
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showClaimModal, setShowClaimModal] = useState(false)
+  const [betsSubmittedTick, setBetsSubmittedTick] = useState<number | null>(null)
 
-  // -- Per-batch tick timer using category-specific duration --
-  const sourceInfo = getSource(sourceId)
-  const category = sourceInfo?.category ?? 'finance'
-  const [tickState, setTickState] = useState(() =>
-    activeBatch ? getBatchTickState(activeBatch.id, category) : getBatchTickState(0, category)
-  )
+  // -- Per-batch tick timer --
+  const tickDuration = activeBatch?.tickDuration ?? 600
+  const [tickState, setTickState] = useState(() => getBatchTickState(tickDuration))
   useEffect(() => {
+    const td = activeBatch?.tickDuration ?? 600
     const interval = setInterval(() => {
-      setTickState(activeBatch ? getBatchTickState(activeBatch.id, category) : getBatchTickState(0, category))
+      setTickState(getBatchTickState(td))
     }, 1000)
     return () => clearInterval(interval)
-  }, [activeBatch, category])
-  const multiplier = getMultiplier(tickState.elapsed, tickState.tickDuration, tickState.lockOffset)
+  }, [activeBatch?.tickDuration])
 
   // -- Derived --
   const counts = bitmapEditor.getCounts(sourceId, marketIds)
@@ -177,10 +175,10 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // Lock blocks both new joins AND deposits — no money moves during lock window.
+  // Betting is always open — no lock window in continuous betting.
   // Unset markets default to DOWN — no need to require explicit predictions to submit.
-  // New joins require: stake + tick open + configHash + markets loaded.
-  const canSubmit = isConnected && hasStake && activeStep === 'idle' && !tickState.isLocked
+  // New joins require: stake + configHash + markets loaded.
+  const canSubmit = isConnected && hasStake && activeStep === 'idle'
     && (isJoined || (!!configHash && marketIds.length > 0))
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
@@ -190,6 +188,8 @@ export default function BatchEntryPanel({
       batchId: activeBatch.id,
       bitmap: encodedBitmap,
       bitmapHash,
+    }).then(() => {
+      setBetsSubmittedTick(activeBatch.currentTick)
     }).finally(() => {
       resetJoin()
       refetchPosition()
@@ -202,6 +202,13 @@ export default function BatchEntryPanel({
     refetchPosition()
     resetDeposit()
   }, [depositStep, refetchPosition, resetDeposit])
+
+  // -- Clear "bets submitted" message when tick advances --
+  useEffect(() => {
+    if (betsSubmittedTick !== null && activeBatch && activeBatch.currentTick > betsSubmittedTick) {
+      setBetsSubmittedTick(null)
+    }
+  }, [activeBatch?.currentTick, betsSubmittedTick])
 
   // -- Enter batch handler --
   const handleEnterBatch = useCallback(() => {
@@ -251,14 +258,13 @@ export default function BatchEntryPanel({
     if (joinStep === 'checking-balance') return 'Checking balance...'
     if (joinStep === 'joining') return 'Joining batch...'
     if (depositStep === 'depositing') return 'Depositing...'
-    if (tickState.isLocked) return `Locked — opens in ${tickState.remaining}s`
     if (isJoined) {
       if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
       return 'Deposit More'
     }
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
-  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined, tickState.isLocked, tickState.remaining])
+  }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
 
   const isProcessing = (joinStep !== 'idle' && joinStep !== 'error' && joinStep !== 'done')
     || (depositStep !== 'idle' && depositStep !== 'error' && depositStep !== 'done')
@@ -272,20 +278,16 @@ export default function BatchEntryPanel({
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold text-neutral-900">{isJoined ? 'Add Funds' : 'Enter Batch'}</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">Set predictions for next tick</h2>
               {activeBatch && (
                 <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
               )}
             </div>
             <p className="text-[10px] text-text-muted">
-              {tickState.isLocked
-                ? `Bets locked — opens in ${tickState.remaining}s`
-                : activeBatch
-                  ? `Tick ${activeBatch.currentTick} · ${multiplier.label}`
-                  : `Multiplier ${multiplier.label}`}
+              {activeBatch ? `Tick ${activeBatch.currentTick}` : 'Waiting for batch...'}
             </p>
           </div>
-          <p className={`text-[24px] font-mono font-black tracking-tight leading-none ${tickState.isLocked ? 'text-red-600' : 'text-black'}`}>
+          <p className="text-[24px] font-mono font-black tracking-tight leading-none text-black">
             {formatCountdown(tickState.remaining)}
           </p>
         </div>
@@ -312,6 +314,18 @@ export default function BatchEntryPanel({
             )}
           </div>
         </div>
+
+        {/* Tick status messages */}
+        {isJoined && betsSubmittedTick !== null && (
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <p className="text-[11px] font-semibold text-emerald-700">Your bets are set for the next tick</p>
+          </div>
+        )}
+        {isJoined && betsSubmittedTick === null && !hasPredictions && (
+          <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <p className="text-[11px] text-neutral-500">No bets set — sitting out this tick</p>
+          </div>
+        )}
 
         {/* Connect wallet prompt when not connected */}
         {!isConnected && !isJoined && (

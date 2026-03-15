@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
-import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceId, getBatchKey } from '@/lib/vision/sources'
+import { getSource, getAssetCountForSource, getDataNodeSourceId, getBatchKey } from '@/lib/vision/sources'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
-import { getBatchTickState, getMultiplier, getSourceKeyForBatch } from '@/lib/vision/tick'
+import { getBatchTickState } from '@/lib/vision/tick'
 import batchConfig from '@/lib/contracts/vision-batches.json'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
@@ -84,17 +84,16 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
     return null
   }, [batches, sourceId, dataNodeId, staticEntry, batchKey])
 
-  // Per-batch tick timer using category-specific duration
-  const [tickState, setTickState] = useState(() =>
-    activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance')
-  )
+  // Per-batch tick timer
+  const tickDuration = activeBatch?.tickDuration ?? 600
+  const [tickState, setTickState] = useState(() => getBatchTickState(tickDuration))
   useEffect(() => {
+    const td = activeBatch?.tickDuration ?? 600
     const interval = setInterval(() => {
-      setTickState(activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance'))
+      setTickState(getBatchTickState(td))
     }, 1000)
     return () => clearInterval(interval)
-  }, [activeBatch, source?.category])
-  const multiplier = getMultiplier(tickState.elapsed, tickState.tickDuration, tickState.lockOffset)
+  }, [activeBatch?.tickDuration])
 
   if (!source) {
     return (
@@ -162,18 +161,9 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           <div className="flex-1">
             <div className="h-1.5 bg-border-light overflow-hidden">
               <div
-                className={`h-full transition-all duration-1000 ${tickState.isLocked ? 'bg-red-500' : 'bg-black'}`}
+                className="h-full transition-all duration-1000 bg-black"
                 style={{ width: `${(tickState.elapsed / tickState.tickDuration) * 100}%` }}
               />
-            </div>
-          </div>
-          {/* Multiplier */}
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Multiplier
-            </div>
-            <div className={`text-[16px] font-bold font-mono ${tickState.isLocked ? 'text-red-600' : 'text-color-up'}`}>
-              {multiplier.label}
             </div>
           </div>
           {/* Set status */}
@@ -190,7 +180,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className={`text-[16px] font-bold font-mono tabular-nums ${tickState.isLocked ? 'text-red-600' : 'text-black'}`}>
+            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
               {formatTime(tickState.remaining)}
             </div>
           </div>
