@@ -2,7 +2,7 @@
   {
     "id": 1,
     "ticker": "BRDG",
-    "name": "Cross-Chain & Interoperability Index",
+    "name": "Cross-Chain Interop Index",
     "thesis": "A multi-chain world needs bridges and messaging protocols. Cross-chain infrastructure captures tolls on inter-chain asset transfer.",
     "section": "The TradFi Migrant",
     "config": {
@@ -1155,7 +1155,7 @@
   {
     "id": 59,
     "ticker": "MEGAMOM",
-    "name": "All 50 Dual Mom + FNG Trigger + BTC Dom",
+    "name": "All 50 Dual Mom FNG+BTC Dom",
     "thesis": "The mega-momentum system: 50 tokens, dual momentum, FNG trigger, BTC dominance. Broadest systematic trend-following.",
     "section": "The Thematic Momentum Trader",
     "config": {
