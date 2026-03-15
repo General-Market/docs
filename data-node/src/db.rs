@@ -63,6 +63,10 @@ pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
     sqlx::raw_sql(m024).execute(pool).await?;
     let m025 = include_str!("../migrations/025_create_market_prices_latest.sql");
     sqlx::raw_sql(m025).execute(pool).await?;
+    let m026 = include_str!("../migrations/026_create_issuer_health_snapshots.sql");
+    sqlx::raw_sql(m026).execute(pool).await?;
+    let m027 = include_str!("../migrations/027_scaling_indexes.sql");
+    sqlx::raw_sql(m027).execute(pool).await?;
     info!("Database migrations applied");
     Ok(())
 }
@@ -2325,4 +2329,42 @@ pub async fn fng_query_all(
     )
     .fetch_all(pool)
     .await
+}
+
+/// Upsert user share balance (persisted by SharesUpdated events).
+pub async fn upsert_user_shares(
+    pool: &PgPool,
+    user_address: &str,
+    itp_id: &str,
+    shares: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO user_shares (user_address, itp_id, shares, updated_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (user_address, itp_id) DO UPDATE SET
+            shares = EXCLUDED.shares,
+            updated_at = NOW()"
+    )
+    .bind(user_address)
+    .bind(itp_id)
+    .bind(shares)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Update trade status by order_id (e.g. 3 = cancelled, 4 = refunded).
+pub async fn update_trade_status(
+    pool: &PgPool,
+    order_id: i64,
+    status: i16,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE trades SET status = $1 WHERE order_id = $2"
+    )
+    .bind(status)
+    .bind(order_id)
+    .execute(pool)
+    .await?;
+    Ok(())
 }
