@@ -235,7 +235,7 @@ def gen_vaults_script(itps):
         a(f"    function _vaultBatch{bi}(address idx, IERC20 wusdc) internal {{")
         for ji, itp in enumerate(batch):
             gi = bi * BATCH + ji
-            itp_num = gi + 2  # Assuming ITP #1 already exists
+            itp_num = gi + 1  # Fresh deploy: ITPs start at ID 1
             t_ = itp["ticker"]
             n_ = itp["name"].replace('"', '\\"')
             a(f"        {{ // {t_}")

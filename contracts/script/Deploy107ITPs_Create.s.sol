@@ -80,7 +80,7 @@ contract Deploy107ITPs_Create is Script {
             w[7] = 8700870087008700; a[7] = t[64]; p[7] = 55860000000000000;
             w[8] = 7100710071007100; a[8] = t[603]; p[8] = 21639000000000000;
             w[9] = 5800580058005800; a[9] = t[256]; p[9] = 37100000000000000;
-            Investment(idx).createITP("Cross-Chain & Interoperability Index", "BRDG", w, a, p, type(uint256).max);
+            Investment(idx).createITP("Cross-Chain Interop Index", "BRDG", w, a, p, type(uint256).max);
         }
         { // PRIV [5]
             uint256[] memory w = new uint256[](5);
@@ -862,7 +862,7 @@ contract Deploy107ITPs_Create is Script {
             w[3] = 11815359967958345; a[3] = t[591]; p[3] = 5056699999999999606784;
             w[4] = 3804946430359467; a[4] = t[539]; p[4] = 288800000000000000;
             w[5] = 2703514568939621; a[5] = t[79]; p[5] = 454700000000000000000;
-            Investment(idx).createITP("All 50 Dual Mom + FNG Trigger + BTC Dom", "MEGAMOM", w, a, p, type(uint256).max);
+            Investment(idx).createITP("All 50 Dual Mom FNG+BTC Dom", "MEGAMOM", w, a, p, type(uint256).max);
         }
     }
 
