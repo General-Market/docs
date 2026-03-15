@@ -333,7 +333,8 @@ async fn batch_state(
 
             let mut player_infos = Vec::with_capacity(players.len());
             for p in &players {
-                let has_bitmap = state.bitmap_store.get(id, p.player).await.is_some();
+                let has_bitmap = state.bitmap_store.get_pending(id, p.player).await.is_some()
+                    || state.bitmap_store.get_active(id, p.player).await.is_some();
                 player_infos.push(PlayerInfo {
                     address: format!("{:?}", p.player),
                     stake_per_tick: p.stake_per_tick.to_string(),
@@ -656,15 +657,26 @@ async fn submit_bitmap(
         }
     }
 
-    // Store the bitmap (BitmapStore verifies keccak256(bitmap) == expected_hash)
+    // Determine current config_hash and target tick for this bitmap
+    let batch_config_hash = state.scheduler.get_batch(req.batch_id).await
+        .map(|b| b.config_hash)
+        .unwrap_or_default();
+    let target_tick_id = state.scheduler.next_tick_for_batch(req.batch_id).await;
+
+    // Store the bitmap in pending slot (verifies hash, persists to DB)
     match state
         .bitmap_store
-        .store(player, req.batch_id, bitmap.clone(), expected_hash)
+        .store_pending(player, req.batch_id, bitmap.clone(), expected_hash, batch_config_hash, target_tick_id)
         .await
     {
         Ok(()) => {
-            // Persist to DB for crash recovery
-            state.bitmap_store.persist_to_db(&state.pool, req.batch_id, player, &bitmap, &expected_hash).await;
+            // DB-first persistence is handled inside store_pending
+            if let Err(e) = state.bitmap_store.persist_pending_to_db(
+                &state.pool, req.batch_id, player,
+                &state.bitmap_store.get_pending(req.batch_id, player).await.unwrap(),
+            ).await {
+                tracing::warn!(error = %e, "Failed to persist bitmap to DB");
+            }
 
             info!(
                 player = ?player,
@@ -838,7 +850,7 @@ async fn get_reveals(
     }
 
     // Retrieve all bitmaps for this batch
-    let bitmaps = state.bitmap_store.get_all_for_batch(batch_id).await;
+    let bitmaps = state.bitmap_store.get_all_active_for_batch(batch_id).await;
 
     let revealed: Vec<RevealedBitmap> = bitmaps
         .into_iter()
