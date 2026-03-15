@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS oracle_health_snapshots (
 );
 
 -- C5: Primary query index — GROUP BY poll_batch_ts for aggregation
-CREATE INDEX idx_oracle_health_batch_time
+CREATE INDEX IF NOT EXISTS idx_oracle_health_batch_time
     ON oracle_health_snapshots (poll_batch_ts DESC);
 
-CREATE INDEX idx_oracle_health_node_time
+CREATE INDEX IF NOT EXISTS idx_oracle_health_node_time
     ON oracle_health_snapshots (node_id, fetched_at DESC);
