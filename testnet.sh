@@ -396,7 +396,7 @@ cmd_deploy() {
     # Reset Vision DB state (stale batch IDs from previous deployment)
     echo -e "${BLUE}[3c/14] Resetting Vision database state...${NC}"
     if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
-        vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements CASCADE;'" \
+        vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements, vision_balance_proofs, vision_batches, vision_batch_state, vision_bitmaps, vision_deposit_orders, vision_kv_store, vision_positions, vision_tick_results, vision_user_balances, vision_withdraw_orders, itp_snapshots, trades, user_shares, oracle_health_snapshots CASCADE;'" \
             && echo -e "  ${GREEN}Vision tables truncated${NC}" \
             || echo -e "  ${YELLOW}Vision table truncate failed — tables may not exist yet${NC}"
     else
