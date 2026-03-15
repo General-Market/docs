@@ -50,7 +50,7 @@ impl PriceBroadcastHub {
         let mut senders = self.senders.write().await;
         senders
             .entry(source.to_string())
-            .or_insert_with(|| broadcast::channel(16).0)
+            .or_insert_with(|| broadcast::channel(256).0)
             .clone()
     }
 
