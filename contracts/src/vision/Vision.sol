@@ -404,7 +404,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             lastClaimedTick: 0,
             joinTimestamp: block.timestamp,
             totalDeposited: depositAmount,
-            totalClaimed: 0,
             isVirtual: usedVirtual
         });
 
@@ -484,24 +483,21 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         position.balance = newBalance;
         position.lastClaimedTick = toTick;
 
+        // HIGH-2 FIX: No fee is taken here. Fees are applied once — at withdraw() /
+        // forceWithdraw() — on net profit over the full lifetime of the position.
+        // Taking a fee here AND at withdraw would compound the effective rate, since
+        // the withdraw profit calculation uses (finalBalance - totalDeposited), meaning
+        // already-taxed intermediate winnings would be taxed again.
+        //
+        // HIGH-1 NOTE: No solvency gap here. The parimutuel model is inherently sound:
+        // all stakes enter the contract via _debitBalance() at join time and never leave
+        // until withdraw(). claimRewards() only updates the position's internal balance
+        // (a redistribution of already-locked funds between winners and losers), backed
+        // by BLS-signed issuer consensus. No USDC is minted or moved; the accounting
+        // invariant USDC.balanceOf(this) >= totalRealBalance + active_batch_deposits +
+        // accumulatedFees holds throughout.
         if (newBalance > oldBalance) {
-            uint256 winnings = newBalance - oldBalance;
-            uint256 fee = (winnings * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
-            accumulatedFees += fee;
-            uint256 payout = winnings - fee;
-
-            // SOL-2: Route payout back to the same balance type used to fund the position.
-            // Virtual-funded positions must not create unbacked realBalance.
-            if (position.isVirtual) {
-                virtualBalance[msg.sender] += payout;
-                totalVirtualBalance += payout;
-            } else {
-                realBalance[msg.sender] += payout;
-                totalRealBalance += payout;
-            }
-            position.totalClaimed += payout;
-
-            emit RewardsClaimed(batchId, msg.sender, payout);
+            emit RewardsClaimed(batchId, msg.sender, newBalance - oldBalance);
         }
         // If newBalance <= oldBalance, losses are recorded (balance decreased), no payout
     }
@@ -528,13 +524,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
+        // Fee on profit only — net profit = finalBalance minus total amount ever deposited.
+        // Fees are applied ONLY here (not in claimRewards) to avoid double-counting.
+        // claimRewards() updates position.balance (an internal redistribution), but no
+        // USDC is moved. The single fee point is withdraw().
         uint256 totalDeposited = position.totalDeposited;
-        uint256 alreadyClaimed = position.totalClaimed;
-        // Effective cost basis: deposits minus what was already claimed (and taxed)
-        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
-            ? totalDeposited - alreadyClaimed : 0;
-        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
@@ -711,13 +706,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
+        // Fee on profit only — net profit = finalBalance minus total amount ever deposited.
+        // Fees are applied ONLY here (not in claimRewards) to avoid double-counting.
         uint256 totalDeposited = position.totalDeposited;
-        uint256 alreadyClaimed = position.totalClaimed;
-        // Effective cost basis: deposits minus what was already claimed (and taxed)
-        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
-            ? totalDeposited - alreadyClaimed : 0;
-        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 

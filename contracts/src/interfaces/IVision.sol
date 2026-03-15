@@ -41,7 +41,8 @@ interface IVision {
         uint256 lastClaimedTick;
         uint256 joinTimestamp;
         uint256 totalDeposited;
-        uint256 totalClaimed;
+        // totalClaimed removed: fees are applied once at withdraw(), not at claimRewards().
+        // Tracking intermediate claimed amounts for fee deduction caused double-counting.
         bool isVirtual;                  // true if funded from virtualBalance (SOL-2)
     }
 

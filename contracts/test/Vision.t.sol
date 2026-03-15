@@ -347,7 +347,6 @@ contract VisionTest is TestHelper {
         assertEq(pos.balance, 10e18, "balance should equal deposit");
         assertEq(pos.totalDeposited, 10e18, "totalDeposited should equal deposit");
         assertEq(pos.joinTimestamp, block.timestamp, "joinTimestamp should be current");
-        assertEq(pos.totalClaimed, 0, "totalClaimed should be 0");
         assertEq(pos.lastClaimedTick, 0, "lastClaimedTick should be 0");
 
         // USDC is in Vision (deposited via depositBalance in _preparePlayer)
@@ -514,14 +513,11 @@ contract VisionTest is TestHelper {
         ));
         bytes memory blsSig = signWithTestIssuers(message);
 
-        // winnings = 13e18 - 10e18 = 3e18
-        // fee = 3e18 * 30 / 10000 = 9e15
-        // payout = 3e18 - 9e15 = 2.991e18
-        uint256 expectedFees = 3e18 * 30 / 10000;
-        uint256 expectedPayout = 3e18 - expectedFees;
+        // winnings = 13e18 - 10e18 = 3e18 (gross, no fee at claim — fee is deferred to withdraw)
+        uint256 grossWinnings = 3e18;
 
         vm.expectEmit(true, true, false, true);
-        emit IVision.RewardsClaimed(batchId, player, expectedPayout);
+        emit IVision.RewardsClaimed(batchId, player, grossWinnings);
 
         vm.prank(player);
         vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
@@ -529,10 +525,9 @@ contract VisionTest is TestHelper {
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.balance, 13e18, "Balance should be updated to newBalance");
         assertEq(pos.lastClaimedTick, toTick, "lastClaimedTick should be updated");
-        assertEq(pos.totalClaimed, expectedPayout, "totalClaimed should track payout");
-        // Payout credited to realBalance, not USDC directly
-        assertEq(vision.realBalance(player), expectedPayout, "Payout should be in player realBalance");
-        assertEq(vision.accumulatedFees(), expectedFees, "Fees should accumulate");
+        // No USDC moved and no fee at claim — fees are applied once at withdraw()
+        assertEq(vision.realBalance(player), 0, "No realBalance credit at claim - fee deferred to withdraw");
+        assertEq(vision.accumulatedFees(), 0, "No fees at claim - fee applied once at withdraw");
     }
 
     function test_claimRewards_lossRecorded() public {
@@ -559,8 +554,7 @@ contract VisionTest is TestHelper {
         IVision.PlayerPosition memory pos = vision.getPosition(batchId, player);
         assertEq(pos.balance, 7e18, "Balance should decrease to newBalance");
         assertEq(pos.lastClaimedTick, toTick, "lastClaimedTick should be updated");
-        assertEq(pos.totalClaimed, 0, "No payout on loss");
-        assertEq(vision.realBalance(player), 0, "No credit on loss");
+        assertEq(vision.realBalance(player), 0, "No credit on loss - payout only at withdraw");
     }
 
     function test_claimRewards_revertNotJoined() public {
