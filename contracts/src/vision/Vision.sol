@@ -245,6 +245,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             return sourceIdToBatchId[sourceId];
         }
 
+        // Hard cap: reject batch creation once MAX_BATCHES is reached
+        if (nextBatchId >= MAX_BATCHES) revert TooManyBatches();
+
         // Validate parameters
         if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
         if (lockOffset >= tickDuration) revert InvalidLockOffset();

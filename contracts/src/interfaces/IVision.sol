@@ -76,6 +76,7 @@ interface IVision {
     error AlreadyProcessed();            // depositProcessed[depositId] already true
     error ZeroAddress();                 // creditBalance with user == address(0)
     error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
+    error TooManyBatches();              // nextBatchId >= MAX_BATCHES
 
     // ============ EVENTS ============
 

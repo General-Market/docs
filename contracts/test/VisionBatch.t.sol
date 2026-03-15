@@ -531,4 +531,54 @@ contract VisionBatchTest is TestHelper {
         uint256 batchId = _createBatch();
         assertEq(vision.getBatchIdBySourceId(SOURCE_ID), batchId);
     }
+
+    // ════════════════════════════════════════════════
+    // Test 8: MAX_BATCHES cap enforcement
+    // ════════════════════════════════════════════════
+
+    function test_createBatch_revertsAtMaxBatches() public {
+        // Force nextBatchId to MAX_BATCHES (200) via direct storage write.
+        // nextBatchId is at slot 2 per `forge inspect Vision storage-layout`.
+        // This skips creating 200 real batches (200 BLS FFI calls would be impractical).
+        // The cap check fires before BLS verification, so BLS is irrelevant here.
+        vm.store(address(vision), bytes32(uint256(2)), bytes32(uint256(200)));
+        assertEq(vision.nextBatchId(), 200, "Storage write sanity check");
+
+        // Attempt to create one more batch — must revert with TooManyBatches
+        bytes32 overflowSource = keccak256("overflow_source");
+        bytes32 overflowConfig = keccak256("overflow_config");
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(vision),
+            "CREATE_BATCH",
+            overflowSource,
+            overflowConfig,
+            TICK_DURATION,
+            LOCK_OFFSET
+        ));
+        bytes memory blsSig = signWithTestIssuers(message);
+
+        vm.expectRevert(IVision.TooManyBatches.selector);
+        vision.createBatch(
+            overflowSource, overflowConfig, TICK_DURATION, LOCK_OFFSET,
+            blsSig, REF_NONCE, SIGNERS_BITMASK
+        );
+    }
+
+    function test_createBatch_idempotentCallDoesNotCountTowardsCap() public {
+        // Create a real batch so sourceIdHasBatch[SOURCE_ID] = true
+        _createBatch();
+
+        // Force nextBatchId to MAX_BATCHES — cap is reached
+        vm.store(address(vision), bytes32(uint256(2)), bytes32(uint256(200)));
+
+        // Idempotent call (same sourceId) must still succeed — it short-circuits before the cap check
+        bytes memory blsSig = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
+        uint256 batchId = vision.createBatch(
+            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
+            blsSig, REF_NONCE, SIGNERS_BITMASK
+        );
+        assertEq(batchId, 0, "Idempotent call should return existing batch 0");
+        assertEq(vision.nextBatchId(), 200, "nextBatchId should be unchanged");
+    }
 }
