@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::RwLock;
 use serde::Serialize;
 
@@ -156,7 +157,6 @@ pub struct UserCostBasis {
     pub fills: Vec<FillRecord>,
 }
 
-#[derive(Default)]
 pub struct UserCache {
     pub balances: UserBalances,
     pub balances_gen: Generation,
@@ -169,6 +169,26 @@ pub struct UserCache {
     pub cost_basis: UserCostBasis,
     pub cost_basis_gen: Generation,
     pub last_scanned_block: u64, // for incremental event scanning (cost basis)
+    pub last_activity: Instant,
+}
+
+impl Default for UserCache {
+    fn default() -> Self {
+        Self {
+            balances: UserBalances::default(),
+            balances_gen: Generation::default(),
+            allowances: UserAllowances::default(),
+            allowances_gen: Generation::default(),
+            orders: Vec::new(),
+            orders_gen: Generation::default(),
+            positions: MorphoPositionSnapshot::default(),
+            positions_gen: Generation::default(),
+            cost_basis: UserCostBasis::default(),
+            cost_basis_gen: Generation::default(),
+            last_scanned_block: 0,
+            last_activity: Instant::now(),
+        }
+    }
 }
 
 pub struct ChainCache {
@@ -212,6 +232,10 @@ pub struct ChainCache {
     // ITP state cache (hydrated from chain on startup)
     pub itp_states: RwLock<ItpStateCache>,
     pub hydration_complete: AtomicBool,
+
+    // Precomputed AUM ranking (refreshed every 60s)
+    pub aum_ranking_json: RwLock<String>,
+    pub aum_ranking_gen: Generation,
 }
 
 impl ChainCache {
@@ -254,6 +278,9 @@ impl ChainCache {
 
             itp_states: RwLock::new(ItpStateCache::new()),
             hydration_complete: AtomicBool::new(false),
+
+            aum_ranking_json: RwLock::new(String::new()),
+            aum_ranking_gen: Generation::default(),
         }
     }
 
@@ -262,11 +289,30 @@ impl ChainCache {
         {
             let users = self.users.read().await;
             if let Some(u) = users.get(&addr) {
+                // Touch last_activity on access
+                if let Ok(mut uc) = u.try_write() {
+                    uc.last_activity = Instant::now();
+                }
                 return Arc::clone(u);
             }
         }
         let mut users = self.users.write().await;
         let entry = users.entry(addr).or_insert_with(|| Arc::new(RwLock::new(UserCache::default())));
         Arc::clone(entry)
+    }
+
+    pub async fn evict_stale_users(&self, max_age: std::time::Duration) {
+        let mut users = self.users.write().await;
+        let before = users.len();
+        users.retain(|_, cache| {
+            match cache.try_read() {
+                Ok(uc) => uc.last_activity.elapsed() < max_age,
+                Err(_) => true, // locked = active
+            }
+        });
+        let evicted = before - users.len();
+        if evicted > 0 {
+            tracing::info!(evicted, remaining = users.len(), "Evicted stale user caches");
+        }
     }
 }

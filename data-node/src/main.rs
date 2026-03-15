@@ -145,9 +145,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Load symbol map for verify-nav
     let symbol_map = api::load_symbol_map(&args.symbol_map)?;
 
-    // Chain cache for SSE pollers — created early so itp_collector can populate it
-    let chain_cache = Arc::new(chain_cache::ChainCache::new());
-
     // Shared collector state
     let collector_state = Arc::new(CollectorState::new());
 
@@ -175,7 +172,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         let itp_rpc_url = args.rpc_url.clone();
         let itp_index_address = index_address.clone();
         let itp_poll_interval = args.itp_poll_interval;
-        let itp_chain_cache = Arc::clone(&chain_cache);
 
         tokio::spawn(async move {
             itp_collector::run(
@@ -184,7 +180,6 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 itp_rpc_url,
                 itp_index_address,
                 itp_poll_interval,
-                itp_chain_cache,
             )
             .await;
         });
@@ -2392,6 +2387,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     info!(sources = source_registry.sources.len(), "Source registry loaded");
 
+    // Chain cache for SSE pollers
+    let chain_cache = Arc::new(chain_cache::ChainCache::new());
+
     // Background health stats cache (refreshes every 60s)
     let health_stats_cache = Arc::new(api::HealthStatsCache::new());
     api::spawn_health_stats_refresh(pool.clone(), Arc::clone(&health_stats_cache));
@@ -2492,7 +2490,9 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("settlement_state",   2, chain_pollers::poll_settlement_state_once);
     spawn_poller!("pending_rebalances", 5, chain_pollers::poll_pending_rebalances_once);
     spawn_poller!("system_snapshot",    5, chain_pollers::poll_system_snapshot_once);
-    info!("Chain pollers started (NAV=30s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s)");
+    spawn_poller!("aum_ranking",       60, chain_pollers::poll_aum_ranking_once);
+    spawn_poller!("user_cache_eviction", 300, chain_pollers::poll_user_cache_eviction_once);
+    info!("Chain pollers started (NAV=60s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=60s, UserCacheEviction=300s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {
