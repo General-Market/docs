@@ -316,8 +316,8 @@ ProfilePage (page.tsx)
 | `frontend/components/domain/profile/BatchTickRow.tsx` | Single batch row |
 | `frontend/components/domain/profile/TickSquares.tsx` | GitHub-style tick visualization |
 | `frontend/hooks/usePlayerProfile.ts` | Fetch player history from API |
-| `issuer/migrations/NNN_create_player_tick_results.sql` | New table migration |
-| `issuer/migrations/NNN_create_player_batch_summary.sql` | Exited batch deposit preservation |
+| `oracle/migrations/NNN_create_player_tick_results.sql` | New table migration |
+| `oracle/migrations/NNN_create_player_batch_summary.sql` | Exited batch deposit preservation |
 
 ## Styling
 
