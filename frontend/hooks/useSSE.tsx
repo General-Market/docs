@@ -216,7 +216,8 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
 
   useEffect(() => {
     function backoffDelay(attempt: number): number {
-      return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_BACKOFF_MS)
+      const jitter = Math.random() * 1000
+      return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_BACKOFF_MS) + jitter
     }
 
     function connect() {
@@ -247,6 +248,19 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
               sseFirstEvent = false
               posthog.capture('sse_connected', { topic: topicsKey })
             }
+          } catch { /* ignore malformed */ }
+        })
+
+        es.addEventListener('itp-nav-delta', (event: MessageEvent) => {
+          try {
+            const delta: NavSnapshot[] = JSON.parse(event.data)
+            setData(prev => {
+              const navMap = new Map(prev.itpNav.map(s => [s.itp_id, s]))
+              delta.forEach(s => navMap.set(s.itp_id, s))
+              return { ...prev, itpNav: Array.from(navMap.values()) }
+            })
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
           } catch { /* ignore malformed */ }
         })
 
