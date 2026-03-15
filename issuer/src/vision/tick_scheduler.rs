@@ -214,6 +214,10 @@ impl TickScheduler {
         if let Some(batch) = batches.get_mut(&batch_id) {
             batch.config_hash = config_hash;
             batch.lock_offset = batch.next_lock_offset;
+            // Promote pending tick duration if set
+            if let Some(new_td) = batch.next_tick_duration.take() {
+                batch.tick_duration = new_td;
+            }
             batch.last_promotion_tick = promoted_at_tick;
             // Clear pending config since it's now active
             batch.next_config_hash = H256::zero();

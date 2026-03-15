@@ -547,7 +547,10 @@ impl ChainListener {
 
         // 2. Update Postgres
         if let Err(e) = sqlx::query(
-            "UPDATE vision_batches SET config_hash = $1, last_promotion_tick = $2 WHERE id = $3",
+            "UPDATE vision_batches SET config_hash = $1, last_promotion_tick = $2, \
+             tick_duration = COALESCE(next_tick_duration, tick_duration), \
+             next_tick_duration = NULL \
+             WHERE id = $3",
         )
         .bind(format!("{:?}", config_hash))
         .bind(promoted_at_tick as i64)
