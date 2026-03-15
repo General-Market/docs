@@ -43,8 +43,24 @@ struct MarketPrice {
 pub async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
+    headers: axum::http::HeaderMap,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+    let ip = crate::api::extract_client_ip(&headers);
+    match state.sse_limiter.try_acquire(ip) {
+        Some(guard) => ws
+            .on_upgrade(move |socket| handle_socket_with_guard(socket, state, guard))
+            .into_response(),
+        None => axum::http::StatusCode::SERVICE_UNAVAILABLE.into_response(),
+    }
+}
+
+async fn handle_socket_with_guard(
+    socket: WebSocket,
+    state: Arc<AppState>,
+    _guard: crate::sse_limiter::SseGuard,
+) {
+    // _guard lives until this function returns (= client disconnects)
+    handle_socket(socket, state).await;
 }
 
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {

@@ -20,16 +20,21 @@ impl SseLimiter {
         }
     }
 
-    pub fn try_acquire(self: &Arc<Self>, ip: IpAddr) -> Option<SseGuard> {
+    /// Acquire a connection slot. `ip` is None when the client IP cannot be
+    /// determined (no X-Real-IP / X-Forwarded-For) — only the global limit
+    /// applies in that case, not the per-IP limit.
+    pub fn try_acquire(self: &Arc<Self>, ip: Option<IpAddr>) -> Option<SseGuard> {
         if self.total.load(Ordering::Relaxed) >= self.max_total {
             return None;
         }
-        let mut per_ip = self.per_ip.lock().unwrap();
-        let count = per_ip.entry(ip).or_insert(0);
-        if *count >= self.max_per_ip {
-            return None;
+        if let Some(addr) = ip {
+            let mut per_ip = self.per_ip.lock().unwrap();
+            let count = per_ip.entry(addr).or_insert(0);
+            if *count >= self.max_per_ip {
+                return None;
+            }
+            *count += 1;
         }
-        *count += 1;
         self.total.fetch_add(1, Ordering::Relaxed);
         Some(SseGuard {
             limiter: Arc::clone(self),
@@ -44,17 +49,19 @@ impl SseLimiter {
 
 pub struct SseGuard {
     limiter: Arc<SseLimiter>,
-    ip: IpAddr,
+    ip: Option<IpAddr>,
 }
 
 impl Drop for SseGuard {
     fn drop(&mut self) {
         self.limiter.total.fetch_sub(1, Ordering::Relaxed);
-        let mut per_ip = self.limiter.per_ip.lock().unwrap();
-        if let Some(count) = per_ip.get_mut(&self.ip) {
-            *count -= 1;
-            if *count == 0 {
-                per_ip.remove(&self.ip);
+        if let Some(addr) = self.ip {
+            let mut per_ip = self.limiter.per_ip.lock().unwrap();
+            if let Some(count) = per_ip.get_mut(&addr) {
+                *count -= 1;
+                if *count == 0 {
+                    per_ip.remove(&addr);
+                }
             }
         }
     }

@@ -5594,13 +5594,24 @@ async fn admin_reset_session(
 
 // ---- SSE helpers ----
 
-fn extract_client_ip(headers: &HeaderMap) -> IpAddr {
+/// Extract client IP from X-Real-IP (set by nginx from $remote_addr) or X-Forwarded-For.
+/// Returns None if neither header is present — callers apply only global limit, not per-IP.
+/// nginx MUST set: proxy_set_header X-Real-IP $remote_addr;
+pub fn extract_client_ip(headers: &HeaderMap) -> Option<IpAddr> {
+    // Prefer X-Real-IP (set by nginx, not spoofable by client)
+    if let Some(val) = headers.get("x-real-ip") {
+        if let Ok(s) = val.to_str() {
+            if let Ok(ip) = s.trim().parse() {
+                return Some(ip);
+            }
+        }
+    }
+    // Fallback: X-Forwarded-For first entry
     headers
         .get("x-forwarded-for")
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.split(',').next())
         .and_then(|s| s.trim().parse().ok())
-        .unwrap_or(IpAddr::from([0, 0, 0, 0]))
 }
 
 // ---- SSE /sse/system-status ----
