@@ -52,10 +52,6 @@ pub struct PlayerPosition {
     pub start_tick: u64,
     pub balance: U256,
     pub initial_deposit: U256,
-    pub join_timestamp: u64,
-    /// Number of ticks the player can fund (balance / stake_per_tick).
-    /// Used for commitment multiplier: log10(num_committed_ticks + offset).
-    pub num_committed_ticks: u64,
 }
 
 /// A bitmap stored off-chain, linking a player's predictions to their on-chain hash.
@@ -65,6 +61,23 @@ pub struct StoredBitmap {
     pub batch_id: u64,
     pub bitmap: Vec<u8>,
     pub hash: H256,
+    pub received_at: u64,
+}
+
+/// A bitmap in the two-slot (pending/active) store.
+///
+/// Carries config_hash and target_tick_id so that stale bitmaps can be
+/// identified and evicted when the batch config rotates mid-stream.
+#[derive(Clone, Debug)]
+pub struct SlottedBitmap {
+    pub player: Address,
+    pub batch_id: u64,
+    pub bitmap: Vec<u8>,
+    pub hash: H256,
+    /// keccak256 of the batch config this bitmap was built against.
+    pub config_hash: H256,
+    /// The tick for which this bitmap is intended.
+    pub target_tick_id: u64,
     pub received_at: u64,
 }
 
@@ -124,22 +137,6 @@ pub struct PlayerMarketResult {
     pub matched_stake: U256,
     pub payout: U256,
     pub refund: U256,
-}
-
-/// Multipliers applied to a player's stake based on early entry and commitment.
-///
-/// All multiplier fields are in basis points (BPS), where 10000 = 1.0x.
-/// This ensures deterministic cross-issuer agreement (no f64 non-determinism).
-#[derive(Debug, Clone)]
-pub struct PlayerMultiplier {
-    pub player: Address,
-    /// Early-entry multiplier in BPS (10000 = 1.0x, 20000 = 2.0x)
-    pub early_mult_bps: u64,
-    /// Commitment multiplier in BPS (10000 = 1.0x for log10(10))
-    pub commitment_mult_bps: u64,
-    /// Total multiplier in BPS = early * commitment / 10000
-    pub total_mult_bps: u64,
-    pub effective_stake: U256,
 }
 
 /// Which side of a binary market a player is on.
