@@ -166,12 +166,16 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         .await;
     });
 
+    // Create chain cache early so itp_collector can populate it
+    let chain_cache_early = Arc::new(chain_cache::ChainCache::new());
+
     // Start ITP collector in background (if index_address is configured)
     if let Some(ref index_address) = args.index_address {
         let itp_pool = pool.clone();
         let itp_rpc_url = args.rpc_url.clone();
         let itp_index_address = index_address.clone();
         let itp_poll_interval = args.itp_poll_interval;
+        let itp_chain_cache = Arc::clone(&chain_cache_early);
 
         tokio::spawn(async move {
             itp_collector::run(
@@ -180,6 +184,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
                 itp_rpc_url,
                 itp_index_address,
                 itp_poll_interval,
+                itp_chain_cache,
             )
             .await;
         });
@@ -2387,8 +2392,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         });
     info!(sources = source_registry.sources.len(), "Source registry loaded");
 
-    // Chain cache for SSE pollers
-    let chain_cache = Arc::new(chain_cache::ChainCache::new());
+    // Chain cache — created early for itp_collector, reused for SSE pollers
+    let chain_cache = chain_cache_early;
 
     // Background health stats cache (refreshes every 60s)
     let health_stats_cache = Arc::new(api::HealthStatsCache::new());
