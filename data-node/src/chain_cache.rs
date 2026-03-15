@@ -71,6 +71,30 @@ pub struct CachedPendingRebalance {
     pub current_assets: Vec<String>,
 }
 
+/// Cached on-chain ITP state (assets, weights, inventory, supply)
+#[derive(Clone, Serialize, Default)]
+pub struct CachedItpState {
+    pub creator: ethers::types::Address,
+    pub total_supply: ethers::types::U256,
+    pub assets: Vec<ethers::types::Address>,
+    pub weights: Vec<ethers::types::U256>,
+    pub inventory: Vec<ethers::types::U256>,
+    pub name: String,
+    pub symbol: String,
+    pub settlement_address: Option<String>,
+}
+
+/// In-memory cache of all ITP states, keyed by itp_id hex string
+pub struct ItpStateCache {
+    pub states: HashMap<String, CachedItpState>,
+}
+
+impl ItpStateCache {
+    pub fn new() -> Self {
+        Self { states: HashMap::new() }
+    }
+}
+
 // ── Per-user data ──
 
 #[derive(Clone, Serialize, Default)]
@@ -184,6 +208,10 @@ pub struct ChainCache {
     // Cached system snapshot (pre-serialized JSON for SSE)
     pub system_snapshot_json: RwLock<String>,
     pub system_snapshot_gen: Generation,
+
+    // ITP state cache (hydrated from chain on startup)
+    pub itp_states: RwLock<ItpStateCache>,
+    pub hydration_complete: AtomicBool,
 }
 
 impl ChainCache {
@@ -223,6 +251,9 @@ impl ChainCache {
 
             system_snapshot_json: RwLock::new(String::new()),
             system_snapshot_gen: Generation::default(),
+
+            itp_states: RwLock::new(ItpStateCache::new()),
+            hydration_complete: AtomicBool::new(false),
         }
     }
 
