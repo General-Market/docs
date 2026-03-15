@@ -165,8 +165,8 @@ impl TickScheduler {
         batch_id: u64,
         balances: &[PlayerBalance],
     ) -> Result<(), sqlx::Error> {
-        self.apply_tick_balances(batch_id, balances).await;
-
+        // 1. Persist to DB first — all-or-nothing via transaction.
+        let mut tx = pool.begin().await?;
         for pb in balances {
             sqlx::query(
                 "UPDATE vision_positions SET balance = $1 WHERE batch_id = $2 AND player = $3",
@@ -174,9 +174,13 @@ impl TickScheduler {
             .bind(pb.new_balance.to_string())
             .bind(batch_id as i64)
             .bind(format!("{:?}", pb.player))
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
         }
+        tx.commit().await?;
+
+        // 2. Only update in-memory state after DB confirms.
+        self.apply_tick_balances(batch_id, balances).await;
 
         Ok(())
     }
