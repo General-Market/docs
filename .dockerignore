@@ -1,7 +1,14 @@
-# Only allow binaries and proxy script into Docker context
+# Only allow binaries, config files, and proxy script into Docker context
 *
 !target/release/oracle
 !target/release/data-node
 !target/release/ap
 !target/release/curator
+!target/release/itp-bot
 !scripts/sonic-rpc-proxy.py
+!frontend/public/deployed-assets.json
+!itp-bot/manifest.json
+!deployments/active-deployment.json
+!deployments/vision-batches.json
+!vision-bot/
+!docker/testnet/vision-swarm/config.toml
