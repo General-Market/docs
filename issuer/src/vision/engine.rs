@@ -156,8 +156,9 @@ impl BalanceProofCollector {
 }
 
 /// Reference prices from the previous tick, used as "start" prices for the next tick.
-/// Maps market_id (H256) -> price value scaled by 1e8 (u128, integer).
-type ReferencePrices = Arc<RwLock<HashMap<H256, u128>>>;
+/// Maps market_id (H256) -> price value scaled by 1e8 (i128, integer).
+/// Signed to accommodate negative-valued markets (interest rates, temperatures, etc.).
+type ReferencePrices = Arc<RwLock<HashMap<H256, i128>>>;
 
 /// How long to suppress retry for missing configs (batch engine may generate them later).
 const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(300);
@@ -273,10 +274,10 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 ///
 /// Returns Result instead of silently returning empty on failure.
 /// Parsed snapshot data for a source:
-/// - market_id -> current price scaled by 1e8 (u128, integer)
+/// - market_id -> current price scaled by 1e8 (i128, integer, signed for negative values)
 /// - market_id -> change_pct (f64, used only for start_price fallback)
 /// - market_id -> fetched_at unix timestamp
-type SnapshotData = (HashMap<H256, u128>, HashMap<H256, f64>, HashMap<H256, i64>);
+type SnapshotData = (HashMap<H256, i128>, HashMap<H256, f64>, HashMap<H256, i64>);
 
 /// Per-tick-cycle cache: Ok(data) for successful fetches, Err for failed ones.
 /// Prevents both redundant fetches AND redundant timeout waits.
@@ -341,7 +342,7 @@ fn parse_snapshot_data(
         .and_then(|s| s.as_array())
         .ok_or("data-node snapshot response missing 'snapshots' array")?;
 
-    let mut current_values: HashMap<H256, u128> = HashMap::new();
+    let mut current_values: HashMap<H256, i128> = HashMap::new();
     let mut change_pcts: HashMap<H256, f64> = HashMap::new();
     let mut fetched_at_map: HashMap<H256, i64> = HashMap::new();
 
@@ -359,22 +360,21 @@ fn parse_snapshot_data(
         let market_id = asset_id_to_market_id(asset_id);
 
         // Prefer integer-scaled price from data-node (value_scaled, 1e8 fixed-point).
+        // value_scaled is i128 — negative values are valid (interest rates, temperatures, etc.).
         // Fall back to f64 `value` field for backwards compatibility.
-        let value: u128 = if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.as_str()) {
-            scaled.parse::<u128>().unwrap_or(0)
-        } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
-            if f < 0.0 {
-                tracing::error!(market = ?market_id, value = f, "Negative price value — skipping market");
-                continue;
-            }
-            (f * 1e8).round() as u128
-        } else if let Some(s) = snap.get("value").and_then(|v| v.as_str()) {
-            match s.parse::<f64>() {
-                Ok(f) if f >= 0.0 => (f * 1e8).round() as u128,
-                Ok(f) => {
-                    tracing::error!(market = ?market_id, value = f, "Negative price value — skipping market");
+        let value: i128 = if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.as_str()) {
+            match scaled.parse::<i128>() {
+                Ok(v) => v,
+                Err(_) => {
+                    tracing::warn!(market = ?market_id, raw = scaled, "Unparseable value_scaled — skipping market");
                     continue;
                 }
+            }
+        } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
+            (f * 1e8).round() as i128
+        } else if let Some(s) = snap.get("value").and_then(|v| v.as_str()) {
+            match s.parse::<f64>() {
+                Ok(f) => (f * 1e8).round() as i128,
                 Err(_) => {
                     tracing::warn!(market = ?market_id, "Unparseable price value — skipping market");
                     continue;
@@ -385,7 +385,8 @@ fn parse_snapshot_data(
             continue;
         };
 
-        if value > 0 {
+        // Zero means no data — exclude. Negative values (e.g. -5% interest rate) are valid.
+        if value != 0 {
             current_values.insert(market_id, value);
         }
 
@@ -530,7 +531,7 @@ async fn build_market_prices(
 
             // start_price: prefer reference from previous tick, else use end_price.
             // If start == end but change_pct is non-trivial, derive start from change_pct.
-            // All arithmetic in integer (u128, scaled by 1e8) — deterministic across issuers.
+            // All arithmetic in integer (i128, scaled by 1e8) — deterministic across issuers.
             let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
 
             if start_price == end_price {
@@ -539,8 +540,9 @@ async fn build_market_prices(
                     let pct_bps = (pct * 100.0).round() as i64; // convert % to bps
                     if pct_bps.abs() > 10 { // > 0.1% change: apply fallback
                         let divisor = 10_000i64 + pct_bps;
-                        if divisor > 0 {
-                            start_price = (end_price as u128 * 10_000) / divisor as u128;
+                        if divisor != 0 {
+                            // Use i128 arithmetic throughout — end_price may be negative.
+                            start_price = (end_price * 10_000) / divisor as i128;
                         }
                     }
                 }

@@ -25,10 +25,11 @@ use super::types::*;
 /// Price data for tick resolution.
 ///
 /// Maps market_id to (start_price, end_price, last_update_timestamp).
-/// Prices are stored as u128 scaled by 1e8 (fixed-point, 8 decimal places).
+/// Prices are stored as i128 scaled by 1e8 (fixed-point, 8 decimal places).
+/// Signed to accommodate negative-valued markets (interest rates, temperatures, etc.).
 #[derive(Clone)]
 pub struct MarketPrices {
-    prices: HashMap<H256, (u128, u128, u64)>,
+    prices: HashMap<H256, (i128, i128, u64)>,
 }
 
 impl MarketPrices {
@@ -39,12 +40,12 @@ impl MarketPrices {
     }
 
     /// Insert price data for a market. Prices must be pre-scaled by 1e8.
-    pub fn insert(&mut self, market_id: H256, start: u128, end: u128, last_update: u64) {
+    pub fn insert(&mut self, market_id: H256, start: i128, end: i128, last_update: u64) {
         self.prices.insert(market_id, (start, end, last_update));
     }
 
-    /// Get start and end prices for a market (u128, scaled by 1e8).
-    pub fn get_prices(&self, market_id: &H256) -> Option<(u128, u128)> {
+    /// Get start and end prices for a market (i128, scaled by 1e8).
+    pub fn get_prices(&self, market_id: &H256) -> Option<(i128, i128)> {
         self.prices.get(market_id).map(|(s, e, _)| (*s, *e))
     }
 
@@ -170,7 +171,7 @@ impl TickResolver {
                 continue;
             }
 
-            // Prices are already u128 scaled by 1e8 — no conversion needed.
+            // Prices are already i128 scaled by 1e8 — no conversion needed.
             // All arithmetic is integer — deterministic across issuers.
             let start_price_scaled = start_price;
             let end_price_scaled = end_price;
@@ -345,19 +346,18 @@ impl TickResolver {
 /// 1 bps = 0.01%, so 100 bps = 1%, 30 bps = 0.3%, 300 bps = 3%, etc.
 /// Formula: pct_bps = (end - start) * 10000 / start
 ///
-/// Prices are expected as u128 scaled by 1e8 (8 decimal places).
-/// All arithmetic is integer — no floating point involved.
-fn compute_pct_change_bps(start_price: u128, end_price: u128) -> i64 {
+/// Prices are expected as i128 scaled by 1e8 (8 decimal places).
+/// Signed arithmetic supports negative-valued markets (interest rates, temperatures, etc.).
+/// Division by negative start_price is well-defined: the sign of the result is correct.
+fn compute_pct_change_bps(start_price: i128, end_price: i128) -> i64 {
     if start_price == 0 {
         return 0;
     }
-    if end_price >= start_price {
-        let diff = end_price - start_price;
-        ((diff as u128 * 10000) / start_price as u128) as i64
-    } else {
-        let diff = start_price - end_price;
-        -(((diff as u128 * 10000) / start_price as u128) as i64)
-    }
+    // (end - start) * 10000 / start — all i128, sign handled automatically.
+    // Saturate to i64 range to avoid pathological inputs (e.g. huge leveraged derivatives).
+    let diff = end_price.wrapping_sub(start_price);
+    let bps = diff.saturating_mul(10_000).wrapping_div(start_price);
+    bps.clamp(i64::MIN as i128, i64::MAX as i128) as i64
 }
 
 /// Resolve market outcome using integer basis points.
