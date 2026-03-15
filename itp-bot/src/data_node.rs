@@ -107,12 +107,50 @@ impl DataNodeClient {
     }
 
     /// Convenience: run a simulation then return its latest holdings.
+    /// Overrides CoinGecko prices with live Bitget prices so that
+    /// ITP creation uses the same price source as NAV computation.
     pub async fn get_target_holdings(
         &self,
         config: &SimConfig,
     ) -> Result<Vec<SimHolding>, Box<dyn std::error::Error>> {
         let run = self.sim_run(config).await?;
         debug!(run_id = run.run_id, "sim complete, fetching holdings");
-        self.sim_holdings(run.run_id).await
+        let mut holdings = self.sim_holdings(run.run_id).await?;
+
+        // Fetch live Bitget prices and override CoinGecko prices.
+        // This prevents NAV drift at creation time — the itp-bot uses
+        // the same price source as the data-node's live NAV computation.
+        if let Ok(bitget_prices) = self.fetch_bitget_prices().await {
+            for h in &mut holdings {
+                let pair_usdt = format!("{}USDT", h.symbol);
+                let pair_usdc = format!("{}USDC", h.symbol);
+                if let Some(price) = bitget_prices.get(&pair_usdt).or(bitget_prices.get(&pair_usdc)) {
+                    if *price > 0.0 {
+                        debug!(symbol = %h.symbol, cg = h.price_usd, bitget = price, "Price override");
+                        h.price_usd = *price;
+                    }
+                }
+            }
+        }
+
+        Ok(holdings)
+    }
+
+    /// Fetch all live Bitget ticker prices (pair → USD price).
+    async fn fetch_bitget_prices(&self) -> Result<std::collections::HashMap<String, f64>, Box<dyn std::error::Error>> {
+        let url = "https://api.bitget.com/api/v2/spot/market/tickers";
+        let resp: serde_json::Value = self.client.get(url).send().await?.json().await?;
+        let mut prices = std::collections::HashMap::new();
+        if let Some(data) = resp.get("data").and_then(|d| d.as_array()) {
+            for t in data {
+                if let (Some(sym), Some(price_str)) = (t.get("symbol").and_then(|s| s.as_str()), t.get("lastPr").and_then(|p| p.as_str())) {
+                    if let Ok(p) = price_str.parse::<f64>() {
+                        prices.insert(sym.to_string(), p);
+                    }
+                }
+            }
+        }
+        debug!(count = prices.len(), "Fetched Bitget live prices");
+        Ok(prices)
     }
 }
