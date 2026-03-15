@@ -86,6 +86,15 @@ library EventsLib {
         uint256[] weights
     );
 
+    /// @notice Emitted on every totalSupply mutation (buy fill, sell escrow, cancel, refund).
+    /// Carries the new totalSupply and the affected user's new share balance.
+    event SharesUpdated(
+        bytes32 indexed itpId,
+        address indexed user,
+        uint256 newTotalSupply,
+        uint256 userNewBalance
+    );
+
     // ============ BRIDGE EVENTS ============
 
     /// @notice Emitted when funds are locked for a bridge transfer
