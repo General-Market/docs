@@ -136,14 +136,47 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
     let mut snapshots = Vec::new();
     let name_cache = ITP_NAME_CACHE.read().await;
 
+    // Pre-fetch all live prices from the fast cache for inventory-based NAV computation.
+    // symbol_map: L3 address → Bitget pair (e.g., "0xabc..." → "BTCUSDC")
+    // live prices: Bitget pair → last price in USD
+    let live_prices: std::collections::HashMap<String, f64> = {
+        let ticker_map = state.live_cache.tickers.read().await;
+        ticker_map.iter().filter_map(|(pair, t)| {
+            t.last_price.parse::<f64>().ok().map(|p| (pair.clone(), p))
+        }).collect()
+    };
+
     for i in 1..=count.as_u64() {
         let mut id_bytes = [0u8; 32];
         U256::from(i).to_big_endian(&mut id_bytes);
 
-        // Only call getITPState (1 RPC call per ITP — the essential one)
+        // Call getITPState — returns stored NAV + inventory for live computation
         match reader.get_itp_state(id_bytes.into()).call().await {
-            Ok((_creator, total_supply, nav, _assets, _weights, _inventory)) => {
-                let nav_f64 = nav.as_u128() as f64 / 1e18;
+            Ok((_creator, total_supply, stored_nav, assets, _weights, inventory)) => {
+                // Compute live NAV from inventory × live prices.
+                // NAV = sum(qty[i] * price[i]) / 1e18
+                // qty[i] is per-share quantity (in 1e18), price[i] is USD (in 1e18).
+                let nav_f64 = if !assets.is_empty() && assets.len() == inventory.len() {
+                    let mut sum = 0.0_f64;
+                    let mut resolved = 0;
+                    for (addr, qty) in assets.iter().zip(inventory.iter()) {
+                        let addr_hex = format!("{:?}", addr).to_lowercase();
+                        if let Some(pair) = state.symbol_map.get(&addr_hex) {
+                            if let Some(&price_usd) = live_prices.get(pair) {
+                                let qty_f64 = qty.as_u128() as f64 / 1e18;
+                                sum += qty_f64 * price_usd;
+                                resolved += 1;
+                            }
+                        }
+                    }
+                    if resolved > 0 && resolved == assets.len() {
+                        sum // all assets resolved — use live NAV
+                    } else {
+                        stored_nav.as_u128() as f64 / 1e18 // fallback
+                    }
+                } else {
+                    stored_nav.as_u128() as f64 / 1e18
+                };
                 let supply_f64 = total_supply.as_u128() as f64 / 1e18;
                 let aum = nav_f64 * supply_f64;
 

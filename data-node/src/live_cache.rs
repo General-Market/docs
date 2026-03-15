@@ -17,7 +17,7 @@ pub struct CachedTicker {
 }
 
 pub struct LiveTickerCache {
-    tickers: RwLock<HashMap<String, CachedTicker>>,
+    pub tickers: RwLock<HashMap<String, CachedTicker>>,
     last_update: RwLock<Option<Instant>>,
 }
 
