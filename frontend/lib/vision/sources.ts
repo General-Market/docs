@@ -1,5 +1,10 @@
-// All source metadata now comes from data-node API via useSourceRegistry() hook.
-// This file kept for backward compatibility during migration.
+// All source metadata now comes from the data-node API.
+//
+// Client components  → useSourceRegistry()   from @/hooks/vision/useSourceRegistry
+// Server components  → getSourceRegistryServer() from @/lib/vision/sources-server
+//                      (also: getSourceDisplayServer, getSourceIdsServer, formatMarketNameServer)
+//
+// This file is kept for backward compatibility; the stubs below return empty/null.
 
 export type SourceCategory = string
 

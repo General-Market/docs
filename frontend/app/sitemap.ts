@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { locales, defaultLocale } from '@/i18n/config'
 import { getItpSummaries } from '@/lib/api/server-data'
-import { getSourceIds } from '@/lib/vision/sources'
+import { getSourceIdsServer } from '@/lib/vision/sources-server'
 import { getArticleSlugs, getArticle } from '@/lib/learn/articles'
 
 const baseUrl = 'https://generalmarket.io'
@@ -64,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Source detail pages — one entry per source with locale alternates
-  for (const sourceId of getSourceIds()) {
+  for (const sourceId of await getSourceIdsServer()) {
     const path = `/source/${sourceId}`
     entries.push({
       url: localeUrl(path, defaultLocale),
