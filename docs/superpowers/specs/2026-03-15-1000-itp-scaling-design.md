@@ -449,3 +449,132 @@ Not critical for 1000 ITPs (vault tokens grow slowly), but worth capping.
 3. **Frontend** — deploy SSE delta handler (backward compatible, still handles full `itp-nav`)
 
 Steps 2 and 3 can deploy independently. Step 1 must precede step 2.
+
+---
+
+## Additional Bottlenecks (Full Audit)
+
+10 parallel agents audited every layer. Below are all additional bottlenecks beyond the core RPC polling fix.
+
+### Contract — O(n) Loops
+
+| Function | File:Line | Pattern | At 1000 ITPs | Fix |
+|----------|-----------|---------|-------------|-----|
+| `getItpInfo()` | Investment.sol:895 | Linear scan `_allItpIds` for vault address | O(1000) per call | Add `mapping(address => bytes32) vault2Id` reverse lookup |
+| `getItpPrice()` | Investment.sol:917 | Same linear scan | O(1000) per call | Same reverse mapping |
+| `getAllItps()` | Investment.sol:861 | Allocates + iterates all ITP vaults | ~100k gas | Cache off-chain, call only on ITP creation events |
+| `createITP()` duplicate check | Investment.sol:689 | O(assets²) nested loop | Bounded by MAX_ASSETS=1000 | Acceptable (one-time per ITP) |
+
+### Database — Missing Indexes & Slow Queries
+
+| Query | File:Line | Issue | Fix |
+|-------|-----------|-------|-----|
+| `trades` by user | chain_pollers.rs:463 | `LOWER(user_address)` breaks index | Store addresses lowercase, drop `LOWER()` |
+| `trades` by status | chain_pollers.rs:733 | No index on `(status, order_id)` | Add `idx_trades_status_order` |
+| Health stats 7-day scan | api.rs:167 | Scans 15-30M rows in `market_prices` | Materialized view or pre-aggregated table |
+| Batch settlements threshold | batch_engine.rs:260 | `GROUP BY asset_id` + JOIN on unbounded table | Add temporal pruning (archive >90 days) |
+| `itp_snapshots` array columns | db.rs:436 | Each row carries full TEXT[] arrays (~7KB) | Consider normalized `itp_snapshot_assets` table |
+
+### Frontend — Rendering
+
+| Component | File | Issue | Fix |
+|-----------|------|-------|-----|
+| ItpListing filter/sort | ItpListing.tsx:101 | Client-side `.filter().sort()` on full 1000-item array per keystroke | Debounce search, server-side filtering |
+| Home page SEO section | page.tsx:36 | Maps all 1000 ITPs as `<article>` elements | Paginate or limit to top 50 by AUM |
+| SSE full-array re-render | useSSE.tsx:243 | `setItpNav(parsed)` replaces full array → re-renders all consumers | Delta updates (covered in Section 10) |
+| VisionLeaderboard | VisionLeaderboard.tsx:49 | `.map()` over unbounded leaderboard, no virtualization | Add pagination or TanStack Virtual |
+| MarketsTable | MarketsTable.tsx:298 | "Show more" keeps adding DOM nodes (100, 300, 500...) | Virtual scrolling |
+
+### SSE & Streaming
+
+| Issue | File:Line | Impact | Fix |
+|-------|-----------|--------|-----|
+| No backpressure | api.rs:6189 | Slow clients block spawned task (mpsc capacity 16) | Drop slow clients after N missed events |
+| No reconnect jitter | useSSE.tsx:219 | Thundering herd on data-node restart | Add randomized jitter to backoff |
+| User cache never evicted | chain_cache.rs:229 | 10K users × 20KB = 200MB unbounded growth | Add TTL or LRU eviction (30min inactive) |
+| Vision WS broadcast overflow | vision_ws.rs:53 | `broadcast::channel(16)` drops silently when lagged | Increase capacity to 256, add resync mechanism |
+| Full `itp-nav` payload | api.rs:6209 | 1000 ITPs × 300B = 300KB per event × 4/sec = 1.2MB/s/client | Delta updates (covered) |
+
+### Issuer — Consensus & Recovery
+
+| Issue | File:Line | Impact at 1000 ITPs | Fix |
+|-------|-----------|---------------------|-----|
+| Sequential `setItpNav` BLS consensus | protocol.rs:6191 | 1000 ITPs × 300ms timeout = 300s per cycle | Batch ITPs into single consensus proposal |
+| Delisting watchdog | delisting_watchdog.rs:106 | 1000 sequential `getITPState` calls daily | Read from data-node cache API instead |
+| State reconstruction at startup | reconstruction.rs:270 | 1000 sequential RPC + 5000 collateral checks (×5 chains) | Parallel batches of 50 + cache snapshot |
+| Pending mints linear scan | settlement_reader.rs:740 | Scans ALL order IDs on crash recovery | Event-based tracking, not polling |
+| Vision snapshot timeout | engine.rs:286 | 5s HTTP timeout already exceeded at 90 ITPs | Increase timeout, paginate response |
+
+### Vision — Batch/Market Scaling
+
+| Issue | File:Line | Complexity | Fix |
+|-------|-----------|-----------|-----|
+| Leaderboard aggregation | vision/api.rs:966 | O(batches × players) per request | Precompute in background, cache |
+| List batches + TVL | vision/api.rs:218 | O(batches × players) for balance sums | Cache TVL per batch, update on events |
+| Batch history | vision/api.rs:381 | 256 markets × 1000 ticks = 256K rows | Paginate, add `LIMIT` |
+| Tick resolver | vision/resolver.rs:118 | O(markets × players) per tick resolution | Acceptable but monitor at scale |
+| Batch config cache refresh | vision_batch_cache.rs:82 | Sequential HTTP per batch | Parallel fetches with `join_all` |
+| WebSocket subscription filtering | vision_ws.rs:146 | O(subscriptions × markets) per broadcast | Index subscriptions by source |
+
+### Bridge & Settlement
+
+| Issue | File:Line | Impact | Fix |
+|-------|-----------|--------|-----|
+| Pending creations polling | chain_pollers.rs:903 | Scans 0..nextCreationNonce per poll | Event-based, listen for BridgeCreateCompleted |
+| Cross-chain order enrichment | chain_pollers.rs:960 | 1 RPC per event to get full order data | Batch enrichment or store from event |
+
+### API Response Sizes
+
+| Endpoint | Current Size | At 1000 ITPs | Fix |
+|----------|-------------|-------------|-----|
+| `/aum-ranking` | ~200KB | 8MB+ (10s timeout) | Precompute in background |
+| `/nav-series` | ~50KB | Unbounded (no max range) | Add 90-day max range |
+| `/snapshot` (market) | ~5MB | 12MB+ (no compression) | Enforce gzip, reduce default limit |
+| `/portfolio` | ~20KB | N+1 DB queries (500 ITPs = 500 queries) | Batch DB query |
+| `/portfolio/trades` | ~10KB | Unbounded (no pagination) | Add `LIMIT` + pagination |
+| `/chain/l3/batched-orders` | ~5KB | Unbounded growth (never pruned) | Add retention/pruning |
+
+### Config & Limits
+
+| Item | File:Line | Current | At 1000 ITPs | Fix |
+|------|-----------|---------|-------------|-----|
+| System snapshot timeout | chain_pollers.rs:1115 | 120s | Still exceeded | Dynamic: `60 + (itp_count / 10)` |
+| Name cache batch cap | chain_pollers.rs:212 | `.take(10)` | 100 polls to warm | `.take(100)` or warm at startup |
+| Deploy script structure | Deploy107ITPs_Create.s.sol | Named batch functions | File too large at >200 ITPs | Loop-based generation |
+
+---
+
+## Files to Modify (Complete)
+
+| # | File | Change | Priority |
+|---|------|--------|----------|
+| 1 | `contracts/src/libraries/EventsLib.sol` | Add `SharesUpdated` event | P0 |
+| 2 | `contracts/src/core/Investment.sol` | Emit `SharesUpdated` at 7 sites + add `vault2Id` reverse mapping | P0 |
+| 3 | `data-node/src/chain_cache.rs` | Add `ItpStateCache` struct, user cache TTL eviction | P0 |
+| 4 | `data-node/src/itp_collector.rs` | Parallel startup, event-only updates, listen to cancel/refund/SharesUpdated | P0 |
+| 5 | `data-node/src/chain_pollers.rs` | Rewrite 5 pollers to cache/DB reads, parallel name warm-up | P0 |
+| 6 | `data-node/src/api.rs` | SSE delta broadcasts, precomputed AUM, add backpressure | P1 |
+| 7 | `data-node/src/main.rs` | Add AUM ranking poller | P1 |
+| 8 | `frontend/hooks/useSSE.tsx` | Delta merge handler, reconnect jitter | P1 |
+| 9 | `data-node/src/db.rs` | Add missing indexes, lowercase user addresses | P1 |
+| 10 | `frontend/components/domain/ItpListing.tsx` | Debounced search, server-side filtering | P2 |
+| 11 | `frontend/app/[locale]/index/page.tsx` | Limit SEO section to top 50 ITPs | P2 |
+| 12 | `data-node/src/vision_batch_cache.rs` | Parallel config fetches | P2 |
+| 13 | `data-node/src/vision_ws.rs` | Increase broadcast capacity, index subscriptions | P2 |
+| 14 | `issuer/src/consensus/protocol.rs` | Batch `setItpNav` consensus | P2 |
+| 15 | `issuer/src/state/reconstruction.rs` | Parallel startup hydration | P2 |
+| 16 | `issuer/src/delisting_watchdog.rs` | Read from data-node cache | P3 |
+| 17 | `issuer/src/vision/api.rs` | Precompute leaderboard, paginate batch state | P3 |
+| 18 | `data-node/src/batch_engine.rs` | Temporal pruning of batch_settlements | P3 |
+
+---
+
+## Deployment Order (Revised)
+
+1. **Contract** — deploy `SharesUpdated` event + `vault2Id` reverse mapping
+2. **Database** — add missing indexes (zero downtime, can run during deploy)
+3. **Data-node** — deploy event-driven cache + rewritten pollers + SSE deltas
+4. **Frontend** — deploy delta SSE handler + UI pagination
+5. **Issuer** — deploy parallel startup + batched consensus (can follow independently)
+
+Steps 2-4 can deploy in parallel. Step 1 must precede step 3.
