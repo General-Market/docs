@@ -311,7 +311,14 @@ def main():
         if missing:
             print(f"SKIP {m['ticker']}: missing tokens {missing}")
             continue
-        itps.append({"ticker": m["ticker"], "name": m["name"], "holdings": h})
+        name = m["name"]
+        if len(name) > 32:
+            print(f"ERROR: {m['ticker']} name '{name}' is {len(name)} chars (max 32). Fix in manifest.")
+            exit(1)
+        if len(m["ticker"]) > 32:
+            print(f"ERROR: {m['ticker']} ticker is {len(m['ticker'])} chars (max 32). Fix in manifest.")
+            exit(1)
+        itps.append({"ticker": m["ticker"], "name": name, "holdings": h})
 
     print(f"\n{len(itps)} ITPs, {N} tokens")
 
