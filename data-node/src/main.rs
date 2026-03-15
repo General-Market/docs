@@ -2460,7 +2460,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }));
         }};
     }
-    spawn_poller!("nav",          1, chain_pollers::poll_nav_once);
+    spawn_poller!("nav",         30, chain_pollers::poll_nav_once);
     spawn_poller!("oracle",       2, chain_pollers::poll_oracle_once);
     spawn_poller!("balances",     1, chain_pollers::poll_user_balances_once);
     spawn_poller!("allowances",   3, chain_pollers::poll_user_allowances_once);
@@ -2476,7 +2476,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("settlement_state",   2, chain_pollers::poll_settlement_state_once);
     spawn_poller!("pending_rebalances", 5, chain_pollers::poll_pending_rebalances_once);
     spawn_poller!("system_snapshot",    5, chain_pollers::poll_system_snapshot_once);
-    info!("Chain pollers started (NAV=1s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s)");
+    info!("Chain pollers started (NAV=30s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, IssuerRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {

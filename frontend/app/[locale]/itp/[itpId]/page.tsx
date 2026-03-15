@@ -9,7 +9,7 @@ import { Link } from '@/i18n/routing'
 import { computeEnrichment } from '@/lib/api/itp-enrichment'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
 
-export const revalidate = 60
+export const revalidate = 300
 
 interface Props {
   params: Promise<{ locale: string; itpId: string }>
@@ -64,7 +64,11 @@ export async function generateStaticParams() {
 
 async function fetchEnrichment(itpId: string): Promise<ItpEnrichment | null> {
   try {
-    return await computeEnrichment(itpId)
+    const result = await Promise.race([
+      computeEnrichment(itpId),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    ])
+    return result
   } catch {
     return null
   }

@@ -1,4 +1,5 @@
 import { ITP_PAGE_CONTENT } from './itp-page-content'
+import itpIdNames from './itp-id-names.json'
 
 // Section IDs — each maps to one React component
 export type SectionId =
@@ -77,8 +78,18 @@ const ITP_TYPE_MAP: Record<string, ItpPageType> = {
 }
 
 export function getItpPageConfig(itpId: string): ItpPageConfig {
-  const pageType = ITP_TYPE_MAP[itpId.toLowerCase()] ?? 'default'
-  return CONFIGS[pageType]
+  // Check by ITP ID first (existing behavior)
+  const pageType = ITP_TYPE_MAP[itpId.toLowerCase()] ?? null
+  if (pageType) return CONFIGS[pageType]
+
+  // Check by ticker from itpId mapping
+  const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[itpId.toLowerCase()]
+  if (override?.ticker) {
+    const tickerConfig = getItpPageConfigByTicker(override.ticker)
+    if (tickerConfig !== CONFIGS['default']) return tickerConfig
+  }
+
+  return CONFIGS['default']
 }
 
 export function getItpPageConfigByTicker(ticker: string): ItpPageConfig {
