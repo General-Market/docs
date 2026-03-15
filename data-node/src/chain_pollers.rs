@@ -170,20 +170,25 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
     }
     drop(name_cache);
 
-    // Populate name cache for any ITPs not yet cached (slow path, runs once per new ITP)
+    // Populate name cache for any ITPs not yet cached (slow path, runs once per new ITP).
+    // Cap at 10 per poll to avoid hanging the NAV update for minutes when many
+    // new ITPs appear at once (each needs 2 RPC calls with timeouts).
     let needs_cache: Vec<u64> = {
         let cache = ITP_NAME_CACHE.read().await;
-        (1..=count.as_u64()).filter(|i| !cache.contains_key(i)).collect()
+        (1..=count.as_u64()).filter(|i| !cache.contains_key(i)).take(10).collect()
     };
     if !needs_cache.is_empty() {
         let mut cache = ITP_NAME_CACHE.write().await;
-        for i in needs_cache {
+        for i in &needs_cache {
             let mut id_bytes = [0u8; 32];
-            U256::from(i).to_big_endian(&mut id_bytes);
+            U256::from(*i).to_big_endian(&mut id_bytes);
 
-            let (name, symbol) = match reader.get_itp_name_symbol(id_bytes.into()).call().await {
-                Ok((n, s)) => (n, s),
-                Err(_) => (String::new(), String::new()),
+            let (name, symbol) = match tokio::time::timeout(
+                std::time::Duration::from_secs(5),
+                reader.get_itp_name_symbol(id_bytes.into()).call(),
+            ).await {
+                Ok(Ok((n, s))) => (n, s),
+                _ => (String::new(), String::new()),
             };
             let settlement_address = match tokio::time::timeout(
                 std::time::Duration::from_secs(3),
@@ -192,8 +197,9 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                 Ok(Ok(addr)) if addr != Address::zero() => Some(format!("{:?}", addr)),
                 _ => None,
             };
-            cache.insert(i, (name, symbol, settlement_address));
+            cache.insert(*i, (name, symbol, settlement_address));
         }
+        info!(cached = needs_cache.len(), remaining = count.as_u64() as usize - cache.len(), "NAV: populated name cache batch");
     }
 
     let mut nav = state.chain_cache.nav.write().await;
