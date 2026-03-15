@@ -36,6 +36,7 @@ mod market_data;
 mod vision_api;
 mod vision_batch_cache;
 mod vision_ws;
+mod sse_limiter;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -2467,6 +2468,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
         chain_event_tx: chain_event_tx.clone(),
         source_registry,
+        sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(500, 10)),
     });
 
     // Spawn chain pollers via run_collector_loop

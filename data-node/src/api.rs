@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,7 @@ use common::BitgetReadOnlyClient;
 use crate::collector::CollectorState;
 use crate::db;
 use crate::live_cache::{CachedTicker, LiveTickerCache};
+use crate::sse_limiter::SseLimiter;
 use crate::orderbook_aggregator::{self, AggregatedOrderbook, OrderbookCache};
 use crate::simulation;
 
@@ -258,6 +260,8 @@ pub struct AppState {
     pub chain_event_tx: tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>,
     /// Source display registry loaded from sources-display.json
     pub source_registry: crate::source_registry::SourceRegistry,
+    /// SSE connection limiter — 500 total, 10 per IP
+    pub sse_limiter: Arc<SseLimiter>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -5588,16 +5592,33 @@ async fn admin_reset_session(
     }
 }
 
+// ---- SSE helpers ----
+
+fn extract_client_ip(headers: &HeaderMap) -> IpAddr {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(IpAddr::from([0, 0, 0, 0]))
+}
+
 // ---- SSE /sse/system-status ----
 
 /// Streams system status snapshots every 5 seconds.
 /// Each event is a JSON object with issuers, orders, fill times, and vault data.
 async fn sse_system_status(
     State(state): State<Arc<AppState>>,
-) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+    headers: HeaderMap,
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, StatusCode> {
+    let ip = extract_client_ip(&headers);
+    let guard = state.sse_limiter.try_acquire(ip)
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(4);
 
     tokio::spawn(async move {
+        let _guard = guard;
         loop {
             let snapshot = build_system_snapshot(&state).await;
             let json = serde_json::to_string(&snapshot).unwrap_or_default();
@@ -5609,8 +5630,8 @@ async fn sse_system_status(
         }
     });
 
-    Sse::new(ReceiverStream::new(rx))
-        .keep_alive(axum::response::sse::KeepAlive::default())
+    Ok(Sse::new(ReceiverStream::new(rx))
+        .keep_alive(axum::response::sse::KeepAlive::default()))
 }
 
 #[derive(Serialize)]
@@ -5954,8 +5975,13 @@ struct StreamQuery {
 
 async fn sse_stream(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<StreamQuery>,
-) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, StatusCode> {
+    let ip = extract_client_ip(&headers);
+    let guard = state.sse_limiter.try_acquire(ip)
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+
     let topics: Vec<String> = params.topics.split(',').map(|s| s.trim().to_string()).collect();
     let address = params.address.map(|a| a.to_lowercase());
 
@@ -5976,6 +6002,7 @@ async fn sse_stream(
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(16);
 
     tokio::spawn(async move {
+        let _guard = guard;
         // Track last-sent generation per topic
         let mut last_nav_gen: u64 = 0;
         let mut last_oracle_gen: u64 = 0;
@@ -6135,8 +6162,8 @@ async fn sse_stream(
         }
     });
 
-    Sse::new(ReceiverStream::new(rx))
-        .keep_alive(axum::response::sse::KeepAlive::default())
+    Ok(Sse::new(ReceiverStream::new(rx))
+        .keep_alive(axum::response::sse::KeepAlive::default()))
 }
 
 // ===========================================================================
@@ -6656,8 +6683,13 @@ struct ChainEventsQuery {
 
 async fn sse_chain_events(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Query(params): Query<ChainEventsQuery>,
-) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
+) -> Result<Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>>, StatusCode> {
+    let ip = extract_client_ip(&headers);
+    let guard = state.sse_limiter.try_acquire(ip)
+        .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+
     let topics: Option<Vec<String>> = params
         .topics
         .map(|t| t.split(',').map(|s| s.trim().to_string()).collect());
@@ -6666,6 +6698,7 @@ async fn sse_chain_events(
     let (tx, mpsc_rx) = tokio::sync::mpsc::channel::<Result<Event, std::convert::Infallible>>(64);
 
     tokio::spawn(async move {
+        let _guard = guard;
         loop {
             match rx.recv().await {
                 Ok(envelope) => {
@@ -6695,11 +6728,11 @@ async fn sse_chain_events(
         }
     });
 
-    Sse::new(ReceiverStream::new(mpsc_rx)).keep_alive(
+    Ok(Sse::new(ReceiverStream::new(mpsc_rx)).keep_alive(
         axum::response::sse::KeepAlive::new()
             .interval(Duration::from_secs(15))
             .text("ping"),
-    )
+    ))
 }
 
 // ---- Chain state HTTP handlers (read from chain_cache) ----

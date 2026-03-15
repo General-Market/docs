@@ -688,6 +688,7 @@ mod tests {
             tick_duration,
             lock_offset: 0,
             next_lock_offset: 0,
+            next_tick_duration: None,
             created_at_tick: 0,
             last_promotion_tick: 0,
             paused: false,

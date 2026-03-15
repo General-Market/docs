@@ -67,7 +67,7 @@ impl EventTopics {
                 b"BatchUnpaused(uint256)",
             )),
             batch_config_updated: H256::from(ethers::utils::keccak256(
-                b"BatchConfigUpdated(uint256,bytes32,uint256)",
+                b"BatchConfigUpdated(uint256,bytes32,uint256,uint256)",
             )),
             batch_config_promoted: H256::from(ethers::utils::keccak256(
                 b"BatchConfigPromoted(uint256,bytes32,bytes32,uint256)",
@@ -342,6 +342,7 @@ impl ChainListener {
                 tick_duration,
                 lock_offset: fetched.lock_offset,
                 next_lock_offset: fetched.next_lock_offset,
+                next_tick_duration: None,
                 created_at_tick: fetched.created_at_tick,
                 last_promotion_tick: fetched.last_promotion_tick,
                 paused: false,
@@ -371,6 +372,7 @@ impl ChainListener {
                     tick_duration,
                     lock_offset: 0,
                     next_lock_offset: 0,
+                    next_tick_duration: None,
                     created_at_tick,
                     last_promotion_tick: 0,
                     paused: false,
@@ -468,10 +470,10 @@ impl ChainListener {
         info!(batch_id, "BatchUnpaused");
     }
 
-    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 nextConfigHash, uint256 nextLockOffset)`
+    /// Handle `BatchConfigUpdated(uint256 indexed batchId, bytes32 nextConfigHash, uint256 nextLockOffset, uint256 nextTickDuration)`
     ///
     /// Emitted when a batch creator (or BLS consensus) updates the pending config.
-    /// Sets next_config_hash and next_lock_offset on the batch; promotion happens at tick boundary.
+    /// Sets next_config_hash, next_lock_offset, and next_tick_duration on the batch; promotion happens at tick boundary.
     async fn handle_batch_config_updated(&self, log: &Log) {
         let batch_id = match extract_indexed_u64(log, 1) {
             Some(v) => v,
@@ -481,25 +483,27 @@ impl ChainListener {
             }
         };
 
-        // Data: nextConfigHash (bytes32) + nextLockOffset (uint256) = 64 bytes
-        if log.data.len() < 64 {
+        // Data: nextConfigHash (bytes32) + nextLockOffset (uint256) + nextTickDuration (uint256) = 96 bytes
+        if log.data.len() < 96 {
             warn!(batch_id, "BatchConfigUpdated: data too short");
             return;
         }
         let new_config_hash = H256::from_slice(&log.data[0..32]);
         let new_lock_offset = U256::from_big_endian(&log.data[32..64]).as_u64();
+        let new_tick_duration = U256::from_big_endian(&log.data[64..96]).as_u64();
 
         // 1. Update in-memory scheduler
         self.scheduler
-            .on_batch_config_updated(batch_id, new_config_hash, new_lock_offset)
+            .on_batch_config_updated(batch_id, new_config_hash, new_lock_offset, new_tick_duration)
             .await;
 
         // 2. Update Postgres
         if let Err(e) = sqlx::query(
-            "UPDATE vision_batches SET next_config_hash = $1, next_lock_offset = $2 WHERE id = $3",
+            "UPDATE vision_batches SET next_config_hash = $1, next_lock_offset = $2, next_tick_duration = $3 WHERE id = $4",
         )
         .bind(format!("{:?}", new_config_hash))
         .bind(new_lock_offset as i64)
+        .bind(new_tick_duration as i64)
         .bind(batch_id as i64)
         .execute(&self.pool)
         .await
@@ -511,6 +515,7 @@ impl ChainListener {
             batch_id,
             new_config_hash = ?new_config_hash,
             new_lock_offset,
+            new_tick_duration,
             "BatchConfigUpdated"
         );
     }
