@@ -185,8 +185,11 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                 Ok((n, s)) => (n, s),
                 Err(_) => (String::new(), String::new()),
             };
-            let settlement_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
-                Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
+            let settlement_address = match tokio::time::timeout(
+                std::time::Duration::from_secs(3),
+                bridge_proxy.get_bridged_itp(id_bytes.into()).call(),
+            ).await {
+                Ok(Ok(addr)) if addr != Address::zero() => Some(format!("{:?}", addr)),
                 _ => None,
             };
             cache.insert(i, (name, symbol, settlement_address));
