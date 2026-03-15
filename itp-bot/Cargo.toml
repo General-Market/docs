@@ -16,3 +16,7 @@ clap = { version = "4", features = ["derive", "env"] }
 rust_decimal = "1"
 rand = "0.8"
 hex = "0.4"
+
+# Vendored OpenSSL for cross-compilation (transitive dep from solana-sdk via ethers)
+[target.'cfg(target_os = "linux")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }

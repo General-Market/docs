@@ -99,7 +99,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let itp_id_hex = match &itp.on_chain.itp_id {
                 Some(id) => id.clone(),
-                None => continue, // Not deployed yet
+                None => {
+                    // Deploy undeployed ITPs
+                    info!("[{}] Not deployed — attempting deployment", ticker);
+                    match deployer::deploy_itp(itp, &data_node, &chain, &registry, args.dry_run).await {
+                        Ok(Some(_id)) => info!("[{}] Deployed successfully", ticker),
+                        Ok(None) => info!("[{}] Deployment skipped (dry run or insufficient data)", ticker),
+                        Err(e) => error!("[{}] Deployment failed: {}", ticker, e),
+                    }
+                    continue;
+                }
             };
 
             // Parse itp_id hex to [u8; 32]

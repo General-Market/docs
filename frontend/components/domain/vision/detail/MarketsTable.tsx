@@ -59,6 +59,12 @@ function formatChangePct(pct: string | null): { text: string; color: string } {
 }
 
 
+function truncateMiddle(str: string, maxLen: number): string {
+  if (str.length <= maxLen) return str
+  const half = Math.floor((maxLen - 3) / 2)
+  return `${str.slice(0, half + 1)}...${str.slice(-half)}`
+}
+
 function resolutionBadge(resType: string | undefined) {
   if (!resType) return null
   const isUp = resType.startsWith('UP')
@@ -387,12 +393,12 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     >
                       <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                     </svg>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-black truncate">
-                        {market.name || market.symbol}
+                    <div className="min-w-0 overflow-hidden">
+                      <div className="font-semibold text-black truncate" title={market.name || market.symbol}>
+                        {truncateMiddle(market.name || market.symbol, 28)}
                       </div>
-                      <div className="text-[10px] font-mono text-text-muted mt-0.5">
-                        {market.symbol}{vol ? ` · Vol ${vol}` : ''}
+                      <div className="text-[10px] font-mono text-text-muted mt-0.5 truncate">
+                        {truncateMiddle(market.symbol, 20)}{vol ? ` · Vol ${vol}` : ''}
                       </div>
                     </div>
                   </div>

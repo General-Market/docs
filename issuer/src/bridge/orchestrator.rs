@@ -3927,12 +3927,16 @@ impl BridgeOrchestrator {
         aggregated: &RebalanceResult,
         computed_nav: U256,
         nav_bls_signature: &[u8],
+        nav_signer_bitmap: U256,
         reference_nonce: u64,
     ) -> Result<H256, BridgeError> {
         // Push computed NAV on-chain BEFORE rebalance so that RebalanceLib
         // reads the real NAV instead of the stale _itpNavs (stuck at 1e18
         // from createITP). BLS signature obtained via setItpNav consensus.
-        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature, reference_nonce, aggregated.signer_bitmap);
+        // IMPORTANT: use nav_signer_bitmap (from NAV consensus), NOT
+        // aggregated.signer_bitmap (from rebalance consensus) — different
+        // issuers may have signed each phase.
+        let nav_calldata = build_set_itp_nav_calldata(itp_id, computed_nav, nav_bls_signature, reference_nonce, nav_signer_bitmap);
         match self.l3_writer.send_transaction(
             self.config.index_address,
             nav_calldata,

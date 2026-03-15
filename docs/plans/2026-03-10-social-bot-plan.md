@@ -2,11 +2,30 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Python MCP server on VPS that detects anomalies from 98 data sources and exposes tools for Claude Code to investigate, write headlines, and post to 5 branded X/Twitter accounts.
+**Goal:** Two-part system: (1) Python MCP server on VPS that detects anomalies and exposes investigation tools, (2) Local `/loop` on Mac that reviews anomalies, writes tweets to `scheduled.csv`, and a local poster script that reads the CSV and posts to X using local credentials.
 
-**Architecture:** Python service on VPS 1 with direct PostgreSQL access (via tunnel to VPS 2). Runs anomaly detection every 2 min, serves MCP tools over stdio (invoked via SSH from local Mac). Claude Code `/loop` calls MCP tools every 10 min to review, investigate, and approve tweets.
+**Architecture:**
+- **VPS**: Python MCP server with direct PostgreSQL access. Anomaly detection every 2 min. Serves investigation tools (search, history, frequency, compare). NO Twitter credentials, NO posting.
+- **Local Mac**: Claude Code `/loop` every 10 min calls MCP tools, writes approved tweets to `social-bot/scheduled.csv`. Each account has a `social-bot/directives/{account}.md` file defining its tone/rules. A separate local script `poster.py` watches `scheduled.csv` and posts via tweepy with local credentials in `social-bot/.twitter-creds.json`.
 
-**Tech Stack:** Python 3.11+, `mcp` (Model Context Protocol SDK), `psycopg2` (PostgreSQL), `tweepy` (Twitter API v2), `pyyaml`, no web framework needed.
+**Tech Stack:** Python 3.11+, `mcp` (Model Context Protocol SDK), `psycopg2` (PostgreSQL), `pyyaml` (VPS). `tweepy` (Twitter API v2) on Mac only for `poster.py`.
+
+```
+VPS (MCP server)                     Local Mac
+┌────────────────────┐               ┌─────────────────────────────┐
+│ PostgreSQL         │               │ Claude Code /loop 10min     │
+│ ↕                  │  SSH stdio    │ ├─ calls MCP tools (VPS)    │
+│ Anomaly detector   │◄────────────►│ ├─ reads directives/*.md    │
+│ Investigation tools│               │ ├─ writes scheduled.csv     │
+│ (no Twitter creds) │               │ └─ NO posting               │
+└────────────────────┘               │                             │
+                                     │ poster.py (background)      │
+                                     │ ├─ watches scheduled.csv    │
+                                     │ ├─ reads .twitter-creds.json│
+                                     │ ├─ posts to X via tweepy    │
+                                     │ └─ marks rows as posted     │
+                                     └─────────────────────────────┘
+```
 
 **Design doc:** `docs/plans/2026-03-10-social-bot-design.md`
 
@@ -24,47 +43,19 @@
 ```
 mcp>=1.0.0
 psycopg2-binary>=2.9.9
-tweepy>=4.14.0
 pyyaml>=6.0
 python-dotenv>=1.0.0
 ```
+
+Note: `tweepy` is only needed on the Mac for `poster.py`, not on the VPS. Install locally with `pip install tweepy`.
 
 **Step 2: Create .env.example**
 
 ```
 DATABASE_URL=postgres://max@localhost:5432/index_prices
-
-# Twitter API keys (6 accounts)
-TW_INSIDERS_API_KEY=
-TW_INSIDERS_API_SECRET=
-TW_INSIDERS_ACCESS_TOKEN=
-TW_INSIDERS_ACCESS_SECRET=
-
-TW_GRIDDOWN_API_KEY=
-TW_GRIDDOWN_API_SECRET=
-TW_GRIDDOWN_ACCESS_TOKEN=
-TW_GRIDDOWN_ACCESS_SECRET=
-
-TW_SKYWATCH_API_KEY=
-TW_SKYWATCH_API_SECRET=
-TW_SKYWATCH_ACCESS_TOKEN=
-TW_SKYWATCH_ACCESS_SECRET=
-
-TW_TAXRECEIPT_API_KEY=
-TW_TAXRECEIPT_API_SECRET=
-TW_TAXRECEIPT_ACCESS_TOKEN=
-TW_TAXRECEIPT_ACCESS_SECRET=
-
-TW_GLITCH_API_KEY=
-TW_GLITCH_API_SECRET=
-TW_GLITCH_ACCESS_TOKEN=
-TW_GLITCH_ACCESS_SECRET=
-
-TW_MAIN_API_KEY=
-TW_MAIN_API_SECRET=
-TW_MAIN_ACCESS_TOKEN=
-TW_MAIN_ACCESS_SECRET=
 ```
+
+Twitter credentials are stored locally in `social-bot/.twitter-creds.json` on the Mac (see Task 6). The VPS has NO Twitter credentials.
 
 **Step 3: Create db.py — PostgreSQL connection**
 
@@ -200,7 +191,7 @@ if __name__ == "__main__":
 ```bash
 python migrate.py
 ```
-Expected: `Ran 8 migrations`
+Expected: `Ran 7 migrations`
 
 **Step 3: Commit**
 
@@ -642,151 +633,385 @@ git commit -m "feat(social-bot): anomaly detector with threshold evaluation + de
 
 ---
 
-### Task 6: Twitter Posting Client
+### Task 6: Local Poster + Directives + Credentials (runs on Mac, NOT VPS)
 
 **Files:**
-- Create: `social-bot/posting/__init__.py`
-- Create: `social-bot/posting/twitter.py`
-- Create: `social-bot/posting/accounts.py`
+- Create: `social-bot/poster.py`
+- Create: `social-bot/.twitter-creds.example.json`
+- Create: `social-bot/scheduled.csv` (empty with header)
+- Create: `social-bot/directives/GeneralInsiders.md`
+- Create: `social-bot/directives/GeneralGridDown.md`
+- Create: `social-bot/directives/GeneralSkyWatch.md`
+- Create: `social-bot/directives/GeneralTaxReceipt.md`
+- Create: `social-bot/directives/GeneralGlitch.md`
 
-**Step 1: Create posting/accounts.py**
+**Step 1: Create .twitter-creds.example.json**
 
-```python
-import os
-
-ACCOUNTS = {
-    "GeneralInsiders": {
-        "api_key": os.getenv("TW_INSIDERS_API_KEY"),
-        "api_secret": os.getenv("TW_INSIDERS_API_SECRET"),
-        "access_token": os.getenv("TW_INSIDERS_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_INSIDERS_ACCESS_SECRET"),
-    },
-    "GeneralGridDown": {
-        "api_key": os.getenv("TW_GRIDDOWN_API_KEY"),
-        "api_secret": os.getenv("TW_GRIDDOWN_API_SECRET"),
-        "access_token": os.getenv("TW_GRIDDOWN_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_GRIDDOWN_ACCESS_SECRET"),
-    },
-    "GeneralSkyWatch": {
-        "api_key": os.getenv("TW_SKYWATCH_API_KEY"),
-        "api_secret": os.getenv("TW_SKYWATCH_API_SECRET"),
-        "access_token": os.getenv("TW_SKYWATCH_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_SKYWATCH_ACCESS_SECRET"),
-    },
-    "GeneralTaxReceipt": {
-        "api_key": os.getenv("TW_TAXRECEIPT_API_KEY"),
-        "api_secret": os.getenv("TW_TAXRECEIPT_API_SECRET"),
-        "access_token": os.getenv("TW_TAXRECEIPT_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_TAXRECEIPT_ACCESS_SECRET"),
-    },
-    "GeneralGlitch": {
-        "api_key": os.getenv("TW_GLITCH_API_KEY"),
-        "api_secret": os.getenv("TW_GLITCH_API_SECRET"),
-        "access_token": os.getenv("TW_GLITCH_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_GLITCH_ACCESS_SECRET"),
-    },
-    "GeneralMarket": {
-        "api_key": os.getenv("TW_MAIN_API_KEY"),
-        "api_secret": os.getenv("TW_MAIN_API_SECRET"),
-        "access_token": os.getenv("TW_MAIN_ACCESS_TOKEN"),
-        "access_secret": os.getenv("TW_MAIN_ACCESS_SECRET"),
-    },
+```json
+{
+  "GeneralInsiders": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralGridDown": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralSkyWatch": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralTaxReceipt": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralGlitch": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  },
+  "GeneralMarket": {
+    "api_key": "...",
+    "api_secret": "...",
+    "access_token": "...",
+    "access_secret": "..."
+  }
 }
-
-def get_client_config(account_name: str) -> dict | None:
-    return ACCOUNTS.get(account_name)
 ```
 
-**Step 2: Create posting/twitter.py**
+Add `.twitter-creds.json` to `.gitignore`.
+
+**Step 2: Create scheduled.csv with header**
+
+```csv
+id,account,tweet_text,outcome_tag,virality_score,scheduled_at,status
+```
+
+Format:
+- `id`: anomaly ID from VPS DB
+- `account`: GeneralInsiders, GeneralGridDown, etc.
+- `tweet_text`: final tweet text (max 280 chars, CSV-escaped)
+- `outcome_tag`: FEAR/LOOK/MONEY/RAGE/WTF/WATCH/RECORD
+- `virality_score`: 1-10
+- `scheduled_at`: ISO timestamp when Claude Code wrote it
+- `status`: `pending` (written by /loop), `posted` (marked by poster.py), `failed` (posting error)
+
+**Step 3: Create poster.py — local background script**
 
 ```python
+#!/usr/bin/env python3
+"""
+Local poster script. Watches scheduled.csv and posts pending tweets to X.
+Runs on Mac only. Reads credentials from .twitter-creds.json.
+"""
+
+import csv
+import json
+import time
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
 import tweepy
-from datetime import datetime
-import db
-from posting.accounts import get_client_config
 
-# Cache tweepy clients
-_clients: dict[str, tweepy.Client] = {}
+SCRIPT_DIR = Path(__file__).parent
+CREDS_FILE = SCRIPT_DIR / ".twitter-creds.json"
+CSV_FILE = SCRIPT_DIR / "scheduled.csv"
+MIN_SPACING_SECS = 1800  # 30 min between posts per account
+MAX_DAILY = 15
 
-def get_twitter_client(account: str) -> tweepy.Client:
-    if account in _clients:
-        return _clients[account]
-    config = get_client_config(account)
-    if not config or not config["api_key"]:
-        raise ValueError(f"No Twitter credentials for {account}")
-    client = tweepy.Client(
-        consumer_key=config["api_key"],
-        consumer_secret=config["api_secret"],
-        access_token=config["access_token"],
-        access_token_secret=config["access_secret"],
+# Track last post time per account
+_last_posted: dict[str, datetime] = {}
+_daily_counts: dict[str, int] = {}
+_daily_reset: str = ""
+
+
+def load_creds() -> dict:
+    with open(CREDS_FILE) as f:
+        return json.load(f)
+
+
+def get_client(account: str, creds: dict) -> tweepy.Client:
+    c = creds[account]
+    return tweepy.Client(
+        consumer_key=c["api_key"],
+        consumer_secret=c["api_secret"],
+        access_token=c["access_token"],
+        access_token_secret=c["access_secret"],
     )
-    _clients[account] = client
-    return client
 
-def post_tweet(account: str, text: str, anomaly_id: str, dedup_key: str,
-               outcome_tag: str = None, virality_score: int = None) -> dict:
-    """Post a tweet and record it in social_posted."""
-    # Check 30-min spacing
-    last = db.query_one("""
-        SELECT posted_at FROM social_posted
-        WHERE account = %s ORDER BY posted_at DESC LIMIT 1
-    """, (account,))
-    if last and last["posted_at"]:
-        elapsed = (datetime.utcnow() - last["posted_at"].replace(tzinfo=None)).total_seconds()
-        if elapsed < 1800 and outcome_tag != "FEAR":  # FEAR bypasses spacing
-            return {"error": f"Too soon — {int(1800 - elapsed)}s until next post for {account}"}
 
-    # Check daily limit
-    today_count = db.query_one("""
-        SELECT COUNT(*) as cnt FROM social_posted
-        WHERE account = %s AND posted_at > CURRENT_DATE
-    """, (account,))
-    if today_count and today_count["cnt"] >= 15:
-        return {"error": f"Daily limit reached for {account} (15/day)"}
+def can_post(account: str, outcome_tag: str) -> tuple[bool, str]:
+    global _daily_counts, _daily_reset
 
-    # Post
-    client = get_twitter_client(account)
-    response = client.create_tweet(text=text)
-    tweet_id = str(response.data["id"])
+    # Reset daily counts at midnight
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    if today != _daily_reset:
+        _daily_counts = {}
+        _daily_reset = today
 
-    # Record
-    db.execute("""
-        INSERT INTO social_posted (id, source, account, tweet_text, tweet_id,
-            outcome_tag, virality_score, dedup_key)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, (anomaly_id, "social-bot", account, text, tweet_id,
-          outcome_tag, virality_score, dedup_key))
+    # Daily limit
+    if _daily_counts.get(account, 0) >= MAX_DAILY:
+        return False, f"Daily limit ({MAX_DAILY}) reached for {account}"
 
-    # Update anomaly status
-    db.execute("""
-        UPDATE social_anomalies SET status = 'posted', final_tweet = %s,
-            outcome_tag = %s, virality_score = %s
-        WHERE id = %s
-    """, (text, outcome_tag, virality_score, anomaly_id))
+    # Spacing (FEAR bypasses)
+    if outcome_tag != "FEAR" and account in _last_posted:
+        elapsed = (datetime.utcnow() - _last_posted[account]).total_seconds()
+        if elapsed < MIN_SPACING_SECS:
+            wait = int(MIN_SPACING_SECS - elapsed)
+            return False, f"Too soon for {account}, wait {wait}s"
 
-    return {"tweet_id": tweet_id, "account": account, "text": text}
+    return True, ""
 
-def post_tweet_dry_run(account: str, text: str) -> dict:
-    """Dry run — don't actually post, just validate."""
-    if len(text) > 280:
-        return {"error": f"Tweet too long: {len(text)} chars (max 280)"}
-    config = get_client_config(account)
-    if not config or not config["api_key"]:
-        return {"error": f"No credentials for {account}"}
-    return {"dry_run": True, "account": account, "text": text, "chars": len(text)}
+
+def read_csv() -> list[dict]:
+    if not CSV_FILE.exists():
+        return []
+    with open(CSV_FILE, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def write_csv(rows: list[dict]):
+    if not rows:
+        return
+    fieldnames = ["id", "account", "tweet_text", "outcome_tag", "virality_score", "scheduled_at", "status"]
+    with open(CSV_FILE, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def run_once(creds: dict):
+    rows = read_csv()
+    if not rows:
+        return
+
+    changed = False
+    for row in rows:
+        if row.get("status") != "pending":
+            continue
+
+        account = row["account"]
+        outcome_tag = row.get("outcome_tag", "")
+        tweet_text = row["tweet_text"]
+
+        ok, reason = can_post(account, outcome_tag)
+        if not ok:
+            print(f"[skip] {reason}")
+            continue
+
+        try:
+            client = get_client(account, creds)
+            response = client.create_tweet(text=tweet_text)
+            tweet_id = response.data["id"]
+            row["status"] = "posted"
+            _last_posted[account] = datetime.utcnow()
+            _daily_counts[account] = _daily_counts.get(account, 0) + 1
+            print(f"[posted] @{account}: {tweet_text[:60]}... (id: {tweet_id})")
+            changed = True
+        except Exception as e:
+            row["status"] = "failed"
+            print(f"[error] @{account}: {e}")
+            changed = True
+
+    if changed:
+        write_csv(rows)
+
+
+def main():
+    if not CREDS_FILE.exists():
+        print(f"Missing {CREDS_FILE} — copy from .twitter-creds.example.json and fill in keys")
+        sys.exit(1)
+
+    creds = load_creds()
+    print(f"[poster] Watching {CSV_FILE} (polling every 30s)")
+    print(f"[poster] Loaded credentials for: {', '.join(creds.keys())}")
+
+    while True:
+        try:
+            run_once(creds)
+        except Exception as e:
+            print(f"[poster] Error: {e}")
+        time.sleep(30)
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-**Step 3: Create posting/__init__.py (empty)**
+**Step 4: Create directives for each account**
 
-```bash
-touch social-bot/posting/__init__.py
+Create `social-bot/directives/GeneralInsiders.md`:
+
+```markdown
+# @GeneralInsiders — Insider Trading & Short Interest
+
+## Sources
+- sec (insider trades, 13F filings)
+- finra (short interest, dark pool volume)
+- congress (congressional trades, STOCK Act disclosures)
+
+## Tone
+Cold, factual, slightly menacing. You're the person who noticed what insiders are doing before anyone else. Think: forensic accountant who tweets.
+
+## Rules
+- ALWAYS name the insider (CEO, CFO, director — never generic "insider")
+- ALWAYS include dollar amount and % of holdings
+- Cluster detection is your superpower: "3 directors sold in 2 weeks" > "1 director sold"
+- Congress trades: name the member, the committee they sit on, and the irony if applicable
+- Short interest: only post if short volume is extreme (>50% of float) or changed dramatically
+- NEVER give financial advice. State facts. Let people draw conclusions.
+- Preferred outcomes: MONEY, WATCH, WTF
+
+## Examples
+- "Pfizer CEO sold $5.6M in stock — 3rd C-suite sale this month. Combined: $18M out the door."
+- "Sen. Tuberville bought $250K in defense stocks. He sits on Armed Services Committee. 4th defense buy this quarter."
+- "AMC short interest hit 38% of float — highest since the Jan 2021 squeeze. 12% jump in one week."
 ```
 
-**Step 4: Commit**
+Create `social-bot/directives/GeneralGridDown.md`:
+
+```markdown
+# @GeneralGridDown — Infrastructure Failures
+
+## Sources
+- power_outages (US utility outages)
+- ioda (internet connectivity, country-level shutdowns)
+- faa_delays (flight delays, ground stops)
+- transit group (mta_subway, tfl_tube, sbb, sncf, db_train)
+- cbp_border (border wait times)
+- nrc_nuclear (nuclear plant events)
+
+## Tone
+Urgent but measured. You're the infrastructure watchdog. When systems fail, you're the first to connect the dots. Think: emergency dispatcher who's also a data analyst.
+
+## Rules
+- ALWAYS include number of people affected (customers, passengers, travelers)
+- Power: state + utility name + customer count. Cluster grid failures ("3rd state this week")
+- Internet: country name + connectivity % drop. Autocracies shutting down = RAGE, infrastructure failure = WATCH
+- Flights: airport code + delay count + cascade potential ("DFW ground stop, 400+ flights, ripple expected")
+- Transit: system name + line + delay magnitude vs normal
+- FEAR tweets for active infrastructure emergencies (power out in extreme heat/cold)
+- Preferred outcomes: FEAR, WATCH, RECORD
+
+## Examples
+- "200K Texans without power in 108°F heat — same grid they 'fixed' after 2021. 4th major failure this year."
+- "Internet connectivity in Pakistan dropped 62% in the last hour. No official statement. 3rd shutdown in 6 weeks."
+- "Every NYC subway line is delayed right now. All 26. Last time this happened: February 2024."
+```
+
+Create `social-bot/directives/GeneralSkyWatch.md`:
+
+```markdown
+# @GeneralSkyWatch — Natural Events & Space Weather
+
+## Sources
+- earthquake (USGS global seismic data)
+- volcano (Smithsonian GVP eruption data)
+- spaceweather (solar flares, geomagnetic storms, Kp index)
+- wildfire (NASA FIRMS hotspots)
+- airnow (US air quality index)
+- weather_alerts (NWS severe weather)
+- epidemic (WHO disease outbreak news)
+
+## Tone
+Awe-struck data nerd. You love the scale of nature and space. Dramatic but grounded in numbers. Think: Neil deGrasse Tyson meets a seismologist.
+
+## Rules
+- Earthquakes: magnitude + location + depth + population within 100km. Frequency context is king ("3rd M5+ in Turkey this week")
+- Solar: Kp index + aurora visibility latitude + what it means for GPS/radio ("visible as far south as New York")
+- Wildfire: hotspot count + growth rate ("doubled in 6 hours") + air quality cascade
+- AQI: city + AQI value + category + how it compares to normal. "Unhealthy" is baseline, only post "Very Unhealthy" or worse unless unusual
+- Volcanoes: eruption VEI + ash plume height + flight impact
+- LOOK outcome for aurora/visual events, FEAR for earthquakes near population
+- Preferred outcomes: LOOK, FEAR, RECORD, WATCH
+
+## Examples
+- "Kp 8 geomagnetic storm in progress. Aurora visible as far south as 40°N tonight. Strongest storm since May 2024. Go outside and look north."
+- "3rd M5+ earthquake in Turkey this week. The Anatolian fault hasn't been this active since 2019. Our data shows a clear acceleration."
+- "Air quality in Sacramento hit 287 (Very Unhealthy) — wildfire smoke from the Dixie complex. 400% above 30-day average. Stay inside."
+```
+
+Create `social-bot/directives/GeneralTaxReceipt.md`:
+
+```markdown
+# @GeneralTaxReceipt — Government & Economy
+
+## Sources
+- usa_spending (federal contract awards, grant spending)
+- courtlistener (federal court rulings)
+- zillow (housing market, rent indices)
+- fred_treasury (treasury yields, economic indicators)
+- congress (legislative activity — shared with Insiders for trade angle)
+
+## Tone
+Dry, sardonic, taxpayer-advocate. You find the absurd in government spending and the unjust in court rulings. Think: auditor with a Twitter account.
+
+## Rules
+- Spending: contractor name + amount + what for. Highlight waste, repeats, no-bid contracts
+- Courts: ruling summary + judge + impact scope. Focus on precedent-setting or broadly impactful
+- Housing: city/metro + price/rent change + vs income. Human scale ("average nurse can't afford average apartment")
+- Treasury: yield level + inversion status + what it signals historically
+- RAGE for waste/hypocrisy, MONEY for things that affect everyone's wallet
+- Preferred outcomes: RAGE, MONEY, RECORD
+
+## Examples
+- "$47M federal contract to a company with 3 employees. For 'consulting services.' This is your money."
+- "Average rent in Austin just passed $2,100/month — up 34% in 2 years. Average local salary: $52K. Do the math."
+- "2Y/10Y yield curve has been inverted for 14 months straight. Last time it lasted this long: 1980."
+```
+
+Create `social-bot/directives/GeneralGlitch.md`:
+
+```markdown
+# @GeneralGlitch — The Weird Data
+
+## Sources
+- mcbroken (McDonald's ice cream machine status)
+- queue_times (theme park wait times)
+- steam (Steam player counts, game launches)
+- twitch (viewer counts, category trends)
+- reddit (subreddit activity spikes)
+- hackernews (trending stories, score anomalies)
+- github_npm_pypi (package download spikes, trending repos)
+- shelter (animal shelter intake/adoption rates)
+- sports (odds movements, upset predictions)
+
+## Tone
+Amused, curious, slightly chaotic. You find the signal in noise that nobody was looking for. Think: the person who notices that every time a certain game crashes, McDonald's ice cream machines go down too.
+
+## Rules
+- McBroken: city-level breakdown %. Only post if a city is >40% broken or national average spikes
+- Theme parks: only extreme waits (>120 min) or unusual patterns (park nearly empty on a Saturday)
+- Steam/Twitch: massive spikes or crashes in player/viewer count. New game launches with record numbers
+- Reddit: subreddit activity spikes >300% above average (something is happening)
+- HN: stories hitting unusually high scores. Tech drama signals.
+- GitHub/npm: package download explosions (supply chain attack? viral project?)
+- WTF for absurdist data, LOOK for "you need to see this", RECORD for historic gaming/internet moments
+- Preferred outcomes: WTF, LOOK, RECORD
+
+## Examples
+- "92% of McDonald's ice cream machines in Philadelphia are broken right now. National average is 11%. Philly, what happened?"
+- "The #1 story on Hacker News has 4,200 points. Average #1 gets ~800. Something big is happening in tech."
+- "Animal shelter intake in Houston spiked 340% this week. 30-day average is 45/day, yesterday was 198. Check on Houston."
+```
+
+**Step 5: Commit**
 
 ```bash
-git add social-bot/posting/
-git commit -m "feat(social-bot): Twitter posting client with spacing + daily limits"
+git add social-bot/poster.py social-bot/.twitter-creds.example.json social-bot/scheduled.csv social-bot/directives/
+echo ".twitter-creds.json" >> social-bot/.gitignore
+git add social-bot/.gitignore
+git commit -m "feat(social-bot): local poster + directives + scheduled.csv + credential template"
 ```
 
 ---
@@ -982,29 +1207,24 @@ def list_assets(source: str, from_date: str = None, to_date: str = None, active_
 
 ```python
 import db
-from posting.twitter import post_tweet
 
-def approve_and_post(anomaly_id: str, final_tweet: str, account: str,
-                     outcome_tag: str, virality_score: int) -> dict:
-    """Approve an anomaly and post it to X."""
-    # Get anomaly data for dedup key
+def approve_anomaly(anomaly_id: str, final_tweet: str, account: str,
+                    outcome_tag: str, virality_score: int) -> dict:
+    """Mark an anomaly as approved in the DB. Does NOT post — the local
+    /loop writes to scheduled.csv, and poster.py does the actual posting."""
     anomaly = db.query_one("SELECT * FROM social_anomalies WHERE id = %s", (anomaly_id,))
     if not anomaly:
         return {"error": f"Anomaly {anomaly_id} not found"}
-    if anomaly["status"] == "posted":
-        return {"error": f"Already posted"}
+    if anomaly["status"] in ("posted", "approved"):
+        return {"error": f"Already {anomaly['status']}"}
 
-    # Update anomaly
     db.execute("""
         UPDATE social_anomalies SET status = 'approved', final_tweet = %s,
             outcome_tag = %s, virality_score = %s
         WHERE id = %s
     """, (final_tweet, outcome_tag, virality_score, anomaly_id))
 
-    # Post to Twitter
-    dedup_key = f"{anomaly['source']}:{anomaly.get('asset_id', '')}:{anomaly_id[:10]}"
-    result = post_tweet(account, final_tweet, anomaly_id, dedup_key, outcome_tag, virality_score)
-    return result
+    return {"approved": anomaly_id, "account": account, "tweet": final_tweet}
 
 def get_last_posted(account: str = None, limit: int = 10) -> list[dict]:
     """Recent tweets per account."""
@@ -1079,7 +1299,7 @@ from mcp.types import Tool, TextContent
 
 from tools.anomalies import get_anomalies, skip_anomaly
 from tools.investigate import search_assets, get_history, get_frequency, get_compare, list_assets
-from tools.publish import approve_and_post, get_last_posted, get_posted
+from tools.publish import approve_anomaly, get_last_posted, get_posted
 from tools.stats import get_stats
 from engine.detector import run_detection
 from migrate import migrate
@@ -1150,7 +1370,7 @@ TOOLS = [
         },
         "required": ["source"],
     }),
-    Tool(name="approve_tweet", description="Approve an anomaly and post it to X/Twitter. Enforces 30-min spacing per account and 15/day limit. FEAR tweets bypass spacing.", inputSchema={
+    Tool(name="approve_tweet", description="Mark an anomaly as approved in the DB. Does NOT post — the /loop writes to scheduled.csv locally, and poster.py posts from the Mac.", inputSchema={
         "type": "object",
         "properties": {
             "id": {"type": "string", "description": "Anomaly ID"},
@@ -1191,7 +1411,7 @@ async def call_tool(name: str, arguments: dict):
         "get_frequency": lambda: get_frequency(arguments["source"], arguments["event_type"], arguments.get("region"), arguments.get("days", 7)),
         "get_compare": lambda: get_compare(arguments["source"], arguments["asset_id"]),
         "list_assets": lambda: list_assets(arguments["source"], arguments.get("from_date"), arguments.get("to_date"), arguments.get("active_only", True)),
-        "approve_tweet": lambda: approve_and_post(arguments["id"], arguments["final_tweet"], arguments["account"], arguments["outcome_tag"], arguments["virality_score"]),
+        "approve_tweet": lambda: approve_anomaly(arguments["id"], arguments["final_tweet"], arguments["account"], arguments["outcome_tag"], arguments["virality_score"]),
         "get_last_posted": lambda: get_last_posted(arguments.get("account"), arguments.get("limit", 10)),
         "get_posted": lambda: get_posted(arguments.get("days", 1)),
         "get_stats": lambda: get_stats(),
@@ -1230,7 +1450,7 @@ if __name__ == "__main__":
 
 ```bash
 git add social-bot/tools/ social-bot/server.py
-git commit -m "feat(social-bot): MCP server with 12 tools + background anomaly detection"
+git commit -m "feat(social-bot): MCP server with 11 tools + background anomaly detection"
 ```
 
 ---
@@ -1398,17 +1618,21 @@ ACCOUNTS:
 - @GeneralMarket — Retweet the best ones
 
 WORKFLOW:
-1. Call get_anomalies() to see pending candidates
-2. For each candidate, DIG DEEPER before deciding:
+1. Read the directives for each account in `social-bot/directives/*.md` — these define tone, sources, and rules per account
+2. Call get_anomalies() to see pending candidates
+3. For each candidate, DIG DEEPER before deciding:
    - get_frequency() — is this actually unusual or routine?
    - get_compare() — how does it compare to historical averages?
    - search() — any related events across OTHER sources? (cross-source insight is your superpower)
    - get_history() — what's the full trend? Is this accelerating?
    - get_last_posted() — what did this account post recently? Avoid repetition.
-3. Ask yourself: "What unique insight can I provide that CNN/Reuters/random Twitter accounts can't?"
+4. Ask yourself: "What unique insight can I provide that CNN/Reuters/random Twitter accounts can't?"
    - If the answer is "nothing, they'd say the same thing" → skip_tweet(id, reason)
    - If you can add context from our data that nobody else has → THAT is the tweet
-4. For newsworthy candidates, write the headline and approve_tweet()
+5. For newsworthy candidates:
+   a. Call approve_tweet() to mark the anomaly as approved in the VPS DB
+   b. Append a row to `social-bot/scheduled.csv` with: id, account, tweet_text, outcome_tag, virality_score, scheduled_at (ISO), status=pending
+   c. The local poster.py will pick it up and post it to X
 
 THE TWEET IS THE CONTEXT, NOT THE EVENT:
 - BAD: "M5.2 earthquake in Turkey" (anyone can say this)
@@ -1438,7 +1662,7 @@ SPACING:
 - When events cascade (wildfire → power outage → air quality), post from EACH relevant
   account — that cross-source connection is exactly our edge
 
-5. End with get_stats() to log summary.
+6. End with get_stats() to log summary.
 ```
 
 **Step 2: Test the loop manually**
@@ -1467,18 +1691,18 @@ git commit -m "feat(social-bot): /loop editorial prompt for Claude Code"
 
 ## Summary
 
-| Task | What | Depends on |
-|------|------|-----------|
-| 1 | Project scaffold + DB connection | — |
-| 2 | State tables (anomalies, posted, event_log) | 1 |
-| 3 | Threshold YAML + parser (5 sources) | 1 |
-| 4 | Context computation engine | 2 |
-| 5 | Anomaly detector | 2, 3, 4 |
-| 6 | Twitter posting client | 2 |
-| 7 | MCP server (12 tools) | 5, 6 |
-| 8 | MCP config on local Mac | 7 |
-| 9 | Deploy to VPS | 7 |
-| 10 | Expand thresholds to all sources | 9 |
-| 11 | /loop prompt setup | 9 |
+| Task | What | Where | Depends on |
+|------|------|-------|-----------|
+| 1 | Project scaffold + DB connection | VPS | — |
+| 2 | State tables (anomalies, posted, event_log) | VPS | 1 |
+| 3 | Threshold YAML + parser (5 sources) | VPS | 1 |
+| 4 | Context computation engine | VPS | 2 |
+| 5 | Anomaly detector | VPS | 2, 3, 4 |
+| 6 | Local poster + directives + credentials | Mac | — |
+| 7 | MCP server (tools, NO posting) | VPS | 5 |
+| 8 | MCP config on local Mac | Mac | 7 |
+| 9 | Deploy to VPS | VPS | 7 |
+| 10 | Expand thresholds to all sources | VPS | 9 |
+| 11 | /loop prompt setup | Mac | 6, 9 |
 
-**Parallelizable:** Tasks 3+4 can run in parallel. Tasks 8+9 can run in parallel after 7.
+**Parallelizable:** Tasks 3+4 can run in parallel. Task 6 (local) can run in parallel with Tasks 1-5 (VPS). Tasks 8+9 can run in parallel after 7.

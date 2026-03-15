@@ -14,11 +14,8 @@ import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { saveBets, getStoredBets, computeHitRate } from '@/lib/vision/bitmap-store'
 import { VisualTab } from './VisualTab'
 import { MarketAccordion } from './MarketAccordion'
-import { ScriptTab } from './ScriptTab'
 import { DepositModal } from './DepositModal'
 import { WithdrawModal } from './WithdrawModal'
-
-type TabType = 'VISUAL' | 'SCRIPT'
 
 interface ExpandedBatchProps {
   batchId: number
@@ -35,8 +32,6 @@ function getYouTubeId(url: string): string | null {
 export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
   const t = useTranslations('vision')
   const marketCount = batch.marketCount || batch.marketIds.length
-  const defaultTab: TabType = marketCount > 100 ? 'SCRIPT' : 'VISUAL'
-  const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
@@ -89,11 +84,6 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
       for (const id of marketIds) next[id] = direction
       return next
     })
-  }, [])
-
-  // Handle bitmap from script tab
-  const handleBitmapGenerated = useCallback((bitmap: Record<string, boolean>) => {
-    setBets(bitmap)
   }, [])
 
   // Save bets to localStorage on SUBMIT (for hit rate tracking)
@@ -176,64 +166,33 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
         </div>
       )}
 
-      {/* Tab switcher */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1">
-          <button
-            onClick={() => setActiveTab('VISUAL')}
-            className={`px-3 py-1.5 rounded-card text-xs font-bold font-mono transition-colors ${
-              activeTab === 'VISUAL'
-                ? 'bg-terminal text-text-inverse'
-                : 'bg-muted text-text-muted hover:text-text-primary'
-            }`}
-          >
-            {t('expanded_batch.tabs.visual')}
-          </button>
-          <button
-            onClick={() => setActiveTab('SCRIPT')}
-            className={`px-3 py-1.5 rounded-card text-xs font-bold font-mono transition-colors ${
-              activeTab === 'SCRIPT'
-                ? 'bg-terminal text-text-inverse'
-                : 'bg-muted text-text-muted hover:text-text-primary'
-            }`}
-          >
-            {t('expanded_batch.tabs.script')}
-          </button>
-        </div>
+      {/* Tick info */}
+      <div className="flex items-center justify-end">
         <span className="text-xs text-text-muted font-mono">
           {t('expanded_batch.tick_info', { tick: batch.currentTick, minutes: batch.tickDuration / 60 })}
         </span>
       </div>
 
-      {/* Tab content */}
+      {/* Market content */}
       {historyLoading ? (
         <div className="py-8 flex items-center justify-center">
           <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
         </div>
-      ) : activeTab === 'VISUAL' ? (
-        // <=5 markets: card layout (VisualTab)
-        // 6+ markets: accordion grouped by category (MarketAccordion)
-        marketCount <= 5 ? (
-          <VisualTab
-            batch={batch}
-            history={history || []}
-            bets={bets}
-            onToggleBet={handleToggleBet}
-          />
-        ) : (
-          <MarketAccordion
-            batch={batch}
-            history={history || []}
-            bets={bets}
-            onToggleBet={handleToggleBet}
-            onBulkBet={handleBulkBet}
-            resolvedMarkets={resolvedMarkets}
-          />
-        )
-      ) : (
-        <ScriptTab
+      ) : marketCount <= 5 ? (
+        <VisualTab
           batch={batch}
-          onBitmapGenerated={handleBitmapGenerated}
+          history={history || []}
+          bets={bets}
+          onToggleBet={handleToggleBet}
+        />
+      ) : (
+        <MarketAccordion
+          batch={batch}
+          history={history || []}
+          bets={bets}
+          onToggleBet={handleToggleBet}
+          onBulkBet={handleBulkBet}
+          resolvedMarkets={resolvedMarkets}
         />
       )}
 

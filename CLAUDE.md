@@ -1,6 +1,6 @@
 ## Git
 
-Commit after each completed task/feature to enable rollback. Use descriptive commit messages.
+Commit after each completed task/feature to enable rollback. Use descriptive commit messages. NEVER add "Co-Authored-By" trailers to commit messages.
 
 ## Parallelism
 
@@ -99,8 +99,36 @@ If BLS verification is in the way, fix the BLS pipeline — don't bypass the che
 Not a concern. Break interfaces, change function signatures, remove deprecated storage freely.
 
 
+## Issuers
+
+Issuers **only run on VPS** — never locally. Don't create local issuer startup scripts, don't test issuers on localhost. All issuer infrastructure lives in `docker/testnet/issuer/` and runs via Docker Compose on the VPS.
+
+- SSH to VPS: `ssh index-maker/prod/be`
+- Issuer logs: `docker logs issuer-1 --tail 100` (issuer-1, issuer-2, issuer-3)
+- Restart: `cd /home/max/index && docker compose -f docker/testnet/issuer/docker-compose.yml restart`
+
 ## Contracts
 
+
+## Writing Style — Cioran
+
+All external-facing writing follows the Cioran method. Full guide: `docs/writing-like-cioran.md`
+
+**Applies to:** docs, emails, blog posts, articles, social media, messages to people, landing page copy, error messages, UI microcopy. Does NOT apply to code comments, commit messages, or internal technical notes.
+
+**Core rules:**
+- Suppress the road, keep the destination. Delete the argument, publish the conclusion.
+- Short declarative sentences. No hedging ("perhaps", "it seems", "one might argue").
+- Setup → pivot → knife. The last words carry all the weight.
+- Nihilist tenderness: dark observations that reveal care underneath.
+- Paradox over explanation. Name the contradiction, don't resolve it.
+- No corporate fluff. No "exciting", "innovative", "cutting-edge", "unlock", "leverage".
+- No enthusiasm. Dry, precise, warm by accident.
+- Every sentence must cost something. If the reader can nod and move on, delete it.
+
+**Combine with format best practices:** Cioran's voice lives INSIDE the format requirements. A docs page still needs frontmatter, code examples, and API signatures — but the prose between them reads like a man who built a protocol because he couldn't help it. An email still has a subject line and a CTA — but the body is three sentences and a knife.
+
+**The test:** Would a reader pause mid-sentence? If not, rewrite.
 
 ## Design Decision Backlog
 

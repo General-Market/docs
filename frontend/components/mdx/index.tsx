@@ -67,6 +67,11 @@ import {
   TeamAgeSpreadPerformance,
   TeamEduPerformance,
   FoundersDashboard,
+  PodcastDistribution,
+  PodcastATHPerformance,
+  PodcastSurvival,
+  PodcastMarketCap,
+  PodcastTop500,
 } from "@/components/learn/diagrams/founders";
 
 function extractTextFromReactNode(node: ReactNode): string {
@@ -264,4 +269,10 @@ export const mdxComponents: MDXComponents = {
   TeamAgeSpreadPerformance,
   TeamEduPerformance,
   FoundersDashboard,
+  // Podcast visibility article
+  PodcastDistribution,
+  PodcastATHPerformance,
+  PodcastSurvival,
+  PodcastMarketCap,
+  PodcastTop500,
 };

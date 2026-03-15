@@ -481,6 +481,32 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${GREEN}Funded deployer with 50k SETTLEMENT_USDC on Sonic${NC}"
     fi
 
+    # Phase 4: Deploy 107 ITP tokens
+    echo -e "${BLUE}[8/10] Deploying ITP tokens...${NC}"
+    MOCK_VAULT=$(read_deployment_addr "MockBitgetVault")
+    rm -rf contracts/broadcast/Deploy107ITPs_Tokens.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Tokens.s.sol/$CHAIN_ID/
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        MOCK_BITGET_VAULT="$MOCK_VAULT" \
+        forge script script/Deploy107ITPs_Tokens.s.sol:Deploy107ITPs_Tokens \
+        --broadcast --slow --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --chain-id $CHAIN_ID) \
+        > logs/deploy-itp-tokens.log 2>&1 || echo -e "  ${YELLOW}ITP tokens deploy had warnings — check logs/deploy-itp-tokens.log${NC}"
+    echo -e "  ${GREEN}ITP tokens deployed${NC}"
+
+    # Phase 5: Create ITPs
+    echo -e "${BLUE}[9/10] Creating ITPs...${NC}"
+    INDEX_ADDR_ITP=$(read_deployment_addr "Index")
+    rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/ contracts/cache/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
+    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        INDEX_ADDRESS="$INDEX_ADDR_ITP" \
+        forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
+        --broadcast --slow --rpc-url "$RPC_URL" \
+        --private-key "$DEPLOYER_KEY" \
+        --chain-id $CHAIN_ID) \
+        > logs/deploy-itp-create.log 2>&1 || echo -e "  ${YELLOW}ITP create had warnings — check logs/deploy-itp-create.log${NC}"
+    echo -e "  ${GREEN}ITPs created${NC}"
+
     # Sync deployment JSONs to envs/testnet/ so switch-env.sh testnet stays current
     if [ -d "envs/testnet" ]; then
         [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
@@ -498,7 +524,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     ./switch-env.sh testnet 2>/dev/null || true
 
     # Deploy frontend to Vercel with new contract addresses
-    echo -e "${BLUE}[8/7] Deploying frontend to Vercel...${NC}"
+    echo -e "${BLUE}[10/10] Deploying frontend to Vercel...${NC}"
     if command -v vercel &>/dev/null; then
         (cd frontend && vercel --prod --yes 2>&1 | tail -5) && \
             echo -e "  ${GREEN}Frontend deployed to Vercel${NC}" || \
@@ -567,8 +593,12 @@ cmd_start() {
     _start_curator_docker
 
     # Start AP on VPS 2
-    echo -e "${BLUE}[6/6] Starting AP on VPS 2...${NC}"
+    echo -e "${BLUE}[6/7] Starting AP on VPS 2...${NC}"
     _start_ap_docker
+
+    # Start itp-bot
+    echo -e "${BLUE}[7/7] Starting itp-bot...${NC}"
+    _start_itp_bot_docker
 
     echo ""
     echo -e "${GREEN}All services started. Check status: ./testnet.sh status${NC}"
@@ -958,17 +988,54 @@ YEOF
     vps_chain_ssh "rm -f $VPS_CHAIN_DIR/docker/testnet/ap/docker-compose.override.yml"
 }
 
+_start_itp_bot_docker() {
+    # Clean up any stale override from previous failed run
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/itp-bot/docker-compose.override.yml"
+
+    local INDEX_ADDR_BOT
+    INDEX_ADDR_BOT=$(read_deployment_addr "Index")
+
+    # Write bot key file on VPS 1
+    vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/bot-key.txt' 2>/dev/null; true"
+    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/bot-key.txt && chmod 644 /tmp/bot-key.txt"
+
+    local OVERRIDE="$SCRIPT_DIR/.itp-bot-override.yml"
+    cat > "$OVERRIDE" <<YEOF
+services:
+  itp-bot:
+    environment:
+      - DATA_NODE_URL=http://localhost:$DATA_NODE_PORT
+      - DATA_NODE_AUTH_TOKEN=$EXPLORER_TOKEN
+      - L3_RPC_URL=$RPC_URL
+      - INDEX_ADDRESS=$INDEX_ADDR_BOT
+      - BOT_KEY_FILE=/tmp/bot-key.txt
+YEOF
+
+    rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/itp-bot/docker-compose.override.yml"
+    rm -f "$OVERRIDE"
+
+    if vps1_compose itp-bot up -d --build; then
+        echo -e "  ${GREEN}itp-bot started${NC}"
+    else
+        echo -e "  ${YELLOW}itp-bot failed to start — check: ./testnet.sh logs itp-bot${NC}"
+    fi
+
+    # Clean up override
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/itp-bot/docker-compose.override.yml"
+}
+
 # ── stop: Stop all VPS services ──────────────────────────────
 cmd_stop() {
     _STARTED_SERVICES=true
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
-    for svc in curator issuer data-node sonic-proxy; do
+    for svc in itp-bot curator issuer data-node sonic-proxy; do
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
-    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt"
+    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt /tmp/bot-key.txt"
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/*/docker-compose.override.yml"
     echo -e "  ${GREEN}VPS 1 stopped + keys cleaned${NC}"
 
@@ -994,6 +1061,7 @@ cmd_status() {
         check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i" || true
     done
     check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "curator" "curator" || true
+    check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "itp-bot" "testnet-itp-bot" || true
 
     echo ""
     echo -e "${BLUE}VPS 2 ($VPS_CHAIN_IP):${NC}"
@@ -1062,6 +1130,8 @@ cmd_logs() {
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/curator && docker compose logs -f" ;;
         ap)
             ssh "$VPS_CHAIN_HOST" "cd $VPS_CHAIN_DIR/docker/testnet/ap && docker compose logs -f" ;;
+        itp-bot)
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/itp-bot && docker compose logs -f" ;;
         all)
             echo -e "${CYAN}Tailing issuer-1 + data-node...${NC}"
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f issuer-1" &
@@ -1069,7 +1139,7 @@ cmd_logs() {
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" &
             PID2=$!
             trap "kill $PID1 $PID2 2>/dev/null" INT; wait ;;
-        *) echo "Available: sonic-proxy, data-node, issuer-1..3, curator, ap, all"; exit 1 ;;
+        *) echo "Available: sonic-proxy, data-node, issuer-1..3, curator, ap, itp-bot, all"; exit 1 ;;
     esac
 }
 
@@ -1099,7 +1169,7 @@ cmd_refresh_batches() {
     echo -e "  ${BLUE}BATCH_VERSION: $BATCH_VERSION (was v$CURRENT_VERSION)${NC}"
 
     # Refresh BLS registry snapshot to avoid SnapshotTooOld
-    echo -e "${BLUE}[1/3] Refreshing BLS registry snapshot...${NC}"
+    echo -e "${BLUE}[1/4] Refreshing BLS registry snapshot...${NC}"
     ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
     if [ -n "$ISSUER_REGISTRY" ]; then
         REG_NONCE=$(cast call --rpc-url "$RPC_URL" "$ISSUER_REGISTRY" "registryNonce()(uint256)" 2>/dev/null || echo "0")
@@ -1114,8 +1184,36 @@ cmd_refresh_batches() {
         fi
     fi
 
+    # Fetch fresh recommended configs from data-node so deploy uses current hashes.
+    # Without this, the deploy script uses stale vision-recommended-configs.json and
+    # the on-chain config_hashes won't match what the data-node computes — causing
+    # issuers to get 404 when fetching batch configs and ticks never advance.
+    echo -e "${BLUE}[2/4] Fetching fresh batch configs from data-node...${NC}"
+    local DATA_NODE_URL="${DATA_NODE_URL:-http://116.203.156.98/data-node}"
+    if curl -sf "$DATA_NODE_URL/batches/recommended" 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+# Transform data-node array format to deploy script's keyed format:
+# { configs: { sourceId: { configHash, tickDurationSecs, lockOffsetSecs } } }
+configs = {}
+for b in d['batches']:
+    configs[b['sourceId']] = {
+        'configHash': b['configHash'],
+        'tickDurationSecs': b['tickDurationSecs'],
+        'lockOffsetSecs': b['lockOffsetSecs'],
+        'marketCount': len(b.get('markets', []))
+    }
+json.dump({'configs': configs}, open('deployments/vision-recommended-configs.json', 'w'), indent=2)
+print(len(configs))
+" 2>/dev/null; then
+        local RECO_COUNT=$(python3 -c "import json; print(len(json.load(open('deployments/vision-recommended-configs.json'))['configs']))" 2>/dev/null || echo "?")
+        echo -e "  ${GREEN}Fetched $RECO_COUNT recommended configs${NC}"
+    else
+        echo -e "  ${YELLOW}Could not fetch recommended configs — using existing file${NC}"
+    fi
+
     # Deploy fresh batches
-    echo -e "${BLUE}[2/3] Deploying Vision batches (version $BATCH_VERSION)...${NC}"
+    echo -e "${BLUE}[3/4] Deploying Vision batches (version $BATCH_VERSION)...${NC}"
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" BATCH_VERSION="$BATCH_VERSION" \
     forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
         --rpc-url "$RPC_URL" \
@@ -1134,7 +1232,7 @@ cmd_refresh_batches() {
     echo -e "  ${GREEN}Batches deployed${NC}"
 
     # Sync vision-batches.json
-    echo -e "${BLUE}[3/3] Syncing deployment files...${NC}"
+    echo -e "${BLUE}[4/4] Syncing deployment files...${NC}"
     if [ -f "deployments/vision-batches.json" ]; then
         [ -d "envs/testnet" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
         # Also copy to frontend for E2E

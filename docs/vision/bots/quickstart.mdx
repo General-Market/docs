@@ -5,16 +5,19 @@ description: "Register and run your first Vision bot"
 
 # Bot Quickstart
 
-This guide walks you through building a minimal Vision bot that registers on-chain, joins a batch with random predictions, and submits its sealed bitmap to issuers.
+Register your bot. Fund it. Let it loose. Watch it learn that the future is unkind to algorithms too.
+
+What follows is a minimal bot that registers on-chain, joins a batch with random predictions, and submits its sealed bitmap to issuers. It will not outperform chance. That comes later -- if it comes at all.
 
 ## Prerequisites
 
 - **Python 3.10+** or **Node 18+**
 - An Arbitrum wallet funded with USDC and ETH (for gas)
 - Your wallet's private key exported as an environment variable
+- A willingness to wager money on a machine's guesses
 
 <Warning>
-**USDC uses 6 decimals.** All amounts in contract calls must be scaled by `10^6`. For example, 10 USDC = `10_000_000`.
+**USDC uses 6 decimals.** All amounts in contract calls must be scaled by `10^6`. 10 USDC = `10_000_000`. The decimal system, at least, is not adversarial.
 </Warning>
 
 ## Set Environment Variables
@@ -219,12 +222,12 @@ main().catch(console.error)
 
 ### 1. Register Your Bot
 
-Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. This is a one-time operation that stores your bot's metadata on-chain.
+Call `registerBot(endpoint, pubkeyHash)` on the Vision contract. One transaction. Irreversible in the way that all on-chain declarations are irreversible.
 
 - `endpoint` -- a URL where your bot can receive notifications (can be a placeholder)
 - `pubkeyHash` -- keccak256 hash of your bot's public key (used for identity)
 
-Registration is free. The only cost is gas.
+Registration is free. The only cost is gas -- and the quiet commitment to a project whose outcome you cannot know.
 
 ### 2. Poll for Active Batches
 
@@ -241,7 +244,7 @@ Returns an array of `BatchSummary` objects. Each batch includes:
 
 ### 3. Generate Predictions
 
-For each market in the batch, decide UP or DOWN. The quickstart uses random bets. See [Example Strategies](/vision/bots/strategies) for smarter approaches.
+For each market in the batch, decide UP or DOWN. The quickstart uses random bets -- the purest confession of ignorance. See [Example Strategies](/vision/bots/strategies) for approaches that disguise ignorance as method.
 
 ### 4. Encode and Hash the Bitmap
 
@@ -254,12 +257,12 @@ Two transactions:
 2. `Vision.joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)` -- join the batch
 
 <Tip>
-You can approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approval transactions. This saves gas when joining multiple batches.
+Approve a larger amount once (e.g., `type(uint256).max`) to avoid repeated approvals. One act of trust, amortized across all future gambles.
 </Tip>
 
 ### 6. Submit Bitmap to Issuers
 
-After joining on-chain, wait ~6 seconds for the chain indexer to detect your `PlayerJoined` event. Then POST your actual bitmap bytes to the issuer API:
+After joining on-chain, wait six seconds. Six seconds -- the gap between commitment and consequence, between the hash and the thing itself. Then POST your actual bitmap bytes to the issuer API:
 
 ```
 POST /vision/bitmap
@@ -274,14 +277,15 @@ POST /vision/bitmap
 The issuer verifies that `keccak256(bitmap_bytes) == expected_hash == on-chain bitmapHash`. If verification passes, the bitmap is stored for tick resolution.
 
 <Warning>
-If you skip the 6-second wait, the issuer may not yet know about your `PlayerJoined` event and will reject the bitmap with "Player not found in batch."
+Skip the wait and the issuer will not yet know you exist. "Player not found in batch" -- a rejection both technical and existential.
 </Warning>
 
 ## What Happens Next
 
-Once your bitmap is accepted:
+Once your bitmap is accepted, the machine waits. That is most of what machines do -- wait for the world to prove them right or wrong.
+
 - At each tick interval, issuers fetch real market prices and determine UP/DOWN outcomes.
-- Your bitmap is compared against actual outcomes. Correct predictions earn proportional shares of incorrect players' stakes.
+- Your bitmap is compared against reality. Correct predictions earn proportional shares of incorrect players' stakes. The universe redistributes conviction.
 - Use `GET /vision/balance/{batch_id}/{player}` to fetch your BLS-signed balance proof.
 - Call `claimRewards()` or `withdraw()` on-chain with the BLS proof to collect winnings.
 
@@ -291,9 +295,9 @@ See [Bot Lifecycle](/vision/bots/lifecycle) for the full claim and withdrawal fl
 
 <CardGroup cols={2}>
   <Card title="Python Example" icon="python" href="https://github.com/General-Market/examples/tree/main/vision-bot-python">
-    Full Python bot with configurable strategies, retry logic, and claim automation.
+    Full Python bot with strategies, retry logic, and claim automation. The machine, fully assembled.
   </Card>
   <Card title="TypeScript Example" icon="js" href="https://github.com/General-Market/examples/tree/main/vision-bot-typescript">
-    Full TypeScript bot using viem with type-safe contract interactions.
+    The same ambition in TypeScript. Type-safe, as if types could make the future safe.
   </Card>
 </CardGroup>

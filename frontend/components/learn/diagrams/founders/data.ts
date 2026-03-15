@@ -64,6 +64,45 @@ export const LINKEDIN_PERF = [
   { tier: "All", liMult: 35.9, noLiMult: 43.6, liDays: 228, noLiDays: 254, liN: 466, noLiN: 407 },
 ];
 
+// Podcast presence — company-level (best founder presence per company)
+// Source: 4,637 founders scanned via DDG search, 1,271 companies with token data
+
+export const PODCAST_DISTRIBUTION = [
+  { cat: "Never", founders: 2638, pct: 57 },
+  { cat: "Once (1-2)", founders: 1324, pct: 29 },
+  { cat: "Regular (3+)", founders: 669, pct: 14 },
+];
+
+export const PODCAST_ATH_MULT = [
+  { cat: "Regular (3+)", mult: 69.7, mean: 162.3, n: 320 },
+  { cat: "Once (1-2)", mult: 53.3, mean: 139.6, n: 345 },
+  { cat: "Never", mult: 43.3, mean: 133.9, n: 348 },
+];
+
+export const PODCAST_DAYS = [
+  { cat: "Regular (3+)", days: 645, mean: 857, n: 368 },
+  { cat: "Once (1-2)", days: 454, mean: 693, n: 430 },
+  { cat: "Never", days: 445, mean: 652, n: 473 },
+];
+
+export const PODCAST_SURVIVAL = [
+  { cat: "Regular (3+)", companies: 589, hasToken: 323, pctListed: 55 },
+  { cat: "Once (1-2)", companies: 955, hasToken: 345, pctListed: 36 },
+  { cat: "Never", companies: 1158, hasToken: 351, pctListed: 30 },
+];
+
+export const PODCAST_MCAP = [
+  { cat: "Regular (3+)", median: 30.4, mean: 5118.8, n: 360 },
+  { cat: "Once (1-2)", median: 13.8, mean: 361.2, n: 409 },
+  { cat: "Never", median: 22.2, mean: 105.5, n: 441 },
+];
+
+export const PODCAST_TOP500 = [
+  { cat: "Regular (3+)", mult: 33.3, days: 598, n: 146 },
+  { cat: "Once (1-2)", mult: 33.1, days: 388, n: 101 },
+  { cat: "Never", mult: 40.0, days: 387, n: 146 },
+];
+
 export const AGE_TIMELINE = [
   { date: "2021-Q1", t100: 36.4, t500: 35.8, t2000: 35.8 },
   { date: "2021-Q2", t100: 36.8, t500: 36.3, t2000: 36.3 },

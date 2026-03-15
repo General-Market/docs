@@ -133,11 +133,11 @@ def _build_dedup_key(template: str, source: str, row: dict) -> str:
         elif part == "month":
             key_parts.append(datetime.utcnow().strftime("%Y-%m"))
         elif part == "asset":
-            key_parts.append(row.get("asset_id", ""))
+            key_parts.append(row.get("asset_id") or "")
         elif part == "region":
-            key_parts.append(row.get("category", ""))
+            key_parts.append(row.get("category") or "")
         else:
-            key_parts.append(row.get(part, part))
+            key_parts.append(row.get(part) or part)
     return ":".join(key_parts)
 
 def _generate_suggestion(source: str, row: dict, context: dict, outcome: str) -> str:

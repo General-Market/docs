@@ -183,7 +183,7 @@ where
                         aggregated_signature,
                         signer_bitmap: collector.signer_bitmap(),
                         signature_count: collector.signature_count(),
-                    })
+                            })
                 }
                 Err(e) => {
                     warn!(

@@ -5,7 +5,7 @@ description: "Tick history, bitmap reveals, and strategy backtesting"
 
 # Ticks & Backtesting
 
-Query historical tick results, view revealed bitmaps after a tick closes, and backtest prediction strategies against simulated market outcomes.
+The past, dissected. Query historical tick results, view revealed bitmaps after a tick closes, and backtest strategies against simulated outcomes. History does not repeat -- but it does rhyme, and the rhyme is sometimes worth money.
 
 ---
 
@@ -13,7 +13,7 @@ Query historical tick results, view revealed bitmaps after a tick closes, and ba
 
 `GET /vision/batch/{id}/history`
 
-Returns the most recent tick results for a batch (up to 100 ticks). Each entry includes the resolution outcomes, number of participating players, and total matched volume.
+Returns the most recent tick results for a batch (up to 100). Each entry: the outcomes, the participants, the volume matched. A ledger of settled arguments.
 
 <ParamField path="id" type="number" required>
   The batch ID to fetch tick history for.
@@ -104,7 +104,7 @@ for (const tick of history) {
 
 `GET /vision/reveal/{batch_id}/{tick_id}`
 
-Returns all player bitmaps for a completed tick. Bitmaps are only available **after the reveal window has expired** -- this prevents players from seeing opponents' predictions before committing their own.
+Returns all player bitmaps for a completed tick. Bitmaps are only available **after the reveal window has expired** -- the sealed opinions of others, visible only after it is too late to act on them.
 
 <ParamField path="batch_id" type="number" required>
   The batch ID to query reveals for.
@@ -191,7 +191,7 @@ for (const bm of data.bitmaps) {
 | `404` | Batch does not exist |
 
 <Warning>
-The reveal window is a configurable delay after a tick ends, during which bitmaps remain sealed. Requesting reveals before the window expires returns a `403` with the deadline timestamp so you can retry after it passes.
+The reveal window is a configurable delay after a tick ends, during which bitmaps remain sealed. Request too early and you receive a `403` with the deadline -- a timestamp that says, in effect, "not yet."
 </Warning>
 
 ---
@@ -200,9 +200,9 @@ The reveal window is a configurable delay after a tick ends, during which bitmap
 
 `POST /vision/backtest`
 
-Simulate a bitmap strategy against deterministic pseudo-random market outcomes. Useful for validating strategy logic before committing real capital.
+Simulate a bitmap strategy against deterministic pseudo-random outcomes. Test your theory before paying for it.
 
-The backtest engine uses a deterministic PRNG seeded from market IDs and tick numbers, producing a consistent 50/50 base outcome distribution.
+The backtest engine uses a deterministic PRNG seeded from market IDs and tick numbers, producing a consistent 50/50 base distribution. A controlled hallucination of the past.
 
 <ParamField body="batch_id" type="number" required>
   The batch ID to simulate against. The batch must exist so the engine knows which markets to simulate.
@@ -306,5 +306,5 @@ console.log(`Simulated ${result.pnl_curve.length} ticks`);
 | `404` | Batch does not exist |
 
 <Info>
-The backtest uses a **deterministic simulation** -- running the same bitmap against the same batch and tick count always produces identical results. This makes it useful for comparing strategies, but the simulated outcomes do not reflect actual historical prices.
+The backtest is **deterministic** -- same inputs, same outputs, always. Useful for comparing strategies against each other. Useless for predicting the future -- but then, what isn't.
 </Info>

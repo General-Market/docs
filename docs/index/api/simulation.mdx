@@ -5,15 +5,15 @@ description: "Backtest index strategies against historical data"
 
 # Simulation API
 
-Run backtest simulations against historical crypto data from 2020 to today. All endpoints are **GET** requests with query parameters. No authentication required.
+Hindsight as a service. Run backtests against crypto data from 2020 to today. The results are always instructive and never actionable -- past performance guarantees nothing except the knowledge that you could have done better.
 
-**Base URL:** `https://generalmarket.io/api`
+All GET requests. No authentication. **Base URL:** `https://generalmarket.io/api`
 
 ---
 
 ## List Categories
 
-Returns available asset categories for backtesting.
+The universe of things you can backtest.
 
 ```
 GET /sim/categories
@@ -55,7 +55,7 @@ categories.forEach(c => console.log(`${c.id} — ${c.name} (${c.coin_count} coin
 
 ## Run Backtest
 
-Run a single simulation with specified parameters. Returns cached results if available.
+One simulation. One set of parameters. Cached when possible, computed when not.
 
 ```
 GET /sim/run
@@ -182,7 +182,7 @@ console.log(`Run #${result.run_id}: ${result.stats.total_return_pct}% return`);
 
 ## Run Backtest (Streaming)
 
-Same parameters as `/sim/run`, but returns results as Server-Sent Events with progress updates.
+Same simulation, but streamed. Watch the backtest compute in real time.
 
 ```
 GET /sim/run-stream
@@ -242,7 +242,7 @@ es.onmessage = (e) => {
 
 ## Sweep Stream
 
-Compare multiple configurations by sweeping one parameter. Returns SSE events with one result per variant.
+Vary one parameter, hold the rest constant. See what matters and what does not.
 
 ```
 GET /sim/sweep-stream
@@ -284,7 +284,7 @@ sweep=rebalance&category_id=layer-1&top_n=10&weighting=mcap"
 
 ## Get Holdings
 
-Fetch the portfolio composition for a completed backtest run.
+What the backtest was holding at any point in time.
 
 ```
 GET /sim/holdings
@@ -311,7 +311,7 @@ for h in resp.json()["holdings"]:
 
 ## Compare Runs
 
-Fetch NAV series for multiple runs to overlay on a chart.
+Multiple backtests, overlaid. The comparison is the point.
 
 ```
 GET /sim/compare
@@ -329,7 +329,7 @@ curl "https://generalmarket.io/api/sim/compare?run_ids=4821,4822,4823"
 
 ## List Cached Results
 
-Fetch all previously computed backtest results, optionally filtered by category.
+Everything the engine has already computed. Filtered by category if you wish.
 
 ```
 GET /sim/results
@@ -347,7 +347,7 @@ curl "https://generalmarket.io/api/sim/results?category_id=layer-1"
 
 ## Get Benchmarks
 
-Fetch BTC and ETH price series normalized to 1.0 at the start date. Useful for chart overlays.
+BTC and ETH, normalized to 1.0 at the start date. The benchmarks against which every strategy is judged.
 
 ```
 GET /sim/benchmarks

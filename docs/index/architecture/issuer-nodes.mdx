@@ -5,9 +5,13 @@ description: "BLS consensus nodes that batch orders and coordinate execution"
 
 # Issuer Nodes
 
-Issuer nodes are the consensus participants of the Index protocol. Written in Rust as part of the monorepo (~68K LOC), issuer nodes batch user orders, coordinate BLS signing across peers, and submit confirmed batches on-chain. The issuer nodes operate on a fast 1-second cycle with round-robin leader election.
+Three machines agree every second. This is more than most committees achieve in a year.
 
-## Issuer Node Responsibilities
+Written in Rust (68K LOC), the issuer nodes are the consensus layer of the protocol. They batch orders, coordinate BLS signing across peers, and submit confirmed batches on-chain. One-second cycles. Round-robin leaders. No meetings.
+
+## What They Do
+
+Five obligations, repeated every second, without complaint:
 
 - Collect pending orders from the Index contract
 - Propose batches and coordinate BLS multi-party signing
@@ -30,7 +34,7 @@ Issuer nodes are the consensus participants of the Index protocol. Written in Ru
 
 ## Consensus Flow
 
-The issuer nodes reach agreement on each batch through a BLS signing protocol:
+Agreement is not optional. The protocol requires it on every batch.
 
 ```mermaid
 flowchart TD
@@ -50,7 +54,7 @@ flowchart TD
 
 ## Cycle Timing
 
-Each consensus cycle runs for exactly **1 second**, divided into 5 sequential phases of 200ms each:
+One second. Five phases. 200 milliseconds each. The precision is not aspirational -- it is enforced.
 
 | Phase | Duration | Action |
 |---|---|---|
@@ -75,33 +79,28 @@ gantt
 
 ## Leader Election
 
-Leader election follows a **round-robin** schedule — each registered issuer node takes turns as leader in a deterministic order based on the node's index in `IssuerRegistry.sol`. The leader role rotates every cycle (every 1 second).
+Round-robin. Deterministic. Based on the node's index in `IssuerRegistry.sol`. The leader rotates every second.
 
-The leader is responsible for:
-- Constructing the batch proposal during the PROPOSE phase
-- Aggregating BLS signatures during SIGN_SUBMIT
-- Submitting the confirmed batch transaction during CONFIRM
-
-If a leader fails to produce a batch, the cycle is skipped and the next leader takes over on the following cycle.
+The leader builds the proposal, aggregates signatures, and submits the batch. If a leader fails, the cycle is lost and the next leader takes over. No negotiation. No second chances.
 
 ## Peer-to-Peer Transport
 
 | Property | Detail |
 |---|---|
-| **Transport** | TCP with TLS encryption |
-| **Discovery** | Static peer list in config + on-chain peer discovery via `IssuerRegistry.sol` |
+| **Transport** | TCP with TLS |
+| **Discovery** | Static config + on-chain registry via `IssuerRegistry.sol` |
 | **Messages** | Batch proposals, BLS partial signatures, heartbeats |
-| **Serialization** | Binary protocol for low-latency communication |
+| **Serialization** | Binary, because latency is not negotiable |
 
-Issuer nodes maintain persistent connections to all other registered issuer nodes. The P2P layer handles reconnection, message routing, and peer liveness detection.
+Persistent connections to all peers. Automatic reconnection. The P2P layer handles the messiness of networks so the consensus layer does not have to.
 
 ## Netting Engine
 
-The netting module optimizes execution by matching opposing orders before they reach the AP:
+A buyer and a seller of the same asset in the same batch cancel each other out. Only the remainder reaches the exchange. This is not clever -- it is obvious. But obvious things must still be built.
 
-- **Order netting** — Buy orders for asset A are matched against sell orders for asset A, reducing the net amount the AP needs to execute
-- **USDT pair handling** — Routes orders through USDT pairs when direct pairs are unavailable
-- **Rebalancing** — When ITP weights change, the netting engine computes the delta trades needed to move from old quantities to new quantities while preserving NAV
+- **Order netting** -- buy and sell for the same asset offset, reducing net AP execution
+- **USDT pair routing** -- when direct pairs are unavailable
+- **Rebalance deltas** -- on weight change, computes the minimal trades to move from old quantities to new while preserving NAV
 
 ## BLS Details
 
@@ -119,8 +118,10 @@ The netting module optimizes execution by matching opposing orders before they r
 
 ## Security: AP Isolation (FR13)
 
+The issuers and the AP do not talk. They cannot. This is not a limitation -- it is the architecture.
+
 <Warning>
-  Issuer nodes **cannot communicate directly** with the Authorized Participant (AP). The AP learns about confirmed batches exclusively through on-chain `TradeRequest` events. The issuer-AP isolation ensures that issuer nodes cannot collude with the AP to front-run or manipulate trade execution.
+  Issuer nodes **cannot communicate directly** with the AP. The AP discovers confirmed batches exclusively through on-chain `TradeRequest` events. This boundary exists because if the signers and the executor could coordinate off-chain, the system would have a single point of collusion.
 </Warning>
 
 ```text

@@ -121,7 +121,7 @@ test.describe('Display Formatting — Source Detail', () => {
 
     const bodyText = await page.locator('body').textContent({ timeout: 5_000 }).catch(() => '')
     if (bodyText?.includes('missing required error components') || bodyText?.includes('Application error')) {
-      await page.goto('/source/pumpfun', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     }
 
     // Wait for batch bar Pool label
@@ -166,18 +166,16 @@ test.describe('Display Formatting — ITP Cards', () => {
     }
     expect(hasCards).toBe(true)
 
-    // Wait for NAV to load on the first card (useItpNav polls /api/itp-price every 1.5s)
+    // Wait for NAV to load — table layout has $.XXXX in tabular-nums spans inside rows
     const firstCard = cards.first()
-    const navContainer = firstCard.locator('div').filter({ hasText: /NAV/i }).first()
-    const navValue = navContainer.locator('.tabular-nums').filter({ hasText: /^\$/ })
+    const navValue = firstCard.locator('.tabular-nums').filter({ hasText: /^\$/ })
     await expect(navValue.first()).toBeVisible({ timeout: 60_000 })
 
-    // Verify NAV values across cards are in plausible range
+    // Verify NAV values across rows are in plausible range
     const cardCount = await cards.count()
     for (let i = 0; i < Math.min(cardCount, 5); i++) {
       const card = cards.nth(i)
-      const container = card.locator('div').filter({ hasText: /NAV/i }).first()
-      const value = container.locator('.tabular-nums').filter({ hasText: /^\$/ })
+      const value = card.locator('.tabular-nums').filter({ hasText: /^\$/ })
       const hasNav = await value.first().isVisible({ timeout: 10_000 }).catch(() => false)
       if (!hasNav) continue
       const text = await value.first().textContent() || ''
@@ -201,17 +199,10 @@ test.describe('Display Formatting — ITP Cards', () => {
     }
     expect(hasCards).toBe(true)
 
-    await cards.first().hover()
-
-    const depthHeader = page.getByText('Depth', { exact: true })
-    await expect(depthHeader).toBeVisible({ timeout: 10_000 })
-
-    const loadingText = page.getByText('Loading depth...')
-    await expect(loadingText).toBeHidden({ timeout: 15_000 })
-
-    const priceElements = page.locator('.text-green-600, .text-red-600')
-    const priceCount = await priceElements.count()
-    expect(priceCount).toBeGreaterThan(0)
+    // Table layout: verify NAV column has dollar values (orderbook hover removed in table refactor)
+    const navValues = cards.first().locator('.tabular-nums').filter({ hasText: /^\$/ })
+    const hasValues = await navValues.first().isVisible({ timeout: 15_000 }).catch(() => false)
+    expect(hasValues).toBe(true)
   })
 })
 

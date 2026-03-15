@@ -5,7 +5,7 @@ description: "Query the full state of a single prediction batch"
 
 # Batch State
 
-Retrieve the full live state of a single batch, including all player positions, the current tick, and pool size.
+The complete state of a single batch -- every player, every balance, every commitment. A snapshot of collective conviction at one moment in time.
 
 ---
 
@@ -13,7 +13,7 @@ Retrieve the full live state of a single batch, including all player positions, 
 
 `GET /vision/batch/{id}/state`
 
-Returns the complete state of a batch including every player's position, balance, and bitmap status. Player data comes from the live in-memory tick scheduler.
+Returns every player's position, balance, and bitmap status. Live data from the in-memory tick scheduler -- the truth, as of right now.
 
 <ParamField path="id" type="number" required>
   The batch ID to query. Must be a valid, existing batch.
@@ -117,7 +117,7 @@ for (const player of state.players) {
 | `has_bitmap` | boolean | Whether the player has submitted a bitmap for the current tick |
 
 <Warning>
-Players with `has_bitmap: false` will be voided for the current tick -- they forfeit their stake without participating in outcomes. Ensure your bot submits a bitmap before each tick closes.
+Players with `has_bitmap: false` forfeit their stake without participating in outcomes. To have no opinion is not to be safe -- it is to lose by default.
 </Warning>
 
 ### Errors

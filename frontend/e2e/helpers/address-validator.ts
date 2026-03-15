@@ -74,7 +74,7 @@ const CORE_L3_CONTRACTS = [
 
 // Optional L3 contracts — tests should adapt if missing
 const OPTIONAL_L3_CONTRACTS = [
-  'MockBitgetVault', 'Governance', 'L3BridgeCustody', 'BLSCustody',
+  'MockBitgetVault', 'Governance', 'L3BridgeCustody', 'BLSCustody', 'L3BridgedItpFactory',
 ] as const
 
 // Settlement-chain contracts (checked against Settlement RPC)

@@ -69,7 +69,7 @@ if ! command -v anvil &>/dev/null && [ -d "$HOME/.foundry/bin" ]; then
     export PATH="$HOME/.foundry/bin:$PATH"
 fi
 
-TOTAL_STEPS=14
+TOTAL_STEPS=13
 
 print_banner() {
     echo -e "${CYAN}"
@@ -914,9 +914,9 @@ cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $RPC_URL > /dev/null 2>&1
 cast rpc anvil_impersonateAccount $TEST_USER --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1
 echo -e "  ${GREEN}Test user $TEST_USER impersonated on both Anvils${NC}"
 
-# Start background block miner — issuers need blocks to advance for event detection.
+# Start background block miner — services need blocks to advance for event detection.
 # Anvil automine only creates blocks on transactions; this loop creates empty blocks
-# every 1 second so issuers reliably detect cross-chain events between transactions.
+# every 1 second so services reliably detect cross-chain events between transactions.
 # Must be AFTER all deployments (automine handles those instantly).
 nohup bash -c "while true; do cast rpc evm_mine --rpc-url $RPC_URL > /dev/null 2>&1; cast rpc evm_mine --rpc-url $SETTLEMENT_RPC_URL > /dev/null 2>&1; sleep 1; done" > /dev/null 2>&1 &
 MINER_PID=$!
@@ -924,110 +924,10 @@ echo $MINER_PID >> .pids
 echo "block-miner:$MINER_PID" >> .pids.info
 echo -e "  ${GREEN}Background block miner started (1s interval, PID: $MINER_PID)${NC}"
 
-# ============ STEP 8: Launch Issuers ============
-echo -e "${BLUE}[8/$TOTAL_STEPS] Starting $ISSUER_COUNT issuer nodes (with Bitget price proxy)...${NC}"
-
-# Extract addresses for issuers
-BRIDGE_PROXY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BridgeProxy'])" 2>/dev/null || echo "")
-MOCK_BITGET_VAULT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['MockBitgetVault'])" 2>/dev/null || echo "")
-SETTLEMENT_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['SettlementBridgeCustody'])" 2>/dev/null || echo "")
-BLS_CUSTODY=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['BLSCustody'])" 2>/dev/null || echo "")
-MOCK_USDT=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('MOCK_USDT',''))" 2>/dev/null || echo "")
-# Morpho oracle + mirror registry addresses (from morpho-e2e.json if it exists)
-NAV_ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
-MIRROR_REGISTRY_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
-ITP_TOKEN_ADDR=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['ITP_Vault'])" 2>/dev/null || echo "")
-
-# Anvil account private keys for issuers (accounts 1-20)
-# Account 0 is the deployer, accounts 1+ are issuer nodes
-ISSUER_KEYS=(
-    ""  # placeholder for index 0
-    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # Account 1
-    "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"  # Account 2
-    "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"  # Account 3
-    "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"  # Account 4
-    "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba"  # Account 5
-    "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e"  # Account 6
-    "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356"  # Account 7
-    "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97"  # Account 8
-    "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"  # Account 9
-)
-
-for i in $(seq 1 $ISSUER_COUNT); do
-    PORT=$((9000 + i))
-    BLS_IDX=$((i - 1))
-
-    ISSUER_ARGS="--node-id $i --port $PORT --rpc $RPC_URL"
-    ISSUER_ARGS="$ISSUER_ARGS --cycle-duration-ms 1000 --min-cycle-gap-ms 50 --consensus-timeout-ms 800 --no-tls"
-    ISSUER_ARGS="$ISSUER_ARGS --test-key-seeds --bls-key-seed-index $BLS_IDX"
-    ISSUER_ARGS="$ISSUER_ARGS --num-issuers $ISSUER_COUNT"
-    ISSUER_ARGS="$ISSUER_ARGS --registry-sync"
-    ISSUER_ARGS="$ISSUER_ARGS --ntp-server \"\""
-    ISSUER_ARGS="$ISSUER_ARGS --log-level ${LOG_LEVEL}"
-
-    [ -n "$BRIDGE_PROXY" ] && ISSUER_ARGS="$ISSUER_ARGS --bridge-proxy $BRIDGE_PROXY"
-    [ -n "$MOCK_BITGET_VAULT" ] && ISSUER_ARGS="$ISSUER_ARGS --bitget-vault $MOCK_BITGET_VAULT"
-    [ -n "$SETTLEMENT_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --settlement-custody $SETTLEMENT_CUSTODY"
-    [ -n "$BLS_CUSTODY" ] && ISSUER_ARGS="$ISSUER_ARGS --issuer-custody-settlement $BLS_CUSTODY"
-    [ -n "$MOCK_USDT" ] && [ "$MOCK_USDT" != "0x0000000000000000000000000000000000000000" ] && ISSUER_ARGS="$ISSUER_ARGS --mock-usdt $MOCK_USDT"
-    [ -n "$NAV_ORACLE_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --nav-oracle $NAV_ORACLE_ADDR"
-    [ -n "$ITP_TOKEN_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --itp-token $ITP_TOKEN_ADDR"
-    [ -n "$MIRROR_REGISTRY_ADDR" ] && ISSUER_ARGS="$ISSUER_ARGS --mirror-registry $MIRROR_REGISTRY_ADDR"
-    ISSUER_ARGS="$ISSUER_ARGS --deployment-file deployments/active-deployment.json"
-    ISSUER_ARGS="$ISSUER_ARGS --wal-path logs/consensus-$i.wal"
-    [ -f "$SCRIPT_DIR/data/symbol-map.json" ] && ISSUER_ARGS="$ISSUER_ARGS --symbol-map-file $SCRIPT_DIR/data/symbol-map.json"
-
-    # Build peer list (all other issuers)
-    PEER_LIST=""
-    for j in $(seq 1 $ISSUER_COUNT); do
-        if [ $j -ne $i ]; then
-            [ -n "$PEER_LIST" ] && PEER_LIST="$PEER_LIST,"
-            PEER_LIST="${PEER_LIST}127.0.0.1:$((9000 + j))"
-        fi
-    done
-
-    ISSUER_KEY=${ISSUER_KEYS[$i]:-""}
-    # Write key to temp file (eval+inline env mangles hex keys)
-    ISSUER_KEY_FILE="/tmp/issuer-key-$i.txt"
-    echo -n "$ISSUER_KEY" > "$ISSUER_KEY_FILE"
-    export ISSUER_PRIVATE_KEY_PATH="$ISSUER_KEY_FILE"
-    export ISSUER_PEERS="$PEER_LIST"
-    export ISSUER_SETTLEMENT_RPC_URL="$SETTLEMENT_RPC_URL"
-    export ISSUER_SETTLEMENT_CHAIN_ID="$SETTLEMENT_CHAIN_ID"
-    export ISSUER_BRIDGE_PROXY_ADDRESS="$BRIDGE_PROXY"
-    # Only pass DATA_NODE_URL when data-node is available (local PG or VPS).
-    # Without it, issuers use BitgetPriceFetcher for asset prices and compute NAV locally
-    # from on-chain inventory + live Bitget prices (no $1 fallback).
-    if [ -n "$DATA_NODE_URL" ]; then
-        true  # Already set (e.g. VPS data-node URL from mutual exclusion check)
-    elif $PG_ISREADY -q 2>/dev/null; then
-        export DATA_NODE_URL="http://localhost:8200"
-    fi
-
-    # Vision subsystem — enable if Vision contract was deployed (pass via CLI flags)
-    VISION_ADDR_CHECK=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
-    if [ -n "$VISION_ADDR_CHECK" ] && [ "$VISION_ADDR_CHECK" != "" ] && $PG_ISREADY -q 2>/dev/null; then
-        ISSUER_ARGS="$ISSUER_ARGS --vision-enabled"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-address $VISION_ADDR_CHECK"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-database-url postgres://localhost/index_prices"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-data-node-url ${DATA_NODE_URL:-http://localhost:8200}"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-rpc-ws-url $RPC_URL"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-settlement-rpc-url $SETTLEMENT_RPC_URL"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-settlement-bridge-custody $SETTLEMENT_CUSTODY"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-reveal-window-secs 60"
-        ISSUER_ARGS="$ISSUER_ARGS --vision-tick-poll-interval-ms 500"
-    fi
-    nohup ./target/release/issuer $ISSUER_ARGS > logs/issuer-$i.log 2>&1 &
-    ISSUER_PID=$!
-    echo $ISSUER_PID >> .pids
-    echo "issuer-$i:$ISSUER_PID" >> .pids.info
-    echo -e "  Issuer $i on port $PORT (PID: $ISSUER_PID)"
-done
-
-# ============ STEP 9: Data-node ============
+# ============ STEP 8: Data-node ============
 # Data-node serves a REST API on port 8200 for asset prices, ITP NAV, and chart data.
 # Requires PostgreSQL. If unavailable, issuers fall back to Bitget direct price feeds.
-echo -e "${BLUE}[9/$TOTAL_STEPS] Starting data-node service...${NC}"
+echo -e "${BLUE}[8/$TOTAL_STEPS] Starting data-node service...${NC}"
 
 INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
 DATA_NODE_RUNNING=false
@@ -1110,8 +1010,8 @@ fi
 # Vision batches are now always deployed by DeployAllVisionBatches.s.sol in Step 6b
 # (BLS-signed, no need for deferred creation)
 
-# ============ STEP 10: Launch AP ============
-echo -e "${BLUE}[10/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
+# ============ STEP 9: Launch AP ============
+echo -e "${BLUE}[9/$TOTAL_STEPS] Starting AP with real Bitget price proxy...${NC}"
 
 AP_ARGS="--port 9100 --rpc $RPC_URL --exchange-mode $EXCHANGE_MODE"
 AP_ARGS="$AP_ARGS --settlement-rpc $SETTLEMENT_RPC_URL --settlement-chain-id $SETTLEMENT_CHAIN_ID"
@@ -1199,8 +1099,8 @@ if [ "$DOCS" = "1" ]; then
     echo -e "  ${GREEN}Docs: http://localhost:3030${NC}"
 fi
 
-# ============ STEP 11: Frontend E2E Browser Tests ============
-echo -e "${BLUE}[11/$TOTAL_STEPS] Starting frontend & running E2E browser tests...${NC}"
+# ============ STEP 10: Frontend E2E Browser Tests ============
+echo -e "${BLUE}[10/$TOTAL_STEPS] Starting frontend & running E2E browser tests...${NC}"
 
 set +e  # Don't exit on E2E test failures
 
@@ -1267,8 +1167,8 @@ for attempt in $(seq 1 60); do
     sleep 1
 done
 
-# ============ STEP 12: Mintlify Docs ============
-echo -e "${BLUE}[12/$TOTAL_STEPS] Starting Mintlify docs server...${NC}"
+# ============ STEP 11: Mintlify Docs ============
+echo -e "${BLUE}[11/$TOTAL_STEPS] Starting Mintlify docs server...${NC}"
 if [ "$DOCS" = "1" ]; then
     echo -e "  ${GREEN}Already started via DOCS=1 (port 3030)${NC}"
 elif [ -f "$SCRIPT_DIR/docs/mint.json" ]; then
@@ -1323,7 +1223,7 @@ VISION_ADDR_VERIFY=$(python3 -c "import json; print(json.load(open('deployments/
 if [ "$NO_TEST" = true ]; then
     true  # skip vision verification when --no-test
 elif [ -n "$VISION_ADDR_VERIFY" ] && [ "$VISION_ADDR_VERIFY" != "" ] && [ "$DATA_NODE_RUNNING" = true ]; then
-    echo -e "${BLUE}[12b/$TOTAL_STEPS] Vision 2-Bot Trading Verification...${NC}"
+    echo -e "${BLUE}[11b/$TOTAL_STEPS] Vision 2-Bot Trading Verification...${NC}"
 
     # Wait for both bots to join the batch
     echo -e "  Waiting for both bots to join batch 0..."
@@ -1496,7 +1396,7 @@ else:
     fi
 fi
 
-# ============ STEP 13: Verification ============
+# ============ STEP 12: Verification ============
 echo ""
 echo -e "${YELLOW}Verifying services...${NC}"
 
@@ -1509,23 +1409,7 @@ else
     echo -e "  AP: ${RED}not ready${NC} (status: $AP_STATUS, check logs/ap.log)"
 fi
 
-# Issuer health
-for i in $(seq 1 $ISSUER_COUNT); do
-    HP=$((10000 + i))
-    if curl -s "http://localhost:$HP/health" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('status')=='healthy' else 1)" 2>/dev/null; then
-        echo -e "  Issuer $i: ${GREEN}healthy${NC}"
-    else
-        echo -e "  Issuer $i: ${YELLOW}starting...${NC} (check logs/issuer-$i.log)"
-    fi
-done
-
-# Vision API health
-VISION_API_PORT=10001
-if curl -sf "http://localhost:$VISION_API_PORT/vision/batches" > /dev/null 2>&1; then
-    echo -e "  Vision API: ${GREEN}healthy${NC} (port $VISION_API_PORT)"
-else
-    echo -e "  Vision API: ${YELLOW}starting...${NC} (port $VISION_API_PORT, check logs/issuer-1.log)"
-fi
+# Note: Issuers run on VPS only (via Docker Compose), not locally
 
 # Contract summary
 echo ""
@@ -1550,9 +1434,8 @@ echo -e "${GREEN}╚════════════════════
 echo ""
 echo -e "  ${BLUE}L3 Anvil:${NC}  http://localhost:8545 (chain $CHAIN_ID)"
 echo -e "  ${BLUE}Settlement Anvil:${NC} http://localhost:8546 (chain $SETTLEMENT_CHAIN_ID)"
-echo -e "  ${BLUE}Issuers:${NC}   ports 9001-900$ISSUER_COUNT (bitget-vault + settlement-custody)"
 echo -e "  ${BLUE}AP:${NC}        port 9100 (real Bitget price proxy)"
-echo -e "  ${BLUE}Vision:${NC}   http://localhost:10101 (issuer 1 API)"
+echo -e "  ${BLUE}Issuers:${NC}  VPS only (not started locally)"
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:3000 (running)"
 echo -e "  ${BLUE}Docs:${NC}      http://localhost:3333 (Mintlify)"
 echo -e "  ${BLUE}E2E Tests:${NC} cd frontend && npm run e2e:headed"

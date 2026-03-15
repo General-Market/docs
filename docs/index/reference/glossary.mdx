@@ -5,7 +5,7 @@ description: "Key terms and definitions"
 
 # Glossary
 
-Key terms and definitions used throughout the General Market protocol documentation.
+Every system invents its own language. This is the dictionary. Learn it once; the rest of the documentation will make sense.
 
 <dl>
 
@@ -33,6 +33,10 @@ An on-chain registry in the Vision contract where automated trading bots registe
 
 The total value of all underlying assets held within an ITP, calculated as the sum of each asset's quantity multiplied by its current price. AUM grows or shrinks as underlying asset prices change and as shares are minted or burned.
 
+### Backing Invariant
+
+The rule that no ITP shares may be minted without confirmed backing. Every minted share must be 1:1 backed by its underlying tokens. `completeBuyOrder` on the Settlement chain (which releases USDC to the AP for asset purchases) must succeed before shares are minted on L3. If `completeBuyOrder` fails, the entire order is rolled back and no shares are minted. Unbacked ITP is the single worst failure mode in the protocol.
+
 ### BLS (Boneh-Lynn-Shacham)
 
 A cryptographic signature scheme that enables efficient signature aggregation. Multiple issuer signatures can be combined into a single aggregated signature, which is verified on-chain against the aggregated public key stored in `IssuerRegistry`. This provides consensus without the gas cost of verifying each signature individually.
@@ -41,13 +45,33 @@ A cryptographic signature scheme that enables efficient signature aggregation. M
 
 The elliptic curve (also known as alt-bn128) used for BLS signature operations. BN254 is compatible with Ethereum's `ecAdd`, `ecMul`, and `ecPairing` precompiles at addresses `0x06`, `0x07`, and `0x08`, enabling efficient on-chain BLS verification.
 
+### Bridge
+
+The cross-chain system connecting L3 and Settlement. It enables ITP shares to be bridged from L3 to Settlement for use as Morpho collateral, and USDC to move between chains during buy/sell operations. The bridge consists of `L3BridgeCustody` and `SettlementBridgeCustody` contracts that hold funds in transit and enforce the backing invariant.
+
+### Bridged ITP
+
+An ERC-20 replica of an L3 ITP on the Settlement chain. When a user bridges ITP shares from L3 to Settlement, the original shares are locked in `L3BridgeCustody` and an equivalent amount of Bridged ITP tokens are minted on Settlement. Bridged ITPs can be used as collateral in Morpho lending markets.
+
 ### Collateral
 
 USDC tokens that are escrowed by the protocol during the order lifecycle. When a user places a buy order, collateral is locked until the order is filled. Collateral ensures that all orders are fully backed. On the Index L3 chain, USDC uses 18 decimals; on Arbitrum L2 it uses the standard 6 decimals.
 
+### Curator
+
+A service that collects BLS-signed NAV updates from the issuer network, manages Morpho vault allocation across ITP lending markets, and monitors health factors for liquidation risk. The curator submits aggregated NAV to the `ITPNAVOracle` on the Settlement chain and adjusts Morpho supply caps based on current market conditions.
+
+### Data Node
+
+A Rust service that aggregates 98+ external data sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) and serves a unified market data API. The data node provides real-time and historical prices used by issuers for Vision tick resolution and ITP NAV calculation. Source code lives in `data-node/`.
+
 ### ERC-4626
 
 A tokenized vault standard used for ITP share tokens. Each ITP's share token implements ERC-4626, providing a standardized interface for deposits, withdrawals, and share/asset accounting. This enables composability with other DeFi protocols such as Morpho lending.
+
+### Explorer
+
+A frontend dashboard showing system health, consensus metrics, and source status. The Explorer displays issuer uptime, BLS signing rates, data source freshness, Vision batch activity, and ITP order pipeline status. Accessible from the main navigation.
 
 ### Health Factor
 
@@ -61,9 +85,17 @@ A consensus node in the General Market network that batches pending orders, prod
 
 A tokenized basket of up to 100 crypto assets, conceptually similar to an ETF. Each ITP has a fixed set of per-share asset quantities that determine its NAV. Users buy and sell ITP shares; quantities only change during a rebalance operation. ITPs start at a price of $1 per share and drift as underlying prices move.
 
+### ITPNAVOracle
+
+An on-chain oracle on the Settlement chain that receives BLS-signed NAV updates from the curator. Morpho markets reference the `ITPNAVOracle` to price ITP collateral for lending. The oracle enforces BLS signature verification via `MirrorIssuerRegistry` before accepting any NAV update.
+
 ### L3 (Layer 3)
 
 The Arbitrum Orbit chain (Chain ID: `111222333`) where the General Market protocol operates. Built on top of Arbitrum L2, the L3 provides low-cost transactions and custom execution logic while inheriting Ethereum's security guarantees through the rollup stack.
+
+### L3BridgeCustody
+
+The contract on L3 that holds USDC and ITP shares during cross-chain bridge operations. When a user initiates a bridge buy, USDC is locked in `L3BridgeCustody` until the Settlement side confirms execution. When ITP shares are bridged to Settlement, the original shares are held in this contract.
 
 ### Liquidation
 
@@ -72,6 +104,10 @@ The forced sale of collateral when a lending position's health factor drops belo
 ### Morpho
 
 A DeFi lending protocol integrated with General Market that enables users to borrow USDC against their ITP shares as collateral. Morpho markets are created for each ITP, allowing holders to leverage their positions or access liquidity without selling.
+
+### MirrorIssuerRegistry
+
+A Settlement-side copy of the issuer BLS public keys from the L3 `IssuerRegistry`. The `MirrorIssuerRegistry` enables BLS signature verification on the Settlement chain without cross-chain calls. The curator and `ITPNAVOracle` reference it to validate that NAV updates carry a valid quorum of issuer signatures.
 
 ### NAV (Net Asset Value)
 
@@ -104,6 +140,14 @@ This changes the portfolio composition without affecting the share price at the 
 ### Sealed Commitment
 
 A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to issuer nodes, who verify the hash matches the on-chain commitment.
+
+### Settlement Chain
+
+The Arbitrum chain (Chain ID: `14601`) used for bridge custody and Morpho lending. Settlement hosts the `SettlementBridgeCustody`, `ITPNAVOracle`, `MirrorIssuerRegistry`, Morpho markets, and Bridged ITP tokens. USDC on Settlement uses the standard 6 decimals.
+
+### SettlementBridgeCustody
+
+The contract on the Settlement chain that holds USDC during cross-chain bridge operations. When an AP completes a buy order, USDC is released from `SettlementBridgeCustody` to fund the asset purchase. This contract enforces the backing invariant by requiring successful USDC release before L3 shares can be minted.
 
 ### Slippage
 

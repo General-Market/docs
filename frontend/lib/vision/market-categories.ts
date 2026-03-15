@@ -40,6 +40,7 @@ const PREFIX_CATEGORIES: [RegExp, string, string][] = [
   [/^(poly_|polymarket_)/i, 'prediction', 'Prediction'],
 ]
 
+
 /**
  * Group a list of market IDs by category.
  * Falls back to 'other' for unrecognized prefixes.

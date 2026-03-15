@@ -5,7 +5,7 @@ description: "User portfolio tracking and trade history"
 
 # Portfolio Endpoints
 
-Track user portfolios including current positions, historical value, and complete trade history. All endpoints require the user's wallet address.
+Your positions, your history, your profit and loss. The wallet address is the only identity the protocol recognizes.
 
 ---
 
@@ -15,7 +15,7 @@ Track user portfolios including current positions, historical value, and complet
   User wallet address (e.g., `0x...`).
 </ParamField>
 
-Returns the portfolio summary for the specified wallet address, including all ITP positions, total value, and profit/loss.
+All ITP positions, total value, and profit/loss for a wallet. The numbers do not flatter.
 
 <CodeGroup>
 ```bash cURL
@@ -105,7 +105,7 @@ portfolio = resp.json()
   User wallet address (e.g., `0x...`).
 </ParamField>
 
-Returns the portfolio value over time for the specified wallet address, useful for rendering portfolio performance charts.
+Portfolio value over time. The chart you will either celebrate or avoid looking at.
 
 <CodeGroup>
 ```bash cURL
@@ -157,7 +157,7 @@ history = resp.json()
   User wallet address (e.g., `0x...`).
 </ParamField>
 
-Returns the complete trade history for the specified wallet address, including buys, sells, and fill details.
+Every trade. Every fill. Every fee. The ledger does not forget.
 
 <CodeGroup>
 ```bash cURL

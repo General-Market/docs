@@ -5,7 +5,7 @@ description: "Key terms and definitions for Vision prediction markets"
 
 # Glossary
 
-Key terms and definitions used throughout the Vision documentation.
+The vocabulary of Vision. Every system invents its own language -- these are the words you will need to speak it.
 
 <dl>
 
@@ -33,6 +33,10 @@ A Boneh-Lynn-Shacham cryptographic signature used for issuer consensus in Vision
 
 An on-chain registry in the Vision contract where automated trading bots register their endpoint URL and public key hash. Registration is free and requires no collateral. Registered bots are discoverable by issuer nodes via `getAllActiveBots()`. Each address can register at most one bot.
 
+### Commitment Multiplier
+
+A logarithmic bonus applied to a player's effective stake based on the number of ticks they commit to when joining a batch. Longer commitments receive a higher multiplier, increasing the player's share of the winning pool relative to their raw stake. This incentivizes sustained participation and deeper liquidity.
+
 ### Commitment Offset
 
 The time window between when a player commits their bitmap hash on-chain and when the tick begins. The commitment must be submitted before the tick starts so that the sealed hash is immutable during resolution. This prevents front-running based on early price movements within the tick.
@@ -41,13 +45,25 @@ The time window between when a player commits their bitmap hash on-chain and whe
 
 A user-defined basis point value used with resolution types ending in `_X` (UP_X, DOWN_X, FLAT_X). The threshold specifies how much the price must move for the market to resolve as UP or DOWN instead of FLAT. Set per market in the `customThresholds` array when creating a batch. 1 basis point = 0.01%.
 
+### Data Node
+
+The backend Rust service that provides market prices for Vision tick resolution. The data node aggregates 98+ external sources (CoinGecko, USGS, TFL, Deutsche Bahn, etc.) into a unified API. Issuer nodes query the data node at the end of each tick to fetch closing prices for all markets in active batches.
+
 ### Deployer Name
 
 A human-readable name that a batch creator can assign to their address via `setDeployerName`. This name is displayed in the frontend next to all batches created by that address. Maximum 64 bytes.
 
+### Early Multiplier
+
+A bonus applied to a player's effective stake for committing their bitmap before the tick deadline. The earlier the commitment relative to the tick start, the higher the multiplier. This rewards decisive action and discourages last-second sniping of price movements.
+
 ### Fee Collector
 
 The address authorized to call `collectFees()` on the Vision contract and withdraw accumulated protocol fees. Set at contract deployment and stored as an immutable reference. Only this address can drain the fee accumulator.
+
+### Market ID
+
+An identifier combining a source prefix and an asset name that uniquely identifies a market across Vision. For example, `crypto_btc` refers to Bitcoin from the crypto source, `usgs_earthquake` refers to earthquake data from the USGS source. Market IDs are used in batch creation, data node queries, and frontend routing.
 
 ### Market Outcome
 
@@ -56,6 +72,10 @@ The resolved result of a single market within a tick. Each market resolves to on
 ### Parimutuel
 
 The betting model used by Vision. All stakes for a given tick are pooled together, and winners split the losers' stakes proportionally based on their `stakePerTick`. There is no counterparty or market maker -- the protocol is zero-sum (minus the 0.3% fee on profits). Winners receive a share of the pool proportional to their stake relative to the total winning stake.
+
+### Points
+
+Season 1 rewards earned by providing liquidity in Vision batches. Players accumulate points based on their stake, commitment duration, and activity across batches. Points serve as a measure of protocol participation and may translate into future rewards.
 
 ### Resolution Type
 
@@ -69,6 +89,10 @@ The period after a tick ends during which players must reveal their actual bitma
 
 A `keccak256` hash of a player's bitmap submitted on-chain before the actual bitmap bytes are revealed. The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline. The bitmap is later revealed to issuer nodes, who verify the hash matches the on-chain commitment stored in `PlayerPosition.bitmapHash`.
 
+### Source
+
+An external data provider that feeds market prices into Vision via the data node. Sources include CoinGecko (crypto prices), USGS (earthquake data), TFL (London transport), Deutsche Bahn (German rail), and 90+ others. Each source has a unique prefix (e.g., `crypto`, `usgs`, `tfl`) used in market IDs. Source configuration lives in `data-node/src/config/`.
+
 ### Stake Per Tick
 
 The amount of USDC (6 decimals) a player wagers on each tick within a batch. Set when joining via `joinBatch` and immutable for the life of the position. The minimum stake per tick is 0.1 USDC (100,000 raw). A player's balance decreases by `stakePerTick` each tick and increases by their proportional share of the winning pool when they predict correctly.
@@ -76,6 +100,10 @@ The amount of USDC (6 decimals) a player wagers on each tick within a batch. Set
 ### Tick
 
 A single resolution interval within a Vision batch. At the end of each tick, issuer nodes fetch closing prices, resolve each market to a binary outcome, compare each player's bitmap against outcomes, and distribute the tick pool to winners. Tick durations range from 1 second to 30 days and are immutable once the batch is created. Ticks are computed as `block.timestamp / tickDuration`.
+
+### Tick Duration
+
+The fixed time interval between resolution cycles in a Vision batch, set at batch creation and immutable thereafter. Tick durations range from 60 seconds to 30 days. Shorter ticks (e.g., 60s, 5min) suit high-frequency trading; longer ticks (e.g., 1 day, 7 days) suit macro bets. The duration determines how frequently prices are sampled and the pool is redistributed.
 
 ### TVL (Total Value Locked)
 

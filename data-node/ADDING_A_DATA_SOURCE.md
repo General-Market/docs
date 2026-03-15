@@ -255,12 +255,14 @@ data-node/src/market_data/sources/{source}/client.rs   ← implements MarketData
                                             mod.rs     ← re-exports
 data-node/src/config/{source}.json                     ← static asset list (or empty [] for dynamic)
 data-node/src/market_data/sources/mod.rs               ← module + re-export
-data-node/src/main.rs                                  ← spawn sync engine
+data-node/src/main.rs                                  ← spawn sync engine via spawn_resilient()
 data-node/src/api.rs                                   ← SOURCE_META table
 data-node/src/config.rs                                ← CLI args (only if API-key-gated)
 start.sh                                               ← pass env vars (only if API-key-gated)
 contracts/script/DeployAllVisionBatches.s.sol           ← register in _getSourceNames() + bump array sizes
 ```
+
+**Write pipeline:** Sources don't write to the DB directly. A central `BatchWriter` collects all price updates via a shared write channel (`price_writer`) and writes them in batches. A `PriceBroadcastHub` streams live updates to WebSocket clients. Both are initialized once in `run_serve()` and passed to every `SyncEngine`/`ScheduledSyncEngine`.
 
 Frontend picks up the source automatically via the `/admin/sources/health` API, but you need to register prefixes and display metadata for proper categorization.
 
@@ -336,17 +338,29 @@ pub use my_source::MyMarketSource;
 
 **File:** `data-node/src/main.rs` — inside `run_serve()`
 
+All sources are wrapped in `spawn_resilient()` which auto-restarts on panic/exit with exponential backoff. The `SyncEngine` takes 4 parameters: pool, source, broadcast_hub (`bh`), and price_writer (`pw`) — these are already initialized at the top of `run_serve()`.
+
 **Always-on source (no API key needed):**
 ```rust
 {
     let pool_c = pool.clone();
-    tokio::spawn(async move {
-        match market_data::sources::my_source::MyMarketSource::from_env() {
-            Ok(source) => {
-                let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                engine.run().await;
+    let bh = broadcast_hub.clone();
+    let pw = price_writer.clone();
+    spawn_resilient("my_source", pw.clone(), move || {
+        let pool_c = pool_c.clone();
+        let bh = bh.clone();
+        let pw = pw.clone();
+        async move {
+            match market_data::sources::my_source::MyMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                    engine.run().await;
+                }
+                Err(e) => {
+                    tracing::error!("MySource init failed: {e}");
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                }
             }
-            Err(e) => tracing::error!("MySource init failed: {e}"),
         }
     });
     info!("MySource started");
@@ -355,22 +369,35 @@ pub use my_source::MyMarketSource;
 
 **API-key-gated source:**
 ```rust
-if let Some(ref api_key) = args.my_source_api_key {
-    std::env::set_var("MY_SOURCE_API_KEY", api_key);
+if let Some(ref key) = args.my_source_api_key {
+    std::env::set_var("MY_SOURCE_API_KEY", key);
     let pool_c = pool.clone();
-    tokio::spawn(async move {
-        match market_data::sources::my_source::MyMarketSource::from_env() {
-            Ok(source) => {
-                let engine = market_data::SyncEngine::new(pool_c, Box::new(source));
-                engine.run().await;
+    let bh = broadcast_hub.clone();
+    let pw = price_writer.clone();
+    spawn_resilient("my_source", pw.clone(), move || {
+        let pool_c = pool_c.clone();
+        let bh = bh.clone();
+        let pw = pw.clone();
+        async move {
+            match market_data::sources::my_source::MyMarketSource::from_env() {
+                Ok(source) => {
+                    let engine = market_data::SyncEngine::new(pool_c, Box::new(source), bh, pw);
+                    engine.run().await;
+                }
+                Err(e) => {
+                    tracing::error!("MySource init failed: {e}");
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                }
             }
-            Err(e) => tracing::error!("MySource init failed: {e}"),
         }
     });
     info!("MySource started");
-} else {
-    info!("MySource skipped (MY_SOURCE_API_KEY not configured)");
 }
+```
+
+**For schedule-aware sources** (data with known release times), use `ScheduledSyncEngine` instead:
+```rust
+let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
 ```
 
 #### 5. Add to SOURCE_META in api.rs
@@ -443,10 +470,19 @@ const CATEGORY_ORDER = [
 
 **File:** `frontend/lib/vision/sources.ts`
 
-Add to the `VISION_SOURCES` array:
+Add to the `VISION_SOURCES` array using the `S()` helper. The interface requires `valueLabel`, `valueUnit`, and optionally `isPrice`:
 ```typescript
-{ id: 'my_source', name: 'My Source', description: 'Description here.', category: 'transport', logo: '/source-imgs/new-mysource.svg', brandBg: '#f5f5f5', prefixes: ['mysource_'] },
+S('my_source', 'My Source', 'Description here.', 'transport', '/source-imgs/new-mysource.svg', '#f5f5f5', ['mysource_'], 'Avg Delay', 'min'),
 ```
+
+The `S()` helper signature:
+```typescript
+S(id, name, description, category, logo, brandBg, prefixes, valueLabel, valueUnit, isPrice?)
+```
+
+- `valueLabel` — column header in markets table (e.g. `'Price'`, `'Avg Delay'`, `'Viewers'`, `'Magnitude'`)
+- `valueUnit` — unit shown in parentheses (e.g. `'USD'`, `'min'`, `'%'`, `'0-9'`)
+- `isPrice` — if `true`, values are formatted with `$` prefix (set for USD-denominated sources)
 
 Also add a logo to `frontend/public/source-imgs/`. See the **Logo Requirements** section below.
 
@@ -524,7 +560,7 @@ my_source: {
 
 **File:** `frontend/components/domain/SourceHealthTable.tsx`
 
-Add to the API links object:
+Add to the `API_KEY_LINKS` object (only if the source needs an API key):
 ```typescript
 my_source: { url: 'https://example.com/api', label: 'My Source API' },
 ```
@@ -585,7 +621,7 @@ BACKEND:
 [ ] data-node/src/market_data/sources/{source}/mod.rs     — pub mod client; pub use ...
 [ ] data-node/src/config/{source}.json                    — asset list or []
 [ ] data-node/src/market_data/sources/mod.rs              — pub mod + pub use
-[ ] data-node/src/main.rs                                 — spawn SyncEngine in run_serve()
+[ ] data-node/src/main.rs                                 — spawn_resilient() with SyncEngine(pool, source, bh, pw)
 [ ] data-node/src/api.rs                                  — add to SOURCE_META
 
 IF API-KEY-GATED:
@@ -599,10 +635,10 @@ CONTRACTS:
 FRONTEND:
 [ ] frontend/public/source-imgs/new-{source}.svg          — REAL company logo (NOT hand-drawn, check contrast vs brandBg)
 [ ] frontend/lib/vision/market-categories.ts              — PREFIX_MAP + CATEGORY_ORDER
-[ ] frontend/lib/vision/sources.ts                        — VISION_SOURCES entry (logo path must match)
+[ ] frontend/lib/vision/sources.ts                        — S() entry with valueLabel, valueUnit, isPrice
 [ ] frontend/components/domain/vision/VisionMarketsGrid.tsx — CATEGORY_GROUPS + COUNT_SOURCES
-[ ] frontend/components/domain/SourceDetailModal.tsx       — SOURCE_META
-[ ] frontend/components/domain/SourceHealthTable.tsx       — API link
+[ ] frontend/components/domain/SourceDetailModal.tsx       — SOURCE_META (valueLabel + unit + optional assetUnit)
+[ ] frontend/components/domain/SourceHealthTable.tsx       — API_KEY_LINKS (if API-key-gated)
 
 VERIFY:
 [ ] cargo check                                           — backend compiles

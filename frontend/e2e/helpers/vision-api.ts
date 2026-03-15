@@ -655,11 +655,43 @@ async function submitBitmapToIssuers(
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
   const issuerUrls = ISSUER_URLS
-  const maxAttempts = 5
+  // Issuers poll L3 every 2s — on testnet with variable block times, events can take
+  // 6-15s to index. Use longer delays and more attempts to avoid race conditions.
+  const retryDelay = IS_ANVIL ? 1_000 : 3_000
+  const maxAttempts = IS_ANVIL ? 5 : 10
 
-  // Retry loop: issuers need time to index PlayerJoined event from L3
+  // Pre-check: wait until at least one issuer sees this player in the batch.
+  // This avoids wasting bitmap submission attempts while issuers haven't indexed yet.
+  if (!IS_ANVIL) {
+    const readyDeadline = Date.now() + 15_000
+    let issuerReady = false
+    while (Date.now() < readyDeadline) {
+      for (const url of issuerUrls) {
+        try {
+          const res = await fetch(`${url}/vision/batch/${batchId}/state`, {
+            signal: AbortSignal.timeout(5_000),
+          })
+          if (res.ok) {
+            const state = await res.json() as { players?: Array<{ address: string }> }
+            if (state.players?.some(p => p.address.toLowerCase() === player.toLowerCase())) {
+              issuerReady = true
+              break
+            }
+          }
+        } catch { /* issuer unavailable, try next */ }
+      }
+      if (issuerReady) break
+      console.log(`[bitmap] Waiting for issuers to index player ${player.slice(0, 10)}... in batch ${batchId}`)
+      await new Promise(r => setTimeout(r, 3_000))
+    }
+    if (!issuerReady) {
+      console.warn(`[bitmap] No issuer indexed player after 15s — submitting anyway`)
+    }
+  }
+
+  // Retry loop: submit bitmap to all issuers
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    if (attempt > 0) await new Promise(r => setTimeout(r, 1_000))
+    if (attempt > 0) await new Promise(r => setTimeout(r, retryDelay))
 
     const results = await Promise.allSettled(
       issuerUrls.map(async (url) => {
@@ -674,6 +706,10 @@ async function submitBitmapToIssuers(
           }),
           signal: AbortSignal.timeout(RPC_TIMEOUT),
         })
+        if (!res.ok) {
+          const body = await res.text().catch(() => '')
+          if (attempt === 0) console.log(`[bitmap] ${url} rejected: ${res.status} ${body.slice(0, 200)}`)
+        }
         return res.ok
       })
     )

@@ -121,38 +121,36 @@ abigen!(
     ]"#
 );
 
+/// Cached name/symbol data (populated on first poll, never changes on-chain).
+static ITP_NAME_CACHE: std::sync::LazyLock<tokio::sync::RwLock<std::collections::HashMap<u64, (String, String, Option<String>)>>> =
+    std::sync::LazyLock::new(|| tokio::sync::RwLock::new(std::collections::HashMap::new()));
+
 pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
 
-    // Resolve BridgeProxy once for settlement address lookups
     let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
     let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.settlement_provider));
 
     let count: U256 = reader.get_itp_count().call().await?;
     let mut snapshots = Vec::new();
+    let name_cache = ITP_NAME_CACHE.read().await;
 
-    // ITP IDs are 1-based (same as itp_collector.rs): U256(i).to_big_endian()
     for i in 1..=count.as_u64() {
         let mut id_bytes = [0u8; 32];
         U256::from(i).to_big_endian(&mut id_bytes);
 
+        // Only call getITPState (1 RPC call per ITP — the essential one)
         match reader.get_itp_state(id_bytes.into()).call().await {
             Ok((_creator, total_supply, nav, _assets, _weights, _inventory)) => {
                 let nav_f64 = nav.as_u128() as f64 / 1e18;
                 let supply_f64 = total_supply.as_u128() as f64 / 1e18;
                 let aum = nav_f64 * supply_f64;
 
-                // Read name/symbol
-                let (name, symbol) = match reader.get_itp_name_symbol(id_bytes.into()).call().await {
-                    Ok((n, s)) => (n, s),
-                    Err(_) => (String::new(), String::new()),
-                };
-
-                // Resolve bridged ERC20 address on Settlement chain
-                let settlement_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
-                    Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
-                    _ => None,
+                // Use cached name/symbol/settlement (populated below if missing)
+                let (name, symbol, settlement_address) = match name_cache.get(&i) {
+                    Some((n, s, sa)) => (n.clone(), s.clone(), sa.clone()),
+                    None => (String::new(), String::new(), None),
                 };
 
                 snapshots.push(NavSnapshot {
@@ -168,6 +166,30 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
             Err(e) => {
                 warn!(itp_index = i, %e, "Failed to read ITP state");
             }
+        }
+    }
+    drop(name_cache);
+
+    // Populate name cache for any ITPs not yet cached (slow path, runs once per new ITP)
+    let needs_cache: Vec<u64> = {
+        let cache = ITP_NAME_CACHE.read().await;
+        (1..=count.as_u64()).filter(|i| !cache.contains_key(i)).collect()
+    };
+    if !needs_cache.is_empty() {
+        let mut cache = ITP_NAME_CACHE.write().await;
+        for i in needs_cache {
+            let mut id_bytes = [0u8; 32];
+            U256::from(i).to_big_endian(&mut id_bytes);
+
+            let (name, symbol) = match reader.get_itp_name_symbol(id_bytes.into()).call().await {
+                Ok((n, s)) => (n, s),
+                Err(_) => (String::new(), String::new()),
+            };
+            let settlement_address = match bridge_proxy.get_bridged_itp(id_bytes.into()).call().await {
+                Ok(addr) if addr != Address::zero() => Some(format!("{:?}", addr)),
+                _ => None,
+            };
+            cache.insert(i, (name, symbol, settlement_address));
         }
     }
 

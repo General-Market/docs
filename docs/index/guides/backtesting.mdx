@@ -3,23 +3,25 @@ title: "Backtesting"
 description: "Simulate portfolio performance with historical data before deploying an ITP"
 ---
 
-General Market's backtesting engine simulates how a portfolio strategy would have performed from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live ITP — all from the UI or API.
+Backtesting shows what would have happened. It says nothing about what will happen. This is its only honest feature.
+
+The engine simulates portfolio performance from 2020 to today. Test a thesis, compare configurations via sweep mode, and deploy the result as a live ITP -- from the UI or API.
 
 <Warning>
-**Past performance does not guarantee future results.** Backtesting uses historical data and cannot account for future market conditions, liquidity changes, or black swan events. See [Risks](/index/guides/risks) before committing capital.
+**Past performance does not guarantee future results.** The past is a story you tell yourself to justify a decision you have already made. Backtesting cannot account for future market conditions, liquidity changes, or black swan events. See [Risks](/index/guides/risks) before committing capital.
 </Warning>
 
 ---
 
 ## Backtesting via the UI
 
-Navigate to the **Backtest** section from the main menu.
+Navigate to the **Backtest** section. The interface is simple. The questions it raises are not.
 
 <Steps>
   <Step title="Select a Category">
-    Choose an asset category to define the token universe. Categories include Layer 1s, DeFi Blue Chips, AI Tokens, Memecoins, Made in China, and 50+ more from CoinGecko and DefiLlama.
+    Choose an asset category to define the token universe. Layer 1s, DeFi Blue Chips, AI Tokens, Memecoins, Made in China, and 50+ more from CoinGecko and DefiLlama.
 
-    Only coins that were listed on Bitget at some point are eligible — this ensures realistic tradeability.
+    Only coins listed on Bitget at some point are eligible. A backtest on untradeable assets is fiction, not simulation.
   </Step>
 
   <Step title="Configure Parameters">
@@ -33,7 +35,7 @@ Navigate to the **Backtest** section from the main menu.
   </Step>
 
   <Step title="Run & Review">
-    Click **Run Backtest**. Results include total return, Sharpe ratio, max drawdown, annualized return, a NAV chart, and final holdings.
+    Click **Run Backtest**. Results include total return, Sharpe ratio, max drawdown, annualized return, a NAV chart, and final holdings. The numbers look definitive. They describe the past with perfect hindsight.
   </Step>
 </Steps>
 
@@ -41,7 +43,7 @@ Navigate to the **Backtest** section from the main menu.
 
 ## Backtesting via the API
 
-All simulation endpoints are **GET** requests with query parameters. No authentication required.
+All simulation endpoints are **GET** requests with query parameters. No authentication required. The data is public. The conclusions you draw from it are yours alone.
 
 **Base URL:** `https://generalmarket.io/api`
 
@@ -193,7 +195,7 @@ console.log(`Run ID: ${result.run_id}`);
 
 ## Sweep Mode
 
-Compare multiple configurations in a single request. Sweep mode varies one parameter and streams results for each variant.
+Sweep mode tests many configurations at once. It varies one parameter and streams results for each variant. It is the fastest way to discover that most configurations perform similarly -- and that the few that don't are probably overfitting.
 
 **Sweep dimensions:** `top_n`, `weighting`, `rebalance`, `category`, `threshold`
 
@@ -264,14 +266,14 @@ data: {"type":"result","run_id":4824,"config":{"top_n":20,...},"stats":{...}}
 | `threshold` | Drift rebalance bands | 3%, 5%, 10%, 15%, 20% |
 
 <Tip>
-Sweep mode is the fastest way to find optimal parameters. One call tests all variants, and results stream back as they complete.
+One call tests all variants. Results stream back as they complete. The temptation is to pick the best-performing result. The discipline is to ask why it performed best and whether that reason will persist.
 </Tip>
 
 ---
 
 ## Fetch Holdings from a Backtest
 
-After running a backtest, fetch the portfolio composition to deploy or analyze:
+After running a backtest, fetch the portfolio composition. These are the holdings that survived:
 
 <CodeGroup>
 
@@ -294,7 +296,7 @@ Pass an optional `date` parameter (YYYY-MM-DD) to get holdings at a specific reb
 
 ## Compare Benchmarks
 
-Fetch BTC and ETH price series normalized to 1.0 at the start date for chart overlays:
+Fetch BTC and ETH price series normalized to 1.0 at the start date. Every strategy must answer one question: did it beat holding BTC? Most do not.
 
 ```bash
 curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
@@ -304,11 +306,11 @@ curl "https://generalmarket.io/api/sim/benchmarks?start_date=2020-01-01"
 
 ## Market Signal Integrations
 
-Layer additional signals into any backtest:
+Layer additional signals into any backtest. More signals do not mean more clarity. But they do mean more data:
 
 ### Fear & Greed Index
 
-Shift allocation between crypto and stablecoins based on market sentiment.
+Shift allocation between crypto and stablecoins based on market sentiment. Fear and greed are the only two emotions the market has. The index measures the ratio.
 
 ```bash
 curl "https://generalmarket.io/api/sim/run?\
@@ -316,7 +318,7 @@ category_id=layer-1&top_n=10&weighting=mcap&rebalance_days=30&\
 fng_mode=both&fng_fear_threshold=25&fng_greed_threshold=75&fng_cash_pct=0.4"
 ```
 
-When FNG > 75 (greed), 40% of the portfolio moves to stables. When FNG < 25 (fear), fully deployed in crypto.
+When FNG > 75 (greed), 40% of the portfolio moves to stables. When FNG < 25 (fear), fully deployed in crypto. The algorithm does what you cannot: sell into euphoria.
 
 ### BTC/ETH Dominance
 
@@ -330,7 +332,7 @@ dom_mode=btc&dom_lookback=30"
 
 ### VC Funding Filter
 
-Filter assets by venture capital backing:
+Filter assets by venture capital backing. Smart money is not always smart. But it is always funded:
 
 ```bash
 curl "https://generalmarket.io/api/sim/run?\
@@ -341,6 +343,8 @@ vc_mode=include&vc_investors=a16z,paradigm&vc_min_amount_m=10"
 ---
 
 ## Understanding Results
+
+Numbers do not lie. But they omit. The metrics below tell you what happened. They do not tell you what it felt like to live through it.
 
 ### Key Metrics
 
@@ -356,62 +360,62 @@ vc_mode=include&vc_investors=a16z,paradigm&vc_min_amount_m=10"
 
 ### What the NAV Series Represents
 
-The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of `3.12` means the strategy returned 212% from the start date.
+The `nav_series` starts at `1.0` and tracks portfolio value over time. A NAV of `3.12` means 212% return from the start date. A straight line on the chart. In reality, each day between 1.0 and 3.12 was a decision not to sell.
 
 ---
 
 ## Deploy as ITP
 
-A well-performing backtest can be deployed as a live on-chain ITP directly from the results.
+A backtest that looks good enough becomes a live ITP with one click. The transition from simulation to reality is instant. The consequences are not.
 
 <Steps>
   <Step title="Review Final Holdings">
-    Check the holdings table to confirm the weights match your thesis.
+    Check the holdings table. Confirm the weights match your thesis. The thesis looked good in simulation. It has not yet met the market.
   </Step>
 
   <Step title="Click Deploy Index">
-    The button pre-fills the ITP creation form with the backtested assets and weights.
+    The button pre-fills the ITP creation form with the backtested assets and weights. One click from history to the present.
   </Step>
 
   <Step title="Confirm On-Chain">
-    Add a name, confirm the transaction. The strategy is now live and tradable.
+    Add a name. Confirm the transaction. The strategy is now live. It belongs to reality now, not to the past.
   </Step>
 </Steps>
 
 <Warning>
-The deployed ITP uses the weights from the final rebalance. It does **not** auto-rebalance — you must trigger rebalances manually or through the protocol mechanism.
+The deployed ITP uses the weights from the final rebalance. It does **not** auto-rebalance. The backtest rebalanced for you. Reality will not.
 </Warning>
 
 ---
 
-## Checklist: Running a Good Backtest
+## Checklist: Running an Honest Backtest
 
 <Steps>
   <Step title="Pick a Category That Matches Your Thesis">
-    Don't backtest "all crypto" if you want a DeFi strategy. Narrower categories give cleaner signal.
+    Do not backtest "all crypto" if you want a DeFi strategy. Narrower categories give cleaner signal. Broader categories give cleaner conscience.
   </Step>
 
   <Step title="Start with Equal Weight">
-    Equal weight is the fairest baseline. If mcap-weighted can't beat equal-weighted, concentration risk is hurting you.
+    Equal weight is the fairest baseline. If mcap-weighted cannot beat equal-weighted, concentration is hurting you. Equal weight is the null hypothesis. Beat it before you complicate things.
   </Step>
 
   <Step title="Use Realistic Fees">
-    Default fee is 0.1%. If you're trading illiquid altcoins, bump `spread_multiplier` to 2.0+. Under-estimating fees is the #1 backtesting mistake.
+    Default fee is 0.1%. If you are trading illiquid altcoins, bump `spread_multiplier` to 2.0+. Underestimating fees is the most common backtesting lie. It is also the most flattering.
   </Step>
 
   <Step title="Run a Sweep Before Committing">
-    Use `sweep=top_n` and `sweep=weighting` to find optimal params. Don't cherry-pick the one configuration that looks best.
+    Use `sweep=top_n` and `sweep=weighting` to find optimal params. Do not cherry-pick the one configuration that looks best. That is not analysis. It is self-deception with a chart.
   </Step>
 
   <Step title="Check Drawdown, Not Just Return">
-    A 500% return with -90% max drawdown means you would have lost 90% of your money at some point. Could you stomach that?
+    A 500% return with -90% max drawdown means you would have watched 90% of your money disappear at some point. The return is theoretical. The drawdown was lived.
   </Step>
 
   <Step title="Look at Delistings">
-    High `total_delistings` means the category contains flaky assets. The backtest handles this gracefully, but in live trading, delistings are painful.
+    High `total_delistings` means the category contains flaky assets. The backtest handles this gracefully. Live trading does not.
   </Step>
 
   <Step title="Compare Against BTC">
-    If your strategy can't beat holding BTC on a risk-adjusted basis (Sharpe), it may not be worth the complexity.
+    If your strategy cannot beat holding BTC on a risk-adjusted basis (Sharpe), the complexity adds nothing. BTC is the benchmark. Everything else is a bet against simplicity.
   </Step>
 </Steps>

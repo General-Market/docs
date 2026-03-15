@@ -3,6 +3,8 @@ title: "Batches"
 description: "How prediction market batches work in Vision"
 ---
 
+A batch groups markets together. Like a parlay. Like a prayer -- multiple requests, one outcome, usually disappointing. And yet people create them, join them, fund them with real money. The persistence of hope in the face of arithmetic is the most human thing about this protocol.
+
 ## Quick Start: Join a Batch
 
 Fetch active batches and join one with a USDC deposit:
@@ -34,11 +36,11 @@ flowchart LR
 
 A batch groups multiple markets (e.g., BTC-USD, ETH-USD, SOL-USD) into a single prediction game. Every tick, all markets in the batch resolve simultaneously, and players win or lose based on how many markets they predicted correctly.
 
-Think of it like a sports parlay card: you pick UP or DOWN for each market, and your payout depends on how your picks compare to other players' picks across all markets.
+You pick UP or DOWN for each market. Your payout depends on how your picks compare to other players' picks across all markets. It is a contest of opinions, settled by reality, which is indifferent to both sides.
 
 ## Creating a Batch
 
-Anyone can create a batch by calling `createBatch`:
+Anyone can create a batch. This is a freedom that carries weight -- you are constructing a small arena where strangers will lose money to each other, and you are responsible for choosing the terms. Call `createBatch`:
 
 ```solidity
 function createBatch(
@@ -73,7 +75,7 @@ const tx = await vision.createBatch(
 
 ## Tick Duration Options
 
-The tick duration controls how often markets in the batch resolve. Common configurations:
+The tick duration controls how often the world is measured and judgment is passed. Common configurations:
 
 | Duration | Use Case |
 |----------|----------|
@@ -89,7 +91,7 @@ The tick duration controls how often markets in the batch resolve. Common config
 
 ## Batch States
 
-A batch moves through the following states:
+A batch moves through states, as all things do. Unlike most things, its states are well-defined:
 
 ```
 Created --> Running --> Paused (optional) --> Running
@@ -106,7 +108,7 @@ Pausing and unpausing require BLS signatures from 2/3+ of registered issuers. Th
 
 ## Updating Markets
 
-A batch creator can change which markets are included in the batch, but this requires BLS issuer consensus to prevent manipulation:
+A batch creator can change which markets are included, but not unilaterally. Altering the rules of a game that people have already entered requires BLS issuer consensus -- the closest thing to democratic oversight a smart contract can offer:
 
 ```solidity
 function updateBatchMarkets(
@@ -121,7 +123,7 @@ The BLS signature must cover the batch ID, new market IDs, new resolution types,
 
 ## Joining a Batch
 
-Players join a batch by depositing USDC and committing a bitmap hash:
+To join is to commit -- money and opinion, simultaneously. Players deposit USDC and commit a bitmap hash:
 
 ```solidity
 function joinBatch(
@@ -142,7 +144,7 @@ See [Bitmaps](/vision/concepts/bitmaps) for how to construct and commit predicti
 
 ### Batch Struct
 
-On-chain, a batch is stored as:
+On-chain, a batch is stored as the following struct. Every field is a constraint. Every constraint is a promise the protocol makes to strangers who will never meet:
 
 ```solidity
 struct Batch {
@@ -168,7 +170,7 @@ struct Batch {
 
 ### Batch Metadata
 
-Batch creators can attach metadata to make their batch discoverable:
+Batch creators can attach metadata to make their batch discoverable. A name, a description, an image -- the small vanities that make a contract feel inhabited:
 
 ```solidity
 function setBatchMetadata(

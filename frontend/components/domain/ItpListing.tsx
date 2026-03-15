@@ -5,6 +5,7 @@ import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
+import itpIdNames from '@/lib/itp-id-names.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
@@ -44,13 +45,13 @@ function navSnapshotsToRows(navList: NavSnapshot[]): ItpRow[] {
   const blacklistSet = new Set((blacklistedItps as string[]).map(id => id.toLowerCase()))
   return navList
     .filter(nav => !blacklistSet.has(nav.itp_id.toLowerCase()))
-    .filter(nav => !(Math.abs(nav.nav_per_share - 1.0) < 0.0001 && nav.aum_usd < 1))
     .map(nav => {
       const num = itpIdToNumber(nav.itp_id)
+      const override = (itpIdNames as Record<string, { name: string; ticker: string }>)[nav.itp_id.toLowerCase()]
       return {
         itpId: nav.itp_id,
-        name: nav.name || `ITP #${num}`,
-        symbol: nav.symbol || `ITP${num}`,
+        name: override?.name || nav.name || `ITP #${num}`,
+        symbol: override?.ticker || nav.symbol || `ITP${num}`,
         navPerShare: nav.nav_per_share,
         aum: nav.aum_usd,
         totalSupply: BigInt(nav.total_supply),
@@ -119,6 +120,14 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
     })
   }, [rows, searchQuery, sortKey, sortDir])
 
+  const PAGE_SIZE = 15
+  const [page, setPage] = useState(0)
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
+  const paginated = useMemo(() => sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [sorted, page])
+
+  // Reset to page 0 when search/sort changes
+  useEffect(() => { setPage(0) }, [searchQuery, sortKey, sortDir])
+
   const SortArrow = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return null
     return (
@@ -174,9 +183,9 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
               {searchQuery ? 'No funds match your search.' : 'No funds available.'}
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto -mx-6 px-6 lg:-mx-0 lg:px-0">
               <table className="w-full border-collapse">
-                {/* iShares-style header: gray bg, compact, uppercase labels */}
                 <thead>
                   <tr className="bg-[#f5f5f5] border-y border-[#ddd]">
                     <th
@@ -215,9 +224,10 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((row, idx) => (
+                  {paginated.map((row, idx) => (
                     <tr
                       key={row.itpId}
+                      id={`itp-card-${row.itpId}`}
                       className={`border-b border-[#eee] hover:bg-[#f0f7f4] transition-colors ${
                         idx % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'
                       }`}
@@ -277,6 +287,48 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                 </tbody>
               </table>
             </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-1">
+                <span className="text-[12px] text-text-muted">
+                  {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage(0)}
+                    disabled={page === 0}
+                    className="px-2 py-1 text-[11px] border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={() => setPage(p => p - 1)}
+                    disabled={page === 0}
+                    className="px-2.5 py-1 text-[11px] border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
+                  >
+                    Prev
+                  </button>
+                  <span className="px-3 text-[12px] text-text-primary font-medium">
+                    {page + 1} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={page >= totalPages - 1}
+                    className="px-2.5 py-1 text-[11px] border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={() => setPage(totalPages - 1)}
+                    disabled={page >= totalPages - 1}
+                    className="px-2 py-1 text-[11px] border border-[#ddd] rounded hover:bg-[#f5f5f5] disabled:opacity-30 disabled:cursor-default"
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>

@@ -2474,7 +2474,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
             }));
         }};
     }
-    spawn_poller!("nav",         30, chain_pollers::poll_nav_once);
+    spawn_poller!("nav",         60, chain_pollers::poll_nav_once);
     spawn_poller!("oracle",       2, chain_pollers::poll_oracle_once);
     spawn_poller!("balances",     1, chain_pollers::poll_user_balances_once);
     spawn_poller!("allowances",   3, chain_pollers::poll_user_allowances_once);

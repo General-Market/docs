@@ -5,7 +5,7 @@ description: "Query player balances and BLS-signed withdrawal proofs"
 
 # Balance & Proofs
 
-Retrieve a player's current balance within a batch. In the full implementation, this endpoint also returns a BLS-signed balance proof that enables on-chain withdrawals.
+What remains. A player's current balance within a batch -- the arithmetic verdict on their predictions. In production, this endpoint also returns a BLS-signed proof that enables on-chain withdrawals.
 
 ---
 
@@ -13,7 +13,7 @@ Retrieve a player's current balance within a batch. In the full implementation, 
 
 `GET /vision/balance/{batch_id}/{player}`
 
-Returns the player's current balance and stake configuration in the specified batch. The balance reflects all tick resolutions processed so far (wins, losses, and fees).
+Returns the player's current balance and stake configuration. The balance reflects all tick resolutions processed so far -- wins, losses, and fees. A running tally of how well your machine understood the world.
 
 <ParamField path="batch_id" type="number" required>
   The batch ID to query the balance for.

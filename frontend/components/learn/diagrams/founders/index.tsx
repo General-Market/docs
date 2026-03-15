@@ -59,3 +59,28 @@ export const FoundersDashboard = dynamic(
     import("./FoundersDashboard").then((m) => m.FoundersDashboard),
   { ssr: false, loading: () => <Placeholder h="2000px" /> }
 );
+
+export const PodcastDistribution = dynamic(
+  () => import("./PodcastPerformance").then((m) => m.PodcastDistribution),
+  { ssr: false, loading: () => <Placeholder h="280px" /> }
+);
+
+export const PodcastATHPerformance = dynamic(
+  () => import("./PodcastPerformance").then((m) => m.PodcastATHPerformance),
+  { ssr: false, loading: () => <Placeholder h="320px" /> }
+);
+
+export const PodcastSurvival = dynamic(
+  () => import("./PodcastPerformance").then((m) => m.PodcastSurvival),
+  { ssr: false, loading: () => <Placeholder h="280px" /> }
+);
+
+export const PodcastMarketCap = dynamic(
+  () => import("./PodcastPerformance").then((m) => m.PodcastMarketCap),
+  { ssr: false, loading: () => <Placeholder h="280px" /> }
+);
+
+export const PodcastTop500 = dynamic(
+  () => import("./PodcastPerformance").then((m) => m.PodcastTop500),
+  { ssr: false, loading: () => <Placeholder h="320px" /> }
+);

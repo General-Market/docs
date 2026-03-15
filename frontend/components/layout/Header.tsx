@@ -161,7 +161,7 @@ export function Header() {
         <div className="px-6 lg:px-12">
           <div className="max-w-site mx-auto flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="shrink-0 flex items-center gap-2.5">
+            <Link href="/" className="shrink-0 flex items-center gap-2.5">
               <img
                 src="/favicon-32x32.png"
                 alt=""
@@ -172,7 +172,7 @@ export function Header() {
               <span className="hidden sm:inline text-[22px] font-black tracking-[-0.03em] text-black">
                 {t('brand.logo_text')}
               </span>
-            </div>
+            </Link>
 
             {/* Page Tabs */}
             <nav className="hidden sm:flex items-center gap-0">

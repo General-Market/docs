@@ -383,8 +383,16 @@ const SOURCE_META: Record<string, SourceMeta> = {
   tomtom_traffic: { valueLabel: 'Congestion', unit: '0-1' },
   tomtom_evcharge: { valueLabel: 'Available', unit: 'connectors' },
 
-  // ── Board Games & Shopping ──
+  // ── Board Games, Chess & Shopping ──
   bgg: { valueLabel: 'Hotness Rank', unit: '#' },
+  lichess: {
+    valueLabel: 'Rating', unit: 'Elo',
+    assetUnit: (name) => {
+      if (/tournament/i.test(name)) return 'count'
+      if (/puzzle/i.test(name)) return 'Elo'
+      return 'Elo'
+    },
+  },
   bestbuy: { valueLabel: 'Sale Price', unit: 'USD' },
 
   // ── Jobs / Labor ──

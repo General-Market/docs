@@ -5,7 +5,9 @@ description: "Architecture and concepts for building autonomous Vision predictio
 
 # Bot Overview
 
-Vision bots are autonomous programs that join prediction batches, submit sealed bitmaps, and claim rewards without human intervention. Registration is free, requires no collateral, and the full lifecycle can be automated with a few API calls and on-chain transactions.
+You are building a machine to make predictions about the future. The machine will be wrong. But it will be wrong faster than you, and that is enough.
+
+A Vision bot joins prediction batches, submits sealed bitmaps, and claims rewards without human intervention. Registration is free, requires no collateral. The full lifecycle reduces to a few API calls and on-chain transactions -- an almost insulting simplicity for a task of such metaphysical ambition.
 
 ## Architecture
 
@@ -34,7 +36,7 @@ flowchart TD
 
 ## What a Vision Bot Does
 
-A Vision bot automates the complete prediction lifecycle:
+The lifecycle of a bot is the lifecycle of hope, compressed into code:
 
 1. **Registers** on the Vision contract (one-time, free, no collateral).
 2. **Polls** the issuer API for active batches.
@@ -46,7 +48,7 @@ A Vision bot automates the complete prediction lifecycle:
 8. **Withdraws** remaining balance when exiting a batch.
 
 <Info>
-Bot registration is **free**. Calling `registerBot()` costs only gas. There is no staking requirement or collateral to register -- you only deposit USDC when joining a batch.
+Registration is **free**. Calling `registerBot()` costs only gas. No staking, no collateral. You deposit USDC only when joining a batch -- the moment you decide your machine's opinions are worth money.
 </Info>
 
 ## Environment Variables
@@ -62,7 +64,7 @@ Bot registration is **free**. Calling `registerBot()` costs only gas. There is n
 | `POLL_INTERVAL` | No | `30` | Seconds between batch polling cycles |
 
 <Warning>
-**USDC uses 6 decimals, not 18.** When calling contract functions, multiply token amounts by `10^6`. For example, 10 USDC = `10_000_000` (not `10_000_000_000_000_000_000`). Getting this wrong will either deposit dust or revert with insufficient balance.
+**USDC uses 6 decimals, not 18.** Multiply token amounts by `10^6`. 10 USDC = `10_000_000` (not `10_000_000_000_000_000_000`). Getting this wrong deposits dust or reverts -- the machine's first lesson in precision.
 </Warning>
 
 ## Contract Details
@@ -77,7 +79,7 @@ Bot registration is **free**. Calling `registerBot()` costs only gas. There is n
 
 ## Bot Registration
 
-Registration stores a public metadata struct on-chain:
+Registration stores a public metadata struct on-chain. The blockchain remembers your bot existed. Whether that is a comfort or an indictment depends on performance:
 
 ```solidity
 struct Bot {
@@ -94,15 +96,15 @@ Call `registerBot(endpoint, pubkeyHash)` once. Call `deregisterBot()` to remove 
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/vision/bots/quickstart">
-    Register and run your first bot in under 10 minutes.
+    Register, fund, and unleash your first bot in under 10 minutes.
   </Card>
   <Card title="Bot Lifecycle" icon="arrows-spin" href="/vision/bots/lifecycle">
-    Detailed walkthrough of every step from registration to withdrawal.
+    Poll. Predict. Join. Monitor. Claim. The full anatomy of automated hope.
   </Card>
   <Card title="Bitmap Encoding" icon="binary" href="/vision/bots/bitmap-encoding">
-    Technical reference for the bitmap format, encoding, and hashing.
+    Bits. The smallest possible opinion. The full encoding spec.
   </Card>
   <Card title="Example Strategies" icon="brain" href="/vision/bots/strategies">
-    Momentum, mean reversion, and random baseline strategies with code.
+    Three theories about the future expressed in code. All wrong. Some useful.
   </Card>
 </CardGroup>

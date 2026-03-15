@@ -2,11 +2,21 @@
 // Run: npx tsx scripts/build-founders-lookup.ts
 // Output: data/founders-lookup.json (~200KB)
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import path from 'path'
 
 const SOURCE = path.join(__dirname, '../../_bmad-output/youtube/video/top100cryptoage/crypto_founders_complete.json')
 const OUTPUT = path.join(__dirname, '../data/founders-lookup.json')
+
+// Skip if source doesn't exist (e.g. Vercel build) — use pre-built lookup
+if (!existsSync(SOURCE)) {
+  if (existsSync(OUTPUT)) {
+    console.log(`Source not found, using existing ${OUTPUT}`)
+  } else {
+    console.log(`Source not found and no pre-built lookup — skipping founders build`)
+  }
+  process.exit(0)
+}
 
 const raw = JSON.parse(readFileSync(SOURCE, 'utf-8'))
 const lookup: Record<string, { age?: number; gender: string; nationality: string; university?: string }[]> = {}

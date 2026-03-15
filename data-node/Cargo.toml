@@ -8,6 +8,10 @@ license.workspace = true
 name = "data-node"
 path = "src/main.rs"
 
+# Vendored OpenSSL for cross-compilation (transitive dep from solana-sdk)
+[target.'cfg(target_os = "linux")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
 [dependencies]
 common = { path = "../common" }
 
@@ -64,7 +68,7 @@ subtle = "2"
 prost = "0.13"
 
 # WebSocket (AISstream)
-tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 
 # XML parsing (SEC 13F)
 quick-xml = { version = "0.37", features = ["serialize"] }

@@ -3515,18 +3515,21 @@ async fn run_rebalance_processing<P, W, K, PF>(
 
                 // Leader submits rebalance() on-chain
                 if am_leader {
-                    // Extract nav BLS signature from consensus result
-                    let nav_sig = match &nav_result {
+                    // Extract nav BLS signature AND signer bitmap from NAV consensus result.
+                    // The signer bitmap must match the NAV signature — using the rebalance
+                    // bitmap instead causes BLSVerifier__InvalidSignature because different
+                    // issuers may have signed each phase.
+                    let (nav_sig, nav_signer_bitmap) = match &nav_result {
                         Ok(result) if !result.aggregated_signature.0.is_empty() => {
-                            result.aggregated_signature.0.clone()
+                            (result.aggregated_signature.0.clone(), result.signer_bitmap)
                         }
                         Ok(_) => {
                             warn!(itp_id = ?itp_h256, "setItpNav consensus returned empty signature");
-                            vec![]
+                            (vec![], ethers::types::U256::zero())
                         }
                         Err(e) => {
                             warn!(itp_id = ?itp_h256, error = %e, "setItpNav consensus failed, proceeding with empty signature");
-                            vec![]
+                            (vec![], ethers::types::U256::zero())
                         }
                     };
 
@@ -3542,6 +3545,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
                         &rebalance_result,
                         computed_nav,
                         &nav_sig,
+                        nav_signer_bitmap,
                         ref_nonce,
                     ).await {
                         Ok(tx_hash) => {
