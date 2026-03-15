@@ -1253,296 +1253,24 @@ async fn nav_series(
     }))
 }
 
-// ---- /aum-ranking ----
-
-#[derive(Deserialize)]
-struct AumRankingQuery {
-    top_n: Option<usize>,
-    from: Option<String>,
-    to: Option<String>,
-}
-
-#[derive(Serialize)]
-struct AumRankedAsset {
-    address: String,
-    symbol: String,
-    aum: String,
-    weight_pct: String,
-    qty_per_share: String,
-    rank: usize,
-}
-
-#[derive(Serialize)]
-struct AumRankingSnapshot {
-    timestamp: i64,
-    label: String,
-    event_type: String,
-    itp_id: String,
-    total_aum: String,
-    computed_nav: String,
-    perf_ratio: String,
-    ranked: Vec<AumRankedAsset>,
-}
-
-#[derive(Serialize)]
-struct AumRankingResponse {
-    snapshots: Vec<AumRankingSnapshot>,
-    all_symbols: HashMap<String, String>,
-}
-
-fn compute_asset_aum(qty_str: &str, total_supply_str: &str, price_usd: f64) -> f64 {
-    let qty: f64 = qty_str.parse().unwrap_or(0.0);
-    let supply: f64 = total_supply_str.parse().unwrap_or(0.0);
-    qty * supply * price_usd / 1e36
-}
-
-fn compute_perf_ratio(current_nav: f64, initial_nav_str: &str) -> f64 {
-    let init: f64 = initial_nav_str.parse().unwrap_or(1e18);
-    if init == 0.0 {
-        return 1.0;
-    }
-    current_nav / (init / 1e18)
-}
-
-fn format_label(ts: i64) -> String {
-    let dt = chrono::DateTime::from_timestamp(ts, 0).unwrap_or_default();
-    dt.format("%m/%d %H:%M").to_string()
-}
+// ---- /aum-ranking (precomputed, served from cache) ----
 
 async fn aum_ranking(
     State(state): State<Arc<AppState>>,
-    Query(params): Query<AumRankingQuery>,
-) -> Result<Json<AumRankingResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let result = tokio::time::timeout(Duration::from_secs(10), async {
-    let top_n = params.top_n.unwrap_or(10);
-    // Max chart columns: sampling reduces N² problem to O(MAX_SNAPSHOTS × assets)
-    const MAX_SNAPSHOTS: usize = 50;
-
-    // Default to last 7 days
-    let from: Option<DateTime<Utc>> = params
-        .from
-        .as_ref()
-        .and_then(|s| s.parse().ok())
-        .or_else(|| Some(Utc::now() - chrono::Duration::days(7)));
-    let to: Option<DateTime<Utc>> = params
-        .to
-        .as_ref()
-        .and_then(|s| s.parse().ok());
-
-    // 1. Fetch all snapshots chronologically
-    let all_snapshots = db::query_all_snapshots_chronological(&state.pool, from, to)
-        .await
-        .map_err(|e| db_error(e))?;
-
-    if all_snapshots.is_empty() {
-        return Ok(Json(AumRankingResponse {
-            snapshots: vec![],
-            all_symbols: HashMap::new(),
-        }));
-    }
-
-    // Evenly sample at most MAX_SNAPSHOTS from the full list to keep computation fast
-    let snapshots: Vec<_> = if all_snapshots.len() <= MAX_SNAPSHOTS {
-        all_snapshots
-    } else {
-        let step = all_snapshots.len() as f64 / MAX_SNAPSHOTS as f64;
-        (0..MAX_SNAPSHOTS)
-            .map(|i| all_snapshots[(i as f64 * step) as usize].clone())
-            .collect()
-    };
-
-    // 2. Cache creation NAVs for perf ratio
-    let mut initial_navs: HashMap<String, String> = HashMap::new();
-    for snap in &snapshots {
-        if snap.event_type == "created" || snap.event_type == "init" {
-            initial_navs.entry(snap.itp_id.clone()).or_insert_with(|| snap.nav.clone());
-        }
-    }
-
-    // For any ITP without a "created" snapshot in range, fetch from DB
-    let mut itp_ids_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-    for snap in &snapshots {
-        itp_ids_seen.insert(snap.itp_id.clone());
-    }
-    for itp_id in &itp_ids_seen {
-        if !initial_navs.contains_key(itp_id) {
-            if let Ok(Some(creation)) = db::query_creation_snapshot(&state.pool, itp_id).await {
-                initial_navs.insert(itp_id.clone(), creation.nav);
-            }
-        }
-    }
-
-    // 3. Collect all unique asset addresses across all snapshots for symbol resolution
-    let mut all_addr_set: std::collections::HashSet<String> = std::collections::HashSet::new();
-    for snap in &snapshots {
-        for addr in &snap.assets {
-            all_addr_set.insert(addr.clone());
-        }
-    }
-
-    // Build address→symbol map from symbol_map (address→pair→symbol)
-    let mut all_symbols: HashMap<String, String> = HashMap::new();
-    // Also build addr→pair map for price lookups
-    let mut addr_to_pair: HashMap<String, String> = HashMap::new();
-    for addr in &all_addr_set {
-        if let Some(pair) = state.symbol_map.get(&addr.to_lowercase()) {
-            let symbol = pair.trim_end_matches("USDT").trim_end_matches("USDC").to_string();
-            all_symbols.insert(addr.clone(), symbol);
-            addr_to_pair.insert(addr.clone(), pair.clone());
-        } else {
-            all_symbols.insert(
-                addr.clone(),
-                format!("{}...{}", &addr[..6], &addr[addr.len().saturating_sub(4)..]),
-            );
-        }
-    }
-
-    // 4. Batch-fetch latest prices for ALL unique symbols in ONE query (no per-row DB calls)
-    let unique_pairs: Vec<&str> = addr_to_pair.values().map(|s| s.as_str()).collect();
-    let price_rows = db::query_freshest_prices_batch(&state.pool, &unique_pairs)
-        .await
-        .unwrap_or_default();
-    let price_cache: HashMap<String, f64> = price_rows
-        .into_iter()
-        .map(|row| (row.symbol, row.price.parse::<f64>().unwrap_or(0.0)))
-        .collect();
-
-    // Helper: look up price for an address via the batch cache
-    let price_for_addr = |addr: &str| -> f64 {
-        addr_to_pair
-            .get(addr)
-            .and_then(|pair| price_cache.get(pair.as_str()))
-            .copied()
-            .unwrap_or(0.0)
-    };
-
-    // 5. Walk snapshots, maintaining ITP state and computing rankings
-    struct ItpState {
-        assets: Vec<String>,
-        inventory: Vec<String>,
-        total_supply: String,
-    }
-
-    let mut itp_states: HashMap<String, ItpState> = HashMap::new();
-    let mut result_snapshots: Vec<AumRankingSnapshot> = Vec::new();
-
-    for snap in &snapshots {
-        // Update ITP state
-        itp_states.insert(
-            snap.itp_id.clone(),
-            ItpState {
-                assets: snap.assets.clone(),
-                inventory: snap.inventory.clone(),
-                total_supply: snap.total_supply.clone(),
-            },
+) -> (StatusCode, [(axum::http::header::HeaderName, &'static str); 1], String) {
+    let cached = state.chain_cache.aum_ranking_json.read().await;
+    if cached.is_empty() {
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            "[]".to_string(),
         );
-
-        // Compute AUM for each asset across ALL active ITPs using cached prices
-        let mut asset_aum: HashMap<String, f64> = HashMap::new();
-        let mut total_aum: f64 = 0.0;
-
-        for (_itp_id, itp) in &itp_states {
-            for (i, addr) in itp.assets.iter().enumerate() {
-                if i >= itp.inventory.len() {
-                    continue;
-                }
-                let price_val = price_for_addr(addr);
-                if price_val == 0.0 {
-                    continue;
-                }
-                let aum = compute_asset_aum(&itp.inventory[i], &itp.total_supply, price_val);
-                *asset_aum.entry(addr.clone()).or_insert(0.0) += aum;
-                total_aum += aum;
-            }
-        }
-
-        // Sort by AUM descending
-        let mut sorted: Vec<(String, f64)> = asset_aum.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-        // Take top_n and build ranked list
-        let ranked: Vec<AumRankedAsset> = sorted
-            .iter()
-            .take(top_n)
-            .enumerate()
-            .map(|(rank, (addr, aum))| {
-                let weight_pct = if total_aum > 0.0 {
-                    aum / total_aum * 100.0
-                } else {
-                    0.0
-                };
-
-                // Find qty_per_share for this asset (from the triggering ITP)
-                let qty_str = itp_states
-                    .get(&snap.itp_id)
-                    .and_then(|itp| {
-                        itp.assets
-                            .iter()
-                            .position(|a| a == addr)
-                            .and_then(|i| itp.inventory.get(i))
-                    })
-                    .cloned()
-                    .unwrap_or_default();
-
-                AumRankedAsset {
-                    address: addr.clone(),
-                    symbol: all_symbols.get(addr).cloned().unwrap_or_default(),
-                    aum: format!("{:.2}", aum),
-                    weight_pct: format!("{:.1}", weight_pct),
-                    qty_per_share: qty_str,
-                    rank: rank + 1,
-                }
-            })
-            .collect();
-
-        // Compute NAV for the triggering ITP using cached prices
-        let triggering_itp = &itp_states[&snap.itp_id];
-        let mut nav_sum: f64 = 0.0;
-        for (i, addr) in triggering_itp.assets.iter().enumerate() {
-            if i >= triggering_itp.inventory.len() {
-                continue;
-            }
-            let price_val = price_for_addr(addr);
-            let qty: f64 = triggering_itp.inventory[i].parse().unwrap_or(0.0);
-            nav_sum += qty * price_val;
-        }
-        let computed_nav = nav_sum / 1e18;
-
-        let initial_nav_str = initial_navs
-            .get(&snap.itp_id)
-            .cloned()
-            .unwrap_or_else(|| "1000000000000000000".to_string());
-        let perf_ratio = compute_perf_ratio(computed_nav, &initial_nav_str);
-
-        let timestamp = snap.valid_from.timestamp();
-
-        result_snapshots.push(AumRankingSnapshot {
-            timestamp,
-            label: format_label(timestamp),
-            event_type: snap.event_type.clone(),
-            itp_id: snap.itp_id.clone(),
-            total_aum: format!("{:.2}", total_aum),
-            computed_nav: format!("{:.6}", computed_nav),
-            perf_ratio: format!("{:.2}", perf_ratio),
-            ranked,
-        });
     }
-
-    Ok(Json(AumRankingResponse {
-        snapshots: result_snapshots,
-        all_symbols,
-    }))
-    }).await;
-
-    match result {
-        Ok(inner) => inner,
-        Err(_) => Err((
-            StatusCode::GATEWAY_TIMEOUT,
-            Json(ErrorResponse {
-                error: "aum-ranking computation timed out".to_string(),
-            }),
-        )),
-    }
+    (
+        StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "application/json")],
+        cached.clone(),
+    )
 }
 
 // ---- /portfolio ----
@@ -5949,6 +5677,65 @@ pub async fn build_system_snapshot_json(state: &AppState) -> String {
     serde_json::to_string(&snap).unwrap_or_default()
 }
 
+/// Precompute AUM ranking from in-memory caches (itp_states + live_cache.tickers).
+/// Returns pre-serialized JSON stored in chain_cache.aum_ranking_json.
+pub async fn compute_aum_ranking_json(state: &AppState) -> String {
+    #[derive(serde::Serialize)]
+    struct ItpAumEntry {
+        itp_id: String,
+        name: String,
+        symbol: String,
+        nav_per_share: f64,
+        total_supply: String,
+        aum_usd: f64,
+        asset_count: usize,
+    }
+
+    let itp_cache = state.chain_cache.itp_states.read().await;
+    let tickers = state.live_cache.tickers.read().await;
+
+    let mut entries: Vec<ItpAumEntry> = Vec::new();
+
+    for (itp_id, itp_state) in &itp_cache.states {
+        // Compute NAV = sum(qty[i] * price[i]) / 1e18
+        let mut nav_sum: f64 = 0.0;
+        for (i, asset_addr) in itp_state.assets.iter().enumerate() {
+            if i >= itp_state.inventory.len() {
+                continue;
+            }
+            let qty: f64 = itp_state.inventory[i].as_u128() as f64;
+            let addr_lower = format!("{:?}", asset_addr).to_lowercase();
+            let price: f64 = state
+                .symbol_map
+                .get(&addr_lower)
+                .and_then(|pair| tickers.get(pair.as_str()))
+                .and_then(|t| t.last_price.parse::<f64>().ok())
+                .unwrap_or(0.0);
+            nav_sum += qty * price;
+        }
+        let nav_per_share = nav_sum / 1e18;
+
+        // AUM = NAV × totalSupply / 1e18
+        let total_supply_f = itp_state.total_supply.as_u128() as f64;
+        let aum_usd = nav_per_share * total_supply_f / 1e18;
+
+        entries.push(ItpAumEntry {
+            itp_id: itp_id.clone(),
+            name: itp_state.name.clone(),
+            symbol: itp_state.symbol.clone(),
+            nav_per_share,
+            total_supply: itp_state.total_supply.to_string(),
+            aum_usd,
+            asset_count: itp_state.assets.len(),
+        });
+    }
+
+    // Sort by AUM descending
+    entries.sort_by(|a, b| b.aum_usd.partial_cmp(&a.aum_usd).unwrap_or(std::cmp::Ordering::Equal));
+
+    serde_json::to_string(&entries).unwrap_or_else(|_| "[]".to_string())
+}
+
 async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
     let cache = &state.chain_cache;
 
@@ -6199,17 +5986,68 @@ async fn sse_stream(
         let mut last_cb_gen: u64 = 0;
         let mut last_system_gen: u64 = 0;
 
+        // Delta tracking: what NAV each client last received per ITP
+        let mut last_sent_nav: HashMap<String, f64> = HashMap::new();
+        let mut consecutive_drops: u32 = 0;
+
         loop {
             let cache = &state.chain_cache;
 
             // Global topics
             if topics.contains(&"nav".to_string()) {
-                let gen = cache.nav_gen.get();
-                if gen != last_nav_gen {
-                    let data = cache.nav.read().await;
-                    let json = serde_json::to_string(&*data).unwrap_or_default();
-                    if tx.send(Ok(Event::default().event("itp-nav").data(json))).await.is_err() { break; }
-                    last_nav_gen = gen;
+                // Gate on hydration — no point sending stale/partial data
+                if !cache.hydration_complete.load(std::sync::atomic::Ordering::Relaxed) {
+                    // Not hydrated yet — skip nav events
+                } else {
+                    let gen = cache.nav_gen.get();
+                    if gen != last_nav_gen {
+                        let data = cache.nav.read().await;
+
+                        if last_sent_nav.is_empty() {
+                            // First connection: send full snapshot
+                            let json = serde_json::to_string(&*data).unwrap_or_default();
+                            match tx.try_send(Ok(Event::default().event("itp-nav").data(json))) {
+                                Ok(_) => {
+                                    consecutive_drops = 0;
+                                    for s in data.iter() {
+                                        last_sent_nav.insert(s.itp_id.clone(), s.nav_per_share);
+                                    }
+                                }
+                                Err(_) => {
+                                    consecutive_drops += 1;
+                                    if consecutive_drops >= 10 { break; }
+                                }
+                            }
+                        } else {
+                            // Subsequent: compute delta — only ITPs that moved > 0.01%
+                            let delta: Vec<&crate::chain_cache::NavSnapshot> = data.iter()
+                                .filter(|s| {
+                                    match last_sent_nav.get(&s.itp_id) {
+                                        Some(&prev) => (s.nav_per_share - prev).abs() / prev.max(0.0001) > 0.0001,
+                                        None => true, // new ITP
+                                    }
+                                })
+                                .collect();
+
+                            if !delta.is_empty() {
+                                let json = serde_json::to_string(&delta).unwrap_or_default();
+                                match tx.try_send(Ok(Event::default().event("itp-nav-delta").data(json))) {
+                                    Ok(_) => {
+                                        consecutive_drops = 0;
+                                        for s in &delta {
+                                            last_sent_nav.insert(s.itp_id.clone(), s.nav_per_share);
+                                        }
+                                    }
+                                    Err(_) => {
+                                        consecutive_drops += 1;
+                                        if consecutive_drops >= 10 { break; }
+                                    }
+                                }
+                            }
+                        }
+
+                        last_nav_gen = gen;
+                    }
                 }
             }
 
