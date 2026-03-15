@@ -543,7 +543,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --broadcast --slow --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-tokens.log 2>&1 || echo -e "  ${YELLOW}Token deploy had warnings — check logs/deploy-tokens.log${NC}"
+        > logs/deploy-tokens.log 2>&1 || { echo -e "  ${RED}Token deploy FAILED — check logs/deploy-tokens.log${NC}"; exit 1; }
     echo -e "  ${GREEN}621 tokens deployed, vault funded${NC}"
 
     # Update assets.json with fresh on-chain addresses
@@ -565,7 +565,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --broadcast --slow --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-itp-create.log 2>&1 || echo -e "  ${YELLOW}ITP create had warnings — check logs/deploy-itp-create.log${NC}"
+        > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; exit 1; }
     echo -e "  ${GREEN}ITPs created${NC}"
 
     echo -e "${BLUE}[12/14] Deploying ITP vaults...${NC}"
@@ -579,7 +579,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --broadcast --slow --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-itp-vaults.log 2>&1 || echo -e "  ${YELLOW}ITP vault deploy had warnings — check logs/deploy-itp-vaults.log${NC}"
+        > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; exit 1; }
     echo -e "  ${GREEN}ITP vaults deployed${NC}"
 
     # Sync deployment files + token registries
@@ -596,23 +596,8 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${GREEN}Synced deployment JSONs + Vision address → envs/testnet/${NC}"
     fi
 
-    # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
-    ./switch-env.sh testnet 2>/dev/null || true
-
-    # Deploy frontend to Vercel with new contract addresses
-    echo -e "${BLUE}[14/14] Deploying frontend to Vercel...${NC}"
-    if command -v vercel &>/dev/null; then
-        (cd frontend && vercel --prod --yes 2>&1 | tail -5) && \
-            echo -e "  ${GREEN}Frontend deployed to Vercel${NC}" || \
-            echo -e "  ${YELLOW}Vercel deploy failed — deploy manually: cd frontend && vercel --prod${NC}"
-    else
-        echo -e "  ${YELLOW}vercel CLI not found — deploy manually: cd frontend && vercel --prod${NC}"
-    fi
-
     # Regenerate deployed-assets.json and symbol-map.json from assets.json.
-    # All Bitget-listed tokens in assets.json have L3 addresses — this ensures
-    # the itp-bot and oracles can resolve every tradeable symbol.
-    echo -e "${BLUE}Syncing token registries from assets.json...${NC}"
+    # Must happen BEFORE switch-env so oracles/data-node get fresh symbol maps.
     python3 -c "
 import json, re
 assets = json.load(open('assets.json'))
@@ -630,6 +615,19 @@ for a in assets:
 json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
 print(f'{len(deployed)} tokens in deployed-assets.json, {len(smap)} in symbol-map.json')
 " 2>/dev/null && echo -e "  ${GREEN}Token registries synced${NC}" || echo -e "  ${YELLOW}Token registry sync failed${NC}"
+
+    # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
+    ./switch-env.sh testnet 2>/dev/null || true
+
+    # Deploy frontend to Vercel with new contract addresses
+    echo -e "${BLUE}[14/14] Deploying frontend to Vercel...${NC}"
+    if command -v vercel &>/dev/null; then
+        (cd frontend && vercel --prod --yes 2>&1 | tail -5) && \
+            echo -e "  ${GREEN}Frontend deployed to Vercel${NC}" || \
+            echo -e "  ${YELLOW}Vercel deploy failed — deploy manually: cd frontend && vercel --prod${NC}"
+    else
+        echo -e "  ${YELLOW}vercel CLI not found — deploy manually: cd frontend && vercel --prod${NC}"
+    fi
 
     echo ""
     echo -e "${GREEN}All contracts deployed. Next steps:${NC}"
