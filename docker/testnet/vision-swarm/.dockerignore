@@ -1,0 +1,6 @@
+vision-bot/.venv/
+vision-bot/__pycache__/
+vision-bot/tests/
+vision-bot/*.pyc
+**/.git
+**/node_modules
