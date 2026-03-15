@@ -25,8 +25,9 @@ use super::types::*;
 /// Price data for tick resolution.
 ///
 /// Maps market_id to (start_price, end_price, last_update_timestamp).
+/// Prices are stored as u128 scaled by 1e8 (fixed-point, 8 decimal places).
 pub struct MarketPrices {
-    prices: HashMap<H256, (f64, f64, u64)>,
+    prices: HashMap<H256, (u128, u128, u64)>,
 }
 
 impl MarketPrices {
@@ -36,13 +37,13 @@ impl MarketPrices {
         }
     }
 
-    /// Insert price data for a market.
-    pub fn insert(&mut self, market_id: H256, start: f64, end: f64, last_update: u64) {
+    /// Insert price data for a market. Prices must be pre-scaled by 1e8.
+    pub fn insert(&mut self, market_id: H256, start: u128, end: u128, last_update: u64) {
         self.prices.insert(market_id, (start, end, last_update));
     }
 
-    /// Get start and end prices for a market.
-    pub fn get_prices(&self, market_id: &H256) -> Option<(f64, f64)> {
+    /// Get start and end prices for a market (u128, scaled by 1e8).
+    pub fn get_prices(&self, market_id: &H256) -> Option<(u128, u128)> {
         self.prices.get(market_id).map(|(s, e, _)| (*s, *e))
     }
 
@@ -160,18 +161,18 @@ impl TickResolver {
                     market_id,
                     asset_id: mc.asset_id.clone(),
                     outcome: MarketOutcome::Cancelled,
-                    start_price,
-                    end_price,
+                    start_price: start_price as f64 / 1e8,
+                    end_price: end_price as f64 / 1e8,
                     pct_change_bps: 0,
                     player_results: vec![],
                 });
                 continue;
             }
 
-            // Convert f64 prices to u128 scaled by 1e8 at the boundary (ONCE).
-            // All subsequent arithmetic is integer — deterministic across issuers.
-            let start_price_scaled = (start_price * 1e8) as u128;
-            let end_price_scaled = (end_price * 1e8) as u128;
+            // Prices are already u128 scaled by 1e8 — no conversion needed.
+            // All arithmetic is integer — deterministic across issuers.
+            let start_price_scaled = start_price;
+            let end_price_scaled = end_price;
 
             // Compute % change in basis points (integer)
             let pct_change_bps = compute_pct_change_bps(start_price_scaled, end_price_scaled);
@@ -194,9 +195,8 @@ impl TickResolver {
             // Decode bitmaps -> player sides for this market
             let mut side_inputs = Vec::new();
             for (player, bitmap) in &revealed_players {
-                // DEV-3: tick-major bitmap indexing
-                let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
-                let bit_index = tick_offset * market_configs.len() + market_idx;
+                // Flat indexing: one bitmap per tick, bit_index = market position in config
+                let bit_index = market_idx;
                 let bit = get_bitmap_bit(bitmap, bit_index);
                 // IS-6: if bitmap doesn't cover this market, skip the player
                 let side = match bit {
@@ -235,8 +235,8 @@ impl TickResolver {
                     market_idx,
                     asset = %mc.asset_id,
                     outcome = ?outcome,
-                    start_price = %format!("{:.8}", start_price),
-                    end_price = %format!("{:.8}", end_price),
+                    start_price = %format!("{:.8}", start_price as f64 / 1e8),
+                    end_price = %format!("{:.8}", end_price as f64 / 1e8),
                     pct_change_bps = pct_change_bps,
                     sides = %sides_str.join(", "),
                     "Market side assignment"
@@ -291,8 +291,8 @@ impl TickResolver {
                 market_id,
                 asset_id: mc.asset_id.clone(),
                 outcome,
-                start_price,
-                end_price,
+                start_price: start_price as f64 / 1e8,
+                end_price: end_price as f64 / 1e8,
                 pct_change_bps,
                 player_results,
             });

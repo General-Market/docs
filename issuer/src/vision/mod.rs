@@ -9,6 +9,7 @@ pub mod batch_config_orchestrator;
 pub mod bitmap_store;
 pub mod chain_listener;
 pub mod config;
+pub mod config_cache;
 pub mod deposit_watcher;
 pub mod engine;
 pub mod pending_ops;
