@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { VISION_API_URL } from '@/lib/config'
 
 export interface BatchInfo {
   id: number
@@ -19,7 +18,7 @@ export function useBatches() {
   return useQuery<BatchInfo[]>({
     queryKey: ['vision-batches'],
     queryFn: async () => {
-      const res = await fetch(`${VISION_API_URL}/vision/batches`)
+      const res = await fetch('/api/vision/batches')
       if (!res.ok) return []
       const data = await res.json()
       // API returns { batches: [...] } with snake_case fields
