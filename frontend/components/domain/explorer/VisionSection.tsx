@@ -15,7 +15,6 @@ import {
 } from 'recharts'
 import type { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
 import { ExplorerChartCard } from '@/components/domain/explorer'
-import { VISION_SOURCES } from '@/lib/vision/sources'
 
 interface SectionProps {
   snapshots: AggregatedSnapshot[]
@@ -34,10 +33,8 @@ interface BatchData {
   paused: boolean
 }
 
-// Build a quick lookup: source_id -> human-readable name
-const SOURCE_NAME_MAP = new Map(VISION_SOURCES.map((s) => [s.id, s.name]))
 function getSourceName(sourceId: string): string {
-  return SOURCE_NAME_MAP.get(sourceId) ?? sourceId.replace(/_/g, ' ')
+  return sourceId.replace(/_/g, ' ')
 }
 
 // Truncate long source labels for chart display

@@ -1,4 +1,11 @@
 import { ISSUER_VISION_URL } from '@/lib/config'
+import visionBatchesJson from '@/lib/contracts/vision-batches.json'
+
+// Reverse map: batchId → human-readable source key (e.g. 215 → "defi", 232 → "polymarket")
+const BATCH_ID_TO_SOURCE: Record<number, string> = {}
+for (const [key, val] of Object.entries(visionBatchesJson.batches)) {
+  BATCH_ID_TO_SOURCE[(val as any).batchId] = key
+}
 
 export async function GET() {
   try {
@@ -8,6 +15,12 @@ export async function GET() {
     })
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)
     const data = await res.json()
+
+    // Enrich: replace keccak256 hex source_id with human-readable name from vision-batches.json
+    for (const batch of (data.batches ?? [])) {
+      const name = BATCH_ID_TO_SOURCE[batch.id]
+      if (name) batch.source_id = name
+    }
 
     // Deduplicate: keep latest batch per source
     const latestPerSource = new Map<string, any>()
