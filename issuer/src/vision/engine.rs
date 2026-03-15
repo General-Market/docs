@@ -10,8 +10,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::traits::BLSSigner;
+use common::types::{BLSPublicKey, P2PMessage};
 use common::BLSSignature;
-use common::types::P2PMessage;
+use crate::consensus::KeyRegistry;
 use ethers::abi::{encode, Token};
 use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
@@ -919,23 +920,69 @@ async fn aggregate_and_store_batch_proofs(
 /// Verifies each proof's BLS signature against the expected message hash,
 /// checks balance matches our own recorded balance, and stores valid signatures
 /// in the collector.
+///
+/// SECURITY (HIGH-4): Each individual BLS signature from the peer is verified
+/// against the sender's registered public key before acceptance. This prevents
+/// a malicious issuer from injecting forged balance proofs that corrupt aggregation.
 async fn handle_incoming_balance_proofs(
     collector: &mut BalanceProofCollector,
     db_pool: &sqlx::PgPool,
     msg: IncomingBalanceProofsBatch,
     chain_id: u64,
     vision_address: Address,
+    key_registry: &dyn KeyRegistry,
 ) {
     let batch_id = msg.batch_id;
     let tick_id = msg.tick_id;
+    let from_peer = msg.from_peer;
     // Derive signer_index from peer identity (NOT self-reported)
-    let signer_index = crate::bootstrap::extract_issuer_id(&msg.from_peer) as u8;
+    let signer_index = crate::bootstrap::extract_issuer_id(&from_peer) as u8;
+
+    // Look up the sender's BLS public key. Reject the entire batch if not registered —
+    // accepting proofs from unregistered peers would allow arbitrary key injection.
+    let sender_pubkey: BLSPublicKey = match key_registry.get_public_key(&from_peer) {
+        Some(pk) => pk,
+        None => {
+            tracing::warn!(
+                batch_id, tick_id, signer_index,
+                "Incoming balance proofs from unregistered peer — rejecting batch"
+            );
+            return;
+        }
+    };
 
     let signer = Bn254BLSSigner::new();
 
     for (player, reported_balance, sig_bytes) in msg.proofs {
         // Recompute expected message hash
         let message_hash = compute_withdraw_hash(chain_id, vision_address, batch_id, player, reported_balance);
+
+        // Verify the BLS signature against the sender's registered public key.
+        // Reject immediately on malformed signature or verification failure.
+        let bls_sig = BLSSignature(sig_bytes.clone());
+        match signer.verify_message_hash(&sender_pubkey, &message_hash, &bls_sig) {
+            Ok(true) => {
+                tracing::trace!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    "BLS signature verified for balance proof"
+                );
+            }
+            Ok(false) => {
+                tracing::warn!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    "BLS signature invalid for balance proof — rejecting"
+                );
+                continue;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    error = %e,
+                    "BLS verification error for balance proof — rejecting"
+                );
+                continue;
+            }
+        }
 
         // Look up our own recorded balance for this (batch_id, player) to cross-check.
         // SECURITY: reject if we have no record OR if balances mismatch. Never accept
@@ -973,8 +1020,6 @@ async fn handle_incoming_balance_proofs(
                 }
             }
         }
-
-        let _ = (&signer, message_hash); // suppress unused — on-chain BLS verifies aggregated sig
 
         collector.add_signature(
             batch_id,
@@ -1026,6 +1071,9 @@ pub async fn run(
     broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
     incoming_proofs_rx: Option<tokio::sync::mpsc::Receiver<IncomingBalanceProofsBatch>>,
     incoming_gossip_rx: Option<tokio::sync::mpsc::Receiver<IncomingBitmapGossip>>,
+    // Key registry for verifying BLS signatures on incoming balance proofs (HIGH-4).
+    // Pass `None` to drop incoming proofs (not recommended for production).
+    key_registry: Option<Arc<dyn KeyRegistry>>,
 ) {
     let interval = tokio::time::Duration::from_millis(config.tick_poll_interval_ms);
     let reference_prices: ReferencePrices = Arc::new(RwLock::new(HashMap::new()));
@@ -1087,6 +1135,20 @@ pub async fn run(
         None
     };
 
+    // HIGH-5: Pinned price snapshots for consensus-retry stability.
+    //
+    // When tick resolution fails and the engine retries on the next poll,
+    // freshly-fetched prices may have shifted — causing issuers to compute
+    // different outcomes and never converge on consensus.
+    //
+    // Fix: cache the first successful MarketPrices build for each (batch_id, tick_id)
+    // and reuse it on all retries. After MAX_TICK_RETRIES failures, skip the tick
+    // with a warning so we don't get permanently stuck.
+    //
+    // Key: (batch_id, tick_id) → (pinned MarketPrices, retry_count)
+    const MAX_TICK_RETRIES: u8 = 3;
+    let mut pinned_prices: HashMap<(u64, u64), (MarketPrices, u8)> = HashMap::new();
+
     tracing::info!(
         poll_interval_ms = config.tick_poll_interval_ms,
         reveal_window_secs = config.reveal_window_secs,
@@ -1108,6 +1170,7 @@ pub async fn run(
             .unwrap_or_else(|_| Address::zero());
         let agg_num_issuers = config.num_issuers;
         let agg_shutdown = shutdown.clone();
+        let agg_key_registry = key_registry.clone();
 
         tokio::spawn(async move {
             let mut collector = BalanceProofCollector::new();
@@ -1120,13 +1183,20 @@ pub async fn run(
 
                 tokio::select! {
                     Some(incoming) = rx.recv() => {
-                        handle_incoming_balance_proofs(
-                            &mut collector,
-                            &pool,
-                            incoming,
-                            agg_chain_id,
-                            agg_vision_address,
-                        ).await;
+                        if let Some(ref kr) = agg_key_registry {
+                            handle_incoming_balance_proofs(
+                                &mut collector,
+                                &pool,
+                                incoming,
+                                agg_chain_id,
+                                agg_vision_address,
+                                kr.as_ref(),
+                            ).await;
+                        } else {
+                            tracing::warn!(
+                                "Received balance proofs but no key registry configured — dropping (HIGH-4)"
+                            );
+                        }
                     }
                     _ = check_interval.tick() => {
                         // Check for expired batch windows and aggregate
@@ -1172,6 +1242,11 @@ pub async fn run(
         tokio::spawn(async move {
             // Track which (batch_id, player, bitmap_hash) triplets we have already
             // requested from a peer, to avoid duplicate BitmapRequests (DoS protection).
+            //
+            // SECURITY (HIGH-3): Capped at MAX_REQUESTED_ENTRIES to prevent memory DoS.
+            // A malicious peer flooding unique gossip keys cannot exhaust heap — once the
+            // cap is reached, new entries are silently dropped (we'll request next tick anyway).
+            const MAX_REQUESTED_ENTRIES: usize = 10_000;
             let mut requested: std::collections::HashSet<(u64, Address, H256)> =
                 std::collections::HashSet::new();
 
@@ -1220,6 +1295,16 @@ pub async fn run(
                                 player = %player,
                                 ?bitmap_hash,
                                 "BitmapGossip: already requested bitmap, ignoring duplicate gossip"
+                            );
+                            continue;
+                        }
+                        // HIGH-3: reject new entries beyond cap to prevent memory DoS.
+                        if requested.len() >= MAX_REQUESTED_ENTRIES {
+                            tracing::warn!(
+                                batch_id,
+                                player = %player,
+                                cap = MAX_REQUESTED_ENTRIES,
+                                "BitmapGossip: requested-set cap reached — dropping entry"
                             );
                             continue;
                         }
@@ -1542,22 +1627,55 @@ pub async fn run(
                         "Processing due tick"
                     );
 
-                    // Get snapshot from cache (already pre-fetched)
-                    let snapshot_data = match snapshot_cache.get(&item.source_id) {
-                        Some(Ok(data)) => data.clone(),
-                        Some(Err(_)) | None => {
-                            continue; // Already logged during pre-fetch
+                    // HIGH-5: Pin price snapshot on first attempt; reuse on retries.
+                    //
+                    // If this (batch_id, tick_id) pair is already tracked in pinned_prices,
+                    // reuse the cached MarketPrices instead of rebuilding from fresh data.
+                    // This ensures all retry attempts resolve with the same price snapshot,
+                    // preventing consensus divergence caused by prices shifting between attempts.
+                    //
+                    // Skip the tick after MAX_TICK_RETRIES consecutive failures so we never
+                    // get permanently stuck waiting for consensus that will never arrive.
+                    let pin_key = (batch_id, tick_id);
+                    let prices = if let Some((pinned, retry_count)) = pinned_prices.get_mut(&pin_key) {
+                        *retry_count += 1;
+                        if *retry_count > MAX_TICK_RETRIES {
+                            tracing::warn!(
+                                batch_id,
+                                tick_id,
+                                retries = *retry_count,
+                                "Tick resolution exhausted MAX_TICK_RETRIES — skipping tick"
+                            );
+                            pinned_prices.remove(&pin_key);
+                            scheduler.mark_resolved(batch_id, tick_id).await;
+                            continue;
                         }
+                        tracing::info!(
+                            batch_id,
+                            tick_id,
+                            retry = *retry_count,
+                            "Retrying tick with pinned price snapshot"
+                        );
+                        pinned.clone()
+                    } else {
+                        // First attempt: build from fresh snapshot and pin it.
+                        let snapshot_data = match snapshot_cache.get(&item.source_id) {
+                            Some(Ok(data)) => data.clone(),
+                            Some(Err(_)) | None => {
+                                continue; // Already logged during pre-fetch
+                            }
+                        };
+                        let built = build_market_prices(
+                            &snapshot_data,
+                            &market_ids,
+                            &reference_prices,
+                            now,
+                            batch.tick_duration,
+                        )
+                        .await;
+                        pinned_prices.insert(pin_key, (built.clone(), 0));
+                        built
                     };
-
-                    let prices = build_market_prices(
-                        &snapshot_data,
-                        &market_ids,
-                        &reference_prices,
-                        now,
-                        batch.tick_duration,
-                    )
-                    .await;
 
                     // First-tick skip: establish reference prices without resolving bets.
                     // tick_id == 0 means no tick has been resolved yet for this batch.
@@ -1766,6 +1884,9 @@ pub async fn run(
                                         .await;
                                     }
 
+                                    // HIGH-5: Tick resolved successfully — clear the pinned price entry.
+                                    pinned_prices.remove(&(batch_id, tick_id));
+
                                     // Update reference prices for next tick
                                     update_reference_prices(
                                         &reference_prices,
@@ -1819,9 +1940,10 @@ pub async fn run(
                                         batch_id,
                                         tick_id,
                                         error = %e,
-                                        "Tick resolution failed"
+                                        "Tick resolution failed — will retry with pinned prices (HIGH-5)"
                                     );
-                                    // Don't mark resolved -- retry on next poll
+                                    // Do NOT clear pinned_prices here — keep the snapshot for retries.
+                                    // Do NOT mark resolved — retry on next poll.
                                 }
                             }
                 }
@@ -1882,7 +2004,7 @@ mod tests {
 
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone, None, None, None).await;
+            run(scheduler, resolver, config, shutdown_clone, None, None, None, None, None).await;
         });
 
         // Let it run briefly, then signal shutdown
@@ -1927,7 +2049,7 @@ mod tests {
         let sched_check = scheduler.clone();
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone, None, None, None).await;
+            run(scheduler, resolver, config, shutdown_clone, None, None, None, None, None).await;
         });
 
         // Wait for the engine to process at least one tick

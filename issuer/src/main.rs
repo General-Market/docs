@@ -4775,6 +4775,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     None, // broadcast_tx: P2P broadcast channel (not yet wired)
                     None, // incoming_proofs_rx: incoming balance proofs channel (not yet wired)
                     None, // incoming_gossip_rx: bitmap gossip channel (not yet wired)
+                    None, // key_registry: BLS verification for incoming balance proofs (HIGH-4, wire when P2P is active)
                 ).await;
             });
 

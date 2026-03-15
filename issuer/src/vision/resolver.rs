@@ -26,6 +26,7 @@ use super::types::*;
 ///
 /// Maps market_id to (start_price, end_price, last_update_timestamp).
 /// Prices are stored as u128 scaled by 1e8 (fixed-point, 8 decimal places).
+#[derive(Clone)]
 pub struct MarketPrices {
     prices: HashMap<H256, (u128, u128, u64)>,
 }
