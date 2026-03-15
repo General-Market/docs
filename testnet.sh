@@ -507,7 +507,8 @@ cmd_deploy() {
     echo -e "  ${GREEN}Vision deployed${NC}"
 
     # Add Vision address to active-deployment.json (Vision is deployed separately)
-    VISION_ADDR_MERGE=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    # Read from vision-deployment.json (always written by DeployVision), NOT vision-batches.json (may fail)
+    VISION_ADDR_MERGE=$(python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['contracts']['Vision'])" 2>/dev/null || echo "")
     if [ -n "$VISION_ADDR_MERGE" ]; then
         python3 -c "
 import json
