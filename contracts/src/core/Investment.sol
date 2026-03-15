@@ -94,7 +94,13 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         if (!_itpExists[itpId]) {
             revert ErrorsLib.E006_ITPNotFound(itpId);
         }
+        // Clear old reverse mapping on vault change
+        address oldVault = itpVaults[itpId];
+        if (oldVault != address(0)) {
+            delete _vault2Id[oldVault];
+        }
         itpVaults[itpId] = vault;
+        _vault2Id[vault] = itpId;
     }
 
     /// @notice Set the FeeRegistry address (admin only)
@@ -891,39 +897,27 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         uint256 totalSupply,
         uint256 price
     ) {
-        // Find ITP ID by vault address
-        for (uint256 i = 0; i < _allItpIds.length;) {
-            bytes32 itpId = _allItpIds[i];
-            if (itpVaults[itpId] == itpAddress) {
-                TypesLib.ITPCore storage itp = _itps[itpId];
-                name = _bytes32ToString(itp.name);
-                symbol = _bytes32ToString(itp.symbol);
-                totalSupply = itp.totalSupply;
-                price = _getCurrentPrice(itpId);
-                return (name, symbol, totalSupply, price);
-            }
-            unchecked {
-                ++i;
-            }
+        bytes32 itpId = _vault2Id[itpAddress];
+        if (itpId == bytes32(0)) {
+            return ("", "", 0, 0);
         }
-        // Return empty if not found
-        return ("", "", 0, 0);
+        TypesLib.ITPCore storage itp = _itps[itpId];
+        name = _bytes32ToString(itp.name);
+        symbol = _bytes32ToString(itp.symbol);
+        totalSupply = itp.totalSupply;
+        price = _getCurrentPrice(itpId);
+        return (name, symbol, totalSupply, price);
     }
 
     /// @notice Get ITP price for frontend
     /// @param itpAddress The ITP vault address
     /// @return price Current price (NAV)
     function getItpPrice(address itpAddress) external view returns (uint256 price) {
-        for (uint256 i = 0; i < _allItpIds.length;) {
-            bytes32 itpId = _allItpIds[i];
-            if (itpVaults[itpId] == itpAddress) {
-                return _getCurrentPrice(itpId);
-            }
-            unchecked {
-                ++i;
-            }
+        bytes32 itpId = _vault2Id[itpAddress];
+        if (itpId == bytes32(0)) {
+            return 0;
         }
-        return 0;
+        return _getCurrentPrice(itpId);
     }
 
     /// @inheritdoc IInvestment

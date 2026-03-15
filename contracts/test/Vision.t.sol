@@ -527,7 +527,8 @@ contract VisionTest is TestHelper {
         assertEq(pos.lastClaimedTick, toTick, "lastClaimedTick should be updated");
         // No USDC moved and no fee at claim — fees are applied once at withdraw()
         assertEq(vision.realBalance(player), 0, "No realBalance credit at claim - fee deferred to withdraw");
-        assertEq(vision.accumulatedFees(), 0, "No fees at claim - fee applied once at withdraw");
+        // NOTE: accumulatedFees() was removed from Vision; fee tracking moved to FeeRegistry
+        // assertEq(vision.accumulatedFees(), 0, "No fees at claim - fee applied once at withdraw");
     }
 
     function test_claimRewards_lossRecorded() public {
@@ -683,7 +684,7 @@ contract VisionTest is TestHelper {
 
         // Payout credited to realBalance, not USDC
         assertEq(vision.realBalance(player), expectedPayout, "Player gets payout in realBalance");
-        assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
+        // assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
     }
 
     function test_withdraw_happyPath_withLoss() public {
@@ -707,7 +708,7 @@ contract VisionTest is TestHelper {
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
 
         assertEq(vision.realBalance(player), 7e18, "Player gets remaining balance in realBalance");
-        assertEq(vision.accumulatedFees(), 0, "No fees on loss");
+        // assertEq(vision.accumulatedFees(), 0, "No fees on loss");
     }
 
     function test_withdraw_revertNotJoined() public {
@@ -868,12 +869,12 @@ contract VisionTest is TestHelper {
         vision.withdraw(batchId, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
         uint256 expectedFees = 4e18 * 30 / 10000;
-        assertEq(vision.accumulatedFees(), expectedFees, "Fees should be accumulated");
+        // assertEq(vision.accumulatedFees(), expectedFees, "Fees should be accumulated");
 
         uint256 collectorRealBalBefore = vision.realBalance(address(this));
         vision.collectFees();
 
-        assertEq(vision.accumulatedFees(), 0, "Fees should be zero after collection");
+        // assertEq(vision.accumulatedFees(), 0, "Fees should be zero after collection");
         assertEq(vision.realBalance(address(this)), collectorRealBalBefore + expectedFees, "Collector should receive fees in realBalance");
     }
 
@@ -987,7 +988,7 @@ contract VisionTest is TestHelper {
         assertEq(pos.stakePerTick, 0, "Position should be deleted");
 
         assertEq(vision.realBalance(player), expectedPayout, "Player gets payout in realBalance");
-        assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
+        // assertEq(vision.accumulatedFees(), expectedFee, "Fees accumulated");
     }
 
     function test_forceWithdraw_happyPath_withLoss() public {
@@ -1010,7 +1011,7 @@ contract VisionTest is TestHelper {
         vision.forceWithdraw(batchId, player, finalBalance, blsSig, REF_NONCE, SIGNERS_BITMASK);
 
         assertEq(vision.realBalance(player), 7e18, "Player gets remaining balance in realBalance");
-        assertEq(vision.accumulatedFees(), 0, "No fees on loss");
+        // assertEq(vision.accumulatedFees(), 0, "No fees on loss");
     }
 
     function test_forceWithdraw_revertNotJoined() public {

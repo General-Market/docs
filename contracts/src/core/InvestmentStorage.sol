@@ -65,6 +65,9 @@ abstract contract InvestmentStorage {
     /// @notice ITP vault addresses by ITP ID (for minting/burning tokens)
     mapping(bytes32 => address) public itpVaults;
 
+    /// @notice Reverse mapping from vault address to ITP ID (O(1) lookup)
+    mapping(address => bytes32) internal _vault2Id;
+
     /// @notice Reference to FeeRegistry for fee tracking and distribution
     IFeeRegistry public feeRegistry;
 
@@ -164,16 +167,16 @@ abstract contract InvestmentStorage {
     ///        orders(0), nextOrderId(1), governance(2), usdc(3), assetPrices(4),
     ///        _itps(5), _itpAssets(6), _itpWeights(7), _itpInventory(8),
     ///        _itpExists(9), _itpCount(10), _allItpIds(11), cycleProcessed(12),
-    ///        issuerRegistry(13), itpVaults(14), feeRegistry(15),
-    ///        _pendingRebalances(16), _registeredAssetCount(17),
-    ///        _userShares(18), lastProcessedCycleNumber(19),
-    ///        assetPriceTimestamps(20), minBuyAmount(21), pendingOrderCount(22),
-    ///        queueWarningThreshold(23), queuePauseThreshold(24),
-    ///        assetAddressToIndex(25), assetIndexRegistered(26),
-    ///        stalenessLimits(27), venuePools(28), _itpNavs(29),
-    ///        _bridgeNonceToItpId(30), authorizedBridge(31),
-    ///        failedFillEscrow(32), batchedTimestamp(33) = 34 slots used
+    ///        issuerRegistry(13), itpVaults(14), _vault2Id(15), feeRegistry(16),
+    ///        _pendingRebalances(17), _registeredAssetCount(18),
+    ///        _userShares(19), lastProcessedCycleNumber(20),
+    ///        assetPriceTimestamps(21), minBuyAmount(22), pendingOrderCount(23),
+    ///        queueWarningThreshold(24), queuePauseThreshold(25),
+    ///        assetAddressToIndex(26), assetIndexRegistered(27),
+    ///        stalenessLimits(28), venuePools(29), _itpNavs(30),
+    ///        _bridgeNonceToItpId(31), authorizedBridge(32),
+    ///        failedFillEscrow(33), batchedTimestamp(34) = 35 slots used
     ///      Target: 50 total slots for upgradeability buffer
-    ///      Gap: 50 - 34 = 16 slots
-    uint256[16] private __gap;
+    ///      Gap: 50 - 35 = 15 slots
+    uint256[15] private __gap;
 }
