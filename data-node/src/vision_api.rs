@@ -17,6 +17,8 @@ use crate::api::AppState;
 
 // ---- Response types ----
 
+const PRICE_SCALE: u64 = 100_000_000; // 1e8
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MarketSnapshot {
@@ -25,6 +27,11 @@ pub struct MarketSnapshot {
     pub symbol: String,
     pub name: String,
     pub value: Decimal,
+    /// Integer-scaled price: round(value * 1e8), serialized as string to avoid u128 JSON loss.
+    /// Computed once at the data-node — all issuers parse the same string to identical u128.
+    pub value_scaled: String,
+    /// Scale factor applied to produce value_scaled. Always 100_000_000 (1e8).
+    pub price_scale: u64,
     pub change_pct: Option<Decimal>,
     pub volume_24h: Option<Decimal>,
     pub market_cap: Option<Decimal>,
@@ -158,12 +165,18 @@ pub async fn snapshot(
         .into_iter()
         .map(
             |(asset_id, source, symbol, name, value, change_pct, volume_24h, market_cap, category, fetched_at)| {
+                // Convert Decimal → f64 → integer-scaled u128, rounding once here so all
+                // issuers parse the same string to the same u128 (no per-hardware f64 drift).
+                let value_f64: f64 = value.to_string().parse().unwrap_or(0.0);
+                let value_scaled: u128 = (value_f64 * PRICE_SCALE as f64).round() as u128;
                 MarketSnapshot {
                     asset_id,
                     source,
                     symbol,
                     name,
                     value,
+                    value_scaled: value_scaled.to_string(),
+                    price_scale: PRICE_SCALE,
                     change_pct,
                     volume_24h,
                     market_cap,
