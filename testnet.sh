@@ -393,6 +393,16 @@ cmd_deploy() {
         echo -e "  ${GREEN}Merged L3 + Sonic deployment${NC}"
     fi
 
+    # Reset Vision DB state (stale batch IDs from previous deployment)
+    echo -e "${BLUE}[3c/14] Resetting Vision database state...${NC}"
+    if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
+        vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements CASCADE;'" \
+            && echo -e "  ${GREEN}Vision tables truncated${NC}" \
+            || echo -e "  ${YELLOW}Vision table truncate failed — tables may not exist yet${NC}"
+    else
+        echo -e "  ${YELLOW}Vision tables don't exist yet — skip (data-node will create on first start)${NC}"
+    fi
+
     # Fund Anvil accounts 1-4 (oracles + AP) with GM for gas
     echo -e "${BLUE}[4/14] Funding oracle + AP accounts with gas...${NC}"
     ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
@@ -413,6 +423,31 @@ cmd_deploy() {
             "$addr" --value 0.5ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 4 accounts with 0.5 S each on Sonic${NC}"
+
+    # Fund swarm bot wallets with gas (if addresses.json exists)
+    if [ -f "docker/testnet/vision-swarm/addresses.json" ]; then
+        echo -e "  Funding swarm bot wallets with gas..."
+        while IFS= read -r addr; do
+            addr=$(echo "$addr" | tr -d '", ')
+            [[ -z "$addr" || "$addr" == "[" || "$addr" == "]" ]] && continue
+            [[ "$addr" =~ ^0x[0-9a-fA-F]{40}$ ]] || continue
+            cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                "$addr" --value 1ether > /dev/null 2>&1 || true
+        done < "docker/testnet/vision-swarm/addresses.json"
+        echo -e "  ${GREEN}Funded swarm bot wallets with 1 GM each${NC}"
+    fi
+
+    # Verify funded accounts have non-zero balances
+    echo -e "  Verifying funded balances..."
+    local FUND_OK=true
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
+        local BAL=$(cast balance --rpc-url "$RPC_URL" "$addr" 2>/dev/null || echo "0")
+        if [ "$BAL" = "0" ]; then
+            echo -e "  ${RED}WARNING: $addr has 0 balance after funding${NC}"
+            FUND_OK=false
+        fi
+    done
+    [ "$FUND_OK" = true ] && echo -e "  ${GREEN}All accounts funded${NC}" || echo -e "  ${YELLOW}Some funding may have failed — check above${NC}"
 
     # Deploy Morpho (no timelock wait)
     echo -e "${BLUE}[5/14] Deploying Morpho (forked, no timelock)...${NC}"
