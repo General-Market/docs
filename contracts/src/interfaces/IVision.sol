@@ -133,6 +133,11 @@ interface IVision {
     event BotDeregistered(address indexed bot);
     event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
 
+    /// @notice Emitted when collectFees() is called.
+    /// @param realFees    Fees from real-funded positions (credited to realBalance)
+    /// @param virtualFees Fees from virtual-funded positions (credited to virtualBalance)
+    event FeeCollected(uint256 realFees, uint256 virtualFees);
+
     // ============ DUAL-BALANCE EVENTS ============
 
     /// @notice Emitted when virtual balance is credited via cross-chain deposit
@@ -294,6 +299,13 @@ interface IVision {
     // ============ FEE MANAGEMENT ============
 
     function collectFees() external;
+
+    /// @notice Pending fees from real-funded positions (backed by L3 USDC in contract)
+    function accumulatedRealFees() external view returns (uint256);
+
+    /// @notice Pending fees from virtual-funded positions (backed by Settlement custody)
+    function accumulatedVirtualFees() external view returns (uint256);
+
     function updateFeeCollector(
         address newCollector,
         bytes calldata blsSignature,

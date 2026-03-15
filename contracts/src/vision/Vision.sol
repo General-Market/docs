@@ -44,7 +44,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public nextBatchId;
     mapping(uint256 => Batch) internal _batches;
     mapping(uint256 => mapping(address => PlayerPosition)) internal _positions;
-    uint256 public accumulatedFees;
+    /// @notice Fees from positions funded by real L3 USDC (backed by actual USDC in contract)
+    uint256 public accumulatedRealFees;
+    /// @notice Fees from positions funded by virtual balance (backed by Settlement custody, not L3 USDC)
+    uint256 public accumulatedVirtualFees;
     address public feeCollector;
 
     /// @notice sourceId => batchId (F5/F13 idempotency + reverse lookup)
@@ -88,9 +91,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     }
     mapping(uint256 => WithdrawRequest) public withdrawRequests;
 
-    // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedFees
+    // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedRealFees
     // INVARIANT: totalRealBalance == sum(realBalance[all users])
     // INVARIANT: totalVirtualBalance == sum(virtualBalance[all users])
+    // INVARIANT: accumulatedVirtualFees NEVER inflates totalRealBalance or USDC holdings
 
     // ============ CONSTRUCTOR ============
 
@@ -495,7 +499,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // (a redistribution of already-locked funds between winners and losers), backed
         // by BLS-signed issuer consensus. No USDC is minted or moved; the accounting
         // invariant USDC.balanceOf(this) >= totalRealBalance + active_batch_deposits +
-        // accumulatedFees holds throughout.
+        // accumulatedRealFees holds throughout.
         if (newBalance > oldBalance) {
             emit RewardsClaimed(batchId, msg.sender, newBalance - oldBalance);
         }
@@ -533,10 +537,17 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
-        accumulatedFees += fee;
-
         // SOL-2: Read isVirtual BEFORE delete
         bool isVirtual = position.isVirtual;
+
+        // HIGH-3 FIX: Route fees to the same bucket as the position's funding source.
+        // Virtual positions never deposited real USDC — crediting their fees to
+        // accumulatedRealFees would inflate totalRealBalance beyond actual USDC holdings.
+        if (isVirtual) {
+            accumulatedVirtualFees += fee;
+        } else {
+            accumulatedRealFees += fee;
+        }
 
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][msg.sender];
@@ -610,15 +621,28 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function collectFees() external nonReentrant {
         if (msg.sender != feeCollector) revert Unauthorized();
 
-        uint256 fees = accumulatedFees;
-        accumulatedFees = 0;
+        uint256 realFees = accumulatedRealFees;
+        uint256 virtualFees = accumulatedVirtualFees;
+        accumulatedRealFees = 0;
+        accumulatedVirtualFees = 0;
 
-        // Fees credited to feeCollector's realBalance (not transferred out).
-        // feeCollector can withdrawBalance() or withdrawToSettlement() to extract.
-        // This fixes the solvency issue where collectFees tried to transfer USDC
-        // that didn't exist when all deposits were Settlement-bridged.
-        realBalance[feeCollector] += fees;
-        totalRealBalance += fees;
+        // Real fees → realBalance: these are backed by actual L3 USDC in the contract.
+        // feeCollector can withdrawBalance() to extract as USDC.
+        if (realFees > 0) {
+            realBalance[feeCollector] += realFees;
+            totalRealBalance += realFees;
+        }
+
+        // Virtual fees → virtualBalance: backed by Settlement custody, NOT L3 USDC.
+        // Crediting them to realBalance would inflate totalRealBalance beyond actual
+        // USDC holdings — the solvency invariant violation this fix corrects.
+        // feeCollector can withdrawToSettlement() to extract via the bridge.
+        if (virtualFees > 0) {
+            virtualBalance[feeCollector] += virtualFees;
+            totalVirtualBalance += virtualFees;
+        }
+
+        emit FeeCollected(realFees, virtualFees);
     }
 
     /// @inheritdoc IVision
@@ -713,10 +737,15 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
-        accumulatedFees += fee;
-
         // SOL-2: Read isVirtual BEFORE delete
         bool isVirtual = position.isVirtual;
+
+        // HIGH-3 FIX: Route fees to the same bucket as the position's funding source.
+        if (isVirtual) {
+            accumulatedVirtualFees += fee;
+        } else {
+            accumulatedRealFees += fee;
+        }
 
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][player];
