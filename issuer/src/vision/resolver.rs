@@ -4,14 +4,13 @@
 //!
 //! 1. Filter active players (balance > 0)
 //! 2. Check bitmap reveals (non-revealed players are voided, stake refunded)
-//! 3. Compute multipliers (early + commitment)
-//! 4. For each market:
+//! 3. For each market:
 //!    a. Fetch start/end prices, check staleness
 //!    b. Compute % change and determine outcome
-//!    c. Decode bitmaps to player sides
+//!    c. Decode bitmaps to player sides (flat stakePerTick split evenly across markets)
 //!    d. Run parimutuel side matching
-//! 5. Aggregate per-player balance changes
-//! 6. Return TickResult
+//! 4. Aggregate per-player balance changes
+//! 5. Return TickResult
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -20,7 +19,6 @@ use ethers::types::{Address, H256, U256};
 
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
-use super::multiplier;
 use super::side_matching::{self, SideMatchInput};
 use super::types::*;
 
@@ -93,9 +91,6 @@ impl TickResolver {
         now: u64,
         market_configs: &[MarketConfig],
     ) -> Result<TickResult, ResolverError> {
-        let tick_duration = batch.tick_duration;
-        let tick_start_time = (batch.created_at_tick + tick_id) * tick_duration;
-
         // 1. Filter active players (balance > 0)
         let active: Vec<&PlayerPosition> = players.iter().filter(|p| !p.balance.is_zero()).collect();
 
@@ -104,7 +99,7 @@ impl TickResolver {
         }
 
         // 2. Check bitmap reveals
-        let bitmaps = self.bitmap_store.get_all_for_batch(batch.id).await;
+        let bitmaps = self.bitmap_store.get_all_active_for_batch(batch.id).await;
         let mut revealed_players: Vec<(&PlayerPosition, Vec<u8>)> = Vec::new();
         let mut voided_players: Vec<Address> = Vec::new();
 
@@ -117,33 +112,9 @@ impl TickResolver {
             }
         }
 
-        // 3. Compute multipliers for revealed players
-        // RC-14: Derive num_committed_ticks from balance coverage, not bitmap length.
-        // This prevents gaming via zero-padded bitmaps: a player who pads their bitmap
-        // with zeros gets no multiplier benefit -- only actual financial commitment counts.
-        let revealed_positions: Vec<PlayerPosition> =
-            revealed_players.iter().map(|(p, _bitmap)| {
-                let mut pos = (*p).clone();
-                if !pos.stake_per_tick.is_zero() {
-                    pos.num_committed_ticks = (pos.balance / pos.stake_per_tick).as_u64();
-                } else {
-                    pos.num_committed_ticks = 0;
-                }
-                pos
-            }).collect();
-        let multipliers = multiplier::compute_all_multipliers(
-            &revealed_positions,
-            tick_id,
-            tick_duration,
-            tick_start_time,
-            &self.config,
-        );
-
-        // Build a lookup: player -> multiplier
-        let mult_map: HashMap<Address, &PlayerMultiplier> =
-            multipliers.iter().map(|m| (m.player, m)).collect();
-
-        // 4. Resolve each market using market_configs
+        // 3. Resolve each market using market_configs
+        // Flat stake weighting: each player's stake_per_tick is split evenly across markets.
+        // Remainder distributed one-unit-extra to the first N markets where N = remainder.
         let mut market_results = Vec::new();
         let mut player_deltas: HashMap<Address, i128> = HashMap::new();
         let num_markets = U256::from(market_configs.len() as u64);
@@ -223,25 +194,35 @@ impl TickResolver {
             // Decode bitmaps -> player sides for this market
             let mut side_inputs = Vec::new();
             for (player, bitmap) in &revealed_players {
-                if let Some(mult) = mult_map.get(&player.player) {
-                    // DEV-3: tick-major bitmap indexing
-                    let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
-                    let bit_index = tick_offset * market_configs.len() + market_idx;
-                    let bit = get_bitmap_bit(bitmap, bit_index);
-                    // IS-6: if bitmap doesn't cover this market, skip the player
-                    let side = match bit {
-                        Some(true) => Side::Up,
-                        Some(false) => Side::Down,
-                        None => continue, // player didn't cover this market
-                    };
-                    // DEV-1: split effective_stake equally across all markets
-                    let per_market_stake = mult.effective_stake / num_markets;
-                    side_inputs.push(SideMatchInput {
-                        player: player.player,
-                        side,
-                        effective_stake: per_market_stake,
-                    });
-                }
+                // DEV-3: tick-major bitmap indexing
+                let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
+                let bit_index = tick_offset * market_configs.len() + market_idx;
+                let bit = get_bitmap_bit(bitmap, bit_index);
+                // IS-6: if bitmap doesn't cover this market, skip the player
+                let side = match bit {
+                    Some(true) => Side::Up,
+                    Some(false) => Side::Down,
+                    None => continue, // player didn't cover this market
+                };
+                // Flat stake: split stake_per_tick evenly across all markets.
+                // Remainder (stake_per_tick % num_markets) is distributed one unit extra
+                // to the first N markets where N = remainder.
+                let per_market_stake = if num_markets.is_zero() {
+                    U256::zero()
+                } else {
+                    let base = player.stake_per_tick / num_markets;
+                    let remainder = player.stake_per_tick % num_markets;
+                    if U256::from(market_idx as u64) < remainder {
+                        base + U256::one()
+                    } else {
+                        base
+                    }
+                };
+                side_inputs.push(SideMatchInput {
+                    player: player.player,
+                    side,
+                    effective_stake: per_market_stake,
+                });
             }
 
             // Debug: log per-market side assignments for non-flat outcomes
@@ -739,7 +720,7 @@ mod tests {
         address: Address,
         stake_per_tick: u128,
         balance: u128,
-        join_timestamp: u64,
+        _join_timestamp: u64,
     ) -> PlayerPosition {
         PlayerPosition {
             player: address,
@@ -748,18 +729,17 @@ mod tests {
             start_tick: 0,
             balance: U256::from(balance),
             initial_deposit: U256::from(balance),
-            join_timestamp,
-            num_committed_ticks: 1,
         }
     }
 
-    /// Store a bitmap for a player, computing the hash automatically.
+    /// Store a bitmap for a player in the active slot (pending → flip → active).
     async fn store_bitmap(store: &BitmapStore, player: Address, batch_id: u64, bitmap: Vec<u8>) {
         let hash = H256::from(keccak256(&bitmap));
         store
-            .store(player, batch_id, bitmap, hash)
+            .store_pending(player, batch_id, bitmap, hash, H256::zero(), 0)
             .await
             .expect("bitmap store should succeed");
+        store.flip(batch_id).await;
     }
 
     // -------------------------------------------------------------------------

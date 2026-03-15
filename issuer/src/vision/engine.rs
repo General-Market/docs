@@ -1494,8 +1494,6 @@ mod tests {
             start_tick: 0,
             balance: U256::from(10000),
             initial_deposit: U256::from(10000),
-            join_timestamp: 1000,
-            num_committed_ticks: 1,
         }
     }
 

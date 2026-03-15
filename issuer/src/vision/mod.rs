@@ -11,7 +11,6 @@ pub mod chain_listener;
 pub mod config;
 pub mod deposit_watcher;
 pub mod engine;
-pub mod multiplier;
 pub mod pending_ops;
 pub mod resolver;
 pub mod side_matching;
