@@ -6051,15 +6051,15 @@ async fn build_system_snapshot(state: &AppState) -> SystemSnapshot {
 
     let is_healthy = active_issuers > 0 && last_cycle_number > 0;
 
-    // Fetch vault asset balances from settlement chain (with 15s timeout)
+    // Fetch vault asset balances from settlement chain (with 60s timeout)
     let vault_result = tokio::time::timeout(
-        std::time::Duration::from_secs(15),
+        std::time::Duration::from_secs(60),
         build_vault_snapshot(state, &state.settlement_provider),
     ).await;
     let (vault_assets, vault_usd_total) = match vault_result {
         Ok((assets, total)) => (assets, total),
         Err(_) => {
-            tracing::warn!("system_snapshot: vault snapshot timed out after 15s");
+            tracing::warn!("system_snapshot: vault snapshot timed out after 60s");
             (vec![], 0.0)
         }
     };
