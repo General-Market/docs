@@ -153,20 +153,6 @@ pub fn verify_single_source(
     Ok(())
 }
 
-/// Check if a batch source is currently in its lock period.
-/// During the lock period (last portion of tick), config updates should be deferred.
-fn is_in_lock_period(tick_duration_secs: u64, lock_offset_secs: u64) -> bool {
-    if tick_duration_secs == 0 {
-        return false;
-    }
-    let now_epoch = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let elapsed = now_epoch % tick_duration_secs;
-    let remaining = tick_duration_secs - elapsed;
-    remaining <= lock_offset_secs
-}
 
 pub struct BatchConfigOrchestrator {
     data_node_url: String,
@@ -208,6 +194,8 @@ impl BatchConfigOrchestrator {
             //   2. Leader broadcasts to followers
             //   3. Followers replicate to own DN via POST /batches/replicate
 
+            // Sleep min(shortest_tick_duration, 120) seconds
+            // Will be refined when scheduler exposes min tick
             tokio::time::sleep(std::time::Duration::from_secs(ORCHESTRATOR_INTERVAL_SECS)).await;
         }
     }
@@ -218,28 +206,14 @@ impl BatchConfigOrchestrator {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let batches = fetch_recommended(&self.data_node_url).await?;
 
-        // Filter to configs that actually changed AND are not in lock period
+        // Filter to configs that actually changed
         let changed: Vec<&RecommendedBatch> = batches
             .iter()
             .filter(|b| {
-                // Skip configs that haven't changed
-                let is_changed = self
-                    .last_signed_hashes
+                self.last_signed_hashes
                     .get(&b.source_id)
                     .map(|h| h != &b.config_hash)
-                    .unwrap_or(true);
-                if !is_changed {
-                    return false;
-                }
-                // Don't push config updates during lock period
-                if is_in_lock_period(b.tick_duration_secs, b.lock_offset_secs) {
-                    info!(
-                        source = %b.source_id,
-                        "Lock period — deferring config proposal"
-                    );
-                    return false;
-                }
-                true
+                    .unwrap_or(true)
             })
             .collect();
 
@@ -308,7 +282,6 @@ impl BatchConfigOrchestrator {
     }
 
     /// After successful consensus, publish signed config to own data-node.
-    /// Skips publishing if the source is currently in its lock period.
     pub async fn publish_to_data_node(
         &self,
         config: &RecommendedBatch,
@@ -316,15 +289,6 @@ impl BatchConfigOrchestrator {
         signers_bitmask: u64,
         reference_nonce: u64,
     ) -> Result<(), reqwest::Error> {
-        // Don't push config updates during lock period
-        if is_in_lock_period(config.tick_duration_secs, config.lock_offset_secs) {
-            info!(
-                source = %config.source_id,
-                "Lock period — deferring config publish"
-            );
-            return Ok(());
-        }
-
         let client = reqwest::Client::new();
         client
             .post(&format!("{}/batches/signed", self.data_node_url))
@@ -345,7 +309,6 @@ impl BatchConfigOrchestrator {
     }
 
     /// Follower: replicate leader's config to own data-node.
-    /// Skips replication if the source is currently in its lock period.
     pub async fn replicate_to_own_data_node(
         &self,
         config: &RecommendedBatch,
@@ -353,15 +316,6 @@ impl BatchConfigOrchestrator {
         signers_bitmask: u64,
         reference_nonce: u64,
     ) -> Result<(), reqwest::Error> {
-        // Don't push config updates during lock period
-        if is_in_lock_period(config.tick_duration_secs, config.lock_offset_secs) {
-            info!(
-                source = %config.source_id,
-                "Lock period — deferring config replication"
-            );
-            return Ok(());
-        }
-
         let client = reqwest::Client::new();
         client
             .post(&format!("{}/batches/replicate", self.data_node_url))
@@ -518,17 +472,4 @@ mod tests {
         assert!(verify_single_source(&leader, &follower).is_ok());
     }
 
-    #[test]
-    fn test_is_in_lock_period_zero_tick() {
-        // Zero tick duration should never be "in lock period"
-        assert!(!is_in_lock_period(0, 0));
-        assert!(!is_in_lock_period(0, 10));
-    }
-
-    #[test]
-    fn test_is_in_lock_period_large_offset() {
-        // If lock_offset equals tick_duration, we're always in lock period
-        // (edge case: offset == tick means remaining <= offset is always true)
-        assert!(is_in_lock_period(600, 600));
-    }
 }
