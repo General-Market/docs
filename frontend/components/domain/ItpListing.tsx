@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useDeferredValue } from 'react'
 import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
@@ -78,6 +78,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const deferredSearch = useDeferredValue(searchQuery)
   const [sortKey, setSortKey] = useState<SortKey>('aum')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
@@ -100,8 +101,8 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
 
   const sorted = useMemo(() => {
     let list = rows
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim()
+    if (deferredSearch.trim()) {
+      const q = deferredSearch.toLowerCase().trim()
       list = list.filter(r =>
         r.name.toLowerCase().includes(q) ||
         r.symbol.toLowerCase().includes(q)
@@ -118,7 +119,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [rows, searchQuery, sortKey, sortDir])
+  }, [rows, deferredSearch, sortKey, sortDir])
 
   const PAGE_SIZE = 15
   const [page, setPage] = useState(0)
@@ -126,7 +127,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const paginated = useMemo(() => sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE), [sorted, page])
 
   // Reset to page 0 when search/sort changes
-  useEffect(() => { setPage(0) }, [searchQuery, sortKey, sortDir])
+  useEffect(() => { setPage(0) }, [deferredSearch, sortKey, sortDir])
 
   const SortArrow = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return null
