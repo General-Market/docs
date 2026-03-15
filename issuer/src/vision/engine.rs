@@ -1084,7 +1084,7 @@ pub async fn run(
 
     // Connect to Postgres for persisting balance updates and resolved ticks
     let db_pool = match sqlx::postgres::PgPoolOptions::new()
-        .max_connections(2)
+        .max_connections(20)
         .idle_timeout(std::time::Duration::from_secs(300))
         .connect(&config.database_url).await {
         Ok(pool) => {
