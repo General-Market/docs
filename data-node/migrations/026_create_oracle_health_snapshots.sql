@@ -1,6 +1,6 @@
 -- 026_create_oracle_health_snapshots.sql
 
-CREATE TABLE oracle_health_snapshots (
+CREATE TABLE IF NOT EXISTS oracle_health_snapshots (
     id              BIGSERIAL PRIMARY KEY,
     node_id         INTEGER NOT NULL CHECK (node_id >= 0),
     fetched_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
