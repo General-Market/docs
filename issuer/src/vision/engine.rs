@@ -119,8 +119,8 @@ impl BalanceProofCollector {
 }
 
 /// Reference prices from the previous tick, used as "start" prices for the next tick.
-/// Maps market_id (H256) -> price value (f64).
-type ReferencePrices = Arc<RwLock<HashMap<H256, f64>>>;
+/// Maps market_id (H256) -> price value scaled by 1e8 (u128, integer).
+type ReferencePrices = Arc<RwLock<HashMap<H256, u128>>>;
 
 /// How long to suppress retry for missing configs (batch engine may generate them later).
 const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(300);
@@ -235,8 +235,11 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 /// end prices from the current snapshot.
 ///
 /// Returns Result instead of silently returning empty on failure.
-/// Parsed snapshot data for a source: (market_id -> value, market_id -> changePct, market_id -> fetched_at_unix)
-type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>, HashMap<H256, i64>);
+/// Parsed snapshot data for a source:
+/// - market_id -> current price scaled by 1e8 (u128, integer)
+/// - market_id -> change_pct (f64, used only for start_price fallback)
+/// - market_id -> fetched_at unix timestamp
+type SnapshotData = (HashMap<H256, u128>, HashMap<H256, f64>, HashMap<H256, i64>);
 
 /// Per-tick-cycle cache: Ok(data) for successful fetches, Err for failed ones.
 /// Prevents both redundant fetches AND redundant timeout waits.
@@ -282,7 +285,7 @@ async fn fetch_snapshot_data_inner_with_secret(
             }
             tracing::debug!("Snapshot HMAC-SHA256 verification successful");
         } else {
-            tracing::warn!("Snapshot response missing X-Snapshot-HMAC header — HMAC verification cannot be performed");
+            return Err("Snapshot HMAC header missing — rejecting unauthenticated data".into());
         }
 
         let json: serde_json::Value = serde_json::from_str(&body_text)?;
@@ -301,7 +304,7 @@ fn parse_snapshot_data(
         .and_then(|s| s.as_array())
         .ok_or("data-node snapshot response missing 'snapshots' array")?;
 
-    let mut current_values: HashMap<H256, f64> = HashMap::new();
+    let mut current_values: HashMap<H256, u128> = HashMap::new();
     let mut change_pcts: HashMap<H256, f64> = HashMap::new();
     let mut fetched_at_map: HashMap<H256, i64> = HashMap::new();
 
@@ -318,20 +321,34 @@ fn parse_snapshot_data(
 
         let market_id = asset_id_to_market_id(asset_id);
 
-        let value = snap
-            .get("value")
-            .and_then(|v| {
-                if let Some(f) = v.as_f64() {
-                    Some(f)
-                } else if let Some(s) = v.as_str() {
-                    s.parse::<f64>().ok()
-                } else {
-                    None
+        // Prefer integer-scaled price from data-node (value_scaled, 1e8 fixed-point).
+        // Fall back to f64 `value` field for backwards compatibility.
+        let value: u128 = if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.as_str()) {
+            scaled.parse::<u128>().unwrap_or(0)
+        } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
+            if f < 0.0 {
+                tracing::error!(market = ?market_id, value = f, "Negative price value — skipping market");
+                continue;
+            }
+            (f * 1e8).round() as u128
+        } else if let Some(s) = snap.get("value").and_then(|v| v.as_str()) {
+            match s.parse::<f64>() {
+                Ok(f) if f >= 0.0 => (f * 1e8).round() as u128,
+                Ok(f) => {
+                    tracing::error!(market = ?market_id, value = f, "Negative price value — skipping market");
+                    continue;
                 }
-            })
-            .unwrap_or(0.0);
+                Err(_) => {
+                    tracing::warn!(market = ?market_id, "Unparseable price value — skipping market");
+                    continue;
+                }
+            }
+        } else {
+            tracing::warn!(market = ?market_id, "Missing price value — skipping market");
+            continue;
+        };
 
-        if value > 0.0 {
+        if value > 0 {
             current_values.insert(market_id, value);
         }
 
@@ -426,12 +443,20 @@ async fn build_market_prices(
                 }
             }
 
+            // start_price: prefer reference from previous tick, else use end_price.
+            // If start == end but change_pct is non-trivial, derive start from change_pct.
+            // All arithmetic in integer (u128, scaled by 1e8) — deterministic across issuers.
             let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
 
-            if (start_price - end_price).abs() < f64::EPSILON {
+            if start_price == end_price {
                 if let Some(&pct) = change_pcts.get(&market_id) {
-                    if pct.abs() > 0.001 {
-                        start_price = end_price / (1.0 + pct / 100.0);
+                    // pct is % change: end = start * (1 + pct/100) => start = end * 1e4 / (1e4 + pct_bps)
+                    let pct_bps = (pct * 100.0).round() as i64; // convert % to bps
+                    if pct_bps.abs() > 10 { // > 0.1% change: apply fallback
+                        let divisor = 10_000i64 + pct_bps;
+                        if divisor > 0 {
+                            start_price = (end_price as u128 * 10_000) / divisor as u128;
+                        }
                     }
                 }
             }
@@ -1240,9 +1265,58 @@ pub async fn run(
                     )
                     .await;
 
+                    // First-tick skip: establish reference prices without resolving bets.
+                    // tick_id == 0 means no tick has been resolved yet for this batch.
+                    if tick_id == 0 {
+                        tracing::info!(
+                            batch_id,
+                            tick_id,
+                            "First tick — establishing reference prices, skipping resolution"
+                        );
+                        if let Some(ref pool) = db_pool {
+                            if let Err(e) = scheduler
+                                .mark_resolved_with_db(pool, batch_id, tick_id)
+                                .await
+                            {
+                                tracing::warn!(
+                                    batch_id,
+                                    tick_id,
+                                    error = %e,
+                                    "Failed to persist first-tick skip to DB"
+                                );
+                                scheduler.mark_resolved(batch_id, tick_id).await;
+                            }
+                        } else {
+                            scheduler.mark_resolved(batch_id, tick_id).await;
+                        }
+                        continue;
+                    }
+
+                    // Compute bitmap_set_hash: sorted (player, bitmap_hash) pairs, hashed together.
+                    // Included in the consensus proposal so all issuers agree on which bitmaps were used.
+                    let active_bitmaps = resolver.bitmap_store.get_all_active_for_batch(batch_id).await;
+                    let mut bitmap_set: Vec<(Address, H256)> = active_bitmaps.iter()
+                        .map(|b| (b.player, b.hash))
+                        .collect();
+                    bitmap_set.sort_by_key(|(addr, _)| *addr);
+                    let bitmap_set_hash = {
+                        use ethers::abi::{encode, Token};
+                        let tokens: Vec<Token> = bitmap_set.iter().flat_map(|(addr, hash)| {
+                            vec![Token::Address(*addr), Token::FixedBytes(hash.0.to_vec())]
+                        }).collect();
+                        H256::from(keccak256(&encode(&tokens)))
+                    };
+                    tracing::debug!(
+                        batch_id,
+                        tick_id,
+                        bitmap_count = active_bitmaps.len(),
+                        bitmap_set_hash = ?bitmap_set_hash,
+                        "Computed bitmap_set_hash for consensus"
+                    );
+
                     // Debug: log bitmap info before resolution
                             {
-                                let bitmaps = resolver.bitmap_store.get_all_for_batch(batch.id).await;
+                                let bitmaps = active_bitmaps.clone();
                                 for bm in &bitmaps {
                                     tracing::info!(
                                         batch_id,
@@ -1357,8 +1431,9 @@ pub async fn run(
                                     .await;
 
                                     // === BLS Consensus Gate ===
-                                    // Multi-issuer: create proposal, defer balance application
-                                    // Single-issuer: apply balances directly (original behavior)
+                                    // Multi-issuer: create proposal, defer balance application.
+                                    // Single-issuer: apply balances directly.
+                                    // NO degraded mode — if consensus proposal fails, skip the tick.
                                     if let Some(ref tc) = tick_consensus {
                                         // Multi-issuer mode: start consensus round
                                         match tc.create_proposal(&result, 0).await {
@@ -1380,17 +1455,9 @@ pub async fn run(
                                                     batch_id,
                                                     tick_id,
                                                     error = %e,
-                                                    "Failed to create tick consensus proposal — applying directly (degraded)"
+                                                    "CRITICAL: Failed to create tick consensus proposal — SKIPPING tick (no balance changes applied)"
                                                 );
-                                                // Fallback: apply directly in degraded mode
-                                                apply_balances(
-                                                    &scheduler,
-                                                    &db_pool,
-                                                    batch_id,
-                                                    tick_id,
-                                                    &result.player_balances,
-                                                )
-                                                .await;
+                                                continue;
                                             }
                                         }
                                     } else {
@@ -1413,22 +1480,30 @@ pub async fn run(
                                     )
                                     .await;
 
-                                    // Persist resolved tick to DB
+                                    // ATOMIC: DB flip + mark_resolved in single transaction.
+                                    // Promotes pending bitmaps to active for the next tick.
                                     if let Some(ref pool) = db_pool {
-                                        if let Err(e) = scheduler
-                                            .mark_resolved_with_db(pool, batch_id, tick_id)
+                                        if let Err(e) = resolver.bitmap_store
+                                            .persist_flip_and_mark_resolved(pool, batch_id, tick_id)
                                             .await
                                         {
                                             tracing::warn!(
                                                 batch_id,
                                                 tick_id,
                                                 error = %e,
-                                                "Failed to persist resolved tick to DB"
+                                                "Failed to persist bitmap flip + resolved tick to DB — falling back to in-memory"
                                             );
                                             // Fall back to in-memory only
+                                            resolver.bitmap_store.flip(batch_id).await;
+                                            scheduler.mark_resolved(batch_id, tick_id).await;
+                                        } else {
+                                            // In-memory flip is safe — DB is source of truth on restart
+                                            resolver.bitmap_store.flip(batch_id).await;
                                             scheduler.mark_resolved(batch_id, tick_id).await;
                                         }
                                     } else {
+                                        // No DB: in-memory only
+                                        resolver.bitmap_store.flip(batch_id).await;
                                         scheduler.mark_resolved(batch_id, tick_id).await;
                                     }
 
