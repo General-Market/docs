@@ -687,6 +687,14 @@ cmd_start() {
     _start_data_node_docker
     echo -e "  ${GREEN}data-node started${NC}"
 
+    # Reset vision chain listener bookmark if vision_batches is empty (fresh deploy).
+    # Without this, the chain listener resumes past the deploy block and never sees
+    # BatchConfigPromoted events, so vision ticks never resolve.
+    if vps_be_ssh "psql -U max -d $DB_NAME -tAc \"SELECT COUNT(*) FROM vision_batches\" 2>/dev/null" | grep -q '^0$'; then
+        vps_be_ssh "psql -U max -d $DB_NAME -c \"DELETE FROM vision_kv_store WHERE key = 'chain_listener_last_block'\" 2>/dev/null" && \
+            echo -e "  ${GREEN}Vision chain listener bookmark reset (fresh deploy detected)${NC}" || true
+    fi
+
     # Start oracles (staggered)
     echo -e "${BLUE}[5/8] Starting oracles...${NC}"
     _start_oracles_docker
