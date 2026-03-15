@@ -656,8 +656,30 @@ cmd_start() {
     # Kill old bare processes (prevents port conflicts on migration)
     _kill_old_processes
 
-    # Sync files
-    echo -e "${BLUE}[2/8] Syncing files...${NC}"
+    # Pull latest code and rebuild binaries on VPS (ensures rename/schema changes are picked up)
+    echo -e "${BLUE}[2/8] Syncing files + rebuilding binaries...${NC}"
+    vps_be_ssh "cd $VPS_BE_DIR && git pull origin main 2>&1 | tail -3" || true
+    # Rebuild all Rust binaries if source changed since last build
+    local NEED_REBUILD=false
+    for bin in oracle data-node curator itp-bot; do
+        if vps_be_ssh "test -f $VPS_BE_DIR/target/release/$bin" 2>/dev/null; then
+            if vps_be_ssh "find $VPS_BE_DIR/oracle/src $VPS_BE_DIR/common/src $VPS_BE_DIR/data-node/src $VPS_BE_DIR/curator/src -newer $VPS_BE_DIR/target/release/$bin -name '*.rs' 2>/dev/null | head -1 | grep -q ." 2>/dev/null; then
+                NEED_REBUILD=true
+                break
+            fi
+        else
+            NEED_REBUILD=true
+            break
+        fi
+    done
+    if [ "$NEED_REBUILD" = true ]; then
+        echo -e "  Rebuilding binaries on VPS (source changed)..."
+        vps_be_ssh "source ~/.cargo/env && cd $VPS_BE_DIR && cargo build --release -p oracle -p data-node -p curator -p itp-bot 2>&1 | tail -3" \
+            && echo -e "  ${GREEN}Binaries rebuilt${NC}" \
+            || echo -e "  ${YELLOW}Binary rebuild failed — using existing binaries${NC}"
+    else
+        echo -e "  ${GREEN}Binaries up to date${NC}"
+    fi
     _sync_docker_files
     _sync_config_files
 
