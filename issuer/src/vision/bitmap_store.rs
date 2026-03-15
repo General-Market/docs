@@ -11,6 +11,7 @@
 //!   deadlock and to make flip() atomic.
 
 use ethers::types::{Address, H256};
+use sqlx::PgPool;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
@@ -173,6 +174,136 @@ impl BitmapStore {
         let mut guard = self.slots.write().await;
         guard.pending.remove(&(batch_id, player));
         guard.active.remove(&(batch_id, player));
+    }
+
+    // -----------------------------------------------------------------------
+    // DB persistence
+    // -----------------------------------------------------------------------
+
+    /// Upsert a player's **pending** bitmap for `batch_id` into `vision_bitmaps`.
+    pub async fn persist_pending_to_db(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        player: Address,
+        bitmap: &SlottedBitmap,
+    ) -> Result<(), BitmapStoreError> {
+        sqlx::query(
+            "INSERT INTO vision_bitmaps
+                 (batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash)
+             VALUES ($1, $2, $3, $4, 'pending', $5, $6)
+             ON CONFLICT (batch_id, player, slot) DO UPDATE SET
+                 bitmap         = EXCLUDED.bitmap,
+                 bitmap_hash    = EXCLUDED.bitmap_hash,
+                 target_tick_id = EXCLUDED.target_tick_id,
+                 config_hash    = EXCLUDED.config_hash",
+        )
+        .bind(batch_id as i64)
+        .bind(format!("{:?}", player))
+        .bind(&bitmap.bitmap)
+        .bind(format!("{:?}", bitmap.hash))
+        .bind(bitmap.target_tick_id as i64)
+        .bind(format!("{:?}", bitmap.config_hash))
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Atomically promote all pending bitmaps for `batch_id` to active in the
+    /// DB and record the resolved tick id in `vision_batch_state`.
+    ///
+    /// Mirrors the in-memory `flip()` logic but durable: survives a restart.
+    pub async fn persist_flip_and_mark_resolved(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        resolved_tick_id: u64,
+    ) -> Result<(), BitmapStoreError> {
+        let mut tx = pool.begin().await.map_err(BitmapStoreError::Db)?;
+
+        // 1. Delete old active rows for this batch.
+        sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
+            .bind(batch_id as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(BitmapStoreError::Db)?;
+
+        // 2. Rename pending → active.
+        sqlx::query(
+            "UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'",
+        )
+        .bind(batch_id as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        // 3. Record the resolved tick id.
+        sqlx::query(
+            "INSERT INTO vision_batch_state (batch_id, last_resolved_tick_id)
+             VALUES ($1, $2)
+             ON CONFLICT (batch_id) DO UPDATE SET
+                 last_resolved_tick_id = EXCLUDED.last_resolved_tick_id",
+        )
+        .bind(batch_id as i64)
+        .bind(resolved_tick_id as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        tx.commit().await.map_err(BitmapStoreError::Db)?;
+        Ok(())
+    }
+
+    /// Reload all bitmaps from the DB into the in-memory store.
+    ///
+    /// Called once at startup for crash recovery.  Any row whose `player`
+    /// address or hash cannot be parsed is silently skipped — the issuer will
+    /// simply request a fresh bitmap from the player on the next tick.
+    pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), BitmapStoreError> {
+        let rows = sqlx::query_as::<_, (i64, String, Vec<u8>, String, String, i64, String)>(
+            "SELECT batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash
+             FROM vision_bitmaps",
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        let mut slots = self.slots.write().await;
+        for (batch_id, player_str, bitmap, hash_str, slot, tick_id, config_hash_str) in rows {
+            let player: Address = match player_str.parse() {
+                Ok(a) => a,
+                Err(_) => continue,
+            };
+            let hash: H256 = match hash_str.parse() {
+                Ok(h) => h,
+                Err(_) => continue,
+            };
+            let config_hash: H256 = match config_hash_str.parse() {
+                Ok(h) => h,
+                Err(_) => continue,
+            };
+
+            let entry = SlottedBitmap {
+                player,
+                batch_id: batch_id as u64,
+                bitmap,
+                hash,
+                config_hash,
+                target_tick_id: tick_id as u64,
+                received_at: 0,
+            };
+            let key = (entry.batch_id, entry.player);
+            match slot.as_str() {
+                "pending" => {
+                    slots.pending.insert(key, entry);
+                }
+                "active" => {
+                    slots.active.insert(key, entry);
+                }
+                _ => {}
+            }
+        }
+        Ok(())
     }
 }
 
