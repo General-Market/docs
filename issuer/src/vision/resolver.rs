@@ -1032,7 +1032,7 @@ mod tests {
 
         // Price went UP: 100 -> 105 (5%)
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 105.0, 1000);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 1000);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1110,7 +1110,7 @@ mod tests {
         ];
 
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 102.0, 1000);
+        prices.insert(market_id, 10_000_000_000, 10_200_000_000, 1000);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1212,7 +1212,7 @@ mod tests {
 
         // Price data is old (last_update=100, now=1000, threshold=300 -> stale)
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 105.0, 100);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 100);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1287,8 +1287,8 @@ mod tests {
         ];
 
         let mut prices = MarketPrices::new();
-        prices.insert(market_a, 100.0, 110.0, 1000); // UP 10%
-        prices.insert(market_b, 100.0, 90.0, 1000); // DOWN 10%
+        prices.insert(market_a, 10_000_000_000, 11_000_000_000, 1000); // UP 10%
+        prices.insert(market_b, 10_000_000_000, 9_000_000_000, 1000); // DOWN 10%
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1347,7 +1347,7 @@ mod tests {
         // All markets go UP → Player A wins all, Player B loses all
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000);
         }
 
         let result = resolver
@@ -1414,7 +1414,7 @@ mod tests {
         // All markets go UP
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000);
         }
 
         let result = resolver
@@ -1509,7 +1509,7 @@ mod tests {
         // === Tick 0 ===
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000); // All UP
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000); // All UP
         }
 
         let result_t0 = resolver
@@ -1568,15 +1568,15 @@ mod tests {
         assert!(prices.is_stale(&market_id, 300, 1000));
 
         // Fresh data (last_update=900, now=1000, threshold=300)
-        prices.insert(market_id, 100.0, 105.0, 900);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 900);
         assert!(!prices.is_stale(&market_id, 300, 1000));
 
         // Stale data (last_update=600, now=1000, threshold=300 -> 400 > 300)
-        prices.insert(market_id, 100.0, 105.0, 600);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 600);
         assert!(prices.is_stale(&market_id, 300, 1000));
 
         // Exactly at threshold (last_update=700, now=1000 -> 300 == 300, not stale)
-        prices.insert(market_id, 100.0, 105.0, 700);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 700);
         assert!(!prices.is_stale(&market_id, 300, 1000));
     }
 }
