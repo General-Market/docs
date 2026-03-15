@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use ethers::prelude::*;
-use tracing::{info, warn};
+use tracing::warn;
 use common::types::{CrossChainOrder, CrossChainSellOrderEvent, ItpCreationRequest};
 use crate::api::AppState;
 use crate::chain_cache::{
@@ -121,24 +121,13 @@ abigen!(
     ]"#
 );
 
-/// Cached name/symbol data (populated on first poll, never changes on-chain).
-static ITP_NAME_CACHE: std::sync::LazyLock<tokio::sync::RwLock<std::collections::HashMap<u64, (String, String, Option<String>)>>> =
-    std::sync::LazyLock::new(|| tokio::sync::RwLock::new(std::collections::HashMap::new()));
-
 pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
-    let reader = NavReader::new(index_addr, Arc::clone(&state.l3_provider));
+    if !state.chain_cache.hydration_complete.load(std::sync::atomic::Ordering::Acquire) {
+        return Ok(());
+    }
+    let itp_cache = state.chain_cache.itp_states.read().await;
+    if itp_cache.states.is_empty() { return Ok(()); }
 
-    let bridge_proxy_addr = crate::api::deployment_addr(&state.deployment, "BridgeProxy")?;
-    let bridge_proxy = BridgeProxyPoller::new(bridge_proxy_addr, Arc::clone(&state.settlement_provider));
-
-    let count: U256 = reader.get_itp_count().call().await?;
-    let mut snapshots = Vec::new();
-    let name_cache = ITP_NAME_CACHE.read().await;
-
-    // Pre-fetch all live prices from the fast cache for inventory-based NAV computation.
-    // symbol_map: L3 address → Bitget pair (e.g., "0xabc..." → "BTCUSDC")
-    // live prices: Bitget pair → last price in USD
     let live_prices: std::collections::HashMap<String, f64> = {
         let ticker_map = state.live_cache.tickers.read().await;
         ticker_map.iter().filter_map(|(pair, t)| {
@@ -146,94 +135,35 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
         }).collect()
     };
 
-    for i in 1..=count.as_u64() {
-        let mut id_bytes = [0u8; 32];
-        U256::from(i).to_big_endian(&mut id_bytes);
-
-        // Call getITPState — returns stored NAV + inventory for live computation
-        match reader.get_itp_state(id_bytes.into()).call().await {
-            Ok((_creator, total_supply, stored_nav, assets, _weights, inventory)) => {
-                // Compute live NAV from inventory × live prices.
-                // NAV = sum(qty[i] * price[i]) / 1e18
-                // qty[i] is per-share quantity (in 1e18), price[i] is USD (in 1e18).
-                let nav_f64 = if !assets.is_empty() && assets.len() == inventory.len() {
-                    let mut sum = 0.0_f64;
-                    let mut resolved = 0;
-                    for (addr, qty) in assets.iter().zip(inventory.iter()) {
-                        let addr_hex = format!("{:?}", addr).to_lowercase();
-                        if let Some(pair) = state.symbol_map.get(&addr_hex) {
-                            if let Some(&price_usd) = live_prices.get(pair) {
-                                // qty is in 1e18 scale (per-share quantity)
-                                // NAV contribution = qty * price_usd / 1e18
-                                sum += qty.as_u128() as f64 * price_usd / 1e18;
-                                resolved += 1;
-                            }
-                        }
+    let mut snapshots = Vec::new();
+    for (itp_id, itp) in &itp_cache.states {
+        let nav_f64 = if !itp.assets.is_empty() && itp.assets.len() == itp.inventory.len() {
+            let mut sum = 0.0_f64;
+            let mut resolved = 0;
+            for (addr, qty) in itp.assets.iter().zip(itp.inventory.iter()) {
+                let addr_hex = format!("{:?}", addr).to_lowercase();
+                if let Some(pair) = state.symbol_map.get(&addr_hex) {
+                    if let Some(&price_usd) = live_prices.get(pair) {
+                        sum += qty.as_u128() as f64 * price_usd / 1e18;
+                        resolved += 1;
                     }
-                    if resolved > 0 && resolved == assets.len() {
-                        sum // all assets resolved — use live NAV
-                    } else {
-                        stored_nav.as_u128() as f64 / 1e18 // fallback
-                    }
-                } else {
-                    stored_nav.as_u128() as f64 / 1e18
-                };
-                let supply_f64 = total_supply.as_u128() as f64 / 1e18;
-                let aum = nav_f64 * supply_f64;
-
-                // Use cached name/symbol/settlement (populated below if missing)
-                let (name, symbol, settlement_address) = match name_cache.get(&i) {
-                    Some((n, s, sa)) => (n.clone(), s.clone(), sa.clone()),
-                    None => (String::new(), String::new(), None),
-                };
-
-                snapshots.push(NavSnapshot {
-                    itp_id: format!("0x{}", hex::encode(id_bytes)),
-                    name,
-                    symbol,
-                    nav_per_share: nav_f64,
-                    total_supply: total_supply.to_string(),
-                    aum_usd: aum,
-                    settlement_address,
-                });
+                }
             }
-            Err(e) => {
-                warn!(itp_index = i, %e, "Failed to read ITP state");
-            }
-        }
-    }
-    drop(name_cache);
+            if resolved == itp.assets.len() { sum }
+            else if resolved > 0 { sum } // partial NAV — better than zero
+            else { 0.0 }
+        } else { 0.0 };
 
-    // Populate name cache for any ITPs not yet cached (slow path, runs once per new ITP).
-    // Cap at 10 per poll to avoid hanging the NAV update for minutes when many
-    // new ITPs appear at once (each needs 2 RPC calls with timeouts).
-    let needs_cache: Vec<u64> = {
-        let cache = ITP_NAME_CACHE.read().await;
-        (1..=count.as_u64()).filter(|i| !cache.contains_key(i)).take(10).collect()
-    };
-    if !needs_cache.is_empty() {
-        let mut cache = ITP_NAME_CACHE.write().await;
-        for i in &needs_cache {
-            let mut id_bytes = [0u8; 32];
-            U256::from(*i).to_big_endian(&mut id_bytes);
-
-            let (name, symbol) = match tokio::time::timeout(
-                std::time::Duration::from_secs(5),
-                reader.get_itp_name_symbol(id_bytes.into()).call(),
-            ).await {
-                Ok(Ok((n, s))) => (n, s),
-                _ => (String::new(), String::new()),
-            };
-            let settlement_address = match tokio::time::timeout(
-                std::time::Duration::from_secs(3),
-                bridge_proxy.get_bridged_itp(id_bytes.into()).call(),
-            ).await {
-                Ok(Ok(addr)) if addr != Address::zero() => Some(format!("{:?}", addr)),
-                _ => None,
-            };
-            cache.insert(*i, (name, symbol, settlement_address));
-        }
-        info!(cached = needs_cache.len(), remaining = count.as_u64() as usize - cache.len(), "NAV: populated name cache batch");
+        let supply_f64 = itp.total_supply.as_u128() as f64 / 1e18;
+        snapshots.push(NavSnapshot {
+            itp_id: itp_id.clone(),
+            name: itp.name.clone(),
+            symbol: itp.symbol.clone(),
+            nav_per_share: nav_f64,
+            total_supply: itp.total_supply.to_string(),
+            aum_usd: nav_f64 * supply_f64,
+            settlement_address: itp.settlement_address.clone(),
+        });
     }
 
     let mut nav = state.chain_cache.nav.write().await;
@@ -285,14 +215,6 @@ pub async fn poll_oracle_once(state: &AppState) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-// ── ITP ID helper (1-based, big-endian bytes32) ──
-
-fn itp_id_bytes(n: u64) -> [u8; 32] {
-    let mut id = [0u8; 32];
-    U256::from(n).to_big_endian(&mut id);
-    id
-}
-
 // ── Per-user pollers ──
 
 pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -309,40 +231,9 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
         .collect();
     drop(users);
 
-    // Resolve contract addresses
+    // Resolve contract addresses — only USDC balances (ITP shares maintained by events)
     let settlement_usdc_addr = crate::api::deployment_addr(&state.deployment, "SETTLEMENT_USDC")?;
-    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
     let l3_usdc_addr = crate::api::deployment_addr(&state.deployment, "L3_WUSDC")?;
-
-    // Read all ITP IDs from the nav cache (already iterated during poll_nav_once)
-    let nav_snapshots = state.chain_cache.nav.read().await;
-    let itp_ids: Vec<[u8; 32]> = nav_snapshots.iter().filter_map(|snap| {
-        let hex = snap.itp_id.strip_prefix("0x").unwrap_or(&snap.itp_id);
-        hex::decode(hex).ok().and_then(|bytes| {
-            if bytes.len() == 32 {
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(&bytes);
-                Some(arr)
-            } else {
-                None
-            }
-        })
-    }).collect();
-    // Also collect itp_id hex strings for the map keys
-    let itp_id_hexes: Vec<String> = nav_snapshots.iter().map(|s| s.itp_id.clone()).collect();
-    drop(nav_snapshots);
-
-    // Fallback: if no nav snapshots yet, poll at least ITP #1
-    let itp_ids = if itp_ids.is_empty() {
-        vec![itp_id_bytes(1)]
-    } else {
-        itp_ids
-    };
-    let itp_id_hexes = if itp_id_hexes.is_empty() {
-        vec![format!("0x{}", hex::encode(itp_id_bytes(1)))]
-    } else {
-        itp_id_hexes
-    };
 
     // Resolve vault ERC20 address from deployment (L3 vault token)
     let vault_addr = crate::api::deployment_addr(&state.deployment, "ITP_Vault").unwrap_or_default();
@@ -357,18 +248,6 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
         let l3_usdc = BalanceReader::new(l3_usdc_addr, Arc::clone(&state.l3_provider));
         let l3_usdc_bal = l3_usdc.balance_of(*user).call().await.unwrap_or_default();
 
-        // L3 ITP shares — read for ALL ITPs
-        let shares_reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
-        let mut shares_map = std::collections::HashMap::new();
-        for (idx, itp_id) in itp_ids.iter().enumerate() {
-            let shares = shares_reader.get_user_shares(*itp_id, *user).call().await.unwrap_or_default();
-            if !shares.is_zero() {
-                if let Some(hex_key) = itp_id_hexes.get(idx) {
-                    shares_map.insert(hex_key.clone(), shares.to_string());
-                }
-            }
-        }
-
         // L3 vault ERC20 balance (used as Morpho collateral)
         let bridged_bal = if has_vault {
             let vault = BalanceReader::new(vault_addr, Arc::clone(&state.l3_provider));
@@ -378,10 +257,12 @@ pub async fn poll_user_balances_once(state: &AppState) -> Result<(), Box<dyn std
         };
 
         let mut uc = user_cache.write().await;
+        // Preserve itp_shares — maintained by SharesUpdated events, not by this poller
+        let existing_shares = uc.balances.itp_shares.clone();
         uc.balances = UserBalances {
             usdc_l3: l3_usdc_bal.to_string(),
             usdc_settlement: usdc_bal.to_string(),
-            itp_shares: shares_map,
+            itp_shares: existing_shares,
             bridged_itp: bridged_bal.to_string(),
             itp_nonce: 0,
         };
@@ -453,17 +334,14 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
         .collect();
     drop(users);
 
-    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
-    let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
-
     for (user_addr, user_cache) in &user_list {
-        // Query DB for active + recently filled orders for this user.
-        // Include filled/cancelled (status 2,3) from last 5 min so frontend
-        // can see the fill transition and display them in portfolio.
-        let rows = sqlx::query_as::<_, (i64,)>(
-            "SELECT order_id FROM trades WHERE LOWER(user_address) = $1 \
-             AND (status IN (0, 1) OR (status IN (2, 3) AND fill_timestamp > NOW() - INTERVAL '5 minutes') \
-             OR order_timestamp > NOW() - INTERVAL '5 minutes') \
+        // DB-only: read active + recently filled orders for this user.
+        let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, Option<String>, Option<String>, i64)>(
+            "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                    status, fill_price, fill_amount, \
+                    EXTRACT(EPOCH FROM order_timestamp)::bigint \
+             FROM trades WHERE LOWER(user_address) = $1 \
+             AND (status IN (0, 1) OR order_timestamp > NOW() - INTERVAL '5 minutes') \
              ORDER BY order_id DESC LIMIT 50"
         )
         .bind(user_addr)
@@ -471,55 +349,21 @@ pub async fn poll_user_orders_once(state: &AppState) -> Result<(), Box<dyn std::
         .await
         .unwrap_or_default();
 
-        let mut orders = Vec::new();
-
-        for (order_id,) in &rows {
-            let oid = U256::from(*order_id as u64);
-
-            // Read on-chain order state
-            let order_data = match reader.get_order(oid).call().await {
-                Ok(d) => d,
-                Err(e) => {
-                    warn!(order_id = *order_id, %e, "Failed to read order on-chain");
-                    continue;
-                }
-            };
-
-            // Check for FillConfirmed events
-            let fill_filter = reader.fill_confirmed_filter()
-                .topic1(oid)
-                .from_block(0u64);
-
-            let (fill_price, fill_amount, fill_cycle) = match fill_filter.query().await {
-                Ok(logs) => {
-                    if let Some(last) = logs.last() {
-                        (
-                            Some(last.fill_price.to_string()),
-                            Some(last.fill_amount.to_string()),
-                            Some(last.cycle_number.as_u64()),
-                        )
-                    } else {
-                        (None, None, None)
-                    }
-                }
-                Err(_) => (None, None, None),
-            };
-
-            // order_data tuple: (id, user, pairId, side, amount, limitPrice, slippageTier, deadline, itpId, timestamp, status)
-            orders.push(UserOrder {
-                order_id: order_data.0.as_u64(),
-                user: format!("{:?}", order_data.1),
-                side: order_data.3,
-                amount: order_data.4.to_string(),
-                limit_price: order_data.5.to_string(),
-                itp_id: format!("0x{}", hex::encode(order_data.8)),
-                timestamp: order_data.9.as_u64(),
-                status: order_data.10,
-                fill_price,
-                fill_amount,
-                fill_cycle,
-            });
-        }
+        let orders: Vec<UserOrder> = rows.into_iter().map(|r| {
+            UserOrder {
+                order_id: r.0 as u64,
+                user: r.1,
+                itp_id: r.2,
+                side: r.3 as u8,
+                amount: r.4,
+                limit_price: r.5,
+                status: r.6 as u8,
+                fill_price: r.7,
+                fill_amount: r.8,
+                fill_cycle: None,
+                timestamp: r.9 as u64,
+            }
+        }).collect();
 
         let mut uc = user_cache.write().await;
         uc.orders = orders;
@@ -720,37 +564,32 @@ pub async fn poll_user_cost_basis_once(state: &AppState) -> Result<(), Box<dyn s
 
 // ── Global L3 backend state pollers ──
 
-/// Poll pending orders (status == 0) from the Index contract.
-/// Scans the last 100 order IDs for pending status.
+/// Poll pending orders (status == 0) from the trades table.
 pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
-    let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
+    let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+        "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+         FROM trades WHERE status = 0 \
+         ORDER BY order_id DESC LIMIT 100"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
-    let next_id = reader.next_order_id().call().await?.as_u64();
-    let start = next_id.saturating_sub(100);
-
-    let mut pending = Vec::new();
-    for oid in start..next_id {
-        let order = match reader.get_order(U256::from(oid)).call().await {
-            Ok(o) => o,
-            Err(_) => continue,
-        };
-        // status field is index 10; status 0 = pending
-        if order.10 == 0 {
-            pending.push(CachedLimitOrder {
-                order_id: order.0.as_u64(),
-                user: format!("{:?}", order.1),
-                itp_id: format!("0x{}", hex::encode(order.8)),
-                side: order.3,
-                amount: order.4.to_string(),
-                limit_price: order.5.to_string(),
-                slippage_tier: order.6.as_u64() as u8,
-                deadline: order.7.to_string(),
-                timestamp: order.9.as_u64(),
-                status: order.10,
-            });
+    let pending: Vec<CachedLimitOrder> = rows.into_iter().map(|r| {
+        CachedLimitOrder {
+            order_id: r.0 as u64,
+            user: r.1,
+            itp_id: r.2,
+            side: r.3 as u8,
+            amount: r.4,
+            limit_price: r.5,
+            slippage_tier: 0,
+            deadline: "0".to_string(),
+            timestamp: r.7 as u64,
+            status: r.6 as u8,
         }
-    }
+    }).collect();
 
     let mut cache = state.chain_cache.pending_orders.write().await;
     *cache = pending;
@@ -758,37 +597,32 @@ pub async fn poll_pending_orders_once(state: &AppState) -> Result<(), Box<dyn st
     Ok(())
 }
 
-/// Poll batched orders (status == 1) from the Index contract.
-/// Scans the last 100 order IDs for batched status.
+/// Poll batched orders (status == 1) from the trades table.
 pub async fn poll_batched_orders_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let index_addr = crate::api::deployment_addr(&state.deployment, "Index")?;
-    let reader = UserSharesReader::new(index_addr, Arc::clone(&state.l3_provider));
+    let rows = sqlx::query_as::<_, (i64, String, String, i16, String, String, i16, i64)>(
+        "SELECT order_id, user_address, itp_id, side, amount, limit_price, \
+                status, EXTRACT(EPOCH FROM order_timestamp)::bigint \
+         FROM trades WHERE status = 1 \
+         ORDER BY order_id DESC LIMIT 100"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
-    let next_id = reader.next_order_id().call().await?.as_u64();
-    let start = next_id.saturating_sub(100);
-
-    let mut batched = Vec::new();
-    for oid in start..next_id {
-        let order = match reader.get_order(U256::from(oid)).call().await {
-            Ok(o) => o,
-            Err(_) => continue,
-        };
-        // status 1 = batched
-        if order.10 == 1 {
-            batched.push(CachedLimitOrder {
-                order_id: order.0.as_u64(),
-                user: format!("{:?}", order.1),
-                itp_id: format!("0x{}", hex::encode(order.8)),
-                side: order.3,
-                amount: order.4.to_string(),
-                limit_price: order.5.to_string(),
-                slippage_tier: order.6.as_u64() as u8,
-                deadline: order.7.to_string(),
-                timestamp: order.9.as_u64(),
-                status: order.10,
-            });
+    let batched: Vec<CachedLimitOrder> = rows.into_iter().map(|r| {
+        CachedLimitOrder {
+            order_id: r.0 as u64,
+            user: r.1,
+            itp_id: r.2,
+            side: r.3 as u8,
+            amount: r.4,
+            limit_price: r.5,
+            slippage_tier: 0,
+            deadline: "0".to_string(),
+            timestamp: r.7 as u64,
+            status: r.6 as u8,
         }
-    }
+    }).collect();
 
     let mut cache = state.chain_cache.batched_orders.write().await;
     *cache = batched;
