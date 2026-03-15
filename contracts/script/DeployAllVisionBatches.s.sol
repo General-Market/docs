@@ -72,7 +72,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         require(visionAddr != address(0), "Vision address not found");
 
         // Read OracleRegistry from Vision contract
-        address registryAddr = address(Vision(visionAddr).blsOracleRegistry());
+        address registryAddr = address(Vision(visionAddr).oracleRegistry());
         uint256 refNonce = IOracleRegistry(registryAddr).lastSnapshotNonce();
 
         // Read recommended configs from data-node generated JSON

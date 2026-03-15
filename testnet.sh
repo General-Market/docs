@@ -494,7 +494,8 @@ cmd_deploy() {
 
     # Vision batches: do NOT use --slow (causes nonce races on L3 Orbit)
     rm -rf contracts/broadcast/DeployAllVisionBatches.s.sol/$CHAIN_ID/ contracts/cache/DeployAllVisionBatches.s.sol/$CHAIN_ID/
-    VISION_ADDR_DEPLOY=$(python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['vision'])" 2>/dev/null || echo "")
+    # Read Vision address: try active-deployment first (most reliable), then vision-deployment.json fallback
+    VISION_ADDR_DEPLOY=$(read_deployment_addr "Vision" 2>/dev/null || python3 -c "import json; print(json.load(open('deployments/vision-deployment.json'))['vision'])" 2>/dev/null || echo "")
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
     VISION_ADDRESS="$VISION_ADDR_DEPLOY" \
     forge script script/DeployAllVisionBatches.s.sol:DeployAllVisionBatches \
