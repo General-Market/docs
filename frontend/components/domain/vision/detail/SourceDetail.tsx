@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from '@/i18n/routing'
-import { getSource, getAssetCountForSource, getSourceStatusFromMeta, getDataNodeSourceId, getBatchKey } from '@/lib/vision/sources'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
-import { getBatchTickState, getMultiplier, getSourceKeyForBatch } from '@/lib/vision/tick'
-import batchConfig from '@/lib/contracts/vision-batches.json'
+import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
+import { getBatchTickState } from '@/lib/vision/tick'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
@@ -30,9 +29,28 @@ function formatTvl(tvl: string): string {
 
 export function SourceDetail({ sourceId }: SourceDetailProps) {
   const router = useRouter()
-  const source = getSource(sourceId)
-  const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
-  const { data: snapshotData } = useSourceSnapshot(dataNodeId)
+
+  // Source registry — all metadata comes from data-node API
+  const { sources, isLoading: isRegistryLoading } = useSourceRegistry()
+  const sourceEntry = findSource(sources, sourceId)
+  // Adapt to VisionSource shape for SourceHero
+  const source = sourceEntry
+    ? {
+        id: sourceEntry.sourceId,
+        name: sourceEntry.name,
+        description: sourceEntry.description,
+        category: sourceEntry.category,
+        logo: sourceEntry.logo,
+        brandBg: sourceEntry.brandBg,
+        prefixes: sourceEntry.prefixes,
+        valueLabel: sourceEntry.valueLabel,
+        valueUnit: sourceEntry.valueUnit,
+        isPrice: sourceEntry.isPrice,
+      }
+    : null
+
+  // Per-source snapshot for market list
+  const { data: snapshotData } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
   const bitmapEditor = useBitmapEditor()
@@ -40,61 +58,44 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   // Find source schedule from meta
   const sourceSchedule = useMemo(() => {
     if (!meta?.sources) return undefined
-    return meta.sources.find((s) => s.sourceId === sourceId || s.sourceId === dataNodeId)
-  }, [meta?.sources, sourceId, dataNodeId])
+    return meta.sources.find((s) => s.sourceId === sourceId)
+  }, [meta?.sources, sourceId])
 
   // Markets come directly from the per-source snapshot (already filtered server-side)
   const sourceMarkets = snapshotData?.prices ?? []
 
   // Use meta for accurate total count, fall back to snapshot
-  const metaCount = meta?.assetCounts ? getAssetCountForSource(sourceId, meta.assetCounts) : 0
+  const metaCount = meta?.assetCounts?.[sourceId] ?? 0
   const marketCount = metaCount > 0 ? metaCount : (sourceMarkets.length || undefined)
   const marketIds = useMemo(() => sourceMarkets.map(p => p.assetId), [sourceMarkets])
 
-  // Pick the active batch matching this source.
-  // Route proxy now deduplicates to one batch per source and sets sourceId correctly
-  // from configHash (stable across redeployments). Match by sourceId string first.
-  const batchKey = getBatchKey(sourceId)
-  const staticEntry = (batchConfig.batches as Record<string, { batchId: number; configHash: string; tickDuration?: number }>)[batchKey]
+  // Pick the active batch matching this source — live data only
   const activeBatch = useMemo(() => {
-    // Try to find from live API data by sourceId (route proxy resolves configHash → name)
-    if (batches && batches.length > 0) {
-      const bySource = batches.find(b =>
-        b.sourceId === sourceId || b.sourceId === dataNodeId || b.sourceId === batchKey
-      )
-      if (bySource) return bySource
-    }
-    // When API data isn't available, construct minimal batch from static config
-    // This ensures TICK/PLAYERS/POOL show something instead of dashes
-    if (staticEntry) {
-      return {
-        id: staticEntry.batchId,
-        creator: '',
-        sourceId: batchKey,
-        marketIds: [] as string[],
-        resolutionTypes: [] as number[],
-        tickDuration: staticEntry.tickDuration ?? 600,
-        marketCount: 0,
-        playerCount: 0,
-        tvl: '0',
-        currentTick: 0,
-        paused: false,
-      } satisfies import('@/hooks/vision/useBatches').BatchInfo
-    }
-    return null
-  }, [batches, sourceId, dataNodeId, staticEntry, batchKey])
+    if (!batches || batches.length === 0) return null
+    return batches.find(b => b.sourceId === sourceId) ?? null
+  }, [batches, sourceId])
 
-  // Per-batch tick timer using category-specific duration
-  const [tickState, setTickState] = useState(() =>
-    activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance')
-  )
+  // Per-batch tick timer using live tickDuration from batch data
+  const tickDuration = activeBatch?.tickDuration ?? 600
+  const [tickState, setTickState] = useState(() => getBatchTickState(tickDuration))
   useEffect(() => {
+    const td = activeBatch?.tickDuration ?? 600
     const interval = setInterval(() => {
-      setTickState(activeBatch ? getBatchTickState(activeBatch.id, source?.category ?? 'finance') : getBatchTickState(0, source?.category ?? 'finance'))
+      setTickState(getBatchTickState(td))
     }, 1000)
     return () => clearInterval(interval)
-  }, [activeBatch, source?.category])
-  const multiplier = getMultiplier(tickState.elapsed, tickState.tickDuration, tickState.lockOffset)
+  }, [activeBatch?.tickDuration])
+
+  // Show loading state while registry loads
+  if (isRegistryLoading) {
+    return (
+      <div className="px-6 lg:px-12 py-12">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-text-muted">Loading source...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!source) {
     return (
@@ -162,18 +163,9 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           <div className="flex-1">
             <div className="h-1.5 bg-border-light overflow-hidden">
               <div
-                className={`h-full transition-all duration-1000 ${tickState.isLocked ? 'bg-red-500' : 'bg-black'}`}
+                className="h-full transition-all duration-1000 bg-black"
                 style={{ width: `${(tickState.elapsed / tickState.tickDuration) * 100}%` }}
               />
-            </div>
-          </div>
-          {/* Multiplier */}
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
-              Multiplier
-            </div>
-            <div className={`text-[16px] font-bold font-mono ${tickState.isLocked ? 'text-red-600' : 'text-color-up'}`}>
-              {multiplier.label}
             </div>
           </div>
           {/* Set status */}
@@ -190,7 +182,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className={`text-[16px] font-bold font-mono tabular-nums ${tickState.isLocked ? 'text-red-600' : 'text-black'}`}>
+            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
               {formatTime(tickState.remaining)}
             </div>
           </div>

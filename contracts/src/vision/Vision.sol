@@ -28,9 +28,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     // ============ CONSTANTS ============
 
     uint256 public constant PROTOCOL_FEE_BPS = 30; // 0.3%
-    uint256 public constant MIN_STAKE_PER_TICK = 1e5; // 0.1 USDC (6 decimals)
+    uint256 public constant MIN_STAKE_PER_TICK = 1e17; // 0.1 USDC (18 decimals)
     uint256 public constant BPS_DENOMINATOR = 10000;
-    uint256 public constant MAX_TICK_DURATION = 30 days;
+    uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
+    uint256 public constant MAX_TICK_DURATION = 604800;   // 1 week maximum
+    uint256 public constant MAX_BATCHES = 200;
 
     // ============ IMMUTABLES ============
 
@@ -42,7 +44,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public nextBatchId;
     mapping(uint256 => Batch) internal _batches;
     mapping(uint256 => mapping(address => PlayerPosition)) internal _positions;
-    uint256 public accumulatedFees;
+    /// @notice Fees from positions funded by real L3 USDC (backed by actual USDC in contract)
+    uint256 public accumulatedRealFees;
+    /// @notice Fees from positions funded by virtual balance (backed by Settlement custody, not L3 USDC)
+    uint256 public accumulatedVirtualFees;
     address public feeCollector;
 
     /// @notice sourceId => batchId (F5/F13 idempotency + reverse lookup)
@@ -86,9 +91,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     }
     mapping(uint256 => WithdrawRequest) public withdrawRequests;
 
-    // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedFees
+    // INVARIANT: USDC.balanceOf(this) >= totalRealBalance + sum(active batch deposits) + accumulatedRealFees
     // INVARIANT: totalRealBalance == sum(realBalance[all users])
     // INVARIANT: totalVirtualBalance == sum(virtualBalance[all users])
+    // INVARIANT: accumulatedVirtualFees NEVER inflates totalRealBalance or USDC holdings
 
     // ============ CONSTRUCTOR ============
 
@@ -127,13 +133,28 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
             b.configHash = b.nextConfigHash;
             b.lockOffset = b.nextLockOffset;
-            b.lastPromotionTick = currentTick;
+
+            // Handle tickDuration change: recalculate epochOffset to preserve tick continuity
+            if (b.nextTickDuration > 0) {
+                // Compute old relative tickId before changing tickDuration
+                int256 oldTickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
+                // Switch to new tickDuration
+                b.tickDuration = b.nextTickDuration;
+                // Compute new absolute tick under new duration
+                int256 newAbsTick = int256(block.timestamp / b.tickDuration);
+                // epochOffset adjustment: oldTickId must equal newAbsTick - createdAtTick + newEpochOffset
+                b.epochOffset = oldTickId - (newAbsTick - int256(b.createdAtTick));
+                b.nextTickDuration = 0;
+            }
+
+            // lastPromotionTick is always in terms of current tickDuration
+            b.lastPromotionTick = block.timestamp / b.tickDuration;
 
             // Clear pending
             b.nextConfigHash = bytes32(0);
             b.nextLockOffset = 0;
 
-            emit BatchConfigPromoted(batchId, oldHash, b.configHash, currentTick);
+            emit BatchConfigPromoted(batchId, oldHash, b.configHash, b.lastPromotionTick);
         }
     }
 
@@ -144,8 +165,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function _currentTickId(uint256 batchId) internal view returns (uint256) {
         Batch storage b = _batches[batchId];
         uint256 currentTick = block.timestamp / b.tickDuration;
-        if (currentTick < b.createdAtTick) return 0;
-        return currentTick - b.createdAtTick;
+        int256 tickId = int256(currentTick) - int256(b.createdAtTick) + b.epochOffset;
+        if (tickId < 0) return 0;
+        return uint256(tickId);
     }
 
     /// @notice Revert if the batch is in its lock window (Issue 6 / F6).
@@ -227,8 +249,11 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             return sourceIdToBatchId[sourceId];
         }
 
+        // Hard cap: reject batch creation once MAX_BATCHES is reached
+        if (nextBatchId >= MAX_BATCHES) revert TooManyBatches();
+
         // Validate parameters
-        if (tickDuration == 0 || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+        if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
         if (lockOffset >= tickDuration) revert InvalidLockOffset();
 
         // BLS verification — proves issuers signed this config (F1/F4)
@@ -271,6 +296,7 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 batchId,
         bytes32 configHash,
         uint256 lockOffset,
+        uint256 tickDuration,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -285,13 +311,15 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         // Lock window check (Issue 9) — cannot update config during lock
         _requireNotLocked(batchId);
 
-        // If configHash == active AND no pending next, no-op
-        if (b.configHash == configHash && b.nextConfigHash == bytes32(0)) {
-            return;
-        }
+        // No-op check: skip if configHash, lockOffset, AND tickDuration are ALL unchanged with no pending update
+        if (b.configHash == configHash && b.lockOffset == lockOffset && b.nextConfigHash == bytes32(0)
+            && b.tickDuration == tickDuration) return;
 
-        // Validate lockOffset
-        if (lockOffset >= b.tickDuration) revert InvalidLockOffset();
+        // Validate tickDuration
+        if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
+
+        // Validate lockOffset against the proposed tickDuration
+        if (lockOffset >= tickDuration) revert LockOffsetTooLarge();
 
         // BLS verification with distinct domain tag (Issue 9)
         bytes32 message = keccak256(abi.encode(
@@ -300,15 +328,17 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             "UPDATE_BATCH_CONFIG",
             batchId,
             configHash,
-            lockOffset
+            lockOffset,
+            tickDuration
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
         // Stage for next tick (F3 deferred promotion)
         b.nextConfigHash = configHash;
         b.nextLockOffset = lockOffset;
+        b.nextTickDuration = tickDuration;
 
-        emit BatchConfigUpdated(batchId, configHash, lockOffset);
+        emit BatchConfigUpdated(batchId, configHash, lockOffset, tickDuration);
     }
 
     /// @inheritdoc IVision
@@ -378,7 +408,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             lastClaimedTick: 0,
             joinTimestamp: block.timestamp,
             totalDeposited: depositAmount,
-            totalClaimed: 0,
             isVirtual: usedVirtual
         });
 
@@ -434,8 +463,12 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     ) external nonReentrant {
         PlayerPosition storage position = _positions[batchId][msg.sender];
         if (position.stakePerTick == 0) revert NotJoined();
-        if (fromTick <= position.lastClaimedTick && position.lastClaimedTick != 0) revert TickAlreadyClaimed();
         if (toTick < fromTick) revert InvalidTickRange();
+        if (position.lastClaimedTick == 0) {
+            if (fromTick <= position.startTick) revert InvalidTickRange();
+        } else {
+            if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
+        }
 
         // BLS verify: issuers sign the new balance for this player over this tick range (F1)
         bytes32 message = keccak256(abi.encode(
@@ -454,24 +487,21 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         position.balance = newBalance;
         position.lastClaimedTick = toTick;
 
+        // HIGH-2 FIX: No fee is taken here. Fees are applied once — at withdraw() /
+        // forceWithdraw() — on net profit over the full lifetime of the position.
+        // Taking a fee here AND at withdraw would compound the effective rate, since
+        // the withdraw profit calculation uses (finalBalance - totalDeposited), meaning
+        // already-taxed intermediate winnings would be taxed again.
+        //
+        // HIGH-1 NOTE: No solvency gap here. The parimutuel model is inherently sound:
+        // all stakes enter the contract via _debitBalance() at join time and never leave
+        // until withdraw(). claimRewards() only updates the position's internal balance
+        // (a redistribution of already-locked funds between winners and losers), backed
+        // by BLS-signed issuer consensus. No USDC is minted or moved; the accounting
+        // invariant USDC.balanceOf(this) >= totalRealBalance + active_batch_deposits +
+        // accumulatedRealFees holds throughout.
         if (newBalance > oldBalance) {
-            uint256 winnings = newBalance - oldBalance;
-            uint256 fee = (winnings * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
-            accumulatedFees += fee;
-            uint256 payout = winnings - fee;
-
-            // SOL-2: Route payout back to the same balance type used to fund the position.
-            // Virtual-funded positions must not create unbacked realBalance.
-            if (position.isVirtual) {
-                virtualBalance[msg.sender] += payout;
-                totalVirtualBalance += payout;
-            } else {
-                realBalance[msg.sender] += payout;
-                totalRealBalance += payout;
-            }
-            position.totalClaimed += payout;
-
-            emit RewardsClaimed(batchId, msg.sender, payout);
+            emit RewardsClaimed(batchId, msg.sender, newBalance - oldBalance);
         }
         // If newBalance <= oldBalance, losses are recorded (balance decreased), no payout
     }
@@ -498,23 +528,26 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
-        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
-
-        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
+        // Fee on profit only — net profit = finalBalance minus total amount ever deposited.
+        // Fees are applied ONLY here (not in claimRewards) to avoid double-counting.
+        // claimRewards() updates position.balance (an internal redistribution), but no
+        // USDC is moved. The single fee point is withdraw().
         uint256 totalDeposited = position.totalDeposited;
-        uint256 alreadyClaimed = position.totalClaimed;
-        // Effective cost basis: deposits minus what was already claimed (and taxed)
-        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
-            ? totalDeposited - alreadyClaimed : 0;
-        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
-        accumulatedFees += fee;
-
         // SOL-2: Read isVirtual BEFORE delete
         bool isVirtual = position.isVirtual;
+
+        // HIGH-3 FIX: Route fees to the same bucket as the position's funding source.
+        // Virtual positions never deposited real USDC — crediting their fees to
+        // accumulatedRealFees would inflate totalRealBalance beyond actual USDC holdings.
+        if (isVirtual) {
+            accumulatedVirtualFees += fee;
+        } else {
+            accumulatedRealFees += fee;
+        }
 
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][msg.sender];
@@ -588,15 +621,28 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     function collectFees() external nonReentrant {
         if (msg.sender != feeCollector) revert Unauthorized();
 
-        uint256 fees = accumulatedFees;
-        accumulatedFees = 0;
+        uint256 realFees = accumulatedRealFees;
+        uint256 virtualFees = accumulatedVirtualFees;
+        accumulatedRealFees = 0;
+        accumulatedVirtualFees = 0;
 
-        // Fees credited to feeCollector's realBalance (not transferred out).
-        // feeCollector can withdrawBalance() or withdrawToSettlement() to extract.
-        // This fixes the solvency issue where collectFees tried to transfer USDC
-        // that didn't exist when all deposits were Settlement-bridged.
-        realBalance[feeCollector] += fees;
-        totalRealBalance += fees;
+        // Real fees → realBalance: these are backed by actual L3 USDC in the contract.
+        // feeCollector can withdrawBalance() to extract as USDC.
+        if (realFees > 0) {
+            realBalance[feeCollector] += realFees;
+            totalRealBalance += realFees;
+        }
+
+        // Virtual fees → virtualBalance: backed by Settlement custody, NOT L3 USDC.
+        // Crediting them to realBalance would inflate totalRealBalance beyond actual
+        // USDC holdings — the solvency invariant violation this fix corrects.
+        // feeCollector can withdrawToSettlement() to extract via the bridge.
+        if (virtualFees > 0) {
+            virtualBalance[feeCollector] += virtualFees;
+            totalVirtualBalance += virtualFees;
+        }
+
+        emit FeeCollected(realFees, virtualFees);
     }
 
     /// @inheritdoc IVision
@@ -684,23 +730,22 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
 
-        // Sanity: finalBalance should not exceed current position balance (with dust tolerance)
-        require(finalBalance <= position.balance + 1e4, "finalBalance exceeds position");
-
-        // Fee on profit only — exclude already-claimed (and already-taxed) amounts
+        // Fee on profit only — net profit = finalBalance minus total amount ever deposited.
+        // Fees are applied ONLY here (not in claimRewards) to avoid double-counting.
         uint256 totalDeposited = position.totalDeposited;
-        uint256 alreadyClaimed = position.totalClaimed;
-        // Effective cost basis: deposits minus what was already claimed (and taxed)
-        uint256 adjustedDeposit = totalDeposited > alreadyClaimed
-            ? totalDeposited - alreadyClaimed : 0;
-        uint256 profit = finalBalance > adjustedDeposit ? finalBalance - adjustedDeposit : 0;
+        uint256 profit = finalBalance > totalDeposited ? finalBalance - totalDeposited : 0;
         uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
         uint256 payout = finalBalance - fee;
 
-        accumulatedFees += fee;
-
         // SOL-2: Read isVirtual BEFORE delete
         bool isVirtual = position.isVirtual;
+
+        // HIGH-3 FIX: Route fees to the same bucket as the position's funding source.
+        if (isVirtual) {
+            accumulatedVirtualFees += fee;
+        } else {
+            accumulatedRealFees += fee;
+        }
 
         // Delete position before balance credit (CEI pattern)
         delete _positions[batchId][player];

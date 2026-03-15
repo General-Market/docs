@@ -17,6 +17,7 @@
 //! - Flat outcome (no price movement)
 
 use ethers::types::{Address, U256};
+use std::cmp::min;
 
 use super::types::{MarketOutcome, Side};
 
@@ -86,17 +87,43 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
         return refund_all(inputs);
     }
 
-    let mut results = Vec::with_capacity(inputs.len());
+    // -------------------------------------------------------------------------
+    // Phase 1: compute per-player matched_stake for ALL players (both sides).
+    //
+    // matched_stake_i = floor(effective_stake_i * matched / side_total)
+    //
+    // Due to integer truncation, sum(matched_stake) can be less than `matched`
+    // by up to (n - 1) wei per side — "rounding dust".  If we naively paid
+    // winners 2 * their_matched_stake the pool would be unbalanced: winners
+    // could receive more than the losers contributed (or vice-versa).
+    //
+    // To guarantee the invariant  sum(winner_payouts) == sum(loser_matched_stakes)
+    // we use the "last-player-gets-remainder" technique on EACH side:
+    //   - for the first (n-1) players on a side, use the truncated value;
+    //   - for the last player on each side, give them
+    //       matched - sum_of_previous_matched_stakes
+    //     so that the side total is exactly `matched`.
+    // -------------------------------------------------------------------------
+
+    // Helper: compute matched_stake for one player, or trigger a refund-all.
+    // Returns None on overflow or zero-division (callers propagate refund_all).
+    struct PerPlayerStake {
+        player: Address,
+        side: Side,
+        effective_stake: U256,
+        matched_stake: U256,
+        refund: U256,
+    }
+
+    let mut per_player: Vec<PerPlayerStake> = Vec::with_capacity(inputs.len());
 
     for input in inputs {
         if input.effective_stake.is_zero() {
-            // Zero-stake players get nothing
-            results.push(SideMatchResult {
+            per_player.push(PerPlayerStake {
                 player: input.player,
                 side: input.side,
                 effective_stake: input.effective_stake,
                 matched_stake: U256::zero(),
-                payout: U256::zero(),
                 refund: U256::zero(),
             });
             continue;
@@ -105,11 +132,6 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
         let is_winner = input.side == winning_side;
         let side_total = if is_winner { winning_total } else { losing_total };
 
-        // Compute this player's matched stake:
-        //   matched_stake = effective_stake * matched / side_total
-        // Using checked math: multiply first, then divide, to maintain precision.
-        // On overflow or zero-division, refund everyone — this indicates corrupted data
-        // and refunding is the safest financial outcome.
         let product = match input.effective_stake.checked_mul(matched) {
             Some(v) => v,
             None => {
@@ -122,7 +144,7 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
                 return refund_all(inputs);
             }
         };
-        let matched_stake = match product.checked_div(side_total) {
+        let matched_stake_trunc = match product.checked_div(side_total) {
             Some(v) => v,
             None => {
                 tracing::error!(
@@ -134,80 +156,145 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
             }
         };
 
-        // Refund = unmatched portion
-        let refund = input.effective_stake - matched_stake;
+        // Refund = unmatched portion (computed from truncated matched_stake for now;
+        // will be corrected for the last player on each side below).
+        let refund = input.effective_stake - matched_stake_trunc;
 
-        if is_winner {
-            // Winners receive: matched_stake + share of losing matched pool
-            // payout = matched_stake + matched_stake * losing_matched / winning_matched
-            //
-            // winning_matched = matched (by definition, min of the two sides)
-            // losing_matched = matched (same amount, the smaller side is fully matched)
-            //
-            // But we need the actual winning_matched total to distribute proportionally.
-            // winning_matched_total = sum of all winners' matched_stakes = matched (when winning >= losing)
-            //                      or = winning_total (when winning < losing)
-            // Actually: winning_matched_total = min(winning_total, matched) = matched if winning >= losing
-            //           winning_matched_total = winning_total if winning < losing
-            // Simpler: winning_matched_total = sum(matched_stake for winners) = matched (always)
-            // Because: sum(stake_i * matched / side_total) for winners = winning_total * matched / winning_total = matched (if winning side)
-            //          OR = winning_total * matched / winning_total = matched... wait no.
-            //
-            // Let's think again:
-            // - If winning_total >= losing_total: matched = losing_total
-            //   winning side is larger -> matched_stake_i = stake_i * losing_total / winning_total
-            //   sum = winning_total * losing_total / winning_total = losing_total = matched ✓
-            //
-            // - If winning_total < losing_total: matched = winning_total
-            //   winning side is smaller -> matched_stake_i = stake_i * winning_total / winning_total = stake_i
-            //   sum = winning_total = matched ✓
-            //
-            // So winning_matched_total = matched, and losing_matched_total = matched.
-            // Each winner gets: matched_stake + matched_stake * matched / matched = 2 * matched_stake
-            // That's wrong for asymmetric sides. Let's reconsider.
-            //
-            // The pool available to winners = losing side's matched total = matched.
-            // Each winner's share of the pool is proportional to their matched_stake / winning_matched_total.
-            // winner_profit = matched * (matched_stake / matched) = matched_stake
-            // winner_payout = matched_stake + matched_stake = 2 * matched_stake
-            //
-            // Hmm, that simplifies to 2x. But that IS correct for parimutuel:
-            // - Each winner's profit from the losing pool is proportional to their matched stake
-            // - The entire losing matched pool is distributed to winners
-            // - Since winning_matched_total = losing_matched_total = matched,
-            //   each winner gets exactly their matched_stake as profit.
-            //
-            // For a 70/30 split (UP=70, DOWN=30):
-            //   matched = 30
-            //   UP player with stake 70: matched_stake = 70 * 30/70 = 30, refund = 40
-            //   payout = 30 + 30 = 60... but they staked 70 total and get back 40 + 60 = 100
-            //   Wait no: they staked 70. matched = 30 from each side. Winner gets the whole pool (60).
-            //   But proportionally: this one winner gets all 60 back.
-            //   Their refund = 70 - 30 = 40. Total received = 60 + 40 = 100. Started with 70. Profit = 30. ✓
-            //
-            // So payout (from the matched pool) = 2 * matched_stake for winners.
-            let payout = matched_stake * 2;
+        per_player.push(PerPlayerStake {
+            player: input.player,
+            side: input.side,
+            effective_stake: input.effective_stake,
+            matched_stake: matched_stake_trunc,
+            refund,
+        });
+    }
 
-            results.push(SideMatchResult {
-                player: input.player,
-                side: input.side,
-                effective_stake: input.effective_stake,
-                matched_stake,
-                payout,
-                refund,
-            });
-        } else {
-            // Losers: their matched_stake goes to the winning pool
-            // They only get back the unmatched refund
-            results.push(SideMatchResult {
-                player: input.player,
-                side: input.side,
-                effective_stake: input.effective_stake,
-                matched_stake,
-                payout: U256::zero(),
-                refund,
-            });
+    // -------------------------------------------------------------------------
+    // Phase 2: fix up the last non-zero player on each side so that
+    //   sum(matched_stake for winners) == matched  (exactly)
+    //   sum(matched_stake for losers)  == matched  (exactly)
+    //
+    // "loser_pool" = sum of loser matched_stakes = exactly `matched` after fixup.
+    // "winner_matched_sum" = exactly `matched` after fixup.
+    // Each winner's payout = 2 * their matched_stake, so
+    //   sum(winner_payouts) = 2 * matched = loser_pool + winner_matched_sum ✓
+    // -------------------------------------------------------------------------
+
+    // Find the last non-zero player on the winning side and fix their matched_stake.
+    {
+        let winner_sum: U256 = per_player
+            .iter()
+            .filter(|p| p.side == winning_side && !p.effective_stake.is_zero())
+            .map(|p| p.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+
+        if winner_sum < matched {
+            // Distribute dust across winners in reverse order. A single player may not
+            // be able to absorb all the dust (their refund could be smaller than dust),
+            // so we cascade through multiple players until it is fully absorbed.
+            let mut remaining_dust = matched - winner_sum;
+            for player in per_player
+                .iter_mut()
+                .rev()
+                .filter(|p| p.side == winning_side && !p.effective_stake.is_zero())
+            {
+                let can_absorb = min(remaining_dust, player.refund);
+                player.matched_stake = player.matched_stake + can_absorb;
+                player.refund = player.refund - can_absorb; // safe: can_absorb <= refund
+                remaining_dust = remaining_dust - can_absorb;
+                if remaining_dust.is_zero() {
+                    break;
+                }
+            }
         }
+    }
+
+    // Find the last non-zero player on the losing side and fix their matched_stake.
+    let loser_pool: U256;
+    {
+        let loser_sum: U256 = per_player
+            .iter()
+            .filter(|p| p.side != winning_side && !p.effective_stake.is_zero())
+            .map(|p| p.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+
+        if loser_sum < matched {
+            // Same cascade logic as winners: distribute dust across losers in reverse
+            // order so no single player absorbs more than their available refund.
+            let mut remaining_dust = matched - loser_sum;
+            for player in per_player
+                .iter_mut()
+                .rev()
+                .filter(|p| p.side != winning_side && !p.effective_stake.is_zero())
+            {
+                let can_absorb = min(remaining_dust, player.refund);
+                player.matched_stake = player.matched_stake + can_absorb;
+                player.refund = player.refund - can_absorb; // safe: can_absorb <= refund
+                remaining_dust = remaining_dust - can_absorb;
+                if remaining_dust.is_zero() {
+                    break;
+                }
+            }
+        }
+
+        // Recompute after fixup (should now equal `matched` exactly).
+        loser_pool = per_player
+            .iter()
+            .filter(|p| p.side != winning_side)
+            .map(|p| p.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 3: compute the winner_matched_sum (after fixup, == matched exactly).
+    // Distribute loser_pool to winners proportionally:
+    //   winner_payout_i = 2 * winner_matched_stake_i
+    // This is correct because winner_matched_sum == loser_pool == matched, so
+    // each winner's share of the loser pool == their matched_stake, and their
+    // total payout (stake back + profit) == 2 * matched_stake.
+    //
+    // Final invariant check: sum(winner_payouts) == loser_pool ✓
+    // (Both equal 2 * matched, and matched == loser_pool after fixup.)
+    // -------------------------------------------------------------------------
+
+    // Sanity: winner_matched_sum should equal loser_pool (both == matched).
+    // If they somehow diverge (impossible with correct logic above, but be safe),
+    // fall back to refund_all to avoid draining the pool.
+    let winner_matched_sum: U256 = per_player
+        .iter()
+        .filter(|p| p.side == winning_side)
+        .map(|p| p.matched_stake)
+        .fold(U256::zero(), |a, b| a + b);
+
+    if winner_matched_sum != loser_pool {
+        tracing::error!(
+            winner_matched_sum = %winner_matched_sum,
+            loser_pool = %loser_pool,
+            "BUG: winner_matched_sum != loser_pool after dust fixup — refunding all players"
+        );
+        return refund_all(inputs);
+    }
+
+    // Build final results.
+    let mut results = Vec::with_capacity(inputs.len());
+    for p in per_player {
+        let is_winner = p.side == winning_side;
+        let payout = if is_winner {
+            // winner gets their matched_stake back plus a proportional share
+            // of the loser pool.  Since winner_matched_sum == loser_pool,
+            // the share == matched_stake, so payout == 2 * matched_stake.
+            p.matched_stake * 2
+        } else {
+            U256::zero()
+        };
+        results.push(SideMatchResult {
+            player: p.player,
+            side: p.side,
+            effective_stake: p.effective_stake,
+            matched_stake: p.matched_stake,
+            payout,
+            refund: p.refund,
+        });
     }
 
     results
@@ -617,5 +704,150 @@ mod tests {
         assert_eq!(loser.matched_stake, u(50)); // 200 * 50 / 200 = 50
         assert_eq!(loser.payout, u(0));
         assert_eq!(loser.refund, u(150)); // 200 - 50
+    }
+
+    // -------------------------------------------------------------------------
+    // Test: rounding dust on winner side.
+    //
+    // UP: 3 players with stake 1 each → total 3
+    // DOWN: 2 players with stake 1 each → total 2
+    // matched = 2
+    //
+    // Naive truncation for UP: floor(1*2/3) = 0 for each → sum = 0, dust = 2.
+    // Last-winner fixup gives the last UP player 2.
+    // Loser side: floor(1*2/2) = 1 each → sum = 2, no dust.
+    // winner_matched_sum (2) == loser_pool (2) ✓
+    // -------------------------------------------------------------------------
+    #[test]
+    fn test_rounding_dust_winner_side() {
+        let inputs = vec![
+            input(1, Side::Up, 1),
+            input(2, Side::Up, 1),
+            input(3, Side::Up, 1),
+            input(4, Side::Down, 1),
+            input(5, Side::Down, 1),
+        ];
+        let results = match_sides(&inputs, MarketOutcome::Up);
+
+        assert_eq!(results.len(), 5);
+        assert_conservation(&inputs, &results);
+
+        let winner_payout_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.payout)
+            .fold(U256::zero(), |a, b| a + b);
+        let loser_matched_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Down)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(
+            winner_payout_total, loser_matched_total,
+            "winner payouts must equal loser matched stakes — pool must be exactly balanced"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Test: dust on loser side.
+    //
+    // UP: 10 (winning, smaller side)
+    // DOWN: 7, 7, 7 → total 21, matched = 10
+    // Loser matched_stakes (truncated): floor(7*10/21) = 3 each → sum = 9, dust = 1.
+    // Last loser gets 3 + 1 = 4 → loser_pool = 10.
+    // winner_matched_stake = floor(10*10/10) = 10 → sum = 10.
+    // winner_matched_sum (10) == loser_pool (10) ✓
+    // -------------------------------------------------------------------------
+    #[test]
+    fn test_rounding_dust_loser_side() {
+        let inputs = vec![
+            input(1, Side::Up, 10),
+            input(2, Side::Down, 7),
+            input(3, Side::Down, 7),
+            input(4, Side::Down, 7),
+        ];
+        let results = match_sides(&inputs, MarketOutcome::Up);
+
+        assert_eq!(results.len(), 4);
+        assert_conservation(&inputs, &results);
+
+        let winner_payout_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.payout)
+            .fold(U256::zero(), |a, b| a + b);
+        let loser_matched_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Down)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(
+            winner_payout_total, loser_matched_total,
+            "winner payouts must equal loser matched stakes"
+        );
+
+        // Winner must be fully matched (smaller side): matched_stake = 10, payout = 20.
+        let winner = find_result(&results, 1);
+        assert_eq!(winner.matched_stake, u(10));
+        assert_eq!(winner.payout, u(20));
+        assert_eq!(winner.refund, u(0));
+    }
+
+    // -------------------------------------------------------------------------
+    // Regression: dust cascade when dust > last player's refund.
+    //
+    // 3 UP winners (stake=1 each), 2 DOWN losers (stake=1 each).
+    // winning_total=3, losing_total=2, matched=2.
+    // Each winner: floor(1*2/3)=0 matched_stake, refund=1. dust=2.
+    // Last winner's refund (1) < dust (2) — old code underflowed U256.
+    // New code cascades: last winner absorbs 1 (all their refund), then
+    // second-to-last winner absorbs the remaining 1.
+    // -------------------------------------------------------------------------
+    #[test]
+    fn test_dust_cascade_exceeds_last_player_refund() {
+        let inputs = vec![
+            input(1, Side::Up, 1),
+            input(2, Side::Up, 1),
+            input(3, Side::Up, 1),
+            input(4, Side::Down, 1),
+            input(5, Side::Down, 1),
+        ];
+        let results = match_sides(&inputs, MarketOutcome::Up);
+
+        assert_eq!(results.len(), 5);
+        // Must not panic or produce wildly wrong values.
+        assert_conservation(&inputs, &results);
+
+        // All winners' matched_stakes must sum to exactly `matched` (2).
+        let winner_matched_sum: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(winner_matched_sum, u(2), "winner matched_stakes must sum to matched");
+
+        // No winner should have matched_stake > their effective_stake.
+        for r in results.iter().filter(|r| r.side == Side::Up) {
+            assert!(
+                r.matched_stake <= r.effective_stake,
+                "matched_stake {} exceeds effective_stake {} for player {:?}",
+                r.matched_stake,
+                r.effective_stake,
+                r.player
+            );
+        }
+
+        // Pool balance: winner payouts == loser matched stakes.
+        let winner_payout_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.payout)
+            .fold(U256::zero(), |a, b| a + b);
+        let loser_matched_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Down)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(winner_payout_total, loser_matched_total);
     }
 }

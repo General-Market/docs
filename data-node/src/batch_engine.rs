@@ -16,7 +16,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 
 /// Lock window as % of tick duration, by source speed class.
 const LOCK_PCT_FAST: f64 = 0.25;    // 30-120s sync → lock last 25%
@@ -438,29 +438,12 @@ async fn compute_asset_thresholds(
 }
 
 /// Generate a full batch config for a source.
-/// Returns None if we're in the lock period (last portion of tick) to freeze config.
 async fn generate_batch_config(
     pool: &PgPool,
     source_id: &str,
     display_name: &str,
     sync_interval_secs: u64,
 ) -> Option<BatchConfig> {
-    // Issue #3: Don't recompute during lock period — freeze config
-    let tick_duration = sync_interval_secs;
-    let lock_offset = lock_offset_for_interval(sync_interval_secs);
-    let now_epoch = Utc::now().timestamp() as u64;
-    let elapsed = now_epoch % tick_duration;
-    let remaining = tick_duration - elapsed;
-    if remaining <= lock_offset {
-        info!(
-            source = source_id,
-            remaining_secs = remaining,
-            lock_offset_secs = lock_offset,
-            "Lock period — freezing batch config"
-        );
-        return None;
-    }
-
     let healthy = match get_healthy_assets(pool, source_id, sync_interval_secs).await {
         Ok(ids) => ids,
         Err(e) => {
@@ -474,7 +457,7 @@ async fn generate_batch_config(
     }
 
     let tick_duration_secs = sync_interval_secs;
-    let lock_offset_secs = lock_offset_for_interval(sync_interval_secs);
+    let lock_offset_secs = 0u64; // Continuous betting: no lock window
 
     let markets = compute_asset_thresholds(pool, source_id, &healthy).await;
 

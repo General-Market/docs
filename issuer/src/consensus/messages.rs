@@ -1202,6 +1202,75 @@ impl ConsensusMessageHandler {
                 debug!(?from, "Forwarding arbitration message to subsystem");
                 MessageHandleResult::ForwardToArbitration(message)
             }
+            // Vision bitmap gossip — forward to bitmap gossip handler
+            P2PMessage::BitmapGossip {
+                batch_id,
+                player,
+                bitmap_hash,
+                config_hash,
+                target_tick_id,
+            } => {
+                debug!(
+                    ?from,
+                    batch_id,
+                    ?player,
+                    ?bitmap_hash,
+                    "Received BitmapGossip"
+                );
+                MessageHandleResult::ProcessBitmapGossip {
+                    from,
+                    batch_id,
+                    player,
+                    bitmap_hash,
+                    config_hash,
+                    target_tick_id,
+                }
+            }
+            P2PMessage::BitmapRequest {
+                batch_id,
+                player,
+                bitmap_hash,
+            } => {
+                debug!(
+                    ?from,
+                    batch_id,
+                    ?player,
+                    ?bitmap_hash,
+                    "Received BitmapRequest"
+                );
+                MessageHandleResult::ProcessBitmapRequest {
+                    from,
+                    batch_id,
+                    player,
+                    bitmap_hash,
+                }
+            }
+            P2PMessage::BitmapResponse {
+                batch_id,
+                player,
+                bitmap,
+                bitmap_hash,
+                config_hash,
+                target_tick_id,
+            } => {
+                debug!(
+                    ?from,
+                    batch_id,
+                    ?player,
+                    ?bitmap_hash,
+                    bitmap_len = bitmap.len(),
+                    "Received BitmapResponse"
+                );
+                MessageHandleResult::ProcessBitmapResponse {
+                    from,
+                    batch_id,
+                    player,
+                    bitmap,
+                    bitmap_hash,
+                    config_hash,
+                    target_tick_id,
+                }
+            }
             _ => {
                 trace!(?from, "Non-consensus message received");
                 MessageHandleResult::Ignored
@@ -1905,6 +1974,33 @@ pub enum MessageHandleResult {
     },
     /// Forward arbitration message to arbitration subsystem
     ForwardToArbitration(P2PMessage),
+    /// Process a BitmapGossip announcement from a peer.
+    /// Receiver checks if it already has the bitmap and, if not, issues a BitmapRequest.
+    ProcessBitmapGossip {
+        from: PeerId,
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+    /// Process a BitmapRequest from a peer that wants our bitmap bytes.
+    ProcessBitmapRequest {
+        from: PeerId,
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+    },
+    /// Process a BitmapResponse — full bitmap sent by a peer after our BitmapRequest.
+    ProcessBitmapResponse {
+        from: PeerId,
+        batch_id: u64,
+        player: Address,
+        bitmap: Vec<u8>,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
 }
 
 impl MessageHandleResult {

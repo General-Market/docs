@@ -586,8 +586,8 @@ impl ChainListener {
         let stake_per_tick = U256::from_big_endian(&log.data[0..32]);
         let bitmap_hash = H256::from_slice(&log.data[32..64]);
 
-        // Get block timestamp for join_timestamp and start_tick computation
-        let (join_timestamp, start_tick) = match self.get_block_timestamp(log).await {
+        // Get block timestamp for start_tick computation
+        let start_tick = match self.get_block_timestamp(log).await {
             Some(ts) => {
                 // Compute start_tick from batch's tick_duration
                 let tick_dur = self
@@ -596,10 +596,9 @@ impl ChainListener {
                     .await
                     .map(|b| b.tick_duration)
                     .unwrap_or(1);
-                let start_tick = if tick_dur > 0 { ts / tick_dur } else { 0 };
-                (ts, start_tick)
+                if tick_dur > 0 { ts / tick_dur } else { 0 }
             }
-            None => (0, 0),
+            None => 0,
         };
 
         // Compute initial balance: for the join event, the depositAmount IS the initial balance.
@@ -617,12 +616,6 @@ impl ChainListener {
             }
         };
 
-        // Derive num_committed_ticks from bitmap length:
-        // bitmap has (num_ticks * num_markets) bits, but we don't know num_markets yet
-        // at join time. Default to 1; it will be updated when bitmap is revealed and
-        // the batch config (num_markets) is known during tick resolution.
-        let num_committed_ticks = 1;
-
         let position = PlayerPosition {
             player,
             bitmap_hash,
@@ -630,8 +623,6 @@ impl ChainListener {
             start_tick,
             balance,
             initial_deposit: balance,
-            join_timestamp,
-            num_committed_ticks,
         };
 
         // 1. Update in-memory scheduler (per-batch position)
@@ -657,7 +648,7 @@ impl ChainListener {
         .bind(format!("{:?}", bitmap_hash))
         .bind(start_tick as i64)
         .bind(balance.to_string())
-        .bind(join_timestamp as i64)
+        .bind(0i64) // join_timestamp no longer tracked (multiplier system removed)
         .bind(balance.to_string()) // total_deposited = initial balance at join time
         .execute(&self.pool)
         .await

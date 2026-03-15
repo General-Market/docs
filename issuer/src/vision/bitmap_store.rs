@@ -1,180 +1,497 @@
-//! Bitmap store for Vision player predictions
+//! Two-slot bitmap store for Vision player predictions
 //!
-//! In-memory store for player bitmaps. Each issuer holds all bitmaps and
-//! verifies them against their on-chain keccak256 commitment hash before storing.
+//! Each batch has two slots: *pending* and *active*.
+//!
+//! - Players submit bitmaps into the **pending** slot.
+//! - At a tick boundary the engine calls `flip(batch_id)`, which promotes
+//!   every pending entry to active (clearing the previous active set for that
+//!   batch first).  Players who did not submit a new bitmap simply sit out the
+//!   next tick — their old active entry is gone after the flip.
+//! - Both maps live inside a single `RwLock<BitmapSlots>` to prevent
+//!   deadlock and to make flip() atomic.
 
-use ethers::core::utils::keccak256;
 use ethers::types::{Address, H256};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
-use tracing::info;
 
-use super::types::StoredBitmap;
+use super::types::SlottedBitmap;
 
-/// In-memory store for player bitmaps. Each issuer holds all bitmaps.
+// ---------------------------------------------------------------------------
+// Internal state
+// ---------------------------------------------------------------------------
+
+struct BitmapSlots {
+    pending: HashMap<(u64, Address), SlottedBitmap>,
+    active: HashMap<(u64, Address), SlottedBitmap>,
+}
+
+impl BitmapSlots {
+    fn new() -> Self {
+        Self {
+            pending: HashMap::new(),
+            active: HashMap::new(),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Public store
+// ---------------------------------------------------------------------------
+
+/// Two-slot in-memory bitmap store.
+///
+/// Thread-safe via a single `RwLock` that guards both pending and active maps.
 pub struct BitmapStore {
-    /// (batch_id, player) -> StoredBitmap
-    bitmaps: RwLock<HashMap<(u64, Address), StoredBitmap>>,
+    slots: RwLock<BitmapSlots>,
 }
 
 impl BitmapStore {
     pub fn new() -> Self {
         Self {
-            bitmaps: RwLock::new(HashMap::new()),
+            slots: RwLock::new(BitmapSlots::new()),
         }
     }
 
-    /// Store a bitmap after verifying keccak256(bitmap) matches the on-chain hash.
-    pub async fn store(
+    /// Store a bitmap in the **pending** slot after verifying its keccak256 hash.
+    ///
+    /// `config_hash` and `target_tick_id` travel with the bitmap so downstream
+    /// code can detect config-version mismatches before using the bitmap.
+    pub async fn store_pending(
         &self,
         player: Address,
         batch_id: u64,
         bitmap: Vec<u8>,
         expected_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
     ) -> Result<(), BitmapStoreError> {
-        // Verify hash
         let computed = keccak256(&bitmap);
-        let computed_hash = H256::from(computed);
-        if computed_hash != expected_hash {
+        if computed != expected_hash {
             return Err(BitmapStoreError::HashMismatch {
                 expected: expected_hash,
-                computed: computed_hash,
+                computed,
             });
         }
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
 
-        let stored = StoredBitmap {
+        let entry = SlottedBitmap {
             player,
             batch_id,
             bitmap,
             hash: expected_hash,
+            config_hash,
+            target_tick_id,
             received_at: now,
         };
 
-        self.bitmaps
+        self.slots
             .write()
             .await
-            .insert((batch_id, player), stored);
+            .pending
+            .insert((batch_id, player), entry);
+
         Ok(())
     }
 
-    /// Get a player's bitmap for a batch.
-    pub async fn get(&self, batch_id: u64, player: Address) -> Option<StoredBitmap> {
-        self.bitmaps.read().await.get(&(batch_id, player)).cloned()
-    }
-
-    /// Get all bitmaps for a batch (for tick resolution).
-    pub async fn get_all_for_batch(&self, batch_id: u64) -> Vec<StoredBitmap> {
-        self.bitmaps
+    /// Retrieve a player's **active** bitmap for a batch, if present.
+    pub async fn get_active(&self, batch_id: u64, player: Address) -> Option<SlottedBitmap> {
+        self.slots
             .read()
             .await
+            .active
+            .get(&(batch_id, player))
+            .cloned()
+    }
+
+    /// Retrieve a player's **pending** bitmap for a batch, if present.
+    pub async fn get_pending(&self, batch_id: u64, player: Address) -> Option<SlottedBitmap> {
+        self.slots
+            .read()
+            .await
+            .pending
+            .get(&(batch_id, player))
+            .cloned()
+    }
+
+    /// Return all **active** bitmaps for a batch (for tick resolution).
+    pub async fn get_all_active_for_batch(&self, batch_id: u64) -> Vec<SlottedBitmap> {
+        self.slots
+            .read()
+            .await
+            .active
             .iter()
             .filter(|((bid, _), _)| *bid == batch_id)
             .map(|(_, v)| v.clone())
             .collect()
     }
 
-    /// Remove a bitmap (after player withdraws).
-    pub async fn remove(&self, batch_id: u64, player: Address) {
-        self.bitmaps.write().await.remove(&(batch_id, player));
+    /// Promote all pending bitmaps for `batch_id` to active.
+    ///
+    /// 1. Remove every existing active entry for this batch.
+    /// 2. Move every pending entry for this batch into active.
+    ///
+    /// Players who submitted no pending bitmap sit out the tick — they have no
+    /// active entry after the flip.
+    pub async fn flip(&self, batch_id: u64) {
+        let mut guard = self.slots.write().await;
+
+        // 1. Clear old active entries for this batch.
+        guard.active.retain(|(bid, _), _| *bid != batch_id);
+
+        // 2. Drain matching pending entries into active.
+        let to_promote: Vec<_> = guard
+            .pending
+            .keys()
+            .filter(|(bid, _)| *bid == batch_id)
+            .cloned()
+            .collect();
+
+        for key in to_promote {
+            if let Some(bitmap) = guard.pending.remove(&key) {
+                guard.active.insert(key, bitmap);
+            }
+        }
     }
 
-    /// Persist a bitmap to Postgres (fire-and-forget, errors logged).
-    pub async fn persist_to_db(&self, pool: &PgPool, batch_id: u64, player: Address, bitmap: &[u8], hash: &H256) {
-        let player_str = format!("{:?}", player);
-        let hash_str = format!("{:?}", hash);
-        if let Err(e) = sqlx::query(
-            "INSERT INTO vision_bitmaps (batch_id, player, bitmap, bitmap_hash)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (batch_id, player) DO UPDATE SET bitmap = $3, bitmap_hash = $4",
+    /// Remove pending bitmaps for `batch_id` whose `target_tick_id` is older
+    /// than `last_resolved_tick_id`.  Called after a tick resolves so that
+    /// stragglers don't accumulate indefinitely.
+    pub async fn cleanup_stale_pending(&self, batch_id: u64, last_resolved_tick_id: u64) {
+        self.slots.write().await.pending.retain(|(bid, _), bm| {
+            *bid != batch_id || bm.target_tick_id > last_resolved_tick_id
+        });
+    }
+
+    /// Remove a player's entries from **both** slots.
+    ///
+    /// Called when a player withdraws and is no longer eligible for settlement.
+    pub async fn remove(&self, batch_id: u64, player: Address) {
+        let mut guard = self.slots.write().await;
+        guard.pending.remove(&(batch_id, player));
+        guard.active.remove(&(batch_id, player));
+    }
+
+    // -----------------------------------------------------------------------
+    // DB persistence
+    // -----------------------------------------------------------------------
+
+    /// Upsert a player's **pending** bitmap for `batch_id` into `vision_bitmaps`.
+    pub async fn persist_pending_to_db(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        player: Address,
+        bitmap: &SlottedBitmap,
+    ) -> Result<(), BitmapStoreError> {
+        sqlx::query(
+            "INSERT INTO vision_bitmaps
+                 (batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash)
+             VALUES ($1, $2, $3, $4, 'pending', $5, $6)
+             ON CONFLICT (batch_id, player, slot) DO UPDATE SET
+                 bitmap         = EXCLUDED.bitmap,
+                 bitmap_hash    = EXCLUDED.bitmap_hash,
+                 target_tick_id = EXCLUDED.target_tick_id,
+                 config_hash    = EXCLUDED.config_hash",
         )
         .bind(batch_id as i64)
-        .bind(&player_str)
-        .bind(bitmap)
-        .bind(&hash_str)
+        .bind(format!("{:?}", player))
+        .bind(&bitmap.bitmap)
+        .bind(format!("{:?}", bitmap.hash))
+        .bind(bitmap.target_tick_id as i64)
+        .bind(format!("{:?}", bitmap.config_hash))
         .execute(pool)
-        .await
-        {
-            tracing::warn!(batch_id, player = %player, error = %e, "Failed to persist bitmap to DB");
-        }
+        .await?;
+        Ok(())
     }
 
-    /// Load all bitmaps from Postgres on startup (crash recovery).
-    pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let rows: Vec<(i64, String, Vec<u8>, String)> = sqlx::query_as(
-            "SELECT batch_id, player, bitmap, bitmap_hash FROM vision_bitmaps",
+    /// Atomically promote all pending bitmaps for `batch_id` to active in the
+    /// DB and record the resolved tick id in `vision_batch_state`.
+    ///
+    /// Mirrors the in-memory `flip()` logic but durable: survives a restart.
+    pub async fn persist_flip_and_mark_resolved(
+        &self,
+        pool: &PgPool,
+        batch_id: u64,
+        resolved_tick_id: u64,
+    ) -> Result<(), BitmapStoreError> {
+        let mut tx = pool.begin().await.map_err(BitmapStoreError::Db)?;
+
+        // 1. Delete old active rows for this batch.
+        sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
+            .bind(batch_id as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(BitmapStoreError::Db)?;
+
+        // 2. Rename pending → active.
+        sqlx::query(
+            "UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'",
+        )
+        .bind(batch_id as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        // 3. Record the resolved tick id.
+        sqlx::query(
+            "INSERT INTO vision_batch_state (batch_id, last_resolved_tick_id)
+             VALUES ($1, $2)
+             ON CONFLICT (batch_id) DO UPDATE SET
+                 last_resolved_tick_id = EXCLUDED.last_resolved_tick_id",
+        )
+        .bind(batch_id as i64)
+        .bind(resolved_tick_id as i64)
+        .execute(&mut *tx)
+        .await
+        .map_err(BitmapStoreError::Db)?;
+
+        tx.commit().await.map_err(BitmapStoreError::Db)?;
+        Ok(())
+    }
+
+    /// Reload all bitmaps from the DB into the in-memory store.
+    ///
+    /// Called once at startup for crash recovery.  Any row whose `player`
+    /// address or hash cannot be parsed is silently skipped — the issuer will
+    /// simply request a fresh bitmap from the player on the next tick.
+    pub async fn load_from_db(&self, pool: &PgPool) -> Result<(), BitmapStoreError> {
+        let rows = sqlx::query_as::<_, (i64, String, Vec<u8>, String, String, i64, String)>(
+            "SELECT batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash
+             FROM vision_bitmaps",
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(BitmapStoreError::Db)?;
 
-        let mut bitmaps = self.bitmaps.write().await;
-        for (batch_id, player_str, bitmap, hash_str) in &rows {
-            let player: Address = player_str.parse().unwrap_or_default();
-            let hash: H256 = hash_str.parse().unwrap_or_default();
-            let now = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-            bitmaps.insert(
-                (*batch_id as u64, player),
-                StoredBitmap {
-                    player,
-                    batch_id: *batch_id as u64,
-                    bitmap: bitmap.clone(),
-                    hash,
-                    received_at: now,
-                },
-            );
+        let mut slots = self.slots.write().await;
+        for (batch_id, player_str, bitmap, hash_str, slot, tick_id, config_hash_str) in rows {
+            let player: Address = match player_str.parse() {
+                Ok(a) => a,
+                Err(_) => continue,
+            };
+            let hash: H256 = match hash_str.parse() {
+                Ok(h) => h,
+                Err(_) => continue,
+            };
+            let config_hash: H256 = match config_hash_str.parse() {
+                Ok(h) => h,
+                Err(_) => continue,
+            };
+
+            let entry = SlottedBitmap {
+                player,
+                batch_id: batch_id as u64,
+                bitmap,
+                hash,
+                config_hash,
+                target_tick_id: tick_id as u64,
+                received_at: 0,
+            };
+            let key = (entry.batch_id, entry.player);
+            match slot.as_str() {
+                "pending" => {
+                    slots.pending.insert(key, entry);
+                }
+                "active" => {
+                    slots.active.insert(key, entry);
+                }
+                _ => {}
+            }
         }
-
-        info!(count = rows.len(), "Loaded bitmaps from DB");
         Ok(())
     }
 }
+
+// ---------------------------------------------------------------------------
+// Error type
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, thiserror::Error)]
 pub enum BitmapStoreError {
     #[error("Hash mismatch: expected {expected:?}, computed {computed:?}")]
     HashMismatch { expected: H256, computed: H256 },
+    #[error("DB error: {0}")]
+    Db(#[from] sqlx::Error),
 }
+
+// ---------------------------------------------------------------------------
+// Hash helper
+// ---------------------------------------------------------------------------
+
+fn keccak256(data: &[u8]) -> H256 {
+    H256::from(ethers::core::utils::keccak256(data))
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    fn make_hash(data: &[u8]) -> H256 {
+        keccak256(data)
+    }
+
+    fn zero_config() -> H256 {
+        H256::zero()
+    }
+
+    // ------------------------------------------------------------------
+    // store_pending → get_pending → flip → get_active
+    // ------------------------------------------------------------------
     #[tokio::test]
-    async fn store_and_retrieve_bitmap() {
+    async fn test_two_slot_store_and_flip() {
         let store = BitmapStore::new();
         let player = Address::random();
         let batch_id = 1u64;
-        let bitmap = vec![0u8, 1, 1, 0, 1, 0, 0, 1];
-        let hash = H256::from(keccak256(&bitmap));
+        let bitmap = vec![0u8, 1, 1, 0];
+        let hash = make_hash(&bitmap);
+        let config_hash = make_hash(b"config_v1");
+        let target_tick = 42u64;
 
+        // Nothing in either slot yet.
+        assert!(store.get_pending(batch_id, player).await.is_none());
+        assert!(store.get_active(batch_id, player).await.is_none());
+
+        // Store into pending.
         store
-            .store(player, batch_id, bitmap.clone(), hash)
+            .store_pending(player, batch_id, bitmap.clone(), hash, config_hash, target_tick)
             .await
-            .expect("store should succeed");
+            .expect("store_pending should succeed");
 
-        let retrieved = store.get(batch_id, player).await.expect("should exist");
-        assert_eq!(retrieved.player, player);
-        assert_eq!(retrieved.batch_id, batch_id);
-        assert_eq!(retrieved.bitmap, bitmap);
-        assert_eq!(retrieved.hash, hash);
+        assert!(store.get_pending(batch_id, player).await.is_some());
+        assert!(store.get_active(batch_id, player).await.is_none());
+
+        // Flip promotes pending → active.
+        store.flip(batch_id).await;
+
+        assert!(store.get_pending(batch_id, player).await.is_none());
+        let active = store
+            .get_active(batch_id, player)
+            .await
+            .expect("should be active after flip");
+
+        assert_eq!(active.player, player);
+        assert_eq!(active.batch_id, batch_id);
+        assert_eq!(active.bitmap, bitmap);
+        assert_eq!(active.hash, hash);
+        assert_eq!(active.config_hash, config_hash);
+        assert_eq!(active.target_tick_id, target_tick);
     }
 
+    // ------------------------------------------------------------------
+    // flip() clears previous active before promoting new pending
+    // ------------------------------------------------------------------
     #[tokio::test]
-    async fn reject_hash_mismatch() {
+    async fn test_flip_clears_previous_active() {
+        let store = BitmapStore::new();
+        let player = Address::random();
+        let batch_id = 2u64;
+
+        let bitmap_a = vec![1u8, 0];
+        let bitmap_b = vec![0u8, 1];
+
+        // First tick: player submits bitmap_a.
+        store
+            .store_pending(
+                player,
+                batch_id,
+                bitmap_a.clone(),
+                make_hash(&bitmap_a),
+                zero_config(),
+                10,
+            )
+            .await
+            .unwrap();
+        store.flip(batch_id).await;
+
+        let active = store.get_active(batch_id, player).await.unwrap();
+        assert_eq!(active.bitmap, bitmap_a);
+
+        // Second tick: player submits bitmap_b.
+        store
+            .store_pending(
+                player,
+                batch_id,
+                bitmap_b.clone(),
+                make_hash(&bitmap_b),
+                zero_config(),
+                11,
+            )
+            .await
+            .unwrap();
+        store.flip(batch_id).await;
+
+        let active2 = store.get_active(batch_id, player).await.unwrap();
+        assert_eq!(active2.bitmap, bitmap_b, "active should reflect the new bitmap");
+
+        // Old bitmap_a must be gone from both slots.
+        let all_active = store.get_all_active_for_batch(batch_id).await;
+        assert_eq!(all_active.len(), 1);
+    }
+
+    // ------------------------------------------------------------------
+    // A player who submits no pending bitmap sits out after flip
+    // ------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_no_pending_means_sit_out() {
+        let store = BitmapStore::new();
+        let player_a = Address::random();
+        let player_b = Address::random();
+        let batch_id = 3u64;
+
+        let bm_a = vec![1u8, 1];
+        let bm_b = vec![0u8, 0];
+
+        // Both players active from tick N.
+        store
+            .store_pending(player_a, batch_id, bm_a.clone(), make_hash(&bm_a), zero_config(), 5)
+            .await
+            .unwrap();
+        store
+            .store_pending(player_b, batch_id, bm_b.clone(), make_hash(&bm_b), zero_config(), 5)
+            .await
+            .unwrap();
+        store.flip(batch_id).await;
+
+        assert_eq!(store.get_all_active_for_batch(batch_id).await.len(), 2);
+
+        // Tick N+1: only player_a submits.
+        store
+            .store_pending(player_a, batch_id, bm_a.clone(), make_hash(&bm_a), zero_config(), 6)
+            .await
+            .unwrap();
+        store.flip(batch_id).await;
+
+        let active = store.get_all_active_for_batch(batch_id).await;
+        assert_eq!(active.len(), 1, "player_b sat out — should not appear in active");
+        assert_eq!(active[0].player, player_a);
+
+        // player_b is gone from active.
+        assert!(store.get_active(batch_id, player_b).await.is_none());
+    }
+
+    // ------------------------------------------------------------------
+    // Hash mismatch is rejected
+    // ------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_hash_mismatch_rejected() {
         let store = BitmapStore::new();
         let player = Address::random();
         let bitmap = vec![1u8, 0, 1];
         let wrong_hash = H256::zero();
 
-        let result = store.store(player, 1, bitmap, wrong_hash).await;
+        let result = store
+            .store_pending(player, 1, bitmap, wrong_hash, zero_config(), 1)
+            .await;
+
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
@@ -182,50 +499,60 @@ mod tests {
         ));
     }
 
+    // ------------------------------------------------------------------
+    // remove() clears both slots
+    // ------------------------------------------------------------------
     #[tokio::test]
-    async fn get_all_for_batch_filters_correctly() {
-        let store = BitmapStore::new();
-        let player_a = Address::random();
-        let player_b = Address::random();
-        let player_c = Address::random();
-
-        let bitmap_a = vec![1u8, 0];
-        let bitmap_b = vec![0u8, 1];
-        let bitmap_c = vec![1u8, 1];
-
-        // Two players in batch 1, one in batch 2
-        store
-            .store(player_a, 1, bitmap_a.clone(), H256::from(keccak256(&bitmap_a)))
-            .await
-            .unwrap();
-        store
-            .store(player_b, 1, bitmap_b.clone(), H256::from(keccak256(&bitmap_b)))
-            .await
-            .unwrap();
-        store
-            .store(player_c, 2, bitmap_c.clone(), H256::from(keccak256(&bitmap_c)))
-            .await
-            .unwrap();
-
-        let batch_1 = store.get_all_for_batch(1).await;
-        assert_eq!(batch_1.len(), 2);
-
-        let batch_2 = store.get_all_for_batch(2).await;
-        assert_eq!(batch_2.len(), 1);
-        assert_eq!(batch_2[0].player, player_c);
-    }
-
-    #[tokio::test]
-    async fn remove_bitmap() {
+    async fn test_remove_clears_both_slots() {
         let store = BitmapStore::new();
         let player = Address::random();
-        let bitmap = vec![1u8, 0, 1, 0];
-        let hash = H256::from(keccak256(&bitmap));
+        let batch_id = 4u64;
+        let bm = vec![1u8];
 
-        store.store(player, 1, bitmap, hash).await.unwrap();
-        assert!(store.get(1, player).await.is_some());
+        store
+            .store_pending(player, batch_id, bm.clone(), make_hash(&bm), zero_config(), 1)
+            .await
+            .unwrap();
+        store.flip(batch_id).await;
 
-        store.remove(1, player).await;
-        assert!(store.get(1, player).await.is_none());
+        // Put another entry in pending.
+        store
+            .store_pending(player, batch_id, bm.clone(), make_hash(&bm), zero_config(), 2)
+            .await
+            .unwrap();
+
+        store.remove(batch_id, player).await;
+
+        assert!(store.get_pending(batch_id, player).await.is_none());
+        assert!(store.get_active(batch_id, player).await.is_none());
+    }
+
+    // ------------------------------------------------------------------
+    // cleanup_stale_pending removes old entries only
+    // ------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_cleanup_stale_pending() {
+        let store = BitmapStore::new();
+        let player_old = Address::random();
+        let player_new = Address::random();
+        let batch_id = 5u64;
+        let bm = vec![1u8];
+        let hash = make_hash(&bm);
+
+        // One entry targeting tick 5 (stale), one targeting tick 10 (fresh).
+        store
+            .store_pending(player_old, batch_id, bm.clone(), hash, zero_config(), 5)
+            .await
+            .unwrap();
+        store
+            .store_pending(player_new, batch_id, bm.clone(), hash, zero_config(), 10)
+            .await
+            .unwrap();
+
+        // Resolve tick 7: anything with target_tick_id <= 7 is stale.
+        store.cleanup_stale_pending(batch_id, 7).await;
+
+        assert!(store.get_pending(batch_id, player_old).await.is_none());
+        assert!(store.get_pending(batch_id, player_new).await.is_some());
     }
 }

@@ -3,7 +3,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { SourceDetailCategoryNav } from '@/components/domain/vision/detail/SourceDetailCategoryNav'
 import { SourceDetail } from '@/components/domain/vision/detail/SourceDetail'
-import { getSource } from '@/lib/vision/sources'
+import { getSourceDisplayServer } from '@/lib/vision/sources-server'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sourceId } = await params
-  const source = getSource(sourceId)
+  const source = await getSourceDisplayServer(sourceId)
 
   if (!source) {
     return { title: 'Source Not Found' }
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SourcePage({ params }: Props) {
   const { sourceId } = await params
-  const source = getSource(sourceId)
+  const source = await getSourceDisplayServer(sourceId)
 
   const category = source ? getCategoryLabel(source.category) : undefined
 

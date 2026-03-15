@@ -4,10 +4,10 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
-import { getSource, getAssetCountForSource, getDataNodeSourceId, getSourceValueLabel, isSourcePriceType, getSourceUnit, getBatchKey } from '@/lib/vision/sources'
+import { useBatches } from '@/hooks/vision/useBatches'
+import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { DATA_NODE_URL } from '@/lib/config'
-import batchConfig from '@/lib/contracts/vision-batches.json'
 import { ConsensusPopup } from './ConsensusPopup'
 import {
   LineChart,
@@ -227,25 +227,33 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
 // ── Markets Table ──
 
 export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
-  const source = getSource(sourceId)
-  const dataNodeId = source ? getDataNodeSourceId(sourceId) : undefined
-  const { data, isLoading } = useSourceSnapshot(dataNodeId)
+  // Source metadata from registry
+  const { sources } = useSourceRegistry()
+  const sourceEntry = findSource(sources, sourceId)
+  const valueLabel = sourceEntry?.valueLabel ?? 'Value'
+  const isPriceSource = sourceEntry?.isPrice ?? true
+  const unit = sourceEntry?.valueUnit ?? ''
+
+  // Snapshot data — sourceId IS the data-node source ID
+  const { data, isLoading } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
 
-  // Fetch batch config from data-node to get per-market resolution types
-  const configHash = useMemo(() => {
-    const entry = (batchConfig.batches as Record<string, { configHash: string }>)[getBatchKey(sourceId)]
-    return entry?.configHash
-  }, [sourceId])
+  // Fetch live batch to get per-market resolution types via batch ID
+  const { data: batches } = useBatches()
+  const activeBatch = useMemo(() => {
+    if (!batches) return null
+    return batches.find(b => b.sourceId === sourceId) ?? null
+  }, [batches, sourceId])
 
   const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
-    queryKey: ['batch-config', configHash],
+    queryKey: ['batch-config-by-id', activeBatch?.id],
     queryFn: async () => {
-      const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
+      // Fetch config by batch ID from data-node
+      const res = await fetch(`${DATA_NODE_URL}/batches/${activeBatch!.id}/config`)
       if (!res.ok) throw new Error(`Config fetch ${res.status}`)
       return res.json()
     },
-    enabled: !!configHash,
+    enabled: activeBatch !== null,
     staleTime: 60_000,
   })
 
@@ -260,9 +268,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
     }
     return map
   }, [batchConfigData])
-  const valueLabel = getSourceValueLabel(sourceId)
-  const isPriceSource = isSourcePriceType(sourceId)
-  const unit = getSourceUnit(sourceId)
+
   const [search, setSearch] = useState('')
   const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
@@ -313,7 +319,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         <div>
           <div className="section-bar-title">Markets</div>
           <div className="section-bar-value">
-            {isLoading ? '...' : (meta?.assetCounts ? getAssetCountForSource(sourceId, meta.assetCounts) : sourceMarkets.length)}
+            {isLoading ? '...' : (meta?.assetCounts?.[sourceId] ?? sourceMarkets.length)}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -458,9 +464,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                 </div>
 
                 {/* Expanded history chart */}
-                {isExpanded && dataNodeId && (
+                {isExpanded && (
                   <div className="border-b border-border-light">
-                    <AssetHistory dataNodeSourceId={dataNodeId} assetId={market.assetId} />
+                    <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} />
                   </div>
                 )}
               </div>

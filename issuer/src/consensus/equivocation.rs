@@ -1129,6 +1129,48 @@ pub fn content_hash(msg: &P2PMessage) -> [u8; 32] {
                 h.update(buf);
             }
         }
+        // Bitmap gossip — not consensus messages; equivocation not relevant.
+        // Hash by batch_id + player + bitmap_hash to ensure unique identity.
+        P2PMessage::BitmapGossip {
+            batch_id,
+            player,
+            bitmap_hash,
+            config_hash,
+            target_tick_id,
+        } => {
+            h.update(b"BitmapGossip");
+            h.update(batch_id.to_le_bytes());
+            h.update(player.as_bytes());
+            h.update(bitmap_hash.as_bytes());
+            h.update(config_hash.as_bytes());
+            h.update(target_tick_id.to_le_bytes());
+        }
+        P2PMessage::BitmapRequest {
+            batch_id,
+            player,
+            bitmap_hash,
+        } => {
+            h.update(b"BitmapRequest");
+            h.update(batch_id.to_le_bytes());
+            h.update(player.as_bytes());
+            h.update(bitmap_hash.as_bytes());
+        }
+        P2PMessage::BitmapResponse {
+            batch_id,
+            player,
+            bitmap,
+            bitmap_hash,
+            config_hash,
+            target_tick_id,
+        } => {
+            h.update(b"BitmapResponse");
+            h.update(batch_id.to_le_bytes());
+            h.update(player.as_bytes());
+            h.update(bitmap_hash.as_bytes());
+            h.update(config_hash.as_bytes());
+            h.update(target_tick_id.to_le_bytes());
+            h.update(bitmap.as_slice());
+        }
     }
 
     h.finalize().into()
@@ -1204,6 +1246,10 @@ pub fn msg_variant_tag(msg: &P2PMessage) -> &'static str {
         P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
         P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
         P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
+        // Bitmap gossip messages — not consensus-relevant for equivocation detection
+        P2PMessage::BitmapGossip { .. } => "BitmapGossip",
+        P2PMessage::BitmapRequest { .. } => "BitmapRequest",
+        P2PMessage::BitmapResponse { .. } => "BitmapResponse",
     }
 }
 

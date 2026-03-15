@@ -4774,6 +4774,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     engine_bls_keypair,
                     None, // broadcast_tx: P2P broadcast channel (not yet wired)
                     None, // incoming_proofs_rx: incoming balance proofs channel (not yet wired)
+                    None, // incoming_gossip_rx: bitmap gossip channel (not yet wired)
+                    None, // key_registry: BLS verification for incoming balance proofs (HIGH-4, wire when P2P is active)
                 ).await;
             });
 
@@ -4896,6 +4898,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         scheduler: scheduler.clone(),
                         bitmap_store: bitmap_store.clone(),
                         config: vision_cfg.clone(),
+                        broadcast_tx: None, // bitmap gossip broadcast (not yet wired)
                     });
 
                     // Build the Vision router (merged into health port in run_main_loop)

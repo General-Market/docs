@@ -8,6 +8,8 @@ import {
   type SnapshotPrice,
   type SourceSchedule,
 } from '@/hooks/vision/useMarketSnapshot'
+import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
+import { SOURCE_DISPLAY_OVERRIDES } from '@/lib/vision/source-categories'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -20,38 +22,6 @@ const TILE_HEIGHT = 64 // px per tile row
 const SECTION_HEADER_HEIGHT = 48
 const SUBHEADER_HEIGHT = 36
 const MIN_TILE_WIDTH = 120 // px — minimum width per tile to stay readable
-
-// Frontend display name overrides (sourceId → display name)
-const SOURCE_DISPLAY_OVERRIDES: Record<string, string> = {
-  polymarket: 'Prediction Markets',
-}
-
-// Category groups — group sources into clean tabs
-const CATEGORY_GROUPS: { id: string; label: string; sources: string[] }[] = [
-  { id: 'crypto', label: 'Crypto', sources: ['crypto', 'bchain', 'defi'] },
-  { id: 'stocks', label: 'Stocks', sources: ['stocks', 'twse', 'finra', 'finra_short_vol'] },
-  { id: 'predictions', label: 'Predictions', sources: ['polymarket'] },
-  { id: 'macro', label: 'Macro', sources: ['rates', 'bls', 'ecb', 'bonds', 'imf', 'worldbank'] },
-  { id: 'regulatory', label: 'Regulatory', sources: ['sec_13f', 'sec_efts', 'sec_insider', 'congress', 'courtlistener', 'nyc311'] },
-  { id: 'commodities', label: 'Commodities', sources: ['futures', 'cftc', 'opec', 'eia', 'yahoo_drinks'] },
-  { id: 'weather', label: 'Weather & Environment', sources: ['weather', 'usgs_water', 'noaa_tides', 'nrc_nuclear', 'ndbc', 'noaa_met', 'nwps', 'airnow', 'power_outages'] },
-  { id: 'transport', label: 'Transport & Tourism', sources: ['citybikes', 'parking', 'tomtom_traffic', 'tomtom_evcharge', 'queue_times', 'cbp_border', 'faa_delays', 'db_trains', 'mta_subway', 'paris_metro', 'ryanair', 'tfl_tube'] },
-  { id: 'education', label: 'Education & Research', sources: ['openalex', 'crossref', 'pubmed', 'stackexchange'] },
-  { id: 'tech', label: 'Tech', sources: ['npm', 'pypi', 'crates_io', 'github', 'cloudflare', 'hackernews', 'reddit', 'ioda'] },
-  { id: 'entertainment', label: 'Entertainment', sources: ['tmdb', 'lastfm', 'anilist', 'twitch', 'chaturbate', 'steam', 'backpacktf', 'fourchan', 'esports', 'bgg', 'mcbroken'] },
-  { id: 'jobs', label: 'Jobs & Labor', sources: ['adzuna'] },
-  { id: 'shopping', label: 'Shopping', sources: ['bestbuy'] },
-  { id: 'real_estate', label: 'Real Estate', sources: ['zillow'] },
-  { id: 'animals', label: 'Animals', sources: ['shelter', 'animals', 'movebank', 'ebird'] },
-]
-
-// Reverse lookup: source → category (used internally for category routing)
-const SOURCE_TO_CATEGORY: Record<string, string> = {}
-for (const cat of CATEGORY_GROUPS) {
-  for (const src of cat.sources) {
-    SOURCE_TO_CATEGORY[src] = cat.id
-  }
-}
 
 // Subcategory display names (keyed by derived feed type)
 const FEED_TYPE_DISPLAY_NAMES: Record<string, string> = {
@@ -136,27 +106,6 @@ const SUBCATEGORIZED_SOURCES = new Set(['weather', 'polymarket', 'defi'])
 // Helpers
 // ---------------------------------------------------------------------------
 
-// Sources where values are NOT denominated in dollars
-const COUNT_SOURCES = new Set([
-  'sec_13f', 'sec_efts', 'sec_insider', 'finra_short_vol', 'congress',
-  'npm', 'pypi', 'crates_io', 'github', 'hackernews',
-  'twitch', 'steam', 'anilist', 'fourchan', 'backpacktf', 'esports',
-  'imf', 'worldbank', 'cftc', 'opec', 'eia', 'finra',
-  'cloudflare', 'tmdb', 'lastfm', 'twse',
-  'usgs_water', 'noaa_tides', 'nrc_nuclear', 'citybikes',
-  'ndbc', 'noaa_met', 'nwps', 'airnow',
-  'courtlistener',
-  'openalex', 'crossref', 'pubmed', 'stackexchange',
-  'shelter',
-  'parking', 'tomtom_traffic', 'tomtom_evcharge',
-  'bgg',
-  'adzuna',
-  'queue_times', 'cbp_border', 'faa_delays', 'db_trains', 'mta_subway', 'paris_metro',
-  'ryanair', 'tfl_tube', 'ioda', 'power_outages',
-  'mcbroken',
-  'nyc311',
-])
-
 function formatNumber(v: number): string {
   if (v >= 1e12) return `${(v / 1e12).toFixed(2)}T`
   if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`
@@ -171,7 +120,7 @@ function formatDollar(v: number): string {
   return `$${formatNumber(v)}`
 }
 
-function formatValue(v: number, source: string, assetId?: string): string {
+function formatValue(v: number, source: string, assetId?: string, isPrice?: boolean): string {
   if (isNaN(v)) return '—'
   if (source === 'rates' || source === 'bls' || source === 'bonds') return `${v.toFixed(2)}%`
   if (source === 'ecb') return v.toFixed(4)
@@ -187,7 +136,8 @@ function formatValue(v: number, source: string, assetId?: string): string {
     }
     return v.toFixed(1)
   }
-  if (COUNT_SOURCES.has(source)) return formatNumber(v)
+  // isPrice=false means count/index data, not a dollar value
+  if (isPrice === false) return formatNumber(v)
   return formatDollar(v)
 }
 
@@ -288,7 +238,7 @@ function CryptoLogo({ assetId, symbol, size = 16 }: { assetId: string; symbol: s
 }
 
 function SourceCard({ source, assetCount }: { source: SourceSchedule; assetCount: number }) {
-  const displayName = SOURCE_DISPLAY_OVERRIDES[source.sourceId] || source.displayName
+  const displayName = source.displayName
   return (
     <div className="border border-border-light bg-white p-3 min-w-[160px] flex-shrink-0">
       <div className="flex items-center gap-2 mb-2">
@@ -334,7 +284,7 @@ function heatClass(changePct: number | null): string {
   return ''
 }
 
-function PriceTileInline({ price }: { price: SnapshotPrice }) {
+function PriceTileInline({ price, isPrice }: { price: SnapshotPrice; isPrice?: boolean }) {
   const value = parseFloat(price.value)
   const changePct = price.changePct ? parseFloat(price.changePct) : null
   const isUp = changePct !== null && changePct >= 0
@@ -355,14 +305,14 @@ function PriceTileInline({ price }: { price: SnapshotPrice }) {
   return (
     <div
       className={`p-2 border border-border-light cursor-default hover:outline hover:outline-2 hover:outline-black hover:-outline-offset-2 transition-[outline] ${heatClass(changePct)}`}
-      title={`${price.name}\n${formatValue(value, price.source, price.assetId)}${changePct !== null ? `\n24h: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : ''}${price.marketCap ? `\n${formatMarketCap(price.marketCap)}` : ''}`}
+      title={`${price.name}\n${formatValue(value, price.source, price.assetId, isPrice)}${changePct !== null ? `\n24h: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : ''}${price.marketCap ? `\n${formatMarketCap(price.marketCap)}` : ''}`}
     >
       <div className="flex items-center gap-1.5">
         {hasCryptoLogo && <CryptoLogo assetId={price.assetId} symbol={price.symbol} size={16} />}
         <div className="font-mono text-xs font-bold text-text-primary truncate">{displaySymbol}</div>
       </div>
       <div className="font-mono text-[10px] text-text-muted truncate">
-        {formatValue(value, price.source, price.assetId)}
+        {formatValue(value, price.source, price.assetId, isPrice)}
       </div>
       {changePct !== null && (
         <div className={`font-mono text-[10px] font-semibold ${isUp ? 'text-color-up' : 'text-color-down'}`}>
@@ -374,7 +324,7 @@ function PriceTileInline({ price }: { price: SnapshotPrice }) {
 }
 
 function SectionHeader({ source, count }: { source: SourceSchedule; count: number }) {
-  const displayName = SOURCE_DISPLAY_OVERRIDES[source.sourceId] || source.displayName
+  const displayName = source.displayName
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-black text-white sticky top-0 z-10">
       <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-zinc-500'}`} />
@@ -404,6 +354,7 @@ export function VisionMarketsGrid() {
   // Progressive loading: meta loads instantly (~1KB), full snapshot loads in background (~3MB)
   const { data: meta, isLoading: metaLoading } = useMarketSnapshotMeta()
   const { data, isLoading: snapshotLoading, isError, error } = useMarketSnapshot()
+  const { sources: registrySources, categories: registryCategories } = useSourceRegistry()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -437,24 +388,38 @@ export function VisionMarketsGrid() {
     return sources.filter((s) => s.enabled)
   }, [sources])
 
-  // Category tabs with counts — show all categories, even those awaiting first sync
+  // Category tabs with counts — built dynamically from registry
   const enabledCategories = useMemo(() => {
-    return CATEGORY_GROUPS
-      .map((cat) => {
-        const count = cat.sources.reduce(
-          (sum, src) => sum + (assetCountBySource[src] || 0),
-          0,
-        )
-        return { ...cat, count }
-      })
-  }, [assetCountBySource])
+    const sorted = [...registryCategories].sort((a, b) => a.order - b.order)
+    return sorted.map((cat) => {
+      const catSourceIds = registrySources
+        .filter((s) => s.category === cat.key)
+        .map((s) => s.sourceId)
+      const count = catSourceIds.reduce(
+        (sum, src) => sum + (assetCountBySource[src] || 0),
+        0,
+      )
+      return { id: cat.key, label: cat.label, count }
+    })
+  }, [registryCategories, registrySources, assetCountBySource])
 
   // Sources in the selected category (or all if no category selected)
   const selectedSourceIds = useMemo(() => {
     if (!selectedCategory) return null
-    const cat = CATEGORY_GROUPS.find((c) => c.id === selectedCategory)
-    return cat ? new Set(cat.sources) : null
-  }, [selectedCategory])
+    const sourceIdsInCat = registrySources
+      .filter((s) => s.category === selectedCategory)
+      .map((s) => s.sourceId)
+    return sourceIdsInCat.length > 0 ? new Set(sourceIdsInCat) : null
+  }, [selectedCategory, registrySources])
+
+  // isPrice lookup by sourceId — drives formatValue dollar vs count formatting
+  const isPriceBySource = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    for (const s of registrySources) {
+      map[s.sourceId] = s.isPrice
+    }
+    return map
+  }, [registrySources])
 
   // Derive feed-type subcategories for sources that support them
   const enrichedPrices = useMemo(() => {
@@ -671,7 +636,7 @@ export function VisionMarketsGrid() {
                     const count = assetCountBySource[s.sourceId] || 0
                     return (
                       <span key={s.sourceId} className="px-2 py-1 bg-muted border border-border-light font-mono text-xs text-text-muted">
-                        {SOURCE_DISPLAY_OVERRIDES[s.sourceId] || s.displayName}: {count.toLocaleString()}
+                        {s.displayName}: {count.toLocaleString()}
                       </span>
                     )
                   })}
@@ -703,7 +668,7 @@ export function VisionMarketsGrid() {
                   const count = assetCountBySource[s.sourceId] || 0
                   return (
                     <span key={s.sourceId} className="px-2 py-1 bg-muted border border-border-light font-mono text-xs text-text-muted">
-                      {SOURCE_DISPLAY_OVERRIDES[s.sourceId] || s.displayName}: {count.toLocaleString()}
+                      {s.displayName}: {count.toLocaleString()}
                     </span>
                   )
                 })}
@@ -774,6 +739,7 @@ export function VisionMarketsGrid() {
                       <PriceTileInline
                         key={`${price.source}-${price.assetId}`}
                         price={price}
+                        isPrice={isPriceBySource[price.source]}
                       />
                     ))}
                   </div>

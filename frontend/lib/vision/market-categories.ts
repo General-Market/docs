@@ -1,8 +1,21 @@
-/**
- * Market categorization utility.
- * Groups market IDs by data-source prefix and provides display helpers.
- * Consolidates the duplicated `formatMarketName` across VisualTab/CompactVisualTab.
- */
+export function getCategory(marketId: string, prefixes: Map<string, string>): string {
+  for (const [prefix, category] of prefixes) {
+    if (marketId.startsWith(prefix)) return category
+  }
+  return 'other'
+}
+
+export function formatMarketName(marketId: string, prefixes?: string[]): string {
+  if (prefixes) {
+    for (const prefix of prefixes) {
+      if (marketId.startsWith(prefix)) return marketId.slice(prefix.length)
+    }
+  }
+  return marketId.replace(/_/g, ' ')
+}
+
+// ── MarketCategory type + categorizeMarkets ────────────────────────────────────
+// Used by MarketAccordion to group markets by category.
 
 export interface MarketCategory {
   key: string
@@ -10,138 +23,52 @@ export interface MarketCategory {
   markets: string[]
 }
 
-const PREFIX_MAP: [string, string, string][] = [
-  // [prefix, categoryKey, displayLabel]
-  ['crypto_', 'crypto', 'Crypto'],
-  ['stock_', 'stocks', 'Stocks'],
-  ['stocks_', 'stocks', 'Stocks'],
-  ['poly_', 'polymarket', 'Polymarket'],
-  ['weather_', 'weather', 'Weather'],
-  ['twitch_', 'twitch', 'Twitch'],
-  ['reddit_', 'reddit', 'Reddit'],
-  ['esport_', 'esports', 'Esports'],
-  ['sport_', 'sports', 'Sports'],
-  ['cb_model_', 'chaturbate', 'Chaturbate'],
-  ['usgs_water_', 'usgs_water', 'USGS Water'],
-  ['noaa_tide_', 'noaa_tides', 'NOAA Tides'],
-  ['nrc_', 'nrc_nuclear', 'NRC Nuclear'],
-  ['citybikes_', 'citybikes', 'CityBikes'],
-  ['court_', 'courtlistener', 'Federal Courts'],
-  ['ndbc_', 'ndbc', 'NDBC Buoys'],
-  ['noaa_met_', 'noaa_met', 'NOAA Ocean Met'],
-  ['nwps_', 'nwps', 'River Gauges'],
-  ['airnow_', 'airnow', 'Air Quality'],
-  ['hn_', 'hackernews', 'HackerNews'],
-  ['defi_', 'defi', 'DeFi'],
-  ['futures_', 'futures', 'Futures'],
-  ['steam_', 'steam', 'Steam'],
-  ['github_', 'github', 'GitHub'],
-  ['tmdb_', 'tmdb', 'Movies/TV/Celebrities'],
-  ['lastfm_', 'lastfm', 'Last.fm Music'],
-  ['zillow_', 'zillow', 'Real Estate'],
-  ['openalex_', 'openalex', 'OpenAlex'],
-  ['crossref_', 'crossref', 'Crossref'],
-  ['pubmed_', 'pubmed', 'PubMed'],
-  ['stackexchange_', 'stackexchange', 'StackOverflow'],
-  ['shelter_', 'shelter', 'Shelters'],
-  ['parking_', 'parking', 'Parking'],
-  ['tomtom_traffic_', 'tomtom_traffic', 'Traffic Flow'],
-  ['tomtom_evcharge_', 'tomtom_evcharge', 'EV Charging'],
-  ['bgg_', 'bgg', 'Board Games'],
-  ['bestbuy_', 'bestbuy', 'Best Buy'],
-  ['adzuna_', 'adzuna', 'Adzuna Jobs'],
-  ['queue_times_', 'queue_times', 'Theme Parks'],
-  ['cbp_border_', 'cbp_border', 'Border Wait Times'],
-  ['faa_delays_', 'faa_delays', 'Airport Delays'],
-  ['db_trains_', 'db_trains', 'Deutsche Bahn'],
-  ['mta_subway_', 'mta_subway', 'NYC Subway'],
-  ['paris_metro_', 'paris_metro', 'Paris Metro'],
-  ['mcbroken_', 'mcbroken', 'McBroken'],
-  ['nyc311_', 'nyc311', 'NYC 311'],
-  ['ryanair_', 'ryanair', 'Ryanair'],
-  ['tfl_tube_', 'tfl_tube', 'London Underground'],
-  ['ioda_', 'ioda', 'Internet Outages'],
-  ['power_outages_', 'power_outages', 'Power Outages'],
+// Simple prefix-based categorization. Categories loosely map source prefixes
+// to human-readable groups. With no static registry, we derive from asset ID patterns.
+const PREFIX_CATEGORIES: [RegExp, string, string][] = [
+  [/^(btc|eth|sol|bnb|ada|xrp|dot|avax|matic|link|uni|aave|comp|mkr|crv|snx|sushi|yfi|1inch|bal|ren|lrc|enj|mana|sand|axs|gala|ilv|chr|alice|tlm|gmt|ape|imx|ldo|rpl|frax|spell|cvx|fxs|ohm|joe|time|wmemo|mim|crv|spell)/i, 'crypto', 'Crypto'],
+  [/^(stocks?_|equity_|share_|nasdaq_|nyse_|sp500_|dowjones_|finnhub_)/i, 'stocks', 'Stocks'],
+  [/^(defi_|tvl_|protocol_|chain_tvl|dex_)/i, 'defi', 'DeFi'],
+  [/^(rates?_|fred_|treasury_|bond_|yield_|fed_|ecb_|bls_|cpi_|pce_|gdp_|unemployment_)/i, 'economic', 'Economic'],
+  [/^(congress_|sec_|finra_|court_|legal_|law_)/i, 'regulatory', 'Regulatory'],
+  [/^(github_|npm_|pypi_|crates_|package_|repo_|commit_)/i, 'tech', 'Tech'],
+  [/^(twitch_|steam_|anilist_|tmdb_|lastfm_|backpacktf_|fourchan_)/i, 'entertainment', 'Entertainment'],
+  [/^(weather_|earthquake_|volcano_|wildfire_|spaceweather_|solar_)/i, 'geophysical', 'Geophysical'],
+  [/^(flight_|ship_|transit_|traffic_|mil_aircraft_|transport_)/i, 'transport', 'Transport'],
+  [/^(ebird_|airquality_|shelter_|nature_)/i, 'nature', 'Nature'],
+  [/^(iss_|space_|satellite_)/i, 'space', 'Space'],
+  [/^(poly_|polymarket_)/i, 'prediction', 'Prediction'],
 ]
-
-// Common bare crypto tickers (no prefix)
-const BARE_CRYPTO = new Set([
-  'btc', 'eth', 'sol', 'bnb', 'xrp', 'doge', 'ada', 'avax', 'dot', 'link',
-  'matic', 'uni', 'aave', 'mkr', 'comp', 'snx', 'crv', 'sushi', 'yfi',
-])
-
-const CATEGORY_ORDER = [
-  'crypto', 'stocks', 'futures', 'defi', 'polymarket',
-  'weather', 'esports', 'sports', 'twitch', 'reddit', 'chaturbate',
-  'usgs_water', 'noaa_tides', 'nrc_nuclear', 'citybikes',
-  'ndbc', 'noaa_met', 'nwps', 'airnow', 'courtlistener', 'nyc311',
-  'hackernews', 'steam', 'github', 'tmdb', 'lastfm', 'zillow',
-  'openalex', 'crossref', 'pubmed', 'stackexchange',
-  'shelter',
-  'parking', 'tomtom_traffic', 'tomtom_evcharge',
-  'bgg', 'bestbuy',
-  'adzuna',
-  'queue_times', 'cbp_border', 'faa_delays', 'db_trains', 'mta_subway', 'paris_metro',
-  'ryanair', 'tfl_tube', 'ioda', 'power_outages',
-  'mcbroken',
-  'other',
-]
-
-const LABEL_MAP: Record<string, string> = {}
-for (const [, key, label] of PREFIX_MAP) {
-  LABEL_MAP[key] = label
-}
-LABEL_MAP['other'] = 'Other'
-
-/** Get category key for a market ID */
-export function getCategory(marketId: string): string {
-  const lower = marketId.toLowerCase()
-
-  for (const [prefix, key] of PREFIX_MAP) {
-    if (lower.startsWith(prefix)) return key
-  }
-
-  // Check bare crypto tickers (e.g., "BTC-USD", "ETH-USD")
-  const base = lower.split('-')[0].split('_')[0]
-  if (BARE_CRYPTO.has(base)) return 'crypto'
-
-  return 'other'
-}
-
-/** Get display label for a category key */
-export function getCategoryLabel(key: string): string {
-  return LABEL_MAP[key] || key.charAt(0).toUpperCase() + key.slice(1)
-}
 
 /**
- * Group market IDs into ordered categories.
- * Returns only categories that have at least one market.
+ * Group a list of market IDs by category.
+ * Falls back to 'other' for unrecognized prefixes.
  */
 export function categorizeMarkets(marketIds: string[]): MarketCategory[] {
-  const groups: Record<string, string[]> = {}
+  const groups: Record<string, { label: string; markets: string[] }> = {}
 
   for (const id of marketIds) {
-    const cat = getCategory(id)
-    if (!groups[cat]) groups[cat] = []
-    groups[cat].push(id)
-  }
-
-  return CATEGORY_ORDER
-    .filter(key => groups[key]?.length)
-    .map(key => ({
-      key,
-      label: getCategoryLabel(key),
-      markets: groups[key],
-    }))
-}
-
-/** Format a market ID into a human-readable short name. */
-export function formatMarketName(marketId: string): string {
-  for (const [prefix] of PREFIX_MAP) {
-    if (marketId.toLowerCase().startsWith(prefix)) {
-      return marketId.slice(prefix.length).replace(/_/g, ' ')
+    let matched = false
+    for (const [pattern, key, label] of PREFIX_CATEGORIES) {
+      if (pattern.test(id)) {
+        if (!groups[key]) groups[key] = { label, markets: [] }
+        groups[key].markets.push(id)
+        matched = true
+        break
+      }
+    }
+    if (!matched) {
+      if (!groups['other']) groups['other'] = { label: 'Other', markets: [] }
+      groups['other'].markets.push(id)
     }
   }
-  // Bare tickers like "BTC-USD" — keep as-is but uppercase
-  return marketId.replace(/_/g, ' ').toUpperCase()
+
+  // Sort by market count desc, other last
+  return Object.entries(groups)
+    .map(([key, { label, markets }]) => ({ key, label, markets }))
+    .sort((a, b) => {
+      if (a.key === 'other') return 1
+      if (b.key === 'other') return -1
+      return b.markets.length - a.markets.length
+    })
 }

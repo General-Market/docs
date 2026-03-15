@@ -5,20 +5,28 @@
 //!
 //! Flow:
 //!   Leader: poll data-node -> propose composite hash -> collect BLS co-signs -> publish
-//!   Follower: receive proposal -> verify +-50% -> BLS co-sign -> replicate config to own DN
+//!   Follower: receive proposal -> verify +-20% -> BLS co-sign -> replicate config to own DN
 
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
+use ethers::abi::{encode, Token};
+use ethers::types::{Address, H256, U256};
+use ethers::utils::keccak256;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 /// Tolerance for follower verification
-const THRESHOLD_TOLERANCE: f64 = 0.50;
-const ASSET_COUNT_TOLERANCE: f64 = 0.50;
+const THRESHOLD_TOLERANCE: f64 = 0.20;
+const ASSET_COUNT_TOLERANCE: f64 = 0.30;
 /// Max fraction of leader's markets that follower doesn't know about
-const UNKNOWN_ASSET_TOLERANCE: f64 = 0.20;
+const UNKNOWN_ASSET_TOLERANCE: f64 = 0.05;
 /// How often to run batch config consensus (seconds)
 const ORCHESTRATOR_INTERVAL_SECS: u64 = 120;
+/// Max new batch creations per rolling hour
+const MAX_CREATIONS_PER_HOUR: usize = 3;
+/// Min markets required before auto-creation fires
+const MIN_MARKETS_FOR_CREATION: usize = 5;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -84,7 +92,7 @@ pub fn verify_single_source(
         return Err("lock_offset mismatch".into());
     }
 
-    // Asset count within +-50%
+    // Asset count within +-30%
     let leader_count = leader.markets.len() as f64;
     let follower_count = follower.markets.len() as f64;
     if follower_count > 0.0 {
@@ -99,11 +107,11 @@ pub fn verify_single_source(
         }
     }
 
-    // Build follower lookup for threshold comparison
-    let follower_map: HashMap<&str, u32> = follower
+    // Build follower lookup for threshold and resolution_type comparison
+    let follower_map: HashMap<&str, &RecommendedMarket> = follower
         .markets
         .iter()
-        .map(|m| (m.asset_id.as_str(), m.threshold_bps))
+        .map(|m| (m.asset_id.as_str(), m))
         .collect();
 
     // Check unknown asset tolerance
@@ -124,14 +132,20 @@ pub fn verify_single_source(
         }
     }
 
-    // For overlapping assets, check threshold tolerance
+    // For overlapping assets, check resolution_type (exact) and threshold tolerance
     let mut checked = 0;
     let mut divergent = 0;
     for leader_market in &leader.markets {
-        if let Some(&follower_bps) = follower_map.get(leader_market.asset_id.as_str()) {
+        if let Some(follower_market) = follower_map.get(leader_market.asset_id.as_str()) {
+            // resolution_type is a protocol enum — must match exactly
+            if leader_market.resolution_type != follower_market.resolution_type {
+                divergent += 1;
+                continue;
+            }
+
             checked += 1;
             let leader_bps = leader_market.threshold_bps as f64;
-            let follower_bps_f = follower_bps as f64;
+            let follower_bps_f = follower_market.threshold_bps as f64;
             if leader_bps == 0.0 && follower_bps_f == 0.0 {
                 continue;
             }
@@ -145,7 +159,7 @@ pub fn verify_single_source(
 
     if checked > 0 && (divergent as f64 / checked as f64) > 0.5 {
         return Err(format!(
-            "threshold divergence: {}/{} assets diverge >50%",
+            "threshold divergence: {}/{} assets diverge >20%",
             divergent, checked
         ));
     }
@@ -153,26 +167,38 @@ pub fn verify_single_source(
     Ok(())
 }
 
-/// Check if a batch source is currently in its lock period.
-/// During the lock period (last portion of tick), config updates should be deferred.
-fn is_in_lock_period(tick_duration_secs: u64, lock_offset_secs: u64) -> bool {
-    if tick_duration_secs == 0 {
-        return false;
-    }
-    let now_epoch = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let elapsed = now_epoch % tick_duration_secs;
-    let remaining = tick_duration_secs - elapsed;
-    remaining <= lock_offset_secs
+/// Compute the BLS message hash for updateBatchConfig.
+///
+/// Includes tickDuration so that a config signed for one tick cadence cannot
+/// be replayed against a batch with a different cadence.
+pub fn compute_update_batch_config_message(
+    chain_id: U256,
+    vision_address: Address,
+    batch_id: U256,
+    config_hash: H256,
+    lock_offset: U256,
+    tick_duration: U256,
+) -> [u8; 32] {
+    let message = encode(&[
+        Token::Uint(chain_id),
+        Token::Address(vision_address),
+        Token::String("UPDATE_BATCH_CONFIG".to_string()),
+        Token::Uint(batch_id),
+        Token::FixedBytes(config_hash.as_bytes().to_vec()),
+        Token::Uint(lock_offset),
+        Token::Uint(tick_duration),
+    ]);
+    keccak256(message)
 }
+
 
 pub struct BatchConfigOrchestrator {
     data_node_url: String,
     admin_token: String,
     round: u64,
     last_signed_hashes: HashMap<String, String>, // source_id -> last signed config_hash
+    /// Timestamps of recent batch creations, for rate-limiting.
+    recent_creations: Vec<Instant>,
 }
 
 impl BatchConfigOrchestrator {
@@ -182,6 +208,7 @@ impl BatchConfigOrchestrator {
             admin_token,
             round: 0,
             last_signed_hashes: HashMap::new(),
+            recent_creations: Vec::new(),
         }
     }
 
@@ -216,30 +243,37 @@ impl BatchConfigOrchestrator {
     pub async fn run_leader_round(
         &mut self,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let batches = fetch_recommended(&self.data_node_url).await?;
+        let recommended_batches = fetch_recommended(&self.data_node_url).await?;
 
-        // Filter to configs that actually changed AND are not in lock period
-        let changed: Vec<&RecommendedBatch> = batches
+        // Auto-creation: check for sources with no on-chain batch.
+        // Rate-limited to MAX_CREATIONS_PER_HOUR per rolling hour.
+        self.recent_creations.retain(|t| t.elapsed() < Duration::from_secs(3600));
+        for recommended in &recommended_batches {
+            let source_id = H256::from(keccak256(recommended.source_id.as_bytes()));
+            // TODO: integrate with TickScheduler once it is passed through.
+            // if !scheduler.has_batch_for_source(source_id).await {
+            //     if self.recent_creations.len() >= MAX_CREATIONS_PER_HOUR {
+            //         warn!("Rate limit: skipping auto-creation for {}", recommended.source_id);
+            //         continue;
+            //     }
+            //     if recommended.markets.len() < MIN_MARKETS_FOR_CREATION {
+            //         warn!("Too few markets for auto-creation: {}", recommended.source_id);
+            //         continue;
+            //     }
+            //     self.propose_batch_creation(recommended).await?;
+            //     self.recent_creations.push(Instant::now());
+            // }
+            let _ = source_id; // suppress until integration
+        }
+
+        // Filter to configs that actually changed
+        let changed: Vec<&RecommendedBatch> = recommended_batches
             .iter()
             .filter(|b| {
-                // Skip configs that haven't changed
-                let is_changed = self
-                    .last_signed_hashes
+                self.last_signed_hashes
                     .get(&b.source_id)
                     .map(|h| h != &b.config_hash)
-                    .unwrap_or(true);
-                if !is_changed {
-                    return false;
-                }
-                // Don't push config updates during lock period
-                if is_in_lock_period(b.tick_duration_secs, b.lock_offset_secs) {
-                    info!(
-                        source = %b.source_id,
-                        "Lock period — deferring config proposal"
-                    );
-                    return false;
-                }
-                true
+                    .unwrap_or(true)
             })
             .collect();
 
@@ -250,7 +284,7 @@ impl BatchConfigOrchestrator {
         info!(
             round = self.round,
             changed = changed.len(),
-            total = batches.len(),
+            total = recommended_batches.len(),
             "Proposing batch config round"
         );
 
@@ -291,9 +325,10 @@ impl BatchConfigOrchestrator {
                         reject_count += 1;
                     }
                 },
+                // Unknown sources are rejections — a follower that doesn't recognise
+                // a source cannot verify its markets, so it cannot accept.
                 None => {
-                    // Source unknown to follower -- acceptable if within tolerance
-                    accept_count += 1;
+                    reject_count += 1;
                 }
             }
         }
@@ -308,7 +343,6 @@ impl BatchConfigOrchestrator {
     }
 
     /// After successful consensus, publish signed config to own data-node.
-    /// Skips publishing if the source is currently in its lock period.
     pub async fn publish_to_data_node(
         &self,
         config: &RecommendedBatch,
@@ -316,15 +350,6 @@ impl BatchConfigOrchestrator {
         signers_bitmask: u64,
         reference_nonce: u64,
     ) -> Result<(), reqwest::Error> {
-        // Don't push config updates during lock period
-        if is_in_lock_period(config.tick_duration_secs, config.lock_offset_secs) {
-            info!(
-                source = %config.source_id,
-                "Lock period — deferring config publish"
-            );
-            return Ok(());
-        }
-
         let client = reqwest::Client::new();
         client
             .post(&format!("{}/batches/signed", self.data_node_url))
@@ -345,7 +370,6 @@ impl BatchConfigOrchestrator {
     }
 
     /// Follower: replicate leader's config to own data-node.
-    /// Skips replication if the source is currently in its lock period.
     pub async fn replicate_to_own_data_node(
         &self,
         config: &RecommendedBatch,
@@ -353,15 +377,6 @@ impl BatchConfigOrchestrator {
         signers_bitmask: u64,
         reference_nonce: u64,
     ) -> Result<(), reqwest::Error> {
-        // Don't push config updates during lock period
-        if is_in_lock_period(config.tick_duration_secs, config.lock_offset_secs) {
-            info!(
-                source = %config.source_id,
-                "Lock period — deferring config replication"
-            );
-            return Ok(());
-        }
-
         let client = reqwest::Client::new();
         client
             .post(&format!("{}/batches/replicate", self.data_node_url))
@@ -401,7 +416,7 @@ mod tests {
         source_id: &str,
         tick_dur: u64,
         lock_off: u64,
-        markets: Vec<(&str, u32)>,
+        markets: Vec<(&str, &str, u32)>,
     ) -> RecommendedBatch {
         RecommendedBatch {
             source_id: source_id.to_string(),
@@ -411,9 +426,9 @@ mod tests {
             lock_offset_secs: lock_off,
             markets: markets
                 .into_iter()
-                .map(|(id, bps)| RecommendedMarket {
+                .map(|(id, res, bps)| RecommendedMarket {
                     asset_id: id.to_string(),
-                    resolution_type: "up_x".to_string(),
+                    resolution_type: res.to_string(),
                     threshold_bps: bps,
                     threshold_source: "test".to_string(),
                 })
@@ -422,39 +437,54 @@ mod tests {
         }
     }
 
+    // Convenience wrapper with default resolution_type "up_x"
+    fn make_batch_simple(
+        source_id: &str,
+        tick_dur: u64,
+        lock_off: u64,
+        markets: Vec<(&str, u32)>,
+    ) -> RecommendedBatch {
+        make_batch(
+            source_id,
+            tick_dur,
+            lock_off,
+            markets.into_iter().map(|(id, bps)| (id, "up_x", bps)).collect(),
+        )
+    }
+
     #[test]
     fn test_verify_same_source_passes() {
-        let leader = make_batch("crypto", 600, 90, vec![("bitcoin", 200), ("ethereum", 300)]);
-        let follower = make_batch("crypto", 600, 90, vec![("bitcoin", 210), ("ethereum", 290)]);
+        let leader = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 200), ("ethereum", 300)]);
+        let follower = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 210), ("ethereum", 290)]);
         assert!(verify_single_source(&leader, &follower).is_ok());
     }
 
     #[test]
     fn test_verify_source_id_mismatch() {
-        let leader = make_batch("crypto", 600, 90, vec![]);
-        let follower = make_batch("stocks", 600, 90, vec![]);
+        let leader = make_batch_simple("crypto", 600, 90, vec![]);
+        let follower = make_batch_simple("stocks", 600, 90, vec![]);
         assert!(verify_single_source(&leader, &follower).is_err());
     }
 
     #[test]
     fn test_verify_tick_duration_mismatch() {
-        let leader = make_batch("crypto", 600, 90, vec![("bitcoin", 200)]);
-        let follower = make_batch("crypto", 300, 90, vec![("bitcoin", 200)]);
+        let leader = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 200)]);
+        let follower = make_batch_simple("crypto", 300, 90, vec![("bitcoin", 200)]);
         let err = verify_single_source(&leader, &follower).unwrap_err();
         assert!(err.contains("tick_duration"));
     }
 
     #[test]
     fn test_verify_lock_offset_mismatch() {
-        let leader = make_batch("crypto", 600, 90, vec![("bitcoin", 200)]);
-        let follower = make_batch("crypto", 600, 45, vec![("bitcoin", 200)]);
+        let leader = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 200)]);
+        let follower = make_batch_simple("crypto", 600, 45, vec![("bitcoin", 200)]);
         let err = verify_single_source(&leader, &follower).unwrap_err();
         assert!(err.contains("lock_offset"));
     }
 
     #[test]
     fn test_verify_asset_count_tolerance() {
-        // Leader has 10, follower has 4 -> ratio 1.5 > 0.5 -> reject
+        // Leader has 10, follower has 4 -> ratio 1.5 > 0.30 -> reject
         let leader_markets: Vec<(&str, u32)> = (0..10).map(|i| {
             // Leak a string so we get a &str. Only in tests.
             let s: &str = Box::leak(format!("asset_{}", i).into_boxed_str());
@@ -464,8 +494,8 @@ mod tests {
             let s: &str = Box::leak(format!("asset_{}", i).into_boxed_str());
             (s, 100u32)
         }).collect();
-        let leader = make_batch("crypto", 600, 90, leader_markets);
-        let follower = make_batch("crypto", 600, 90, follower_markets);
+        let leader = make_batch_simple("crypto", 600, 90, leader_markets);
+        let follower = make_batch_simple("crypto", 600, 90, follower_markets);
         let err = verify_single_source(&leader, &follower).unwrap_err();
         assert!(err.contains("asset count"));
     }
@@ -473,15 +503,15 @@ mod tests {
     #[test]
     fn test_verify_unknown_asset_tolerance() {
         // Leader has assets A-E, follower knows A-C (but not D,E)
-        // Asset counts: leader=5, follower=5 (within tolerance)
-        // Unknown: 2/5 = 40% > 20% tolerance -> reject on unknown assets
-        let leader = make_batch(
+        // Asset counts: leader=5, follower=5 (within 30% tolerance)
+        // Unknown: 2/5 = 40% > 5% tolerance -> reject on unknown assets
+        let leader = make_batch_simple(
             "crypto",
             600,
             90,
             vec![("a", 100), ("b", 100), ("c", 100), ("d", 100), ("e", 100)],
         );
-        let follower = make_batch(
+        let follower = make_batch_simple(
             "crypto",
             600,
             90,
@@ -494,13 +524,13 @@ mod tests {
     #[test]
     fn test_verify_threshold_divergence() {
         // All assets diverge massively -> reject
-        let leader = make_batch(
+        let leader = make_batch_simple(
             "crypto",
             600,
             90,
             vec![("a", 1000), ("b", 1000), ("c", 1000), ("d", 1000)],
         );
-        let follower = make_batch(
+        let follower = make_batch_simple(
             "crypto",
             600,
             90,
@@ -512,23 +542,51 @@ mod tests {
 
     #[test]
     fn test_verify_within_tolerance() {
-        // 45% threshold difference is within 50%
-        let leader = make_batch("crypto", 600, 90, vec![("bitcoin", 145)]);
-        let follower = make_batch("crypto", 600, 90, vec![("bitcoin", 100)]);
+        // 15% threshold difference is within 20%
+        let leader = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 115)]);
+        let follower = make_batch_simple("crypto", 600, 90, vec![("bitcoin", 100)]);
         assert!(verify_single_source(&leader, &follower).is_ok());
     }
 
     #[test]
-    fn test_is_in_lock_period_zero_tick() {
-        // Zero tick duration should never be "in lock period"
-        assert!(!is_in_lock_period(0, 0));
-        assert!(!is_in_lock_period(0, 10));
+    fn test_verify_resolution_type_mismatch_rejects() {
+        // Same asset, different resolution_type -> counted as divergent
+        let leader = make_batch("crypto", 600, 90, vec![("bitcoin", "up_x", 100), ("eth", "up_x", 100)]);
+        let follower = make_batch("crypto", 600, 90, vec![("bitcoin", "binary", 100), ("eth", "up_x", 100)]);
+        // bitcoin: resolution mismatch -> reject_count++ (via divergent path), eth: ok
+        // divergent=1, checked=1 -> 100% > 50% -> should fail
+        let err = verify_single_source(&leader, &follower).unwrap_err();
+        assert!(err.contains("threshold divergence"));
     }
 
     #[test]
-    fn test_is_in_lock_period_large_offset() {
-        // If lock_offset equals tick_duration, we're always in lock period
-        // (edge case: offset == tick means remaining <= offset is always true)
-        assert!(is_in_lock_period(600, 600));
+    fn test_compute_update_batch_config_message_is_deterministic() {
+        use ethers::types::{Address, U256};
+        let chain_id = U256::from(111222333u64);
+        let addr = Address::zero();
+        let batch_id = U256::from(1u64);
+        let config_hash = H256::from([0xab; 32]);
+        let lock_offset = U256::from(90u64);
+        let tick_duration = U256::from(600u64);
+
+        let h1 = compute_update_batch_config_message(
+            chain_id, addr, batch_id, config_hash, lock_offset, tick_duration,
+        );
+        let h2 = compute_update_batch_config_message(
+            chain_id, addr, batch_id, config_hash, lock_offset, tick_duration,
+        );
+        assert_eq!(h1, h2);
+
+        // Different tick_duration => different hash
+        let h3 = compute_update_batch_config_message(
+            chain_id, addr, batch_id, config_hash, lock_offset, U256::from(300u64),
+        );
+        assert_ne!(h1, h3);
+    }
+
+    #[test]
+    fn test_rate_limit_constants() {
+        assert_eq!(MAX_CREATIONS_PER_HOUR, 3);
+        assert_eq!(MIN_MARKETS_FOR_CREATION, 5);
     }
 }

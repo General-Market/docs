@@ -1,28 +1,35 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { SourceCategory } from '@/lib/vision/sources'
+import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { SOURCE_CATEGORIES } from '@/lib/vision/source-categories'
-import { getCategoryCounts } from '@/lib/vision/source-categories'
 
 interface CategoryNavProps {
-  activeCategory: SourceCategory | 'all'
-  onCategoryChange: (cat: SourceCategory | 'all') => void
+  activeCategory: string
+  onCategoryChange: (cat: string) => void
 }
 
 export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavProps) {
-  const counts = useMemo(() => getCategoryCounts(), [])
+  const { sources, categories: apiCategories } = useSourceRegistry()
 
-  const pills: { key: SourceCategory | 'all'; label: string; count: number }[] = useMemo(() => {
-    return [
-      { key: 'all' as const, label: 'All', count: counts.all },
-      ...SOURCE_CATEGORIES.map(c => ({
-        key: c.key,
-        label: c.label,
-        count: counts[c.key] ?? 0,
-      })),
-    ]
-  }, [counts])
+  // Build category counts from registry sources
+  const counts = useMemo(() => {
+    const result: Record<string, number> = { all: sources.length }
+    for (const source of sources) {
+      result[source.category] = (result[source.category] ?? 0) + 1
+    }
+    return result
+  }, [sources])
+
+  // Use API categories when available, fall back to static list
+  const categoryList = apiCategories.length > 0
+    ? apiCategories.sort((a, b) => a.order - b.order)
+    : SOURCE_CATEGORIES.map(c => ({ key: c.key, label: c.label, order: 0 }))
+
+  const pills = useMemo(() => [
+    { key: 'all', label: 'All', count: counts.all ?? 0 },
+    ...categoryList.map(c => ({ key: c.key, label: c.label, count: counts[c.key] ?? 0 })),
+  ], [categoryList, counts])
 
   return (
     <div className="border-b border-[var(--border)] bg-white">

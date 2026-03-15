@@ -23,6 +23,8 @@ interface IVision {
         uint256 tickDuration;            // seconds per tick
         uint256 lockOffset;              // active lock window (seconds before tick end)
         uint256 nextLockOffset;          // pending lock offset for next tick — F3
+        uint256 nextTickDuration;        // staged tickDuration for next promotion
+        int256 epochOffset;              // signed offset for tick continuity across tickDuration changes
         uint256 createdAtTick;           // block.timestamp / tickDuration at creation
         uint256 lastPromotionTick;       // tick at which config was last promoted — F3
         bool paused;
@@ -39,7 +41,8 @@ interface IVision {
         uint256 lastClaimedTick;
         uint256 joinTimestamp;
         uint256 totalDeposited;
-        uint256 totalClaimed;
+        // totalClaimed removed: fees are applied once at withdraw(), not at claimRewards().
+        // Tracking intermediate claimed amounts for fee deduction caused double-counting.
         bool isVirtual;                  // true if funded from virtualBalance (SOL-2)
     }
 
@@ -64,6 +67,7 @@ interface IVision {
     error InvalidTickRange();
     error InvalidTickDuration();
     error InvalidLockOffset();           // lockOffset >= tickDuration
+    error LockOffsetTooLarge();          // lockOffset >= tickDuration in updateBatchConfig
     error InsolventPayout();
     error BotAlreadyRegistered();
     error BotNotRegistered();
@@ -73,6 +77,7 @@ interface IVision {
     error AlreadyProcessed();            // depositProcessed[depositId] already true
     error ZeroAddress();                 // creditBalance with user == address(0)
     error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
+    error TooManyBatches();              // nextBatchId >= MAX_BATCHES
 
     // ============ EVENTS ============
 
@@ -89,7 +94,8 @@ interface IVision {
     event BatchConfigUpdated(
         uint256 indexed batchId,
         bytes32 nextConfigHash,
-        uint256 nextLockOffset
+        uint256 nextLockOffset,
+        uint256 nextTickDuration
     );
 
     event BatchConfigPromoted(
@@ -126,6 +132,11 @@ interface IVision {
     event BotRegistered(address indexed bot, string endpoint);
     event BotDeregistered(address indexed bot);
     event FeeCollectorUpdated(address indexed oldCollector, address indexed newCollector);
+
+    /// @notice Emitted when collectFees() is called.
+    /// @param realFees    Fees from real-funded positions (credited to realBalance)
+    /// @param virtualFees Fees from virtual-funded positions (credited to virtualBalance)
+    event FeeCollected(uint256 realFees, uint256 virtualFees);
 
     // ============ DUAL-BALANCE EVENTS ============
 
@@ -201,20 +212,22 @@ interface IVision {
         bytes32 bitmapHash
     ) external returns (uint256 batchId);
 
-    /// @notice Update a batch's config hash. Takes effect NEXT tick (F3 deferred
-    ///         promotion). Writes to nextConfigHash/nextLockOffset; promotion happens
+    /// @notice Update a batch's config hash and optionally tickDuration.
+    ///         Takes effect NEXT tick (F3 deferred promotion). Writes to
+    ///         nextConfigHash/nextLockOffset/nextTickDuration; promotion happens
     ///         lazily via _promoteConfigIfNeeded().
     /// @dev BLS message = keccak256(abi.encode(
     ///        block.chainid, address(this), "UPDATE_BATCH_CONFIG",
-    ///        batchId, configHash, lockOffset
+    ///        batchId, configHash, lockOffset, tickDuration
     ///      ))
     ///      Distinct domain tag from CREATE_BATCH (Issue 9).
     ///      Enforces lock window check (Issue 9) -- cannot update config during lock.
-    ///      If configHash == batch.configHash AND no pending next, no-op without revert.
+    ///      If configHash == batch.configHash AND tickDuration unchanged AND no pending, no-op.
     function updateBatchConfig(
         uint256 batchId,
         bytes32 configHash,
         uint256 lockOffset,
+        uint256 tickDuration,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
@@ -286,6 +299,13 @@ interface IVision {
     // ============ FEE MANAGEMENT ============
 
     function collectFees() external;
+
+    /// @notice Pending fees from real-funded positions (backed by L3 USDC in contract)
+    function accumulatedRealFees() external view returns (uint256);
+
+    /// @notice Pending fees from virtual-funded positions (backed by Settlement custody)
+    function accumulatedVirtualFees() external view returns (uint256);
+
     function updateFeeCollector(
         address newCollector,
         bytes calldata blsSignature,

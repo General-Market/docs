@@ -4,14 +4,13 @@
 //!
 //! 1. Filter active players (balance > 0)
 //! 2. Check bitmap reveals (non-revealed players are voided, stake refunded)
-//! 3. Compute multipliers (early + commitment)
-//! 4. For each market:
+//! 3. For each market:
 //!    a. Fetch start/end prices, check staleness
 //!    b. Compute % change and determine outcome
-//!    c. Decode bitmaps to player sides
+//!    c. Decode bitmaps to player sides (flat stakePerTick split evenly across markets)
 //!    d. Run parimutuel side matching
-//! 5. Aggregate per-player balance changes
-//! 6. Return TickResult
+//! 4. Aggregate per-player balance changes
+//! 5. Return TickResult
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -20,15 +19,17 @@ use ethers::types::{Address, H256, U256};
 
 use super::bitmap_store::BitmapStore;
 use super::config::VisionConfig;
-use super::multiplier;
 use super::side_matching::{self, SideMatchInput};
 use super::types::*;
 
 /// Price data for tick resolution.
 ///
 /// Maps market_id to (start_price, end_price, last_update_timestamp).
+/// Prices are stored as i128 scaled by 1e8 (fixed-point, 8 decimal places).
+/// Signed to accommodate negative-valued markets (interest rates, temperatures, etc.).
+#[derive(Clone)]
 pub struct MarketPrices {
-    prices: HashMap<H256, (f64, f64, u64)>,
+    prices: HashMap<H256, (i128, i128, u64)>,
 }
 
 impl MarketPrices {
@@ -38,13 +39,13 @@ impl MarketPrices {
         }
     }
 
-    /// Insert price data for a market.
-    pub fn insert(&mut self, market_id: H256, start: f64, end: f64, last_update: u64) {
+    /// Insert price data for a market. Prices must be pre-scaled by 1e8.
+    pub fn insert(&mut self, market_id: H256, start: i128, end: i128, last_update: u64) {
         self.prices.insert(market_id, (start, end, last_update));
     }
 
-    /// Get start and end prices for a market.
-    pub fn get_prices(&self, market_id: &H256) -> Option<(f64, f64)> {
+    /// Get start and end prices for a market (i128, scaled by 1e8).
+    pub fn get_prices(&self, market_id: &H256) -> Option<(i128, i128)> {
         self.prices.get(market_id).map(|(s, e, _)| (*s, *e))
     }
 
@@ -93,9 +94,6 @@ impl TickResolver {
         now: u64,
         market_configs: &[MarketConfig],
     ) -> Result<TickResult, ResolverError> {
-        let tick_duration = batch.tick_duration;
-        let tick_start_time = (batch.created_at_tick + tick_id) * tick_duration;
-
         // 1. Filter active players (balance > 0)
         let active: Vec<&PlayerPosition> = players.iter().filter(|p| !p.balance.is_zero()).collect();
 
@@ -104,7 +102,7 @@ impl TickResolver {
         }
 
         // 2. Check bitmap reveals
-        let bitmaps = self.bitmap_store.get_all_for_batch(batch.id).await;
+        let bitmaps = self.bitmap_store.get_all_active_for_batch(batch.id).await;
         let mut revealed_players: Vec<(&PlayerPosition, Vec<u8>)> = Vec::new();
         let mut voided_players: Vec<Address> = Vec::new();
 
@@ -117,33 +115,9 @@ impl TickResolver {
             }
         }
 
-        // 3. Compute multipliers for revealed players
-        // RC-14: Derive num_committed_ticks from balance coverage, not bitmap length.
-        // This prevents gaming via zero-padded bitmaps: a player who pads their bitmap
-        // with zeros gets no multiplier benefit -- only actual financial commitment counts.
-        let revealed_positions: Vec<PlayerPosition> =
-            revealed_players.iter().map(|(p, _bitmap)| {
-                let mut pos = (*p).clone();
-                if !pos.stake_per_tick.is_zero() {
-                    pos.num_committed_ticks = (pos.balance / pos.stake_per_tick).as_u64();
-                } else {
-                    pos.num_committed_ticks = 0;
-                }
-                pos
-            }).collect();
-        let multipliers = multiplier::compute_all_multipliers(
-            &revealed_positions,
-            tick_id,
-            tick_duration,
-            tick_start_time,
-            &self.config,
-        );
-
-        // Build a lookup: player -> multiplier
-        let mult_map: HashMap<Address, &PlayerMultiplier> =
-            multipliers.iter().map(|m| (m.player, m)).collect();
-
-        // 4. Resolve each market using market_configs
+        // 3. Resolve each market using market_configs
+        // Flat stake weighting: each player's stake_per_tick is split evenly across markets.
+        // Remainder distributed one-unit-extra to the first N markets where N = remainder.
         let mut market_results = Vec::new();
         let mut player_deltas: HashMap<Address, i128> = HashMap::new();
         let num_markets = U256::from(market_configs.len() as u64);
@@ -189,18 +163,18 @@ impl TickResolver {
                     market_id,
                     asset_id: mc.asset_id.clone(),
                     outcome: MarketOutcome::Cancelled,
-                    start_price,
-                    end_price,
+                    start_price: start_price as f64 / 1e8,
+                    end_price: end_price as f64 / 1e8,
                     pct_change_bps: 0,
                     player_results: vec![],
                 });
                 continue;
             }
 
-            // Convert f64 prices to u128 scaled by 1e8 at the boundary (ONCE).
-            // All subsequent arithmetic is integer — deterministic across issuers.
-            let start_price_scaled = (start_price * 1e8) as u128;
-            let end_price_scaled = (end_price * 1e8) as u128;
+            // Prices are already i128 scaled by 1e8 — no conversion needed.
+            // All arithmetic is integer — deterministic across issuers.
+            let start_price_scaled = start_price;
+            let end_price_scaled = end_price;
 
             // Compute % change in basis points (integer)
             let pct_change_bps = compute_pct_change_bps(start_price_scaled, end_price_scaled);
@@ -223,25 +197,34 @@ impl TickResolver {
             // Decode bitmaps -> player sides for this market
             let mut side_inputs = Vec::new();
             for (player, bitmap) in &revealed_players {
-                if let Some(mult) = mult_map.get(&player.player) {
-                    // DEV-3: tick-major bitmap indexing
-                    let tick_offset = tick_id.saturating_sub(player.start_tick) as usize;
-                    let bit_index = tick_offset * market_configs.len() + market_idx;
-                    let bit = get_bitmap_bit(bitmap, bit_index);
-                    // IS-6: if bitmap doesn't cover this market, skip the player
-                    let side = match bit {
-                        Some(true) => Side::Up,
-                        Some(false) => Side::Down,
-                        None => continue, // player didn't cover this market
-                    };
-                    // DEV-1: split effective_stake equally across all markets
-                    let per_market_stake = mult.effective_stake / num_markets;
-                    side_inputs.push(SideMatchInput {
-                        player: player.player,
-                        side,
-                        effective_stake: per_market_stake,
-                    });
-                }
+                // Flat indexing: one bitmap per tick, bit_index = market position in config
+                let bit_index = market_idx;
+                let bit = get_bitmap_bit(bitmap, bit_index);
+                // IS-6: if bitmap doesn't cover this market, skip the player
+                let side = match bit {
+                    Some(true) => Side::Up,
+                    Some(false) => Side::Down,
+                    None => continue, // player didn't cover this market
+                };
+                // Flat stake: split stake_per_tick evenly across all markets.
+                // Remainder (stake_per_tick % num_markets) is distributed one unit extra
+                // to the first N markets where N = remainder.
+                let per_market_stake = if num_markets.is_zero() {
+                    U256::zero()
+                } else {
+                    let base = player.stake_per_tick / num_markets;
+                    let remainder = player.stake_per_tick % num_markets;
+                    if U256::from(market_idx as u64) < remainder {
+                        base + U256::one()
+                    } else {
+                        base
+                    }
+                };
+                side_inputs.push(SideMatchInput {
+                    player: player.player,
+                    side,
+                    effective_stake: per_market_stake,
+                });
             }
 
             // Debug: log per-market side assignments for non-flat outcomes
@@ -254,8 +237,8 @@ impl TickResolver {
                     market_idx,
                     asset = %mc.asset_id,
                     outcome = ?outcome,
-                    start_price = %format!("{:.8}", start_price),
-                    end_price = %format!("{:.8}", end_price),
+                    start_price = %format!("{:.8}", start_price as f64 / 1e8),
+                    end_price = %format!("{:.8}", end_price as f64 / 1e8),
                     pct_change_bps = pct_change_bps,
                     sides = %sides_str.join(", "),
                     "Market side assignment"
@@ -310,8 +293,8 @@ impl TickResolver {
                 market_id,
                 asset_id: mc.asset_id.clone(),
                 outcome,
-                start_price,
-                end_price,
+                start_price: start_price as f64 / 1e8,
+                end_price: end_price as f64 / 1e8,
                 pct_change_bps,
                 player_results,
             });
@@ -363,19 +346,22 @@ impl TickResolver {
 /// 1 bps = 0.01%, so 100 bps = 1%, 30 bps = 0.3%, 300 bps = 3%, etc.
 /// Formula: pct_bps = (end - start) * 10000 / start
 ///
-/// Prices are expected as u128 scaled by 1e8 (8 decimal places).
-/// All arithmetic is integer — no floating point involved.
-fn compute_pct_change_bps(start_price: u128, end_price: u128) -> i64 {
+/// Prices are expected as i128 scaled by 1e8 (8 decimal places).
+/// Signed arithmetic supports negative-valued markets (interest rates, temperatures, etc.).
+/// Division by negative start_price is well-defined: the sign of the result is correct.
+fn compute_pct_change_bps(start_price: i128, end_price: i128) -> i64 {
     if start_price == 0 {
         return 0;
     }
-    if end_price >= start_price {
-        let diff = end_price - start_price;
-        ((diff as u128 * 10000) / start_price as u128) as i64
-    } else {
-        let diff = start_price - end_price;
-        -(((diff as u128 * 10000) / start_price as u128) as i64)
-    }
+    // (end - start) * 10000 / |start| — dividing by the absolute value preserves
+    // directional semantics for negative start prices.  If we divided by start_price
+    // directly, a negative denominator would flip the sign: a price moving from -5 to
+    // -3 (an upward move, value closer to zero) would yield negative bps and trigger
+    // the wrong winner side.  Using abs() ensures positive change → positive bps
+    // regardless of the sign of the starting price.
+    let diff = end_price.wrapping_sub(start_price);
+    let bps = diff.saturating_mul(10_000).wrapping_div(start_price.abs());
+    bps.clamp(i64::MIN as i128, i64::MAX as i128) as i64
 }
 
 /// Resolve market outcome using integer basis points.
@@ -739,7 +725,7 @@ mod tests {
         address: Address,
         stake_per_tick: u128,
         balance: u128,
-        join_timestamp: u64,
+        _join_timestamp: u64,
     ) -> PlayerPosition {
         PlayerPosition {
             player: address,
@@ -748,18 +734,17 @@ mod tests {
             start_tick: 0,
             balance: U256::from(balance),
             initial_deposit: U256::from(balance),
-            join_timestamp,
-            num_committed_ticks: 1,
         }
     }
 
-    /// Store a bitmap for a player, computing the hash automatically.
+    /// Store a bitmap for a player in the active slot (pending → flip → active).
     async fn store_bitmap(store: &BitmapStore, player: Address, batch_id: u64, bitmap: Vec<u8>) {
         let hash = H256::from(keccak256(&bitmap));
         store
-            .store(player, batch_id, bitmap, hash)
+            .store_pending(player, batch_id, bitmap, hash, H256::zero(), 0)
             .await
             .expect("bitmap store should succeed");
+        store.flip(batch_id).await;
     }
 
     // -------------------------------------------------------------------------
@@ -832,6 +817,18 @@ mod tests {
 
         // Tiny move: 100 -> 100.01 = 0.01% = 1 bps
         assert_eq!(compute_pct_change_bps(100_00000000, 100_01000000), 1);
+
+        // Negative start prices (e.g. interest rates, inverted indices):
+        // -5 -> -3: price moves toward zero (upward), must be positive bps.
+        // diff = (-3) - (-5) = +2, |start| = 5 → 2*10000/5 = 4000 bps (UP).
+        assert_eq!(compute_pct_change_bps(-5_00000000, -3_00000000), 4000);
+        // -5 -> -7: price moves away from zero (downward), must be negative bps.
+        // diff = (-7) - (-5) = -2, |start| = 5 → -2*10000/5 = -4000 bps (DOWN).
+        assert_eq!(compute_pct_change_bps(-5_00000000, -7_00000000), -4000);
+        // -100 -> -105: 5% further negative → -500 bps.
+        assert_eq!(compute_pct_change_bps(-100_00000000, -105_00000000), -500);
+        // -100 -> -95: 5% toward zero → +500 bps.
+        assert_eq!(compute_pct_change_bps(-100_00000000, -95_00000000), 500);
     }
 
     // -------------------------------------------------------------------------
@@ -1052,7 +1049,7 @@ mod tests {
 
         // Price went UP: 100 -> 105 (5%)
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 105.0, 1000);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 1000);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1130,7 +1127,7 @@ mod tests {
         ];
 
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 102.0, 1000);
+        prices.insert(market_id, 10_000_000_000, 10_200_000_000, 1000);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1232,7 +1229,7 @@ mod tests {
 
         // Price data is old (last_update=100, now=1000, threshold=300 -> stale)
         let mut prices = MarketPrices::new();
-        prices.insert(market_id, 100.0, 105.0, 100);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 100);
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1307,8 +1304,8 @@ mod tests {
         ];
 
         let mut prices = MarketPrices::new();
-        prices.insert(market_a, 100.0, 110.0, 1000); // UP 10%
-        prices.insert(market_b, 100.0, 90.0, 1000); // DOWN 10%
+        prices.insert(market_a, 10_000_000_000, 11_000_000_000, 1000); // UP 10%
+        prices.insert(market_b, 10_000_000_000, 9_000_000_000, 1000); // DOWN 10%
 
         let result = resolver
             .resolve_tick(&batch, 0, &players, &prices, 1000, &market_configs)
@@ -1367,7 +1364,7 @@ mod tests {
         // All markets go UP → Player A wins all, Player B loses all
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000);
         }
 
         let result = resolver
@@ -1434,7 +1431,7 @@ mod tests {
         // All markets go UP
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000);
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000);
         }
 
         let result = resolver
@@ -1529,7 +1526,7 @@ mod tests {
         // === Tick 0 ===
         let mut prices = MarketPrices::new();
         for mc in &market_configs {
-            prices.insert(mc.market_id, 100.0, 110.0, 1000); // All UP
+            prices.insert(mc.market_id, 10_000_000_000, 11_000_000_000, 1000); // All UP
         }
 
         let result_t0 = resolver
@@ -1588,15 +1585,15 @@ mod tests {
         assert!(prices.is_stale(&market_id, 300, 1000));
 
         // Fresh data (last_update=900, now=1000, threshold=300)
-        prices.insert(market_id, 100.0, 105.0, 900);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 900);
         assert!(!prices.is_stale(&market_id, 300, 1000));
 
         // Stale data (last_update=600, now=1000, threshold=300 -> 400 > 300)
-        prices.insert(market_id, 100.0, 105.0, 600);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 600);
         assert!(prices.is_stale(&market_id, 300, 1000));
 
         // Exactly at threshold (last_update=700, now=1000 -> 300 == 300, not stale)
-        prices.insert(market_id, 100.0, 105.0, 700);
+        prices.insert(market_id, 10_000_000_000, 10_500_000_000, 700);
         assert!(!prices.is_stale(&market_id, 300, 1000));
     }
 }

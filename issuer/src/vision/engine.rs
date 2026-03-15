@@ -10,8 +10,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use common::bls::{BLSKeyPair, Bn254BLSSigner};
 use common::traits::BLSSigner;
+use common::types::{BLSPublicKey, P2PMessage};
 use common::BLSSignature;
-use common::types::P2PMessage;
+use crate::consensus::KeyRegistry;
 use ethers::abi::{encode, Token};
 use ethers::types::{Address, H256, U256};
 use ethers::utils::keccak256;
@@ -23,6 +24,42 @@ use super::resolver::{MarketPrices, TickResolver};
 use super::tick_consensus::TickConsensus;
 use super::tick_scheduler::TickScheduler;
 use super::types::MarketConfig;
+
+// ---------------------------------------------------------------------------
+// Bitmap gossip types for cross-issuer bitmap synchronisation
+// ---------------------------------------------------------------------------
+
+/// Bitmap gossip message variants forwarded from the P2P layer to the engine.
+///
+/// The gossip task responds to each variant:
+/// - `Gossip`: if the bitmap is unknown, send `BitmapRequest` back to the sender.
+/// - `Request`: if we have the bitmap, send `BitmapResponse` directly to the requester.
+/// - `Response`: verify hash, store in the pending slot via BitmapStore.
+pub enum IncomingBitmapGossip {
+    Gossip {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+    Request {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+    },
+    Response {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap: Vec<u8>,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+}
 
 // ---------------------------------------------------------------------------
 // Balance proof types for P2P aggregation
@@ -119,8 +156,9 @@ impl BalanceProofCollector {
 }
 
 /// Reference prices from the previous tick, used as "start" prices for the next tick.
-/// Maps market_id (H256) -> price value (f64).
-type ReferencePrices = Arc<RwLock<HashMap<H256, f64>>>;
+/// Maps market_id (H256) -> price value scaled by 1e8 (i128, integer).
+/// Signed to accommodate negative-valued markets (interest rates, temperatures, etc.).
+type ReferencePrices = Arc<RwLock<HashMap<H256, i128>>>;
 
 /// How long to suppress retry for missing configs (batch engine may generate them later).
 const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(300);
@@ -235,8 +273,11 @@ fn asset_id_to_market_id(asset_id: &str) -> H256 {
 /// end prices from the current snapshot.
 ///
 /// Returns Result instead of silently returning empty on failure.
-/// Parsed snapshot data for a source: (market_id -> value, market_id -> changePct, market_id -> fetched_at_unix)
-type SnapshotData = (HashMap<H256, f64>, HashMap<H256, f64>, HashMap<H256, i64>);
+/// Parsed snapshot data for a source:
+/// - market_id -> current price scaled by 1e8 (i128, integer, signed for negative values)
+/// - market_id -> change_pct (f64, used only for start_price fallback)
+/// - market_id -> fetched_at unix timestamp
+type SnapshotData = (HashMap<H256, i128>, HashMap<H256, f64>, HashMap<H256, i64>);
 
 /// Per-tick-cycle cache: Ok(data) for successful fetches, Err for failed ones.
 /// Prevents both redundant fetches AND redundant timeout waits.
@@ -282,7 +323,7 @@ async fn fetch_snapshot_data_inner_with_secret(
             }
             tracing::debug!("Snapshot HMAC-SHA256 verification successful");
         } else {
-            tracing::warn!("Snapshot response missing X-Snapshot-HMAC header — HMAC verification cannot be performed");
+            return Err("Snapshot HMAC header missing — rejecting unauthenticated data".into());
         }
 
         let json: serde_json::Value = serde_json::from_str(&body_text)?;
@@ -301,7 +342,7 @@ fn parse_snapshot_data(
         .and_then(|s| s.as_array())
         .ok_or("data-node snapshot response missing 'snapshots' array")?;
 
-    let mut current_values: HashMap<H256, f64> = HashMap::new();
+    let mut current_values: HashMap<H256, i128> = HashMap::new();
     let mut change_pcts: HashMap<H256, f64> = HashMap::new();
     let mut fetched_at_map: HashMap<H256, i64> = HashMap::new();
 
@@ -318,20 +359,34 @@ fn parse_snapshot_data(
 
         let market_id = asset_id_to_market_id(asset_id);
 
-        let value = snap
-            .get("value")
-            .and_then(|v| {
-                if let Some(f) = v.as_f64() {
-                    Some(f)
-                } else if let Some(s) = v.as_str() {
-                    s.parse::<f64>().ok()
-                } else {
-                    None
+        // Prefer integer-scaled price from data-node (value_scaled, 1e8 fixed-point).
+        // value_scaled is i128 — negative values are valid (interest rates, temperatures, etc.).
+        // Fall back to f64 `value` field for backwards compatibility.
+        let value: i128 = if let Some(scaled) = snap.get("value_scaled").and_then(|v| v.as_str()) {
+            match scaled.parse::<i128>() {
+                Ok(v) => v,
+                Err(_) => {
+                    tracing::warn!(market = ?market_id, raw = scaled, "Unparseable value_scaled — skipping market");
+                    continue;
                 }
-            })
-            .unwrap_or(0.0);
+            }
+        } else if let Some(f) = snap.get("value").and_then(|v| v.as_f64()) {
+            (f * 1e8).round() as i128
+        } else if let Some(s) = snap.get("value").and_then(|v| v.as_str()) {
+            match s.parse::<f64>() {
+                Ok(f) => (f * 1e8).round() as i128,
+                Err(_) => {
+                    tracing::warn!(market = ?market_id, "Unparseable price value — skipping market");
+                    continue;
+                }
+            }
+        } else {
+            tracing::warn!(market = ?market_id, "Missing price value — skipping market");
+            continue;
+        };
 
-        if value > 0.0 {
+        // Zero means no data — exclude. Negative values (e.g. -5% interest rate) are valid.
+        if value != 0 {
             current_values.insert(market_id, value);
         }
 
@@ -383,6 +438,54 @@ fn parse_snapshot_data(
     Ok((current_values, change_pcts, fetched_at_map))
 }
 
+/// Fetch snapshot data from the data-node with exponential backoff retry.
+///
+/// Attempts up to 4 fetches total: immediate + 3 retries at 5s, 15s, 45s delays.
+/// Transient failures (timeout, 5xx, network errors) are retried; the last error
+/// is returned if all attempts fail.
+async fn fetch_snapshot_with_retry(
+    data_node_url: &str,
+    source_id: &str,
+    hmac_secret: &Option<String>,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
+    let delays = [
+        std::time::Duration::from_secs(5),
+        std::time::Duration::from_secs(15),
+        std::time::Duration::from_secs(45),
+    ];
+    let mut last_err: Option<Box<dyn std::error::Error + Send + Sync>> = None;
+
+    for (attempt, delay) in std::iter::once(std::time::Duration::ZERO)
+        .chain(delays.iter().copied())
+        .enumerate()
+    {
+        if attempt > 0 {
+            tracing::warn!(
+                attempt,
+                source = source_id,
+                delay_secs = delay.as_secs(),
+                "Data-node fetch failed, retrying after delay"
+            );
+            tokio::time::sleep(delay).await;
+        }
+
+        match fetch_snapshot_data_inner_with_secret(data_node_url, source_id, hmac_secret).await {
+            Ok(data) => return Ok(data),
+            Err(e) => {
+                tracing::warn!(
+                    attempt,
+                    source = source_id,
+                    error = %e,
+                    "Data-node snapshot fetch failed"
+                );
+                last_err = Some(e);
+            }
+        }
+    }
+
+    Err(last_err.unwrap_or_else(|| "All data-node fetch retries exhausted".into()))
+}
+
 /// Build MarketPrices from cached snapshot data for a specific batch's markets.
 ///
 /// Uses `fetched_at` timestamps from the data-node to populate the `last_update`
@@ -426,12 +529,21 @@ async fn build_market_prices(
                 }
             }
 
+            // start_price: prefer reference from previous tick, else use end_price.
+            // If start == end but change_pct is non-trivial, derive start from change_pct.
+            // All arithmetic in integer (i128, scaled by 1e8) — deterministic across issuers.
             let mut start_price = ref_prices.get(&market_id).copied().unwrap_or(end_price);
 
-            if (start_price - end_price).abs() < f64::EPSILON {
+            if start_price == end_price {
                 if let Some(&pct) = change_pcts.get(&market_id) {
-                    if pct.abs() > 0.001 {
-                        start_price = end_price / (1.0 + pct / 100.0);
+                    // pct is % change: end = start * (1 + pct/100) => start = end * 1e4 / (1e4 + pct_bps)
+                    let pct_bps = (pct * 100.0).round() as i64; // convert % to bps
+                    if pct_bps.abs() > 10 { // > 0.1% change: apply fallback
+                        let divisor = 10_000i64 + pct_bps;
+                        if divisor != 0 {
+                            // Use i128 arithmetic throughout — end_price may be negative.
+                            start_price = (end_price * 10_000) / divisor as i128;
+                        }
                     }
                 }
             }
@@ -810,23 +922,69 @@ async fn aggregate_and_store_batch_proofs(
 /// Verifies each proof's BLS signature against the expected message hash,
 /// checks balance matches our own recorded balance, and stores valid signatures
 /// in the collector.
+///
+/// SECURITY (HIGH-4): Each individual BLS signature from the peer is verified
+/// against the sender's registered public key before acceptance. This prevents
+/// a malicious issuer from injecting forged balance proofs that corrupt aggregation.
 async fn handle_incoming_balance_proofs(
     collector: &mut BalanceProofCollector,
     db_pool: &sqlx::PgPool,
     msg: IncomingBalanceProofsBatch,
     chain_id: u64,
     vision_address: Address,
+    key_registry: &dyn KeyRegistry,
 ) {
     let batch_id = msg.batch_id;
     let tick_id = msg.tick_id;
+    let from_peer = msg.from_peer;
     // Derive signer_index from peer identity (NOT self-reported)
-    let signer_index = crate::bootstrap::extract_issuer_id(&msg.from_peer) as u8;
+    let signer_index = crate::bootstrap::extract_issuer_id(&from_peer) as u8;
+
+    // Look up the sender's BLS public key. Reject the entire batch if not registered —
+    // accepting proofs from unregistered peers would allow arbitrary key injection.
+    let sender_pubkey: BLSPublicKey = match key_registry.get_public_key(&from_peer) {
+        Some(pk) => pk,
+        None => {
+            tracing::warn!(
+                batch_id, tick_id, signer_index,
+                "Incoming balance proofs from unregistered peer — rejecting batch"
+            );
+            return;
+        }
+    };
 
     let signer = Bn254BLSSigner::new();
 
     for (player, reported_balance, sig_bytes) in msg.proofs {
         // Recompute expected message hash
         let message_hash = compute_withdraw_hash(chain_id, vision_address, batch_id, player, reported_balance);
+
+        // Verify the BLS signature against the sender's registered public key.
+        // Reject immediately on malformed signature or verification failure.
+        let bls_sig = BLSSignature(sig_bytes.clone());
+        match signer.verify_message_hash(&sender_pubkey, &message_hash, &bls_sig) {
+            Ok(true) => {
+                tracing::trace!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    "BLS signature verified for balance proof"
+                );
+            }
+            Ok(false) => {
+                tracing::warn!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    "BLS signature invalid for balance proof — rejecting"
+                );
+                continue;
+            }
+            Err(e) => {
+                tracing::warn!(
+                    batch_id, tick_id, player = %player, signer_index,
+                    error = %e,
+                    "BLS verification error for balance proof — rejecting"
+                );
+                continue;
+            }
+        }
 
         // Look up our own recorded balance for this (batch_id, player) to cross-check.
         // SECURITY: reject if we have no record OR if balances mismatch. Never accept
@@ -865,8 +1023,6 @@ async fn handle_incoming_balance_proofs(
             }
         }
 
-        let _ = (&signer, message_hash); // suppress unused — on-chain BLS verifies aggregated sig
-
         collector.add_signature(
             batch_id,
             tick_id,
@@ -900,6 +1056,14 @@ async fn handle_incoming_balance_proofs(
 /// After each tick, balance proofs are signed and broadcast via `broadcast_tx`.
 /// Proofs from peers arrive via `incoming_proofs_rx`. After a 5s collection
 /// window, proofs are aggregated (BLS) and stored in `vision_balance_proofs`.
+///
+/// # Bitmap Gossip
+///
+/// When an issuer receives a bitmap from a player via the API, it broadcasts
+/// a `BitmapGossip` to all peers. Peers that lack the bitmap reply with
+/// `BitmapRequest`; the sender responds with `BitmapResponse`. All issuers
+/// end up with the same set of bitmaps before each tick resolves, removing
+/// the single-issuer-as-gatekeeper problem.
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
@@ -908,6 +1072,10 @@ pub async fn run(
     bls_keypair: Option<Arc<BLSKeyPair>>,
     broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
     incoming_proofs_rx: Option<tokio::sync::mpsc::Receiver<IncomingBalanceProofsBatch>>,
+    incoming_gossip_rx: Option<tokio::sync::mpsc::Receiver<IncomingBitmapGossip>>,
+    // Key registry for verifying BLS signatures on incoming balance proofs (HIGH-4).
+    // Pass `None` to drop incoming proofs (not recommended for production).
+    key_registry: Option<Arc<dyn KeyRegistry>>,
 ) {
     let interval = tokio::time::Duration::from_millis(config.tick_poll_interval_ms);
     let reference_prices: ReferencePrices = Arc::new(RwLock::new(HashMap::new()));
@@ -969,6 +1137,20 @@ pub async fn run(
         None
     };
 
+    // HIGH-5: Pinned price snapshots for consensus-retry stability.
+    //
+    // When tick resolution fails and the engine retries on the next poll,
+    // freshly-fetched prices may have shifted — causing issuers to compute
+    // different outcomes and never converge on consensus.
+    //
+    // Fix: cache the first successful MarketPrices build for each (batch_id, tick_id)
+    // and reuse it on all retries. After MAX_TICK_RETRIES failures, skip the tick
+    // with a warning so we don't get permanently stuck.
+    //
+    // Key: (batch_id, tick_id) → (pinned MarketPrices, retry_count)
+    const MAX_TICK_RETRIES: u8 = 3;
+    let mut pinned_prices: HashMap<(u64, u64), (MarketPrices, u8)> = HashMap::new();
+
     tracing::info!(
         poll_interval_ms = config.tick_poll_interval_ms,
         reveal_window_secs = config.reveal_window_secs,
@@ -990,6 +1172,7 @@ pub async fn run(
             .unwrap_or_else(|_| Address::zero());
         let agg_num_issuers = config.num_issuers;
         let agg_shutdown = shutdown.clone();
+        let agg_key_registry = key_registry.clone();
 
         tokio::spawn(async move {
             let mut collector = BalanceProofCollector::new();
@@ -1002,13 +1185,20 @@ pub async fn run(
 
                 tokio::select! {
                     Some(incoming) = rx.recv() => {
-                        handle_incoming_balance_proofs(
-                            &mut collector,
-                            &pool,
-                            incoming,
-                            agg_chain_id,
-                            agg_vision_address,
-                        ).await;
+                        if let Some(ref kr) = agg_key_registry {
+                            handle_incoming_balance_proofs(
+                                &mut collector,
+                                &pool,
+                                incoming,
+                                agg_chain_id,
+                                agg_vision_address,
+                                kr.as_ref(),
+                            ).await;
+                        } else {
+                            tracing::warn!(
+                                "Received balance proofs but no key registry configured — dropping (HIGH-4)"
+                            );
+                        }
                     }
                     _ = check_interval.tick() => {
                         // Check for expired batch windows and aggregate
@@ -1034,6 +1224,222 @@ pub async fn run(
             }
 
             tracing::info!("Balance proof aggregation task stopped");
+        });
+    }
+
+    // Spawn the bitmap gossip task.
+    //
+    // Handles three message kinds forwarded from the P2P layer:
+    // - Gossip: check if we have the bitmap; if not, request it from the sender.
+    // - Request: look up our pending/active bitmap and send it back.
+    // - Response: verify hash, store in pending slot.
+    //
+    // DoS protection: BitmapRequest is rate-limited implicitly — we only send
+    // one request per (batch_id, player, bitmap_hash) triplet via a seen-set.
+    if let Some(mut gossip_rx) = incoming_gossip_rx {
+        let gossip_bitmap_store = resolver.bitmap_store.clone();
+        let gossip_broadcast_tx = broadcast_tx.clone();
+        let gossip_shutdown = shutdown.clone();
+
+        tokio::spawn(async move {
+            // Track which (batch_id, player, bitmap_hash) triplets we have already
+            // requested from a peer, to avoid duplicate BitmapRequests (DoS protection).
+            //
+            // SECURITY (HIGH-3): Capped at MAX_REQUESTED_ENTRIES to prevent memory DoS.
+            // A malicious peer flooding unique gossip keys cannot exhaust heap — once the
+            // cap is reached, new entries are silently dropped (we'll request next tick anyway).
+            const MAX_REQUESTED_ENTRIES: usize = 10_000;
+            let mut requested: std::collections::HashSet<(u64, Address, H256)> =
+                std::collections::HashSet::new();
+
+            loop {
+                if gossip_shutdown.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                match gossip_rx.recv().await {
+                    None => break, // channel closed
+                    Some(IncomingBitmapGossip::Gossip {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap_hash,
+                        config_hash: _config_hash,
+                        target_tick_id: _target_tick_id,
+                    }) => {
+                        // Check if we already have this bitmap in either slot.
+                        let have_pending = gossip_bitmap_store
+                            .get_pending(batch_id, player)
+                            .await
+                            .map(|b| b.hash == bitmap_hash)
+                            .unwrap_or(false);
+                        let have_active = gossip_bitmap_store
+                            .get_active(batch_id, player)
+                            .await
+                            .map(|b| b.hash == bitmap_hash)
+                            .unwrap_or(false);
+
+                        if have_pending || have_active {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapGossip: already have bitmap, ignoring"
+                            );
+                            continue;
+                        }
+
+                        // We don't have it — send a BitmapRequest (once per triplet).
+                        let key = (batch_id, player, bitmap_hash);
+                        if requested.contains(&key) {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapGossip: already requested bitmap, ignoring duplicate gossip"
+                            );
+                            continue;
+                        }
+                        // HIGH-3: reject new entries beyond cap to prevent memory DoS.
+                        if requested.len() >= MAX_REQUESTED_ENTRIES {
+                            tracing::warn!(
+                                batch_id,
+                                player = %player,
+                                cap = MAX_REQUESTED_ENTRIES,
+                                "BitmapGossip: requested-set cap reached — dropping entry"
+                            );
+                            continue;
+                        }
+                        requested.insert(key);
+
+                        if let Some(ref tx) = gossip_broadcast_tx {
+                            let req_msg = P2PMessage::BitmapRequest {
+                                batch_id,
+                                player,
+                                bitmap_hash,
+                            };
+                            if let Err(e) = tx.try_send(req_msg) {
+                                tracing::warn!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    error = %e,
+                                    "Failed to enqueue BitmapRequest for broadcast"
+                                );
+                            } else {
+                                tracing::debug!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    "BitmapGossip: sent BitmapRequest for missing bitmap"
+                                );
+                            }
+                        }
+                    }
+
+                    Some(IncomingBitmapGossip::Request {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap_hash,
+                    }) => {
+                        // Serve the bitmap if we have it in pending or active slot.
+                        let maybe_bitmap = gossip_bitmap_store
+                            .get_pending(batch_id, player)
+                            .await
+                            .filter(|b| b.hash == bitmap_hash)
+                            .or_else(|| {
+                                // Note: get_active is async; run a blocking check via a nested task
+                                // is overcomplicated here — just return None for active slot
+                                // and let the peer retry from pending. Active bitmaps are
+                                // less useful for the requester anyway (already resolved).
+                                None
+                            });
+
+                        if let Some(slotted) = maybe_bitmap {
+                            if let Some(ref tx) = gossip_broadcast_tx {
+                                let resp_msg = P2PMessage::BitmapResponse {
+                                    batch_id,
+                                    player,
+                                    bitmap: slotted.bitmap.clone(),
+                                    bitmap_hash: slotted.hash,
+                                    config_hash: slotted.config_hash,
+                                    target_tick_id: slotted.target_tick_id,
+                                };
+                                if let Err(e) = tx.try_send(resp_msg) {
+                                    tracing::warn!(
+                                        batch_id,
+                                        player = %player,
+                                        ?bitmap_hash,
+                                        error = %e,
+                                        "Failed to enqueue BitmapResponse for broadcast"
+                                    );
+                                } else {
+                                    tracing::debug!(
+                                        batch_id,
+                                        player = %player,
+                                        ?bitmap_hash,
+                                        "BitmapRequest: served bitmap to peer"
+                                    );
+                                }
+                            }
+                        } else {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapRequest: bitmap not found in pending slot — cannot serve"
+                            );
+                        }
+                    }
+
+                    Some(IncomingBitmapGossip::Response {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap,
+                        bitmap_hash,
+                        config_hash,
+                        target_tick_id,
+                    }) => {
+                        // Verify hash before storing — reject corrupted/malicious responses.
+                        match gossip_bitmap_store
+                            .store_pending(
+                                player,
+                                batch_id,
+                                bitmap,
+                                bitmap_hash,
+                                config_hash,
+                                target_tick_id,
+                            )
+                            .await
+                        {
+                            Ok(()) => {
+                                tracing::info!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    "BitmapResponse: stored bitmap in pending slot via gossip"
+                                );
+                                // Remove from requested-set so future gossip for the
+                                // same player (next tick) triggers a fresh request.
+                                requested.remove(&(batch_id, player, bitmap_hash));
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    error = %e,
+                                    "BitmapResponse: rejected (hash mismatch or store error)"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            tracing::info!("Bitmap gossip task stopped");
         });
     }
 
@@ -1180,7 +1586,7 @@ pub async fn run(
                                     return (source, Err("semaphore closed during snapshot fetch".into()));
                                 }
                             };
-                            let result = fetch_snapshot_data_inner_with_secret(&url, &source, &secret).await;
+                            let result = fetch_snapshot_with_retry(&url, &source, &secret).await;
                             (source, result)
                         }
                     })
@@ -1223,26 +1629,108 @@ pub async fn run(
                         "Processing due tick"
                     );
 
-                    // Get snapshot from cache (already pre-fetched)
-                    let snapshot_data = match snapshot_cache.get(&item.source_id) {
-                        Some(Ok(data)) => data.clone(),
-                        Some(Err(_)) | None => {
-                            continue; // Already logged during pre-fetch
+                    // HIGH-5: Pin price snapshot on first attempt; reuse on retries.
+                    //
+                    // If this (batch_id, tick_id) pair is already tracked in pinned_prices,
+                    // reuse the cached MarketPrices instead of rebuilding from fresh data.
+                    // This ensures all retry attempts resolve with the same price snapshot,
+                    // preventing consensus divergence caused by prices shifting between attempts.
+                    //
+                    // Skip the tick after MAX_TICK_RETRIES consecutive failures so we never
+                    // get permanently stuck waiting for consensus that will never arrive.
+                    let pin_key = (batch_id, tick_id);
+                    let prices = if let Some((pinned, retry_count)) = pinned_prices.get_mut(&pin_key) {
+                        *retry_count += 1;
+                        if *retry_count > MAX_TICK_RETRIES {
+                            tracing::warn!(
+                                batch_id,
+                                tick_id,
+                                retries = *retry_count,
+                                "Tick resolution exhausted MAX_TICK_RETRIES — skipping tick"
+                            );
+                            pinned_prices.remove(&pin_key);
+                            scheduler.mark_resolved(batch_id, tick_id).await;
+                            continue;
                         }
+                        tracing::info!(
+                            batch_id,
+                            tick_id,
+                            retry = *retry_count,
+                            "Retrying tick with pinned price snapshot"
+                        );
+                        pinned.clone()
+                    } else {
+                        // First attempt: build from fresh snapshot and pin it.
+                        let snapshot_data = match snapshot_cache.get(&item.source_id) {
+                            Some(Ok(data)) => data.clone(),
+                            Some(Err(_)) | None => {
+                                continue; // Already logged during pre-fetch
+                            }
+                        };
+                        let built = build_market_prices(
+                            &snapshot_data,
+                            &market_ids,
+                            &reference_prices,
+                            now,
+                            batch.tick_duration,
+                        )
+                        .await;
+                        pinned_prices.insert(pin_key, (built.clone(), 0));
+                        built
                     };
 
-                    let prices = build_market_prices(
-                        &snapshot_data,
-                        &market_ids,
-                        &reference_prices,
-                        now,
-                        batch.tick_duration,
-                    )
-                    .await;
+                    // First-tick skip: establish reference prices without resolving bets.
+                    // tick_id == 0 means no tick has been resolved yet for this batch.
+                    if tick_id == 0 {
+                        tracing::info!(
+                            batch_id,
+                            tick_id,
+                            "First tick — establishing reference prices, skipping resolution"
+                        );
+                        if let Some(ref pool) = db_pool {
+                            if let Err(e) = scheduler
+                                .mark_resolved_with_db(pool, batch_id, tick_id)
+                                .await
+                            {
+                                tracing::warn!(
+                                    batch_id,
+                                    tick_id,
+                                    error = %e,
+                                    "Failed to persist first-tick skip to DB"
+                                );
+                                scheduler.mark_resolved(batch_id, tick_id).await;
+                            }
+                        } else {
+                            scheduler.mark_resolved(batch_id, tick_id).await;
+                        }
+                        continue;
+                    }
+
+                    // Compute bitmap_set_hash: sorted (player, bitmap_hash) pairs, hashed together.
+                    // Included in the consensus proposal so all issuers agree on which bitmaps were used.
+                    let active_bitmaps = resolver.bitmap_store.get_all_active_for_batch(batch_id).await;
+                    let mut bitmap_set: Vec<(Address, H256)> = active_bitmaps.iter()
+                        .map(|b| (b.player, b.hash))
+                        .collect();
+                    bitmap_set.sort_by_key(|(addr, _)| *addr);
+                    let bitmap_set_hash = {
+                        use ethers::abi::{encode, Token};
+                        let tokens: Vec<Token> = bitmap_set.iter().flat_map(|(addr, hash)| {
+                            vec![Token::Address(*addr), Token::FixedBytes(hash.0.to_vec())]
+                        }).collect();
+                        H256::from(keccak256(&encode(&tokens)))
+                    };
+                    tracing::debug!(
+                        batch_id,
+                        tick_id,
+                        bitmap_count = active_bitmaps.len(),
+                        bitmap_set_hash = ?bitmap_set_hash,
+                        "Computed bitmap_set_hash for consensus"
+                    );
 
                     // Debug: log bitmap info before resolution
                             {
-                                let bitmaps = resolver.bitmap_store.get_all_for_batch(batch.id).await;
+                                let bitmaps = active_bitmaps.clone();
                                 for bm in &bitmaps {
                                     tracing::info!(
                                         batch_id,
@@ -1357,8 +1845,9 @@ pub async fn run(
                                     .await;
 
                                     // === BLS Consensus Gate ===
-                                    // Multi-issuer: create proposal, defer balance application
-                                    // Single-issuer: apply balances directly (original behavior)
+                                    // Multi-issuer: create proposal, defer balance application.
+                                    // Single-issuer: apply balances directly.
+                                    // NO degraded mode — if consensus proposal fails, skip the tick.
                                     if let Some(ref tc) = tick_consensus {
                                         // Multi-issuer mode: start consensus round
                                         match tc.create_proposal(&result, 0).await {
@@ -1380,17 +1869,9 @@ pub async fn run(
                                                     batch_id,
                                                     tick_id,
                                                     error = %e,
-                                                    "Failed to create tick consensus proposal — applying directly (degraded)"
+                                                    "CRITICAL: Failed to create tick consensus proposal — SKIPPING tick (no balance changes applied)"
                                                 );
-                                                // Fallback: apply directly in degraded mode
-                                                apply_balances(
-                                                    &scheduler,
-                                                    &db_pool,
-                                                    batch_id,
-                                                    tick_id,
-                                                    &result.player_balances,
-                                                )
-                                                .await;
+                                                continue;
                                             }
                                         }
                                     } else {
@@ -1405,6 +1886,9 @@ pub async fn run(
                                         .await;
                                     }
 
+                                    // HIGH-5: Tick resolved successfully — clear the pinned price entry.
+                                    pinned_prices.remove(&(batch_id, tick_id));
+
                                     // Update reference prices for next tick
                                     update_reference_prices(
                                         &reference_prices,
@@ -1413,22 +1897,30 @@ pub async fn run(
                                     )
                                     .await;
 
-                                    // Persist resolved tick to DB
+                                    // ATOMIC: DB flip + mark_resolved in single transaction.
+                                    // Promotes pending bitmaps to active for the next tick.
                                     if let Some(ref pool) = db_pool {
-                                        if let Err(e) = scheduler
-                                            .mark_resolved_with_db(pool, batch_id, tick_id)
+                                        if let Err(e) = resolver.bitmap_store
+                                            .persist_flip_and_mark_resolved(pool, batch_id, tick_id)
                                             .await
                                         {
                                             tracing::warn!(
                                                 batch_id,
                                                 tick_id,
                                                 error = %e,
-                                                "Failed to persist resolved tick to DB"
+                                                "Failed to persist bitmap flip + resolved tick to DB — falling back to in-memory"
                                             );
                                             // Fall back to in-memory only
+                                            resolver.bitmap_store.flip(batch_id).await;
+                                            scheduler.mark_resolved(batch_id, tick_id).await;
+                                        } else {
+                                            // In-memory flip is safe — DB is source of truth on restart
+                                            resolver.bitmap_store.flip(batch_id).await;
                                             scheduler.mark_resolved(batch_id, tick_id).await;
                                         }
                                     } else {
+                                        // No DB: in-memory only
+                                        resolver.bitmap_store.flip(batch_id).await;
                                         scheduler.mark_resolved(batch_id, tick_id).await;
                                     }
 
@@ -1450,9 +1942,10 @@ pub async fn run(
                                         batch_id,
                                         tick_id,
                                         error = %e,
-                                        "Tick resolution failed"
+                                        "Tick resolution failed — will retry with pinned prices (HIGH-5)"
                                     );
-                                    // Don't mark resolved -- retry on next poll
+                                    // Do NOT clear pinned_prices here — keep the snapshot for retries.
+                                    // Do NOT mark resolved — retry on next poll.
                                 }
                             }
                 }
@@ -1494,8 +1987,6 @@ mod tests {
             start_tick: 0,
             balance: U256::from(10000),
             initial_deposit: U256::from(10000),
-            join_timestamp: 1000,
-            num_committed_ticks: 1,
         }
     }
 
@@ -1515,7 +2006,7 @@ mod tests {
 
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone, None, None, None).await;
+            run(scheduler, resolver, config, shutdown_clone, None, None, None, None, None).await;
         });
 
         // Let it run briefly, then signal shutdown
@@ -1560,7 +2051,7 @@ mod tests {
         let sched_check = scheduler.clone();
         let shutdown_clone = shutdown.clone();
         let handle = tokio::spawn(async move {
-            run(scheduler, resolver, config, shutdown_clone, None, None, None).await;
+            run(scheduler, resolver, config, shutdown_clone, None, None, None, None, None).await;
         });
 
         // Wait for the engine to process at least one tick
