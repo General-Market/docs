@@ -6012,10 +6012,12 @@ async fn sse_stream(
                                     for s in data.iter() {
                                         last_sent_nav.insert(s.itp_id.clone(), s.nav_per_share);
                                     }
+                                    last_nav_gen = gen; // only advance on successful send
                                 }
                                 Err(_) => {
                                     consecutive_drops += 1;
                                     if consecutive_drops >= 10 { break; }
+                                    // Do NOT advance gen — retry full snapshot next tick
                                 }
                             }
                         } else {
@@ -6037,16 +6039,22 @@ async fn sse_stream(
                                         for s in &delta {
                                             last_sent_nav.insert(s.itp_id.clone(), s.nav_per_share);
                                         }
+                                        // Prune removed ITPs from tracking (prevents phantom accumulation)
+                                        let current_ids: std::collections::HashSet<&str> = data.iter().map(|s| s.itp_id.as_str()).collect();
+                                        last_sent_nav.retain(|k, _| current_ids.contains(k.as_str()));
+                                        last_nav_gen = gen; // only advance on successful send
                                     }
                                     Err(_) => {
                                         consecutive_drops += 1;
                                         if consecutive_drops >= 10 { break; }
+                                        // Do NOT advance last_nav_gen — retry on next tick
                                     }
                                 }
+                            } else {
+                                // No delta needed — all ITPs unchanged. Safe to advance gen.
+                                last_nav_gen = gen;
                             }
                         }
-
-                        last_nav_gen = gen;
                     }
                 }
             }

@@ -26,7 +26,7 @@ abigen!(
         event FillConfirmed(uint256 indexed orderId, uint256 indexed cycleNumber, uint256 fillPrice, uint256 fillAmount)
         event OrderSubmitted(uint256 indexed orderId, address indexed user, bytes32 indexed itpId, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline)
         event SharesUpdated(bytes32 indexed itpId, address indexed user, uint256 newTotalSupply, uint256 userNewBalance)
-        event OrderCancelled(uint256 indexed orderId, address indexed user, uint256 refundAmount)
+        event OrderCancelled(uint256 indexed orderId, address indexed user, uint256 amount, uint8 side)
         event OrderRefunded(uint256 indexed orderId, address indexed user, uint256 refundAmount)
     ]"#
 );
