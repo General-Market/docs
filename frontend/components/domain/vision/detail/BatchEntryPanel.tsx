@@ -15,9 +15,7 @@ import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getBatchTickState } from '@/lib/vision/tick'
-import { getBatchKey } from '@/lib/vision/sources'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
-import batchConfig from '@/lib/contracts/vision-batches.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
 import { WithdrawModal } from '../WithdrawModal'
@@ -52,40 +50,14 @@ export default function BatchEntryPanel({
   marketIds = [],
 }: BatchEntryPanelProps) {
   // -- Batch data --
-  // Get the canonical source key and static config from vision-batches.json
-  const batchKey = getBatchKey(sourceId)
-  const staticEntry = (batchConfig.batches as Record<string, { batchId: number; configHash: string }>)[batchKey]
-
   // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
-  // The proxy deduplicates to the latest batch per source (highest ID), so match by
-  // sourceId rather than static batchId — batch IDs change on redeployment.
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
-    if (!staticEntry) return null
-    if (batches && batches.length > 0) {
-      // Match by sourceId (proxy resolves configHash → source name)
-      const bySource = batches.find(b =>
-        b.sourceId === sourceId || b.sourceId === batchKey
-      )
-      if (bySource) return bySource
-    }
-    // Fallback to static config when API isn't available
-    return {
-      id: staticEntry.batchId,
-      creator: '',
-      sourceId: batchKey,
-      marketIds: [] as string[],
-      resolutionTypes: [] as number[],
-      tickDuration: (staticEntry as any)?.tickDuration ?? 600,
-      marketCount: 0,
-      playerCount: 0,
-      tvl: '0',
-      currentTick: 0,
-      paused: false,
-    } satisfies import('@/hooks/vision/useBatches').BatchInfo
-  }, [batches, sourceId, batchKey, staticEntry])
+    if (!batches || batches.length === 0) return null
+    return batches.find(b => b.sourceId === sourceId) ?? null
+  }, [batches, sourceId])
 
-  // -- Read configHash from on-chain batch state, with static fallback --
+  // -- Read configHash from on-chain batch state --
   const activeBatchId = activeBatch?.id ?? null
   const { data: onChainBatch } = useReadContract({
     address: VISION_ADDRESS,
@@ -95,9 +67,7 @@ export default function BatchEntryPanel({
     chainId: indexL3.id,
     query: { enabled: activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
-  const onChainConfigHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
-  // Use on-chain value when available, fall back to static config (from vision-batches.json)
-  const configHash = onChainConfigHash ?? (staticEntry?.configHash as `0x${string}` | undefined)
+  const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
 
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
