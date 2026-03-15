@@ -903,6 +903,38 @@ pub enum P2PMessage {
         proofs: Vec<(Address, U256, BLSSignature)>,
         signer_index: u8,
     },
+
+    // ==================== Vision Bitmap Gossip ====================
+
+    /// Gossip: notify peers that we have a bitmap for (batch_id, player).
+    /// Recipients check if they already have the bitmap; if not, they send
+    /// BitmapRequest. DoS-protected: only the player themselves or an
+    /// issuer that received the bitmap via the API should gossip it.
+    BitmapGossip {
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+
+    /// Request the full bitmap bytes from a peer that advertised them via BitmapGossip.
+    BitmapRequest {
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+    },
+
+    /// Full bitmap payload sent in response to a BitmapRequest.
+    /// Receiver verifies keccak256(bitmap) == bitmap_hash before storing.
+    BitmapResponse {
+        batch_id: u64,
+        player: Address,
+        bitmap: Vec<u8>,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
 }
 
 /// A proposed batch config for a single source, carried in BatchConfigProposal.

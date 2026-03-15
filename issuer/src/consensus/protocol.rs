@@ -415,6 +415,9 @@ where
     /// Set by the engine bootstrap; message dispatch forwards incoming batches here.
     /// The engine's aggregation task reads from the other end.
     pub vision_balance_proofs_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBalanceProofsBatch>>>>,
+    /// Forwarding channel for incoming bitmap gossip messages (Gossip/Request/Response).
+    /// Set by the engine bootstrap; the bitmap gossip task reads from the other end.
+    pub vision_bitmap_gossip_tx: Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Sender<crate::vision::engine::IncomingBitmapGossip>>>>,
 }
 
 /// Macro for the common bridge-orchestrator signature collection polling loop.
@@ -507,6 +510,7 @@ where
             vision_sign_tx: Arc::new(std::sync::Mutex::new(None)),
             vision_consensus_config: RwLock::new(None),
             vision_balance_proofs_tx: Arc::new(std::sync::Mutex::new(None)),
+            vision_bitmap_gossip_tx: Arc::new(std::sync::Mutex::new(None)),
         }
     }
 
@@ -3068,6 +3072,72 @@ where
                         }
                     } else {
                         debug!(batch_id, tick_id, "VisionBalanceProofsBatch received but aggregator channel not set");
+                    }
+                }
+            }
+            // Vision bitmap gossip — forward to bitmap gossip task
+            MessageHandleResult::ProcessBitmapGossip {
+                from, batch_id, player, bitmap_hash, config_hash, target_tick_id,
+            } => {
+                debug!(batch_id, ?player, ?bitmap_hash, "Received BitmapGossip — forwarding to gossip task");
+                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let incoming = crate::vision::engine::IncomingBitmapGossip::Gossip {
+                            from,
+                            batch_id,
+                            player,
+                            bitmap_hash,
+                            config_hash,
+                            target_tick_id,
+                        };
+                        if let Err(e) = tx.try_send(incoming) {
+                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapGossip to gossip task");
+                        }
+                    } else {
+                        debug!(batch_id, ?player, "BitmapGossip received but gossip task channel not set");
+                    }
+                }
+            }
+            MessageHandleResult::ProcessBitmapRequest {
+                from, batch_id, player, bitmap_hash,
+            } => {
+                debug!(batch_id, ?player, ?bitmap_hash, "Received BitmapRequest — forwarding to gossip task");
+                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let incoming = crate::vision::engine::IncomingBitmapGossip::Request {
+                            from,
+                            batch_id,
+                            player,
+                            bitmap_hash,
+                        };
+                        if let Err(e) = tx.try_send(incoming) {
+                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapRequest to gossip task");
+                        }
+                    } else {
+                        debug!(batch_id, ?player, "BitmapRequest received but gossip task channel not set");
+                    }
+                }
+            }
+            MessageHandleResult::ProcessBitmapResponse {
+                from, batch_id, player, bitmap, bitmap_hash, config_hash, target_tick_id,
+            } => {
+                debug!(batch_id, ?player, ?bitmap_hash, bitmap_len = bitmap.len(), "Received BitmapResponse — forwarding to gossip task");
+                if let Ok(guard) = self.vision_bitmap_gossip_tx.lock() {
+                    if let Some(tx) = guard.as_ref() {
+                        let incoming = crate::vision::engine::IncomingBitmapGossip::Response {
+                            from,
+                            batch_id,
+                            player,
+                            bitmap,
+                            bitmap_hash,
+                            config_hash,
+                            target_tick_id,
+                        };
+                        if let Err(e) = tx.try_send(incoming) {
+                            warn!(batch_id, ?player, error = %e, "Failed to forward BitmapResponse to gossip task");
+                        }
+                    } else {
+                        debug!(batch_id, ?player, "BitmapResponse received but gossip task channel not set");
                     }
                 }
             }

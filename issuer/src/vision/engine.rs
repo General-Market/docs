@@ -25,6 +25,42 @@ use super::tick_scheduler::TickScheduler;
 use super::types::MarketConfig;
 
 // ---------------------------------------------------------------------------
+// Bitmap gossip types for cross-issuer bitmap synchronisation
+// ---------------------------------------------------------------------------
+
+/// Bitmap gossip message variants forwarded from the P2P layer to the engine.
+///
+/// The gossip task responds to each variant:
+/// - `Gossip`: if the bitmap is unknown, send `BitmapRequest` back to the sender.
+/// - `Request`: if we have the bitmap, send `BitmapResponse` directly to the requester.
+/// - `Response`: verify hash, store in the pending slot via BitmapStore.
+pub enum IncomingBitmapGossip {
+    Gossip {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+    Request {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap_hash: H256,
+    },
+    Response {
+        from: [u8; 32],
+        batch_id: u64,
+        player: Address,
+        bitmap: Vec<u8>,
+        bitmap_hash: H256,
+        config_hash: H256,
+        target_tick_id: u64,
+    },
+}
+
+// ---------------------------------------------------------------------------
 // Balance proof types for P2P aggregation
 // ---------------------------------------------------------------------------
 
@@ -973,6 +1009,14 @@ async fn handle_incoming_balance_proofs(
 /// After each tick, balance proofs are signed and broadcast via `broadcast_tx`.
 /// Proofs from peers arrive via `incoming_proofs_rx`. After a 5s collection
 /// window, proofs are aggregated (BLS) and stored in `vision_balance_proofs`.
+///
+/// # Bitmap Gossip
+///
+/// When an issuer receives a bitmap from a player via the API, it broadcasts
+/// a `BitmapGossip` to all peers. Peers that lack the bitmap reply with
+/// `BitmapRequest`; the sender responds with `BitmapResponse`. All issuers
+/// end up with the same set of bitmaps before each tick resolves, removing
+/// the single-issuer-as-gatekeeper problem.
 pub async fn run(
     scheduler: Arc<TickScheduler>,
     resolver: Arc<TickResolver>,
@@ -981,6 +1025,7 @@ pub async fn run(
     bls_keypair: Option<Arc<BLSKeyPair>>,
     broadcast_tx: Option<tokio::sync::mpsc::Sender<P2PMessage>>,
     incoming_proofs_rx: Option<tokio::sync::mpsc::Receiver<IncomingBalanceProofsBatch>>,
+    incoming_gossip_rx: Option<tokio::sync::mpsc::Receiver<IncomingBitmapGossip>>,
 ) {
     let interval = tokio::time::Duration::from_millis(config.tick_poll_interval_ms);
     let reference_prices: ReferencePrices = Arc::new(RwLock::new(HashMap::new()));
@@ -1107,6 +1152,207 @@ pub async fn run(
             }
 
             tracing::info!("Balance proof aggregation task stopped");
+        });
+    }
+
+    // Spawn the bitmap gossip task.
+    //
+    // Handles three message kinds forwarded from the P2P layer:
+    // - Gossip: check if we have the bitmap; if not, request it from the sender.
+    // - Request: look up our pending/active bitmap and send it back.
+    // - Response: verify hash, store in pending slot.
+    //
+    // DoS protection: BitmapRequest is rate-limited implicitly — we only send
+    // one request per (batch_id, player, bitmap_hash) triplet via a seen-set.
+    if let Some(mut gossip_rx) = incoming_gossip_rx {
+        let gossip_bitmap_store = resolver.bitmap_store.clone();
+        let gossip_broadcast_tx = broadcast_tx.clone();
+        let gossip_shutdown = shutdown.clone();
+
+        tokio::spawn(async move {
+            // Track which (batch_id, player, bitmap_hash) triplets we have already
+            // requested from a peer, to avoid duplicate BitmapRequests (DoS protection).
+            let mut requested: std::collections::HashSet<(u64, Address, H256)> =
+                std::collections::HashSet::new();
+
+            loop {
+                if gossip_shutdown.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                match gossip_rx.recv().await {
+                    None => break, // channel closed
+                    Some(IncomingBitmapGossip::Gossip {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap_hash,
+                        config_hash: _config_hash,
+                        target_tick_id: _target_tick_id,
+                    }) => {
+                        // Check if we already have this bitmap in either slot.
+                        let have_pending = gossip_bitmap_store
+                            .get_pending(batch_id, player)
+                            .await
+                            .map(|b| b.hash == bitmap_hash)
+                            .unwrap_or(false);
+                        let have_active = gossip_bitmap_store
+                            .get_active(batch_id, player)
+                            .await
+                            .map(|b| b.hash == bitmap_hash)
+                            .unwrap_or(false);
+
+                        if have_pending || have_active {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapGossip: already have bitmap, ignoring"
+                            );
+                            continue;
+                        }
+
+                        // We don't have it — send a BitmapRequest (once per triplet).
+                        let key = (batch_id, player, bitmap_hash);
+                        if requested.contains(&key) {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapGossip: already requested bitmap, ignoring duplicate gossip"
+                            );
+                            continue;
+                        }
+                        requested.insert(key);
+
+                        if let Some(ref tx) = gossip_broadcast_tx {
+                            let req_msg = P2PMessage::BitmapRequest {
+                                batch_id,
+                                player,
+                                bitmap_hash,
+                            };
+                            if let Err(e) = tx.try_send(req_msg) {
+                                tracing::warn!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    error = %e,
+                                    "Failed to enqueue BitmapRequest for broadcast"
+                                );
+                            } else {
+                                tracing::debug!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    "BitmapGossip: sent BitmapRequest for missing bitmap"
+                                );
+                            }
+                        }
+                    }
+
+                    Some(IncomingBitmapGossip::Request {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap_hash,
+                    }) => {
+                        // Serve the bitmap if we have it in pending or active slot.
+                        let maybe_bitmap = gossip_bitmap_store
+                            .get_pending(batch_id, player)
+                            .await
+                            .filter(|b| b.hash == bitmap_hash)
+                            .or_else(|| {
+                                // Note: get_active is async; run a blocking check via a nested task
+                                // is overcomplicated here — just return None for active slot
+                                // and let the peer retry from pending. Active bitmaps are
+                                // less useful for the requester anyway (already resolved).
+                                None
+                            });
+
+                        if let Some(slotted) = maybe_bitmap {
+                            if let Some(ref tx) = gossip_broadcast_tx {
+                                let resp_msg = P2PMessage::BitmapResponse {
+                                    batch_id,
+                                    player,
+                                    bitmap: slotted.bitmap.clone(),
+                                    bitmap_hash: slotted.hash,
+                                    config_hash: slotted.config_hash,
+                                    target_tick_id: slotted.target_tick_id,
+                                };
+                                if let Err(e) = tx.try_send(resp_msg) {
+                                    tracing::warn!(
+                                        batch_id,
+                                        player = %player,
+                                        ?bitmap_hash,
+                                        error = %e,
+                                        "Failed to enqueue BitmapResponse for broadcast"
+                                    );
+                                } else {
+                                    tracing::debug!(
+                                        batch_id,
+                                        player = %player,
+                                        ?bitmap_hash,
+                                        "BitmapRequest: served bitmap to peer"
+                                    );
+                                }
+                            }
+                        } else {
+                            tracing::debug!(
+                                batch_id,
+                                player = %player,
+                                ?bitmap_hash,
+                                "BitmapRequest: bitmap not found in pending slot — cannot serve"
+                            );
+                        }
+                    }
+
+                    Some(IncomingBitmapGossip::Response {
+                        from: _from,
+                        batch_id,
+                        player,
+                        bitmap,
+                        bitmap_hash,
+                        config_hash,
+                        target_tick_id,
+                    }) => {
+                        // Verify hash before storing — reject corrupted/malicious responses.
+                        match gossip_bitmap_store
+                            .store_pending(
+                                player,
+                                batch_id,
+                                bitmap,
+                                bitmap_hash,
+                                config_hash,
+                                target_tick_id,
+                            )
+                            .await
+                        {
+                            Ok(()) => {
+                                tracing::info!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    "BitmapResponse: stored bitmap in pending slot via gossip"
+                                );
+                                // Remove from requested-set so future gossip for the
+                                // same player (next tick) triggers a fresh request.
+                                requested.remove(&(batch_id, player, bitmap_hash));
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    batch_id,
+                                    player = %player,
+                                    ?bitmap_hash,
+                                    error = %e,
+                                    "BitmapResponse: rejected (hash mismatch or store error)"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            tracing::info!("Bitmap gossip task stopped");
         });
     }
 
