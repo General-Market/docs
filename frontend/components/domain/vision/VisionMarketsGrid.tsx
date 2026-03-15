@@ -8,7 +8,8 @@ import {
   type SnapshotPrice,
   type SourceSchedule,
 } from '@/hooks/vision/useMarketSnapshot'
-import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
+import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
+import { SOURCE_DISPLAY_OVERRIDES } from '@/lib/vision/source-categories'
 
 // ---------------------------------------------------------------------------
 // Constants

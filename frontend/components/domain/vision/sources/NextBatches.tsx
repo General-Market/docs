@@ -1,20 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { getAllBatches, getBatchTickState, getMultiplier, formatTickDuration, type StaticBatch } from '@/lib/vision/tick'
-import { useBatches } from '@/hooks/vision/useBatches'
-import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
-import { getSourceStatusFromMeta, getVisionSourceId } from '@/lib/vision/sources'
-import { getCategoryLabel } from '@/lib/vision/source-categories'
+import { getBatchTickState, formatTickDuration } from '@/lib/vision/tick'
+import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
+import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import Image from 'next/image'
 import { Link } from '@/i18n/routing'
-
-interface BatchWithTick extends StaticBatch {
-  remaining: number
-  elapsed: number
-  isLocked: boolean
-  lockOffset: number
-}
 
 function formatTimer(seconds: number): string {
   if (seconds <= 0) return '0:00'
@@ -42,26 +33,36 @@ const CATEGORY_COLORS: Record<string, string> = {
   space:         'bg-violet-50 text-violet-700',
 }
 
-function BatchCard({ batch }: { batch: BatchWithTick }) {
-  const multiplier = getMultiplier(batch.elapsed, batch.tickDuration, batch.lockOffset)
-  const catColors = CATEGORY_COLORS[batch.category] ?? 'bg-gray-50 text-gray-700'
-  const urgencyPct = 1 - batch.remaining / batch.tickDuration
-  // Progress bar width
+interface BatchWithTick {
+  batch: BatchInfo
+  remaining: number
+  elapsed: number
+  tickDuration: number
+  isLocked: boolean
+  logo?: string
+  displayName: string
+  category: string
+  sourceKey: string
+}
+
+function BatchCard({ item }: { item: BatchWithTick }) {
+  const catColors = CATEGORY_COLORS[item.category] ?? 'bg-gray-50 text-gray-700'
+  const urgencyPct = 1 - item.remaining / item.tickDuration
   const progressWidth = `${Math.min(urgencyPct * 100, 100)}%`
 
   return (
     <Link
-      href={`/source/${batch.sourceKey}`}
+      href={`/source/${item.sourceKey}`}
       className={`
         shrink-0 flex flex-col px-4 py-3 border bg-white transition-all w-[200px] cursor-pointer
-        ${batch.isLocked ? 'border-red-300 border-2' : 'border-border-light hover:border-black'}
+        ${item.isLocked ? 'border-red-300 border-2' : 'border-border-light hover:border-black'}
       `}
     >
       {/* Header: logo + name */}
       <div className="flex items-center gap-2 mb-1.5 min-w-0">
-        {batch.logo && (
+        {item.logo && (
           <Image
-            src={batch.logo}
+            src={item.logo}
             alt=""
             width={14}
             height={14}
@@ -69,56 +70,48 @@ function BatchCard({ batch }: { batch: BatchWithTick }) {
           />
         )}
         <span className="text-[11px] font-bold text-black truncate leading-tight">
-          {batch.displayName}
+          {item.displayName}
         </span>
       </div>
 
       {/* Timer — large */}
       <span
-        className={`text-[24px] font-bold tabular-nums tracking-tight leading-none font-mono ${batch.isLocked ? 'text-red-600' : 'text-black'}`}
+        className={`text-[24px] font-bold tabular-nums tracking-tight leading-none font-mono ${item.isLocked ? 'text-red-600' : 'text-black'}`}
       >
-        {formatTimer(batch.remaining)}
+        {formatTimer(item.remaining)}
       </span>
 
       {/* Progress bar */}
       <div className="h-1 bg-border-light mt-2 mb-1.5 overflow-hidden">
         <div
-          className={`h-full transition-all duration-1000 ${batch.isLocked ? 'bg-red-500' : 'bg-black'}`}
+          className={`h-full transition-all duration-1000 ${item.isLocked ? 'bg-red-500' : 'bg-black'}`}
           style={{ width: progressWidth }}
         />
       </div>
 
-      {/* Footer: category + tick duration + multiplier */}
+      {/* Footer: category + tick duration */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${catColors}`}>
-            {getCategoryLabel(batch.category)}
+            {item.category}
           </span>
           <span className="text-[9px] font-semibold text-text-muted">
-            {formatTickDuration(batch.tickDuration)}
+            {formatTickDuration(item.tickDuration)}
           </span>
         </div>
-        {batch.isLocked ? (
-          <span className="text-[9px] font-bold text-red-600">
-            Opens in {batch.remaining}s
-          </span>
-        ) : (
-          <span className="text-[9px] font-bold text-green-600">
-            {multiplier.label}
-          </span>
-        )}
+        <span className="text-[9px] font-bold text-text-muted">
+          #{item.batch.currentTick}
+        </span>
       </div>
     </Link>
   )
 }
 
 export function NextBatches() {
-  const staticBatches = useMemo(() => getAllBatches(), [])
   const { data: apiBatches } = useBatches()
-  const { data: meta } = useMarketSnapshotMeta()
+  const { sources: registrySources } = useSourceRegistry()
 
-  // Initialize with 0 to avoid hydration mismatch (Date.now() differs server vs client,
-  // causing React to discard server DOM and re-render — detaching all event handlers temporarily)
+  // Initialize with 0 to avoid hydration mismatch
   const [now, setNow] = useState(0)
 
   useEffect(() => {
@@ -127,61 +120,41 @@ export function NextBatches() {
     return () => clearInterval(interval)
   }, [])
 
-  // Compute per-batch tick state and sort by remaining time (soonest first)
-  // When now === 0 (SSR / before mount), use placeholder values for hydration safety
   const sortedBatches = useMemo((): BatchWithTick[] => {
-    if (now === 0) {
-      // SSR / hydration: return stable order without timer computation
-      return staticBatches.map(batch => ({
-        ...batch,
-        remaining: batch.tickDuration ?? 60,
-        elapsed: 0,
-        isLocked: false,
-        lockOffset: 0,
-      }))
-    }
+    if (!apiBatches || apiBatches.length === 0) return []
 
-    // Create a map of batch ID -> API tick duration for quick lookup
-    const apiTickDurationMap = new Map(
-      apiBatches?.map(b => [b.id, b.tickDuration]) ?? []
-    )
-
-    return staticBatches
-      .filter(batch => {
-        // Only show batches for sources confirmed as working via meta health
-        // When meta is unavailable, hide all batches (better than showing empty ones)
-        if (!meta?.sources) return false
-        const frontendId = getVisionSourceId(batch.sourceKey)
-        const status = getSourceStatusFromMeta(frontendId, meta.sources)
-        if (status !== 'healthy' && status !== 'stale') {
-          const assetCount = meta.assetCounts?.[frontendId] ?? 0
-          if (assetCount === 0) return false
-        }
-        return true
-      })
+    return apiBatches
+      .filter(b => b.marketCount > 0)
       .map(batch => {
-        const apiTickDuration = apiTickDurationMap.get(batch.batchId)
-        const tick = getBatchTickState(
-          batch.batchId,
-          batch.category,
-          now,
-          apiTickDuration // Pass the real tick duration from API, falls back to category default if not available
-        )
-        return { ...batch, ...tick }
+        const tickDuration = batch.tickDuration > 0 ? batch.tickDuration : 600
+        const tickState = now === 0
+          ? { elapsed: 0, remaining: tickDuration, tickDuration, isLocked: false, lockOffset: 0 }
+          : getBatchTickState(tickDuration)
+
+        // Resolve display info from source registry
+        const source = findSource(registrySources, batch.sourceId)
+        const displayName = source?.name ?? batch.sourceId
+        const logo = source?.logo
+        const category = source?.category ?? 'finance'
+
+        return {
+          batch,
+          remaining: tickState.remaining,
+          elapsed: tickState.elapsed,
+          tickDuration,
+          isLocked: tickState.isLocked,
+          logo,
+          displayName,
+          category,
+          sourceKey: batch.sourceId,
+        }
       })
       .sort((a, b) => a.remaining - b.remaining)
-  }, [staticBatches, apiBatches, meta, now])
+  }, [apiBatches, registrySources, now])
 
-  // Count how many are locked right now
   const lockedCount = sortedBatches.filter(b => b.isLocked).length
 
-  // Hide section when no batches to show
   if (sortedBatches.length === 0) return null
-  // Hide when the latest on-chain batch has no markets (system not creating markets)
-  if (apiBatches && apiBatches.length > 0) {
-    const latestBatch = apiBatches.reduce((a, b) => (a.id > b.id ? a : b))
-    if (latestBatch.marketCount === 0) return null
-  }
 
   return (
     <div className="px-6 lg:px-12">
@@ -202,8 +175,8 @@ export function NextBatches() {
           className="flex gap-2 pb-4 overflow-x-auto"
           style={{ scrollbarWidth: 'thin' }}
         >
-          {sortedBatches.map((batch) => (
-            <BatchCard key={batch.batchId} batch={batch} />
+          {sortedBatches.map((item) => (
+            <BatchCard key={item.batch.id} item={item} />
           ))}
         </div>
       </div>

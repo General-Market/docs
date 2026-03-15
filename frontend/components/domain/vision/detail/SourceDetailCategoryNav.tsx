@@ -2,24 +2,34 @@
 
 import { useMemo } from 'react'
 import { Link } from '@/i18n/routing'
-import type { SourceCategory } from '@/lib/vision/sources'
-import { SOURCE_CATEGORIES, getCategoryCounts } from '@/lib/vision/source-categories'
+import { SOURCE_CATEGORIES } from '@/lib/vision/source-categories'
+import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 
 interface SourceDetailCategoryNavProps {
-  sourceCategory: SourceCategory
+  sourceCategory: string
 }
 
 export function SourceDetailCategoryNav({ sourceCategory }: SourceDetailCategoryNavProps) {
-  const counts = useMemo(() => getCategoryCounts(), [])
+  const { sources, categories: apiCategories } = useSourceRegistry()
+
+  // Build category counts from registry sources
+  const counts = useMemo(() => {
+    const result: Record<string, number> = { all: sources.length }
+    for (const source of sources) {
+      result[source.category] = (result[source.category] ?? 0) + 1
+    }
+    return result
+  }, [sources])
+
+  // Use API categories when available, fall back to static list
+  const categoryList = apiCategories.length > 0
+    ? apiCategories.sort((a, b) => a.order - b.order)
+    : SOURCE_CATEGORIES.map(c => ({ key: c.key, label: c.label, order: 0 }))
 
   const pills = useMemo(() => [
-    { key: 'all' as const, label: 'All', count: counts.all },
-    ...SOURCE_CATEGORIES.map(c => ({
-      key: c.key,
-      label: c.label,
-      count: counts[c.key] ?? 0,
-    })),
-  ], [counts])
+    { key: 'all', label: 'All', count: counts.all ?? 0 },
+    ...categoryList.map(c => ({ key: c.key, label: c.label, count: counts[c.key] ?? 0 })),
+  ], [categoryList, counts])
 
   return (
     <div className="border-b border-[var(--border)] bg-white">
