@@ -962,3 +962,18 @@ pub async fn poll_system_snapshot_once(state: &AppState) -> Result<(), Box<dyn s
     }
     Ok(())
 }
+
+/// Precompute AUM ranking every 60s from cache.
+pub async fn poll_aum_ranking_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let json = crate::api::compute_aum_ranking_json(state).await;
+    let mut cache = state.chain_cache.aum_ranking_json.write().await;
+    *cache = json;
+    state.chain_cache.aum_ranking_gen.bump();
+    Ok(())
+}
+
+/// Evict user caches inactive for more than 30 minutes.
+pub async fn poll_user_cache_eviction_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    state.chain_cache.evict_stale_users(std::time::Duration::from_secs(1800)).await;
+    Ok(())
+}
