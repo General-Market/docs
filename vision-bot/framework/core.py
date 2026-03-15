@@ -141,9 +141,12 @@ def load_config(path=None):
     for p in [path, "config.toml", "../config.toml"]:
         if p and os.path.exists(p):
             try:
-                import tomli
+                try:
+                    import tomllib
+                except ImportError:
+                    import tomli as tomllib  # type: ignore[no-redef]
                 with open(p, "rb") as f:
-                    defaults.update(tomli.load(f))
+                    defaults.update(tomllib.load(f))
             except ImportError:
                 pass  # no TOML parser, rely on defaults + env vars
             break

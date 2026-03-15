@@ -65,13 +65,14 @@ VISION_ABI = [
                 "type": "tuple",
                 "components": [
                     {"name": "bitmapHash", "type": "bytes32"},
+                    {"name": "configHash", "type": "bytes32"},
                     {"name": "stakePerTick", "type": "uint256"},
                     {"name": "startTick", "type": "uint256"},
                     {"name": "balance", "type": "uint256"},
                     {"name": "lastClaimedTick", "type": "uint256"},
                     {"name": "joinTimestamp", "type": "uint256"},
                     {"name": "totalDeposited", "type": "uint256"},
-                    {"name": "totalClaimed", "type": "uint256"},
+                    {"name": "isVirtual", "type": "bool"},
                 ],
             }
         ],
@@ -103,6 +104,8 @@ VISION_ABI = [
                     {"name": "tickDuration", "type": "uint256"},
                     {"name": "lockOffset", "type": "uint256"},
                     {"name": "nextLockOffset", "type": "uint256"},
+                    {"name": "nextTickDuration", "type": "uint256"},
+                    {"name": "epochOffset", "type": "int256"},
                     {"name": "createdAtTick", "type": "uint256"},
                     {"name": "lastPromotionTick", "type": "uint256"},
                     {"name": "paused", "type": "bool"},
@@ -275,13 +278,14 @@ class Executor:
         raw = self.vision.functions.getPosition(batch_id, self.bot_addr).call()
         return {
             "bitmapHash": raw[0],
-            "stakePerTick": raw[1],
-            "startTick": raw[2],
-            "balance": raw[3],
-            "lastClaimedTick": raw[4],
-            "joinTimestamp": raw[5],
-            "totalDeposited": raw[6],
-            "totalClaimed": raw[7],
+            "configHash": raw[1],
+            "stakePerTick": raw[2],
+            "startTick": raw[3],
+            "balance": raw[4],
+            "lastClaimedTick": raw[5],
+            "joinTimestamp": raw[6],
+            "totalDeposited": raw[7],
+            "isVirtual": raw[8],
         }
 
     def get_batch_info(self, batch_id: int) -> dict:
@@ -294,7 +298,12 @@ class Executor:
             "nextConfigHash": info[3],
             "tickDuration": info[4],
             "lockOffset": info[5],
-            "paused": info[9],
+            "nextLockOffset": info[6],
+            "nextTickDuration": info[7],
+            "epochOffset": info[8],
+            "createdAtTick": info[9],
+            "lastPromotionTick": info[10],
+            "paused": info[11],
         }
 
     def next_batch_id(self) -> int:
