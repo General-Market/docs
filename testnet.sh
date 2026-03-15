@@ -2,7 +2,7 @@
 # testnet.sh — Manage Index testnet on VPSes
 #
 # Architecture:
-#   VPS 1 (be)       — data-node, 3 issuers, Curator, PostgreSQL
+#   VPS 1 (be)       — data-node, 3 oracles, Curator, PostgreSQL
 #   VPS 2 (postgres)  — AP, L3 Orbit chain (Docker)
 #   Mac (local)       — contract deployment (forge)
 #   Vercel            — frontend (www.generalmarket.io)
@@ -19,7 +19,7 @@
 #   ./testnet.sh stop           # Stop all services on VPSes
 #   ./testnet.sh status         # Check what's running
 #   ./testnet.sh update         # git pull + rebuild + restart on both VPSes
-#   ./testnet.sh logs [service] # Tail logs (data-node, issuer-1..3, ap)
+#   ./testnet.sh logs [service] # Tail logs (data-node, oracle-1..3, ap)
 
 set -e
 
@@ -45,7 +45,7 @@ SETTLEMENT_RPC_URL="https://rpc.testnet.soniclabs.com"
 
 GITHUB_REPO="https://github.com/General-Market/mono.git"
 
-# VPS 1 — Backend (issuers + data-node + PostgreSQL)
+# VPS 1 — Backend (oracles + data-node + PostgreSQL)
 VPS_BE_HOST="index-maker/prod/be"
 VPS_BE_IP="116.203.156.98"
 VPS_BE_USER="max"
@@ -63,12 +63,12 @@ VPS_CHAIN_DIR="/home/max/index"
 DEPLOYER_KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
 DEPLOYER_ADDRESS="0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4"
 
-# Issuer keys — Anvil accounts 1-3 (must match DeployFullSystemE2E._registerIssuers)
-ISSUER_1_KEY="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-ISSUER_2_KEY="0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
-ISSUER_3_KEY="0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
-ISSUER_COUNT=3
-ISSUER_KEYS=("$ISSUER_1_KEY" "$ISSUER_2_KEY" "$ISSUER_3_KEY")
+# Oracle keys — Anvil accounts 1-3 (must match DeployFullSystemE2E._registerOracles)
+ORACLE_1_KEY="0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+ORACLE_2_KEY="0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+ORACLE_3_KEY="0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+ORACLE_COUNT=3
+ORACLE_KEYS=("$ORACLE_1_KEY" "$ORACLE_2_KEY" "$ORACLE_3_KEY")
 
 # AP key — Anvil account 4
 AP_KEY="0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a"
@@ -92,10 +92,10 @@ SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
 
 # Cleanup trap: remove local override YAMLs + remote key files on exit (prevents secrets on disk)
 _cleanup() {
-    rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.issuer-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
+    rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.oracle-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
     # Only clean remote key files if we were starting/stopping services (not on status/logs/deploy)
     if [ "${_STARTED_SERVICES:-}" = "true" ]; then
-        vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
+        vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
         vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
     fi
 }
@@ -160,7 +160,7 @@ _sync_config_files() {
 # Kill any old bare-metal processes to prevent port conflicts
 _kill_old_processes() {
     echo -e "  Cleaning up old bare processes..."
-    vps_be_ssh "pkill -9 -x issuer 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f '[s]onic-rpc-proxy' 2>/dev/null; true"
+    vps_be_ssh "pkill -9 -x oracle 2>/dev/null; pkill -9 -x data-node 2>/dev/null; pkill -9 -x curator 2>/dev/null; pkill -9 -f '[s]onic-rpc-proxy' 2>/dev/null; true"
     vps_chain_ssh "pkill -9 -x ap 2>/dev/null; true"
     sleep 2
 }
@@ -190,8 +190,8 @@ if 'BridgedItpFactory' in sc:
     l3['contracts']['BridgedItpFactory'] = sc['BridgedItpFactory']
     l3['contracts']['SettlementBridgedItpFactory'] = sc['BridgedItpFactory']
 # Add Sonic-specific keys
-if 'IssuerRegistry' in sc:
-    l3['contracts']['SettlementIssuerRegistry'] = sc['IssuerRegistry']
+if 'OracleRegistry' in sc:
+    l3['contracts']['SettlementOracleRegistry'] = sc['OracleRegistry']
 # BridgeProxy: frontend/E2E use this for settlement operations (requestCreateItp etc.)
 # so it MUST point to the Sonic address. Save L3's as L3BridgeProxy.
 if 'BridgeProxy' in sc:
@@ -260,7 +260,7 @@ cmd_setup_be() {
 
     echo -e "${BLUE}[5/5] Building binaries...${NC}"
     echo -e "  ${YELLOW}This may take several minutes on first build...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p oracle -p curator 2>&1 | tail -5" | grep -v 'Unauthorized\|monitored'
     echo -e "  ${GREEN}Build complete${NC}"
 
     # Sync .env for data-node
@@ -300,7 +300,7 @@ cmd_deploy() {
     done
 
     # Check L3 is reachable
-    echo -e "${BLUE}[1/7] Checking L3 RPC...${NC}"
+    echo -e "${BLUE}[1/14] Checking L3 RPC...${NC}"
     VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
     if [ "$VPS_CHAIN_ID" != "$CHAIN_ID" ]; then
         echo -e "  ${RED}L3 not reachable (got chain $VPS_CHAIN_ID, expected $CHAIN_ID)${NC}"
@@ -308,8 +308,21 @@ cmd_deploy() {
     fi
     echo -e "  ${GREEN}L3 OK (chain $VPS_CHAIN_ID)${NC}"
 
+    # Check deployer gas balance
+    echo -e "${BLUE}[1b/14] Checking deployer gas balance...${NC}"
+    DEPLOYER_BAL_WEI=$(cast balance --rpc-url "$RPC_URL" "$DEPLOYER_ADDRESS" 2>/dev/null || echo "0")
+    DEPLOYER_BAL_ETH=$(python3 -c "print(f'{int($DEPLOYER_BAL_WEI) / 1e18:.1f}')" 2>/dev/null || echo "0")
+    # Need ~100 GM for ~1800 txs (621 token deploys + 621 mints + 96 ITP creates + 96 vaults + Vision)
+    MIN_BAL_WEI="100000000000000000000"  # 100 GM
+    if python3 -c "exit(0 if int('$DEPLOYER_BAL_WEI') >= int('$MIN_BAL_WEI') else 1)" 2>/dev/null; then
+        echo -e "  ${GREEN}Deployer balance: ${DEPLOYER_BAL_ETH} GM${NC}"
+    else
+        echo -e "  ${RED}Deployer balance too low: ${DEPLOYER_BAL_ETH} GM (need >= 100 GM for ~1800 txs)${NC}"
+        exit 1
+    fi
+
     # Check bls-tool binary (needed for FFI in deploy scripts)
-    echo -e "${BLUE}[2/7] Checking bls-tool (FFI)...${NC}"
+    echo -e "${BLUE}[2/14] Checking bls-tool (FFI)...${NC}"
     if [ ! -f "target/release/bls-tool" ]; then
         echo -e "  ${RED}bls-tool binary not found at target/release/bls-tool${NC}"
         echo -e "  ${YELLOW}Build it manually: cargo build --release -p bls-tool${NC}"
@@ -319,7 +332,7 @@ cmd_deploy() {
 
     # Deploy core system (must run from contracts/ for foundry.toml remappings)
     # Clean forge cache first — stale cache causes 0-receipt broadcasts
-    echo -e "${BLUE}[3/7] Deploying core contracts (Index, IssuerRegistry, USDC, BridgeProxy)...${NC}"
+    echo -e "${BLUE}[3/14] Deploying core contracts (Index, OracleRegistry, USDC, BridgeProxy)...${NC}"
     rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
     forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
@@ -345,7 +358,7 @@ cmd_deploy() {
     echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
 
     # 3b: Deploy settlement contracts to Sonic
-    echo -e "${BLUE}[3b/7] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
+    echo -e "${BLUE}[3b/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
 
     # Save L3 deployment before Sonic overwrites it
     # The forge script writes to e2e-full-system.json (not active-deployment.json)
@@ -380,29 +393,29 @@ cmd_deploy() {
         echo -e "  ${GREEN}Merged L3 + Sonic deployment${NC}"
     fi
 
-    # Fund Anvil accounts 1-4 (issuers + AP) with GM for gas
-    echo -e "${BLUE}[4/7] Funding issuer + AP accounts with gas...${NC}"
-    ISSUER_1_ADDR=$(cast wallet address "$ISSUER_1_KEY")
-    ISSUER_2_ADDR=$(cast wallet address "$ISSUER_2_KEY")
-    ISSUER_3_ADDR=$(cast wallet address "$ISSUER_3_KEY")
+    # Fund Anvil accounts 1-4 (oracles + AP) with GM for gas
+    echo -e "${BLUE}[4/14] Funding oracle + AP accounts with gas...${NC}"
+    ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
+    ORACLE_2_ADDR=$(cast wallet address "$ORACLE_2_KEY")
+    ORACLE_3_ADDR=$(cast wallet address "$ORACLE_3_KEY")
     AP_ADDR=$(cast wallet address "$AP_KEY")
 
-    for addr in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR"; do
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
         cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
             "$addr" --value 10ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 4 accounts with 10 GM each${NC}"
 
     # Fund accounts with gas on Sonic
-    echo -e "${BLUE}[4b/7] Funding accounts with gas on Sonic...${NC}"
-    for addr in "$ISSUER_1_ADDR" "$ISSUER_2_ADDR" "$ISSUER_3_ADDR" "$AP_ADDR"; do
+    echo -e "${BLUE}[4b/14] Funding accounts with gas on Sonic...${NC}"
+    for addr in "$ORACLE_1_ADDR" "$ORACLE_2_ADDR" "$ORACLE_3_ADDR" "$AP_ADDR"; do
         cast send --private-key "$DEPLOYER_KEY" --rpc-url "$SETTLEMENT_RPC_URL" --chain $SETTLEMENT_CHAIN_ID \
             "$addr" --value 0.5ether > /dev/null 2>&1 || true
     done
     echo -e "  ${GREEN}Funded 4 accounts with 0.5 S each on Sonic${NC}"
 
     # Deploy Morpho (no timelock wait)
-    echo -e "${BLUE}[5/7] Deploying Morpho (forked, no timelock)...${NC}"
+    echo -e "${BLUE}[5/14] Deploying Morpho (forked, no timelock)...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
     # Use L3BridgedItpFactory (L3-chain), NOT BridgedItpFactory (Settlement-chain after merge)
     ITP_VAULT=$(read_deployment_addr "L3BridgedItpFactory")
@@ -410,11 +423,11 @@ cmd_deploy() {
         # Fallback: read from L3-only deployment JSON (before merge)
         ITP_VAULT=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-l3.json'))['contracts']['BridgedItpFactory'])" 2>/dev/null)
     fi
-    ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
+    ORACLE_REGISTRY=$(read_deployment_addr "OracleRegistry")
 
     rm -rf contracts/broadcast/DeployMorphoE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployMorphoE2E.s.sol/$CHAIN_ID/
     (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
-    SETTLEMENT_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ISSUER_REGISTRY="$ISSUER_REGISTRY" \
+    SETTLEMENT_USDC="$L3_USDC" ITP_VAULT="$ITP_VAULT" ORACLE_REGISTRY="$ORACLE_REGISTRY" \
     forge script script/DeployMorphoE2E.s.sol:DeployMorphoE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
@@ -425,10 +438,10 @@ cmd_deploy() {
     echo -e "  ${GREEN}Morpho deployed${NC}"
 
     # Deploy Vision
-    echo -e "${BLUE}[6/7] Deploying Vision + batches...${NC}"
+    echo -e "${BLUE}[6/14] Deploying Vision + batches...${NC}"
     rm -rf contracts/broadcast/DeployVision.s.sol/$CHAIN_ID/ contracts/cache/DeployVision.s.sol/$CHAIN_ID/
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-    ISSUER_REGISTRY="$ISSUER_REGISTRY" USDC_ADDRESS="$L3_USDC" \
+    ORACLE_REGISTRY="$ORACLE_REGISTRY" USDC_ADDRESS="$L3_USDC" \
     forge script script/DeployVision.s.sol:DeployVision \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
@@ -463,7 +476,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     fi
 
     # Fund test accounts with L3 USDC
-    echo -e "${BLUE}[7/7] Funding accounts with L3 USDC...${NC}"
+    echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
         # Mint 1M USDC to deployer
         cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
@@ -535,7 +548,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
 
     # Regenerate deployed-assets.json and symbol-map.json from assets.json.
     # All Bitget-listed tokens in assets.json have L3 addresses — this ensures
-    # the itp-bot and issuers can resolve every tradeable symbol.
+    # the itp-bot and oracles can resolve every tradeable symbol.
     echo -e "${BLUE}Syncing token registries from assets.json...${NC}"
     python3 -c "
 import json, re
@@ -585,11 +598,11 @@ cmd_start() {
 
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
     # First remove any Docker-created directory stubs (Docker creates dirs for missing mount sources)
-    vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/issuer-key-1.txt /tmp/issuer-key-2.txt /tmp/issuer-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt' 2>/dev/null; true"
+    vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt' 2>/dev/null; true"
     for i in 1 2 3; do
-        vps_be_ssh "printf '%s' '${ISSUER_KEYS[$((i-1))]}' > /tmp/issuer-key-$i.txt && chmod 644 /tmp/issuer-key-$i.txt"
+        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
     done
-    # Settlement key shared by all issuers (same deployer key)
+    # Settlement key shared by all oracles (same deployer key)
     vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
     echo -e "  ${GREEN}Files synced${NC}"
 
@@ -606,10 +619,10 @@ cmd_start() {
     _start_data_node_docker
     echo -e "  ${GREEN}data-node started${NC}"
 
-    # Start issuers (staggered)
-    echo -e "${BLUE}[5/6] Starting issuers...${NC}"
-    _start_issuers_docker
-    echo -e "  ${GREEN}issuers started${NC}"
+    # Start oracles (staggered)
+    echo -e "${BLUE}[5/6] Starting oracles...${NC}"
+    _start_oracles_docker
+    echo -e "  ${GREEN}oracles started${NC}"
 
     # Start curator
     _start_curator_docker
@@ -661,9 +674,9 @@ $([ -n "$INDEX_FLAG" ] && echo '      - "--index-address"
       - "'"$INDEX_ADDR"'"')
       - "--explorer-token"
       - "$EXPLORER_TOKEN"
-      - "--issuer-health-urls"
+      - "--oracle-health-urls"
       - "http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
-      - "--issuer-health-poll-interval"
+      - "--oracle-health-poll-interval"
       - "60"
 YEOF
 
@@ -680,26 +693,26 @@ YEOF
     sleep 3
 }
 
-_start_issuers_docker() {
+_start_oracles_docker() {
     # Clean up any stale override from previous failed run
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
 
     # Stop existing + clean WAL (safe — no race condition)
-    vps1_compose issuer down || true
+    vps1_compose oracle down || true
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
     # Dynamic args
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
-    echo -e "  L3 block: $L3_FROM_BLOCK (issuers start from here)"
+    echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here)"
 
     VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
     VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
-    MIRROR_REGISTRY=$(read_deployment_addr "SettlementIssuerRegistry")
+    MIRROR_REGISTRY=$(read_deployment_addr "SettlementOracleRegistry")
 
-    # Build per-issuer command as YAML list (safe from injection)
-    _issuer_command_yaml() {
+    # Build per-oracle command as YAML list (safe from injection)
+    _oracle_command_yaml() {
         local NODE_ID=$1 PORT=$2 BLS_IDX=$3 PEERS=$4
         cat <<CMD
       - "--node-id"
@@ -718,7 +731,7 @@ _start_issuers_docker() {
       - "--test-key-seeds"
       - "--bls-key-seed-index"
       - "$BLS_IDX"
-      - "--num-issuers"
+      - "--num-oracles"
       - "3"
       - "--signature-threshold"
       - "2"
@@ -769,100 +782,100 @@ CMD
 
     # No env_file: (env_file values are baked into docker inspect, same as environment:).
     # All secrets via mounted key files. Only non-secret config in environment:.
-    local OVERRIDE="$SCRIPT_DIR/.issuer-override.yml"
+    local OVERRIDE="$SCRIPT_DIR/.oracle-override.yml"
     cat > "$OVERRIDE" <<YEOF
 services:
-  issuer-1:
+  oracle-1:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-1.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
-      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-1.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9002,127.0.0.1:9003"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
+$(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-1.txt:/tmp/issuer-key-1.txt:ro
+      - /tmp/oracle-key-1.txt:/tmp/oracle-key-1.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
-  issuer-2:
+  oracle-2:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-2.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
-      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-2.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9003"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
+$(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-2.txt:/tmp/issuer-key-2.txt:ro
+      - /tmp/oracle-key-2.txt:/tmp/oracle-key-2.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 
-  issuer-3:
+  oracle-3:
     environment:
-      ISSUER_PRIVATE_KEY_PATH: /tmp/issuer-key-3.txt
-      ISSUER_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
-      ISSUER_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
-      ISSUER_RPC_URL: "$RPC_URL"
-      ISSUER_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
-      ISSUER_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
-      ISSUER_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      ORACLE_PRIVATE_KEY_PATH: /tmp/oracle-key-3.txt
+      ORACLE_SETTLEMENT_PRIVATE_KEY_PATH: /tmp/settlement-key.txt
+      ORACLE_PEERS: "127.0.0.1:9001,127.0.0.1:9002"
+      ORACLE_RPC_URL: "$RPC_URL"
+      ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
+      ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
+      ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
       DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
-$(_issuer_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
+$(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
     volumes:
       - $VPS_BE_DIR/deployments/active-deployment.json:/app/deployments/active-deployment.json:ro
       - $VPS_BE_DIR/data/symbol-map.json:/app/data/symbol-map.json:ro
-      - /tmp/issuer-key-3.txt:/tmp/issuer-key-3.txt:ro
+      - /tmp/oracle-key-3.txt:/tmp/oracle-key-3.txt:ro
       - /tmp/settlement-key.txt:/tmp/settlement-key.txt:ro
       - $VPS_BE_DIR/logs:/app/logs
 YEOF
 
     rsync -az -e "$RSYNC_SSH_BE" "$OVERRIDE" \
-        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+        "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
     rm -f "$OVERRIDE"
 
     # Build image once
-    vps1_compose issuer build
+    vps1_compose oracle build
 
-    # Start issuers sequentially with 5s stagger (P2P needs peers listening)
+    # Start oracles sequentially with 5s stagger (P2P needs peers listening)
     for i in 1 2 3; do
-        echo -e "  Issuer $i starting on port $((9000 + i))..."
-        if ! vps1_compose issuer up -d issuer-$i; then
-            echo -e "  ${RED}issuer-$i failed to start${NC}"
+        echo -e "  Oracle $i starting on port $((9000 + i))..."
+        if ! vps1_compose oracle up -d oracle-$i; then
+            echo -e "  ${RED}oracle-$i failed to start${NC}"
         fi
         [ $i -lt 3 ] && sleep 5
     done
 
     # Clean up override on VPS
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/issuer/docker-compose.override.yml"
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
 
-    # Verify all 3 issuers are running (BLS threshold is 2/3 — all must be up)
+    # Verify all 3 oracles are running (BLS threshold is 2/3 — all must be up)
     sleep 3
     local all_ok=true
     for i in 1 2 3; do
-        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i"; then
-            echo -e "  ${RED}FATAL: issuer-$i not running after start${NC}"
+        if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i"; then
+            echo -e "  ${RED}FATAL: oracle-$i not running after start${NC}"
             all_ok=false
         fi
     done
     if [ "$all_ok" = false ]; then
-        echo -e "  ${RED}Not all issuers started — consensus impossible. Stopping all.${NC}"
+        echo -e "  ${RED}Not all oracles started — consensus impossible. Stopping all.${NC}"
         cmd_stop
         exit 1
     fi
@@ -877,16 +890,16 @@ _start_curator_docker() {
     MARKET_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
     ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
     ITP_ADDR=$(read_deployment_addr "BridgedITP")
-    REGISTRY_ADDR=$(read_deployment_addr "IssuerRegistry")
+    REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
 
     if [ -z "$MORPHO_ADDR" ] || [ -z "$VAULT_ADDR" ]; then
         echo -e "  ${YELLOW}Curator skipped — no Morpho deployment${NC}"
         return
     fi
 
-    ISSUER_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
+    ORACLE_URLS="http://127.0.0.1:10001,http://127.0.0.1:10002,http://127.0.0.1:10003"
 
-    # Write curator key file on VPS (same pattern as issuer keys — NOT in CLI args or environment)
+    # Write curator key file on VPS (same pattern as oracle keys — NOT in CLI args or environment)
     vps_be_ssh "printf '%s' '${DEPLOYER_KEY#0x}' > /tmp/curator-key.txt && chmod 644 /tmp/curator-key.txt"
 
     # Use YAML list format (safe from injection)
@@ -913,8 +926,8 @@ services:
       - "$ORACLE_ADDR"
       - "--itp-address"
       - "$ITP_ADDR"
-      - "--issuer-urls"
-      - "$ISSUER_URLS"
+      - "--oracle-urls"
+      - "$ORACLE_URLS"
       - "--l3-rpc-url"
       - "$RPC_URL"
       - "--mirror-registry-address"
@@ -1053,11 +1066,11 @@ cmd_stop() {
     echo -e "${CYAN}Stopping all services...${NC}"
 
     echo -e "${BLUE}VPS 1...${NC}"
-    for svc in itp-bot curator issuer data-node sonic-proxy; do
+    for svc in itp-bot curator oracle data-node sonic-proxy; do
         ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/$svc && docker compose down 2>/dev/null; true" < /dev/null 2>/dev/null
     done
     # Clean up key files and stale overrides on VPS 1
-    vps_be_ssh "rm -f /tmp/issuer-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt /tmp/bot-key.txt"
+    vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt /tmp/bot-key.txt"
     vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/*/docker-compose.override.yml"
     echo -e "  ${GREEN}VPS 1 stopped + keys cleaned${NC}"
 
@@ -1080,7 +1093,7 @@ cmd_status() {
         check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "$svc" "$svc" || true
     done
     for i in 1 2 3; do
-        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "issuer" "issuer-$i" || true
+        check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i" || true
     done
     check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "curator" "curator" || true
     check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "itp-bot" "testnet-itp-bot" || true
@@ -1130,7 +1143,7 @@ cmd_update() {
     vps_chain_ssh "cd $VPS_CHAIN_DIR && git pull origin main 2>&1 | tail -5"
 
     echo -e "${BLUE}[3/4] Building on VPS 1...${NC}"
-    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p issuer -p curator 2>&1 | tail -5"
+    vps_be_ssh "cd $VPS_BE_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p data-node -p oracle -p curator 2>&1 | tail -5"
     echo -e "${BLUE}[4/4] Building on VPS 2...${NC}"
     vps_chain_ssh "cd $VPS_CHAIN_DIR && source ~/.cargo/env 2>/dev/null && cargo build --release -p ap 2>&1 | tail -5"
 
@@ -1146,8 +1159,8 @@ cmd_logs() {
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/sonic-proxy && docker compose logs -f" ;;
         data-node)
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" ;;
-        issuer-1|issuer-2|issuer-3)
-            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f $service" ;;
+        oracle-1|oracle-2|oracle-3)
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/oracle && docker compose logs -f $service" ;;
         curator)
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/curator && docker compose logs -f" ;;
         ap)
@@ -1155,13 +1168,13 @@ cmd_logs() {
         itp-bot)
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/itp-bot && docker compose logs -f" ;;
         all)
-            echo -e "${CYAN}Tailing issuer-1 + data-node...${NC}"
-            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/issuer && docker compose logs -f issuer-1" &
+            echo -e "${CYAN}Tailing oracle-1 + data-node...${NC}"
+            ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/oracle && docker compose logs -f oracle-1" &
             PID1=$!
             ssh "$VPS_BE_HOST" "cd $VPS_BE_DIR/docker/testnet/data-node && docker compose logs -f" &
             PID2=$!
             trap "kill $PID1 $PID2 2>/dev/null" INT; wait ;;
-        *) echo "Available: sonic-proxy, data-node, issuer-1..3, curator, ap, itp-bot, all"; exit 1 ;;
+        *) echo "Available: sonic-proxy, data-node, oracle-1..3, curator, ap, itp-bot, all"; exit 1 ;;
     esac
 }
 
@@ -1192,13 +1205,13 @@ cmd_refresh_batches() {
 
     # Refresh BLS registry snapshot to avoid SnapshotTooOld
     echo -e "${BLUE}[1/4] Refreshing BLS registry snapshot...${NC}"
-    ISSUER_REGISTRY=$(read_deployment_addr "IssuerRegistry")
-    if [ -n "$ISSUER_REGISTRY" ]; then
-        REG_NONCE=$(cast call --rpc-url "$RPC_URL" "$ISSUER_REGISTRY" "registryNonce()(uint256)" 2>/dev/null || echo "0")
-        AGG_PUBKEY=$(cast call --rpc-url "$RPC_URL" "$ISSUER_REGISTRY" "getAggregatedPubkey()(bytes)" 2>/dev/null || echo "")
+    ORACLE_REGISTRY=$(read_deployment_addr "OracleRegistry")
+    if [ -n "$ORACLE_REGISTRY" ]; then
+        REG_NONCE=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY" "registryNonce()(uint256)" 2>/dev/null || echo "0")
+        AGG_PUBKEY=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY" "getAggregatedPubkey()(bytes)" 2>/dev/null || echo "")
         if [ -n "$AGG_PUBKEY" ] && [ "$AGG_PUBKEY" != "" ]; then
             cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-                "$ISSUER_REGISTRY" "setAggregatedPubkey(bytes,uint256)" "$AGG_PUBKEY" "$REG_NONCE" \
+                "$ORACLE_REGISTRY" "setAggregatedPubkey(bytes,uint256)" "$AGG_PUBKEY" "$REG_NONCE" \
                 > /dev/null 2>&1 || echo -e "  ${YELLOW}Snapshot refresh failed (non-fatal)${NC}"
             echo -e "  ${GREEN}Registry snapshot refreshed (nonce $REG_NONCE)${NC}"
         else
@@ -1209,7 +1222,7 @@ cmd_refresh_batches() {
     # Fetch fresh recommended configs from data-node so deploy uses current hashes.
     # Without this, the deploy script uses stale vision-recommended-configs.json and
     # the on-chain config_hashes won't match what the data-node computes — causing
-    # issuers to get 404 when fetching batch configs and ticks never advance.
+    # oracles to get 404 when fetching batch configs and ticks never advance.
     echo -e "${BLUE}[2/4] Fetching fresh batch configs from data-node...${NC}"
     local DATA_NODE_URL="${DATA_NODE_URL:-http://116.203.156.98/data-node}"
     if curl -sf "$DATA_NODE_URL/batches/recommended" 2>/dev/null | python3 -c "
@@ -1289,10 +1302,10 @@ case "${1:-help}" in
         echo "  status            Check what's running"
         echo "  update            git pull + rebuild + restart on both VPSes"
         echo "  refresh-batches   Redeploy Vision batches with fresh version"
-        echo "  logs [svc]        Tail logs (sonic-proxy, data-node, issuer-1..3, curator, ap, all)"
+        echo "  logs [svc]        Tail logs (sonic-proxy, data-node, oracle-1..3, curator, ap, all)"
         echo ""
         echo "Architecture:"
-        echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 issuers, Curator, PostgreSQL"
+        echo "  VPS 1 ($VPS_BE_IP)    — data-node, 3 oracles, Curator, PostgreSQL"
         echo "  VPS 2 ($VPS_CHAIN_IP)  — AP, L3 Orbit chain"
         echo "  L3 chain $CHAIN_ID     — $RPC_URL"
         echo "  Settlement chain $SETTLEMENT_CHAIN_ID  — $SETTLEMENT_RPC_URL"
