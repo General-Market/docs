@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use ethers::prelude::*;
-use tracing::warn;
+use tracing::{info, warn};
 use common::types::{CrossChainOrder, CrossChainSellOrderEvent, ItpCreationRequest};
 use crate::api::AppState;
 use crate::chain_cache::{
