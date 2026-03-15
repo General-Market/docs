@@ -403,6 +403,13 @@ cmd_deploy() {
         echo -e "  ${YELLOW}Vision tables don't exist yet — skip (data-node will create on first start)${NC}"
     fi
 
+    # Run oracle DB migrations (schema may have changed between deploys)
+    echo -e "  Running oracle DB migrations..."
+    for migration in oracle/migrations/*.sql; do
+        vps_be_ssh "psql -U max -d $DB_NAME -f $VPS_BE_DIR/$migration" > /dev/null 2>&1 || true
+    done
+    echo -e "  ${GREEN}Oracle migrations applied${NC}"
+
     # Fund Anvil accounts 1-4 (oracles + AP) with GM for gas
     echo -e "${BLUE}[4/14] Funding oracle + AP accounts with gas...${NC}"
     ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
