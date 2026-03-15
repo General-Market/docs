@@ -400,6 +400,54 @@ fn parse_snapshot_data(
     Ok((current_values, change_pcts, fetched_at_map))
 }
 
+/// Fetch snapshot data from the data-node with exponential backoff retry.
+///
+/// Attempts up to 4 fetches total: immediate + 3 retries at 5s, 15s, 45s delays.
+/// Transient failures (timeout, 5xx, network errors) are retried; the last error
+/// is returned if all attempts fail.
+async fn fetch_snapshot_with_retry(
+    data_node_url: &str,
+    source_id: &str,
+    hmac_secret: &Option<String>,
+) -> Result<SnapshotData, Box<dyn std::error::Error + Send + Sync>> {
+    let delays = [
+        std::time::Duration::from_secs(5),
+        std::time::Duration::from_secs(15),
+        std::time::Duration::from_secs(45),
+    ];
+    let mut last_err: Option<Box<dyn std::error::Error + Send + Sync>> = None;
+
+    for (attempt, delay) in std::iter::once(std::time::Duration::ZERO)
+        .chain(delays.iter().copied())
+        .enumerate()
+    {
+        if attempt > 0 {
+            tracing::warn!(
+                attempt,
+                source = source_id,
+                delay_secs = delay.as_secs(),
+                "Data-node fetch failed, retrying after delay"
+            );
+            tokio::time::sleep(delay).await;
+        }
+
+        match fetch_snapshot_data_inner_with_secret(data_node_url, source_id, hmac_secret).await {
+            Ok(data) => return Ok(data),
+            Err(e) => {
+                tracing::warn!(
+                    attempt,
+                    source = source_id,
+                    error = %e,
+                    "Data-node snapshot fetch failed"
+                );
+                last_err = Some(e);
+            }
+        }
+    }
+
+    Err(last_err.unwrap_or_else(|| "All data-node fetch retries exhausted".into()))
+}
+
 /// Build MarketPrices from cached snapshot data for a specific batch's markets.
 ///
 /// Uses `fetched_at` timestamps from the data-node to populate the `last_update`
@@ -1205,7 +1253,7 @@ pub async fn run(
                                     return (source, Err("semaphore closed during snapshot fetch".into()));
                                 }
                             };
-                            let result = fetch_snapshot_data_inner_with_secret(&url, &source, &secret).await;
+                            let result = fetch_snapshot_with_retry(&url, &source, &secret).await;
                             (source, result)
                         }
                     })
