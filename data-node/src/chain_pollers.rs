@@ -163,8 +163,9 @@ pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::E
                         let addr_hex = format!("{:?}", addr).to_lowercase();
                         if let Some(pair) = state.symbol_map.get(&addr_hex) {
                             if let Some(&price_usd) = live_prices.get(pair) {
-                                let qty_f64 = qty.as_u128() as f64 / 1e18;
-                                sum += qty_f64 * price_usd;
+                                // qty is in 1e18 scale (per-share quantity)
+                                // NAV contribution = qty * price_usd / 1e18
+                                sum += qty.as_u128() as f64 * price_usd / 1e18;
                                 resolved += 1;
                             }
                         }
