@@ -533,6 +533,28 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${YELLOW}vercel CLI not found — deploy manually: cd frontend && vercel --prod${NC}"
     fi
 
+    # Regenerate deployed-assets.json and symbol-map.json from assets.json.
+    # All Bitget-listed tokens in assets.json have L3 addresses — this ensures
+    # the itp-bot and issuers can resolve every tradeable symbol.
+    echo -e "${BLUE}Syncing token registries from assets.json...${NC}"
+    python3 -c "
+import json, re
+assets = json.load(open('assets.json'))
+deployed = json.load(open('frontend/public/deployed-assets.json'))
+existing = {a['symbol'] for a in deployed}
+for a in assets:
+    sym = re.sub(r'(USDT|USDC)\$', '', a['bitget'])
+    if sym and sym not in existing:
+        deployed.append({'address': a['address'], 'symbol': sym})
+        existing.add(sym)
+json.dump(deployed, open('frontend/public/deployed-assets.json', 'w'), indent=2)
+smap = {}
+for a in assets:
+    smap[a['address'].lower()] = {'pair': a['bitget'], 'source': 'bitget'}
+json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
+print(f'{len(deployed)} tokens in deployed-assets.json, {len(smap)} in symbol-map.json')
+" 2>/dev/null && echo -e "  ${GREEN}Token registries synced${NC}" || echo -e "  ${YELLOW}Token registry sync failed${NC}"
+
     echo ""
     echo -e "${GREEN}All contracts deployed. Next steps:${NC}"
     echo -e "  ${CYAN}1. Start services: ./testnet.sh start${NC}"
