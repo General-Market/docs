@@ -22,8 +22,8 @@ use super::types::SlottedBitmap;
 // ---------------------------------------------------------------------------
 
 struct BitmapSlots {
-    pending: HashMap<(u64, Address), SlottedBitmap>,
-    active: HashMap<(u64, Address), SlottedBitmap>,
+    pending: HashMap<u64, HashMap<Address, SlottedBitmap>>,
+    active: HashMap<u64, HashMap<Address, SlottedBitmap>>,
 }
 
 impl BitmapSlots {
@@ -93,7 +93,9 @@ impl BitmapStore {
             .write()
             .await
             .pending
-            .insert((batch_id, player), entry);
+            .entry(batch_id)
+            .or_default()
+            .insert(player, entry);
 
         Ok(())
     }
@@ -104,7 +106,8 @@ impl BitmapStore {
             .read()
             .await
             .active
-            .get(&(batch_id, player))
+            .get(&batch_id)
+            .and_then(|m| m.get(&player))
             .cloned()
     }
 
@@ -114,7 +117,8 @@ impl BitmapStore {
             .read()
             .await
             .pending
-            .get(&(batch_id, player))
+            .get(&batch_id)
+            .and_then(|m| m.get(&player))
             .cloned()
     }
 
@@ -124,10 +128,9 @@ impl BitmapStore {
             .read()
             .await
             .active
-            .iter()
-            .filter(|((bid, _), _)| *bid == batch_id)
-            .map(|(_, v)| v.clone())
-            .collect()
+            .get(&batch_id)
+            .map(|m| m.values().cloned().collect())
+            .unwrap_or_default()
     }
 
     /// Promote all pending bitmaps for `batch_id` to active.
@@ -139,22 +142,9 @@ impl BitmapStore {
     /// active entry after the flip.
     pub async fn flip(&self, batch_id: u64) {
         let mut guard = self.slots.write().await;
-
-        // 1. Clear old active entries for this batch.
-        guard.active.retain(|(bid, _), _| *bid != batch_id);
-
-        // 2. Drain matching pending entries into active.
-        let to_promote: Vec<_> = guard
-            .pending
-            .keys()
-            .filter(|(bid, _)| *bid == batch_id)
-            .cloned()
-            .collect();
-
-        for key in to_promote {
-            if let Some(bitmap) = guard.pending.remove(&key) {
-                guard.active.insert(key, bitmap);
-            }
+        guard.active.remove(&batch_id);
+        if let Some(pending_batch) = guard.pending.remove(&batch_id) {
+            guard.active.insert(batch_id, pending_batch);
         }
     }
 
@@ -162,9 +152,13 @@ impl BitmapStore {
     /// than `last_resolved_tick_id`.  Called after a tick resolves so that
     /// stragglers don't accumulate indefinitely.
     pub async fn cleanup_stale_pending(&self, batch_id: u64, last_resolved_tick_id: u64) {
-        self.slots.write().await.pending.retain(|(bid, _), bm| {
-            *bid != batch_id || bm.target_tick_id > last_resolved_tick_id
-        });
+        let mut guard = self.slots.write().await;
+        if let Some(batch_pending) = guard.pending.get_mut(&batch_id) {
+            batch_pending.retain(|_, bm| bm.target_tick_id > last_resolved_tick_id);
+            if batch_pending.is_empty() {
+                guard.pending.remove(&batch_id);
+            }
+        }
     }
 
     /// Remove a player's entries from **both** slots.
@@ -172,8 +166,18 @@ impl BitmapStore {
     /// Called when a player withdraws and is no longer eligible for settlement.
     pub async fn remove(&self, batch_id: u64, player: Address) {
         let mut guard = self.slots.write().await;
-        guard.pending.remove(&(batch_id, player));
-        guard.active.remove(&(batch_id, player));
+        if let Some(m) = guard.pending.get_mut(&batch_id) {
+            m.remove(&player);
+            if m.is_empty() {
+                guard.pending.remove(&batch_id);
+            }
+        }
+        if let Some(m) = guard.active.get_mut(&batch_id) {
+            m.remove(&player);
+            if m.is_empty() {
+                guard.active.remove(&batch_id);
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -283,22 +287,22 @@ impl BitmapStore {
                 Err(_) => continue,
             };
 
+            let bid = batch_id as u64;
             let entry = SlottedBitmap {
                 player,
-                batch_id: batch_id as u64,
+                batch_id: bid,
                 bitmap,
                 hash,
                 config_hash,
                 target_tick_id: tick_id as u64,
                 received_at: 0,
             };
-            let key = (entry.batch_id, entry.player);
             match slot.as_str() {
                 "pending" => {
-                    slots.pending.insert(key, entry);
+                    slots.pending.entry(bid).or_default().insert(player, entry);
                 }
                 "active" => {
-                    slots.active.insert(key, entry);
+                    slots.active.entry(bid).or_default().insert(player, entry);
                 }
                 _ => {}
             }
@@ -554,5 +558,29 @@ mod tests {
 
         assert!(store.get_pending(batch_id, player_old).await.is_none());
         assert!(store.get_pending(batch_id, player_new).await.is_some());
+    }
+
+    // ------------------------------------------------------------------
+    // get_all_active_for_batch only returns entries for the requested batch
+    // ------------------------------------------------------------------
+    #[tokio::test]
+    async fn test_get_all_active_only_returns_requested_batch() {
+        let store = BitmapStore::new();
+        let player = Address::random();
+        let bm = vec![1u8];
+        let hash = make_hash(&bm);
+
+        for batch_id in [10u64, 20, 30] {
+            store.store_pending(player, batch_id, bm.clone(), hash, zero_config(), 1).await.unwrap();
+            store.flip(batch_id).await;
+        }
+
+        let active_20 = store.get_all_active_for_batch(20).await;
+        assert_eq!(active_20.len(), 1);
+        assert_eq!(active_20[0].batch_id, 20);
+
+        assert_eq!(store.get_all_active_for_batch(10).await.len(), 1);
+        assert_eq!(store.get_all_active_for_batch(30).await.len(), 1);
+        assert_eq!(store.get_all_active_for_batch(99).await.len(), 0);
     }
 }
