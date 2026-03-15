@@ -256,6 +256,8 @@ pub struct AppState {
     pub snapshot_hmac_secret: Option<String>,
     /// Chain event broadcast channel for backend SSE consumers (issuers, AP)
     pub chain_event_tx: tokio::sync::broadcast::Sender<crate::chain_event_scanner::ChainEventEnvelope>,
+    /// Source display registry loaded from sources-display.json
+    pub source_registry: crate::source_registry::SourceRegistry,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -385,6 +387,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
         .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
         .route("/vision/ws", get(crate::vision_ws::ws_handler))
+        // Source registry
+        .route("/sources/registry", get(sources_registry))
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
@@ -5493,6 +5497,56 @@ async fn store_signed_batch(
         return StatusCode::BAD_REQUEST;
     }
 
+    // DN-5: BLS signature verification against on-chain aggregated pubkey.
+    // Rejects any payload whose BLS signature doesn't verify against the
+    // aggregated pubkey fetched from IssuerRegistry.  If the pubkey is not yet
+    // populated (e.g., chain poller hasn't run), the check is skipped with a
+    // warning — this matches the bootstrap window and avoids a hard failure
+    // during startup.
+    {
+        let agg_pubkey_bytes = state.chain_cache.aggregated_pubkey.read().await.clone();
+        if agg_pubkey_bytes.is_empty() {
+            tracing::warn!(
+                source = %payload.source_id,
+                "BLS verification skipped — aggregated pubkey not yet populated"
+            );
+        } else {
+            let sig_bytes_for_verify =
+                hex::decode(payload.bls_signature.trim_start_matches("0x")).unwrap_or_default();
+
+            let pubkey = common::types::BLSPublicKey(agg_pubkey_bytes);
+            let signature = common::types::BLSSignature(sig_bytes_for_verify);
+
+            // config_hash is the 32-byte message that was signed
+            let mut msg_hash = [0u8; 32];
+            if recomputed.len() == 32 {
+                msg_hash.copy_from_slice(&recomputed);
+            }
+
+            let signer = common::bls::Bn254BLSSigner::new();
+            match signer.verify_message_hash(&pubkey, &msg_hash, &signature) {
+                Ok(true) => {
+                    tracing::debug!(source = %payload.source_id, "BLS signature verified");
+                }
+                Ok(false) => {
+                    tracing::warn!(
+                        source = %payload.source_id,
+                        "BLS signature invalid — rejecting payload"
+                    );
+                    return StatusCode::UNAUTHORIZED;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        source = %payload.source_id,
+                        error = %e,
+                        "BLS verification error — rejecting payload"
+                    );
+                    return StatusCode::BAD_REQUEST;
+                }
+            }
+        }
+    }
+
     // Prepare data outside the lock (no shared-state dependency)
     let hash_bytes =
         hex::decode(payload.config_hash.trim_start_matches("0x")).unwrap_or_default();
@@ -7036,4 +7090,11 @@ async fn chain_settlement_cross_chain_sell_orders(
         .cloned()
         .collect();
     Json(filtered)
+}
+
+// ---- /sources/registry ----
+
+async fn sources_registry(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    let registry = &state.source_registry;
+    Json(serde_json::to_value(registry).unwrap_or_default())
 }

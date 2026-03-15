@@ -285,6 +285,10 @@ pub struct ServeArgs {
     /// Shared secret token for authenticating explorer API requests (frontend-only access)
     #[arg(long, env = "EXPLORER_TOKEN")]
     pub explorer_token: Option<String>,
+
+    /// Path to sources-display.json (source registry for /sources/registry endpoint)
+    #[arg(long, default_value = "config/sources-display.json", env = "SOURCES_DISPLAY_FILE")]
+    pub sources_display_file: String,
 }
 
 #[derive(Parser, Debug)]

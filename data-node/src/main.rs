@@ -29,6 +29,7 @@ mod orderbook_aggregator;
 pub mod live_cache;
 mod logo_downloader;
 mod simulation;
+mod source_registry;
 mod trade_collector;
 mod work_queue;
 mod market_data;
@@ -2374,6 +2375,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     };
     info!("Deployment files loaded");
 
+    // Load source display registry
+    let source_registry = source_registry::SourceRegistry::load(&args.sources_display_file)
+        .unwrap_or_else(|e| {
+            tracing::warn!(
+                path = %args.sources_display_file,
+                error = %e,
+                "Failed to load sources-display.json, using empty registry"
+            );
+            source_registry::SourceRegistry { sources: vec![], categories: vec![] }
+        });
+    info!(sources = source_registry.sources.len(), "Source registry loaded");
+
     // Chain cache for SSE pollers
     let chain_cache = Arc::new(chain_cache::ChainCache::new());
 
@@ -2448,6 +2461,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         )),
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
         chain_event_tx: chain_event_tx.clone(),
+        source_registry,
     });
 
     // Spawn chain pollers via run_collector_loop
