@@ -1443,6 +1443,9 @@ pub async fn run(
         });
     }
 
+    let mut gc_timer = tokio::time::interval(std::time::Duration::from_secs(30));
+    gc_timer.tick().await; // consume the immediate first tick
+
     loop {
         if shutdown.load(Ordering::Relaxed) {
             tracing::info!("Vision tick engine shutting down");
@@ -1450,6 +1453,11 @@ pub async fn run(
         }
 
         tokio::select! {
+            _ = gc_timer.tick() => {
+                if let Some(ref tc) = tick_consensus {
+                    tc.gc_stale_rounds().await;
+                }
+            }
             _ = tokio::time::sleep(interval) => {
                 if shutdown.load(Ordering::Relaxed) {
                     tracing::info!("Vision tick engine shutting down");
