@@ -27,8 +27,9 @@ pub struct MarketSnapshot {
     pub symbol: String,
     pub name: String,
     pub value: Decimal,
-    /// Integer-scaled price: round(value * 1e8), serialized as string to avoid u128 JSON loss.
-    /// Computed once at the data-node — all issuers parse the same string to identical u128.
+    /// Integer-scaled price: round(value * 1e8), serialized as string.
+    /// May be negative (e.g., interest rates, temperatures). Consumers MUST parse as i128, not u128.
+    /// Computed once at the data-node — all issuers parse the same string to the same i128.
     pub value_scaled: String,
     /// Scale factor applied to produce value_scaled. Always 100_000_000 (1e8).
     pub price_scale: u64,
@@ -165,10 +166,12 @@ pub async fn snapshot(
         .into_iter()
         .map(
             |(asset_id, source, symbol, name, value, change_pct, volume_24h, market_cap, category, fetched_at)| {
-                // Convert Decimal → f64 → integer-scaled u128, rounding once here so all
-                // issuers parse the same string to the same u128 (no per-hardware f64 drift).
+                // Convert Decimal → f64 → integer-scaled i128, rounding once here so all
+                // issuers parse the same string to the same i128 (no per-hardware f64 drift).
+                // i128 (not u128) to preserve sign for negative values (e.g., interest rates,
+                // temperatures). Consumers must parse value_scaled as i128.
                 let value_f64: f64 = value.to_string().parse().unwrap_or(0.0);
-                let value_scaled: u128 = (value_f64 * PRICE_SCALE as f64).round() as u128;
+                let value_scaled: i128 = (value_f64 * PRICE_SCALE as f64).round() as i128;
                 MarketSnapshot {
                     asset_id,
                     source,

@@ -5500,16 +5500,16 @@ async fn store_signed_batch(
     // DN-5: BLS signature verification against on-chain aggregated pubkey.
     // Rejects any payload whose BLS signature doesn't verify against the
     // aggregated pubkey fetched from IssuerRegistry.  If the pubkey is not yet
-    // populated (e.g., chain poller hasn't run), the check is skipped with a
-    // warning — this matches the bootstrap window and avoids a hard failure
-    // during startup.
+    // populated, the request is hard-rejected — the system must not accept
+    // unsigned batches during any bootstrap window.
     {
         let agg_pubkey_bytes = state.chain_cache.aggregated_pubkey.read().await.clone();
         if agg_pubkey_bytes.is_empty() {
-            tracing::warn!(
+            tracing::error!(
                 source = %payload.source_id,
-                "BLS verification skipped — aggregated pubkey not yet populated"
+                "BLS pubkey not configured — cannot verify signatures, rejecting request"
             );
+            return StatusCode::SERVICE_UNAVAILABLE;
         } else {
             let sig_bytes_for_verify =
                 hex::decode(payload.bls_signature.trim_start_matches("0x")).unwrap_or_default();
