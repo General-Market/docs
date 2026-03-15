@@ -134,7 +134,7 @@ def run_cycle(cfg, executor, tracker, strategy, risk, issuer_urls_fn, feed):
         # Dual-balance flow: deposit USDC into Vision balance, then joinBatch pulls from it
         executor.approve_usdc(deposit_wei)
         executor.deposit_balance(deposit_wei)
-        stake_wei = cfg["stake"] * 10**DECIMALS
+        stake_wei = int(cfg["stake"] * 10**DECIMALS)
         executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 
         time.sleep(2)  # initial wait for block confirmation

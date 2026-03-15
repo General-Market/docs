@@ -162,6 +162,7 @@ def load_config(path=None):
         "VISION_API_URL": "vision_api",
         "DATA_NODE_URL": "data_node",
         "PNL_FILE": "pnl_file",
+        "ISSUER_DISCOVERY": "issuer_discovery",
     }
     for env_key, conf_key in env_map.items():
         if env_key in os.environ:
@@ -169,10 +170,15 @@ def load_config(path=None):
             default_type = type(defaults[conf_key])
             if default_type == bool:
                 defaults[conf_key] = val.lower() in ("true", "1", "yes")
+            elif default_type == float:
+                defaults[conf_key] = float(val)
             elif default_type == int:
                 defaults[conf_key] = int(val)
             else:
                 defaults[conf_key] = val
+    # ISSUER_URLS: comma-separated list of URLs
+    if "ISSUER_URLS" in os.environ:
+        defaults["issuer_urls"] = [u.strip() for u in os.environ["ISSUER_URLS"].split(",") if u.strip()]
     # BATCH_IDS: comma-separated list of ints
     if "BATCH_IDS" in os.environ:
         defaults["batch_ids"] = [int(x.strip()) for x in os.environ["BATCH_IDS"].split(",") if x.strip()]

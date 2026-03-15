@@ -140,11 +140,14 @@ export async function fundAllBots(): Promise<void> {
         abi: ERC20_ABI,
         functionName: "mint",
         args: [addr as Hex, FUND_AMOUNT],
-        nonce: nonce++,
+        nonce,
       });
+      nonce++;
       funded++;
     } catch (e: any) {
       console.warn(`  Fund ${addr.slice(0, 10)} failed: ${e.message}`);
+      // Re-fetch nonce after failure to avoid desync
+      nonce = await publicClient.getTransactionCount({ address: account.address, blockTag: "pending" });
     }
   }
   if (funded < 8) throw new Error(`Only funded ${funded}/10 bots. Aborting.`);
