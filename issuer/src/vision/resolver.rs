@@ -353,10 +353,14 @@ fn compute_pct_change_bps(start_price: i128, end_price: i128) -> i64 {
     if start_price == 0 {
         return 0;
     }
-    // (end - start) * 10000 / start — all i128, sign handled automatically.
-    // Saturate to i64 range to avoid pathological inputs (e.g. huge leveraged derivatives).
+    // (end - start) * 10000 / |start| — dividing by the absolute value preserves
+    // directional semantics for negative start prices.  If we divided by start_price
+    // directly, a negative denominator would flip the sign: a price moving from -5 to
+    // -3 (an upward move, value closer to zero) would yield negative bps and trigger
+    // the wrong winner side.  Using abs() ensures positive change → positive bps
+    // regardless of the sign of the starting price.
     let diff = end_price.wrapping_sub(start_price);
-    let bps = diff.saturating_mul(10_000).wrapping_div(start_price);
+    let bps = diff.saturating_mul(10_000).wrapping_div(start_price.abs());
     bps.clamp(i64::MIN as i128, i64::MAX as i128) as i64
 }
 
@@ -813,6 +817,18 @@ mod tests {
 
         // Tiny move: 100 -> 100.01 = 0.01% = 1 bps
         assert_eq!(compute_pct_change_bps(100_00000000, 100_01000000), 1);
+
+        // Negative start prices (e.g. interest rates, inverted indices):
+        // -5 -> -3: price moves toward zero (upward), must be positive bps.
+        // diff = (-3) - (-5) = +2, |start| = 5 → 2*10000/5 = 4000 bps (UP).
+        assert_eq!(compute_pct_change_bps(-5_00000000, -3_00000000), 4000);
+        // -5 -> -7: price moves away from zero (downward), must be negative bps.
+        // diff = (-7) - (-5) = -2, |start| = 5 → -2*10000/5 = -4000 bps (DOWN).
+        assert_eq!(compute_pct_change_bps(-5_00000000, -7_00000000), -4000);
+        // -100 -> -105: 5% further negative → -500 bps.
+        assert_eq!(compute_pct_change_bps(-100_00000000, -105_00000000), -500);
+        // -100 -> -95: 5% toward zero → +500 bps.
+        assert_eq!(compute_pct_change_bps(-100_00000000, -95_00000000), 500);
     }
 
     // -------------------------------------------------------------------------

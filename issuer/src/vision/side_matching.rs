@@ -17,6 +17,7 @@
 //! - Flat outcome (no price movement)
 
 use ethers::types::{Address, U256};
+use std::cmp::min;
 
 use super::types::{MarketOutcome, Side};
 
@@ -188,16 +189,22 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
             .fold(U256::zero(), |a, b| a + b);
 
         if winner_sum < matched {
-            let dust = matched - winner_sum;
-            // Give dust to the last non-zero winner.
-            if let Some(last_winner) = per_player
+            // Distribute dust across winners in reverse order. A single player may not
+            // be able to absorb all the dust (their refund could be smaller than dust),
+            // so we cascade through multiple players until it is fully absorbed.
+            let mut remaining_dust = matched - winner_sum;
+            for player in per_player
                 .iter_mut()
                 .rev()
-                .find(|p| p.side == winning_side && !p.effective_stake.is_zero())
+                .filter(|p| p.side == winning_side && !p.effective_stake.is_zero())
             {
-                last_winner.matched_stake = last_winner.matched_stake + dust;
-                // Refund decreases by the same amount (matched_stake increased).
-                last_winner.refund = last_winner.refund - dust;
+                let can_absorb = min(remaining_dust, player.refund);
+                player.matched_stake = player.matched_stake + can_absorb;
+                player.refund = player.refund - can_absorb; // safe: can_absorb <= refund
+                remaining_dust = remaining_dust - can_absorb;
+                if remaining_dust.is_zero() {
+                    break;
+                }
             }
         }
     }
@@ -212,14 +219,21 @@ pub fn match_sides(inputs: &[SideMatchInput], outcome: MarketOutcome) -> Vec<Sid
             .fold(U256::zero(), |a, b| a + b);
 
         if loser_sum < matched {
-            let dust = matched - loser_sum;
-            if let Some(last_loser) = per_player
+            // Same cascade logic as winners: distribute dust across losers in reverse
+            // order so no single player absorbs more than their available refund.
+            let mut remaining_dust = matched - loser_sum;
+            for player in per_player
                 .iter_mut()
                 .rev()
-                .find(|p| p.side != winning_side && !p.effective_stake.is_zero())
+                .filter(|p| p.side != winning_side && !p.effective_stake.is_zero())
             {
-                last_loser.matched_stake = last_loser.matched_stake + dust;
-                last_loser.refund = last_loser.refund - dust;
+                let can_absorb = min(remaining_dust, player.refund);
+                player.matched_stake = player.matched_stake + can_absorb;
+                player.refund = player.refund - can_absorb; // safe: can_absorb <= refund
+                remaining_dust = remaining_dust - can_absorb;
+                if remaining_dust.is_zero() {
+                    break;
+                }
             }
         }
 
@@ -777,5 +791,63 @@ mod tests {
         assert_eq!(winner.matched_stake, u(10));
         assert_eq!(winner.payout, u(20));
         assert_eq!(winner.refund, u(0));
+    }
+
+    // -------------------------------------------------------------------------
+    // Regression: dust cascade when dust > last player's refund.
+    //
+    // 3 UP winners (stake=1 each), 2 DOWN losers (stake=1 each).
+    // winning_total=3, losing_total=2, matched=2.
+    // Each winner: floor(1*2/3)=0 matched_stake, refund=1. dust=2.
+    // Last winner's refund (1) < dust (2) — old code underflowed U256.
+    // New code cascades: last winner absorbs 1 (all their refund), then
+    // second-to-last winner absorbs the remaining 1.
+    // -------------------------------------------------------------------------
+    #[test]
+    fn test_dust_cascade_exceeds_last_player_refund() {
+        let inputs = vec![
+            input(1, Side::Up, 1),
+            input(2, Side::Up, 1),
+            input(3, Side::Up, 1),
+            input(4, Side::Down, 1),
+            input(5, Side::Down, 1),
+        ];
+        let results = match_sides(&inputs, MarketOutcome::Up);
+
+        assert_eq!(results.len(), 5);
+        // Must not panic or produce wildly wrong values.
+        assert_conservation(&inputs, &results);
+
+        // All winners' matched_stakes must sum to exactly `matched` (2).
+        let winner_matched_sum: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(winner_matched_sum, u(2), "winner matched_stakes must sum to matched");
+
+        // No winner should have matched_stake > their effective_stake.
+        for r in results.iter().filter(|r| r.side == Side::Up) {
+            assert!(
+                r.matched_stake <= r.effective_stake,
+                "matched_stake {} exceeds effective_stake {} for player {:?}",
+                r.matched_stake,
+                r.effective_stake,
+                r.player
+            );
+        }
+
+        // Pool balance: winner payouts == loser matched stakes.
+        let winner_payout_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Up)
+            .map(|r| r.payout)
+            .fold(U256::zero(), |a, b| a + b);
+        let loser_matched_total: U256 = results
+            .iter()
+            .filter(|r| r.side == Side::Down)
+            .map(|r| r.matched_stake)
+            .fold(U256::zero(), |a, b| a + b);
+        assert_eq!(winner_payout_total, loser_matched_total);
     }
 }
