@@ -171,7 +171,7 @@ impl TickScheduler {
             sqlx::query(
                 "UPDATE vision_positions SET balance = $1 WHERE batch_id = $2 AND player = $3",
             )
-            .bind(pb.new_balance.as_u128() as i64)
+            .bind(pb.new_balance.to_string())
             .bind(batch_id as i64)
             .bind(format!("{:?}", pb.player))
             .execute(pool)
@@ -360,9 +360,9 @@ impl TickScheduler {
 
         // 2. Load player positions (only active: balance > 0)
         // Cast numeric columns to text to avoid BigDecimal dependency
-        let pos_rows: Vec<(i64, String, String, String, i64, String, i64, String)> =
+        let pos_rows: Vec<(i64, String, String, String, i64, String, String)> =
             sqlx::query_as(
-                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, join_timestamp, total_deposited::text \
+                "SELECT batch_id, player, bitmap_hash, stake_per_tick::text, start_tick, balance::text, total_deposited::text \
                  FROM vision_positions WHERE balance > 0",
             )
             .fetch_all(pool)
@@ -370,7 +370,7 @@ impl TickScheduler {
 
         {
             let mut players = self.players.write().await;
-            for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, join_timestamp, total_deposited) in &pos_rows {
+            for (batch_id, player, bitmap_hash, stake_per_tick, start_tick, balance, total_deposited) in &pos_rows {
                 let bal = U256::from_dec_str(balance).unwrap_or_default();
                 let dep = U256::from_dec_str(total_deposited).unwrap_or(bal);
                 let position = PlayerPosition {
@@ -380,8 +380,6 @@ impl TickScheduler {
                     start_tick: *start_tick as u64,
                     balance: bal,
                     initial_deposit: dep,
-                    join_timestamp: *join_timestamp as u64,
-                    num_committed_ticks: 1, // Updated from bitmap at resolution time
                 };
                 players
                     .entry(*batch_id as u64)
@@ -572,8 +570,6 @@ mod tests {
             start_tick: 0,
             balance: U256::from(stake * 100),
             initial_deposit: U256::from(stake * 100),
-            join_timestamp: 1000,
-            num_committed_ticks: 1,
         }
     }
 
