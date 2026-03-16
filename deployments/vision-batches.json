@@ -1,5 +1,5 @@
 {
-  "vision": "0x5a64e0a1EC76A8fc12Dc1Da8BE3B350e289F9c73",
+  "vision": "0xAFD85eFB3b8bfC929B508C0c2cF12d5379584D60",
   "batchCount": 47,
   "batches": {
     "defi": { "batchId": 0, "configHash": "0xbdb8ad2871c37ad2f9880a986165c0e5799637546aed5d32b45152b4969d9476", "tickDuration": 120, "lockOffset": 0 },
