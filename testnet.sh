@@ -410,6 +410,9 @@ cmd_deploy() {
     done
     echo -e "  ${GREEN}Oracle migrations applied${NC}"
 
+    # Delete stale consensus WAL files (prevents old P2P state from poisoning fresh deploy)
+    vps_be_ssh "rm -f $VPS_BE_DIR/logs/consensus-*.wal" && echo -e "  ${GREEN}Consensus WAL files cleaned${NC}" || true
+
     # Fund Anvil accounts 1-4 (oracles + AP) with GM for gas
     echo -e "${BLUE}[4/14] Funding oracle + AP accounts with gas...${NC}"
     ORACLE_1_ADDR=$(cast wallet address "$ORACLE_1_KEY")
