@@ -4747,3 +4747,11 @@ The backtester currently supports one rebalance method: **periodic time-based re
 [DECISION] Vision deposit poll 5s → 1s, finality 15 → 3 — deposit detection was unnecessarily slow.
 [DECISION] Data-node settlement scanner 3s → 1s — consistency with reduced oracle polling.
 [FAILED] Uploaded macOS ARM binaries to Linux VPS — `file` check before upload would have caught this. VPS must build from source.
+
+[BUG] BatchConfigOrchestrator silent after fresh deploy - 20260315-2145-k8m3
+After a full redeploy with DB truncation, the BatchConfigOrchestrator starts every 120s but produces no output. No configs get promoted, no batches enter the tick_scheduler, and vision ticks never resolve. The data-node has 41 batches via /batches/recommended, but the orchestrator doesn't read or promote them. This blocks all Vision tick resolution on fresh deploys.
+Root cause: likely the orchestrator checks `signed_batch_configs` DB (empty after truncate) and concludes there's nothing to do, rather than re-reading from chain/data-node.
+
+[BUG] Stale orders persist in oracle after CREATE2 redeploy - 20260316-1200-p9k2
+After redeploying with CREATE2 (unique proxy addresses), the oracle's get_pending_orders() still returns 24 orders from the previous deployment. The chain reader's id.is_zero() filter doesn't trigger despite getOrder() returning zeros for non-existent orders via cast. Likely an RPC caching issue on the L3 Orbit node, or the ethers-rs contract call returns differently than raw eth_call.
+Workaround needed: either reset the L3 chain entirely, or add a "max order age" check in get_pending_orders().
