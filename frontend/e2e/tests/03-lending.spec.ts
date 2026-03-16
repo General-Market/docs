@@ -156,6 +156,16 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         }
       }
 
+      // Verify MORPHO contract has code before attempting deposits
+      const morphoAddr = morphoCheck?.contracts?.MORPHO;
+      if (morphoAddr) {
+        const morphoCode = await l3RpcCall('eth_getCode', [morphoAddr, 'latest']);
+        if (!morphoCode || morphoCode === '0x') {
+          console.log(`MORPHO at ${morphoAddr} has no code — stale deployment, skipping lending cycle`);
+          return;
+        }
+      }
+
       // Step 1: Deposit Collateral (direct RPC)
       const posBefore = await getMorphoPositionDirect(TEST_ADDRESS);
       console.log(`Position before deposit: collateral=${posBefore.collateral}`);

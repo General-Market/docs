@@ -130,7 +130,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   useEffect(() => {
     if (navPriceSet.current || isNavLoading) return
     if (navPerShareBn > 0n) {
-      const priceWithBuffer = (navPerShareBn * 95n) / 100n
+      const priceWithBuffer = navPerShareBn // Oracle has 15% tolerance for drift
       setLimitPrice(formatUnits(priceWithBuffer, 18))
       navPriceSet.current = true
     }

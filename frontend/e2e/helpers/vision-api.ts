@@ -881,9 +881,17 @@ export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const batches = require('../../../deployments/vision-batches.json')
-    const entries = Object.values(batches.batches || {}) as Array<{ batchId: number; configHash: string }>
-    // Sort by batchId descending (newest first = most likely unjoined)
-    entries.sort((a, b) => b.batchId - a.batchId)
+    const batchMap = batches.batches || {}
+    // Prefer batches with known working data sources (short tick durations = more likely to resolve)
+    const PREFERRED_SOURCES = ['earthquake', 'hackernews', 'steam', 'polymarket', 'twitch', 'pumpfun', 'iss']
+    const entries = Object.entries(batchMap)
+      .map(([name, v]) => ({ ...(v as any), sourceName: name }))
+      .sort((a, b) => {
+        const aPreferred = PREFERRED_SOURCES.includes(a.sourceName) ? 1 : 0
+        const bPreferred = PREFERRED_SOURCES.includes(b.sourceName) ? 1 : 0
+        if (aPreferred !== bPreferred) return bPreferred - aPreferred
+        return b.batchId - a.batchId // Then newest first
+      }) as Array<{ batchId: number; configHash: string; sourceName: string }>
     for (const entry of entries) {
       try {
         const pos = await getPosition(entry.batchId, player)
