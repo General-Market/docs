@@ -1540,7 +1540,7 @@ async fn player_profile(
     #[derive(Debug, sqlx::FromRow)]
     struct HistoryRow {
         delta: String,
-        resolved_at: Option<chrono::NaiveDateTime>,
+        resolved_at: Option<chrono::DateTime<chrono::Utc>>,
     }
 
     // -- Q4: batch metadata --
@@ -1767,7 +1767,7 @@ async fn player_profile(
         // Find last_active_at from the last row (most recent)
         if let Some(last) = history_rows.first() {
             if let Some(ts) = &last.resolved_at {
-                last_active = Some(ts.and_utc().to_rfc3339());
+                last_active = Some(ts.to_rfc3339());
             }
         }
 
@@ -1785,7 +1785,13 @@ async fn player_profile(
             running_sum += delta_wei;
 
             let hour = match &row.resolved_at {
-                Some(ts) => ts.format("%Y-%m-%dT%H:00:00Z").to_string(),
+                Some(ts) => {
+                    // Truncate to hour boundary — ts is DateTime<Utc>, so Z suffix is truthful
+                    let epoch_hour = ts.timestamp() / 3600;
+                    chrono::DateTime::from_timestamp(epoch_hour * 3600, 0)
+                        .map(|dt| dt.to_rfc3339())
+                        .unwrap_or_default()
+                }
                 None => continue,
             };
 
