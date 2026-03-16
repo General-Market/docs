@@ -2020,8 +2020,9 @@ impl BridgeOrchestrator {
             return Err(BridgeError::BatchAlreadyConfirmed { cycle_number });
         }
 
-        // Filter stale order IDs — after a redeploy, P2P consensus may broadcast
-        // order IDs from the previous deployment that no longer exist on-chain.
+        // Filter order IDs: remove stale (>= nextOrderId), zero, and non-PENDING (already batched/filled).
+        // After a redeploy, P2P consensus may broadcast stale order IDs. Even with valid IDs, orders
+        // that were already confirmed in a previous consensus round must be excluded.
         let next_order_id = {
             let selector = ethers::utils::keccak256("nextOrderId()")[..4].to_vec();
             match self.l3_writer.static_call(self.config.index_address, selector).await {
@@ -2029,6 +2030,21 @@ impl BridgeOrchestrator {
                 _ => U256::from(u64::MAX),
             }
         };
+
+        // Also check if this cycle was already processed
+        let cycle_processed = {
+            let mut selector = ethers::utils::keccak256("cycleProcessed(uint256)")[..4].to_vec();
+            selector.extend_from_slice(&ethers::abi::encode(&[ethers::abi::Token::Uint(U256::from(cycle_number))]));
+            match self.l3_writer.static_call(self.config.index_address, selector).await {
+                Ok(data) if data.len() >= 32 => data[31] != 0,
+                _ => false,
+            }
+        };
+        if cycle_processed {
+            info!(cycle_number, "Cycle already processed on-chain — skipping");
+            return Err(BridgeError::BatchAlreadyConfirmed { cycle_number });
+        }
+
         let valid_order_ids: Vec<U256> = order_ids.iter()
             .filter(|id| !id.is_zero() && **id < next_order_id)
             .cloned()
