@@ -68,30 +68,39 @@ In `engine.rs`, find `apply_balances()`. After the call to `scheduler.apply_tick
 ```rust
 // Persist per-player tick deltas for profile page (best-effort, never blocks resolution)
 if let Some(pool) = db_pool {
-    for pb in player_balances {
-        let player_str = format!("{:?}", pb.player);
-        // Read total_deposited while the position still exists
-        let deposited: Option<String> = sqlx::query_scalar(
-            "SELECT total_deposited FROM vision_positions WHERE batch_id = $1 AND player = $2"
-        )
-        .bind(batch_id as i64)
-        .bind(&player_str)
-        .fetch_optional(pool)
-        .await
-        .ok()
-        .flatten();
+    // Bulk-fetch total_deposited for all players in ONE query (not N+1)
+    let player_strs: Vec<String> = player_balances.iter()
+        .map(|pb| format!("{:?}", pb.player))
+        .collect();
+    let deposit_map: std::collections::HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
+        "SELECT player, total_deposited FROM vision_positions WHERE batch_id = $1 AND player = ANY($2)"
+    )
+    .bind(batch_id as i64)
+    .bind(&player_strs)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
+    .into_iter()
+    .collect();
+
+    // Bulk-INSERT all deltas (single multi-row INSERT, not N separate INSERTs)
+    // For simplicity, use individual INSERTs with UPSERT — acceptable at <100 players per tick.
+    // For 1000+ players, refactor to a single multi-row VALUES clause.
+    for (pb, player_str) in player_balances.iter().zip(player_strs.iter()) {
+        let deposited = deposit_map.get(player_str).map(|s| s.as_str());
 
         if let Err(e) = sqlx::query(
             "INSERT INTO vision_player_tick_deltas (batch_id, tick_id, player, delta, won, total_deposited, resolved_at)
              VALUES ($1, $2, $3, $4, $5, $6, NOW())
-             ON CONFLICT (batch_id, tick_id, player) DO NOTHING"
+             ON CONFLICT (batch_id, tick_id, player) DO UPDATE
+             SET delta = EXCLUDED.delta, won = EXCLUDED.won, total_deposited = EXCLUDED.total_deposited, resolved_at = NOW()"
         )
         .bind(batch_id as i64)
         .bind(tick_id as i64)
-        .bind(&player_str)
+        .bind(player_str)
         .bind(pb.delta.to_string())
-        .bind(pb.delta > 0)
-        .bind(deposited.as_deref())
+        .bind(pb.delta >= 0)     // >= 0: zero delta = break-even, not a loss
+        .bind(deposited)
         .execute(pool)
         .await {
             tracing::warn!(batch_id, tick_id, player = %player_str, error = %e, "Failed to persist tick delta");
@@ -101,10 +110,11 @@ if let Some(pool) = db_pool {
 ```
 
 Notes:
+- **Bulk-fetch** `total_deposited` in one `ANY($2)` query — not N+1.
+- **`ON CONFLICT DO UPDATE`** — if oracle re-resolves a tick (retry with different prices), the corrected delta overwrites the stale one.
+- **`won = pb.delta >= 0`** — zero delta is break-even (Flat/Cancelled outcomes), not a loss. Prevents inflated loss count.
 - Uses `pb.delta` directly — already computed `i128` in the `PlayerBalance` struct.
-- `total_deposited` read from `vision_positions` while the row still exists.
-- `let Err(e)` — logs failures but never blocks tick resolution.
-- `ON CONFLICT DO NOTHING` — idempotent on re-processing.
+- Logs failures but never blocks tick resolution.
 
 - [ ] **Step 2: Build and verify**
 
@@ -439,45 +449,111 @@ git commit -m "feat(oracle): player profile endpoint — stats, batches, P&L his
 - Modify: `data-node/src/vision_api.rs` (add proxy handler)
 - Modify: `data-node/src/api.rs` (register route + add cache to AppState)
 
-Follow the exact pattern of the existing leaderboard proxy (`LeaderboardCache`).
+Follow the exact pattern of the existing leaderboard proxy (`LeaderboardCache`). The oracle URL is sourced from the `ORACLE_URL` env var, same as `LeaderboardCache.oracle_url`.
 
 - [ ] **Step 1: Add ProfileCache to AppState**
 
-In `api.rs`, add a cache struct (same pattern as `LeaderboardCache`):
+Use `mini_moka` (already in the ecosystem) or a simple bounded HashMap. The cache must:
+- **Hard cap** at 5K entries (prevent unbounded growth from address enumeration)
+- **Serve stale data** on oracle failure (graceful degradation)
+- **Coalesce concurrent requests** for the same address (prevent stampede)
 
 ```rust
 pub struct ProfileCache {
-    pub entries: tokio::sync::RwLock<std::collections::HashMap<String, (String, std::time::Instant)>>,
-    pub ttl: std::time::Duration,
+    oracle_url: String,
+    entries: tokio::sync::RwLock<std::collections::HashMap<String, (String, std::time::Instant)>>,
+    in_flight: tokio::sync::RwLock<std::collections::HashMap<String, Arc<tokio::sync::Notify>>>,
+    ttl: std::time::Duration,
 }
 
 impl ProfileCache {
-    pub fn new(ttl_secs: u64) -> Self {
+    pub fn new(oracle_url: String, ttl_secs: u64) -> Self {
         Self {
+            oracle_url,
             entries: tokio::sync::RwLock::new(std::collections::HashMap::new()),
+            in_flight: tokio::sync::RwLock::new(std::collections::HashMap::new()),
             ttl: std::time::Duration::from_secs(ttl_secs),
         }
     }
 
-    pub async fn get(&self, key: &str) -> Option<String> {
-        let entries = self.entries.read().await;
-        entries.get(key).and_then(|(json, ts)| {
-            if ts.elapsed() < self.ttl { Some(json.clone()) } else { None }
-        })
-    }
+    pub async fn get_or_fetch(&self, addr: &str) -> Result<String, StatusCode> {
+        // 1. Check fresh cache
+        {
+            let entries = self.entries.read().await;
+            if let Some((json, ts)) = entries.get(addr) {
+                if ts.elapsed() < self.ttl {
+                    return Ok(json.clone());
+                }
+            }
+        }
 
-    pub async fn set(&self, key: String, json: String) {
-        let mut entries = self.entries.write().await;
-        entries.insert(key, (json, std::time::Instant::now()));
-        // Evict stale entries if map grows > 10K
-        if entries.len() > 10_000 {
-            entries.retain(|_, (_, ts)| ts.elapsed() < self.ttl);
+        // 2. Coalesce concurrent requests for same address
+        {
+            let in_flight = self.in_flight.read().await;
+            if let Some(notify) = in_flight.get(addr) {
+                let n = notify.clone();
+                drop(in_flight);
+                n.notified().await;
+                // Another request completed — check cache again
+                let entries = self.entries.read().await;
+                if let Some((json, _)) = entries.get(addr) {
+                    return Ok(json.clone());
+                }
+            }
+        }
+
+        // 3. Mark this address as in-flight
+        let notify = Arc::new(tokio::sync::Notify::new());
+        {
+            let mut in_flight = self.in_flight.write().await;
+            in_flight.insert(addr.to_string(), notify.clone());
+        }
+
+        // 4. Fetch from oracle
+        let url = format!("{}/vision/player/{}/profile", self.oracle_url, addr);
+        let result = reqwest::Client::new()
+            .get(&url)
+            .timeout(std::time::Duration::from_secs(10))
+            .send()
+            .await;
+
+        // 5. Clean up in-flight, notify waiters
+        {
+            let mut in_flight = self.in_flight.write().await;
+            in_flight.remove(addr);
+        }
+        notify.notify_waiters();
+
+        match result {
+            Ok(resp) if resp.status().is_success() => {
+                if let Ok(body) = resp.text().await {
+                    let mut entries = self.entries.write().await;
+                    entries.insert(addr.to_string(), (body.clone(), std::time::Instant::now()));
+                    // Hard cap: evict oldest when > 5K entries
+                    if entries.len() > 5_000 {
+                        let oldest = entries.iter()
+                            .min_by_key(|(_, (_, ts))| *ts)
+                            .map(|(k, _)| k.clone());
+                        if let Some(k) = oldest { entries.remove(&k); }
+                    }
+                    return Ok(body);
+                }
+                Err(StatusCode::BAD_GATEWAY)
+            }
+            _ => {
+                // Oracle down — serve stale cache if available
+                let entries = self.entries.read().await;
+                if let Some((json, _)) = entries.get(addr) {
+                    return Ok(json.clone()); // stale but better than 502
+                }
+                Err(StatusCode::BAD_GATEWAY)
+            }
         }
     }
 }
 ```
 
-Add `pub profile_cache: Arc<ProfileCache>` to `AppState`. Initialize with 30s TTL.
+Add `pub profile_cache: Arc<ProfileCache>` to `AppState`. Initialize with oracle URL from `ORACLE_URL` env var and 30s TTL.
 
 - [ ] **Step 2: Add proxy handler in vision_api.rs**
 
@@ -486,36 +562,18 @@ pub async fn player_profile_proxy(
     State(state): State<Arc<AppState>>,
     Path(address): Path<String>,
 ) -> impl IntoResponse {
-    if address.len() != 42 || !address.starts_with("0x") {
+    if address.len() != 42 || !address.starts_with("0x")
+        || !address[2..].chars().all(|c| c.is_ascii_hexdigit()) {
         return (StatusCode::BAD_REQUEST, "Invalid address").into_response();
     }
     let addr = address.to_lowercase();
 
-    // Check cache
-    if let Some(cached) = state.profile_cache.get(&addr).await {
-        return (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, "application/json")], cached).into_response();
+    match state.profile_cache.get_or_fetch(&addr).await {
+        Ok(json) => (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, "application/json")], json).into_response(),
+        Err(status) => (status, "Profile unavailable").into_response(),
     }
-
-    // Fetch from oracle (try each oracle URL)
-    let oracle_urls = &state.batch_engine.oracle_urls; // or however oracle URLs are configured
-    for url in oracle_urls {
-        let fetch_url = format!("{}/vision/player/{}/profile", url, addr);
-        match reqwest::get(&fetch_url).await {
-            Ok(resp) if resp.status().is_success() => {
-                if let Ok(body) = resp.text().await {
-                    state.profile_cache.set(addr, body.clone()).await;
-                    return (StatusCode::OK, [(axum::http::header::CONTENT_TYPE, "application/json")], body).into_response();
-                }
-            }
-            _ => continue,
-        }
-    }
-
-    (StatusCode::BAD_GATEWAY, "Profile unavailable").into_response()
 }
 ```
-
-Note: Check how the existing leaderboard proxy gets oracle URLs. Use the same mechanism.
 
 - [ ] **Step 3: Register route**
 
@@ -608,6 +666,7 @@ export function usePlayerProfile(address: string) {
     queryFn: () => fetchProfile(address),
     enabled: /^0x[0-9a-fA-F]{40}$/.test(address),
     staleTime: 60_000,
+    refetchInterval: 60_000,  // keep profile fresh for long sessions (ticks resolve every few minutes)
   })
   return { profile: data ?? null, isLoading, isError, error: error as Error | null }
 }
@@ -680,7 +739,12 @@ git commit -m "feat(frontend): Vision tab — P&L chart + batch tick squares"
 - Create: `frontend/components/domain/profile/IndexTab.tsx`
 - Modify: `frontend/components/domain/vision/VisionLeaderboard.tsx`
 
-- [ ] **Step 1: IndexTab** — for arbitrary address ITP balances, create a new hook that accepts `address: string` and uses `useReadContracts` (wagmi multicall) with the address as a parameter — NOT `useAccount()`. Show holdings table. Empty state.
+- [ ] **Step 1: IndexTab** — for arbitrary address ITP balances, create a new hook `useAddressItpShares(address: string)` that:
+  1. Calls `getItpCount()` on Index.sol to get total ITPs
+  2. Uses `useReadContracts` (wagmi multicall) to batch-call `getUserShares(itpId, address)` for each ITP ID
+  3. Filters to non-zero balances
+  This is O(N) RPC calls batched into one multicall. At 96 ITPs this is one multicall. At 621+ ITPs, may need chunking (200 per multicall). Do NOT use `useAccount()` — the address comes from the URL param.
+  Show holdings table (ITP name, shares, value). Empty state: "No ITP holdings."
 
 - [ ] **Step 2: Leaderboard links** — wrap player addresses in `<Link href={'/profile/${addr}'}>{truncated}</Link>`.
 
