@@ -68,6 +68,16 @@ fn bytes32_hex_to_string(hex: &str) -> String {
     }
 }
 
+/// Encode a UTF-8 string to a 0x-prefixed bytes32 hex string (right-padded with zeros).
+/// Inverse of `bytes32_hex_to_string`.
+fn string_to_bytes32_hex(s: &str) -> String {
+    let mut buf = [0u8; 32];
+    let bytes = s.as_bytes();
+    let len = bytes.len().min(32);
+    buf[..len].copy_from_slice(&bytes[..len]);
+    format!("0x{}", hex::encode(buf))
+}
+
 /// Build the axum router for all Vision API endpoints.
 pub fn routes(state: Arc<VisionState>) -> axum::Router {
     axum::Router::new()
@@ -957,23 +967,29 @@ struct LeaderboardEntry {
 #[derive(Debug, Deserialize)]
 struct LeaderboardQuery {
     batch_id: Option<u64>,
+    source_id: Option<String>,
 }
 
 /// Vision leaderboard — aggregates player balances across batches.
 ///
 /// Ranks players by current PnL (current_balance - initial_deposit).
-/// Optionally filters to a single batch via `?batch_id=N`.
+/// Supports `?batch_id=N` for a single batch or `?source_id=X` for all
+/// batches belonging to a source (including completed/paused ones).
 async fn vision_leaderboard(
     State(state): State<Arc<VisionState>>,
     Query(query): Query<LeaderboardQuery>,
 ) -> impl IntoResponse {
-    // Aggregate player data — optionally filtered to a single batch
+    // When source_id is provided, use Postgres for full historical data
+    // (includes completed/paused batches that are no longer in memory).
+    if let Some(ref source_id) = query.source_id {
+        return leaderboard_from_postgres(&state.pool, Some(source_id), None).await;
+    }
+    if let Some(bid) = query.batch_id {
+        return leaderboard_from_postgres(&state.pool, None, Some(bid)).await;
+    }
+
+    // No filter — aggregate from in-memory scheduler (active batches only)
     let all_ids = state.scheduler.get_all_batch_ids().await;
-    let batch_ids: Vec<u64> = if let Some(bid) = query.batch_id {
-        all_ids.into_iter().filter(|id| *id == bid).collect()
-    } else {
-        all_ids
-    };
 
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins)
     let mut player_data: std::collections::HashMap<
@@ -981,20 +997,18 @@ async fn vision_leaderboard(
         (u128, u128, usize, usize, usize),
     > = std::collections::HashMap::new();
 
-    for batch_id in &batch_ids {
+    for batch_id in &all_ids {
         if let Some((batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
-            // Skip paused batches — they have stale balances
             if batch.paused {
                 continue;
             }
             for p in &players {
                 let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0, 0));
                 let balance = p.balance.as_u128();
-                entry.0 += balance; // current balance
+                entry.0 += balance;
                 let initial = p.initial_deposit.as_u128();
                 entry.1 += initial;
-                entry.2 += 1; // batches joined
-                // Win = player is in profit for this batch
+                entry.2 += 1;
                 if balance > initial {
                     entry.4 += 1;
                 }
@@ -1002,25 +1016,14 @@ async fn vision_leaderboard(
         }
     }
 
-    // Query Postgres for persisted total_deposited values
-    // When filtered by batch_id, only fetch deposits for that batch
-    let deposit_query = if let Some(bid) = query.batch_id {
-        format!(
-            "SELECT vp.player, SUM(vp.total_deposited::numeric) as total_deposited
-             FROM vision_positions vp
-             JOIN vision_batches vb ON vp.batch_id = vb.id
-             WHERE vb.paused = false AND vp.batch_id = {}
-             GROUP BY vp.player",
-            bid
-        )
-    } else {
-        "SELECT vp.player, SUM(vp.total_deposited::numeric) as total_deposited
+    // Supplement with Postgres deposits for active batches
+    if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
+        "SELECT vp.player, SUM(vp.total_deposited::numeric)::bigint as total_deposited
          FROM vision_positions vp
          JOIN vision_batches vb ON vp.batch_id = vb.id
          WHERE vb.paused = false
-         GROUP BY vp.player".to_string()
-    };
-    if let Ok(rows) = sqlx::query_as::<_, DepositRow>(&deposit_query)
+         GROUP BY vp.player",
+    )
     .fetch_all(&state.pool)
     .await
     {
@@ -1037,21 +1040,164 @@ async fn vision_leaderboard(
         }
     }
 
-    // Build ranked entries
+    let leaderboard = build_leaderboard_from_map(player_data);
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "leaderboard": leaderboard,
+            "updatedAt": chrono::Utc::now().to_rfc3339(),
+        })),
+    )
+        .into_response()
+}
+
+/// Row type for Postgres-based leaderboard queries.
+#[derive(Debug, sqlx::FromRow)]
+struct LeaderboardRow {
+    player: String,
+    total_balance: Option<String>,
+    total_deposited: Option<String>,
+    batches_joined: Option<i64>,
+    wins: Option<i64>,
+}
+
+/// Build leaderboard from Postgres — used when source_id or batch_id filter is set.
+/// Includes ALL batches (active + completed/paused) so historical data is visible.
+async fn leaderboard_from_postgres(
+    pool: &sqlx::PgPool,
+    source_id: Option<&str>,
+    batch_id: Option<u64>,
+) -> axum::response::Response {
+    let query = if let Some(sid) = source_id {
+        // source_id in Postgres is stored as bytes32 hex (e.g. "0x70756d7066756e00...")
+        // The frontend sends human-readable strings (e.g. "pumpfun"), so convert.
+        let hex_sid = string_to_bytes32_hex(sid);
+        format!(
+            "SELECT vp.player,
+                    SUM(vp.balance::numeric)::text as total_balance,
+                    SUM(vp.total_deposited::numeric)::text as total_deposited,
+                    COUNT(DISTINCT vp.batch_id) as batches_joined,
+                    SUM(CASE WHEN vp.balance::numeric > vp.total_deposited::numeric THEN 1 ELSE 0 END) as wins
+             FROM vision_positions vp
+             JOIN vision_batches vb ON vp.batch_id = vb.id
+             WHERE vb.source_id = '{}'
+             GROUP BY vp.player",
+            hex_sid.replace('\'', "")
+        )
+    } else if let Some(bid) = batch_id {
+        format!(
+            "SELECT vp.player,
+                    SUM(vp.balance::numeric)::text as total_balance,
+                    SUM(vp.total_deposited::numeric)::text as total_deposited,
+                    COUNT(DISTINCT vp.batch_id) as batches_joined,
+                    SUM(CASE WHEN vp.balance::numeric > vp.total_deposited::numeric THEN 1 ELSE 0 END) as wins
+             FROM vision_positions vp
+             WHERE vp.batch_id = {}
+             GROUP BY vp.player",
+            bid
+        )
+    } else {
+        return (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "leaderboard": Vec::<LeaderboardEntry>::new(),
+                "updatedAt": chrono::Utc::now().to_rfc3339(),
+            })),
+        )
+            .into_response();
+    };
+
+    let rows = match sqlx::query_as::<_, LeaderboardRow>(&query)
+        .fetch_all(pool)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("Leaderboard Postgres query failed: {e}");
+            return (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "leaderboard": Vec::<LeaderboardEntry>::new(),
+                    "updatedAt": chrono::Utc::now().to_rfc3339(),
+                })),
+            )
+                .into_response();
+        }
+    };
+
+    let decimals = 1e18_f64;
+    let mut entries: Vec<(String, f64, f64, usize, usize)> = rows
+        .into_iter()
+        .map(|r| {
+            let bal: f64 = r.total_balance.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+            let dep: f64 = r.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+            let batches = r.batches_joined.unwrap_or(0) as usize;
+            let wins = r.wins.unwrap_or(0) as usize;
+            (r.player, bal, dep, batches, wins)
+        })
+        .collect();
+
+    // Sort by PnL descending
+    entries.sort_by(|a, b| {
+        let pnl_a = a.1 - a.2;
+        let pnl_b = b.1 - b.2;
+        pnl_b.partial_cmp(&pnl_a).unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let leaderboard: Vec<LeaderboardEntry> = entries
+        .iter()
+        .enumerate()
+        .map(|(i, (addr, bal, dep, batches, wins))| {
+            let pnl = (bal - dep) / decimals;
+            let deposited = dep / decimals;
+            let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
+            let win_rate = if *batches > 0 {
+                *wins as f64 / *batches as f64 * 100.0
+            } else {
+                0.0
+            };
+            LeaderboardEntry {
+                rank: i + 1,
+                wallet_address: addr.clone(),
+                pnl: (pnl * 100.0).round() / 100.0,
+                win_rate: (win_rate * 10.0).round() / 10.0,
+                roi: (roi * 100.0).round() / 100.0,
+                total_volume: (deposited * 100.0).round() / 100.0,
+                portfolio_bets: *batches,
+                avg_portfolio_size: 0.0,
+                largest_portfolio: 0,
+            }
+        })
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "leaderboard": leaderboard,
+            "updatedAt": chrono::Utc::now().to_rfc3339(),
+        })),
+    )
+        .into_response()
+}
+
+/// Convert in-memory player_data map to sorted LeaderboardEntry vec.
+fn build_leaderboard_from_map(
+    player_data: std::collections::HashMap<Address, (u128, u128, usize, usize, usize)>,
+) -> Vec<LeaderboardEntry> {
     let mut entries: Vec<(Address, u128, u128, usize, usize, usize)> = player_data
         .into_iter()
         .map(|(addr, (bal, dep, batches, largest, wins))| (addr, bal, dep, batches, largest, wins))
         .collect();
 
-    // Sort by PnL descending (current_balance - initial_deposit)
     entries.sort_by(|a, b| {
         let pnl_a = a.1 as i128 - a.2 as i128;
         let pnl_b = b.1 as i128 - b.2 as i128;
         pnl_b.cmp(&pnl_a)
     });
 
-    let decimals = 1e18_f64; // 18 decimals (on-chain internal format)
-    let leaderboard: Vec<LeaderboardEntry> = entries
+    let decimals = 1e18_f64;
+    entries
         .iter()
         .enumerate()
         .map(|(i, (addr, bal, dep, batches, _largest, wins))| {
@@ -1075,16 +1221,7 @@ async fn vision_leaderboard(
                 largest_portfolio: 0,
             }
         })
-        .collect();
-
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({
-            "leaderboard": leaderboard,
-            "updatedAt": chrono::Utc::now().to_rfc3339(),
-        })),
-    )
-        .into_response()
+        .collect()
 }
 
 /// Row type for deposit queries.

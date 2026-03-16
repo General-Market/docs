@@ -20,10 +20,16 @@ export function LanguageSwitcher() {
       : currentPath
 
     // Default locale has no prefix (localePrefix: 'as-needed')
-    if (newLocale === defaultLocale) {
-      window.location.pathname = basePath
+    const targetPath = newLocale === defaultLocale
+      ? basePath
+      : `/${newLocale}${basePath === '/' ? '' : basePath}`
+
+    // Middleware uses rewrite (not redirect), so the browser URL may already
+    // equal targetPath even though the locale changed. Force reload in that case.
+    if (targetPath === currentPath) {
+      window.location.reload()
     } else {
-      window.location.pathname = `/${newLocale}${basePath === '/' ? '' : basePath}`
+      window.location.pathname = targetPath
     }
   }
 

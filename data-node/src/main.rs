@@ -2440,6 +2440,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     );
 
     // HTTP server
+    let oracle_url = std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string());
     let app_state = Arc::new(AppState {
         pool,
         collector: collector_state,
@@ -2462,9 +2463,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         orderbook_cache,
         price_broadcast: broadcast_hub.clone(),
         vision_batch_cache: Arc::new(crate::vision_batch_cache::VisionBatchCache::new(
-            std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string()),
+            oracle_url.clone(),
             format!("http://{}:{}", args.bind, args.port),
         )),
+        leaderboard_cache: Arc::new(crate::vision_api::LeaderboardCache::new(oracle_url)),
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
         chain_event_tx: chain_event_tx.clone(),
         source_registry,

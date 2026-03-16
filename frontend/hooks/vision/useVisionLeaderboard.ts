@@ -5,17 +5,20 @@ import { VISION_API_URL } from '@/lib/config'
 import type { AgentRanking, LeaderboardResponse } from '@/hooks/useLeaderboard'
 
 /**
- * Fetches Vision leaderboard from the oracle API.
+ * Fetches Vision leaderboard via the Next.js proxy to the oracle.
  * Returns data in the same AgentRanking format as the ITP leaderboard.
- * Optionally filters by batchId for per-source leaderboards.
+ * Optionally filters by sourceId (all-time) or batchId (single batch).
  */
-async function fetchVisionLeaderboard(batchId?: number): Promise<LeaderboardResponse> {
+async function fetchVisionLeaderboard(batchId?: number, sourceId?: string): Promise<LeaderboardResponse> {
   if (!VISION_API_URL) {
     return { leaderboard: [], updatedAt: new Date().toISOString() }
   }
 
-  const params = batchId !== undefined ? `?batch_id=${batchId}` : ''
-  const response = await fetch(`${VISION_API_URL}/vision/leaderboard${params}`)
+  const searchParams = new URLSearchParams()
+  if (sourceId) searchParams.set('source_id', sourceId)
+  else if (batchId !== undefined) searchParams.set('batch_id', String(batchId))
+  const qs = searchParams.toString()
+  const response = await fetch(`${VISION_API_URL}/vision/leaderboard${qs ? `?${qs}` : ''}`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch Vision leaderboard: ${response.status}`)
@@ -54,10 +57,10 @@ async function fetchVisionLeaderboard(batchId?: number): Promise<LeaderboardResp
   }
 }
 
-export function useVisionLeaderboard(batchId?: number) {
+export function useVisionLeaderboard(batchId?: number, sourceId?: string) {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['vision-leaderboard', batchId],
-    queryFn: () => fetchVisionLeaderboard(batchId),
+    queryKey: ['vision-leaderboard', sourceId ?? batchId],
+    queryFn: () => fetchVisionLeaderboard(batchId, sourceId),
     refetchInterval: 5000,
     staleTime: 3000,
   })

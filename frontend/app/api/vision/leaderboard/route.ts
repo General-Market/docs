@@ -6,8 +6,12 @@ const ORACLE_URL = ORACLE_VISION_URL
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
+    const params = new URLSearchParams()
     const batchId = searchParams.get('batch_id')
-    const qs = batchId ? `?batch_id=${batchId}` : ''
+    const sourceId = searchParams.get('source_id')
+    if (sourceId) params.set('source_id', sourceId)
+    else if (batchId) params.set('batch_id', batchId)
+    const qs = params.toString() ? `?${params.toString()}` : ''
     const res = await fetch(`${ORACLE_URL}/vision/leaderboard${qs}`, {
       next: { revalidate: 5 },
       signal: AbortSignal.timeout(10_000),

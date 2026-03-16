@@ -1,12 +1,14 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import {
   ResponsiveContainer, AreaChart, Area,
   XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts'
+import { formatUnits } from 'viem'
 import { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
 import { ExplorerChartCard } from '@/components/domain/explorer'
+import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 
 interface SectionProps {
   snapshots: AggregatedSnapshot[]
@@ -17,79 +19,37 @@ interface SectionProps {
 const tickFormatter = (v: string) =>
   new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-const ITP_IDS = [
-  { id: '0x0000000000000000000000000000000000000000000000000000000000000001', label: 'ITP-1' },
-  { id: '0x0000000000000000000000000000000000000000000000000000000000000002', label: 'ITP-2' },
-]
-
-interface ItpData {
-  label: string
-  nav_display: string
-  aum_usd: string | null
-  assets_total: number
-  name: string | null
-  symbol: string | null
-  error: boolean
-}
-
 function formatUsd(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`
   if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`
-  return `$${value.toFixed(2)}`
+  if (value >= 0.01) return `$${value.toFixed(2)}`
+  return '$0'
+}
+
+function formatShares(supply: string): string {
+  const n = parseFloat(formatUnits(BigInt(supply || '0'), 18))
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  if (n > 0) return n.toFixed(2)
+  return '0'
 }
 
 export function ITPSection({ snapshots, latest, loading }: SectionProps) {
-  const [itpData, setItpData] = useState<ItpData[]>([])
-  const [itpLoading, setItpLoading] = useState(true)
+  const navList = useSSENav()
 
-  useEffect(() => {
-    let cancelled = false
+  // Top 10 by AUM
+  const topItps = useMemo(() => {
+    return [...navList]
+      .sort((a, b) => (b.aum_usd || 0) - (a.aum_usd || 0))
+      .slice(0, 10)
+  }, [navList])
 
-    async function fetchItpData() {
-      const results = await Promise.all(
-        ITP_IDS.map(async ({ id, label }) => {
-          try {
-            const res = await fetch(`/api/itp-price?itp_id=${encodeURIComponent(id)}`, {
-              signal: AbortSignal.timeout(5_000),
-            })
-            if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            const data = await res.json()
-            return {
-              label,
-              nav_display: data.nav_display || '0',
-              aum_usd: data.aum_usd ?? null,
-              assets_total: data.assets_total || 0,
-              name: data.name ?? null,
-              symbol: data.symbol ?? null,
-              error: false,
-            } as ItpData
-          } catch {
-            return {
-              label,
-              nav_display: '--',
-              aum_usd: null,
-              assets_total: 0,
-              name: null,
-              symbol: null,
-              error: true,
-            } as ItpData
-          }
-        })
-      )
-
-      if (!cancelled) {
-        setItpData(results)
-        setItpLoading(false)
-      }
-    }
-
-    fetchItpData()
-    const interval = setInterval(fetchItpData, 30_000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
+  // Summary stats
+  const stats = useMemo(() => {
+    const totalAum = navList.reduce((sum, n) => sum + (n.aum_usd || 0), 0)
+    const withSupply = navList.filter(n => BigInt(n.total_supply || '0') > 0n).length
+    return { total: navList.length, withSupply, totalAum }
+  }, [navList])
 
   const pendingOrderData = useMemo(
     () =>
@@ -99,6 +59,8 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
       })),
     [snapshots]
   )
+
+  const itpLoading = navList.length === 0
 
   return (
     <section>
@@ -121,65 +83,70 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
           </ResponsiveContainer>
         </ExplorerChartCard>
 
-        {/* Live ITP Metrics */}
-        <ExplorerChartCard title="Live ITP Metrics" subtitle="NAV & composition from on-chain data" loading={itpLoading}>
-          <div className="h-full flex flex-col justify-center px-1">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border-light">
-                  <th className="text-[11px] font-semibold text-text-muted pb-2 pr-3">Fund</th>
-                  <th className="text-[11px] font-semibold text-text-muted pb-2 pr-3 text-right">NAV</th>
-                  <th className="text-[11px] font-semibold text-text-muted pb-2 pr-3 text-right">AUM</th>
-                  <th className="text-[11px] font-semibold text-text-muted pb-2 text-right">Assets</th>
-                </tr>
-              </thead>
-              <tbody>
-                {itpData.map((itp) => (
-                  <tr key={itp.label} className="border-b border-border-light last:border-0">
-                    <td className="py-2.5 pr-3">
-                      <span className="text-[13px] font-bold text-black">
-                        {itp.name || itp.label}
-                      </span>
-                      {itp.symbol && (
-                        <span className="text-[11px] text-text-muted ml-1.5">{itp.symbol}</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 text-right">
-                      {itp.error ? (
-                        <span className="text-[12px] text-text-muted">--</span>
-                      ) : (
-                        <span className="text-[13px] font-mono font-semibold text-black">
-                          ${itp.nav_display}
+        {/* Live ITP Overview */}
+        <ExplorerChartCard title="ITP Overview" subtitle={`${stats.total} funds, ${stats.withSupply} with shares`} loading={itpLoading}>
+          <div className="h-full flex flex-col">
+            {/* Summary row */}
+            <div className="flex items-baseline gap-4 mb-2 px-1">
+              <div>
+                <span className="text-[10px] text-text-muted block">Total Funds</span>
+                <span className="text-[20px] font-black text-black">{stats.total}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted block">Total AUM</span>
+                <span className="text-[20px] font-black text-black">{formatUsd(stats.totalAum)}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted block">With Shares</span>
+                <span className="text-[20px] font-black text-black">{stats.withSupply}</span>
+              </div>
+            </div>
+            {/* Top ITPs table */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border-light">
+                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2">Fund</th>
+                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2 text-right">NAV</th>
+                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2 text-right">AUM</th>
+                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 text-right">Shares</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topItps.map((itp) => (
+                    <tr key={itp.itp_id} className="border-b border-border-light last:border-0">
+                      <td className="py-1.5 pr-2">
+                        <span className="text-[12px] font-bold text-black">
+                          {itp.symbol || itp.name || 'ITP'}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pr-3 text-right">
-                      {itp.error || itp.aum_usd == null ? (
-                        <span className="text-[11px] text-text-muted">--</span>
-                      ) : (
+                      </td>
+                      <td className="py-1.5 pr-2 text-right">
                         <span className="text-[12px] font-mono text-black">
-                          {formatUsd(Number(itp.aum_usd))}
+                          ${itp.nav_per_share.toFixed(4)}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-2.5 text-right">
-                      {itp.error ? (
-                        <span className="text-[11px] text-text-muted">--</span>
-                      ) : (
-                        <span className="text-[12px] font-mono text-black">{itp.assets_total}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {itpData.length === 0 && !itpLoading && (
-                  <tr>
-                    <td colSpan={4} className="py-4 text-center text-[12px] text-text-muted">
-                      No ITP data available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="py-1.5 pr-2 text-right">
+                        <span className="text-[11px] font-mono text-black">
+                          {itp.aum_usd > 0 ? formatUsd(itp.aum_usd) : '--'}
+                        </span>
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <span className="text-[11px] font-mono text-text-muted">
+                          {formatShares(itp.total_supply)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {topItps.length === 0 && !itpLoading && (
+                    <tr>
+                      <td colSpan={4} className="py-4 text-center text-[12px] text-text-muted">
+                        No ITP data available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </ExplorerChartCard>
       </div>

@@ -12,6 +12,7 @@ use axum::response::{IntoResponse, Json, Response};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
 use crate::api::AppState;
 
@@ -310,4 +311,127 @@ pub async fn batch_history(
         "source": batch_info.source,
         "markets": markets.into_values().collect::<Vec<_>>(),
     })))
+}
+
+// ---- GET /vision/leaderboard ----
+
+#[derive(Deserialize)]
+pub struct LeaderboardQuery {
+    pub source_id: Option<String>,
+    pub batch_id: Option<u64>,
+}
+
+/// Cached leaderboard response from the oracle.
+struct CachedLeaderboard {
+    data: serde_json::Value,
+    fetched_at: DateTime<Utc>,
+}
+
+/// In-memory leaderboard cache — keyed by query params, 30s TTL.
+pub struct LeaderboardCache {
+    entries: RwLock<HashMap<String, CachedLeaderboard>>,
+    oracle_url: String,
+    client: reqwest::Client,
+}
+
+impl LeaderboardCache {
+    pub fn new(oracle_url: String) -> Self {
+        Self {
+            entries: RwLock::new(HashMap::new()),
+            oracle_url,
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap(),
+        }
+    }
+
+    async fn get_or_fetch(
+        &self,
+        source_id: Option<&str>,
+        batch_id: Option<u64>,
+    ) -> Result<serde_json::Value, String> {
+        let cache_key = match (source_id, batch_id) {
+            (Some(s), _) => format!("source:{}", s),
+            (_, Some(b)) => format!("batch:{}", b),
+            _ => "global".to_string(),
+        };
+
+        // Check cache (30s TTL)
+        {
+            let entries = self.entries.read().await;
+            if let Some(cached) = entries.get(&cache_key) {
+                if (Utc::now() - cached.fetched_at).num_seconds() < 30 {
+                    return Ok(cached.data.clone());
+                }
+            }
+        }
+
+        // Fetch from oracle
+        let mut params = Vec::new();
+        if let Some(s) = source_id {
+            params.push(format!("source_id={}", s));
+        } else if let Some(b) = batch_id {
+            params.push(format!("batch_id={}", b));
+        }
+        let qs = if params.is_empty() {
+            String::new()
+        } else {
+            format!("?{}", params.join("&"))
+        };
+
+        let url = format!("{}/vision/leaderboard{}", self.oracle_url, qs);
+        let resp = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| format!("oracle fetch failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            return Err(format!("oracle returned {}", resp.status()));
+        }
+
+        let data: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(|e| format!("oracle JSON parse failed: {}", e))?;
+
+        // Cache it
+        let mut entries = self.entries.write().await;
+        entries.insert(
+            cache_key,
+            CachedLeaderboard {
+                data: data.clone(),
+                fetched_at: Utc::now(),
+            },
+        );
+
+        Ok(data)
+    }
+}
+
+/// Vision leaderboard — proxied from oracle with 30s cache.
+///
+/// Supports `?source_id=pumpfun` for per-source historical leaderboard
+/// or `?batch_id=N` for a single batch.
+pub async fn leaderboard(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<LeaderboardQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let data = state
+        .leaderboard_cache
+        .get_or_fetch(params.source_id.as_deref(), params.batch_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Leaderboard cache error: {}", e);
+            (
+                StatusCode::BAD_GATEWAY,
+                Json(ErrorResponse {
+                    error: "leaderboard unavailable".into(),
+                }),
+            )
+        })?;
+
+    Ok(Json(data))
 }

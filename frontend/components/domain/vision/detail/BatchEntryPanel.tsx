@@ -94,6 +94,7 @@ export default function BatchEntryPanel({
     submitBitmap,
     isSubmitting,
     error: submitError,
+    reset: resetSubmit,
   } = useSubmitBitmap()
 
   // -- Wallet connection --
@@ -138,11 +139,12 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // Betting is always open — no lock window in continuous betting.
-  // Unset markets default to DOWN — no need to require explicit predictions to submit.
-  // New joins require: stake + configHash + markets loaded.
+  // All markets must be explicitly set (up or down) before entering.
+  const allMarketsSet = marketIds.length > 0 && counts.empty === 0
+  // New joins require: stake + configHash + all markets set.
+  // Deposits (already joined) only require stake.
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (!!configHash && marketIds.length > 0))
+    && (isJoined || (!!configHash && allMarketsSet))
 
   // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
@@ -225,6 +227,7 @@ export default function BatchEntryPanel({
       if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
       return 'Deposit More'
     }
+    if (!allMarketsSet) return `Set all ${counts.empty} remaining markets`
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
   }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
@@ -367,29 +370,29 @@ export default function BatchEntryPanel({
           </div>
         )}
 
-        {/* Error display — with dismiss to reset state for retry */}
+        {/* Error display — dismissable */}
         {displayError && (
-          <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
-            <div>
-              <p className="line-clamp-2">{displayError}</p>
-              {displayError.includes('Insufficient Vision balance') && (
-                <button
-                  type="button"
-                  onClick={() => setShowDepositModal(true)}
-                  className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
-                >
-                  Deposit USDC
-                </button>
-              )}
+          <div className="text-[11px] mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-red-600 line-clamp-2 flex-1">{displayError}</p>
+              <button
+                type="button"
+                onClick={() => { resetJoin(); resetDeposit(); resetSubmit() }}
+                className="text-red-400 hover:text-red-600 text-sm font-bold flex-shrink-0 leading-none"
+                title="Dismiss"
+              >
+                &times;
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => { resetJoin(); resetDeposit() }}
-              className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
-              title="Dismiss"
-            >
-              &times;
-            </button>
+            {displayError.includes('Insufficient Vision balance') && (
+              <button
+                type="button"
+                onClick={() => { setShowDepositModal(true); resetJoin(); resetDeposit(); resetSubmit() }}
+                className="mt-1.5 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
+              >
+                Deposit USDC
+              </button>
+            )}
           </div>
         )}
 

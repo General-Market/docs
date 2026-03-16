@@ -20,8 +20,8 @@ function formatVolume(vol: number): string {
   return `$${vol.toFixed(0)}`
 }
 
-export function TopPlayers({ batchId }: { batchId?: number }) {
-  const { leaderboard, isLoading } = useVisionLeaderboard(batchId)
+export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?: string }) {
+  const { leaderboard, isLoading } = useVisionLeaderboard(batchId, sourceId)
   const top5 = leaderboard.slice(0, 5)
 
   return (

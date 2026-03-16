@@ -31,6 +31,8 @@ export interface UseSubmitBitmapReturn {
   lastResult: SubmitBitmapResult | null
   /** Error from last submission */
   error: string | null
+  /** Clear error and last result */
+  reset: () => void
 }
 
 /**
@@ -144,11 +146,17 @@ export function useSubmitBitmap(): UseSubmitBitmapReturn {
     return submitBitmap({ batchId, bitmap, bitmapHash: hash })
   }, [submitBitmap])
 
+  const reset = useCallback(() => {
+    setError(null)
+    setLastResult(null)
+  }, [])
+
   return {
     submitBitmap,
     submitBets,
     isSubmitting,
     lastResult,
     error,
+    reset,
   }
 }

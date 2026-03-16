@@ -262,6 +262,8 @@ pub struct AppState {
     pub source_registry: crate::source_registry::SourceRegistry,
     /// SSE connection limiter — 500 total, 10 per IP
     pub sse_limiter: Arc<SseLimiter>,
+    /// Cached leaderboard data from oracle (30s TTL)
+    pub leaderboard_cache: Arc<crate::vision_api::LeaderboardCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -390,6 +392,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vision/snapshot", get(crate::vision_api::snapshot))
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
         .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
+        .route("/vision/leaderboard", get(crate::vision_api::leaderboard))
         .route("/vision/ws", get(crate::vision_ws::ws_handler))
         // Source registry
         .route("/sources/registry", get(sources_registry))
