@@ -264,6 +264,8 @@ pub struct AppState {
     pub sse_limiter: Arc<SseLimiter>,
     /// Cached leaderboard data from oracle (30s TTL)
     pub leaderboard_cache: Arc<crate::vision_api::LeaderboardCache>,
+    /// Cached player profile data from oracle (30s TTL)
+    pub profile_cache: Arc<crate::vision_api::ProfileCache>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -393,6 +395,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/vision/markets/active", get(crate::vision_api::active_markets))
         .route("/vision/batch/:batch_id/history", get(crate::vision_api::batch_history))
         .route("/vision/leaderboard", get(crate::vision_api::leaderboard))
+        .route("/vision/player/:address/profile", get(crate::vision_api::player_profile_proxy))
         .route("/vision/ws", get(crate::vision_ws::ws_handler))
         // Source registry
         .route("/sources/registry", get(sources_registry))

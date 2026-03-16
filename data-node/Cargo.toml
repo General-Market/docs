@@ -87,6 +87,7 @@ rust_decimal = { version = "1", features = ["serde-with-str"] }
 chrono-tz = "0.10"
 dashmap = "5.5"
 regex = "1.12.3"
+mini-moka = "0.10"
 
 [dev-dependencies]
 wiremock = "0.6"

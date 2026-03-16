@@ -16,6 +16,48 @@ use tokio::sync::RwLock;
 
 use crate::api::AppState;
 
+// ---- Profile proxy cache ----
+
+/// Caches oracle player profile responses (30s TTL, up to 5k entries).
+pub struct ProfileCache {
+    oracle_url: String,
+    client: reqwest::Client,
+    cache: mini_moka::sync::Cache<String, String>,
+}
+
+impl ProfileCache {
+    pub fn new(oracle_url: String) -> Self {
+        Self {
+            oracle_url,
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap_or_default(),
+            cache: mini_moka::sync::Cache::builder()
+                .max_capacity(5_000)
+                .time_to_live(std::time::Duration::from_secs(30))
+                .build(),
+        }
+    }
+
+    pub async fn get_or_fetch(&self, addr: &str) -> Result<String, StatusCode> {
+        if let Some(cached) = self.cache.get(&addr.to_string()) {
+            return Ok(cached);
+        }
+        let url = format!("{}/vision/player/{}/profile", self.oracle_url, addr);
+        match self.client.get(&url).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                if let Ok(body) = resp.text().await {
+                    self.cache.insert(addr.to_string(), body.clone());
+                    return Ok(body);
+                }
+                Err(StatusCode::BAD_GATEWAY)
+            }
+            _ => Err(StatusCode::BAD_GATEWAY),
+        }
+    }
+}
+
 // ---- Response types ----
 
 const PRICE_SCALE: u64 = 100_000_000; // 1e8
@@ -434,4 +476,29 @@ pub async fn leaderboard(
         })?;
 
     Ok(Json(data))
+}
+
+// ---- GET /vision/player/:address/profile ----
+
+/// Player profile — proxied from oracle with 30s cache.
+pub async fn player_profile_proxy(
+    State(state): State<Arc<AppState>>,
+    Path(address): Path<String>,
+) -> impl IntoResponse {
+    if address.len() != 42
+        || !address.starts_with("0x")
+        || !address[2..].chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return (StatusCode::BAD_REQUEST, "Invalid address").into_response();
+    }
+    let addr = address.to_lowercase();
+    match state.profile_cache.get_or_fetch(&addr).await {
+        Ok(json) => (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "application/json")],
+            json,
+        )
+            .into_response(),
+        Err(status) => (status, "Profile unavailable").into_response(),
+    }
 }
