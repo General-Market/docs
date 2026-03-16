@@ -3693,6 +3693,15 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         }
     }
 
+    // Filter out stale orders: only include IDs < nextOrderId (prevents stale P2P state after redeploy)
+    let next_oid = chain_reader.get_next_order_id().await.unwrap_or(u64::MAX);
+    let l3_native_orders: Vec<_> = l3_native_orders.into_iter()
+        .filter(|o| o.id.as_u64() < next_oid && !o.id.is_zero())
+        .collect();
+    if l3_native_orders.is_empty() {
+        return;
+    }
+
     let order_ids: Vec<ethers::types::U256> = l3_native_orders.iter().map(|o| o.id).collect();
     // Fetch NAV per unique ITP (multi-ITP support for L3-native orders)
     let mut l3_nav_cache: HashMap<String, ethers::types::U256> = HashMap::new();
