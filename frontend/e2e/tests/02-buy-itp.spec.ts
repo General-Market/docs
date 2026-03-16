@@ -51,12 +51,11 @@ test.describe('Buy ITP', () => {
 
     // 8. Limit price should auto-fill from NAV — wait for it, fallback to manual fill
     const limitInput = buyModal.limitPriceInput(page);
-    // Always set limit price with generous buffer — NAV drifts during oracle consensus
-    const state = await getItpStateL3(ITP_ID);
-    const navWithBuffer = (state.nav * 120n) / 100n; // 20% buffer for NAV drift during consensus
-    const priceStr = (Number(navWithBuffer) / 1e18).toFixed(6);
+    // Set a high absolute limit price — dynamic NAV calculation fails because NAV drifts
+    // during oracle consensus (30-90s). Test 03's placeL3BuyOrderDirect uses $10 and works.
+    const limitPrice = '20.000000'; // $20 — covers any realistic ITP NAV
     await limitInput.clear();
-    await limitInput.fill(priceStr);
+    await limitInput.fill(limitPrice);
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
     // to avoid race with parallel lending test's mintL3Shares

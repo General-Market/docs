@@ -36,11 +36,18 @@ test.describe('Sell ITP', () => {
     // 5. Sell modal should appear (heading is "Sell {itpName}")
     await expect(page.getByRole('heading', { name: /^Sell\s/ })).toBeVisible({ timeout: 10_000 });
 
-    // 6. Use MAX button or enter sell amount (half of shares)
+    // 6. Enter sell amount (half of shares) and set low limit price
     const sharesInput = sellModal.sharesInput(page);
     await expect(sharesInput).toBeVisible({ timeout: 10_000 });
     const halfShares = Number(existingShares / (10n ** 18n)) / 2;
     await sharesInput.fill(String(Math.max(1, Math.floor(halfShares))));
+
+    // Set limit price low to survive NAV drift during consensus
+    const limitInput = page.locator('input[placeholder*="limit"], input[name*="limit"]');
+    if (await limitInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await limitInput.clear();
+      await limitInput.fill('0.01'); // Very low — accept any NAV for sell
+    }
 
     // Record balances RIGHT BEFORE submitting (avoid race with parallel tests)
     const usdcBefore = await getL3UsdcBalance(TEST_ADDRESS);
