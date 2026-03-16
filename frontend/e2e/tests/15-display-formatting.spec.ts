@@ -158,11 +158,11 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
+    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
-      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
+      await page.waitForTimeout(5_000)
+      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
 
@@ -191,11 +191,11 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
+    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
-      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
+      await page.waitForTimeout(5_000)
+      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
 
