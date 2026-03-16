@@ -58,7 +58,9 @@ export default function BatchEntryPanel({
 
   // Config hash from API batch data (no on-chain read needed)
   const activeBatchId = activeBatch?.id ?? null
-  const configHash = activeBatch?.sourceId ? `0x${'0'.repeat(64)}` as `0x${string}` : undefined
+  const configHash = activeBatch?.configHash
+    ? activeBatch.configHash as `0x${string}`
+    : (activeBatch?.sourceId ? `0x${'0'.repeat(64)}` as `0x${string}` : undefined)
 
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)

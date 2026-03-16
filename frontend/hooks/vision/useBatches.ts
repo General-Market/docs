@@ -4,6 +4,7 @@ export interface BatchInfo {
   id: number
   creator: string
   sourceId: string
+  configHash: string
   marketIds: string[]
   resolutionTypes: number[]
   tickDuration: number
@@ -27,6 +28,7 @@ export function useBatches() {
         id: b.id,
         creator: b.creator ?? '',
         sourceId: b.source_id ?? b.sourceId ?? '',
+        configHash: b.config_hash ?? b.configHash ?? '',
         marketIds: b.market_ids ?? b.marketIds ?? [],
         resolutionTypes: b.resolution_types ?? b.resolutionTypes ?? [],
         tickDuration: b.tick_duration ?? b.tickDuration ?? 0,
