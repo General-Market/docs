@@ -320,6 +320,8 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
   const [userBalances, setUserBalances] = useState<Map<string, bigint>>(new Map())
   const [onChainVaults, setOnChainVaults] = useState<string[]>([])
+  // Dynamic market discovery: collateral tokens found in the vault's supply queue
+  const [vaultMarketCollaterals, setVaultMarketCollaterals] = useState<Set<string>>(new Set())
   const publicClientRef = useRef(publicClient)
 
   useEffect(() => { publicClientRef.current = publicClient }, [publicClient])
@@ -354,6 +356,46 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
       } catch { /* Index contract not available */ }
     }
     discoverVaults()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Discover authorized markets from the MetaMorpho vault's supply queue
+  // This is the dynamic counterpart to the static batch-markets.json
+  useEffect(() => {
+    const discoverVaultMarkets = async () => {
+      const client = publicClientRef.current
+      if (!client) return
+      try {
+        const queueLen = await client.readContract({
+          address: MORPHO_ADDRESSES.metaMorphoVault,
+          abi: [{ name: 'supplyQueueLength', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] }],
+          functionName: 'supplyQueueLength',
+        }) as bigint
+        const collaterals = new Set<string>()
+        for (let i = 0n; i < queueLen; i++) {
+          try {
+            const marketId = await client.readContract({
+              address: MORPHO_ADDRESSES.metaMorphoVault,
+              abi: [{ name: 'supplyQueue', type: 'function', stateMutability: 'view', inputs: [{ type: 'uint256' }], outputs: [{ type: 'bytes32' }] }],
+              functionName: 'supplyQueue',
+              args: [i],
+            }) as `0x${string}`
+            // Read market params from Morpho core to get collateral token
+            const params = await client.readContract({
+              address: MORPHO_ADDRESSES.morpho,
+              abi: [{ name: 'idToMarketParams', type: 'function', stateMutability: 'view', inputs: [{ type: 'bytes32' }], outputs: [{ type: 'address' }, { type: 'address' }, { type: 'address' }, { type: 'address' }, { type: 'uint256' }] }],
+              functionName: 'idToMarketParams',
+              args: [marketId],
+            }) as readonly [string, string, string, string, bigint]
+            const collateralToken = params[1] // loanToken, collateralToken, oracle, irm, lltv
+            if (collateralToken && collateralToken !== '0x0000000000000000000000000000000000000000') {
+              collaterals.add(collateralToken.toLowerCase())
+            }
+          } catch { /* skip individual market read failures */ }
+        }
+        setVaultMarketCollaterals(collaterals)
+      } catch { /* vault not available */ }
+    }
+    discoverVaultMarkets()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get all registered markets from the registry
@@ -412,15 +454,16 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   const rows = allCollateralTokens.map(addr => {
     const live = liveByCollateral.get(addr.toLowerCase())
     const registry = getMorphoMarketForItp(addr)
+    const dynamicMatch = vaultMarketCollaterals.has(addr.toLowerCase())
     const name = itpNames.get(addr) || 'ITP'
     const userBal = userBalances.get(addr) ?? 0n
-    const lltv = registry ? Number(registry.lltv) / 1e16 : 70
+    const lltv = registry ? Number(registry.lltv) / 1e16 : dynamicMatch ? 77 : 70
 
     return {
       collateralToken: addr,
       name,
       userBalance: userBal,
-      hasMarket: !!registry,
+      hasMarket: !!registry || dynamicMatch,
       supplyApy: live && live.borrowApy > 0 ? (live.borrowApy * (live.utilization / 100)).toFixed(2) : '--',
       borrowApy: live ? live.borrowApy.toFixed(2) : '--',
       tvl: live && live.totalBorrowed > 0n

@@ -179,6 +179,11 @@ export default function BatchEntryPanel({
   const handleEnterBatch = useCallback(() => {
     if (!activeBatch || !canSubmit) return
 
+    // Clear any previous errors before starting
+    resetJoin()
+    resetDeposit()
+    resetSubmit()
+
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e18))
 
