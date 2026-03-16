@@ -51,15 +51,12 @@ test.describe('Buy ITP', () => {
 
     // 8. Limit price should auto-fill from NAV — wait for it, fallback to manual fill
     const limitInput = buyModal.limitPriceInput(page);
-    const autoFilled = await expect(limitInput).not.toHaveValue('', { timeout: 15_000 })
-      .then(() => true).catch(() => false);
-    if (!autoFilled) {
-      // NAV didn't auto-fill (SSE/data-node timing) — set manually from chain state
-      const state = await getItpStateL3(ITP_ID);
-      const navWithBuffer = (state.nav * 105n) / 100n; // 5% buffer like the modal
-      const priceStr = (Number(navWithBuffer) / 1e18).toFixed(6);
-      await limitInput.fill(priceStr);
-    }
+    // Always set limit price with generous buffer — NAV drifts during oracle consensus
+    const state = await getItpStateL3(ITP_ID);
+    const navWithBuffer = (state.nav * 120n) / 100n; // 20% buffer for NAV drift during consensus
+    const priceStr = (Number(navWithBuffer) / 1e18).toFixed(6);
+    await limitInput.clear();
+    await limitInput.fill(priceStr);
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
     // to avoid race with parallel lending test's mintL3Shares

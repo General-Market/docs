@@ -3678,6 +3678,9 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         })
         .collect();
 
+    // Update metric with ACTUAL valid pending count (not stale pre-filter count)
+    metrics.update_pending_order_count(l3_native_orders.len() as u64);
+
     if !l3_native_orders.is_empty() {
     // 3. Leader assignment: cycle derived from max order ID (deterministic across oracles).
     // Using max ensures that when NEW orders arrive, the cycle number changes, avoiding
