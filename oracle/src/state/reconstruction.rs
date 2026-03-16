@@ -206,6 +206,11 @@ where
                     timestamp,
                     status,
                 )) => {
+                    // Skip non-existent orders (id=0 means empty storage slot after proxy reuse)
+                    if id.is_zero() {
+                        continue;
+                    }
+
                     let order_status = match status {
                         0 => OrderStatus::Pending,
                         1 => OrderStatus::Batched,

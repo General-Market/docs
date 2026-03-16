@@ -265,6 +265,12 @@ where
 
             match contract.get_order(*order_id).call().await {
                 Ok((id, user, pair_id, side, amount, limit_price, slippage_tier, deadline, itp_id, timestamp, status)) => {
+                    // Skip non-existent orders (id=0 means storage slot is empty — order was deleted or never existed)
+                    if id.is_zero() {
+                        newly_settled.push(*order_id);
+                        continue;
+                    }
+
                     trace!(order_id = %order_id, status = status, "Order status from getOrder");
 
                     match status {
