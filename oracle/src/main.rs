@@ -3669,9 +3669,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     let next_oid_pre = chain_reader.get_next_order_id().await.unwrap_or(u64::MAX);
     let l3_native_orders: Vec<_> = l3_native_orders.into_iter()
         .filter(|o| {
-            o.id.as_u64() < next_oid_pre
-                && !o.id.is_zero()
-                && o.status == common::types::OrderStatus::Pending
+            let valid = o.id.as_u64() < next_oid_pre && !o.id.is_zero();
+            let pending = o.status == common::types::OrderStatus::Pending;
+            if valid && !pending {
+                tracing::warn!(order_id = o.id.as_u64(), status = ?o.status, "Skipping non-pending order");
+            }
+            valid && pending
         })
         .collect();
 
