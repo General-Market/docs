@@ -41,6 +41,7 @@ pub struct RecommendedBatchesResponse {
 #[serde(rename_all = "camelCase")]
 pub struct RecommendedBatch {
     pub source_id: String,
+    #[serde(default)]
     pub display_name: String,
     pub config_hash: String,
     pub tick_duration_secs: u64,
