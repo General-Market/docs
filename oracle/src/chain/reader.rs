@@ -21,7 +21,7 @@ use common::types::{Oracle, ITPCore, LimitOrder, OrderStatus, Price, Side};
 abigen!(
     IndexContract,
     r#"[
-        function getOrder(uint256 orderId) external view returns (uint256 id, address user, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, bytes32 itpId, uint256 timestamp, uint8 status)
+        function getOrder(uint256 orderId) external view returns ((uint256 id, address user, bytes32 pairId, uint8 side, uint256 amount, uint256 limitPrice, uint256 slippageTier, uint256 deadline, bytes32 itpId, uint256 timestamp, uint8 status))
         function getITP(bytes32 itpId) external view returns (bytes32 name, bytes32 symbol, address creator, uint256 createdAt, uint256 feeRate, uint256 status, uint256 totalSupply, uint256 totalValue, uint256 assetCount)
         function getPrice(uint256 assetIdx) external view returns (uint256 price)
         function batchGetPrices(uint256[] indices) external view returns (uint256[] prices)
