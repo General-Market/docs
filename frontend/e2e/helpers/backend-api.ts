@@ -1307,23 +1307,22 @@ export async function getMorphoPositionDirect(user: string): Promise<{ collatera
   const morpho = readMorphoDeployment();
   if (!morpho) throw new Error('morpho-deployment.json not found');
 
-  // position(bytes32,address) selector
   const marketId = morpho.contracts.MARKET_ID.replace('0x', '');
   const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
 
-  // Compute selector via web3_sha3
-  const sigHex = '0x' + Buffer.from('position(bytes32,address)').toString('hex');
-  const selector = ((await l3RpcCall('web3_sha3', [sigHex])) as string).slice(0, 10);
+  // position(bytes32,address) — precomputed selector: 0x93c52062
+  const selector = '0x93c52062';
 
   const result = await l3RpcCall('eth_call', [
     { to: morpho.contracts.MORPHO, data: selector + marketId + userPadded },
     'latest',
   ]) as string;
 
+  // Returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral)
   const hex = result.slice(2);
   return {
-    collateral: BigInt('0x' + hex.slice(128, 192)),
-    borrowShares: BigInt('0x' + hex.slice(64, 128)),
+    borrowShares: BigInt('0x' + (hex.slice(64, 128) || '0')),
+    collateral: BigInt('0x' + (hex.slice(128, 192) || '0')),
   };
 }
 
