@@ -275,8 +275,8 @@ where
                     trace!(order_id = %order_id, status = status, "Order status from getOrder");
 
                     match status {
-                        // Terminal states: cache as settled
-                        2 | 3 | 4 => {
+                        // Terminal or batched states: cache as settled
+                        1 | 2 | 3 | 4 => {
                             newly_settled.push(*order_id);
                         }
                         // Pending
