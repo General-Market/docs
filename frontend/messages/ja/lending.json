@@ -149,7 +149,8 @@
     },
     "loading": "マーケットを読み込み中...",
     "no_markets": "利用可能なマーケットがありません",
-    "market_pair": "{name} / USDC"
+    "market_pair": "{name} / USDC",
+    "coming_soon": "Coming Soon"
   },
   "common": {
     "something_went_wrong": "エラーが発生しました",
