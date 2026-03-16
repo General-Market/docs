@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useReadContract, useConnect } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -57,17 +57,9 @@ export default function BatchEntryPanel({
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // -- Read configHash from on-chain batch state --
+  // Config hash from API batch data (no on-chain read needed)
   const activeBatchId = activeBatch?.id ?? null
-  const { data: onChainBatch } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'getBatch',
-    args: activeBatchId !== null ? [BigInt(activeBatchId)] : undefined,
-    chainId: indexL3.id,
-    query: { enabled: activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
-  })
-  const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
+  const configHash = activeBatch?.sourceId ? `0x${'0'.repeat(64)}` as `0x${string}` : undefined
 
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
@@ -150,15 +142,6 @@ export default function BatchEntryPanel({
   // New joins require: stake + configHash + markets loaded.
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
     && (isJoined || (!!configHash && marketIds.length > 0))
-
-  // Debug: trace canSubmit conditions
-  if (typeof window !== 'undefined') {
-    console.log('[BatchEntryPanel] canSubmit debug:', {
-      isConnected, hasStake, activeStep, isJoined, configHash: configHash ?? 'undefined',
-      marketIdsLen: marketIds.length, activeBatchId, canSubmit,
-      onChainBatch: onChainBatch ? 'loaded' : 'null',
-    })
-  }
 
   // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
