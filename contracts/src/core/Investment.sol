@@ -71,6 +71,15 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         nextOrderId = 1; // Start from 1, 0 reserved for "no order"
     }
 
+    /// @notice Reset order state after a full redeploy to the same proxy address.
+    /// Clears stale orders from the previous deployment.
+    function resetOrderState() external {
+        if (msg.sender != governance.admin()) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
+        }
+        nextOrderId = 1;
+    }
+
     /// @notice Set the OracleRegistry address (admin only, one-time setup)
     /// @param oracleRegistry_ Address of the OracleRegistry contract
     function setOracleRegistry(address oracleRegistry_) external {

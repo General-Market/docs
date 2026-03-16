@@ -151,6 +151,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         address indexImpl = address(new Investment());
         bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governance, l3Wusdc);
         indexProxy = address(new ERC1967Proxy(indexImpl, initData));
+
+        // If proxy was reused from a previous deploy, reset stale order state.
+        // On fresh deploy this is harmless (nextOrderId is already 1).
+        try Investment(indexProxy).resetOrderState() {} catch {}
+
         console.log("  Governance:", governance);
         console.log("  Index:", indexProxy);
     }
