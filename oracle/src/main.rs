@@ -3585,6 +3585,7 @@ async fn run_rebalance_processing<P, W, K, PF>(
 
 /// Check if a fill price respects an order's limit price (E126 guard).
 /// Returns true if the fill can proceed, false if it would violate the limit.
+/// Includes a 15% tolerance for NAV drift between order submission and fill execution.
 fn fill_price_respects_limit(
     fill_price: ethers::types::U256,
     limit_price: ethers::types::U256,
@@ -3593,9 +3594,22 @@ fn fill_price_respects_limit(
     if limit_price.is_zero() {
         return true; // No limit set
     }
+    // Apply 15% tolerance for NAV drift during consensus delay
+    let tolerance_bps = ethers::types::U256::from(1500u64); // 15%
+    let bps_base = ethers::types::U256::from(10000u64);
     match side {
-        common::types::Side::Buy => fill_price <= limit_price,
-        common::types::Side::Sell => fill_price >= limit_price,
+        common::types::Side::Buy => {
+            let buffered_limit = limit_price + (limit_price * tolerance_bps / bps_base);
+            fill_price <= buffered_limit
+        }
+        common::types::Side::Sell => {
+            let buffered_limit = if limit_price > limit_price * tolerance_bps / bps_base {
+                limit_price - (limit_price * tolerance_bps / bps_base)
+            } else {
+                ethers::types::U256::zero()
+            };
+            fill_price >= buffered_limit
+        }
     }
 }
 

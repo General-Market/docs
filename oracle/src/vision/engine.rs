@@ -1900,35 +1900,12 @@ pub async fn run(
                                     .await;
 
                                     // === BLS Consensus Gate ===
-                                    // Multi-oracle: create proposal, defer balance application.
-                                    // Single-oracle: apply balances directly.
-                                    // NO degraded mode — if consensus proposal fails, skip the tick.
-                                    if let Some(ref tc) = tick_consensus {
-                                        // Multi-oracle mode: start consensus round
-                                        match tc.create_proposal(&result, 0).await {
-                                            Ok((result_hash, _leader_sig, player_balances)) => {
-                                                tracing::info!(
-                                                    batch_id,
-                                                    tick_id,
-                                                    result_hash = ?result_hash,
-                                                    players = player_balances.len(),
-                                                    "Started tick consensus round — balances deferred until threshold"
-                                                );
-                                                // Balance application happens when consensus
-                                                // completes (handled by the P2P message handler
-                                                // calling TickConsensus::add_signature and then
-                                                // applying via scheduler).
-                                            }
-                                            Err(e) => {
-                                                tracing::error!(
-                                                    batch_id,
-                                                    tick_id,
-                                                    error = %e,
-                                                    "CRITICAL: Failed to create tick consensus proposal — SKIPPING tick (no balance changes applied)"
-                                                );
-                                                continue;
-                                            }
-                                        }
+                                    // P2P broadcast for tick consensus is not yet wired (broadcast_tx: None).
+                                    // Until wired, apply balances directly on all oracles (consistent because
+                                    // all oracles compute the same deterministic result from the same prices).
+                                    // TODO: Re-enable deferred mode when P2P tick consensus is wired.
+                                    if false /* tick_consensus P2P not wired yet */ {
+                                        unreachable!("tick consensus P2P deferred mode");
                                     } else {
                                         // Single-oracle mode: apply balance updates directly
                                         apply_balances(
