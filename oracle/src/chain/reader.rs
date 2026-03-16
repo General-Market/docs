@@ -238,10 +238,19 @@ where
 
         let new_event_count = events.len();
 
-        // Add newly discovered order IDs to known set
+        // Detect contract reset: if nextOrderId dropped, clear all caches
+        // (resetOrderState() reuses order IDs — stale settled cache blocks them)
         {
+            let next_oid = contract.next_order_id().call().await.unwrap_or(U256::MAX).as_u64();
+            let mut settled = self.settled_order_ids.write().await;
             let mut known = self.known_order_ids.write().await;
-            let settled = self.settled_order_ids.read().await;
+            // If any settled ID >= nextOrderId, the contract was reset
+            if settled.iter().any(|id| id.as_u64() >= next_oid) {
+                tracing::warn!(next_oid, settled_count = settled.len(), "Contract reset detected — clearing order caches");
+                settled.clear();
+                known.clear();
+            }
+            // Add newly discovered order IDs
             for event in &events {
                 if !known.contains(&event.order_id) && !settled.contains(&event.order_id) {
                     known.push(event.order_id);
