@@ -681,6 +681,49 @@ pub async fn apply_balances(
             .apply_tick_balances(batch_id, player_balances)
             .await;
     }
+
+    // Persist per-player tick deltas for profile page
+    // Spawned as background task — never blocks tick resolution
+    if let Some(ref pool) = db_pool {
+        let pool = pool.clone();
+        let balances = player_balances.to_vec();
+        tokio::spawn(async move {
+            let player_strs: Vec<String> = balances.iter()
+                .map(|pb| format!("{:?}", pb.player))
+                .collect();
+            let deposit_map: std::collections::HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
+                "SELECT player, total_deposited FROM vision_positions WHERE batch_id = $1 AND player = ANY($2)"
+            )
+            .bind(batch_id as i64)
+            .bind(&player_strs)
+            .fetch_all(&pool)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
+
+            for (pb, player_str) in balances.iter().zip(player_strs.iter()) {
+                let deposited = deposit_map.get(player_str).map(|s| s.as_str());
+
+                if let Err(e) = sqlx::query(
+                    "INSERT INTO vision_player_tick_deltas (batch_id, tick_id, player, delta, won, total_deposited, resolved_at)
+                     VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                     ON CONFLICT (batch_id, tick_id, player) DO UPDATE
+                     SET delta = EXCLUDED.delta, won = EXCLUDED.won, total_deposited = EXCLUDED.total_deposited, resolved_at = NOW()"
+                )
+                .bind(batch_id as i64)
+                .bind(tick_id as i64)
+                .bind(player_str)
+                .bind(pb.delta.to_string())
+                .bind(pb.delta >= 0)
+                .bind(deposited)
+                .execute(&pool)
+                .await {
+                    tracing::warn!(batch_id, tick_id, player = %player_str, error = %e, "Failed to persist tick delta");
+                }
+            }
+        }); // end tokio::spawn
+    }
 }
 
 /// Compute the WITHDRAW message hash for a single player balance.
@@ -1503,7 +1546,7 @@ pub async fn run(
                                 continue;
                             }
 
-                            // Skip backlog
+                            // Skip backlog — but always resolve the LATEST tick (don't skip everything)
                             if batch.tick_duration > 0 {
                                 let current_tick = now / batch.tick_duration;
                                 let latest_resolvable = if current_tick > batch.created_at_tick {
@@ -1511,17 +1554,19 @@ pub async fn run(
                                 } else {
                                     0
                                 };
-                                if tick_id < latest_resolvable {
+                                // Skip old ticks but keep the latest one for actual resolution
+                                if tick_id + 1 < latest_resolvable {
+                                    let skip_to = latest_resolvable - 1; // Leave last tick for resolution
                                     tracing::info!(
                                         batch_id,
                                         skipped_from = tick_id,
-                                        skipped_to = latest_resolvable,
-                                        "Skipping backlog ticks to latest"
+                                        skipped_to = skip_to,
+                                        "Skipping backlog ticks (keeping latest for resolution)"
                                     );
-                                    for skip_tick in tick_id..latest_resolvable {
+                                    for skip_tick in tick_id..skip_to {
                                         scheduler.mark_resolved(batch_id, skip_tick).await;
                                     }
-                                    continue;
+                                    continue; // Will process skip_to on next iteration
                                 }
                             }
 
