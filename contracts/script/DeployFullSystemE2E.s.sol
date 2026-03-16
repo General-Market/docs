@@ -49,6 +49,20 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     uint256 public constant AP_INITIAL_BALANCE = AP_INITIAL_BALANCE_18DEC;
     uint256 public constant USER_INITIAL_BALANCE = USER_INITIAL_BALANCE_18DEC;
 
+    // ============ DEPLOY SALT ============
+    // Uses block.timestamp so each redeploy on the same chain gets unique proxy addresses.
+    // Prevents stale storage from previous deploys bleeding through ERC1967 proxy reuse.
+    uint256 private _saltCounter;
+
+    function _nextSalt() internal returns (bytes32) {
+        return keccak256(abi.encode("INDEX_DEPLOY", block.timestamp, block.chainid, ++_saltCounter));
+    }
+
+    function _deployProxy(address impl, bytes memory initData) internal returns (address) {
+        bytes32 salt = _nextSalt();
+        return address(new ERC1967Proxy{salt: salt}(impl, initData));
+    }
+
     // ============ DEPLOYED ADDRESSES ============
 
     address public l3Wusdc;
@@ -146,15 +160,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     function _deployCore() internal {
         console.log("Phase 2: Deploy Core");
         Governance govImpl = new Governance();
-        governance = address(new ERC1967Proxy(address(govImpl), abi.encodeWithSelector(Governance.initialize.selector, admin)));
+        governance = _deployProxy(address(govImpl), abi.encodeWithSelector(Governance.initialize.selector, admin));
 
         address indexImpl = address(new Investment());
         bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governance, l3Wusdc);
-        indexProxy = address(new ERC1967Proxy(indexImpl, initData));
-
-        // If proxy was reused from a previous deploy, reset stale order state.
-        // On fresh deploy this is harmless (nextOrderId is already 1).
-        try Investment(indexProxy).resetOrderState() {} catch {}
+        indexProxy = _deployProxy(indexImpl, initData);
 
         console.log("  Governance:", governance);
         console.log("  Index:", indexProxy);
@@ -163,7 +173,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     function _deployRegistries() internal {
         console.log("Phase 3: Deploy Registries");
         OracleRegistry regImpl = new OracleRegistry();
-        oracleRegistry = address(new ERC1967Proxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance)));
+        oracleRegistry = _deployProxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance));
         collateralRegistry = address(new CollateralRegistry(admin, oracleRegistry));
         console.log("  OracleRegistry:", oracleRegistry);
         console.log("  CollateralRegistry:", collateralRegistry);
@@ -175,18 +185,18 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         // L3BridgeCustody
         address l3Impl = address(new L3BridgeCustody());
         bytes memory l3Init = abi.encodeWithSelector(L3BridgeCustody.initialize.selector, oracleRegistry, l3Wusdc);
-        l3BridgeCustodyProxy = address(new ERC1967Proxy(l3Impl, l3Init));
+        l3BridgeCustodyProxy = _deployProxy(l3Impl, l3Init);
 
         // SettlementBridgeCustody (with indexContract for cross-chain buy)
         // bridgeProxyAddr set during initialize to avoid BLS-gated setBridgeProxy call
         address settlementImpl = address(new SettlementBridgeCustody());
         bytes memory settlementInit = abi.encodeWithSelector(SettlementBridgeCustody.initialize.selector, oracleRegistry, settlementUsdc, indexProxy, bridgeProxyAddr);
-        settlementBridgeCustodyProxy = address(new ERC1967Proxy(settlementImpl, settlementInit));
+        settlementBridgeCustodyProxy = _deployProxy(settlementImpl, settlementInit);
 
         // BLSCustody
         address blsImpl = address(new BLSCustody());
         bytes memory blsInit = abi.encodeWithSelector(BLSCustody.initialize.selector, oracleRegistry);
-        blsCustodyProxy = address(new ERC1967Proxy(blsImpl, blsInit));
+        blsCustodyProxy = _deployProxy(blsImpl, blsInit);
 
         console.log("  L3BridgeCustody:", l3BridgeCustodyProxy);
         console.log("  SettlementBridgeCustody:", settlementBridgeCustodyProxy);
@@ -214,7 +224,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
             address(0), // factory not yet deployed
             admin
         );
-        bridgeProxyAddr = address(new ERC1967Proxy(address(bridgeImpl), bridgeInit));
+        bridgeProxyAddr = _deployProxy(address(bridgeImpl), bridgeInit);
 
         // 3. Deploy BridgedItpFactory with the proxy address
         bridgedItpFactory = address(new BridgedItpFactory(bridgeProxyAddr));
