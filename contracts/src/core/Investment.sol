@@ -72,12 +72,19 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @notice Reset order state after a full redeploy to the same proxy address.
-    /// Clears stale orders from the previous deployment.
+    /// Clears stale orders and cycle state from the previous deployment.
     function resetOrderState() external {
         if (msg.sender != governance.admin()) {
             revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
+        // Clear individual order records up to current nextOrderId
+        for (uint256 i = 1; i < nextOrderId; i++) {
+            delete orders[i];
+            delete cycleProcessed[i + 500_000_000]; // cycle = orderId + 500M
+            delete batchedTimestamp[i];
+        }
         nextOrderId = 1;
+        lastProcessedCycleNumber = 0;
     }
 
     /// @notice Set the OracleRegistry address (admin only, one-time setup)
