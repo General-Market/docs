@@ -63,11 +63,15 @@ git commit -m "feat(oracle): add vision_player_tick_deltas table for profile pag
 
 - [ ] **Step 1: Add INSERT after balance application**
 
-In `engine.rs`, find `apply_balances()`. After the call to `scheduler.apply_tick_balances_with_db()`, add:
+In `engine.rs`, find `apply_balances()`. After the call to `scheduler.apply_tick_balances_with_db()`, spawn a background task so the INSERTs don't block tick resolution:
 
 ```rust
-// Persist per-player tick deltas for profile page (best-effort, never blocks resolution)
+// Persist per-player tick deltas for profile page
+// Spawned as background task — never blocks tick resolution
 if let Some(pool) = db_pool {
+    let pool = pool.clone();
+    let balances = player_balances.to_vec();
+    tokio::spawn(async move {
     // Bulk-fetch total_deposited for all players in ONE query (not N+1)
     let player_strs: Vec<String> = player_balances.iter()
         .map(|pb| format!("{:?}", pb.player))
@@ -83,10 +87,9 @@ if let Some(pool) = db_pool {
     .into_iter()
     .collect();
 
-    // Bulk-INSERT all deltas (single multi-row INSERT, not N separate INSERTs)
-    // For simplicity, use individual INSERTs with UPSERT — acceptable at <100 players per tick.
-    // For 1000+ players, refactor to a single multi-row VALUES clause.
-    for (pb, player_str) in player_balances.iter().zip(player_strs.iter()) {
+    // Individual UPSERTs per player — runs in background task, not on resolution critical path.
+    // At <100 players per tick, total ~100ms. Acceptable for background work.
+    for (pb, player_str) in balances.iter().zip(player_strs.iter()) {
         let deposited = deposit_map.get(player_str).map(|s| s.as_str());
 
         if let Err(e) = sqlx::query(
@@ -101,11 +104,12 @@ if let Some(pool) = db_pool {
         .bind(pb.delta.to_string())
         .bind(pb.delta >= 0)     // >= 0: zero delta = break-even, not a loss
         .bind(deposited)
-        .execute(pool)
+        .execute(&pool)
         .await {
             tracing::warn!(batch_id, tick_id, player = %player_str, error = %e, "Failed to persist tick delta");
         }
     }
+    }); // end tokio::spawn
 }
 ```
 
@@ -276,6 +280,8 @@ async fn player_profile(
     let batch_ids: Vec<i64> = batch_aggs.iter().map(|b| b.batch_id)
         .chain(positions.iter().map(|p| p.batch_id))
         .collect::<std::collections::HashSet<_>>().into_iter().collect();
+    // source_id is stored as H256 hex (e.g., "0x636f696e6765636b6f00...").
+    // Decode to human-readable string using bytes32_hex_to_string() — same as list_batches endpoint.
     let batch_source: std::collections::HashMap<i64, String> = if !batch_ids.is_empty() {
         sqlx::query_as::<_, (i64, String)>(
             "SELECT id, COALESCE(source_id, '') FROM vision_batches WHERE id = ANY($1)"
@@ -285,6 +291,7 @@ async fn player_profile(
         .await
         .unwrap_or_default()
         .into_iter()
+        .map(|(id, raw)| (id, bytes32_hex_to_string(&raw)))
         .collect()
     } else { std::collections::HashMap::new() };
 
@@ -449,111 +456,62 @@ git commit -m "feat(oracle): player profile endpoint — stats, batches, P&L his
 - Modify: `data-node/src/vision_api.rs` (add proxy handler)
 - Modify: `data-node/src/api.rs` (register route + add cache to AppState)
 
-Follow the exact pattern of the existing leaderboard proxy (`LeaderboardCache`). The oracle URL is sourced from the `ORACLE_URL` env var, same as `LeaderboardCache.oracle_url`.
+Follow the existing leaderboard proxy pattern. Oracle URL from `ORACLE_URL` env var.
 
 - [ ] **Step 1: Add ProfileCache to AppState**
 
-Use `mini_moka` (already in the ecosystem) or a simple bounded HashMap. The cache must:
-- **Hard cap** at 5K entries (prevent unbounded growth from address enumeration)
-- **Serve stale data** on oracle failure (graceful degradation)
-- **Coalesce concurrent requests** for the same address (prevent stampede)
+Use `mini_moka` for the cache — eliminates all hand-rolled concurrency bugs (TOCTOU, panic poisoning, O(N) eviction, stampede). Reuse a single `reqwest::Client`.
 
 ```rust
 pub struct ProfileCache {
     oracle_url: String,
-    entries: tokio::sync::RwLock<std::collections::HashMap<String, (String, std::time::Instant)>>,
-    in_flight: tokio::sync::RwLock<std::collections::HashMap<String, Arc<tokio::sync::Notify>>>,
-    ttl: std::time::Duration,
+    client: reqwest::Client,
+    cache: mini_moka::sync::Cache<String, String>,  // address → JSON, bounded + TTL
 }
 
 impl ProfileCache {
-    pub fn new(oracle_url: String, ttl_secs: u64) -> Self {
+    pub fn new(oracle_url: String) -> Self {
         Self {
             oracle_url,
-            entries: tokio::sync::RwLock::new(std::collections::HashMap::new()),
-            in_flight: tokio::sync::RwLock::new(std::collections::HashMap::new()),
-            ttl: std::time::Duration::from_secs(ttl_secs),
+            client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap_or_default(),
+            cache: mini_moka::sync::Cache::builder()
+                .max_capacity(5_000)
+                .time_to_live(std::time::Duration::from_secs(30))
+                .build(),
         }
     }
 
     pub async fn get_or_fetch(&self, addr: &str) -> Result<String, StatusCode> {
-        // 1. Check fresh cache
-        {
-            let entries = self.entries.read().await;
-            if let Some((json, ts)) = entries.get(addr) {
-                if ts.elapsed() < self.ttl {
-                    return Ok(json.clone());
-                }
-            }
+        // Check cache (mini_moka handles TTL + eviction + bounded size)
+        if let Some(cached) = self.cache.get(&addr.to_string()) {
+            return Ok(cached);
         }
 
-        // 2. Coalesce concurrent requests for same address
-        {
-            let in_flight = self.in_flight.read().await;
-            if let Some(notify) = in_flight.get(addr) {
-                let n = notify.clone();
-                drop(in_flight);
-                n.notified().await;
-                // Another request completed — check cache again
-                let entries = self.entries.read().await;
-                if let Some((json, _)) = entries.get(addr) {
-                    return Ok(json.clone());
-                }
-            }
-        }
-
-        // 3. Mark this address as in-flight
-        let notify = Arc::new(tokio::sync::Notify::new());
-        {
-            let mut in_flight = self.in_flight.write().await;
-            in_flight.insert(addr.to_string(), notify.clone());
-        }
-
-        // 4. Fetch from oracle
+        // Fetch from oracle
         let url = format!("{}/vision/player/{}/profile", self.oracle_url, addr);
-        let result = reqwest::Client::new()
-            .get(&url)
-            .timeout(std::time::Duration::from_secs(10))
-            .send()
-            .await;
-
-        // 5. Clean up in-flight, notify waiters
-        {
-            let mut in_flight = self.in_flight.write().await;
-            in_flight.remove(addr);
-        }
-        notify.notify_waiters();
-
-        match result {
+        match self.client.get(&url).send().await {
             Ok(resp) if resp.status().is_success() => {
                 if let Ok(body) = resp.text().await {
-                    let mut entries = self.entries.write().await;
-                    entries.insert(addr.to_string(), (body.clone(), std::time::Instant::now()));
-                    // Hard cap: evict oldest when > 5K entries
-                    if entries.len() > 5_000 {
-                        let oldest = entries.iter()
-                            .min_by_key(|(_, (_, ts))| *ts)
-                            .map(|(k, _)| k.clone());
-                        if let Some(k) = oldest { entries.remove(&k); }
-                    }
+                    self.cache.insert(addr.to_string(), body.clone());
                     return Ok(body);
                 }
                 Err(StatusCode::BAD_GATEWAY)
             }
-            _ => {
-                // Oracle down — serve stale cache if available
-                let entries = self.entries.read().await;
-                if let Some((json, _)) = entries.get(addr) {
-                    return Ok(json.clone()); // stale but better than 502
-                }
-                Err(StatusCode::BAD_GATEWAY)
-            }
+            _ => Err(StatusCode::BAD_GATEWAY),
         }
     }
 }
 ```
 
-Add `pub profile_cache: Arc<ProfileCache>` to `AppState`. Initialize with oracle URL from `ORACLE_URL` env var and 30s TTL.
+Add `pub profile_cache: Arc<ProfileCache>` to `AppState`. Check if `mini_moka` is already in `data-node/Cargo.toml` — if not, add it: `mini-moka = "0.10"`.
+
+Notes:
+- `mini_moka::sync::Cache` handles TTL eviction, bounded capacity (LRU), and is thread-safe — no hand-rolled locks.
+- `reqwest::Client` is created once and reused (connection pool, TLS session cache).
+- No stampede protection — concurrent cold misses will fire multiple oracle requests. Acceptable at realistic traffic (~10 req/s). For higher scale, wrap in `moka`'s `get_with()` loader which coalesces automatically.
 
 - [ ] **Step 2: Add proxy handler in vision_api.rs**
 
