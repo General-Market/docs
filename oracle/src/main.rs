@@ -3662,6 +3662,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         vec![]
     };
 
+    // Filter stale orders BEFORE cycle computation (prevents stale P2P orders from poisoning cycle number)
+    let next_oid_pre = chain_reader.get_next_order_id().await.unwrap_or(u64::MAX);
+    let l3_native_orders: Vec<_> = l3_native_orders.into_iter()
+        .filter(|o| o.id.as_u64() < next_oid_pre && !o.id.is_zero())
+        .collect();
+
     if !l3_native_orders.is_empty() {
     // 3. Leader assignment: cycle derived from max order ID (deterministic across oracles).
     // Using max ensures that when NEW orders arrive, the cycle number changes, avoiding
@@ -3691,15 +3697,6 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
         for order in &l3_native_orders {
             orch.set_order_amount(order.id, order.amount).await;
         }
-    }
-
-    // Filter out stale orders: only include IDs < nextOrderId (prevents stale P2P state after redeploy)
-    let next_oid = chain_reader.get_next_order_id().await.unwrap_or(u64::MAX);
-    let l3_native_orders: Vec<_> = l3_native_orders.into_iter()
-        .filter(|o| o.id.as_u64() < next_oid && !o.id.is_zero())
-        .collect();
-    if l3_native_orders.is_empty() {
-        return;
     }
 
     let order_ids: Vec<ethers::types::U256> = l3_native_orders.iter().map(|o| o.id).collect();
