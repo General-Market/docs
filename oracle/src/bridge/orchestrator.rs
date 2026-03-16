@@ -2020,16 +2020,38 @@ impl BridgeOrchestrator {
             return Err(BridgeError::BatchAlreadyConfirmed { cycle_number });
         }
 
+        // Filter stale order IDs — after a redeploy, P2P consensus may broadcast
+        // order IDs from the previous deployment that no longer exist on-chain.
+        let next_order_id = {
+            let selector = ethers::utils::keccak256("nextOrderId()")[..4].to_vec();
+            match self.l3_writer.static_call(self.config.index_address, selector).await {
+                Ok(data) if data.len() >= 32 => U256::from_big_endian(&data[..32]),
+                _ => U256::from(u64::MAX),
+            }
+        };
+        let valid_order_ids: Vec<U256> = order_ids.iter()
+            .filter(|id| !id.is_zero() && **id < next_order_id)
+            .cloned()
+            .collect();
+
+        if valid_order_ids.is_empty() {
+            warn!(cycle_number, stale_count = order_ids.len(), "All order IDs are stale — skipping confirmBatch");
+            return Err(BridgeError::BatchAlreadyConfirmed { cycle_number });
+        }
+        if valid_order_ids.len() != order_ids.len() {
+            warn!(cycle_number, original = order_ids.len(), valid = valid_order_ids.len(), "Filtered stale order IDs");
+        }
+
         info!(
             cycle_number = cycle_number,
-            l3_order_ids = ?order_ids,
+            l3_order_ids = ?valid_order_ids,
             "Executing confirmBatch with L3 order IDs"
         );
 
-        // Build Index.confirmBatch() calldata using L3 order IDs
+        // Build Index.confirmBatch() calldata using validated order IDs
         let calldata = build_confirm_batch_calldata(
             cycle_number,
-            order_ids,
+            &valid_order_ids,
             &aggregated.aggregated_signature.0,
             reference_nonce,
             aggregated.signer_bitmap,
