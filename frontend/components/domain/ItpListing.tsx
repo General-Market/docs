@@ -73,7 +73,34 @@ type SortDir = 'asc' | 'desc'
 export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
   const t = useTranslations('markets')
 
-  const navList = useSSENav()
+  const sseNavList = useSSENav()
+  const [restNavList, setRestNavList] = useState<NavSnapshot[]>([])
+
+  // Fallback: if SSE hasn't delivered data in 3s, fetch from REST
+  useEffect(() => {
+    if (sseNavList.length > 0) return
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/dn/aum-ranking')
+        if (!res.ok) return
+        const data = await res.json()
+        if (Array.isArray(data) && data.length > 0 && sseNavList.length === 0) {
+          setRestNavList(data.map((d: any) => ({
+            itp_id: d.itp_id || '',
+            name: d.name || '',
+            symbol: d.symbol || '',
+            nav_per_share: d.nav_per_share || 0,
+            total_supply: d.total_supply || '0',
+            aum_usd: d.aum_usd || 0,
+            settlement_address: d.settlement_address || null,
+          })))
+        }
+      } catch {}
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [sseNavList.length])
+
+  const navList = sseNavList.length > 0 ? sseNavList : restNavList
   const loading = navList.length === 0
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
