@@ -12,6 +12,7 @@
 //! - `GET /vision/batch/:id/history` - Tick results (last 100)
 //! - `POST /vision/backtest` - Strategy backtest (bitmap simulation)
 //! - `GET /vision/leaderboard` - Player rankings by PnL
+//! - `GET /vision/player/:address/profile` - Display-ready player profile
 //!
 //! **From in-memory state (bitmap/balance):**
 //! - `POST /vision/bitmap` - Player submits bitmap
@@ -94,6 +95,7 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/user/:address/balance", get(get_user_balance))
         .route("/vision/deposit/:order_id/status", get(get_deposit_status))
         .route("/vision/withdraw/:withdraw_id/status", get(get_withdraw_status))
+        .route("/vision/player/:address/profile", get(player_profile))
         .with_state(state)
 }
 
@@ -1422,6 +1424,434 @@ async fn get_withdraw_status(
                 .into_response()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/player/:address/profile
+// ---------------------------------------------------------------------------
+
+/// Display-ready player profile response.
+#[derive(Debug, Serialize)]
+pub struct PlayerProfileResponse {
+    pub stats: ProfileStats,
+    pub batches: Vec<ProfileBatch>,
+    #[serde(rename = "pnlHistory")]
+    pub pnl_history: Vec<ProfilePnlPoint>,
+}
+
+/// Aggregate player statistics.
+#[derive(Debug, Serialize)]
+pub struct ProfileStats {
+    pub pnl: f64,
+    #[serde(rename = "totalDeposited")]
+    pub total_deposited: f64,
+    pub roi: f64,
+    #[serde(rename = "winRate")]
+    pub win_rate: f64,
+    #[serde(rename = "totalBatches")]
+    pub total_batches: u64,
+    #[serde(rename = "lastActiveAt")]
+    pub last_active_at: Option<String>,
+}
+
+/// Per-batch breakdown in a player profile.
+#[derive(Debug, Serialize)]
+pub struct ProfileBatch {
+    #[serde(rename = "batchId")]
+    pub batch_id: i64,
+    #[serde(rename = "sourceId")]
+    pub source_id: String,
+    pub status: String,
+    pub deposited: f64,
+    pub balance: f64,
+    #[serde(rename = "tickCount")]
+    pub tick_count: i64,
+    pub roi: f64,
+    pub ticks: Vec<ProfileTick>,
+}
+
+/// A single tick result within a batch.
+#[derive(Debug, Serialize, Clone)]
+pub struct ProfileTick {
+    #[serde(rename = "tickId")]
+    pub tick_id: i64,
+    pub pnl: f64,
+    pub won: bool,
+}
+
+/// Hourly-bucketed P&L history point.
+#[derive(Debug, Serialize)]
+pub struct ProfilePnlPoint {
+    pub timestamp: String,
+    pub pnl: f64,
+}
+
+/// Player profile — stats, batches, and P&L chart in a single call.
+///
+/// Aggregates from `vision_player_tick_deltas`, `vision_positions`,
+/// and `vision_batches`. Returns display-ready dollars, percentages,
+/// pre-sorted batches, and hourly-bucketed P&L history.
+async fn player_profile(
+    State(state): State<Arc<VisionState>>,
+    Path(address_str): Path<String>,
+) -> impl IntoResponse {
+    // -- Validate address --
+    if address_str.len() != 42
+        || !address_str.starts_with("0x")
+        || !address_str[2..].chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError::new("Invalid address: expected 0x-prefixed 40 hex chars")),
+        )
+            .into_response();
+    }
+    let address = address_str.to_lowercase();
+
+    // -- Q0: per-batch delta aggregates --
+    #[derive(Debug, sqlx::FromRow)]
+    struct DeltaAggRow {
+        batch_id: i64,
+        total_delta: Option<String>,
+        last_deposited: Option<String>,
+        tick_count: Option<i64>,
+    }
+
+    // -- Q1: recent ticks per batch (max 60) --
+    #[derive(Debug, sqlx::FromRow)]
+    struct TickRow {
+        batch_id: i64,
+        tick_id: i64,
+        delta: String,
+        won: bool,
+        #[allow(dead_code)]
+        rn: Option<i64>,
+    }
+
+    // -- Q2: active positions --
+    #[derive(Debug, sqlx::FromRow)]
+    struct PositionRow {
+        batch_id: i64,
+        balance: String,
+        total_deposited: String,
+    }
+
+    // -- Q3: P&L history --
+    #[derive(Debug, sqlx::FromRow)]
+    struct HistoryRow {
+        delta: String,
+        resolved_at: Option<chrono::NaiveDateTime>,
+    }
+
+    // -- Q4: batch metadata --
+    #[derive(Debug, sqlx::FromRow)]
+    struct BatchMetaRow {
+        id: i64,
+        source_id_raw: Option<String>,
+    }
+
+    // Run all 4 independent queries in parallel (Q4 depends on Q0+Q2 results)
+    let (q0_result, q1_result, q2_result, q3_result) = tokio::join!(
+        sqlx::query_as::<_, DeltaAggRow>(
+            "SELECT batch_id, SUM(delta::numeric)::text as total_delta, \
+             MAX(total_deposited) as last_deposited, COUNT(*) as tick_count \
+             FROM vision_player_tick_deltas WHERE LOWER(player) = $1 GROUP BY batch_id"
+        )
+        .bind(&address)
+        .fetch_all(&state.pool),
+
+        sqlx::query_as::<_, TickRow>(
+            "WITH ranked AS (\
+                SELECT batch_id, tick_id, delta, won, \
+                       ROW_NUMBER() OVER (PARTITION BY batch_id ORDER BY tick_id DESC) as rn \
+                FROM vision_player_tick_deltas WHERE LOWER(player) = $1\
+            ) SELECT batch_id, tick_id, delta, won, rn FROM ranked WHERE rn <= 60"
+        )
+        .bind(&address)
+        .fetch_all(&state.pool),
+
+        sqlx::query_as::<_, PositionRow>(
+            "SELECT batch_id, balance, total_deposited \
+             FROM vision_positions WHERE LOWER(player) = $1"
+        )
+        .bind(&address)
+        .fetch_all(&state.pool),
+
+        sqlx::query_as::<_, HistoryRow>(
+            "SELECT delta, resolved_at \
+             FROM vision_player_tick_deltas WHERE LOWER(player) = $1 \
+             ORDER BY resolved_at DESC LIMIT 5000"
+        )
+        .bind(&address)
+        .fetch_all(&state.pool),
+    );
+
+    // Unwrap results — return 500 on any DB failure
+    let delta_aggs = match q0_result {
+        Ok(rows) => rows,
+        Err(e) => {
+            warn!(error = %e, "Profile Q0 (delta aggregates) failed");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
+        }
+    };
+    let tick_rows = match q1_result {
+        Ok(rows) => rows,
+        Err(e) => {
+            warn!(error = %e, "Profile Q1 (tick rows) failed");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
+        }
+    };
+    let positions = match q2_result {
+        Ok(rows) => rows,
+        Err(e) => {
+            warn!(error = %e, "Profile Q2 (positions) failed");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
+        }
+    };
+    let history_rows = match q3_result {
+        Ok(rows) => rows,
+        Err(e) => {
+            warn!(error = %e, "Profile Q3 (history) failed");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(format!("Database error: {e}")))).into_response();
+        }
+    };
+
+    // Collect all batch IDs for Q4
+    let mut all_batch_ids: Vec<i64> = delta_aggs.iter().map(|r| r.batch_id).collect();
+    for p in &positions {
+        if !all_batch_ids.contains(&p.batch_id) {
+            all_batch_ids.push(p.batch_id);
+        }
+    }
+
+    // -- Q4: batch metadata --
+    let batch_meta_map: std::collections::HashMap<i64, String> = if all_batch_ids.is_empty() {
+        std::collections::HashMap::new()
+    } else {
+        match sqlx::query_as::<_, BatchMetaRow>(
+            "SELECT id, COALESCE(source_id, '') as source_id_raw FROM vision_batches WHERE id = ANY($1)"
+        )
+        .bind(&all_batch_ids)
+        .fetch_all(&state.pool)
+        .await
+        {
+            Ok(rows) => rows
+                .into_iter()
+                .map(|r| {
+                    let source = bytes32_hex_to_string(&r.source_id_raw.unwrap_or_default());
+                    (r.id, source)
+                })
+                .collect(),
+            Err(e) => {
+                warn!(error = %e, "Profile Q4 (batch meta) failed");
+                std::collections::HashMap::new()
+            }
+        }
+    };
+
+    // -- Build lookup maps --
+    let delta_map: std::collections::HashMap<i64, &DeltaAggRow> =
+        delta_aggs.iter().map(|r| (r.batch_id, r)).collect();
+
+    let position_map: std::collections::HashMap<i64, &PositionRow> =
+        positions.iter().map(|r| (r.batch_id, r)).collect();
+
+    // Group tick_rows by batch, reverse to oldest-first
+    let mut ticks_by_batch: std::collections::HashMap<i64, Vec<ProfileTick>> =
+        std::collections::HashMap::new();
+    for t in &tick_rows {
+        let delta_wei: i128 = t.delta.parse().unwrap_or(0);
+        let pnl = delta_wei as f64 / 1e18;
+        ticks_by_batch.entry(t.batch_id).or_default().push(ProfileTick {
+            tick_id: t.tick_id,
+            pnl: (pnl * 100.0).round() / 100.0,
+            won: t.won,
+        });
+    }
+    // Reverse each batch's ticks so oldest is first
+    for ticks in ticks_by_batch.values_mut() {
+        ticks.reverse();
+    }
+
+    // -- Compute aggregate stats using i128 arithmetic --
+    let mut total_pnl_wei: i128 = 0;
+    let mut total_deposited_wei: i128 = 0;
+    let mut total_wins: u64 = 0;
+    let mut total_batches: u64 = 0;
+    let mut last_active: Option<String> = None;
+
+    // Active batches: from positions
+    let mut profile_batches: Vec<ProfileBatch> = Vec::new();
+
+    for pos in &positions {
+        let balance_wei: i128 = pos.balance.parse().unwrap_or(0);
+        let deposited_wei: i128 = pos.total_deposited.parse().unwrap_or(0);
+        let pnl_wei = balance_wei - deposited_wei;
+
+        total_pnl_wei += pnl_wei;
+        total_deposited_wei += deposited_wei;
+        total_batches += 1;
+        if pnl_wei > 0 {
+            total_wins += 1;
+        }
+
+        let tick_count = delta_map
+            .get(&pos.batch_id)
+            .and_then(|d| d.tick_count)
+            .unwrap_or(0);
+
+        let deposited_f = deposited_wei as f64 / 1e18;
+        let balance_f = balance_wei as f64 / 1e18;
+        let pnl_f = pnl_wei as f64 / 1e18;
+        let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
+
+        profile_batches.push(ProfileBatch {
+            batch_id: pos.batch_id,
+            source_id: batch_meta_map.get(&pos.batch_id).cloned().unwrap_or_default(),
+            status: "active".to_string(),
+            deposited: (deposited_f * 100.0).round() / 100.0,
+            balance: (balance_f * 100.0).round() / 100.0,
+            tick_count,
+            roi: (roi * 100.0).round() / 100.0,
+            ticks: ticks_by_batch.remove(&pos.batch_id).unwrap_or_default(),
+        });
+    }
+
+    // Exited batches: have deltas but no active position
+    for agg in &delta_aggs {
+        if position_map.contains_key(&agg.batch_id) {
+            continue; // already counted as active
+        }
+        let delta_wei: i128 = agg.total_delta.as_deref().unwrap_or("0").parse().unwrap_or(0);
+        let deposited_wei: i128 = agg.last_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0);
+
+        total_pnl_wei += delta_wei;
+        total_deposited_wei += deposited_wei;
+        total_batches += 1;
+        if delta_wei > 0 {
+            total_wins += 1;
+        }
+
+        let tick_count = agg.tick_count.unwrap_or(0);
+        let deposited_f = deposited_wei as f64 / 1e18;
+        let pnl_f = delta_wei as f64 / 1e18;
+        let roi = if deposited_f > 0.0 { pnl_f / deposited_f * 100.0 } else { 0.0 };
+
+        profile_batches.push(ProfileBatch {
+            batch_id: agg.batch_id,
+            source_id: batch_meta_map.get(&agg.batch_id).cloned().unwrap_or_default(),
+            status: "exited".to_string(),
+            deposited: (deposited_f * 100.0).round() / 100.0,
+            balance: 0.0,
+            tick_count,
+            roi: (roi * 100.0).round() / 100.0,
+            ticks: ticks_by_batch.remove(&agg.batch_id).unwrap_or_default(),
+        });
+    }
+
+    // Sort: active first, then by tick_count descending
+    profile_batches.sort_by(|a, b| {
+        let status_ord = |s: &str| -> u8 { if s == "active" { 0 } else { 1 } };
+        status_ord(&a.status)
+            .cmp(&status_ord(&b.status))
+            .then(b.tick_count.cmp(&a.tick_count))
+    });
+
+    // -- P&L history: hourly bucketed, running sum, downsampled to ~200 --
+    let mut pnl_history: Vec<ProfilePnlPoint> = Vec::new();
+    if !history_rows.is_empty() {
+        // history_rows are DESC by resolved_at — reverse for chronological
+        let mut chrono_rows: Vec<&HistoryRow> = history_rows.iter().collect();
+        chrono_rows.reverse();
+
+        // Find last_active_at from the last row (most recent)
+        if let Some(last) = history_rows.first() {
+            if let Some(ts) = &last.resolved_at {
+                last_active = Some(ts.and_utc().to_rfc3339());
+            }
+        }
+
+        // Bucket into hourly intervals with i128 running sum
+        struct Bucket {
+            hour: String,
+            sum_wei: i128,
+        }
+
+        let mut buckets: Vec<Bucket> = Vec::new();
+        let mut running_sum: i128 = 0;
+
+        for row in &chrono_rows {
+            let delta_wei: i128 = row.delta.parse().unwrap_or(0);
+            running_sum += delta_wei;
+
+            let hour = match &row.resolved_at {
+                Some(ts) => ts.format("%Y-%m-%dT%H:00:00Z").to_string(),
+                None => continue,
+            };
+
+            match buckets.last_mut() {
+                Some(b) if b.hour == hour => {
+                    b.sum_wei = running_sum;
+                }
+                _ => {
+                    buckets.push(Bucket {
+                        hour,
+                        sum_wei: running_sum,
+                    });
+                }
+            }
+        }
+
+        // Downsample to ~200 points
+        let target = 200usize;
+        let step = if buckets.len() > target {
+            buckets.len() / target
+        } else {
+            1
+        };
+
+        for (i, bucket) in buckets.iter().enumerate() {
+            if i % step == 0 || i == buckets.len() - 1 {
+                pnl_history.push(ProfilePnlPoint {
+                    timestamp: bucket.hour.clone(),
+                    pnl: (bucket.sum_wei as f64 / 1e18 * 100.0).round() / 100.0,
+                });
+            }
+        }
+    }
+
+    // -- Final stats --
+    let total_deposited_f = total_deposited_wei as f64 / 1e18;
+    let total_pnl_f = total_pnl_wei as f64 / 1e18;
+    let roi = if total_deposited_f > 0.0 {
+        total_pnl_f / total_deposited_f * 100.0
+    } else {
+        0.0
+    };
+    let win_rate = if total_batches > 0 {
+        total_wins as f64 / total_batches as f64 * 100.0
+    } else {
+        0.0
+    };
+
+    let stats = ProfileStats {
+        pnl: (total_pnl_f * 100.0).round() / 100.0,
+        total_deposited: (total_deposited_f * 100.0).round() / 100.0,
+        roi: (roi * 100.0).round() / 100.0,
+        win_rate: (win_rate * 10.0).round() / 10.0,
+        total_batches,
+        last_active_at: last_active,
+    };
+
+    (
+        StatusCode::OK,
+        Json(PlayerProfileResponse {
+            stats,
+            batches: profile_batches,
+            pnl_history,
+        }),
+    )
+        .into_response()
 }
 
 #[cfg(test)]
