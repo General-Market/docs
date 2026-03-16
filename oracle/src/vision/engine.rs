@@ -1537,7 +1537,7 @@ pub async fn run(
                 let mut sources_needed: std::collections::HashSet<String> = std::collections::HashSet::new();
 
                 for &batch_id in &due_batches {
-                    let tick_id = scheduler.next_tick_for_batch(batch_id).await;
+                    let mut tick_id = scheduler.next_tick_for_batch(batch_id).await;
 
                     match scheduler.get_batch_state(batch_id).await {
                         Some((batch, players)) => {
@@ -1554,19 +1554,21 @@ pub async fn run(
                                 } else {
                                     0
                                 };
-                                // Skip old ticks but keep the latest one for actual resolution
-                                if tick_id + 1 < latest_resolvable {
-                                    let skip_to = latest_resolvable - 1; // Leave last tick for resolution
-                                    tracing::info!(
-                                        batch_id,
-                                        skipped_from = tick_id,
-                                        skipped_to = skip_to,
-                                        "Skipping backlog ticks (keeping latest for resolution)"
-                                    );
-                                    for skip_tick in tick_id..skip_to {
-                                        scheduler.mark_resolved(batch_id, skip_tick).await;
+                                // Skip old ticks, then resolve the latest one
+                                if tick_id < latest_resolvable {
+                                    if tick_id + 1 < latest_resolvable {
+                                        tracing::info!(
+                                            batch_id,
+                                            skipped_from = tick_id,
+                                            resolving = latest_resolvable,
+                                            "Skipping backlog, will resolve latest"
+                                        );
+                                        for skip_tick in tick_id..latest_resolvable {
+                                            scheduler.mark_resolved(batch_id, skip_tick).await;
+                                        }
                                     }
-                                    continue; // Will process skip_to on next iteration
+                                    // Advance tick_id to latest — fall through to resolve it
+                                    tick_id = latest_resolvable;
                                 }
                             }
 
