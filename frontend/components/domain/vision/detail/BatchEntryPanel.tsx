@@ -151,6 +151,15 @@ export default function BatchEntryPanel({
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
     && (isJoined || (!!configHash && marketIds.length > 0))
 
+  // Debug: trace canSubmit conditions
+  if (typeof window !== 'undefined') {
+    console.log('[BatchEntryPanel] canSubmit debug:', {
+      isConnected, hasStake, activeStep, isJoined, configHash: configHash ?? 'undefined',
+      marketIdsLen: marketIds.length, activeBatchId, canSubmit,
+      onChainBatch: onChainBatch ? 'loaded' : 'null',
+    })
+  }
+
   // -- After on-chain join succeeds, submit bitmap to oracles --
   useEffect(() => {
     if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
