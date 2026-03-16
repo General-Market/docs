@@ -1,6 +1,7 @@
 'use client'
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { Link } from '@/i18n/routing'
 
 /**
  * Vision leaderboard showing player rankings by PnL.
@@ -57,7 +58,12 @@ export function VisionLeaderboard() {
                     {entry.rank}
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs">
-                    {entry.walletAddress.slice(0, 6)}...{entry.walletAddress.slice(-4)}
+                    <Link
+                      href={`/profile/${entry.walletAddress}`}
+                      className="hover:underline hover:text-black transition-colors"
+                    >
+                      {entry.walletAddress.slice(0, 6)}...{entry.walletAddress.slice(-4)}
+                    </Link>
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right font-bold ${pnlPositive ? 'text-color-up' : 'text-color-down'}`}>
                     {pnlPositive ? '+' : '-'}${Math.abs(entry.pnl).toFixed(2)}

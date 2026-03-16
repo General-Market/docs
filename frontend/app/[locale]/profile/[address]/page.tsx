@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer'
 import { ProfileHeader } from '@/components/domain/profile/ProfileHeader'
 import { ProfileTabs } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
+import { IndexTab } from '@/components/domain/profile/IndexTab'
 import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { formatPnL, formatROI, formatVolume } from '@/lib/utils/formatters'
 
@@ -80,9 +81,7 @@ function ProfileContent({ address }: { address: string }) {
               No profile data found for this address.
             </div>
           ) : (
-            <div className="py-16 text-center text-[13px] text-text-muted">
-              Index portfolio view coming soon.
-            </div>
+            <IndexTab address={address} />
           )}
         </div>
       </div>
