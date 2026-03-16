@@ -28,8 +28,12 @@ export const SETTLEMENT_EXPLORER_URL = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLOR
 export const VISION_API_URL = '/api'
 
 // Vision oracle URLs — for bitmap submission, balance proofs, withdrawals.
-// These point to each oracle's health port (Vision routes merged in).
-export const VISION_ORACLE_URLS = (
+// On HTTPS, use /api proxy to avoid mixed content blocks.
+// On HTTP (local dev / E2E), use direct oracle URLs.
+const rawOracleUrls = (
   process.env.NEXT_PUBLIC_ORACLE_URLS ||
   'http://localhost:10001,http://localhost:10002,http://localhost:10003'
 ).split(',').map(s => s.trim())
+export const VISION_ORACLE_URLS = typeof window !== 'undefined' && window.location?.protocol === 'https:'
+  ? ['/api/vision']  // Single proxy endpoint — next.config.ts rewrite handles it
+  : rawOracleUrls
