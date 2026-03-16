@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useDeferredValue } from 'react'
 import { formatUnits } from 'viem'
 import { BuyItpModal } from './BuyItpModal'
 import { SellItpModal } from './SellItpModal'
+import { ChartModal } from './ChartModal'
 import blacklistedItps from '@/lib/config/blacklisted-itps.json'
 import itpIdNames from '@/lib/itp-id-names.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
@@ -76,15 +77,15 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const sseNavList = useSSENav()
   const [restNavList, setRestNavList] = useState<NavSnapshot[]>([])
 
-  // Fallback: if SSE hasn't delivered data in 3s, fetch from REST
+  // Always fetch REST immediately for fast initial render, SSE takes over when connected
   useEffect(() => {
-    if (sseNavList.length > 0) return
-    const timer = setTimeout(async () => {
+    let cancelled = false
+    ;(async () => {
       try {
         const res = await fetch('/api/dn/aum-ranking')
-        if (!res.ok) return
+        if (!res.ok || cancelled) return
         const data = await res.json()
-        if (Array.isArray(data) && data.length > 0 && sseNavList.length === 0) {
+        if (Array.isArray(data) && data.length > 0 && !cancelled) {
           setRestNavList(data.map((d: any) => ({
             itp_id: d.itp_id || '',
             name: d.name || '',
@@ -96,14 +97,15 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
           })))
         }
       } catch {}
-    }, 3000)
-    return () => clearTimeout(timer)
-  }, [sseNavList.length])
+    })()
+    return () => { cancelled = true }
+  }, []) // Run once on mount
 
   const navList = sseNavList.length > 0 ? sseNavList : restNavList
   const loading = navList.length === 0
   const [buyModal, setBuyModal] = useState<string | null>(null)
   const [sellModal, setSellModal] = useState<string | null>(null)
+  const [chartModal, setChartModal] = useState<{ itpId: string; name: string } | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const deferredSearch = useDeferredValue(searchQuery)
   const [sortKey, setSortKey] = useState<SortKey>('aum')
@@ -228,6 +230,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                     >
                       Name<SortArrow col="name" />
                     </th>
+                    <th className="py-2.5 px-2 w-8"></th>
                     <th
                       onClick={() => handleSort('nav')}
                       className="py-2.5 px-4 text-right text-[11px] font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
@@ -275,6 +278,18 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                             {row.name}
                           </span>
                         </Link>
+                      </td>
+                      {/* Chart button */}
+                      <td className="py-3 px-2 w-8">
+                        <button
+                          onClick={() => setChartModal({ itpId: row.itpId, name: row.name })}
+                          className="text-[#999] hover:text-black transition-colors"
+                          title="NAV chart"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="1 12 4 7 8 9 11 4 15 6" />
+                          </svg>
+                        </button>
                       </td>
                       {/* NAV */}
                       <td className="py-3 px-4 text-right">
@@ -361,6 +376,13 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
         </div>
       </div>
 
+      {chartModal && (
+        <ChartModal
+          itpId={chartModal.itpId}
+          itpName={chartModal.name}
+          onClose={() => setChartModal(null)}
+        />
+      )}
       {buyModal && (
         <BuyItpModal itpId={buyModal} onClose={() => setBuyModal(null)} />
       )}
