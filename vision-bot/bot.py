@@ -71,17 +71,14 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
             log.warning("Insufficient USDC for batch %d", batch_id)
             continue
 
-        # Get configHash — from batch data or read from chain
-        config_hash = batch.get("config_hash")
-        if config_hash and isinstance(config_hash, str):
-            config_hash = bytes.fromhex(config_hash.replace("0x", ""))
-        if not config_hash:
-            try:
-                info = executor.get_batch_info(batch_id)
-                config_hash = info["configHash"]
-            except Exception as e:
-                log.warning("Batch %d: cannot read configHash: %s", batch_id, e)
-                continue
+        # Get configHash from on-chain getBatch() — MUST match exactly or joinBatch reverts.
+        # Data-node/WS config hashes drift as market data changes; only the chain value works.
+        try:
+            info = executor.get_batch_info(batch_id)
+            config_hash = info["configHash"]
+        except Exception as e:
+            log.warning("Batch %d: cannot read configHash from chain: %s", batch_id, e)
+            continue
 
         # Fetch real market config from data-node to get actual market count
         if isinstance(config_hash, bytes):

@@ -264,7 +264,9 @@ class Executor:
     def _sign_and_send(self, tx: dict) -> bytes:
         signed = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-        self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+        if receipt["status"] == 0:
+            raise RuntimeError(f"Transaction reverted: {tx_hash.hex()}")
         return tx_hash
 
     # ── read methods ──
