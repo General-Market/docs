@@ -267,6 +267,7 @@ where
                 Ok((id, user, pair_id, side, amount, limit_price, slippage_tier, deadline, itp_id, timestamp, status)) => {
                     // Skip non-existent orders (id=0 means storage slot is empty — order was deleted or never existed)
                     if id.is_zero() {
+                        warn!(order_id = %order_id, "Filtering non-existent order (id=0) — likely stale from previous deploy");
                         newly_settled.push(*order_id);
                         continue;
                     }
