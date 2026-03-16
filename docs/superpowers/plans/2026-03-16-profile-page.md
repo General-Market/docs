@@ -73,7 +73,7 @@ if let Some(pool) = db_pool {
     let balances = player_balances.to_vec();
     tokio::spawn(async move {
     // Bulk-fetch total_deposited for all players in ONE query (not N+1)
-    let player_strs: Vec<String> = player_balances.iter()
+    let player_strs: Vec<String> = balances.iter()
         .map(|pb| format!("{:?}", pb.player))
         .collect();
     let deposit_map: std::collections::HashMap<String, String> = sqlx::query_as::<_, (String, String)>(
@@ -81,7 +81,7 @@ if let Some(pool) = db_pool {
     )
     .bind(batch_id as i64)
     .bind(&player_strs)
-    .fetch_all(pool)
+    .fetch_all(&pool)
     .await
     .unwrap_or_default()
     .into_iter()
@@ -458,7 +458,14 @@ git commit -m "feat(oracle): player profile endpoint — stats, batches, P&L his
 
 Follow the existing leaderboard proxy pattern. Oracle URL from `ORACLE_URL` env var.
 
-- [ ] **Step 1: Add ProfileCache to AppState**
+- [ ] **Step 1a: Add `mini-moka` dependency**
+
+In `data-node/Cargo.toml`, add:
+```toml
+mini-moka = "0.10"
+```
+
+- [ ] **Step 1b: Add ProfileCache to AppState**
 
 Use `mini_moka` for the cache — eliminates all hand-rolled concurrency bugs (TOCTOU, panic poisoning, O(N) eviction, stampede). Reuse a single `reqwest::Client`.
 
