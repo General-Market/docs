@@ -272,7 +272,7 @@ where
                         continue;
                     }
 
-                    trace!(order_id = %order_id, status = status, "Order status from getOrder");
+                    info!(order_id = %order_id, raw_status = status, "getOrder returned status");
 
                     match status {
                         // Terminal or batched states: cache as settled
