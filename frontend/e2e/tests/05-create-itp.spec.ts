@@ -52,6 +52,9 @@ test.describe('Create ITP', () => {
       const createSection = page.locator('#create-itp');
       await createSection.scrollIntoViewIfNeeded();
 
+      // Wait for assets to load (deployed-assets.json fetch + pre-select)
+      await expect(createSection.getByText('BTC')).toBeVisible({ timeout: 30_000 });
+
       // Verify the Equal button and asset selection are visible
       const equalBtn = createSection.getByRole('button', { name: 'Equal', exact: true });
       await expect(equalBtn).toBeVisible({ timeout: 15_000 });
@@ -94,7 +97,9 @@ test.describe('Create ITP', () => {
       const createSection = page.locator('#create-itp');
       await createSection.scrollIntoViewIfNeeded();
 
-      // 5. Wait for assets to load
+      // 5. Wait for assets to load (deployed-assets.json fetch + pre-select)
+      await expect(createSection.getByText('BTC')).toBeVisible({ timeout: 30_000 });
+
       const equalBtn = createSection.getByRole('button', { name: 'Equal', exact: true });
       await expect(equalBtn).toBeVisible({ timeout: 15_000 });
 

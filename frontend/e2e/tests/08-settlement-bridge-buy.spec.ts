@@ -26,18 +26,29 @@ import {
   BRIDGED_ITP,
   SETTLEMENT_USDC,
 } from '../helpers/backend-api';
-import { IS_ANVIL, CONTRACTS } from '../env';
+import { IS_ANVIL, CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS } from '../env';
 
-const TEST_ADDRESS = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
+const TEST_ADDRESS = DEPLOYER_ADDRESS;
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
-const INDEX_CONTRACT = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Settlement Bridge', () => {
   test('buy ITP via Settlement bridge — oracles relay to L3, BridgedITP minted', async () => {
     test.setTimeout(480_000);
 
-    const useSettlement = IS_ANVIL || await hasSettlementGas();
-    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas)'}`);
+    const hasGas = await hasSettlementGas();
+    let oracleRelayAlive = false;
+    if (hasGas && !IS_ANVIL) {
+      try {
+        const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
+        const data = await res.json();
+        oracleRelayAlive = data.status === 'healthy';
+      } catch {
+        oracleRelayAlive = false;
+      }
+    }
+    const useSettlement = IS_ANVIL || (hasGas && oracleRelayAlive);
+    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas or oracle unavailable)'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
@@ -114,8 +125,19 @@ test.describe('Settlement Bridge', () => {
   test('sell ITP via Settlement bridge — oracles relay to L3, USDC returned on Settlement', async () => {
     test.setTimeout(360_000);
 
-    const useSettlement = IS_ANVIL || await hasSettlementGas();
-    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas)'}`);
+    const hasGas = await hasSettlementGas();
+    let oracleRelayAlive = false;
+    if (hasGas && !IS_ANVIL) {
+      try {
+        const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
+        const data = await res.json();
+        oracleRelayAlive = data.status === 'healthy';
+      } catch {
+        oracleRelayAlive = false;
+      }
+    }
+    const useSettlement = IS_ANVIL || (hasGas && oracleRelayAlive);
+    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas or oracle unavailable)'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
