@@ -851,6 +851,21 @@ print(f'{len(deployed)} tokens in deployed-assets.json, {len(smap)} in symbol-ma
     rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
     echo -e "  ${GREEN}Synced symbol-map + deployment to VPS${NC}"
 
+    # Final safety check: ensure Vision address matches vision-batches.json before switching env
+    VISION_BATCHES_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    if [ -n "$VISION_BATCHES_ADDR" ]; then
+        CURRENT_VISION=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
+        if [ "$CURRENT_VISION" != "$VISION_BATCHES_ADDR" ]; then
+            python3 -c "
+import json
+d = json.load(open('$DEPLOYMENT_FILE'))
+d['contracts']['Vision'] = '$VISION_BATCHES_ADDR'
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+"
+            echo -e "  ${YELLOW}Corrected stale Vision address in active-deployment.json${NC}"
+        fi
+    fi
+
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true
 
