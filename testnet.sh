@@ -357,6 +357,10 @@ cmd_deploy() {
     fi
     echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
 
+    # Copy fresh deployment to active so subsequent steps read correct addresses
+    cp deployments/e2e-full-system.json "$DEPLOYMENT_FILE"
+    echo -e "  ${GREEN}Deployment JSON updated${NC}"
+
     # 3b: Register oracle BLS keys in OracleRegistry
     echo -e "${BLUE}[3b/14] Registering oracle BLS keys in OracleRegistry...${NC}"
     ORACLE_REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
