@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { useTranslations } from 'next-intl'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
@@ -48,7 +47,44 @@ const VaultTradesFeed = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
-const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system', 'ap-feed']
+/* ── Icons — monoline, 18px, institutional ── */
+const icons: Record<string, React.ReactNode> = {
+  markets: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 13V9" /><path d="M7 13V5" /><path d="M11 13V8" /><path d="M15 13V3" />
+    </svg>
+  ),
+  portfolio: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="14" height="10" rx="1.5" /><path d="M6 5V3.5A1.5 1.5 0 017.5 2h3A1.5 1.5 0 0112 3.5V5" />
+    </svg>
+  ),
+  create: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="9" r="7" /><path d="M9 6v6" /><path d="M6 9h6" />
+    </svg>
+  ),
+  lend: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="14" height="9" rx="1.5" /><path d="M4 7V5a5 5 0 0110 0v2" /><circle cx="9" cy="11.5" r="1.5" />
+    </svg>
+  ),
+  backtest: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="9" r="7" /><path d="M9 5v4l2.5 2.5" />
+    </svg>
+  ),
+  system: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="9" r="2.5" /><path d="M9 2v2" /><path d="M9 14v2" /><path d="M2 9h2" /><path d="M14 9h2" /><path d="M4.05 4.05l1.41 1.41" /><path d="M12.54 12.54l1.41 1.41" /><path d="M4.05 13.95l1.41-1.41" /><path d="M12.54 5.46l1.41-1.41" />
+    </svg>
+  ),
+  'ap-feed': (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 9h2l2-5 3 10 2.5-7L14 9h2" />
+    </svg>
+  ),
+}
 
 const NAV_ITEMS = [
   { id: 'markets', label: 'Markets' },
@@ -57,11 +93,11 @@ const NAV_ITEMS = [
   { id: 'lend', label: 'Lend' },
   { id: 'backtest', label: 'Backtest' },
   { id: 'system', label: 'System' },
-  { id: 'ap-feed', label: 'AP Feed' },
 ]
 
+const SECTION_IDS = NAV_ITEMS.map(n => n.id)
+
 export function HomeClient() {
-  const t = useTranslations('common')
   const { capture } = usePostHogTracker()
   const [activeSection, setActiveSection] = useState('markets')
   const [deployHoldings, setDeployHoldings] = useState<{ symbol: string; weight: number }[] | null>(null)
@@ -69,18 +105,45 @@ export function HomeClient() {
   const [rebalanceModal, setRebalanceModal] = useState<{
     itpId: string; name: string; holdings: { symbol: string; weight: number }[]
   } | null>(null)
+  const isScrollingRef = useRef(false)
 
   useSectionTimeTracker(SECTION_IDS)
 
-  const handleSectionChange = useCallback((id: string) => {
+  // IntersectionObserver — track which section is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isScrollingRef.current) return
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-30% 0px -60% 0px' }
+    )
+
+    for (const id of SECTION_IDS) {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  const scrollTo = useCallback((id: string) => {
     setActiveSection(id)
     capture('section_navigated', { section_name: id })
+    isScrollingRef.current = true
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    // Re-enable observer after scroll settles
+    setTimeout(() => { isScrollingRef.current = false }, 800)
   }, [capture])
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)
-    setActiveSection('create')
-  }, [])
+    scrollTo('create')
+  }, [scrollTo])
 
   const handleItpsLoaded = useCallback((itps: DeployedItpRef[]) => {
     setDeployedItps(itps)
@@ -100,122 +163,103 @@ export function HomeClient() {
       <Header />
 
       <div className="flex min-h-[calc(100vh-64px)]">
-        {/* ── Morpho-style sidebar — dark, permanent, desktop only ── */}
-        <aside className="hidden lg:flex flex-col w-[200px] shrink-0 bg-zinc-950 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-64px)]">
-          {/* Nav items */}
-          <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5">
+        {/* ── Morpho sidebar — dark, permanent, desktop ── */}
+        <aside className="hidden lg:flex flex-col w-[220px] shrink-0 bg-zinc-950 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-64px)]">
+          <nav className="flex-1 py-5 px-3 flex flex-col gap-0.5">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleSectionChange(item.id)}
-                className={`group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] font-medium transition-all duration-150 text-left ${
+                onClick={() => scrollTo(item.id)}
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] font-medium transition-all duration-200 text-left ${
                   activeSection === item.id
                     ? 'bg-white/[0.08] text-white'
                     : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
                 }`}
               >
-                {/* Active indicator — left bar */}
-                <span className={`w-[3px] h-4 rounded-full transition-all duration-150 shrink-0 ${
-                  activeSection === item.id ? 'bg-white' : 'bg-transparent group-hover:bg-white/20'
-                }`} />
+                <span className={`shrink-0 transition-all duration-200 ${
+                  activeSection === item.id ? 'text-white' : 'text-white/30 group-hover:text-white/50'
+                }`}>
+                  {icons[item.id]}
+                </span>
                 {item.label}
               </button>
             ))}
           </nav>
 
-          {/* Bottom — subtle branding */}
           <div className="px-5 py-4 border-t border-white/[0.06]">
             <span className="text-[10px] font-mono text-white/20 uppercase tracking-[0.1em]">General Market</span>
           </div>
         </aside>
 
-        {/* ── Mobile bottom bar — dark to match sidebar ── */}
+        {/* ── Mobile bottom bar ── */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t border-white/[0.06] safe-area-bottom">
-          <div className="flex items-center justify-around h-14 px-2">
+          <div className="flex items-center justify-around h-14 px-1">
             {NAV_ITEMS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleSectionChange(item.id)}
-                className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded transition-all duration-150 min-w-0 ${
+                onClick={() => scrollTo(item.id)}
+                className={`flex flex-col items-center gap-1 px-2 py-1 rounded transition-all duration-200 min-w-0 ${
                   activeSection === item.id
                     ? 'text-white'
                     : 'text-white/30'
                 }`}
               >
-                <span className={`w-1 h-1 rounded-full transition-all ${
-                  activeSection === item.id ? 'bg-white' : 'bg-transparent'
-                }`} />
-                <span className="text-[9px] font-semibold truncate">{item.label}</span>
+                <span className="shrink-0">{icons[item.id]}</span>
+                <span className="text-[8px] font-semibold truncate">{item.label}</span>
               </button>
             ))}
           </div>
         </nav>
 
-        {/* ── Main content — single active section ── */}
+        {/* ── Main content — all sections, scroll-based ── */}
         <main className="flex-1 min-w-0 pb-16 lg:pb-0">
-          {activeSection === 'markets' && (
-            <section id="markets" className="animate-fade-in">
-              <ItpListing onItpsLoaded={handleItpsLoaded} />
-            </section>
-          )}
+          <section id="markets">
+            <ItpListing onItpsLoaded={handleItpsLoaded} />
+          </section>
 
-          {activeSection === 'portfolio' && (
-            <section id="portfolio" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
-              </div>
-            </section>
-          )}
+          <section id="portfolio" className="bg-surface border-t border-border-light">
+            <div className="px-6 lg:px-12 py-10">
+              <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
+            </div>
+          </section>
 
-          {activeSection === 'create' && (
-            <section id="create" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <CreateItpSection
-                  expanded={true}
-                  onToggle={() => {}}
-                  initialHoldings={deployHoldings}
-                />
-              </div>
-            </section>
-          )}
+          <section id="create" className="border-t border-border-light">
+            <div className="px-6 lg:px-12 py-10">
+              <CreateItpSection
+                expanded={true}
+                onToggle={() => {}}
+                initialHoldings={deployHoldings}
+              />
+            </div>
+          </section>
 
-          {activeSection === 'lend' && (
-            <section id="lend" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <VaultModal inline onClose={() => {}} />
-              </div>
-            </section>
-          )}
+          <div className="section-divider" />
 
-          {activeSection === 'backtest' && (
-            <section id="backtest" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <BacktestSection
-                  expanded={true}
-                  onToggle={() => {}}
-                  onDeployIndex={handleDeployIndex}
-                  deployedItps={deployedItps}
-                  onRebalanceItp={handleRebalanceItp}
-                />
-              </div>
-            </section>
-          )}
+          <section id="lend" className="bg-surface">
+            <div className="px-6 lg:px-12 py-8">
+              <VaultModal inline onClose={() => {}} />
+            </div>
+          </section>
 
-          {activeSection === 'system' && (
-            <section id="system" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <SystemStatusSection deployedItps={deployedItps} />
-              </div>
-            </section>
-          )}
+          <section id="backtest" className="border-t border-border-light">
+            <div className="px-6 lg:px-12 py-10">
+              <BacktestSection
+                expanded={true}
+                onToggle={() => {}}
+                onDeployIndex={handleDeployIndex}
+                deployedItps={deployedItps}
+                onRebalanceItp={handleRebalanceItp}
+              />
+            </div>
+          </section>
 
-          {activeSection === 'ap-feed' && (
-            <section id="ap-feed" className="animate-fade-in">
-              <div className="px-6 lg:px-12 py-8">
-                <VaultTradesFeed deployedItps={deployedItps} />
-              </div>
-            </section>
-          )}
+          <section id="system" className="bg-surface border-t border-border-light">
+            <div className="px-6 lg:px-12 py-8 space-y-6">
+              <SystemStatusSection deployedItps={deployedItps} />
+              <div className="border-t border-border-medium" />
+              <VaultTradesFeed deployedItps={deployedItps} />
+            </div>
+          </section>
         </main>
       </div>
 
