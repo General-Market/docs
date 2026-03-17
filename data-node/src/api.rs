@@ -39,6 +39,7 @@ pub struct HealthStatsEntry {
     pub avg_change_pct: f64,
     pub no_change_count: i64,
     pub newest_record: Option<DateTime<Utc>>,
+    pub sync_gap_max_secs: i64,
 }
 
 pub struct HealthStatsCache {
@@ -212,6 +213,65 @@ async fn refresh_health_stats(
             let entry = stats.entry(source.clone()).or_default();
             entry.stale_count += *active - seen;
         }
+    }
+
+    // Query D: Avg change % per source (compare latest two prices per asset, 24h window)
+    tracing::info!("health cache: query C done ({:?}), starting query D (avg change)", start.elapsed());
+    let change_rows: Vec<(String, f64, i64)> = sqlx::query_as(
+        r#"
+        WITH latest_two AS (
+            SELECT source, asset_id, value, fetched_at,
+                   ROW_NUMBER() OVER (PARTITION BY source, asset_id ORDER BY fetched_at DESC) as rn
+            FROM market_prices
+            WHERE fetched_at > NOW() - INTERVAL '24 hours'
+              AND value > 0
+        )
+        SELECT l1.source,
+               AVG(ABS((l1.value - l2.value) / NULLIF(l2.value, 0) * 100))::float8 as avg_pct,
+               COUNT(*) FILTER (WHERE l1.value = l2.value)::bigint as no_change
+        FROM latest_two l1
+        JOIN latest_two l2 ON l1.source = l2.source AND l1.asset_id = l2.asset_id AND l2.rn = 2
+        WHERE l1.rn = 1
+        GROUP BY l1.source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("avg change query: {}", e))?;
+
+    for (source, avg_pct, no_change) in &change_rows {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.avg_change_pct = *avg_pct;
+        entry.no_change_count = *no_change;
+    }
+
+    // Query E: Max sync gap per source (largest gap between consecutive fetches, 24h window)
+    tracing::info!("health cache: query D done ({:?}), starting query E (max gap)", start.elapsed());
+    let gap_rows: Vec<(String, i64)> = sqlx::query_as(
+        r#"
+        WITH ordered AS (
+            SELECT source, fetched_at,
+                   LAG(fetched_at) OVER (PARTITION BY source ORDER BY fetched_at) as prev_at
+            FROM (
+                SELECT DISTINCT source, fetched_at
+                FROM market_prices
+                WHERE fetched_at > NOW() - INTERVAL '24 hours'
+            ) sub
+        )
+        SELECT source,
+               COALESCE(MAX(EXTRACT(EPOCH FROM (fetched_at - prev_at)))::bigint, 0) as max_gap
+        FROM ordered
+        WHERE prev_at IS NOT NULL
+        GROUP BY source
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| format!("max gap query: {}", e))?;
+
+    for (source, max_gap) in &gap_rows {
+        let entry = stats.entry(source.clone()).or_default();
+        entry.sync_gap_max_secs = *max_gap;
     }
 
     let count = stats.len();
@@ -6375,6 +6435,7 @@ async fn admin_sources_health(
         let stale_active = stale - stale_dormant;
         let avg_change = hs.map(|h| h.avg_change_pct).unwrap_or(0.0);
         let no_change = hs.map(|h| h.no_change_count).unwrap_or(0);
+        let gap_max = hs.map(|h| h.sync_gap_max_secs).unwrap_or(0);
 
         sources.push(SourceHealthEntry {
             source_id: id.to_string(),
@@ -6397,7 +6458,7 @@ async fn admin_sources_health(
             stale_reason: stale_reason_for(id).to_string(),
             avg_change_pct: (avg_change * 100.0).round() / 100.0,
             assets_with_no_change_24h: no_change,
-            sync_gap_max_secs: 0,
+            sync_gap_max_secs: gap_max,
             estimated_daily_records: 0,
             error_category: err_cat,
             consecutive_errors: cons_err,
@@ -6453,7 +6514,7 @@ async fn admin_sources_health(
             stale_reason: stale_reason_for(source).to_string(),
             avg_change_pct: (hs_u.avg_change_pct * 100.0).round() / 100.0,
             assets_with_no_change_24h: hs_u.no_change_count,
-            sync_gap_max_secs: 0,
+            sync_gap_max_secs: hs_u.sync_gap_max_secs,
             estimated_daily_records: 0,
             error_category: "ok".to_string(),
             consecutive_errors: 0,
