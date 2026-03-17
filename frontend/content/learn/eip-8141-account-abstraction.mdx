@@ -14,53 +14,53 @@ tldr:
   - "Privacy protocols can use the <strong>public mempool</strong> directly — no more relayer UX pain"
 ---
 
-After a decade of proposals — EIP-86 (2016), ERC-4337 (2021), EIP-3074 (2023), EIP-7702 (2024) — account abstraction on Ethereum is getting one omnibus EIP that wraps up every remaining problem. EIP-8141, targeting the Hegota fork.
+A decade of proposals — EIP-86 (2016), ERC-4337 (2021), EIP-3074 (2023), EIP-7702 (2024) — each one a partial confession that Ethereum's transaction model was insufficient. EIP-8141 is the full admission. One omnibus EIP. Targeting the Hegota fork. No more workarounds.
 
 ## Normal TX vs Frame TX
 
-Today, a transaction is one call signed by one key. EIP-8141 replaces this with Frame Transactions — N ordered calls that can read each other's data and authorize the sender via the `ACCEPT` opcode — a separate paymaster frame can optionally cover gas.
+A transaction today is one call signed by one key. A single envelope, a single letter, a single stamp. EIP-8141 replaces this with Frame Transactions — N ordered calls that read each other's data and authorize the sender via the `ACCEPT` opcode. A separate paymaster frame can cover gas. The rigid becomes programmable.
 
 <NormalVsFrame3D />
 
 ## How Frame Transactions Work
 
-Each frame starts untrusted. When a validation frame returns `ACCEPT`, the protocol authorizes the sender for subsequent execution frames — granting the account's full permissions. `CALLDATAREAD` lets any frame inspect another frame's calldata. If no validation frame returns `ACCEPT`, the entire transaction reverts.
+Each frame enters the world untrusted. When a validation frame returns `ACCEPT`, the protocol grants the sender full permissions for subsequent execution frames. `CALLDATAREAD` lets any frame inspect another frame's calldata — a kind of controlled omniscience within the transaction boundary. If no validation frame returns `ACCEPT`, everything reverts. The system assumes hostility until proven otherwise, which is the only sane default.
 
 <FrameOverview3D />
 
 ## Multisig Authentication
 
-A multisig wallet collects signatures from multiple parties into a single validation frame. The validator contract checks all signatures, returns `ACCEPT`, and the execution frame transfers funds — all atomic, all in one transaction.
+A multisig wallet today requires off-chain signature collection, a relayer, a separate verification contract — three layers of infrastructure for one act of collective will. Frame Transactions reduce this to two frames. Frame 0 validates: it receives signatures from multiple parties, checks them all, returns `ACCEPT`. Frame 1 executes: it transfers funds with the authority that consensus just granted. Atomic. One transaction. The ceremony of agreement, compressed into a single block inclusion.
 
 <MultisigAuth3D />
 
 ## Gas in Any Token
 
-You hold RAI but no ETH. A paymaster — an on-chain contract — covers gas in ETH, then collects its fee in RAI from your wallet. No bundler, no intermediary. `CALLDATAREAD` links the paymaster's validation to your execution frame.
+You hold RAI but no ETH. On Ethereum today, you are paralyzed — rich in the wrong currency, unable to act. A paymaster, an on-chain contract, resolves this indignity. It covers gas in ETH, then collects its fee in RAI from your wallet. No bundler. No intermediary. `CALLDATAREAD` links the paymaster's validation to your execution frame. The exchange happens inside the transaction because the transaction format finally permits it.
 
 <PaymasterFlow3D />
 
 ## New Account Deployment
 
-If the account doesn't exist yet, prepend a deployment frame. A deterministic factory (EIP-7997) deploys the wallet contract, then validation and execution frames run atomically — same address on every chain.
+If the account does not yet exist, prepend a deployment frame. A deterministic factory (EIP-7997) deploys the wallet contract. Validation and execution frames follow atomically. Same address on every chain. The house gets a street number before the foundation is poured — and somehow, this works.
 
 <AccountDeploy3D />
 
 ## Privacy Without Relayers
 
-Today's privacy protocols (Railgun, Privacy Pools) need centralized relayers to broadcast transactions — revealing timing metadata and creating single points of failure. With Frame Transactions, a ZK-SNARK paymaster verifies proofs and pays gas directly. No link between deposit and withdrawal. No relayer. Combined with 2D nonces (RIP-7712), this lets a single privacy contract handle parallel withdrawals without timing correlation.
+Privacy protocols today — Railgun, Privacy Pools — depend on centralized relayers to broadcast transactions. The relayer sees timing metadata. The relayer can censor. The relayer can disappear. Frame Transactions render the relayer obsolete. A ZK-SNARK paymaster verifies proofs and pays gas directly, inside the transaction. No link between deposit and withdrawal. No middleman holding the keys to your anonymity. Combined with 2D nonces (RIP-7712), a single privacy contract handles parallel withdrawals without timing correlation. Privacy becomes a property of the architecture, not a favor granted by infrastructure.
 
 <ZKPrivacy3D />
 
 ## Censorship Resistance: FOCIL
 
-Without FOCIL (Fork-Choice Enforced Inclusion Lists), a block builder can silently censor smart wallet transactions. With FOCIL, a committee of validators forces inclusion — AA transactions, privacy transactions, sponsored gas transactions all get through.
+Block builders choose which transactions enter the next block. Without constraint, a builder can silently exclude Frame Transactions — they are more complex, perhaps less profitable, certainly more troublesome. FOCIL (Fork-Choice Enforced Inclusion Lists) prevents this. A committee of validators publishes transactions the next block must contain. If the builder refuses, the block is invalid. AA transactions, privacy transactions, sponsored gas transactions — all get through. The bouncer answers to a committee now.
 
 <FOCILGuard3D />
 
 ## Atomic Operations
 
-Separate transactions create a vulnerability window — an attacker can front-run between your approve and your spend. Frame Transactions bundle everything atomically. Approve + execute in one transaction, no gap for exploitation.
+Two separate transactions create a gap. Approve in one. Swap in the next. Between them — seconds, minutes, an eternity in adversarial time — an attacker can see your approval and front-run your swap. Frame Transactions eliminate the gap by eliminating the separation. Approve and execute become frames inside one transaction. Atomic. No window for exploitation. The vulnerability ceases to exist because the architecture no longer contains the space where it lived.
 
 <AtomicBatch3D />
 

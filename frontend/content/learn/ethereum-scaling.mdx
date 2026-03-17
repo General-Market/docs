@@ -15,85 +15,85 @@ tldr:
   - "ZK-EVM replaces re-execution with <strong>proof verification</strong> — solo stakers survive the throughput increase"
 ---
 
-Ethereum processes about 15 million gas per block today. Five independent upgrades compound to 100x that number over three years.
+Fifteen million gas per block. That is the ceiling under which the most ambitious financial experiment in history currently operates. Five upgrades, each independent, each insufficient alone, compound to demolish that ceiling a hundredfold in three years. The architecture of patience, disguised as a roadmap.
 
 <ScalingStats />
 
 ## The Roadmap
 
-Three layers compound: execution (gas limits), data (blob throughput), proofs (ZK verification).
+Three layers stack: execution (gas limits), data (blob throughput), proofs (ZK verification). Each one a bet that the other two will arrive on time. The history of distributed systems is littered with bets like this. Ethereum's distinction is not confidence — it is stubbornness.
 
 <RoadmapStaircase3D />
 
 ## Parallel Block Verification
 
-Access lists let validators verify non-conflicting transactions simultaneously — 5-8x faster on 8 cores.
+Access lists let validators verify non-conflicting transactions simultaneously — 5-8x faster on 8 cores. The machine finally does what the machine was always meant to do: many things at once.
 
 <ParallelVerification3D />
 
 ### How Access Lists Enable Parallelism
 
-Each transaction declares which storage slots it reads and writes — the EVM groups non-conflicting transactions into parallel lanes.
+Each transaction declares which storage slots it touches. The EVM sorts non-conflicting transactions into parallel lanes. It is, in essence, a confession system — every transaction admits its dependencies in advance, and honesty is rewarded with speed.
 
 <AccessListConflict3D />
 
 ## ePBS: Using the Whole Slot
 
-Separates block building from proposing, giving validators the full 12-second slot to verify larger blocks.
+Building and proposing, separated. The validator receives the full 12-second slot to verify larger blocks. A division of labor so elementary it is embarrassing it took this long.
 
 <EPBSSlotClock3D />
 
 ### The Slot Budget
 
-Today validators verify in ~300ms (2.5% of the slot) — ePBS restructures timing to give 4 seconds, enabling 13x larger blocks.
+Validators currently verify in roughly 300 milliseconds — 2.5% of the slot. The remaining 97.5% is wasted silence. ePBS restructures the timing to reclaim 4 seconds, enabling blocks 13x larger. The throughput was always there. It was hiding inside the clock.
 
 <SlotBudget3D />
 
 ## Gas Evolution
 
-Each resource (compute, state, calldata, blobs) gets its own gas limit and fee market.
+One gas number for four distinct resources is a lie the network has been telling itself since genesis. Compute, state, calldata, blobs — each now receives its own limit and fee market. The truth arrives late, but it arrives.
 
 <GasEvolution3D />
 
 ### The Overflow Reservoir
 
-The Glamsterdam reservoir gives legacy contracts a single gas number while specialized dimensions price each resource independently.
+The Glamsterdam reservoir grants legacy contracts their single familiar gas number while, underneath, specialized dimensions price each resource independently. Backward compatibility is always a form of tenderness toward the past. It is also always a tax.
 
 <GasReservoir3D />
 
 ## Blobs and PeerDAS
 
-Validators sample random blob columns instead of downloading everything — scales to 128 blobs/block.
+Validators sample random blob columns instead of downloading everything. This scales to 128 blobs per block. The insight is ancient: you do not need to read the entire book to know it exists. You need to read enough pages that lying about the rest becomes impossible.
 
 <BlobSampling3D />
 
 ### Erasure Coding
 
-Reed-Solomon coding expands blob data with parity columns — any 50% of validators can reconstruct the full dataset.
+Reed-Solomon coding expands blob data with parity columns. Any 50% of validators can reconstruct the full dataset. Redundancy is the only honest form of trust — not in any single node, but in the statistical impossibility of enough of them failing simultaneously.
 
 <ErasureCoding3D />
 
 ## ZK-EVM: Staged Rollout
 
-Validators verify a succinct proof instead of re-executing every transaction. A Raspberry Pi can validate.
+Validators verify a succinct proof instead of re-executing every transaction. A Raspberry Pi can validate the entire chain. The dream of decentralization, preserved at the exact moment the throughput increase would have killed it.
 
 <ZKEVMPopulation3D />
 
 ### Prover Consensus
 
-Five independent prover teams generate proofs separately — 3-of-5 must agree, so a single buggy implementation can't compromise the network.
+Five independent prover teams generate proofs separately. Three of five must agree. A single buggy implementation cannot compromise the network. Redundancy again — not as engineering elegance, but as institutional distrust formalized into protocol. The healthiest kind of paranoia.
 
 <ProverConsensus3D />
 
 ## EOF: Structured Contracts
 
-Explicit code/data sections enable static analysis, faster parallel execution, and cheaper ZK circuits.
+Explicit code and data sections enable static analysis, faster parallel execution, and cheaper ZK circuits. The EVM's bytecode has been an unstructured stream since 2015. EOF imposes order. Every system eventually discovers that chaos, however charming, does not scale.
 
 <EOFContainerization3D />
 
 ## Full Stack Convergence
 
-Parallel verification × ePBS × multidimensional gas × PeerDAS × ZK-EVM = 100x throughput.
+Parallel verification multiplied by ePBS multiplied by multidimensional gas multiplied by PeerDAS multiplied by ZK-EVM. The product is 100x throughput. Whether it arrives on schedule is a question for prophets. That it arrives at all would be sufficient.
 
 <FullStackLayers3D />
 

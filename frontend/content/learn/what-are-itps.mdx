@@ -14,13 +14,13 @@ tldr:
   - "Buy, sell, or rebalance through smart contracts — <strong>no KYC, no minimum investment</strong>"
 ---
 
-The on-chain equivalent of ETFs. A single token that holds a basket of crypto assets with fixed weights.
+The on-chain equivalent of ETFs. One token. A basket of crypto assets. Fixed weights. The rest is arithmetic.
 
 ## The 30-Second Version
 
-You want exposure to "DeFi" but don't want to buy 10 tokens separately. An ITP lets you buy one token that holds all 10. The price floats with the basket. Like buying an S&P 500 ETF instead of 500 individual stocks.
+You want exposure to "DeFi" but refuse to buy 10 tokens separately. An ITP lets you buy one token that holds all 10. The price floats with the basket. Like buying an S&P 500 ETF instead of 500 individual stocks — except nobody asked you for identification, and settlement takes thirty seconds instead of a business day.
 
-Someone picks the assets, assigns weights, and deploys the ITP on-chain. You buy shares at the current price. When the underlying tokens go up, your share price goes up. When they go down, so does yours. One token, many assets.
+Someone picks the assets, assigns weights, deploys the ITP on-chain. You buy shares at the current price. When the underlying tokens rise, your share price rises. When they fall, yours falls with them. One token, many assets, one fate.
 
 <Callout type="info">
 
@@ -47,21 +47,21 @@ You buy 100 shares → $124 exposure to all 8 tokens in one transaction.
 
 ### Creation
 
-Anyone can create an ITP. Pick assets from 100+ supported tokens, assign weights (e.g. 30% ETH, 20% BTC, 50% stablecoins), and deploy in a single transaction. Your ITP starts at $1 NAV. Each share holds a fixed quantity of each underlying asset, calculated from the weights and prices at the time of creation.
+Anyone can create an ITP. Pick assets from 100+ supported tokens, assign weights (e.g. 30% ETH, 20% BTC, 50% stablecoins), deploy in a single transaction. The ITP starts at $1 NAV. Each share holds a fixed quantity of each underlying asset, calculated from the weights and prices at the moment of creation. An opinion, crystallized into a contract.
 
 ### NAV (Net Asset Value)
 
-The price of one ITP share. Calculated as: sum of (quantity x price) for each asset in the basket. Updates every cycle, roughly every 30 seconds.
+The price of one share. Calculated as: sum of (quantity x price) for each asset in the basket. Updates every cycle, roughly every 30 seconds.
 
-If ETH goes up 10% and your ITP is 50% ETH, your NAV goes up roughly 5%. If everything drops 20%, your NAV drops 20%. The math is transparent and verifiable on-chain at all times.
+If ETH rises 10% and your ITP is 50% ETH, your NAV rises roughly 5%. If everything drops 20%, your NAV drops 20%. The math is transparent and verifiable on-chain at all times. The market does not care about your intentions, but at least the accounting is honest.
 
 ### Buying and Selling
 
-To buy: deposit USDC and receive ITP shares at the current NAV. If the NAV is $1.24 and you deposit $124, you get 100 shares. To sell: return your shares and receive USDC at the current NAV. Settlement happens on-chain in one cycle — no waiting days for your funds.
+To buy: deposit USDC, receive ITP shares at the current NAV. If the NAV is $1.24 and you deposit $124, you get 100 shares. To sell: return your shares, receive USDC at the current NAV. Settlement happens on-chain in one cycle. No waiting days for your funds. No intermediary holding your money while pretending to process paperwork.
 
 ### Rebalancing
 
-Weights can be updated by the ITP creator. When this happens, the underlying quantities are recalculated to preserve the current NAV. Your share count stays the same — only what each share holds changes. Think of it like an ETF manager adjusting the portfolio allocation without affecting your account balance.
+The ITP creator can update weights. When this happens, the underlying quantities are recalculated to preserve the current NAV. Your share count stays the same — only what each share contains changes. The portfolio shifts beneath you without disturbing the surface. Like an ETF manager adjusting allocations without touching your account balance.
 
 ## ITPs vs Traditional ETFs
 
@@ -75,39 +75,39 @@ Weights can be updated by the ITP creator. When this happens, the underlying qua
 | Fees | 0.03 - 1% | ~0.3% |
 | Transparency | Quarterly | Real-time |
 
-Not better or worse — different tradeoffs. ITPs trade speed and permissionlessness for regulatory clarity and deposit insurance. ETFs are battle-tested over decades with clear legal frameworks. ITPs are new, operate 24/7, and anyone can create one without filing paperwork. Pick what matters to you.
+Different tradeoffs, not a hierarchy. ITPs trade speed and permissionlessness for regulatory clarity and deposit insurance. ETFs are battle-tested over decades with clear legal frameworks. ITPs are new, operate continuously, and anyone can create one without filing paperwork. ETFs require an institution. ITPs require a wallet. Both require conviction.
 
 ## ITPs vs Buying Tokens Directly
 
-Why not just buy the 10 tokens yourself? You can. But there are practical reasons people don't:
+Why not buy the 10 tokens yourself? You can. Nobody is stopping you. But there are reasons people choose not to endure that particular form of suffering:
 
-1. **Gas.** 10 separate swaps cost 10x the gas. An ITP purchase is one transaction.
-2. **Rebalancing.** If you want to maintain 20% ETH / 20% BTC, you need to manually rebalance when prices shift. An ITP handles this automatically.
-3. **Tracking.** One NAV number vs tracking 10 different prices across 10 different positions.
-4. **Sharing.** You can share one token link that represents a thesis. "I'm bullish on DeFi" becomes a single tradeable asset, not a spreadsheet.
+1. **Gas.** 10 separate swaps cost 10x the gas. An ITP purchase is one transaction. Efficiency is its own argument.
+2. **Rebalancing.** Maintaining 20% ETH / 20% BTC requires manual adjustment when prices shift. An ITP handles this automatically. Discipline outsourced to a contract.
+3. **Tracking.** One NAV number versus tracking 10 different prices across 10 different positions. Simplicity has a cognitive value that does not appear on any balance sheet.
+4. **Legibility.** You can share one token that represents a thesis. "I'm bullish on DeFi" becomes a single tradeable asset, not a spreadsheet. An opinion with a price tag.
 
-The same reason people buy SPY instead of 500 individual stocks.
+The same reason people buy SPY instead of 500 individual stocks. Convenience is not laziness — it is the recognition that life is finite.
 
 ## How to Get Started
 
-Three steps. No jargon required.
+Three steps.
 
 1. **Connect your wallet** on Index L3. MetaMask, WalletConnect, or any EVM-compatible wallet.
 2. **Browse ITPs** on the Markets page. Each one shows its holdings, NAV, and AUM.
 3. **Buy shares with USDC.** Enter the amount, confirm the transaction. Done.
 
-Or create your own ITP from 100+ supported assets. Pick the tokens, set the weights, deploy in one transaction.
+Or create your own ITP from 100+ supported assets. Pick the tokens, set the weights, deploy in one transaction. The barrier between having a thesis and owning one is a single confirmation.
 
 ## Risks
 
-ITPs are an emerging financial primitive. Here are the real risks:
+ITPs are an emerging financial primitive. The risks are real, and pretending otherwise would be an insult to your intelligence.
 
-- **Smart contract risk.** ITPs are governed by smart contracts. Code can have bugs. Contracts are audited but not guaranteed to be bug-free. Funds held in a contract are only as safe as the contract itself.
-- **Oracle risk.** NAV depends on price feeds from external oracles. If an oracle reports an incorrect price, your NAV calculation will be wrong. This can cause you to buy too high or sell too low.
-- **Liquidity risk.** Low-AUM ITPs may have wider effective spreads. If you hold a large position relative to the ITP's total AUM, exiting may take multiple cycles.
-- **Regulatory risk.** Rules around tokenized index products are still evolving. What is permissible today may face restrictions tomorrow. This space does not yet have the regulatory clarity of traditional ETFs.
+- **Smart contract risk.** ITPs are governed by smart contracts. Code can have bugs. Contracts are audited but not guaranteed to be flawless. Funds held in a contract are only as safe as the contract itself. Trust in code is still trust.
+- **Oracle risk.** NAV depends on price feeds from external oracles. If an oracle reports an incorrect price, your NAV calculation will be wrong. You may buy too high or sell too low. The chain is only as truthful as its sources.
+- **Liquidity risk.** Low-AUM ITPs may have wider effective spreads. If you hold a large position relative to the ITP's total AUM, exiting may take multiple cycles. Size is a privilege that becomes a trap.
+- **Regulatory risk.** Rules around tokenized index products are still forming. What is permissible today may face restrictions tomorrow. This space does not yet have the regulatory clarity of traditional ETFs. The law moves slowly, but it moves.
 
-None of this is meant to discourage you. It's meant to make sure you go in with open eyes. Do your own research and never invest more than you can afford to lose.
+You will lose money here. Perhaps not, but the possibility deserves to be named before anything else. The difference between this and other places you might lose money is that here, the math is visible.
 
 ## Further Reading
 

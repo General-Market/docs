@@ -14,35 +14,35 @@ tldr:
   - "Parimutuel pools mean <strong>no counterparty risk</strong> — winners split losers' stakes deterministically"
 ---
 
-Every prediction market has the same dirty secret: the moment you place a bet, you are giving away information. On platforms with public orderbooks, your position is broadcast to every other participant before the market settles. If your model is good, you are effectively publishing your alpha for free. Sealed prediction markets fix this by hiding bets until resolution. Vision implements this through a commit-reveal mechanism that makes front-running mathematically impossible.
+The moment you place a bet on a public orderbook, you have already lost something. Not money — information. Your position is broadcast to every participant before the market settles. If your model is any good, you are publishing your edge for free, a gift to strangers who did none of the work. Sealed prediction markets exist because someone finally noticed that transparency, taken to its logical extreme, is a form of theft. Vision implements this through commit-reveal cryptography. Front-running does not become difficult. It becomes impossible.
 
 ## The Front-Running Problem
 
-On Polymarket or Kalshi, your order hits a public orderbook. Everyone can see it. Other traders, bots, and even validators processing the transaction can observe your position and react before the market settles.
+On Polymarket or Kalshi, your order enters a public orderbook. Everyone sees it — traders, bots, validators. Your conviction becomes communal property before it has time to pay you.
 
-This creates three problems:
+Three pathologies follow from this single architectural sin:
 
-**Copycat extraction.** If a well-known bot with a strong track record places a large bet on a specific outcome, other bots can immediately copy the position. The original bot did the work of building and calibrating a model. Everyone else free-rides on its signal. This is not a theoretical concern. On Polymarket, bot wallets are public and tracked by monitoring tools. A bot with a 65% win rate becomes a signal source for every other participant the moment it places an order.
+**Copycat extraction.** A bot with a 65% win rate becomes, against its will, a signal tower. On Polymarket, bot wallets are public and tracked by monitoring tools. The moment a strong bot places a large bet, lesser bots copy the position. The original did the work of building and calibrating a model. Everyone else harvests the signal like crows following a plow. This is not theoretical. It is the ordinary state of affairs.
 
-**MEV (Maximal Extractable Value).** Block producers and validators can see pending transactions before they are included in a block. They can reorder, insert, or sandwich your transaction to extract value. You submit a buy order at $0.55. A validator sees it, buys at $0.55 first, then lets your order execute at $0.56, and sells into you. You paid more than you should have. The validator pockets the difference. This happens constantly on every public-orderbook blockchain market.
+**MEV (Maximal Extractable Value).** Block producers see pending transactions before they enter a block. They reorder, insert, sandwich. You submit a buy at $0.55. A validator purchases at $0.55 first, lets your order fill at $0.56, sells into you, pockets the difference. A tax levied by infrastructure on conviction. It happens constantly, on every public-orderbook blockchain market, and nobody apologizes for it.
 
-**Alpha decay through information leakage.** If you have a model that correctly predicts earthquake aftershock frequency using USGS data, the moment you express that view on a public orderbook, you are teaching other participants what your model knows. Over time, your edge disappears not because your model got worse, but because everyone else learned your strategy by watching your trades.
+**Alpha decay through information leakage.** Suppose you built a model that predicts earthquake aftershock frequency from USGS data. The moment you express that view on a public orderbook, you are teaching the market what you know. Your edge disappears — not because your model degraded, but because your competitors learned your strategy by watching you use it. Knowledge, once visible, belongs to everyone.
 
-The core issue is simple: public bets turn every participant into an involuntary signal broadcaster.
+The diagnosis is simple: public bets conscript every participant into involuntary broadcasting.
 
 ## How Sealed Commit-Reveal Works
 
-Vision solves this with a sealed commit-reveal scheme. Your bets are invisible to everyone during the betting window. Here is the mechanism, step by step.
+Vision hides bets until resolution. Your predictions are invisible during the entire betting window. The mechanism proceeds in four steps, each one closing a door that cannot be reopened.
 
-**Step 1: Encode your predictions as a bitmap.** Each market in a Vision batch gets one bit. UP or DOWN. If a batch has 200 markets, your prediction set is a 200-bit string, packed big-endian into `ceil(200/8) = 25` bytes. One byte per 8 markets. The entire portfolio of predictions is a single compact binary blob.
+**Step 1: Encode your predictions as a bitmap.** Each market in a Vision batch occupies one bit. UP or DOWN. A batch of 200 markets yields a 200-bit string, packed big-endian into `ceil(200/8) = 25` bytes. Your entire portfolio of predictions — a single compact binary blob. No ambiguity, no partial commitment.
 
-**Step 2: Hash the bitmap and commit on-chain.** Your bot computes `keccak256(bitmap)` and submits the hash via `joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)`. The on-chain transaction contains only the hash, not the bitmap itself. Nobody can reverse a keccak256 hash to recover the original bitmap. Your predictions are cryptographically sealed.
+**Step 2: Hash the bitmap and commit on-chain.** Your bot computes `keccak256(bitmap)` and submits the hash via `joinBatch(batchId, depositAmount, stakePerTick, bitmapHash)`. The on-chain transaction contains only the hash. Nobody can reverse a keccak256 hash to recover the original bitmap. Your predictions are cryptographically sealed — present on the blockchain, yet invisible.
 
-**Step 3: Reveal the bitmap to oracles off-chain.** After the commitment window closes, your bot sends the plaintext bitmap to the oracle node network via `POST /vision/bitmap`. The oracles verify that `keccak256(revealedBitmap) == onChainHash`. If it matches, the bitmap is accepted. If it does not match, the commitment is invalid. This reveal goes only to the oracle nodes, not to other participants, not to the public blockchain.
+**Step 3: Reveal the bitmap to oracles off-chain.** After the commitment window closes, your bot sends the plaintext bitmap to the oracle node network via `POST /vision/bitmap`. The oracles verify that `keccak256(revealedBitmap) == onChainHash`. Match: accepted. Mismatch: discarded. This reveal reaches only the oracle nodes — not other participants, not the public chain. The audience arrives after the performance is over.
 
-**Step 4: Resolution.** At tick close, oracles fetch the actual closing prices from data sources, compare each bit in your bitmap against the real outcome, and calculate your score. Winners split losers' stakes. Payouts are verified by BLS 3-of-5 consensus among the oracle nodes, then distributed on-chain.
+**Step 4: Resolution.** At tick close, oracles fetch actual closing prices from data sources, compare each bit against reality, and calculate scores. Winners split losers' stakes. Payouts are verified by BLS 3-of-5 consensus among oracle nodes, then distributed on-chain.
 
-The flow looks like this:
+The flow:
 
 ```
 Commit keccak256(bitmap) on-chain
@@ -56,23 +56,23 @@ Reveal plaintext bitmap to oracles (POST /vision/bitmap)
 Compare bitmap vs outcomes, distribute pool (BLS-verified)
 ```
 
-The critical property: during the entire betting window, no participant, no validator, no frontend operator, and no oracle can see your predictions. By the time anyone sees your bitmap, the window is closed and no new bets can be placed. Front-running is not just difficult. It is impossible.
+The essential property: during the entire betting window, no participant, no validator, no frontend operator, no oracle can see your predictions. By the time anyone reads your bitmap, the window is sealed and no new bets are possible. Front-running is not merely difficult. It is structurally excluded from reality.
 
 ## Why This Matters for AI Agents
 
-Sealed bets change the game theory for automated trading agents in a fundamental way.
+Sealed bets rearrange the game theory for automated trading in a way that favors the patient and the precise.
 
-**Your model's edge stays private.** On a public orderbook, a bot with a novel weather-prediction model leaks its strategy every time it trades. Other bots reverse-engineer the pattern. Within weeks, the edge is gone. On Vision, your bitmap is a black box. Other participants know you committed to something, but not what. Your model can maintain its edge indefinitely as long as the underlying signal holds.
+**Your model's edge stays private.** On a public orderbook, a bot with a novel weather-prediction model hemorrhages its strategy with every trade. Other bots reverse-engineer the pattern. Within weeks, the edge is extinct. On Vision, your bitmap is an opaque commitment. Other participants know you bet. They do not know what you bet. Your model can maintain its advantage indefinitely — or at least until the underlying signal decays on its own terms, not because you were forced to advertise it.
 
-**No copycat convergence.** When 50 bots trade the same niche market on a public platform, they can all observe each other and gradually converge on the same positions. This destroys profitability for everyone. In a sealed environment, each bot operates in isolation. Convergence can only happen if bots independently arrive at the same conclusion from the same data, which is the market working correctly, not a structural failure.
+**No copycat convergence.** When fifty bots trade the same niche market on a public platform, they observe each other and gradually collapse onto identical positions. Profitability evaporates for everyone — a tragedy of shared information. In a sealed environment, each bot operates in epistemic isolation. Convergence happens only if bots independently reach the same conclusion from the same data. That is the market functioning correctly. Not a structural failure — a structural feature.
 
-**Accuracy is the only competitive axis.** Without information leakage, you cannot win by being fast, by having low-latency infrastructure, or by front-running slower participants. You can only win by being right. This is the environment where a well-calibrated model has the highest expected value, and it is the reason most serious AI agents on Vision trade 50+ markets per tick rather than concentrating on a handful of crowded events.
+**Accuracy is the only axis that matters.** Without information leakage, you cannot win by being fast, by owning low-latency infrastructure, by front-running slower participants. You win by being right. This is the environment where a well-calibrated model has the highest expected value. It is also why most serious AI agents on Vision trade 50+ markets per tick rather than crowding into a handful of conspicuous events. Breadth rewards calibration. Depth rewards infrastructure. Sealed markets chose calibration.
 
 ## The Parimutuel Model
 
-Vision uses parimutuel pools instead of orderbooks. The difference is structural.
+Vision uses parimutuel pools, not orderbooks. The difference is not cosmetic. It is structural.
 
-In a parimutuel pool, all bets go into a shared pot. When the market resolves, winners split losers' stakes. There is no market maker. No spread. No liquidity fragmentation across bid-ask levels. The pool is the pool.
+All bets enter a shared pot. When the market resolves, winners split losers' stakes. No market maker. No spread. No liquidity fragmented across bid-ask levels. The pool is the pool — indivisible, democratic, indifferent to your reputation.
 
 The fee is 0.3% (30 basis points) on profits only:
 
@@ -80,9 +80,9 @@ The fee is 0.3% (30 basis points) on profits only:
 fee = (winnings * 30) / 10000
 ```
 
-If you lose, you pay zero fees. You are only charged when you profit. Compare this to an orderbook where you pay the spread on every trade regardless of outcome, plus slippage if you are moving size, plus gas on every individual order.
+Lose, and you pay nothing. You are charged only when you profit. Compare this to an orderbook where you pay the spread on every trade regardless of outcome, plus slippage if you move size, plus gas on every individual order. The orderbook taxes participation. The parimutuel pool taxes success. One of these seems more honest.
 
-The parimutuel model also means payout scales with how wrong the crowd was. If you are the only correct predictor in a pool of 20 participants, you take a larger share than if 15 others also got it right. This rewards contrarian accuracy, which is exactly the kind of edge a specialized AI agent can maintain.
+Payout scales with how wrong the crowd was. If you are the sole correct predictor in a pool of twenty, you take a larger share than if fifteen others also saw what you saw. This rewards contrarian accuracy — the precise variety of edge a specialized AI agent can sustain over time.
 
 ## Order Book vs Sealed Parimutuel
 
@@ -104,7 +104,7 @@ Deploy a sealed-bet trading bot in one command:
 npx generalmarket init
 ```
 
-The scaffold handles bitmap encoding, hash commitment, and reveal submission out of the box. Pick your data source, write your model, and let the commit-reveal pipeline handle the privacy.
+The scaffold handles bitmap encoding, hash commitment, and reveal submission. You supply the model. The pipeline supplies the privacy. What you know stays yours — which, in markets, is the only form of ownership that matters.
 
 ## Further Reading
 

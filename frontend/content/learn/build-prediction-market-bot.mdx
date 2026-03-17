@@ -14,24 +14,24 @@ tldr:
   - "Live leaderboard tracks your bot's performance in <strong>real-time</strong> against other agents"
 ---
 
-No prediction market platform has a complete bot tutorial. Polymarket has a GitHub agents repo with no walkthrough. Kalshi has SDKs with no strategy docs. Every platform says "build a bot" and then gives you a raw API reference.
+No prediction market platform has a real bot tutorial. Polymarket offers a GitHub agents repo with no walkthrough. Kalshi ships SDKs with no strategy documentation. Every platform whispers "build a bot" and then hands you a raw API reference like a riddle without an answer.
 
-Here is the tutorial that should have existed years ago. By the end, you will have a working bot that reads market data, computes signals, encodes bets as bitmaps, submits them on-chain through commit-reveal, and tracks performance on the live leaderboard. Ten minutes, real code, no hand-waving.
+What follows is the tutorial that should have existed years ago. By the end you will have a working bot — one that reads market data, computes signals, encodes bets as bitmaps, submits them on-chain through commit-reveal, and tracks performance on the live leaderboard. Ten minutes. Real code. No hand-waving, no apologies.
 
 ## Prerequisites
 
-Before you start, make sure you have:
+You will need:
 
-- **A wallet** — MetaMask or any EVM-compatible wallet with a private key you can export
-- **USDC on Arbitrum** — bridge from mainnet if needed, or use a faucet for testnet
-- **Node.js 18+** or **Python 3.10+** — the tutorial shows both
+- **A wallet** — MetaMask or any EVM-compatible wallet with an exportable private key
+- **USDC on Arbitrum** — bridge from mainnet or use a faucet for testnet
+- **Node.js 18+** or **Python 3.10+** — both shown below
 - **Optional: Claude Code or any AI agent framework** — useful for strategy iteration, not required
 
-Minimum capital to start: $0.10 per tick. You can test a full strategy for under a dollar.
+Minimum capital to start: $0.10 per tick. You can test a full strategy for under a dollar. The cost of admission is negligible. The cost of a bad model is not.
 
 ## Step 1: Scaffold Your Bot
 
-One command sets up the entire project:
+One command. The entire project materializes:
 
 ```bash
 npx generalmarket init
@@ -52,7 +52,7 @@ my-bot/
 └── .env.example         # PRIVATE_KEY goes here
 ```
 
-Copy `.env.example` to `.env` and add your private key. The config file comes pre-filled with the production RPC and API endpoints. You do not need to hunt for URLs.
+Copy `.env.example` to `.env` and add your private key. The config file arrives pre-filled with production RPC and API endpoints. No scavenging for URLs.
 
 ```bash
 cd my-bot
@@ -67,13 +67,13 @@ If you prefer Python, pass the `--python` flag:
 npx generalmarket init --python
 ```
 
-Same structure, same logic, different language. Both are first-class.
+Same structure, same logic, different syntax. Both are first-class citizens in this particular republic.
 
 ## Step 2: Understand the Data Sources
 
-Vision runs 25,000+ prediction markets across 79 data feeds. Each market is a simple binary question: will this value go UP or DOWN in the next tick?
+Vision runs 25,000+ prediction markets across 79 data feeds. Each market poses the same binary question: will this value go UP or DOWN in the next tick?
 
-Browse all available sources at [/sources](/sources). Or hit the data node API directly:
+Browse all available sources at [/sources](/sources). Or interrogate the data node directly:
 
 ```bash
 curl https://www.generalmarket.io/api/vision/markets/active
@@ -109,11 +109,11 @@ The response contains every active market:
 
 Each market has an `id` (used in bitmap encoding), a `source` name, the current `value`, and a `change24h` percentage. Your strategy reads these fields and decides UP or DOWN for each market.
 
-**Picking your niche matters.** Crypto prices are crowded — hundreds of bots compete on BTC and ETH. But earthquake frequency, weather patterns, tech infrastructure metrics? Almost no competition. The fewer bots trading a market, the more edge you have. This is the core thesis: niche data sources are where alpha lives.
+**Picking your niche is not optional — it is the whole game.** Crypto prices are a bloodbath. Hundreds of bots compete on BTC and ETH, each shaving basis points from the same signals. But earthquake frequency? Weather patterns? Tech infrastructure metrics? Almost no competition. The fewer bots trading a market, the more your accuracy is worth. Obscurity is the last remaining alpha.
 
 ## Step 3: Write a Simple Strategy
 
-Here is a complete momentum strategy in TypeScript. If the 24h change is positive, bet UP. If negative, bet DOWN. Simple, but it illustrates the full pipeline.
+A complete momentum strategy in TypeScript. If the 24h change is positive, bet UP. If negative, bet DOWN. Crude — but it illustrates the full pipeline, and crude strategies sometimes outlive elegant ones.
 
 ```typescript
 // strategy.ts
@@ -133,7 +133,7 @@ export async function computeBets(): Promise<{ bets: Bet[]; marketCount: number 
 }
 ```
 
-That is a toy strategy. Here is a slightly smarter one — mean reversion on weather data, momentum on everything else:
+That is a toy. Here is a slightly less naive version — mean reversion on weather data, momentum on everything else:
 
 ```typescript
 export async function computeBets(): Promise<{ bets: Bet[]; marketCount: number }> {
@@ -152,11 +152,11 @@ export async function computeBets(): Promise<{ bets: Bet[]; marketCount: number 
 }
 ```
 
-The key insight: you can use different logic for different data sources within the same bitmap. Weather reverts. Crypto trends. Earthquakes are random. Your strategy should reflect this.
+The insight worth remembering: you can apply different logic to different data sources within the same bitmap. Weather reverts. Crypto trends. Earthquakes obey no one. Your strategy should reflect the indifference of each domain to the others.
 
 ### Building a Claude Code Trading Bot
 
-If you are using Claude Code or another AI agent framework, you can go further. Feed Claude the market data and ask it to reason about each source:
+If you use Claude Code or another AI agent framework, you can go further. Feed Claude the market data and let it reason about each source:
 
 ```typescript
 import Anthropic from "@anthropic-ai/sdk";
@@ -181,13 +181,13 @@ ${markets.map((m) => `${m.id}: ${m.name} — current: ${m.value}, 24h change: ${
 }
 ```
 
-This is not hypothetical. Multiple bots on Vision use LLM-based strategies. The sealed-bet mechanism means nobody can see your reasoning — only your results on the leaderboard.
+This is not hypothetical. Multiple bots on Vision already run LLM-based strategies. The sealed-bet mechanism ensures nobody can observe your reasoning — only your results on the leaderboard, which tell nothing about how you arrived there.
 
 ## Step 4: Encode the Bitmap
 
 Vision uses packed binary bitmaps for bets. One bit per market. 1 means UP, 0 means DOWN. Big-endian byte order.
 
-If you are betting on 25 markets, you need `ceil(25/8) = 4` bytes (32 bits, with the last 7 bits unused).
+Betting on 25 markets requires `ceil(25/8) = 4` bytes (32 bits, last 7 unused).
 
 ### TypeScript
 
@@ -230,11 +230,11 @@ Bit layout:  1 0 1 1 0 0 1 0
 Byte value:  0xB2 (178 decimal)
 ```
 
-One byte encodes 8 markets. A bitmap for all 25,000+ markets fits in about 3.2 KB. The encoding is compact by design.
+One byte encodes 8 markets. A bitmap for all 25,000+ markets fits in about 3.2 KB. Entire worldviews, compressed into kilobytes.
 
 ## Step 5: Submit Your Bets (Commit-Reveal)
 
-Vision uses commit-reveal to prevent front-running. You commit a hash first, then reveal the actual bitmap. Nobody can see your bets until after the commitment window closes.
+Vision uses commit-reveal to prevent front-running. You commit a hash first, then reveal the actual bitmap after the window closes. Nobody can see your bets in between. This is the interval where your strategy exists as pure potential — a hash on a ledger, meaningless to everyone but you.
 
 ### Step 5a: Hash the Bitmap
 
@@ -282,11 +282,11 @@ if (!response.ok) throw new Error(`Reveal failed: ${response.status}`);
 console.log("Revealed bitmap to oracle nodes");
 ```
 
-The sequence matters: commit first, then reveal. If you reveal before committing, your bets are visible and you lose the sealed-bet advantage. The scaffolded project handles this ordering automatically.
+The sequence is non-negotiable: commit first, then reveal. Reverse the order and your bets are visible before commitment — you forfeit the sealed-bet advantage. The scaffolded project handles this ordering automatically, because humans cannot be trusted with sequence.
 
 ## Step 6: Monitor Performance
 
-Once your bot is live, it appears on the leaderboard at generalmarket.io. Track three numbers:
+Once your bot is live, it appears on the leaderboard at generalmarket.io. Three numbers matter:
 
 - **P&L per tick** — are you net positive over the last 100 ticks?
 - **Win rate** — what percentage of individual market bets are correct?
@@ -307,11 +307,11 @@ console.log(`Current balance: $${balance.amount}`);
 console.log(`Win rate: ${balance.winRate}%`);
 ```
 
-When you are ready to withdraw, claim winnings via a BLS balance proof. The claim is verified on-chain — no trust required.
+When you are ready to withdraw, claim winnings via a BLS balance proof. Verified on-chain. No trust required. No intermediary to plead with.
 
 ## Step 7: Register On-Chain (Optional)
 
-If you want your bot to have a public profile on the leaderboard:
+If you want your bot to have a public identity on the leaderboard:
 
 ```typescript
 const tx = await vision.registerBot(
@@ -321,25 +321,25 @@ const tx = await vision.registerBot(
 await tx.wait();
 ```
 
-Registration is free. No collateral required. Your bot gets a profile showing its performance stats — win rate, P&L history, markets traded. Other traders can see how you perform, but they can never see your strategy. Bets are sealed until resolution.
+Registration is free. No collateral. Your bot gets a profile showing its performance — win rate, P&L history, markets traded. Other traders can see how you perform. They can never see how you think. Bets remain sealed until resolution.
 
 ## Tips for Better Performance
 
-**Diversify across data sources.** The biggest mistake new bot builders make is trading only crypto. BTC and ETH have hundreds of competitors. Weather data, earthquake monitors, and tech metrics have almost none. Fewer competitors means more edge per correct prediction.
+**Diversify across data sources.** The gravest mistake new bot builders make is trading only crypto. BTC and ETH attract hundreds of competitors. Weather data, earthquake monitors, and tech metrics attract almost none. Fewer competitors means more edge per correct prediction. Solitude, in markets, is profitable.
 
-**Bigger portfolio = more edge.** Betting on 50+ markets per tick averages out noise. If your strategy has a 55% accuracy rate, that is barely distinguishable from random on 5 markets but statistically significant across 200. Top bots on the leaderboard trade 100+ markets simultaneously.
+**Bigger portfolio = more edge.** Betting on 50+ markets per tick averages out noise. A 55% accuracy rate is indistinguishable from random on 5 markets but statistically significant across 200. Top bots on the leaderboard trade 100+ markets simultaneously. Breadth is not a luxury. It is the mechanism.
 
 **Match tick duration to strategy type.** Five-minute ticks suit momentum and mean reversion on volatile data. One-hour or one-day ticks suit fundamental analysis — weather forecasts, economic indicators, slower-moving feeds. The `config.json` from `npx generalmarket init` lets you set your preferred tick duration.
 
-**Start with $0.10 stakes.** The minimum stake per tick is ten cents. Run your bot for a week at minimum stake before committing real capital. A week of data gives you roughly 2,000 ticks on 5-minute intervals — enough to measure whether your strategy has real edge or got lucky.
+**Start with $0.10 stakes.** The minimum stake per tick is ten cents. Run your bot for a week at minimum stake before committing real capital. A week of data yields roughly 2,000 ticks on 5-minute intervals — enough to discern whether your strategy has genuine edge or merely enjoyed a fortunate week.
 
-**Iterate with AI.** If you are building a Claude Code trading bot, use the feedback loop: run the strategy, collect results, feed the win/loss data back into the prompt, and ask Claude to refine the logic. This is where AI agent frameworks shine — not in raw prediction accuracy, but in rapid iteration over strategy parameters.
+**Iterate with AI.** If you are building a Claude Code trading bot, exploit the feedback loop: run the strategy, collect results, feed win/loss data back into the prompt, ask Claude to refine the logic. This is where AI agent frameworks earn their keep — not in raw prediction accuracy, but in rapid iteration over strategy parameters.
 
-**Never overfit to recent data.** A strategy that perfectly predicts yesterday's markets will underperform tomorrow. Keep your logic simple. The best-performing bots on Vision use 3-5 signals at most. Complexity is the enemy of robustness.
+**Never overfit to recent data.** A strategy that perfectly predicts yesterday's markets will underperform tomorrow. Keep your logic simple. The best-performing bots on Vision use 3-5 signals at most. Complexity is seductive. Robustness is what survives.
 
 ## The Full Loop
 
-Here is the complete flow in one script:
+The complete flow in one script:
 
 ```typescript
 import { computeBets } from "./strategy";
@@ -374,11 +374,11 @@ async function main() {
 main().catch(console.error);
 ```
 
-Five steps. Fetch data, compute signals, encode bitmap, commit hash, reveal bitmap. Every bot on Vision follows this exact pipeline. The only variable is what happens inside `computeBets()` — that is where your edge lives.
+Five steps. Fetch data, compute signals, encode bitmap, commit hash, reveal bitmap. Every bot on Vision follows this exact pipeline. The only variable is what happens inside `computeBets()` — that is where your edge lives, or doesn't.
 
 ## Fee Structure
 
-Vision charges 0.3% on profit only. If you lose a tick, you pay nothing in fees. If you win $10 on a tick, you pay $0.03. There is no entry fee, no subscription, no platform cut on losses. This makes it viable to run strategies at very small scale while testing.
+Vision charges 0.3% on profit only. Lose a tick, pay nothing in fees. Win $10, pay $0.03. No entry fee, no subscription, no platform cut on losses. You are taxed only on success — a structure more honest than most governments manage.
 
 ## Further Reading
 
