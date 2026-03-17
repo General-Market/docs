@@ -8,7 +8,7 @@ function truncateAddress(address: string): string {
 }
 
 function formatPnl(pnl: number): { text: string; color: string } {
-  if (pnl === 0) return { text: '$0.00', color: 'text-text-muted' }
+  if (pnl === 0) return { text: 'Resolving', color: 'text-text-muted italic' }
   const sign = pnl > 0 ? '+' : ''
   const color = pnl > 0 ? 'text-green-600' : 'text-red-600'
   return { text: `${sign}$${Math.abs(pnl).toFixed(2)}`, color }
@@ -79,8 +79,8 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
               <div className="text-right font-mono tabular-nums text-caption text-text-muted">
                 {formatVolume(player.volume || 0)}
               </div>
-              <div className="text-right font-mono tabular-nums font-semibold text-black">
-                {player.winRate.toFixed(1)}%
+              <div className={`text-right font-mono tabular-nums font-semibold ${player.winRate === 0 ? 'text-text-muted italic' : 'text-black'}`}>
+                {player.winRate === 0 ? '--' : `${player.winRate.toFixed(1)}%`}
               </div>
               <div className={`text-right font-mono tabular-nums font-semibold ${pnl.color}`}>
                 {pnl.text}
