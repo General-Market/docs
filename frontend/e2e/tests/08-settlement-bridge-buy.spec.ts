@@ -143,7 +143,7 @@ test.describe('Settlement Bridge', () => {
         const usdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
         const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
 
-        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 0n);
+        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
         console.log(`Settlement bridge sell order placed: orderId=${orderId}`);
 
         const usdcAfter = await pollUntil(
@@ -175,7 +175,7 @@ test.describe('Settlement Bridge', () => {
       await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
       const sellAmount = l3SharesBefore > 25n * 10n ** 18n ? 25n * 10n ** 18n : l3SharesBefore;
-      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 1n);
+      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
       console.log(`L3 direct sell order placed: orderId=${orderId}`);
 
       // Poll for order status = 2 (Filled) instead of shares change

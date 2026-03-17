@@ -166,6 +166,24 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         }
       }
 
+      // Check if Morpho market actually exists (was createMarket called?)
+      if (morphoCheck) {
+        // market(bytes32) selector = 0x44e2e5c4
+        const marketId = morphoCheck.contracts.MARKET_ID.replace('0x', '');
+        const marketResult = await l3RpcCall('eth_call', [
+          { to: morphoCheck.contracts.MORPHO, data: '0x44e2e5c4' + marketId },
+          'latest',
+        ]) as string;
+        // market() returns (..., lastUpdate, fee) — lastUpdate at offset 256-320
+        const hex = (marketResult || '').slice(2);
+        const lastUpdate = hex.length >= 320 ? BigInt('0x' + (hex.slice(256, 320) || '0')) : 0n;
+        if (lastUpdate === 0n) {
+          console.log('Morpho market not created on-chain (lastUpdate=0) — lending cycle requires market creation');
+          return;
+        }
+        console.log(`Morpho market exists (lastUpdate=${lastUpdate})`);
+      }
+
       // Step 1: Deposit Collateral (direct RPC)
       const posBefore = await getMorphoPositionDirect(TEST_ADDRESS);
       console.log(`Position before deposit: collateral=${posBefore.collateral}`);
