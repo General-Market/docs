@@ -15,7 +15,7 @@ import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ORACLE_URLS,
-  RPC_TIMEOUT, BACKEND_URL,
+  RPC_TIMEOUT, BACKEND_URL, VISION_BATCHES,
 } from '../env'
 
 /** Retry wrapper for flaky network calls (testnet RPCs). */
@@ -151,18 +151,9 @@ function getKeyForAddress(addr: string): `0x${string}` {
   return key
 }
 
-// Read addresses from deployment.json (copied by start.sh step 7)
-let _deploymentCache: any = null
-function getDeployment() {
-  if (!_deploymentCache) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _deploymentCache = require('../../lib/contracts/deployment.json')
-  }
-  return _deploymentCache
-}
-
+// Addresses from env.ts (single source of truth — reads active-deployment.json)
 export function getVisionAddress(): string {
-  return getDeployment().contracts.Vision
+  return CONTRACTS.Vision
     || process.env.NEXT_PUBLIC_VISION_ADDRESS
     || ''
 }
@@ -171,7 +162,7 @@ export function getVisionAddress(): string {
  *  On testnet, Vision may have been deployed with a different USDC than what's in deployment.json.
  *  Use getVisionUsdcAddress() for Vision-related approve/deposit operations. */
 function getL3UsdcAddress(): string {
-  return getDeployment().contracts.L3_WUSDC
+  return CONTRACTS.L3_WUSDC ?? ''
 }
 
 /** Cache for the USDC address that Vision actually uses (read from contract) */
@@ -877,10 +868,9 @@ export async function getBatchConfigHash(batchId: number): Promise<`0x${string}`
  * when all existing batches have been joined by previous E2E runs.
  */
 export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{ batchId: number; configHash: `0x${string}` }> {
-  // Read vision-batches.json for batch mappings (refreshed by testnet.sh refresh-batches)
+  // Read vision-batches from env.ts (single source of truth)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const batches = require('../../../deployments/vision-batches.json')
+    const batches = VISION_BATCHES
     const batchMap = batches.batches || {}
     // Prefer batches with known working data sources (short tick durations = more likely to resolve)
     const PREFERRED_SOURCES = ['earthquake', 'hackernews', 'steam', 'polymarket', 'twitch', 'pumpfun', 'iss']
@@ -1104,11 +1094,11 @@ async function settlementRpcCall(method: string, params: unknown[]): Promise<unk
 }
 
 function getSettlementCustodyAddress(): string {
-  return getDeployment().contracts.SettlementBridgeCustody
+  return CONTRACTS.SettlementBridgeCustody ?? ''
 }
 
 function getSettlementUsdcAddress(): string {
-  return getDeployment().contracts.SETTLEMENT_USDC
+  return CONTRACTS.SETTLEMENT_USDC ?? ''
 }
 
 /**
