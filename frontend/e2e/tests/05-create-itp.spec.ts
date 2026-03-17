@@ -87,8 +87,8 @@ test.describe('Create ITP', () => {
       // 1. Connect wallet
       await ensureWalletConnected(page, TEST_ADDRESS);
 
-      // 2. Click the Create tab in the sidebar to activate the section
-      const createTab = page.getByRole('link', { name: /Create/i }).first();
+      // 2. Click "Create Index" in the sidebar to activate the section
+      const createTab = page.getByText('Create Index', { exact: true });
       await expect(createTab).toBeVisible({ timeout: 15_000 });
       await createTab.click();
       await page.waitForTimeout(1_000);
