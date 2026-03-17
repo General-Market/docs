@@ -41,8 +41,8 @@ module.exports = {
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
       },
       maxWidth: {
-        site: '1280px',
-        'site-wide': '1400px',
+        site: 'none',
+        'site-wide': 'none',
       },
       boxShadow: {
         card: '0 1px 2px rgba(0,0,0,0.04)',

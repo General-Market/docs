@@ -79,7 +79,7 @@ export function HomeClient() {
     <>
       <Header />
 
-      <div className="flex-1 overflow-x-clip pb-14 lg:pb-0">
+      <div className="flex-1 overflow-x-clip pb-14 lg:pb-0 lg:pl-[140px]">
         {/* ── Markets — hero section, owns its own padding ── */}
         <section id="markets">
           <ItpListing onItpsLoaded={handleItpsLoaded} />
