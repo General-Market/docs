@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
+import { DATA_NODE_URL } from '@/lib/config'
 import { ConsensusPopup } from './ConsensusPopup'
 import {
   LineChart,
@@ -286,17 +288,42 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Build resolution type map directly from batch's marketIds + resolutionTypes arrays
+  // Fetch batch config by hash from data-node (has per-market resolution types)
+  const configHash = activeBatch?.configHash
+  const { data: batchConfigData } = useQuery<{ markets: { asset_id: string; resolution_type: string }[] }>({
+    queryKey: ['batch-config-hash', configHash],
+    queryFn: async () => {
+      const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
+      if (!res.ok) return { markets: [] }
+      return res.json()
+    },
+    enabled: !!configHash,
+    staleTime: 300_000,
+    retry: 1,
+  })
+
+  // Build resolution type map from config (data-node) or from batch arrays (oracle)
   const resolutionMap = useMemo(() => {
     const map = new Map<string, string>()
-    if (!activeBatch) return map
-    const { marketIds, resolutionTypes } = activeBatch
-    for (let i = 0; i < marketIds.length; i++) {
-      const label = RESOLUTION_TYPE_LABELS[resolutionTypes[i]] ?? `TYPE_${resolutionTypes[i]}`
-      map.set(marketIds[i], label)
+    // Prefer data-node config (has per-market resolution types)
+    if (batchConfigData?.markets?.length) {
+      for (const m of batchConfigData.markets) {
+        if (m.asset_id && m.resolution_type) {
+          map.set(m.asset_id, m.resolution_type.toUpperCase())
+        }
+      }
+      return map
+    }
+    // Fallback: oracle batch arrays (if populated)
+    if (activeBatch?.marketIds?.length && activeBatch?.resolutionTypes?.length) {
+      const { marketIds, resolutionTypes } = activeBatch
+      for (let i = 0; i < marketIds.length; i++) {
+        const label = RESOLUTION_TYPE_LABELS[resolutionTypes[i]] ?? `TYPE_${resolutionTypes[i]}`
+        map.set(marketIds[i], label)
+      }
     }
     return map
-  }, [activeBatch])
+  }, [batchConfigData, activeBatch])
 
   // Fetch tick history for consensus arrows
   const { data: tickHistory } = useBatchHistory(activeBatch?.id ?? null)
