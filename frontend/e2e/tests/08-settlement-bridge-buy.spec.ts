@@ -59,7 +59,6 @@ test.describe('Settlement Bridge', () => {
 
       if (useSettlement) {
         // Full Settlement bridge path
-        const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
         const usdcAmount = 100_000_000n; // 100 USDC (6 decimals)
 
         const orderId = await placeBuyOrderDirect(TEST_ADDRESS, ITP_ID, usdcAmount, limitPrice);
@@ -89,18 +88,23 @@ test.describe('Settlement Bridge', () => {
         console.log(`L3 shares increased: ${sharesBefore} -> ${sharesAfter}`);
         expect(sharesAfter).toBeGreaterThan(sharesBefore);
 
-        // Wait for BridgedITP mint
-        try {
-          const bridgedItpAfter = await pollUntil(
-            async () => BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS)),
-            (balance) => balance > bridgedItpBefore,
-            240_000,
-            3_000,
-          );
-          console.log(`BridgedITP minted: ${bridgedItpBefore} -> ${bridgedItpAfter}`);
-          expect(bridgedItpAfter).toBeGreaterThan(bridgedItpBefore);
-        } catch {
-          console.log(`BridgedITP mint timed out — L3 shares verified`);
+        // Wait for BridgedITP mint (if deployed)
+        if (BRIDGED_ITP) {
+          try {
+            const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
+            const bridgedItpAfter = await pollUntil(
+              async () => BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS)),
+              (balance) => balance > bridgedItpBefore,
+              240_000,
+              3_000,
+            );
+            console.log(`BridgedITP minted: ${bridgedItpBefore} -> ${bridgedItpAfter}`);
+            expect(bridgedItpAfter).toBeGreaterThan(bridgedItpBefore);
+          } catch {
+            console.log(`BridgedITP mint timed out — L3 shares verified`);
+          }
+        } else {
+          console.log('BridgedITP not deployed — skipping BridgedITP balance check');
         }
       } else {
         // L3 direct path (no Settlement gas)
@@ -144,10 +148,17 @@ test.describe('Settlement Bridge', () => {
     try {
       if (useSettlement) {
         // Full Settlement bridge sell path
+        // If BridgedITP not deployed, fall back to L3 direct
+        if (!BRIDGED_ITP) {
+          console.log('BridgedITP not deployed — falling back to L3 direct sell');
+          await doL3DirectSell();
+          return;
+        }
+
         const bridgedItpBalance = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
         console.log(`BridgedITP balance before sell: ${bridgedItpBalance}`);
 
-        // If no BridgedITP, fall back to L3 direct
+        // If no BridgedITP balance, fall back to L3 direct
         if (bridgedItpBalance === 0n) {
           console.log('No BridgedITP balance — falling back to L3 direct sell');
           await doL3DirectSell();
