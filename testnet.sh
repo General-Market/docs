@@ -919,8 +919,7 @@ YEOF
         echo -e "  ${RED}data-node failed to start${NC}"; exit 1
     fi
 
-    # Clean up override on VPS
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/data-node/docker-compose.override.yml"
+    # Keep override on VPS — containers need it for restarts
     sleep 3
 }
 
@@ -1098,8 +1097,7 @@ YEOF
         [ $i -lt 3 ] && sleep 5
     done
 
-    # Clean up override on VPS
-    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/oracle/docker-compose.override.yml"
+    # Keep override on VPS — containers need it for restarts (command, volumes, env vars)
 
     # Verify all 3 oracles are running (BLS threshold is 2/3 — all must be up)
     sleep 3
