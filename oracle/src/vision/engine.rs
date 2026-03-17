@@ -1533,13 +1533,9 @@ pub async fn run(
                 if li < 3 { diag(&format!("get_chain_timestamp returned: {}", now)); }
 
                 let batch_count = scheduler.active_batch_count().await;
-                if li < 5 {
-                    use std::io::Write;
-                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
-                        let _ = writeln!(f, "[{}] active_batch_count={}", chrono::Utc::now().format("%H:%M:%S%.3f"), batch_count);
-                    }
-                }
+                eprintln!("VISION-DIAG: active_batch_count={} (iter {})", batch_count, li);
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
+                eprintln!("VISION-DIAG: due_batches={} (iter {})", due_batches.len(), li);
                 if li < 5 {
                     use std::io::Write;
                     if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
