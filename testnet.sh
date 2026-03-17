@@ -549,7 +549,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         MOCK_BITGET_VAULT="$MOCK_VAULT" \
         forge script script/DeployAllTokens.s.sol:DeployAllTokens \
-        --broadcast --slow --rpc-url "$RPC_URL" \
+        --broadcast --legacy --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-tokens.log 2>&1 || { echo -e "  ${RED}Token deploy FAILED — check logs/deploy-tokens.log${NC}"; exit 1; }
@@ -571,7 +571,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
-        --broadcast --slow --rpc-url "$RPC_URL" \
+        --broadcast --legacy --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; exit 1; }
@@ -585,7 +585,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         L3_WUSDC="$L3_USDC" \
         forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
-        --broadcast --slow --rpc-url "$RPC_URL" \
+        --broadcast --legacy --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; exit 1; }
