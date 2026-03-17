@@ -75,8 +75,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      // beforeFiles: locale routing fallback — fires even if middleware doesn't execute on Vercel Edge
+      // beforeFiles: high-priority rewrites that must fire before filesystem routes
       beforeFiles: [
+        // Vision leaderboard → data-node (precomputed, not oracle)
+        { source: "/api/vision/leaderboard", destination: `${DATA_NODE_URL}/vision/leaderboard` },
         // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
         { source: "/docs", destination: `${DOCS_URL}/` },
         { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },
@@ -106,7 +108,6 @@ const nextConfig: NextConfig = {
         { source: "/rpc", destination: L3_RPC_URL },
         { source: "/api/vision/snapshot/meta", destination: `${DATA_NODE_URL}/snapshot/meta` },
         { source: "/api/vision/snapshot", destination: `${DATA_NODE_URL}/snapshot` },
-        { source: "/api/vision/leaderboard", destination: `${DATA_NODE_URL}/vision/leaderboard` },
         { source: "/api/vision/:path*", destination: `${VISION_API_URL}/vision/:path*` },
         { source: "/health", destination: `${BACKEND_URL}/health` },
       ],
