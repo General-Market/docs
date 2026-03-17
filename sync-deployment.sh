@@ -57,7 +57,7 @@ BROADCAST_BASE="contracts/broadcast"
 UPDATED=0
 
 python3 - "$BROADCAST_BASE" "$CHAIN_ID" "$DEPLOYMENT_FILE" <<'PYEOF'
-import json, sys, os, glob
+import json, sys, os, glob, time
 
 broadcast_base = sys.argv[1]
 chain_id = sys.argv[2]
@@ -78,8 +78,22 @@ if not broadcast_files:
 
 # Build a map of contract name -> address from all broadcasts (latest wins)
 found = {}
+current_time = time.time()
+max_age_seconds = 7200  # 2 hours
+
 for bf in broadcast_files:
     script_name = bf.split("/")[-3]  # e.g., DeployFullSystemE2E.s.sol
+
+    # Skip broadcasts older than 2 hours (stale from previous deploys)
+    try:
+        file_age = current_time - os.path.getmtime(bf)
+        if file_age > max_age_seconds:
+            age_hours = file_age / 3600
+            print(f"  Skipping stale broadcast: {bf} ({age_hours:.1f}h old)")
+            continue
+    except Exception:
+        pass
+
     try:
         data = json.load(open(bf))
     except Exception:
