@@ -613,6 +613,18 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${GREEN}Added Vision to active-deployment.json${NC}"
     fi
 
+    # Ensure Vision address matches vision-batches.json (batches live on this contract)
+    VISION_BATCHES_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    if [ -n "$VISION_BATCHES_ADDR" ]; then
+        python3 -c "
+import json
+d = json.load(open('$DEPLOYMENT_FILE'))
+d['contracts']['Vision'] = '$VISION_BATCHES_ADDR'
+json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+"
+        echo -e "  ${GREEN}Vision address synced with vision-batches.json${NC}"
+    fi
+
     # Fund test accounts with L3 USDC
     echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
@@ -671,6 +683,24 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     echo -e "${BLUE}[10/14] Generating ITP deploy scripts...${NC}"
     python3 scripts/deploy-107-itps.py || { echo -e "${RED}ITP generator failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Generated ITP create + vault scripts${NC}"
+
+    echo -e "${BLUE}[10b/14] Verifying deployment integrity...${NC}"
+    # Check Index
+    INDEX_CHECK=$(read_deployment_addr "Index")
+    INDEX_CODE=$(cast code --rpc-url "$RPC_URL" "$INDEX_CHECK" 2>/dev/null | wc -c)
+    [ "$INDEX_CODE" -lt 10 ] && { echo -e "  ${RED}Index has no code${NC}"; exit 1; }
+
+    # Check oracles
+    ORACLE_REG_CHECK=$(cast call --rpc-url "$RPC_URL" "$INDEX_CHECK" "oracleRegistry()(address)" 2>/dev/null | tr -d '[:space:]')
+    ORACLE_COUNT=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REG_CHECK" "activeOracleCount()(uint256)" 2>/dev/null | tr -d '[:space:]')
+    [ "$ORACLE_COUNT" != "3" ] && { echo -e "  ${RED}OracleRegistry has $ORACLE_COUNT oracles (need 3)${NC}"; exit 1; }
+
+    # Check first 3 tokens have code
+    for addr in $(head -4 data/all-token-addresses.csv | tail -3 | cut -d, -f2); do
+        CODE=$(cast code --rpc-url "$RPC_URL" "$addr" 2>/dev/null | wc -c)
+        [ "$CODE" -lt 10 ] && { echo -e "  ${RED}Token $addr has no code${NC}"; exit 1; }
+    done
+    echo -e "  ${GREEN}Deployment verified: Index ✓, 3 oracles ✓, tokens ✓${NC}"
 
     echo -e "${BLUE}[11/14] Creating ITPs...${NC}"
     INDEX_ADDR_ITP=$(read_deployment_addr "Index")
