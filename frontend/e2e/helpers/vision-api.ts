@@ -898,7 +898,8 @@ export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{
         // Use joinTimestamp to detect past joins — stakePerTick resets to 0 after withdraw
         // but the contract still flags the player as AlreadyJoined
         if (pos.joinTimestamp === 0n) {
-          return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
+          const liveConfigHash = await getBatchConfigHash(entry.batchId)
+          return { batchId: entry.batchId, configHash: liveConfigHash }
         }
       } catch {
         // Position read failed — verify batch exists on-chain before returning
