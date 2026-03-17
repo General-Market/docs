@@ -22,9 +22,9 @@ import { useTranslations } from 'next-intl'
 
 // Note: Error fallback uses static English because it renders outside i18n context
 const LendingErrorFallback = (
-  <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">
-    <h3 className="text-color-down font-bold mb-2">Something went wrong</h3>
-    <p className="text-text-muted text-sm">Please refresh the page.</p>
+  <div className="bg-surface-down border border-color-down/30 rounded-card p-6 text-center">
+    <h3 className="text-color-down font-bold mb-2">Module failed to load</h3>
+    <p className="text-text-muted text-sm">Refresh the page to retry.</p>
   </div>
 )
 
@@ -46,9 +46,9 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
 
   const header = (
     <div className="pt-10 mb-6">
-      <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-      <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
-      <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
+      <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+      <h2 className="text-display font-black text-black">{t('heading.title')}</h2>
+      <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
     </div>
   )
 
@@ -72,10 +72,10 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-white border border-border-light rounded-md max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-card relative"
+        className="bg-white border border-border-light rounded-md max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-modal relative"
         onClick={e => e.stopPropagation()}
       >
-        <div className="px-6 pb-6">
+        <div className="px-4 sm:px-6 pb-6">
           <button onClick={onClose} className="absolute top-4 right-4 text-text-muted hover:text-text-primary text-2xl">&times;</button>
           {lendContent}
         </div>
@@ -153,7 +153,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* LEFT — Supply / USDC Vault */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('supply_panel.title')}
           </div>
           <div className="p-5 space-y-4">
@@ -165,19 +165,19 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => toggleAction('deposit')}
-                className={`py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] transition-colors ${
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
                   activeAction === 'deposit'
-                    ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                    ? 'bg-terminal text-white'
+                    : 'bg-brand text-white hover:bg-brand-dark'
                 }`}
               >
                 {t('actions.deposit')}
               </button>
               <button
                 onClick={() => toggleAction('withdraw')}
-                className={`py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] border transition-colors ${
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
                   activeAction === 'withdraw'
-                    ? 'bg-zinc-100 border-zinc-900 text-zinc-900'
+                    ? 'bg-muted border-black text-text-primary'
                     : 'border-border-medium text-text-primary hover:bg-muted'
                 }`}
               >
@@ -201,7 +201,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 
         {/* RIGHT — Borrow / Against ITP */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('borrow_panel.title')}
           </div>
           <div className="p-5 space-y-4">
@@ -213,19 +213,19 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={() => toggleAction('borrow')}
-                className={`py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] transition-colors ${
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
                   activeAction === 'borrow'
-                    ? 'bg-zinc-700 text-white'
-                    : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                    ? 'bg-terminal text-white'
+                    : 'bg-brand text-white hover:bg-brand-dark'
                 }`}
               >
                 {t('actions.borrow_usdc')}
               </button>
               <button
                 onClick={() => toggleAction('repay')}
-                className={`py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] border transition-colors ${
+                className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
                   activeAction === 'repay'
-                    ? 'bg-zinc-100 border-zinc-900 text-zinc-900'
+                    ? 'bg-muted border-black text-text-primary'
                     : 'border-border-medium text-text-primary hover:bg-muted'
                 }`}
               >
@@ -283,9 +283,9 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 /* ── Stat Cell ── */
 function StatCell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="px-5 py-4 border-b lg:border-b-0 border-r border-border-light last:border-r-0">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{label}</p>
-      <p className={`text-[22px] font-extrabold font-mono tabular-nums ${color || 'text-black'}`}>
+    <div className="px-3 sm:px-5 py-3 sm:py-4 border-b lg:border-b-0 border-r border-border-light last:border-r-0">
+      <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{label}</p>
+      <p className={`text-heading sm:text-title font-extrabold font-mono tabular-nums ${color || 'text-black'}`}>
         {value}
       </p>
     </div>
@@ -490,20 +490,20 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   return (
     <div>
       <div className="bg-black text-white px-5 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] mb-0.5">{t('markets_table.section_label')}</p>
-        <p className="text-[15px] font-bold">{t('markets_table.section_title')}</p>
+        <p className="text-micro font-semibold uppercase tracking-[0.08em] mb-0.5">{t('markets_table.section_label')}</p>
+        <p className="text-body font-bold">{t('markets_table.section_title')}</p>
       </div>
 
       <div className="border border-border-light border-t-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted border-b border-border-light">
-              <th className="text-left px-4 py-3">{t('markets_table.header.market')}</th>
-              <th className="text-right px-4 py-3">{t('markets_table.header.my_balance')}</th>
-              <th className="text-right px-4 py-3">{t('markets_table.header.borrow_apy')}</th>
-              <th className="text-right px-4 py-3">{t('markets_table.header.tvl')}</th>
-              <th className="text-right px-4 py-3">{t('markets_table.header.lltv')}</th>
-              <th className="text-right px-4 py-3"></th>
+            <tr className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted border-b border-border-light">
+              <th className="text-left px-3 sm:px-4 py-3">{t('markets_table.header.market')}</th>
+              <th className="text-right px-3 sm:px-4 py-3 hidden sm:table-cell">{t('markets_table.header.my_balance')}</th>
+              <th className="text-right px-3 sm:px-4 py-3">{t('markets_table.header.borrow_apy')}</th>
+              <th className="text-right px-3 sm:px-4 py-3 hidden sm:table-cell">{t('markets_table.header.tvl')}</th>
+              <th className="text-right px-3 sm:px-4 py-3 hidden sm:table-cell">{t('markets_table.header.lltv')}</th>
+              <th className="text-right px-3 sm:px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -518,36 +518,36 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
             ) : (
               rows.map((row) => (
                 <tr key={row.collateralToken} className="border-b border-border-light last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-zinc-900 text-[10px] font-bold">{row.name.slice(0, 3)}</span>
+                      <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-text-primary text-micro font-bold">{row.name.slice(0, 3)}</span>
                       </div>
-                      <span className="font-semibold text-text-primary">{t('markets_table.market_pair', { name: row.name })}</span>
+                      <span className="font-semibold text-text-primary text-sm">{t('markets_table.market_pair', { name: row.name })}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums">
+                  <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums hidden sm:table-cell">
                     {row.userBalance > 0n ? (
                       <span className="text-text-primary">{parseFloat(formatUnits(row.userBalance, 18)).toFixed(2)}</span>
                     ) : (
                       <span className="text-text-muted">--</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.borrowApy === '--' ? '--' : `${row.borrowApy}%`}</td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.tvl}</td>
-                  <td className="px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.lltv}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums text-text-primary">{row.borrowApy === '--' ? '--' : `${row.borrowApy}%`}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums text-text-primary hidden sm:table-cell">{row.tvl}</td>
+                  <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums text-text-primary hidden sm:table-cell">{row.lltv}</td>
                   <td className="px-4 py-3 text-right">
                     {row.hasMarket ? (
                       <WalletActionButton
                         onClick={() => onBorrow(row.collateralToken, row.name)}
-                        className="px-3 py-1.5 bg-zinc-900 text-white text-[11px] font-bold uppercase tracking-[0.04em] hover:bg-zinc-800 transition-colors"
+                        className="px-3 py-1.5 bg-brand text-white text-label font-bold uppercase tracking-[0.08em] hover:bg-brand-dark transition-colors"
                       >
                         {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
                           ? t('actions.manage_position')
                           : t('actions.borrow')}
                       </WalletActionButton>
                     ) : (
-                      <span className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-text-muted">
+                      <span className="px-3 py-1.5 text-label font-bold uppercase tracking-[0.08em] text-text-muted">
                         {t('markets_table.coming_soon', { defaultValue: 'Coming Soon' })}
                       </span>
                     )}
@@ -574,7 +574,7 @@ function LendSkeleton() {
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-border-light">
         {['Vault TVL', 'Supply APY', 'Borrow APY', 'Utilization'].map((label, idx) => (
           <div key={label} className="px-5 py-4 border-b lg:border-b-0 border-r border-border-light last:border-r-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{label}</p>
+            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{label}</p>
             <Bone w={idx === 0 ? 'w-20' : 'w-16'} h="h-7" />
           </div>
         ))}
@@ -584,7 +584,7 @@ function LendSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Supply */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             Supply — USDC Vault
           </div>
           <div className="p-5 space-y-4">
@@ -602,7 +602,7 @@ function LendSkeleton() {
         </div>
         {/* Borrow */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             Borrow — Against ITP
           </div>
           <div className="p-5 space-y-4">

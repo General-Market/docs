@@ -26,24 +26,24 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="border border-border-light overflow-hidden bg-white flex">
+    <div className="border border-border-light overflow-hidden bg-white flex flex-col sm:flex-row hover-lift" data-fade-in>
       {/* Left half — info */}
-      <div className="flex-1 px-5 py-4 flex flex-col justify-center">
+      <div className="flex-1 px-4 sm:px-5 py-4 flex flex-col justify-center animate-fade-up">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.08em] bg-black/5 text-text-secondary">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-micro font-bold uppercase tracking-[0.08em] bg-black/5 text-text-secondary">
             {categoryLabel}
           </span>
           {sourceSchedule && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.08em] ${
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-micro font-bold uppercase tracking-[0.08em] ${
                 isLive
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-600'
+                  ? 'bg-surface-up text-color-up'
+                  : 'bg-surface-down text-color-down'
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  isLive ? 'bg-green-500' : 'bg-red-500'
+                  isLive ? 'bg-color-up' : 'bg-color-down'
                 }`}
               />
               {isLive ? 'LIVE' : 'OFFLINE'}
@@ -51,12 +51,12 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
           )}
         </div>
 
-        <h1 className="text-[22px] font-black tracking-[-0.02em] text-black leading-tight">
+        <h1 className="text-title font-black tracking-tight text-black leading-tight animate-hero-in">
           {source.name}
         </h1>
 
         {source.description && (
-          <p className="text-[12px] text-text-muted leading-snug mt-1.5">
+          <p className="text-caption text-text-muted leading-snug mt-1.5">
             {source.description}
           </p>
         )}
@@ -64,7 +64,7 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
 
       {/* Right half — brand logo */}
       <div
-        className="w-1/2 min-h-[100px] flex items-center justify-center"
+        className="w-full sm:w-1/2 min-h-[80px] sm:min-h-[100px] flex items-center justify-center animate-fade-in"
         style={{ background: source.brandBg }}
       >
         <img

@@ -174,10 +174,10 @@ function humanInterval(secs: number): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  healthy: 'bg-green-500',
-  stale: 'bg-yellow-500',
-  pending: 'bg-blue-500',
-  disabled: 'bg-zinc-300',
+  healthy: 'bg-color-up',
+  stale: 'bg-color-warning',
+  pending: 'bg-color-info',
+  disabled: 'bg-border-light',
 }
 
 function useColumnCount(containerRef: React.RefObject<HTMLDivElement | null>) {
@@ -187,7 +187,7 @@ function useColumnCount(containerRef: React.RefObject<HTMLDivElement | null>) {
     if (!el) return
     const ro = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width
-      setCols(Math.max(4, Math.floor(w / MIN_TILE_WIDTH)))
+      setCols(Math.max(2, Math.floor(w / MIN_TILE_WIDTH)))
     })
     ro.observe(el)
     return () => ro.disconnect()
@@ -240,12 +240,12 @@ function CryptoLogo({ assetId, symbol, size = 16 }: { assetId: string; symbol: s
 function SourceCard({ source, assetCount }: { source: SourceSchedule; assetCount: number }) {
   const displayName = source.displayName
   return (
-    <div className="border border-border-light bg-white p-3 min-w-[160px] flex-shrink-0">
+    <div className="border border-border-light bg-white p-3 min-w-[160px] flex-shrink-0 card-interactive">
       <div className="flex items-center gap-2 mb-2">
-        <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-zinc-300'}`} />
-        <span className="font-mono text-[11px] font-bold text-text-primary uppercase tracking-wide">{displayName}</span>
+        <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-border-light'}`} />
+        <span className="font-mono text-label font-bold text-text-primary uppercase tracking-[0.08em]">{displayName}</span>
       </div>
-      <div className="space-y-0.5 font-mono text-[10px] text-text-muted">
+      <div className="space-y-0.5 font-mono text-micro text-text-muted">
         <div className="flex justify-between">
           <span>Assets</span>
           <span className="text-text-secondary font-semibold">{assetCount.toLocaleString()}</span>
@@ -304,18 +304,18 @@ function PriceTileInline({ price, isPrice }: { price: SnapshotPrice; isPrice?: b
 
   return (
     <div
-      className={`p-2 border border-border-light cursor-default hover:outline hover:outline-2 hover:outline-black hover:-outline-offset-2 transition-[outline] ${heatClass(changePct)}`}
+      className={`p-2 border border-border-light cursor-default hover:outline hover:outline-2 hover:outline-black hover:-outline-offset-2 hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-[outline,box-shadow] ${heatClass(changePct)}`}
       title={`${price.name}\n${formatValue(value, price.source, price.assetId, isPrice)}${changePct !== null ? `\n24h: ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : ''}${price.marketCap ? `\n${formatMarketCap(price.marketCap)}` : ''}`}
     >
       <div className="flex items-center gap-1.5">
         {hasCryptoLogo && <CryptoLogo assetId={price.assetId} symbol={price.symbol} size={16} />}
         <div className="font-mono text-xs font-bold text-text-primary truncate">{displaySymbol}</div>
       </div>
-      <div className="font-mono text-[10px] text-text-muted truncate">
+      <div className="font-mono text-micro text-text-muted truncate">
         {formatValue(value, price.source, price.assetId, isPrice)}
       </div>
       {changePct !== null && (
-        <div className={`font-mono text-[10px] font-semibold ${isUp ? 'text-color-up' : 'text-color-down'}`}>
+        <div className={`font-mono text-micro font-semibold ${isUp ? 'text-color-up' : 'text-color-down'}`}>
           {isUp ? '\u2191' : '\u2193'}{Math.abs(changePct).toFixed(1)}%
         </div>
       )}
@@ -327,10 +327,10 @@ function SectionHeader({ source, count }: { source: SourceSchedule; count: numbe
   const displayName = source.displayName
   return (
     <div className="flex items-center gap-3 px-3 py-2 bg-black text-white sticky top-0 z-10">
-      <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-zinc-500'}`} />
-      <span className="font-mono text-[12px] font-bold uppercase tracking-wider">{displayName}</span>
-      <span className="font-mono text-[11px] text-white/60">{count.toLocaleString()} assets</span>
-      <span className="font-mono text-[11px] text-white/40">
+      <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[source.status] || 'bg-text-muted'}`} />
+      <span className="font-mono text-caption font-bold uppercase tracking-[0.08em]">{displayName}</span>
+      <span className="font-mono text-label text-white/60">{count.toLocaleString()} assets</span>
+      <span className="font-mono text-label text-white/40">
         synced {relativeTime(source.lastSync)} &middot; every {humanInterval(source.syncIntervalSecs)}
       </span>
     </div>
@@ -340,8 +340,8 @@ function SectionHeader({ source, count }: { source: SourceSchedule; count: numbe
 function SubSectionHeader({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-border-light">
-      <span className="font-mono text-[11px] font-semibold text-text-secondary uppercase tracking-wide">{label}</span>
-      <span className="font-mono text-[10px] text-text-muted">{count.toLocaleString()}</span>
+      <span className="font-mono text-label font-semibold text-text-secondary uppercase tracking-[0.08em]">{label}</span>
+      <span className="font-mono text-micro text-text-muted">{count.toLocaleString()}</span>
     </div>
   )
 }
@@ -546,17 +546,17 @@ export function VisionMarketsGrid() {
   return (
     <div className="flex flex-col h-full">
       {/* Compact stats row */}
-      <div className="flex items-center gap-6 mb-4 flex-shrink-0 text-xs font-mono text-text-muted">
+      <div className="flex items-center gap-3 sm:gap-6 mb-4 flex-shrink-0 text-xs font-mono text-text-muted flex-wrap animate-fade-up">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Total Assets</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Total Assets</span>
           <span className="ml-2 text-text-primary font-bold">{totalAssets.toLocaleString()}</span>
         </div>
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Sources</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Sources</span>
           <span className="ml-2 text-text-primary font-bold">{enabledSources.length}</span>
         </div>
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">Last Sync</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Last Sync</span>
           <span className="ml-2 text-text-secondary">{generatedAt}</span>
         </div>
         {metaLoading && (
@@ -566,7 +566,7 @@ export function VisionMarketsGrid() {
 
       {/* Source schedule cards — show from meta (instant) or full data */}
       {enabledSources.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 flex-shrink-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 flex-shrink-0 stagger">
           {enabledSources.map((source) => (
             <SourceCard
               key={source.sourceId}
@@ -578,15 +578,15 @@ export function VisionMarketsGrid() {
       )}
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 mb-4 flex-shrink-0 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 flex-shrink-0 animate-fade-up">
         <input
           type="text"
           placeholder="Search symbol or name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-white border-2 border-zinc-900 text-text-primary font-mono text-sm px-4 py-1.5 rounded-full focus:outline-none focus:ring-2 focus:ring-black/10 w-64"
+          className="bg-white border-2 border-brand text-text-primary font-mono text-sm px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-brand/10 w-full sm:w-64 input-animate"
         />
-        <div className="flex gap-1.5 overflow-x-auto">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
           <button
             type="button"
             onClick={() => setSelectedCategory(null)}
@@ -620,7 +620,7 @@ export function VisionMarketsGrid() {
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="px-6 py-2 bg-brand/10 border border-brand/30 text-brand font-mono text-sm hover:bg-brand/20 transition-all rounded-md"
+                className="px-6 py-2 bg-brand/10 border border-brand/30 text-brand font-mono text-sm hover:bg-brand/20 transition-colors rounded-md"
               >
                 Retry
               </button>
@@ -748,10 +748,13 @@ export function VisionMarketsGrid() {
             </div>
           </div>
         ) : (
-          <div className="py-20 text-center text-text-muted font-mono">
-            <p className="text-lg mb-2">No data found</p>
-            <p className="text-sm">
-              {search ? 'Try a different search term' : 'Data sync may be in progress'}
+          <div className="py-20 text-center font-mono">
+            <div className="text-text-muted text-lg whitespace-pre mb-4" aria-hidden="true">{'○ ○ ○'}</div>
+            <p className="text-text-secondary text-sm mb-1">
+              {search ? 'Nothing matches.' : 'The data has not arrived.'}
+            </p>
+            <p className="text-text-muted text-xs">
+              {search ? 'Adjust the search, or wait for the world to produce what you seek.' : 'Sync in progress. Patience is the only strategy.'}
             </p>
           </div>
         )}

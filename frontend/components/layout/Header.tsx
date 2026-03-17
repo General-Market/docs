@@ -151,15 +151,15 @@ export function Header() {
   return (
     <>
       {/* Topbar — thin black strip (scrolls away) */}
-      <div className="bg-black text-white text-[11px] font-medium tracking-[0.02em] text-center py-1.5">
+      <div className="bg-black text-white text-label font-medium text-center py-1.5">
         {t('brand.topbar')}
       </div>
 
       <div className="sticky top-0 z-50">
       {/* Primary Header — Logo + Investment/Vision + Support + Wallet */}
       <header className="bg-white border-b border-border-light">
-        <div className="px-6 lg:px-12">
-          <div className="max-w-site mx-auto flex items-center justify-between h-16">
+        <div className="px-4 sm:px-6 lg:px-12">
+          <div className="max-w-site mx-auto flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
             <Link href="/" className="shrink-0 flex items-center gap-2.5">
               <img
@@ -169,7 +169,7 @@ export function Header() {
                 height={24}
                 className="w-6 h-6"
               />
-              <span className="hidden sm:inline text-[22px] font-black tracking-[-0.03em] text-black">
+              <span className="hidden sm:inline text-title font-black tracking-tight text-black">
                 {t('brand.logo_text')}
               </span>
             </Link>
@@ -178,33 +178,33 @@ export function Header() {
             <nav className="hidden sm:flex items-center gap-0">
               <Link
                 href="/index"
-                className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
+                className={`px-6 py-5 text-body font-semibold transition-all duration-200 border-b-[3px] ${
                   !isVision
-                    ? 'text-black border-black'
-                    : 'text-text-secondary border-transparent hover:text-black'
+                    ? 'text-black border-brand font-bold'
+                    : 'text-text-secondary border-transparent hover:text-black hover:border-border-medium'
                 }`}
               >
                 {t('nav.investment')}
               </Link>
               <Link
                 href="/"
-                className={`px-6 py-5 text-[15px] font-semibold transition-all border-b-[3px] ${
+                className={`px-6 py-5 text-body font-semibold transition-all duration-200 border-b-[3px] ${
                   isVision
-                    ? 'text-black border-black'
-                    : 'text-text-secondary border-transparent hover:text-black'
+                    ? 'text-black border-brand font-bold'
+                    : 'text-text-secondary border-transparent hover:text-black hover:border-border-medium'
                 }`}
               >
                 {t('nav.vision')}
               </Link>
               <div className="ml-4 hidden lg:flex items-center gap-3">
-                <Link href="/explorer" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.explorer')}</Link>
-                <Link href="/points" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.points')}</Link>
-                <Link href="/about" className="text-[12px] text-text-secondary hover:text-black transition-colors">{t('nav.about')}</Link>
+                <Link href="/explorer" className="text-caption text-text-secondary hover:text-black transition-all duration-200 hover:font-semibold">{t('nav.explorer')}</Link>
+                <Link href="/points" className="text-caption text-text-secondary hover:text-black transition-all duration-200 hover:font-semibold">{t('nav.points')}</Link>
+                <Link href="/about" className="text-caption text-text-secondary hover:text-black transition-all duration-200 hover:font-semibold">{t('nav.about')}</Link>
               </div>
             </nav>
 
             {/* Right side — Language + Balance + Wallet + Hamburger */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <div className="hidden sm:block">
                 <LanguageSwitcher />
               </div>
@@ -214,7 +214,7 @@ export function Header() {
                   {/* USDC balance or Deposit button — hidden on Vision (VisionBalanceBar handles it) */}
                   {!isVision && (
                     usdcBalance !== null && usdcBalance > 0 ? (
-                      <span className="text-[13px] font-bold font-mono tabular-nums text-black">
+                      <span className="hidden sm:inline text-caption font-bold font-mono tabular-nums text-black">
                         {usdcBalance < 0.01 ? '<0.01' : usdcBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         <span className="text-text-muted font-medium ml-1">USDC</span>
                       </span>
@@ -223,7 +223,7 @@ export function Header() {
                         href={`https://onramp.money/main/buy/?appId=1&coinCode=usdc&network=${process.env.NEXT_PUBLIC_ONRAMP_NETWORK || 'sonic'}&walletAddress=${address}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-[12px] font-bold rounded hover:bg-green-700 transition-colors"
+                        className="inline-flex items-center px-3 py-1.5 bg-color-up text-white text-caption font-bold rounded hover:opacity-90 transition-opacity"
                       >
                         {t('wallet.deposit')}
                       </a>
@@ -232,7 +232,7 @@ export function Header() {
                   {/* Wallet address */}
                   <button
                     onClick={handleLogout}
-                    className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
+                    className="group px-2 sm:px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-md transition-all duration-200 hover:bg-surface-down hover:border-color-down/30 hover:text-color-down hover:shadow-sm"
                   >
                     <span className="group-hover:hidden">{truncateAddress(address)}</span>
                     <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
@@ -242,22 +242,22 @@ export function Header() {
                 <button
                   onClick={() => switchChain({ chainId: indexL3.id })}
                   disabled={isSwitching}
-                  className="px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-lg hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50"
+                  className="px-3 sm:px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-md hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50"
                 >
                   {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
                 </button>
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="hidden sm:inline-flex items-center px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+                  className="inline-flex items-center px-3 sm:px-4 py-2 bg-brand text-white text-sm font-medium rounded-md hover:bg-brand-dark transition-colors"
                 >
-                  {t('wallet.sign_up')}
+                  {t('wallet.login')}
                 </button>
               )}
-              {/* Hamburger */}
+              {/* Hamburger — larger touch target for mobile */}
               <div className="relative lg:hidden">
                 <button
-                  className="p-2 text-text-muted hover:text-text-primary"
+                  className="p-3 -m-1 text-text-muted hover:text-text-primary"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label={t('aria.toggle_menu')}
                 >
@@ -270,34 +270,56 @@ export function Header() {
                   </svg>
                 </button>
 
-                {/* Small dropdown */}
+                {/* Mobile dropdown */}
                 {mobileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-lg border border-border-light shadow-lg py-2 z-50">
+                  <div className="animate-slide-down absolute right-0 top-full mt-2 w-64 bg-white rounded-md border border-border-light shadow-modal py-2 z-50">
                     {/* Page tabs */}
                     <div className="px-3 pb-2 mb-1 border-b border-border-light flex gap-2">
                       <Link
                         href="/index"
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`px-2.5 py-1 text-[12px] font-semibold rounded ${!isVision ? 'bg-black text-white' : 'text-text-secondary'}`}
+                        className={`px-3 py-1.5 text-caption font-semibold rounded ${!isVision ? 'bg-black text-white' : 'text-text-secondary'}`}
                       >
                         {t('nav.investment')}
                       </Link>
                       <Link
                         href="/"
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`px-2.5 py-1 text-[12px] font-semibold rounded ${isVision ? 'bg-black text-white' : 'text-text-secondary'}`}
+                        className={`px-3 py-1.5 text-caption font-semibold rounded ${isVision ? 'bg-black text-white' : 'text-text-secondary'}`}
                       >
                         {t('nav.vision')}
                       </Link>
                     </div>
 
-                    <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.explorer')}</Link>
-                    <Link href="/points" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.points')}</Link>
-                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.about')}</Link>
-                    <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
-                    <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
-                    <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.privacy_policy')}</Link>
-                    <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-1.5 text-[13px] text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.terms_of_service')}</Link>
+                    {/* Section nav — scroll-to links (contextual) */}
+                    {(isIndex || isVision) && (
+                      <div className="px-2 py-1.5 mb-1 border-b border-border-light">
+                        <div className="px-1 mb-1 text-micro font-semibold uppercase tracking-[0.1em] text-text-muted">
+                          Sections
+                        </div>
+                        {navLinks.map((link) => (
+                          <button
+                            key={link.id}
+                            onClick={() => scrollTo(link.id)}
+                            className={`block w-full text-left px-2 py-2 text-caption rounded transition-colors ${
+                              activeSection === link.id
+                                ? 'text-black font-semibold bg-surface'
+                                : 'text-text-secondary hover:text-black hover:bg-surface'
+                            }`}
+                          >
+                            {link.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <Link href="/explorer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.explorer')}</Link>
+                    <Link href="/points" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.points')}</Link>
+                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('nav.about')}</Link>
+                    <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.docs')}</a>
+                    <a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.discord')}</a>
+                    <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.privacy_policy')}</Link>
+                    <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-caption text-text-secondary hover:text-black hover:bg-surface transition-colors">{t('footer.terms_of_service')}</Link>
 
                     {/* Language switcher */}
                     <div className="px-3 pt-2 mt-1 border-t border-border-light">
@@ -311,19 +333,19 @@ export function Header() {
         </div>
       </header>
 
-      {/* Sub Header — Section Navigation (only for /index page) */}
+      {/* Sub Header — Section Navigation (scrollable on mobile) */}
       {isIndex && (
       <nav className="bg-white border-b border-border-light">
-        <div className="px-6 lg:px-12">
-          <div className="max-w-site mx-auto hidden md:flex items-center gap-1 h-11">
+        <div className="px-4 sm:px-6 lg:px-12">
+          <div className="max-w-site mx-auto flex items-center gap-1 h-11 overflow-x-auto scrollbar-hide">
             {navLinks.map((link) => (
               <button
                 key={link.id}
                 onClick={() => scrollTo(link.id)}
-                className={`px-4 py-2 text-[13px] font-medium rounded transition-all ${
+                className={`px-3 sm:px-4 py-2 text-caption font-medium rounded transition-all duration-200 whitespace-nowrap shrink-0 ${
                   activeSection === link.id
-                    ? 'text-black bg-surface font-semibold'
-                    : 'text-text-secondary hover:text-black hover:bg-surface'
+                    ? 'text-black bg-surface font-bold'
+                    : 'text-text-secondary hover:text-black hover:bg-surface hover:font-semibold'
                 }`}
               >
                 {link.label}

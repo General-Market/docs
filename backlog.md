@@ -1,5 +1,25 @@
 # Design Decision Backlog
 
+## Session: 20260317-m4b1 (Mobile adaptation — full frontend)
+
+- [DECISION] Sign Up button was `hidden sm:inline-flex` — invisible on mobile. Users literally could not sign up on phones. Fixed to always-visible with responsive padding `px-3 sm:px-4`.
+- [DECISION] Subheader nav (`hidden md:flex`) now visible on all viewports with horizontal scroll (`overflow-x-auto scrollbar-hide`). Buttons get `whitespace-nowrap shrink-0` to prevent compression.
+- [DECISION] Added section nav (scroll-to links) to hamburger menu for both /index and Vision pages. Contextual — shows INVESTMENT_NAV or VISION_NAV based on current page.
+- [DECISION] LeaderboardTable: mobile card layout (`MobileAgentCard`) replaces table below 768px. Shows rank + wallet + ROI on line 1, max portfolio + bets + volume + last active on line 2. Preserves `isMobile` hook already in place.
+- [DECISION] PortfolioBetHistoryTable: mobile card layout (`MobileBetCard`) replaces table below 768px. Shows markets + amount on line 1, status + time + tx on line 2. Expandable details preserved.
+- [DECISION] Hamburger touch target increased from `p-2` (32px) to `p-3 -m-1` (44px effective). Mobile menu items from `py-1.5` to `py-2.5`.
+- [DECISION] Hero band text scales from 2rem to 1.5rem on mobile via CSS `@media (max-width: 767px)`. Section bar title scales to 10px.
+- [DECISION] Modals left unchanged — `p-4` backdrop + `w-full max-w-lg` + `max-h-[90vh]` already works. Not worth touching 8+ files for 4px of padding.
+- [DECISION] KeyStatsBar already had mobile layout (2-col grid with `md:hidden` / `hidden md:flex`). No changes needed.
+- [DECISION] SourceHero: `flex` → `flex flex-col sm:flex-row`, logo `w-1/2` → `w-full sm:w-1/2`. Stacks vertically on mobile.
+- [DECISION] VisionPage: Header `flex` → `flex flex-col sm:flex-row` with gap-4. Create button gets `self-start` on mobile.
+- [DECISION] VisionMarketsGrid: search `w-64` → `w-full sm:w-64`. Column count minimum from 4 → 2 (was forcing 4 columns on 375px screens, now allows 2-3). Filter pills get `scrollbar-hide`. Stats row gets `flex-wrap`.
+- [DECISION] VaultModal: `shadow-card` → `shadow-modal`. Inner padding `px-6` → `px-4 sm:px-6`. StatCell text `text-title` → `text-heading sm:text-title`. Inner markets table hides My Balance/TVL/LLTV columns on mobile (`hidden sm:table-cell`).
+- [DECISION] MarketsTable (lending): outer `p-6` → `p-4 sm:p-6`. Utilization column hidden on mobile. Collateral cell tightened for mobile (smaller icon, truncated address hidden).
+- [DECISION] HoldingsTable: removed `min-w-[900px]` hard constraint. Sector column hidden on mobile (`hidden sm:table-cell`). Table now fits mobile viewport with 5 visible columns (Rank, Name, Weight, Price, 24h).
+- [DECISION] SourceHealthTable: left as-is — admin table with 10 columns. Horizontal scroll (`overflow-x-auto`) is the correct pattern for monitoring dashboards.
+- [DECISION] BilateralBetsList: already responsive — `flex-wrap` on filters, `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` on grid. No changes needed.
+
 ## Session: 20260314-b3f9 (ITP deploy price fetch fix)
 
 - [DECISION] "AP returned 500" on ITP deploy: root cause is data-node's `prices-by-address` returning HTTP 500 when PostgreSQL query fails (DB not yet populated, or transient connection error). Production (Vercel) shows only 200s; error manifests in E2E Anvil mode where local data-node starts fresh without price history.

@@ -6,12 +6,17 @@ import { useAccount } from 'wagmi'
 import { useBetHistory, BetRecord } from '@/hooks/useBetHistory'
 import { BetDetailsExpanded } from '@/components/domain/BetDetailsExpanded'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { useToast } from '@/lib/contexts/ToastContext'
+import { useIsMobile } from '@/hooks/useMediaQueries'
 import { formatUSD, formatNumber, toBaseUnits } from '@/lib/utils/formatters'
 import { formatRelativeTime } from '@/lib/utils/time'
 import { getTxUrl } from '@/lib/utils/basescan'
 
 const ITEMS_PER_PAGE = 20
+
+function formatTradeCount(bet: BetRecord): string {
+  const count = bet.tradeCount || bet.portfolioSize || 0
+  return count >= 1000 ? `${(count / 1000).toFixed(1)}K` : String(count)
+}
 
 interface BetRowProps {
   bet: BetRecord
@@ -33,12 +38,7 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
       >
         {/* Portfolio Size - use tradeCount from backend (Epic 8) */}
         <td className="px-4 py-3 font-mono font-bold text-text-primary">
-          {(() => {
-            const count = bet.tradeCount || bet.portfolioSize || 0
-            return count >= 1000
-              ? `${(count / 1000).toFixed(1)}K`
-              : count
-          })()} markets
+          {formatTradeCount(bet)} markets
         </td>
 
         {/* Amount */}
@@ -105,6 +105,70 @@ const BetRow = memo(function BetRow({ bet, isExpanded, onToggle }: BetRowProps) 
 })
 
 /**
+ * Mobile card for a single bet — replaces table row below 768px
+ */
+const MobileBetCard = memo(function MobileBetCard({ bet, isExpanded, onToggle }: BetRowProps) {
+  const amount = toBaseUnits(bet.amount)
+
+  return (
+    <div className="border-b border-border-light">
+      <button
+        onClick={onToggle}
+        className="w-full text-left px-4 py-3 hover:bg-card-hover transition-colors"
+      >
+        {/* Row 1: Markets + Amount */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono font-bold text-sm text-text-primary">
+            {formatTradeCount(bet)} markets
+          </span>
+          <span className="font-mono text-sm text-text-primary tabular-nums">
+            {formatUSD(amount)}
+          </span>
+        </div>
+        {/* Row 2: Status + Time + Tx + Chevron */}
+        <div className="flex items-center gap-3 mt-1.5">
+          <StatusBadge status={bet.status} />
+          <span className="text-xs text-text-muted">
+            {formatRelativeTime(bet.createdAt)}
+          </span>
+          {bet.txHash && (
+            <a
+              href={getTxUrl(bet.txHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-text-muted hover:text-text-primary font-mono transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {bet.txHash.slice(0, 8)}...
+            </a>
+          )}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`ml-auto text-text-muted transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </button>
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="bg-muted px-4 py-4 border-t border-border-light">
+          <BetDetailsExpanded bet={bet} />
+        </div>
+      )}
+    </div>
+  )
+})
+
+/**
  * Loading skeleton for table rows
  */
 function LoadingSkeleton() {
@@ -137,10 +201,40 @@ function LoadingSkeleton() {
 }
 
 /**
+ * Mobile loading skeleton
+ */
+function MobileLoadingSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="px-4 py-3 border-b border-border-light">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="flex gap-3 mt-2">
+            <div className="h-3 w-14 bg-muted animate-pulse rounded" />
+            <div className="h-3 w-12 bg-muted animate-pulse rounded" />
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+/**
  * Empty state component
  */
-function EmptyState() {
+function EmptyState({ isMobile }: { isMobile: boolean }) {
   const t = useTranslations('common')
+  if (isMobile) {
+    return (
+      <div className="px-4 py-12 text-center">
+        <p className="text-text-muted">{t('empty.no_bets_found')}</p>
+        <p className="text-text-muted text-sm mt-1">{t('empty.no_bets_found_hint')}</p>
+      </div>
+    )
+  }
   return (
     <tr>
       <td colSpan={6} className="px-4 py-12 text-center">
@@ -172,7 +266,7 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
       <button
         onClick={onPrev}
         disabled={currentPage === 1}
-        className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
+        className="px-3 py-1.5 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-brand disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
         {tc('pagination.previous')}
       </button>
@@ -182,7 +276,7 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
       <button
         onClick={onNext}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-zinc-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
+        className="px-3 py-1.5 border border-border-medium text-text-muted text-sm font-mono hover:text-text-primary hover:border-brand disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
       >
         {tc('pagination.next')}
       </button>
@@ -193,12 +287,14 @@ function Pagination({ currentPage, totalPages, onPrev, onNext }: PaginationProps
 /**
  * Portfolio Bet History Table
  * Displays user's bet history with expandable rows, pagination, and auto-refresh
+ * Mobile: card layout below 768px
  */
 export function PortfolioBetHistoryTable() {
   const t = useTranslations('portfolio')
   const tc = useTranslations('common')
   const { address, isConnected } = useAccount()
   const { bets, isLoading, isError, error } = useBetHistory({ address })
+  const isMobile = useIsMobile()
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -232,7 +328,7 @@ export function PortfolioBetHistoryTable() {
   // Not connected state
   if (!isConnected) {
     return (
-      <div className="border border-border-medium rounded-xl p-6 text-center">
+      <div className="border border-border-medium rounded-card p-6 text-center">
         <p className="text-text-muted">{t('bet_history.connect_to_view')}</p>
       </div>
     )
@@ -241,7 +337,7 @@ export function PortfolioBetHistoryTable() {
   // Error state
   if (isError) {
     return (
-      <div className="border border-color-down/50 rounded-xl p-6 text-center">
+      <div className="border border-color-down/50 rounded-card p-6 text-center">
         <p className="text-color-down">{t('bet_history.error_loading')}</p>
         <p className="text-text-muted text-sm mt-1">{error?.message}</p>
       </div>
@@ -249,7 +345,7 @@ export function PortfolioBetHistoryTable() {
   }
 
   return (
-    <div className="border border-border-light rounded-xl shadow-card">
+    <div className="border border-border-light rounded-card shadow-card">
       {/* Table Header */}
       <div className="bg-muted px-4 py-3 border-b border-border-medium rounded-t-xl">
         <h3 className="text-lg font-bold text-text-primary">{t('bet_history.title')}</h3>
@@ -258,37 +354,57 @@ export function PortfolioBetHistoryTable() {
         </p>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-muted text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-medium">
-              <th className="px-4 py-2 text-left">{t('bet_history.portfolio_size')}</th>
-              <th className="px-4 py-2 text-left">{t('bet_history.amount')}</th>
-              <th className="px-4 py-2 text-left">{t('bet_history.status')}</th>
-              <th className="px-4 py-2 text-left">{t('bet_history.created')}</th>
-              <th className="px-4 py-2 text-left">{t('bet_history.tx_hash')}</th>
-              <th className="px-4 py-2 w-8"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : paginatedBets.length === 0 ? (
-              <EmptyState />
-            ) : (
-              paginatedBets.map((bet) => (
-                <BetRow
-                  key={bet.betId}
-                  bet={bet}
-                  isExpanded={expandedBetId === bet.betId}
-                  onToggle={() => toggleExpanded(bet.betId)}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Mobile: card layout */}
+      {isMobile ? (
+        <div>
+          {isLoading ? (
+            <MobileLoadingSkeleton />
+          ) : paginatedBets.length === 0 ? (
+            <EmptyState isMobile />
+          ) : (
+            paginatedBets.map((bet) => (
+              <MobileBetCard
+                key={bet.betId}
+                bet={bet}
+                isExpanded={expandedBetId === bet.betId}
+                onToggle={() => toggleExpanded(bet.betId)}
+              />
+            ))
+          )}
+        </div>
+      ) : (
+        /* Desktop: table */
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-muted text-xs font-medium uppercase tracking-[0.08em] text-text-muted border-b border-border-medium">
+                <th className="px-4 py-2 text-left">{t('bet_history.portfolio_size')}</th>
+                <th className="px-4 py-2 text-left">{t('bet_history.amount')}</th>
+                <th className="px-4 py-2 text-left">{t('bet_history.status')}</th>
+                <th className="px-4 py-2 text-left">{t('bet_history.created')}</th>
+                <th className="px-4 py-2 text-left">{t('bet_history.tx_hash')}</th>
+                <th className="px-4 py-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <LoadingSkeleton />
+              ) : paginatedBets.length === 0 ? (
+                <EmptyState isMobile={false} />
+              ) : (
+                paginatedBets.map((bet) => (
+                  <BetRow
+                    key={bet.betId}
+                    bet={bet}
+                    isExpanded={expandedBetId === bet.betId}
+                    onToggle={() => toggleExpanded(bet.betId)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination */}
       {!isLoading && bets.length > 0 && (
