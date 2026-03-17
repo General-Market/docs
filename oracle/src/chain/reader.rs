@@ -282,8 +282,9 @@ where
                     info!(order_id = %order_id, raw_status = status, "getOrder returned status");
 
                     match status {
-                        // Terminal or batched states: cache as settled
-                        1 | 2 | 3 | 4 => {
+                        // Terminal states only: cache as settled
+                        // Note: status 1 (Batched) is NOT settled — get_batched_orders() needs it
+                        2 | 3 | 4 => {
                             newly_settled.push(*order_id);
                         }
                         // Pending
