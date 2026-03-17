@@ -433,16 +433,17 @@ impl EthersChainWriter {
         for nonce_attempt in 0..=MAX_NONCE_RETRIES {
             let tx_start = std::time::Instant::now();
 
+            // Estimate gas BEFORE nonce (gas estimation may fail on contract revert,
+            // and we don't want to consume a nonce for a tx that won't be sent)
+            let t0 = std::time::Instant::now();
+            let gas = self.gas_estimator.estimate_gas(&tx.clone().into()).await?;
+            let gas_est_ms = t0.elapsed().as_millis();
+
             // Get nonce (fresh on each attempt after resync)
             let nonce = self.nonce_manager.get_next_nonce().await?;
             let mut tx_with_nonce = tx.clone();
             tx_with_nonce.set_nonce(nonce);
-
-            // Estimate gas
-            let t0 = std::time::Instant::now();
-            let gas = self.gas_estimator.estimate_gas(&tx_with_nonce).await?;
             tx_with_nonce.set_gas(gas);
-            let gas_est_ms = t0.elapsed().as_millis();
 
             // Get gas price
             let t1 = std::time::Instant::now();
