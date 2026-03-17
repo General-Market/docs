@@ -80,23 +80,24 @@ export function HomeClient() {
       <Header />
 
       <div className="flex-1 overflow-x-clip">
+        {/* ── Markets — hero section, owns its own padding ── */}
         <section id="markets">
           <ItpListing onItpsLoaded={handleItpsLoaded} />
         </section>
 
-        <div className="section-divider" />
-        <section id="portfolio">
+        {/* ── Portfolio — surface bg creates natural break from Markets ── */}
+        <section id="portfolio" className="bg-surface border-t border-border-light">
           <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
+            <div className="max-w-site mx-auto py-10">
               <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
             </div>
           </div>
         </section>
 
-        <div className="section-divider" />
-        <section id="create">
+        {/* ── Create — back to white, border-top as lighter separator ── */}
+        <section id="create" className="border-t border-border-light">
           <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
+            <div className="max-w-site mx-auto py-10">
               <CreateItpSection
                 expanded={true}
                 onToggle={() => {}}
@@ -106,19 +107,22 @@ export function HomeClient() {
           </div>
         </section>
 
+        {/* ── Single divider — context shift: from building to lending ── */}
         <div className="section-divider" />
-        <section id="lend">
+
+        {/* ── Lend — surface bg ── */}
+        <section id="lend" className="bg-surface">
           <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
+            <div className="max-w-site mx-auto py-8">
               <VaultModal inline onClose={() => {}} />
             </div>
           </div>
         </section>
 
-        <div className="section-divider" />
-        <section id="backtest">
+        {/* ── Backtest — white, border separator ── */}
+        <section id="backtest" className="border-t border-border-light">
           <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
+            <div className="max-w-site mx-auto py-10">
               <BacktestSection
                 expanded={true}
                 onToggle={() => {}}
@@ -130,23 +134,20 @@ export function HomeClient() {
           </div>
         </section>
 
-        <div className="section-divider" />
-        <section id="system">
+        {/* ── Monitoring — System + AP Feed grouped, compact, surface bg ── */}
+        <div className="bg-surface border-t border-border-light">
           <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto">
-              <SystemStatusSection deployedItps={deployedItps} />
+              <section id="system" className="py-6">
+                <SystemStatusSection deployedItps={deployedItps} />
+              </section>
+              <div className="border-t border-border-medium" />
+              <section id="ap-feed" className="py-6">
+                <VaultTradesFeed deployedItps={deployedItps} />
+              </section>
             </div>
           </div>
-        </section>
-
-        <div className="section-divider" />
-        <section id="ap-feed">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <VaultTradesFeed deployedItps={deployedItps} />
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
 
       {rebalanceModal && (

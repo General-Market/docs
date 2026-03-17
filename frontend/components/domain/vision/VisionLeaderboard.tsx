@@ -1,6 +1,7 @@
 'use client'
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Link } from '@/i18n/routing'
 
 /**
@@ -37,7 +38,7 @@ export function VisionLeaderboard() {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-border-medium text-[10px] font-mono text-text-muted uppercase tracking-wider">
+            <tr className="border-b border-border-medium text-micro font-mono text-text-muted uppercase tracking-[0.08em]">
               <th className="pb-3 pr-4">#</th>
               <th className="pb-3 pr-4">Player</th>
               <th className="pb-3 pr-4 text-right">PnL (USDC)</th>
@@ -47,15 +48,17 @@ export function VisionLeaderboard() {
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map((entry) => {
+            {leaderboard.map((entry, index) => {
               const pnlPositive = entry.pnl >= 0
+              const isTop3 = entry.rank <= 3
               return (
                 <tr
                   key={entry.walletAddress}
-                  className="border-b border-border-light hover:bg-surface transition-colors"
+                  className={`border-b border-border-light hover:bg-surface hover:shadow-[inset_3px_0_0_#000] transition-all animate-row-in ${isTop3 ? 'bg-surface' : ''}`}
+                  style={{ '--row-i': index } as React.CSSProperties}
                 >
-                  <td className="py-3 pr-4 font-mono text-xs text-text-muted">
-                    {entry.rank}
+                  <td className={`py-3 pr-4 font-mono text-xs ${isTop3 ? 'text-text-primary font-black text-sm' : 'text-text-muted'}`}>
+                    <AnimatedNumber value={entry.rank} decimals={0} duration={500} />
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs">
                     <Link
@@ -66,13 +69,25 @@ export function VisionLeaderboard() {
                     </Link>
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right font-bold ${pnlPositive ? 'text-color-up' : 'text-color-down'}`}>
-                    {pnlPositive ? '+' : '-'}${Math.abs(entry.pnl).toFixed(2)}
+                    <AnimatedNumber
+                      value={entry.pnl}
+                      duration={800}
+                      formatFn={(v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`}
+                    />
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right ${entry.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                    {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
+                    <AnimatedNumber
+                      value={entry.roi}
+                      duration={800}
+                      formatFn={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+                    />
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-right text-text-secondary">
-                    ${entry.totalVolume.toFixed(2)}
+                    <AnimatedNumber
+                      value={entry.totalVolume}
+                      duration={800}
+                      formatFn={(v) => `$${v.toFixed(2)}`}
+                    />
                   </td>
                   <td className="py-3 font-mono text-xs text-right text-text-secondary">
                     {entry.portfolioBets}

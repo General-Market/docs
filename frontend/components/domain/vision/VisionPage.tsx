@@ -31,9 +31,9 @@ export function VisionPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
-                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
-                <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
-                <p className="text-[14px] text-text-secondary mt-1.5">
+                <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
+                <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+                <p className="text-body text-text-secondary mt-1.5">
                   {t('heading.description', { count: batches?.length || 0 })}
                 </p>
               </div>
@@ -106,9 +106,9 @@ export function VisionPage() {
       {/* Leaderboard */}
       <section id="leaderboard" className="px-6 lg:px-12 pt-6 pb-12">
         <div className="max-w-site mx-auto">
-          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-brand mb-1.5">{t('leaderboard.label')}</p>
-          <h3 className="text-[24px] font-bold tracking-[-0.02em] text-black leading-[1.1]">{t('leaderboard.title')}</h3>
-          <p className="text-[14px] text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
+          <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('leaderboard.label')}</p>
+          <h3 className="text-title font-bold tracking-tight text-black leading-[1.1]">{t('leaderboard.title')}</h3>
+          <p className="text-body text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
           <ErrorBoundary fallback={<div className="py-8 text-center text-text-muted font-mono text-sm">Leaderboard unavailable.</div>}>
             <VisionLeaderboard />
           </ErrorBoundary>
