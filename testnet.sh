@@ -646,8 +646,21 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
-        > logs/deploy-tokens.log 2>&1 || { echo -e "  ${RED}Token deploy FAILED — check logs/deploy-tokens.log${NC}"; exit 1; }
-    echo -e "  ${GREEN}621 tokens deployed, vault funded${NC}"
+        > logs/deploy-tokens.log 2>&1
+
+    # Forge may report nonce errors on Orbit L3 even when all txs succeed
+    # Check actual deployment before aborting
+    FIRST_TOKEN=$(head -2 data/all-token-addresses.csv | tail -1 | cut -d, -f2)
+    if [ -n "$FIRST_TOKEN" ]; then
+        TOKEN_CODE=$(cast code --rpc-url "$RPC_URL" "$FIRST_TOKEN" 2>/dev/null | wc -c)
+        if [ "$TOKEN_CODE" -gt 10 ]; then
+            echo -e "  ${GREEN}Tokens deployed (verified first token has code)${NC}"
+        else
+            echo -e "  ${RED}Token deploy FAILED — first token has no code${NC}"; exit 1
+        fi
+    else
+        echo -e "  ${RED}Token deploy FAILED — no addresses in CSV${NC}"; exit 1
+    fi
 
     # Update assets.json with fresh on-chain addresses
     echo -e "${BLUE}[9b/14] Syncing fresh token addresses to assets.json...${NC}"
