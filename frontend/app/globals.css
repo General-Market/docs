@@ -11,7 +11,7 @@
   --up: #16A34A;
   --down: #DC2626;
   --brand: #00A36C;
-  --mono: 'JetBrains Mono', monospace;
+  --mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
 
   /* Motion tokens */
   --dur-instant: 100ms;
@@ -288,6 +288,33 @@ input[type="number"] {
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* ── DELIGHT KEYFRAMES — success feedback & micro-polish ── */
+@keyframes checkmark-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes success-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes icon-swap-in {
+  from { opacity: 0; transform: scale(0.5) rotate(-30deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes done-ring {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.35); }
+  100% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+}
+@keyframes tooltip-appear {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes status-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ── ANIMATION UTILITIES ── */
 .animate-fade-up { animation: fade-up var(--dur-normal) var(--ease-out-expo) both; }
 .animate-fade-in { animation: fade-in var(--dur-normal) var(--ease-out) both; }
@@ -298,6 +325,16 @@ input[type="number"] {
 .animate-drawer-in { animation: drawer-in-right var(--dur-slow) var(--ease-out-expo) both; }
 .animate-toast-in { animation: toast-in var(--dur-slow) var(--ease-out-expo) both; }
 .animate-hero-in { animation: hero-entrance var(--dur-dramatic) var(--ease-out-expo) both; }
+.animate-checkmark-draw {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: checkmark-draw 0.4s var(--ease-out-expo) 0.15s forwards;
+}
+.animate-success-pop { animation: success-pop 0.35s var(--ease-out-expo) both; }
+.animate-icon-swap { animation: icon-swap-in 0.25s var(--ease-out-expo) both; }
+.animate-done-ring { animation: done-ring 0.6s var(--ease-out) forwards; }
+.animate-tooltip-in { animation: tooltip-appear 0.15s var(--ease-out) both; }
+.animate-status-breathe { animation: status-breathe 2s ease-in-out infinite; }
 
 /* Stagger — set --i per child via nth-child */
 .stagger > :nth-child(1) { --i: 0; }
@@ -386,11 +423,22 @@ input[type="number"] {
   animation-delay: calc(var(--row-i, 0) * 50ms);
 }
 
+/* ── GEOMETRIC PULSE — concentric rings expanding from center ── */
+@keyframes geo-pulse-ring {
+  0% { transform: scale(0); opacity: 0.9; }
+  70% { opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
 /* Respect reduced motion for all overdrive animations */
 @media (prefers-reduced-motion: reduce) {
   .live-ambient-pulse { animation: none; }
+  .animate-status-breathe { animation: none; }
   .animate-batch-reveal { animation: none; opacity: 1; transform: none; }
   .animate-row-in { animation: none; opacity: 1; transform: none; }
+  .animate-done-ring { animation: none; }
+  .animate-checkmark-draw { animation: none; stroke-dashoffset: 0; }
+  .geo-pulse-container svg circle { animation: none !important; opacity: 0.15; transform: scale(0.5); }
 }
 
 /* ── INPUT FOCUS ── */

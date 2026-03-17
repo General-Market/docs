@@ -37,8 +37,19 @@ module.exports = {
         accent: '#C40000',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        'micro':   ['0.625rem',  { lineHeight: '1.4' }],   // 10px — mobile nav, tiny badges
+        'label':   ['0.6875rem', { lineHeight: '1.4' }],   // 11px — uppercase labels, table headers
+        'caption': ['0.75rem',   { lineHeight: '1.5' }],   // 12px — secondary info, timestamps
+        'body-sm': ['0.8125rem', { lineHeight: '1.55' }],  // 13px — compact body, sidebar items
+        'body':    ['0.875rem',  { lineHeight: '1.6' }],   // 14px — default body text
+        'base':    ['1rem',      { lineHeight: '1.6' }],   // 16px — readable prose
+        'title':   ['1.25rem',   { lineHeight: '1.3' }],   // 20px — card titles, stat values
+        'heading': ['1.75rem',   { lineHeight: '1.2' }],   // 28px — section headings
+        'display': ['2.75rem',   { lineHeight: '1.08' }],  // 44px — hero, page titles
       },
       maxWidth: {
         site: 'none',
