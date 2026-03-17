@@ -1534,7 +1534,12 @@ pub async fn run(
 
                 let batch_count = scheduler.active_batch_count().await;
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
-                if li < 5 { diag(&format!("batch_count={}, due={}", batch_count, due_batches.len())); }
+                if li < 5 {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
+                        let _ = writeln!(f, "[{}] batch_count={}, due={}", chrono::Utc::now().format("%H:%M:%S%.3f"), batch_count, due_batches.len());
+                    }
+                }
 
                 if due_batches.is_empty() {
                     static POLL_CTR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
