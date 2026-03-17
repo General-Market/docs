@@ -363,7 +363,12 @@ cmd_deploy() {
 
     # 3b: Register oracle BLS keys in OracleRegistry
     echo -e "${BLUE}[3b/14] Registering oracle BLS keys in OracleRegistry...${NC}"
-    ORACLE_REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
+    # Read the ACTUAL OracleRegistry from the Index contract (not deployment JSON — may be stale)
+    INDEX_ADDR_3B=$(read_deployment_addr "Index")
+    ORACLE_REGISTRY_ADDR=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR_3B" "oracleRegistry()(address)" 2>/dev/null | tr -d '[:space:]')
+    if [ -z "$ORACLE_REGISTRY_ADDR" ] || [ "$ORACLE_REGISTRY_ADDR" = "0x0000000000000000000000000000000000000000" ]; then
+        ORACLE_REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
+    fi
     if [ -z "$ORACLE_REGISTRY_ADDR" ]; then
         echo -e "  ${RED}OracleRegistry address not found in deployment JSON${NC}"
         exit 1
@@ -438,6 +443,9 @@ cmd_deploy() {
         exit 1
     fi
     echo -e "  ${GREEN}BLS oracle registration complete — $ACTIVE_ORACLE_COUNT active oracles${NC}"
+
+    # Patch deployment JSON with the verified OracleRegistry address (chain-sourced, not broadcast-derived)
+    python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['OracleRegistry']='$ORACLE_REGISTRY_ADDR'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
 
     # 3c: Deploy settlement contracts to Sonic
     echo -e "${BLUE}[3c/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
