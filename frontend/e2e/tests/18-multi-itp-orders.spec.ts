@@ -113,7 +113,7 @@ test.describe('Multi-ITP Order Processing', () => {
     try {
       // 6. Place L3 sell order for ITP2
       const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
-      const limitPrice = 1n;
+      const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
       const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
       console.log(`Placed ITP2 L3 sell order #${orderId}`);
 
