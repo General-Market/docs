@@ -22,20 +22,20 @@ function getHorizonBadge(horizon?: TradeHorizon): { label: string; bgColor: stri
     case 'weekly':
       return {
         label: 'Weekly',
-        bgColor: 'bg-amber-100',
-        textColor: 'text-amber-700',
+        bgColor: 'bg-surface-warning',
+        textColor: 'text-color-warning',
       };
     case 'monthly':
       return {
         label: 'Monthly',
-        bgColor: 'bg-orange-100',
-        textColor: 'text-orange-700',
+        bgColor: 'bg-surface-warning',
+        textColor: 'text-color-warning',
       };
     case 'quarterly':
       return {
         label: 'Quarterly',
-        bgColor: 'bg-red-100',
-        textColor: 'text-red-700',
+        bgColor: 'bg-surface-down',
+        textColor: 'text-color-down',
       };
     default:
       return null;
@@ -79,20 +79,20 @@ function getStatusColor(status: string): string {
   switch (status) {
     // Legacy statuses (GeneralMarketCore)
     case 'pending':
-      return 'text-yellow-600'
+      return 'text-color-warning'
     case 'matched':
-      return 'text-green-600'
+      return 'text-color-up'
     case 'settling':
-      return 'text-blue-600'
+      return 'text-color-info'
     case 'settled':
-      return 'text-cyan-600'
+      return 'text-text-secondary'
     // Bilateral custody statuses (CollateralVault)
     case 'active':
-      return 'text-green-600'
+      return 'text-color-up'
     case 'in_arbitration':
-      return 'text-orange-600'
+      return 'text-color-warning'
     case 'custom_payout':
-      return 'text-purple-600'
+      return 'text-text-secondary'
     default:
       return 'text-text-muted'
   }
@@ -116,7 +116,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
   const category = useCategoryById(bet.categoryId)
 
   return (
-    <div className={`border border-border-light rounded-xl p-4 bg-white shadow-card ${className}`}>
+    <div className={`border border-border-light rounded-card p-4 bg-white shadow-card card-interactive hover-lift ${className}`}>
       {/* Header with odds badge and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
           })()}
           {/* Story 14-1: Early exit badge */}
           {bet.earlyExit && (
-            <span className="px-2 py-1 bg-cyan-100 rounded text-xs font-mono text-cyan-700">
+            <span className="px-2 py-1 bg-surface-info rounded text-xs font-mono text-color-info">
               ⊗ Early Exit
             </span>
           )}
@@ -166,14 +166,14 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       {/* Match status indicator */}
       <div className="mb-4 text-xs font-mono text-text-muted">
         {odds.isMatched ? (
-          <span className="text-green-600">{t('bet_card.matched')}</span>
+          <span className="text-color-up">{t('bet_card.matched')}</span>
         ) : (
-          <span className="text-yellow-600">{t('bet_card.awaiting_match')}</span>
+          <span className="text-color-warning">{t('bet_card.awaiting_match')}</span>
         )}
       </div>
 
       {/* Payout info (AC4) */}
-      <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
+      <div className="bg-muted p-3 rounded-md border border-border-light mb-4">
         <div className="text-text-muted text-xs uppercase font-mono mb-2">{t('bet_card.payout_info')}</div>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between font-mono">
@@ -184,13 +184,13 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
             <Tooltip content="Return multiplier if creator wins">
               <span className="text-text-muted cursor-help">{t('bet_card.creator_return')}</span>
             </Tooltip>
-            <span className="text-green-600">{odds.creatorReturn}</span>
+            <span className="text-color-up">{odds.creatorReturn}</span>
           </div>
           <div className="flex justify-between font-mono">
             <Tooltip content="Return multiplier if matcher wins">
               <span className="text-text-muted cursor-help">{t('bet_card.matcher_return')}</span>
             </Tooltip>
-            <span className="text-green-600">{odds.matcherReturn}</span>
+            <span className="text-color-up">{odds.matcherReturn}</span>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       </button>
 
       {showAdvanced && (
-        <div className="bg-muted p-3 rounded-lg border border-border-light mb-4 text-sm">
+        <div className="bg-muted p-3 rounded-md border border-border-light mb-4 text-sm">
           <div className="flex justify-between font-mono">
             <Tooltip content="Probability implied by the odds that creator wins">
               <span className="text-text-muted cursor-help">{t('bet_card.creator_implied')}</span>
@@ -225,7 +225,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
         {bet.tradeCount && bet.tradeCount > 0 ? (
           <span>Portfolio: {bet.tradeCount.toLocaleString()} markets</span>
         ) : bet.listSize ? (
-          <span>List Size: {bet.listSize} trades</span>
+          <span>Portfolio: {bet.listSize} markets</span>
         ) : (
           <span>Portfolio: {(bet.portfolioSize || 0).toLocaleString()} markets</span>
         )}
@@ -246,13 +246,13 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
       <div className="flex justify-between items-center">
         <Link
           href={`/bet/${bet.betId}`}
-          className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
+          className="text-brand hover:text-brand-dark text-xs font-mono transition-colors"
         >
           {t('bet_card.view_details')}
         </Link>
 
         {/* Read-only notice (AC6) */}
-        <span className="text-[10px] text-text-muted italic">
+        <span className="text-micro text-text-muted italic">
           {t('bet_card.bot_notice')}
         </span>
       </div>

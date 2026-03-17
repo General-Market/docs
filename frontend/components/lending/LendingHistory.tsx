@@ -17,9 +17,9 @@ const TYPE_LABEL_KEYS: Record<MorphoTx['type'], string> = {
 
 const TYPE_COLORS: Record<MorphoTx['type'], string> = {
   deposit: 'text-color-up',
-  withdraw: 'text-orange-600',
-  borrow: 'text-blue-600',
-  repay: 'text-purple-600',
+  withdraw: 'text-color-warning',
+  borrow: 'text-text-secondary',
+  repay: 'text-text-secondary',
 }
 
 function formatTime(timestamp: number): string {
@@ -48,7 +48,7 @@ export function LendingHistory({ market }: LendingHistoryProps) {
 
   if (isLoading && txs.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-card border border-border-light p-4">
+      <div className="bg-white rounded-card shadow-card border border-border-light p-4">
         <h3 className="text-sm font-bold text-text-secondary mb-2">{t('lending_history.title')}</h3>
         <div className="text-center py-3 text-text-muted text-xs">{t('lending_history.loading')}</div>
       </div>
@@ -58,11 +58,11 @@ export function LendingHistory({ market }: LendingHistoryProps) {
   if (txs.length === 0) return null
 
   return (
-    <div className="bg-white rounded-xl shadow-card border border-border-light p-4">
+    <div className="bg-white rounded-card shadow-card border border-border-light p-4" data-fade-in>
       <h3 className="text-sm font-bold text-text-secondary mb-3">{t('lending_history.title')}</h3>
-      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+      <div className="space-y-2 max-h-[200px] overflow-y-auto stagger">
         {txs.map((tx, i) => (
-          <div key={`${tx.txHash}-${i}`} className="flex justify-between items-center text-xs py-1.5 border-b border-border-light last:border-0">
+          <div key={`${tx.txHash}-${i}`} className="flex justify-between items-center text-xs py-1.5 border-b border-border-light last:border-0 animate-fade-up hover:bg-surface transition-colors rounded-sm px-1 -mx-1">
             <div className="flex items-center gap-2">
               <span className={`font-bold ${TYPE_COLORS[tx.type]}`}>
                 {t(TYPE_LABEL_KEYS[tx.type])}

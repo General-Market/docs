@@ -104,7 +104,7 @@ export function TransactionStepper({
   const nodes = [...visibleSteps.map((s, i) => ({ label: s.label, index: i })), { label: tc('stepper.done'), index: visibleSteps.length }]
 
   return (
-    <div className="bg-muted border border-border-light rounded-xl p-5">
+    <div className="bg-muted border border-border-light rounded-md p-5">
       {/* Step circles + connectors — centered layout */}
       <div className="flex items-center">
         {nodes.map((node, i) => {
@@ -121,20 +121,20 @@ export function TransactionStepper({
                 {/* Circle */}
                 <div className="relative">
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-300 ${
                       stepDone || stepDoneNode
-                        ? 'bg-zinc-900 text-white'
+                        ? 'bg-brand text-white'
                         : stepCurrent
-                        ? 'bg-zinc-900 text-white ring-2 ring-zinc-400'
+                        ? 'bg-brand text-white ring-2 ring-brand/40'
                         : 'bg-white text-text-muted border-2 border-border-light'
                     }`}
                   >
                     {isDoneNode ? (
-                      <svg className={`w-4 h-4 ${stepDoneNode ? '' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <svg className={`w-4 h-4 ${stepDoneNode ? 'animate-scale-in' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : stepDone ? (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <svg className="w-4 h-4 animate-scale-in" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : stepCurrent ? (
@@ -144,12 +144,12 @@ export function TransactionStepper({
                     )}
                   </div>
                   {stepCurrent && (
-                    <span className="absolute inset-0 rounded-full animate-ping bg-zinc-600/20" />
+                    <span className="absolute inset-0 rounded-full animate-ping bg-brand/20" />
                   )}
                 </div>
                 {/* Label */}
                 <span
-                  className={`text-[10px] mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
+                  className={`text-micro mt-1.5 text-center leading-tight font-medium whitespace-nowrap transition-opacity duration-300 ${
                     stepDone || stepDoneNode || stepCurrent
                       ? 'text-text-primary'
                       : 'text-text-muted'
@@ -164,7 +164,7 @@ export function TransactionStepper({
                 <div className="relative h-0.5 flex-1 -mx-0.5" style={{ marginTop: -12 }}>
                   <div className="absolute inset-0 bg-border-light rounded-full" />
                   <div
-                    className="absolute inset-y-0 left-0 bg-zinc-900 rounded-full transition-all duration-500 ease-out"
+                    className="absolute inset-y-0 left-0 bg-brand rounded-full transition-[width] duration-500 ease-out"
                     style={{ width: `${getConnectorFill(i) * 100}%` }}
                   />
                 </div>
@@ -193,7 +193,7 @@ export function TransactionStepper({
 
       {/* Completed tx hash links */}
       {completedTxLinks.length > 0 && (
-        <div className="mt-2 flex justify-center gap-3 flex-wrap text-[10px] font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-3 flex-wrap text-micro font-mono text-text-muted">
           {completedTxLinks.map((tx, i) => (
             <a
               key={i}
@@ -202,7 +202,7 @@ export function TransactionStepper({
               rel="noopener noreferrer"
               className="hover:text-text-primary transition-colors flex items-center gap-1"
             >
-              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'settlement' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+              <span className={`inline-block w-1.5 h-1.5 rounded-full ${tx.chain === 'settlement' ? 'bg-color-info' : 'bg-color-up'}`} />
               {truncateHash(tx.hash)}
             </a>
           ))}
@@ -211,7 +211,7 @@ export function TransactionStepper({
 
       {/* Tx refs (order IDs) */}
       {txRefs && txRefs.length > 0 && (
-        <div className="mt-2 flex justify-center gap-4 text-[10px] font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-4 text-micro font-mono text-text-muted">
           {txRefs.map((ref, i) => (
             ref.explorerUrl ? (
               <a key={i} href={ref.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">
@@ -226,7 +226,7 @@ export function TransactionStepper({
 
       {/* Error */}
       {error && (
-        <div className="mt-3 bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down">
+        <div className="mt-3 bg-surface-down border border-color-down/30 rounded-md p-3 text-color-down">
           <p className="text-sm break-all">{error}</p>
         </div>
       )}

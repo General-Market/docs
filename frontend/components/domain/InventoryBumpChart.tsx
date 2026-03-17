@@ -184,7 +184,7 @@ export function InventoryBumpChart() {
   // Render states
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6">
+      <div className="bg-white rounded-card shadow-card p-6">
         <h2 className="text-xl font-bold text-text-primary mb-2">{t('aum_ranking.title')}</h2>
         <div className="text-color-down text-sm">{error}</div>
       </div>
@@ -193,7 +193,7 @@ export function InventoryBumpChart() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6">
+      <div className="bg-white rounded-card shadow-card p-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">{t('aum_ranking.title')}</h2>
         <div className="h-64 flex items-center justify-center text-text-secondary">
           {t('aum_ranking.loading')}
@@ -204,12 +204,12 @@ export function InventoryBumpChart() {
 
   if (snapshots.length < 2) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6">
+      <div className="bg-white rounded-card shadow-card p-6">
         <h2 className="text-xl font-bold text-text-primary mb-2">{t('aum_ranking.title')}</h2>
         <p className="text-sm text-text-secondary mb-4">
           {t('aum_ranking.description')}
         </p>
-        <div className="h-48 flex items-center justify-center text-text-secondary border border-border-light rounded-lg">
+        <div className="h-48 flex items-center justify-center text-text-secondary border border-border-light rounded-md">
           {t('aum_ranking.need_events')}
           {snapshots.length === 1 && ` ${t('aum_ranking.showing_event')}`}
         </div>
@@ -218,7 +218,7 @@ export function InventoryBumpChart() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-card p-6">
+    <div className="bg-white rounded-card shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-xl font-bold text-text-primary">{t('aum_ranking.title')}</h2>
@@ -227,7 +227,7 @@ export function InventoryBumpChart() {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{formatAum(latestTotalAum)}</p>
+          <p className="text-2xl font-bold text-text-primary font-mono tabular-nums">{formatAum(latestTotalAum)}</p>
           <p className="text-xs text-text-secondary">{t('aum_ranking.total_aum')}</p>
         </div>
       </div>
@@ -432,7 +432,7 @@ export function InventoryBumpChart() {
             }}
           >
             <div
-              className="rounded-xl p-3 text-xs font-mono shadow-card-hover"
+              className="rounded-card p-3 text-xs font-mono shadow-card-hover"
               style={{
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E4E4E7',
@@ -442,7 +442,7 @@ export function InventoryBumpChart() {
               <div className="text-text-secondary mb-1">
                 {tooltip.snapshot.label} — {eventLabel(tooltip.snapshot.eventType)}
               </div>
-              <div className="text-zinc-900 font-semibold mb-2">
+              <div className="text-text-primary font-semibold mb-2">
                 Total AUM: {formatAum(tooltip.snapshot.totalAum)}
               </div>
               {tooltip.snapshot.ranked.map((asset) => (

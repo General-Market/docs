@@ -72,37 +72,38 @@ export default async function LearnPage() {
         eyebrow="General Market"
         title="Learn"
         subtitle="Tutorials and guides for AI prediction market trading. Build bots, compare platforms, understand sealed parimutuel markets."
+        className="animate-fade-up"
       />
 
       <div className="max-w-site mx-auto w-full px-6 lg:px-12 pb-16">
         <SectionBar title="Articles" value={String(articles.length)} />
 
         {articles.length === 0 ? (
-          <p className="text-[14px] text-text-secondary mt-8">
-            No articles yet. Check back soon.
+          <p className="text-body text-text-secondary mt-8">
+            No articles published yet.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border border-border-light mt-6 stagger">
             {articles.map((article) => (
               <Link
                 key={article.frontmatter.slug}
                 href={`/learn/${article.frontmatter.slug}`}
-                className="border-r border-b border-border-light p-6 hover:border-black transition-colors group flex flex-col"
+                className="border-r border-b border-border-light p-6 hover:border-black transition-colors group flex flex-col animate-fade-up hover-lift"
               >
-                <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted mb-3">
+                <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
                   {article.frontmatter.category}
                 </div>
-                <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black leading-snug mb-2">
+                <div className="text-subhead font-extrabold tracking-tight text-black leading-snug mb-2">
                   {article.frontmatter.title}
                 </div>
-                <div className="text-[14px] text-text-secondary leading-relaxed mb-4 flex-1">
+                <div className="text-body text-text-secondary leading-relaxed mb-4 flex-1">
                   {article.frontmatter.description}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-[12px] text-text-muted">
+                  <div className="text-caption text-text-muted">
                     {article.frontmatter.readingTime}
                   </div>
-                  <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-black group-hover:underline">
+                  <div className="text-caption font-bold uppercase tracking-[0.08em] text-black group-hover:underline">
                     Read
                   </div>
                 </div>

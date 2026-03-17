@@ -259,9 +259,9 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
   }, [chartReady, data, timeframe, itpId])
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={onClose}>
       <div
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-2xl w-full"
+        className="bg-card border border-border-light rounded-card shadow-modal max-w-2xl w-full animate-modal-in"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-border-light flex justify-between items-center">
@@ -277,8 +277,8 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
                   onClick={() => setTimeframe(tf.value)}
                   className={`px-3 py-1 text-xs rounded transition-colors ${
                     timeframe === tf.value
-                      ? 'bg-zinc-900 text-white'
-                      : 'bg-muted text-text-secondary border border-border-light hover:border-zinc-500'
+                      ? 'bg-brand text-white'
+                      : 'bg-muted text-text-secondary border border-border-light hover:border-brand'
                   }`}
                 >
                   {tf.label}
@@ -290,7 +290,7 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
               className={`px-3 py-1 text-xs rounded transition-colors ${
                 showBtc
                   ? 'bg-[#f7931a]/20 text-[#f7931a] border border-[#f7931a]/50'
-                  : 'bg-muted text-text-secondary border border-border-light hover:border-zinc-500'
+                  : 'bg-muted text-text-secondary border border-border-light hover:border-brand'
               }`}
             >
               BTC
@@ -304,7 +304,7 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
           {(isLoading && data.length === 0) && (
             <div className="absolute inset-0 flex items-center justify-center bg-card">
               <div className="text-center">
-                <div className="inline-block w-6 h-6 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin mb-2" />
+                <div className="inline-block w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mb-2" />
                 <p className="text-sm text-text-muted">{t('chart.loading')}</p>
               </div>
             </div>

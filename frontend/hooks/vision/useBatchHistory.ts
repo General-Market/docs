@@ -34,6 +34,6 @@ export function useBatchHistory(batchId: number | null) {
       }))
     },
     enabled: batchId !== null,
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
   })
 }

@@ -110,15 +110,15 @@ describe('AnimatedLeaderboardRow', () => {
   })
 
   describe('CSS pulse class selection (AC4)', () => {
-    test('rank change triggers animate-pulse-red class', () => {
+    test('rank change triggers animate-pulse-highlight class', () => {
       const isAnimating = true
-      const rankChangeClass = isAnimating ? 'animate-pulse-red' : ''
-      expect(rankChangeClass).toBe('animate-pulse-red')
+      const rankChangeClass = isAnimating ? 'animate-pulse-highlight' : ''
+      expect(rankChangeClass).toBe('animate-pulse-highlight')
     })
 
     test('no rank change has no pulse class', () => {
       const isAnimating = false
-      const rankChangeClass = isAnimating ? 'animate-pulse-red' : ''
+      const rankChangeClass = isAnimating ? 'animate-pulse-highlight' : ''
       expect(rankChangeClass).toBe('')
     })
   })

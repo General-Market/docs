@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { useRankChangeAnimation } from '@/hooks/useRankChangeAnimation'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
@@ -65,7 +66,7 @@ export interface AnimatedLeaderboardRowProps {
  * AC6: Portfolio size animation
  * AC7: 60fps performance with mobile/reduced motion disable
  */
-export function AnimatedLeaderboardRow({
+export const AnimatedLeaderboardRow = memo(function AnimatedLeaderboardRow({
   agent,
   onClick,
   isHighlighted,
@@ -85,8 +86,17 @@ export function AnimatedLeaderboardRow({
     ? 'shadow-[0_0_15px_rgba(196,0,0,0.5)] bg-muted'
     : ''
 
+  // Podium tint for top 3 rows — barely perceptible background wash
+  const podiumClass = !isHighlighted && agent.rank === 1
+    ? 'bg-surface-warning/60'
+    : !isHighlighted && agent.rank === 2
+    ? 'bg-muted/50'
+    : !isHighlighted && agent.rank === 3
+    ? 'bg-surface-warning/40'
+    : ''
+
   // Animation class for rank change (2s duration per AC4)
-  const rankChangeClass = isAnimating ? 'animate-pulse-red' : ''
+  const rankChangeClass = isAnimating ? 'animate-pulse-highlight' : ''
 
   return (
     <motion.tr
@@ -107,7 +117,7 @@ export function AnimatedLeaderboardRow({
       role="button"
       tabIndex={0}
       aria-label={`View details for agent ${formatWalletAddress(agent.walletAddress)}, ranked ${agent.rank}, ROI ${formatROI(agent.roi)}`}
-      className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-zinc-900/50 transition-colors duration-300 ${highlightClass} ${rankChangeClass}`}
+      className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand/50 transition-colors duration-300 ${podiumClass} ${highlightClass} ${rankChangeClass}`}
       style={{ willChange: shouldAnimate ? 'transform' : 'auto' }}
     >
       {/* Rank - AnimatedNumber for ranks > 3, emoji badges for top 3 */}
@@ -147,7 +157,7 @@ export function AnimatedLeaderboardRow({
 
       {/* Avg Portfolio Size - animated (AC6) */}
       <TableCell className="font-mono text-text-primary font-bold hidden md:table-cell">
-        <Tooltip content="Average number of markets per bet - only AI can manage this scale">
+        <Tooltip content="Average number of markets per portfolio bet">
           <AnimatedNumber
             value={agent.avgPortfolioSize}
             decimals={0}
@@ -159,7 +169,7 @@ export function AnimatedLeaderboardRow({
       </TableCell>
 
       {/* Max Portfolio - animated (AC6) */}
-      <TableCell className="font-mono text-zinc-900 font-bold">
+      <TableCell className="font-mono text-text-primary font-bold">
         <Tooltip content="Maximum markets traded simultaneously in a single bet">
           <AnimatedNumber
             value={agent.maxPortfolioSize}
@@ -182,4 +192,16 @@ export function AnimatedLeaderboardRow({
       </TableCell>
     </motion.tr>
   )
-}
+}, (prev, next) =>
+  prev.agent.walletAddress === next.agent.walletAddress &&
+  prev.agent.rank === next.agent.rank &&
+  prev.agent.roi === next.agent.roi &&
+  prev.agent.totalBets === next.agent.totalBets &&
+  prev.agent.avgPortfolioSize === next.agent.avgPortfolioSize &&
+  prev.agent.maxPortfolioSize === next.agent.maxPortfolioSize &&
+  prev.agent.volume === next.agent.volume &&
+  prev.agent.lastActiveAt === next.agent.lastActiveAt &&
+  prev.isHighlighted === next.isHighlighted &&
+  prev.prefersReducedMotion === next.prefersReducedMotion &&
+  prev.isMobile === next.isMobile
+)

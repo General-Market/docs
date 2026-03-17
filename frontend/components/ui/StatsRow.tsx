@@ -33,14 +33,14 @@ export function StatsRow({ stats, className }: StatsRowProps) {
               i === 0 && 'pl-0'
             )}
           >
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
               {stat.label}
             </div>
-            <div className={cn('text-[22px] font-extrabold font-mono tabular-nums', colorClass(stat.color))}>
+            <div className={cn('text-title font-extrabold font-mono tabular-nums', colorClass(stat.color))}>
               {stat.value}
             </div>
             {stat.sub && (
-              <div className="text-[11px] text-text-muted mt-0.5">{stat.sub}</div>
+              <div className="text-label text-text-muted mt-0.5">{stat.sub}</div>
             )}
           </div>
         ))}

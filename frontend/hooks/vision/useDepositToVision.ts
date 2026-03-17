@@ -258,8 +258,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   // Error handling
   useEffect(() => {
     if (approveError) {
-      const msg = approveError.message || 'Approval failed'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg('USDC approval failed. Check your wallet and try again.')
       setStep('error')
       resetApprove()
     }
@@ -267,8 +266,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
 
   useEffect(() => {
     if (depositError) {
-      const msg = depositError.message || 'Deposit failed'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg('Deposit failed. Check your USDC balance and try again.')
       setStep('error')
       resetDeposit()
     }

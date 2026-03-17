@@ -77,7 +77,7 @@ export function BilateralBetCard({
   )
 
   return (
-    <div className={`border border-border-light rounded-xl p-4 bg-white shadow-card ${className}`}>
+    <div className={`border border-border-light rounded-card p-4 bg-white shadow-card card-interactive hover-lift ${className}`}>
       {/* Header with bet ID and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
@@ -86,8 +86,8 @@ export function BilateralBetCard({
             <span
               className={`px-2 py-0.5 rounded text-xs font-mono ${
                 userRole === 'creator'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-purple-100 text-purple-700'
+                  ? 'bg-surface-info text-color-info'
+                  : 'bg-muted text-text-secondary'
               }`}
             >
               {userRole === 'creator' ? t('bilateral.creator') : t('bilateral.filler')}
@@ -106,14 +106,14 @@ export function BilateralBetCard({
         <div>
           <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.creator')}</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.creator, 6)}</div>
-          <div className="text-xs text-green-600 font-mono mt-0.5">
+          <div className="text-xs text-color-up font-mono mt-0.5">
             {formatUSDCAmount(bet.creatorAmount)} USDC
           </div>
         </div>
         <div>
           <div className="text-text-muted text-xs uppercase font-mono mb-1">{t('bilateral.filler')}</div>
           <div className="font-mono text-text-primary">{truncateAddress(bet.filler, 6)}</div>
-          <div className="text-xs text-green-600 font-mono mt-0.5">
+          <div className="text-xs text-color-up font-mono mt-0.5">
             {formatUSDCAmount(bet.fillerAmount)} USDC
           </div>
         </div>
@@ -142,13 +142,13 @@ export function BilateralBetCard({
 
       {/* Settlement info (if settled) */}
       {isTerminal && (
-        <div className="bg-muted p-3 rounded-lg border border-border-light mb-4">
+        <div className="bg-muted p-3 rounded-md border border-border-light mb-4">
           <div className="text-text-muted text-xs uppercase font-mono mb-2">{t('bilateral.settlement')}</div>
           <div className="space-y-2 text-sm">
             {bet.winner && (
               <div className="flex justify-between font-mono">
                 <span className="text-text-muted">{t('bilateral.winner')}</span>
-                <span className="text-green-600">{truncateAddress(bet.winner, 6)}</span>
+                <span className="text-color-up">{truncateAddress(bet.winner, 6)}</span>
               </div>
             )}
             {bet.resolutionType && (
@@ -195,7 +195,7 @@ export function BilateralBetCard({
       <div className="flex justify-between items-center">
         <Link
           href={`/bilateral-bet/${bet.betId}`}
-          className="text-color-info hover:text-color-info/80 text-xs font-mono transition-colors"
+          className="text-brand hover:text-brand-dark text-xs font-mono transition-colors"
         >
           {t('bet_card.view_details')}
         </Link>
@@ -203,14 +203,14 @@ export function BilateralBetCard({
         {/* Status indicators */}
         <div className="flex items-center gap-2">
           {canDispute && (
-            <span className="text-[10px] text-orange-600 font-mono">{t('bilateral.can_dispute')}</span>
+            <span className="text-micro text-color-warning font-mono">{t('bilateral.can_dispute')}</span>
           )}
           {bet.txHash && (
             <a
               href={getTxUrl(bet.txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-text-muted hover:text-text-primary font-mono"
+              className="text-micro text-text-muted hover:text-text-primary font-mono"
             >
               Tx \u2197
             </a>

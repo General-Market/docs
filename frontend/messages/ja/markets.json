@@ -144,5 +144,27 @@
     "loading": "NAVデータを読み込み中...",
     "error": "チャートデータの読み込みに失敗しました",
     "no_data": "この期間のNAVデータはありません"
+  },
+  "itp_listing": {
+    "search_placeholder": "ファンド名またはティッカーで検索...",
+    "showing": "{total}件中{count}件のファンドを表示",
+    "loading": "ファンドを読み込み中...",
+    "no_match": "検索結果が見つかりません。",
+    "no_funds": "利用可能なファンドはまだありません。",
+    "ticker": "ティッカー",
+    "fund": "ファンド名",
+    "nav": "NAV",
+    "net_assets": "純資産",
+    "shares_outstanding": "発行済株式数",
+    "trade": "取引",
+    "buy": "購入",
+    "sell": "売却",
+    "first": "最初",
+    "prev": "前へ",
+    "next": "次へ",
+    "last": "最後",
+    "nav_chart": "NAVチャート",
+    "page_info": "{page} / {total}",
+    "page_range": "{start}\u2013{end} / {total}"
   }
 }

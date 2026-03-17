@@ -83,12 +83,12 @@
     "login": "Connect Wallet",
     "connecting": "Connecting...",
     "switching": "Switching...",
-    "switch_network": "Switch to Index Settlement",
+    "switch_network": "Switch to General Market",
     "install_metamask": "Install MetaMask",
     "connect_to_buy": "Connect your wallet to buy ITP shares",
     "connect_to_sell": "Connect your wallet to sell ITP shares",
     "connect_to_create": "Connect your wallet to create a batch",
-    "sign_up": "Sign Up",
+    "sign_up": "Connect Wallet",
     "deposit": "Deposit"
   },
   "status": {
@@ -106,14 +106,14 @@
     "offline": "Offline"
   },
   "errors": {
-    "generic": "Something went wrong. Please try again.",
+    "generic": "Something went wrong. Try again, or refresh the page.",
     "wallet_not_connected": "Please connect your wallet first.",
     "wrong_chain": "Please switch to the correct network.",
-    "transaction_failed": "Transaction failed",
+    "transaction_failed": "Transaction failed. Check your wallet and try again.",
     "transaction_rejected": "Transaction rejected",
     "confirmation_failed": "Confirmation failed",
     "insufficient_balance": "Insufficient balance",
-    "failed_to_fetch": "Failed to fetch data"
+    "failed_to_fetch": "Unable to load data. Check your connection and refresh."
   },
   "warnings": {
     "tx_stuck_title": "Transaction may be stuck",
@@ -133,7 +133,7 @@
     "days_ago": "{count}d ago"
   },
   "how_it_works": {
-    "title": "HOW AGIARENA WORKS",
+    "title": "HOW IT WORKS",
     "step1_title": "BET",
     "step1_subtitle": "Agent places position",
     "step1_description": "AI agents analyze thousands of markets and place bets based on their worldview model.",
@@ -156,8 +156,8 @@
   "agent_search": {
     "placeholder": "Enter wallet address...",
     "find_rank": "Find Rank",
-    "not_found": "Agent not found.",
-    "not_found_hint": "Have you placed any portfolio bets?",
+    "not_found": "Player not found.",
+    "not_found_hint": "This address has no portfolio bets yet.",
     "deploy_agent": "Deploy an agent",
     "dismiss": "Dismiss"
   },
@@ -207,7 +207,7 @@
     "no_bets_check_back": "Check back soon.",
     "no_bets_found": "No bets found",
     "no_bets_found_hint": "Place your first bet to see it here",
-    "agent_no_bets": "This agent hasn't entered the arena",
+    "agent_no_bets": "This player has no bets yet.",
     "agent_no_bets_hint": "Check back after markets open.",
     "end_of_feed": "End of feed",
     "no_data": "No performance data",
@@ -215,7 +215,7 @@
     "no_bilateral_bets": "No bilateral bets found",
     "no_bilateral_bets_hint": "Try changing the status filter or",
     "no_positions_match": "No positions match your search",
-    "error_loading_performance": "Error loading performance data",
+    "error_loading_performance": "Unable to load performance data. Try refreshing.",
     "resolved": "Resolved"
   },
   "connection": {
@@ -238,7 +238,7 @@
     "trend_tooltip": "30-day performance trend",
     "bets": "Bets",
     "avg_portfolio": "Avg Portfolio",
-    "avg_portfolio_tooltip": "Average number of markets per bet - only AI can manage this scale",
+    "avg_portfolio_tooltip": "Average number of markets per portfolio bet",
     "max_portfolio": "Max Portfolio",
     "max_portfolio_tooltip": "Maximum markets traded simultaneously in a single bet",
     "win_rate": "Win Rate",

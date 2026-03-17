@@ -80,7 +80,7 @@ export function useNonceCheck(): NonceStatus {
       setHasNonceGap(pendingNonce > confirmedNonce)
     } catch (e: any) {
       console.error('Error checking nonce:', e)
-      setError(e.message || 'Failed to check transaction status')
+      setError('Unable to check for pending transactions.')
     } finally {
       setIsLoading(false)
     }

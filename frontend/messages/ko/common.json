@@ -80,15 +80,15 @@
     "esc": "ESC"
   },
   "wallet": {
-    "login": "Base에서 로그인",
+    "login": "지갑 연결",
     "connecting": "연결 중...",
     "switching": "전환 중...",
-    "switch_network": "Index Settlement으로 전환",
+    "switch_network": "General Market으로 전환",
     "install_metamask": "MetaMask 설치",
     "connect_to_buy": "ITP 주식을 구매하려면 지갑을 연결하세요",
     "connect_to_sell": "ITP 주식을 판매하려면 지갑을 연결하세요",
     "connect_to_create": "배치를 생성하려면 지갑을 연결하세요",
-    "sign_up": "가입하기",
+    "sign_up": "지갑 연결",
     "deposit": "입금"
   },
   "status": {
@@ -109,11 +109,11 @@
     "generic": "문제가 발생했습니다. 다시 시도해 주세요.",
     "wallet_not_connected": "먼저 지갑을 연결해 주세요.",
     "wrong_chain": "올바른 네트워크로 전환해 주세요.",
-    "transaction_failed": "트랜잭션 실패",
+    "transaction_failed": "트랜잭션이 실패했습니다. 지갑을 확인하고 다시 시도해 주세요.",
     "transaction_rejected": "트랜잭션 거부됨",
     "confirmation_failed": "확인 실패",
     "insufficient_balance": "잔액 부족",
-    "failed_to_fetch": "데이터를 불러오지 못했습니다"
+    "failed_to_fetch": "데이터를 불러올 수 없습니다. 연결 상태를 확인하고 새로고침하세요."
   },
   "warnings": {
     "tx_stuck_title": "트랜잭션이 지연되고 있을 수 있습니다",
@@ -133,7 +133,7 @@
     "days_ago": "{count}일 전"
   },
   "how_it_works": {
-    "title": "AGIARENA 작동 방식",
+    "title": "작동 방식",
     "step1_title": "베팅",
     "step1_subtitle": "에이전트가 포지션을 설정합니다",
     "step1_description": "AI 에이전트가 수천 개의 마켓을 분석하고 자체 세계관 모델을 기반으로 베팅합니다.",
@@ -156,8 +156,8 @@
   "agent_search": {
     "placeholder": "지갑 주소를 입력하세요...",
     "find_rank": "순위 찾기",
-    "not_found": "에이전트를 찾을 수 없습니다.",
-    "not_found_hint": "포트폴리오 베팅을 하신 적이 있나요?",
+    "not_found": "플레이어를 찾을 수 없습니다.",
+    "not_found_hint": "이 주소에는 아직 포트폴리오 베팅이 없습니다.",
     "deploy_agent": "에이전트 배포하기",
     "dismiss": "닫기"
   },
@@ -206,7 +206,7 @@
     "no_bets_hint": "이 에이전트는 아직 포트폴리오 베팅을 하지 않았습니다",
     "no_bets_found": "베팅을 찾을 수 없습니다",
     "no_bets_found_hint": "첫 번째 베팅을 하면 여기에 표시됩니다",
-    "agent_no_bets": "이 에이전트는 아직 아레나에 참가하지 않았습니다",
+    "agent_no_bets": "이 플레이어는 아직 베팅이 없습니다.",
     "agent_no_bets_hint": "마켓이 열린 후 다시 확인하세요.",
     "no_bets_check_back": "곧 다시 확인하세요.",
     "end_of_feed": "피드 끝",
@@ -215,7 +215,7 @@
     "no_bilateral_bets": "양자 베팅을 찾을 수 없습니다",
     "no_bilateral_bets_hint": "상태 필터를 변경하거나",
     "no_positions_match": "검색과 일치하는 포지션이 없습니다",
-    "error_loading_performance": "성과 데이터를 불러오는 중 오류가 발생했습니다",
+    "error_loading_performance": "성과 데이터를 불러올 수 없습니다. 새로고침을 시도해 보세요.",
     "resolved": "정산됨"
   },
   "connection": {

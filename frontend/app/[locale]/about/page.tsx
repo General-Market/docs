@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { PageSection } from '@/components/layout/PageSection'
 import { HeroBand } from '@/components/ui/HeroBand'
 import { SectionBar } from '@/components/ui/SectionBar'
 import { Link } from '@/i18n/routing'
@@ -98,33 +99,32 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
         subtitle={t('subtitle')}
       />
 
-      <div className="px-6 lg:px-12">
-      <div className="max-w-site mx-auto w-full pb-16">
+      <PageSection as="div" className="w-full pb-16">
         {/* What We Build */}
         <SectionBar title={t('what_we_build')} value={t('two_products')} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 border border-border-light">
           {/* Index Products */}
           <div className="border-r border-b border-border-light p-6 md:p-8">
-            <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+            <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
               {t('index_products')}
             </div>
-            <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black mb-2">
+            <div className="text-subhead font-extrabold tracking-[-0.01em] text-black mb-2">
               {t('onchain_etfs')}
             </div>
-            <p className="text-[14px] text-text-secondary leading-relaxed mb-5">
+            <p className="text-body text-text-secondary leading-relaxed mb-5">
               {t('index_description')}
             </p>
             <div className="flex items-center gap-4">
               <Link
                 href="/index"
-                className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+                className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
               >
                 {t('explore')} &rarr;
               </Link>
               <Link
                 href="/learn/what-are-itps"
-                className="text-[12px] text-text-muted hover:text-black"
+                className="text-caption text-text-muted hover:text-black"
               >
                 {t('what_are_itps')}
               </Link>
@@ -133,36 +133,32 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
 
           {/* Vision */}
           <div className="border-b border-border-light p-6 md:p-8">
-            <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+            <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
               {t('vision_label')}
             </div>
-            <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black mb-2">
+            <div className="text-subhead font-extrabold tracking-[-0.01em] text-black mb-2">
               {t('ai_agent_arena')}
             </div>
-            <p className="text-[14px] text-text-secondary leading-relaxed mb-5">
+            <p className="text-body text-text-secondary leading-relaxed mb-5">
               {t('vision_description')}
             </p>
             <Link
               href="/"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+              className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               {t('leaderboard')} &rarr;
             </Link>
           </div>
         </div>
 
-        {/* Numbers */}
-        <div className="mt-12">
-          <SectionBar title={t('numbers')} />
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
+        {/* Numbers — flows from product section, no bar needed */}
+        <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light mt-8">
           {STATS.map((stat) => (
             <div key={stat.label} className="border-r border-border-light p-6">
-              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted">
+              <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted">
                 {stat.label}
               </div>
-              <div className="text-[28px] font-black tracking-[-0.02em] text-black mt-1">
+              <div className="text-display font-black tracking-tight text-black mt-1">
                 {stat.value}
               </div>
             </div>
@@ -184,17 +180,17 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               className="w-14 h-14 rounded-full object-cover shrink-0"
             />
             <div>
-              <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black">
+              <div className="text-subhead font-extrabold tracking-[-0.01em] text-black">
                 Max
               </div>
-              <div className="text-[13px] text-text-secondary mt-0.5">
+              <div className="text-caption text-text-secondary mt-0.5">
                 {t('founder')}
               </div>
               <a
                 href="https://x.com/otc_max"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[12px] text-text-muted hover:text-black mt-1 inline-block"
+                className="text-caption text-text-muted hover:text-black mt-1 inline-block"
               >
                 @otc_max
               </a>
@@ -202,34 +198,30 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
           </div>
         </div>
 
-        {/* Technology */}
-        <div className="mt-12">
-          <SectionBar title={t('technology')} />
-        </div>
-
-        <div className="border border-border-light">
+        {/* Technology — content speaks for itself */}
+        <div className="border border-border-light mt-8">
           <div className="grid grid-cols-1 md:grid-cols-3">
             <div className="border-r border-b border-border-light p-6 md:p-8">
-              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+              <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
                 {t('settlement')}
               </div>
-              <p className="text-[14px] text-text-secondary leading-relaxed">
+              <p className="text-body text-text-secondary leading-relaxed">
                 {t('settlement_description')}
               </p>
             </div>
             <div className="border-r border-b border-border-light p-6 md:p-8">
-              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+              <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
                 {t('smart_contracts')}
               </div>
-              <p className="text-[14px] text-text-secondary leading-relaxed">
+              <p className="text-body text-text-secondary leading-relaxed">
                 {t('smart_contracts_description')}
               </p>
             </div>
             <div className="border-b border-border-light p-6 md:p-8">
-              <div className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-3">
+              <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
                 {t('data')}
               </div>
-              <p className="text-[14px] text-text-secondary leading-relaxed">
+              <p className="text-body text-text-secondary leading-relaxed">
                 <Link href="/sources" className="text-black font-semibold border-b border-black/30 hover:border-black transition-colors">{t('data_description_prefix')}</Link> {t('data_description_suffix')}
               </p>
             </div>
@@ -239,7 +231,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               href="https://docs.generalmarket.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+              className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               {t('view_docs')} &rarr;
             </a>
@@ -248,7 +240,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
                 href={process.env.NEXT_PUBLIC_L3_EXPLORER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[12px] font-bold uppercase tracking-[0.04em] text-text-muted hover:text-black"
+                className="text-caption font-bold uppercase tracking-[0.04em] text-text-muted hover:text-black"
               >
                 {t('view_contract')} &rarr;
               </a>
@@ -256,18 +248,14 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
           </div>
         </div>
 
-        {/* Contact */}
-        <div className="mt-12">
-          <SectionBar title={t('contact')} />
-        </div>
-
-        <div className="border border-border-light">
+        {/* Contact — final section, minimal */}
+        <div className="border border-border-light mt-8">
           <div className="flex items-center gap-8 p-6 md:p-8">
             <a
               href="https://discord.gg/xsfgzwR6"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+              className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               Discord
             </a>
@@ -275,7 +263,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               href="https://x.com/otc_max"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+              className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               Twitter
             </a>
@@ -283,14 +271,13 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
               href="https://docs.generalmarket.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[12px] font-bold uppercase tracking-[0.04em] text-black hover:underline"
+              className="text-caption font-bold uppercase tracking-[0.04em] text-black hover:underline"
             >
               Docs
             </a>
           </div>
         </div>
-      </div>
-      </div>
+      </PageSection>
 
       <div className="flex-1" />
       <Footer />

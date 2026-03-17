@@ -109,7 +109,7 @@ export function MarketsSection() {
   // SSR placeholder
   if (!isHydrated) {
     return (
-      <section id="markets" className="border border-border-light bg-card rounded-xl shadow-card" aria-labelledby="markets-heading">
+      <section id="markets" className="border border-border-light bg-card rounded-card shadow-card" aria-labelledby="markets-heading" data-fade-in>
         <button className="w-full flex justify-between items-center p-4 text-left" disabled>
           <h2 id="markets-heading" className="text-lg font-bold text-text-primary">
             {t('heading')}
@@ -130,11 +130,11 @@ export function MarketsSection() {
   })
 
   return (
-    <section id="markets" className="border border-border-light bg-card rounded-xl shadow-card" aria-labelledby="markets-heading">
+    <section id="markets" className="border border-border-light bg-card rounded-card shadow-card" aria-labelledby="markets-heading" data-fade-in>
       {/* Header - toggle */}
       <button
         type="button"
-        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl"
+        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl press"
         onClick={toggleCollapsed}
         aria-expanded={!isCollapsed}
         aria-controls="markets-content"
@@ -154,9 +154,9 @@ export function MarketsSection() {
 
       {/* Content */}
       {!isCollapsed && (
-        <div id="markets-content" className="border-t border-border-light">
+        <div id="markets-content" className="border-t border-border-light animate-fade-up">
           {/* Market type grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border-light">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border-light stagger">
             {activeTypes.map(([typeId, config]) => {
               const isExpanded = expandedType === typeId
               const relatedCategories = activeCategories.filter(cat =>
@@ -166,11 +166,11 @@ export function MarketsSection() {
               return (
                 <div
                   key={typeId}
-                  className="bg-card p-4"
+                  className="bg-card p-4 animate-fade-up card-interactive"
                 >
                   <button
                     type="button"
-                    className="w-full text-left"
+                    className="w-full text-left press"
                     onClick={() => setExpandedType(isExpanded ? null : typeId)}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -187,13 +187,13 @@ export function MarketsSection() {
                     {/* Update frequency badge */}
                     <div className="flex items-center gap-2 text-xs">
                       <span className="text-text-muted">{t('labels.updates')}</span>
-                      <span className="text-zinc-900">{t(`types.${typeId}.update_freq`)}</span>
+                      <span className="text-text-primary">{t(`types.${typeId}.update_freq`)}</span>
                     </div>
                   </button>
 
                   {/* Expanded view with sample prices */}
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-border-light">
+                    <div className="mt-3 pt-3 border-t border-border-light animate-fade-up">
                       {/* Categories in this type */}
                       <div className="mb-3">
                         <p className="text-text-muted text-xs mb-1">{t('labels.categories')}</p>

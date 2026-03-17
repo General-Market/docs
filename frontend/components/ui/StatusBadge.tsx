@@ -88,7 +88,7 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
   }
 
   const sizeClasses = size === 'sm'
-    ? 'text-[10px] px-1.5 py-0.5'
+    ? 'text-micro px-1.5 py-0.5'
     : 'text-xs px-2 py-1'
 
   return (
@@ -113,7 +113,7 @@ export function StatusBadgeOld({ status }: { status: BadgeStatus }) {
       case 'pending':
         return 'bg-muted text-text-secondary'
       case 'matched':
-        return 'bg-zinc-900 text-white'
+        return 'bg-brand text-white'
       case 'settling':
       case 'settled':
         return 'bg-muted text-text-secondary'

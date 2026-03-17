@@ -30,7 +30,7 @@ const RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
  */
 export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
   return (
-    <div className="inline-flex bg-card border border-border-medium rounded-lg overflow-hidden">
+    <div className="inline-flex bg-card border border-border-medium rounded-md overflow-hidden">
       {RANGE_OPTIONS.map((option) => {
         const isSelected = value === option.value
         return (
@@ -38,7 +38,7 @@ export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
             key={option.value}
             onClick={() => onChange(option.value)}
             className={`
-              px-3 py-1.5 text-sm transition-colors
+              px-3 py-1.5 text-sm transition-colors press
               ${isSelected
                 ? 'bg-muted text-text-primary font-bold'
                 : 'text-text-muted hover:text-text-primary hover:bg-card-hover'

@@ -88,7 +88,7 @@ function UserNode({ reducedMotion }: { reducedMotion: boolean }) {
       </mesh>
       {/* Persistent label: "User (RAI)" */}
       <Html center position={[0, 0.75, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: PURPLE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: PURPLE }}>
           User (RAI)
         </p>
       </Html>
@@ -170,7 +170,7 @@ function PaymasterNode({ reducedMotion }: { reducedMotion: boolean }) {
       </mesh>
       {/* Persistent label: "Paymaster (ETH)" */}
       <Html center position={[0, PAY_Y + 0.85, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: INDIGO }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: INDIGO }}>
           Paymaster (ETH)
         </p>
       </Html>
@@ -257,7 +257,7 @@ function RecipientNode({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={BLUE} roughness={0.5} emissive={BLUE} emissiveIntensity={0.06} />
       </RoundedBox>
       <Html center position={[0, 0.6, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Recipient
         </p>
       </Html>
@@ -692,7 +692,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={calldataRef}>
         <Html center position={[(USER_X + PAY_X) / 2, PAY_Y + 0.6, 0.3]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-amber-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
               CALLDATAREAD
             </p>
           </div>
@@ -703,7 +703,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={acceptRef}>
         <Html center position={[PAY_X, PAY_Y - 1.0, -0.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               ACCEPT
             </p>
           </div>
@@ -714,7 +714,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={feeRef}>
         <Html center position={[(USER_X + PAY_X) / 2, USER_Y - 0.3, -0.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-amber-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: '#71717a' }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: '#71717a' }}>
               <span style={{ color: GREEN }}>Gas paid in ETH</span>
               {' '}
               <span className="opacity-40">/</span>

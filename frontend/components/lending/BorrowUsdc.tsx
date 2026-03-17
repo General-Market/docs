@@ -100,21 +100,21 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Transaction failed')
-      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: actionError.message || 'Transaction failed' })
+      setTxError(actionError.message || t('common.transaction_failed'))
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'borrow', error_message: actionError.message || 'transaction_failed' })
       setStep('input')
       resetAction()
     }
   }, [actionError, resetAction])
 
   const handleBorrow = useCallback(() => {
-    if (!amount || parsedAmount === 0n || !canBorrow) return
+    if (!amount || parsedAmount === 0n || !canBorrow || isPending || isConfirming) return
     capture('lend_borrow_submitted', { itp_id: market?.collateralToken, amount: amount })
     successHandled.current = false
     setTxError(null)
     setStep('borrowing')
     borrow(parsedAmount)
-  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken])
+  }, [amount, parsedAmount, canBorrow, borrow, capture, market?.collateralToken, isPending, isConfirming])
 
   const isProcessing = isPending || isConfirming
 
@@ -129,7 +129,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
   const formatMaxBorrow = maxBorrow ? formatUnits(maxBorrow, 18) : '0'
 
   return (
-    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+    <div className="bg-white rounded-card shadow-card border border-border-light p-6">
       <h2 className="text-lg font-bold text-text-primary mb-4">{t('borrow_usdc.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
         {t('borrow_usdc.description')}
@@ -152,12 +152,12 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+              className="w-full bg-muted border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg focus:border-brand focus:outline-none disabled:opacity-50 input-animate"
             />
             <button
               onClick={() => setAmount(formatMaxBorrow)}
               disabled={isProcessing || maxBorrow === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brand font-medium hover:text-brand-dark disabled:opacity-50"
             >
               MAX
             </button>
@@ -166,10 +166,10 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Projected Health Factor */}
         {amount && parsedAmount > 0n && (
-          <div className="bg-muted rounded-xl p-3">
+          <div className="bg-muted rounded-card p-3 animate-fade-up">
             <div className="flex justify-between items-center">
               <span className="text-sm text-text-secondary">{t('borrow_usdc.projected_health_factor')}</span>
-              <span className={`font-mono tabular-nums font-bold ${
+              <span className={`font-mono tabular-nums font-bold transition-colors ${
                 projectedHealthFactor >= 1.5 ? 'text-color-up' :
                 projectedHealthFactor >= 1.0 ? 'text-color-warning' :
                 'text-color-down'
@@ -178,12 +178,12 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               </span>
             </div>
             {projectedHealthFactor < 1.0 && (
-              <p className="text-color-down text-xs mt-2">
+              <p className="text-color-down text-xs mt-2 animate-fade-up">
                 {t('borrow_usdc.cannot_borrow_health')}
               </p>
             )}
             {projectedHealthFactor >= 1.0 && projectedHealthFactor < 1.5 && (
-              <p className="text-color-warning text-xs mt-2">
+              <p className="text-color-warning text-xs mt-2 animate-fade-up">
                 {t('borrow_usdc.low_health_warning')}
               </p>
             )}
@@ -192,8 +192,8 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
 
         {/* Quote API Terms (when in quote mode) */}
         {useQuoteMode && quote && !isExpired && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-            <div className="text-xs text-blue-700 font-bold uppercase tracking-wider">{t('borrow_usdc.quote.title')}</div>
+          <div className="bg-muted border border-border-light rounded-card p-3 space-y-2 animate-fade-up">
+            <div className="text-xs text-text-secondary font-bold uppercase tracking-[0.08em]">{t('borrow_usdc.quote.title')}</div>
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">{t('borrow_usdc.quote.borrow_apr')}</span>
               <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>
@@ -215,13 +215,13 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
               <span className="text-text-primary font-mono tabular-nums">{quote.terms.maxBorrow} USDC</span>
             </div>
             <div className="text-xs text-text-muted">
-              Bundle: {quote.bundler.steps.join(' → ')}
+              {t('borrow_usdc.quote.bundle_label')} {quote.bundler.steps.join(' → ')}
             </div>
           </div>
         )}
 
         {useQuoteMode && isExpired && (
-          <div className="bg-surface-warning border border-orange-300 rounded-xl p-2 text-orange-700 text-xs text-center">
+          <div className="bg-surface-warning border border-color-warning rounded-card p-2 text-color-warning text-xs text-center animate-fade-up">
             {t('borrow_usdc.quote.expired')} <button onClick={fetchQuote} className="underline">{t('borrow_usdc.quote.refresh')}</button>
           </div>
         )}
@@ -231,7 +231,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           <button
             onClick={() => executeBundler(quote)}
             disabled={isBundlerPending || isBundlerConfirming}
-            className="w-full py-3 font-bold rounded-lg transition-colors bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed"
+            className="w-full py-3 font-bold rounded-md transition-colors bg-brand text-white hover:bg-brand-dark disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed press"
           >
             {isBundlerPending ? t('borrow_usdc.quote.confirm_wallet') :
              isBundlerConfirming ? t('borrow_usdc.quote.executing_bundle') :
@@ -242,10 +242,10 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
           <WalletActionButton
             onClick={handleBorrow}
             disabled={!amount || parsedAmount === 0n || isProcessing || !canBorrow}
-            className={`w-full py-3 font-bold rounded-lg transition-colors ${
+            className={`w-full py-3 font-bold rounded-md transition-colors press ${
               step === 'success'
                 ? 'bg-color-up text-white'
-                : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+                : 'bg-brand text-white hover:bg-brand-dark disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
             }`}
           >
             {buttonText}
@@ -255,9 +255,9 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {/* Quote mode toggle — hidden, direct borrow is default */}
 
         {(txError || quoteError || bundlerError) && (
-          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+          <div className="bg-surface-down border border-color-down rounded-card p-3 text-color-down text-sm animate-fade-up">
             {(() => {
-              const msg = txError || quoteError?.message || bundlerError?.message || 'Unknown error'
+              const msg = txError || quoteError?.message || bundlerError?.message || t('common.transaction_failed')
               if (msg.includes('User rejected') || msg.includes('denied')) return t('common.transaction_rejected')
               if (quoteError?.isMarketFrozen) return t('common.market_frozen')
               if (quoteError?.isRateLimited) return t('common.rate_limited', { seconds: quoteError.retryAfter ?? 0 })

@@ -25,8 +25,8 @@ interface TierConfig {
  */
 const TIERS: TierConfig[] = [
   { label: 'Elite', color: 'bg-zinc-900 text-white', threshold: 20000 },
-  { label: 'Advanced', color: 'bg-amber-600 text-white', threshold: 15000 },
-  { label: 'Intermediate', color: 'bg-blue-600 text-white', threshold: 10000 },
+  { label: 'Advanced', color: 'bg-color-warning text-white', threshold: 15000 },
+  { label: 'Intermediate', color: 'bg-color-info text-white', threshold: 10000 },
   { label: 'Beginner', color: 'bg-muted text-text-primary', threshold: 0 }
 ]
 

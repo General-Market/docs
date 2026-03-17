@@ -117,19 +117,21 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const hasClaimableTicks = lastClaimedTick < (batchInfo?.createdAtTick ?? 0n) + 100n // rough check
 
   const handleWithdraw = useCallback(() => {
+    if (isWithdrawPending || isWithdrawConfirming || withdrawStep === 'fetching-proof') return
     capture('vision_withdraw_submitted', { batch_id: batchId, amount: onChainBalance > 0n ? formatUnits(onChainBalance, VISION_USDC_DECIMALS) : '0' })
     setMode('withdraw')
     withdraw(BigInt(batchId))
-  }, [batchId, withdraw, capture, onChainBalance])
+  }, [batchId, withdraw, capture, onChainBalance, isWithdrawPending, isWithdrawConfirming, withdrawStep])
 
   const handleClaim = useCallback(() => {
+    if (isClaimPending || isClaimConfirming || claimStep === 'fetching-proof') return
     setMode('claim')
     // fromTick = lastClaimedTick + 1, toTick = we pass 0 and let oracle determine current tick
     // In practice the frontend should know the current resolved tick from batch state
     const from = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
     // toTick = 0 means "up to latest resolved tick" — oracle handles this
     claim(BigInt(batchId), from, 0n)
-  }, [batchId, lastClaimedTick, startTick, claim])
+  }, [batchId, lastClaimedTick, startTick, claim, isClaimPending, isClaimConfirming, claimStep])
 
   const handleReset = useCallback(() => {
     setMode('choose')
@@ -153,7 +155,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-card border border-border-light rounded-card shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -164,18 +166,18 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">{t('withdraw_modal.connect_wallet')}</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
+              <div className="bg-surface-up border border-color-up/30 rounded-card p-6 text-center">
                 <p className="text-color-up font-semibold text-lg mb-1">
                   {mode === 'withdraw' ? t('withdraw_modal.withdrawal_successful') : t('withdraw_modal.claim_successful')}
                 </p>
                 {mode === 'withdraw' && withdrawProof && (
                   <p className="text-text-secondary text-sm">
-                    {t('withdraw_modal.usdc_returned', { amount: parseFloat(formatUnits(BigInt(withdrawProof.balance), VISION_USDC_DECIMALS)).toFixed(2) })}
+                    {t('withdraw_modal.usdc_returned', { amount: (parseFloat(formatUnits(BigInt(withdrawProof.balance), VISION_USDC_DECIMALS)) || 0).toFixed(2) })}
                   </p>
                 )}
                 {mode === 'claim' && claimProof && (
@@ -191,7 +193,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
               </div>
               <button
                 onClick={handleReset}
-                className="w-full py-3 bg-muted text-text-primary font-medium rounded-lg border border-border-light hover:bg-surface transition-colors"
+                className="w-full py-3 bg-muted text-text-primary font-medium rounded-md border border-border-light hover:bg-surface transition-colors"
               >
                 {t('withdraw_modal.back')}
               </button>
@@ -205,31 +207,31 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
           ) : (
             <div className="space-y-4">
               {/* Position overview */}
-              <div className="bg-muted border border-border-light rounded-xl p-4 space-y-3">
+              <div className="bg-muted border border-border-light rounded-card p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                    {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
+                    {onChainBalance > 0n ? (parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)) || 0).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.total_deposited')}</span>
                   <span className="text-sm text-text-secondary tabular-nums font-mono">
-                    {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
+                    {totalDeposited > 0n ? (parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)) || 0).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
                 {profit > 0n && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.profit')}</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.profit')}</span>
                       <span className="text-sm text-color-up tabular-nums font-mono">
-                        +{parseFloat(formatUnits(profit, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+                        +{(parseFloat(formatUnits(profit, VISION_USDC_DECIMALS)) || 0).toFixed(2)} USDC
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.est_fee')}</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.est_fee')}</span>
                       <span className="text-sm text-text-muted tabular-nums font-mono">
-                        -{parseFloat(formatUnits(estimatedFee, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+                        -{(parseFloat(formatUnits(estimatedFee, VISION_USDC_DECIMALS)) || 0).toFixed(2)} USDC
                       </span>
                     </div>
                   </>
@@ -238,7 +240,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
               {/* Step indicator */}
               {activeStep !== 'idle' && activeStep !== 'error' && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className="bg-muted border border-border-light rounded-card p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
@@ -248,7 +250,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
               {/* Error */}
               {activeError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                   <p className="font-medium">{t('withdraw_modal.error_title')}</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
@@ -267,7 +269,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                   <WalletActionButton
                     onClick={handleWithdraw}
                     disabled={onChainBalance === 0n}
-                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="w-full py-4 bg-color-down text-white font-medium rounded-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                   >
                     {t('withdraw_modal.withdraw_all')}
                   </WalletActionButton>
@@ -281,7 +283,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                   <WalletActionButton
                     onClick={handleClaim}
                     disabled={onChainBalance === 0n}
-                    className="w-full py-4 bg-muted text-text-primary font-medium rounded-lg border border-border-light hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-4 bg-muted text-text-primary font-medium rounded-md border border-border-light hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {t('withdraw_modal.claim_rewards')}
                   </WalletActionButton>

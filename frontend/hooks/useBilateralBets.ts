@@ -66,8 +66,8 @@ export function useBilateralBets(options: UseBilateralBetsOptions = {}) {
     queryKey: ['bilateral-bets', queryOptions],
     queryFn: () => fetchBilateralBets(queryOptions),
     enabled,
-    staleTime: 5000, // Consider data stale after 5 seconds
-    refetchInterval: 10000, // Refetch every 10 seconds
+    staleTime: 25_000,
+    refetchInterval: 30_000,
   })
 }
 

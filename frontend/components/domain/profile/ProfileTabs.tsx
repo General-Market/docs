@@ -1,5 +1,7 @@
 'use client'
 
+import { PageSection } from '@/components/layout/PageSection'
+
 interface ProfileTabsProps {
   activeTab: 'vision' | 'index'
   onTabChange: (tab: 'vision' | 'index') => void
@@ -13,13 +15,13 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
 
   return (
     <div className="border-b border-border-light">
-      <div className="px-6 lg:px-12">
-        <div className="max-w-site mx-auto flex items-center gap-0">
+      <PageSection as="div">
+        <div className="flex items-center gap-0 animate-fade-in">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-6 py-3 text-[14px] font-semibold transition-all border-b-[3px] ${
+              className={`px-6 py-3 text-body font-semibold transition-colors border-b-[3px] press ${
                 activeTab === tab.id
                   ? 'text-black border-black'
                   : 'text-text-secondary border-transparent hover:text-black'
@@ -29,7 +31,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
             </button>
           ))}
         </div>
-      </div>
+      </PageSection>
     </div>
   )
 }

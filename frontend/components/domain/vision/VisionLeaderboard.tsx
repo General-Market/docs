@@ -1,6 +1,7 @@
 'use client'
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Link } from '@/i18n/routing'
 
 /**
@@ -25,19 +26,23 @@ export function VisionLeaderboard() {
   if (isError || leaderboard.length === 0) {
     return (
       <div className="py-8 text-center">
-        <p className="text-text-muted font-mono text-sm">
-          {isError ? 'Failed to load leaderboard' : 'No players yet — join a batch to compete'}
+        <div className="text-text-muted font-mono text-lg whitespace-pre mb-4" aria-hidden="true">{'#1 ───\n#2 ───\n#3 ───'}</div>
+        <p className="text-text-secondary font-medium text-sm mb-1">
+          {isError ? 'The leaderboard refused to load.' : 'No players yet.'}
+        </p>
+        <p className="text-text-muted text-xs">
+          {isError ? 'These things happen to systems that attempt too much.' : 'The throne is empty. Take it.'}
         </p>
       </div>
     )
   }
 
   return (
-    <div className="py-6">
+    <div className="py-6" data-fade-in style={{ '--stagger-delay': 2 } as React.CSSProperties}>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b border-border-medium text-[10px] font-mono text-text-muted uppercase tracking-wider">
+            <tr className="border-b border-border-medium text-micro font-mono text-text-muted uppercase tracking-[0.08em]">
               <th className="pb-3 pr-4">#</th>
               <th className="pb-3 pr-4">Player</th>
               <th className="pb-3 pr-4 text-right">PnL (USDC)</th>
@@ -47,15 +52,20 @@ export function VisionLeaderboard() {
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map((entry) => {
-              const pnlPositive = entry.pnl >= 0
+            {leaderboard.map((entry, index) => {
+              const pnl = Number.isFinite(entry.pnl) ? entry.pnl : 0
+              const roi = Number.isFinite(entry.roi) ? entry.roi : 0
+              const totalVolume = Number.isFinite(entry.totalVolume) ? entry.totalVolume : 0
+              const pnlPositive = pnl >= 0
+              const isTop3 = entry.rank <= 3
               return (
                 <tr
                   key={entry.walletAddress}
-                  className="border-b border-border-light hover:bg-surface transition-colors"
+                  className={`border-b border-border-light hover:bg-surface hover:shadow-[inset_3px_0_0_#000] transition-all animate-row-in ${isTop3 ? 'bg-surface' : ''}`}
+                  style={{ '--row-i': index } as React.CSSProperties}
                 >
-                  <td className="py-3 pr-4 font-mono text-xs text-text-muted">
-                    {entry.rank}
+                  <td className={`py-3 pr-4 font-mono text-xs ${isTop3 ? 'text-text-primary font-black text-sm' : 'text-text-muted'}`}>
+                    <AnimatedNumber value={entry.rank} decimals={0} duration={500} className="" />
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs">
                     <Link
@@ -66,13 +76,25 @@ export function VisionLeaderboard() {
                     </Link>
                   </td>
                   <td className={`py-3 pr-4 font-mono text-xs text-right font-bold ${pnlPositive ? 'text-color-up' : 'text-color-down'}`}>
-                    {pnlPositive ? '+' : '-'}${Math.abs(entry.pnl).toFixed(2)}
+                    <AnimatedNumber
+                      value={pnl}
+                      duration={800}
+                      formatFn={(v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`}
+                    />
                   </td>
-                  <td className={`py-3 pr-4 font-mono text-xs text-right ${entry.roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                    {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
+                  <td className={`py-3 pr-4 font-mono text-xs text-right ${roi >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                    <AnimatedNumber
+                      value={roi}
+                      duration={800}
+                      formatFn={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+                    />
                   </td>
                   <td className="py-3 pr-4 font-mono text-xs text-right text-text-secondary">
-                    ${entry.totalVolume.toFixed(2)}
+                    <AnimatedNumber
+                      value={totalVolume}
+                      duration={800}
+                      formatFn={(v) => `$${v.toFixed(2)}`}
+                    />
                   </td>
                   <td className="py-3 font-mono text-xs text-right text-text-secondary">
                     {entry.portfolioBets}

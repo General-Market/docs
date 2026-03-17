@@ -70,6 +70,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
 
   const handleDeposit = useCallback(() => {
     if (!amount || parsedAmount === 0n) return
+    // Guard against double-submission while a deposit is in flight
+    if (activeStep !== 'idle' && activeStep !== 'done' && activeStep !== 'error') return
 
     if (mode === 'l3') {
       capture('vision_balance_deposit_l3', { amount })
@@ -78,7 +80,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
       capture('vision_balance_deposit_settlement', { amount })
       depositSettlement(parsedAmount)
     }
-  }, [amount, parsedAmount, mode, depositL3, depositSettlement, capture])
+  }, [amount, parsedAmount, mode, activeStep, depositL3, depositSettlement, capture])
 
   const handleReset = useCallback(() => {
     setMode('choose')
@@ -116,10 +118,10 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   })
 
   const l3WalletBalance = l3UsdcRaw !== undefined
-    ? parseFloat(formatUnits(l3UsdcRaw, VISION_USDC_DECIMALS)).toFixed(2)
+    ? (parseFloat(formatUnits(l3UsdcRaw, VISION_USDC_DECIMALS)) || 0).toFixed(2)
     : null
   const settlementWalletBalance = settlementUsdcRaw !== undefined
-    ? parseFloat(formatUnits(settlementUsdcRaw, SETTLEMENT_USDC_DECIMALS)).toFixed(2)
+    ? (parseFloat(formatUnits(settlementUsdcRaw, SETTLEMENT_USDC_DECIMALS)) || 0).toFixed(2)
     : null
 
   const stepLabel = (() => {
@@ -144,8 +146,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={onClose}>
+      <div className="bg-card border border-border-light rounded-card shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto animate-modal-in" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -154,12 +156,12 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">Connect your wallet to deposit</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
+              <div className="bg-surface-up border border-color-up/30 rounded-card p-6 text-center">
                 <p className="text-color-up font-semibold text-lg mb-1">Deposit Successful</p>
                 <p className="text-text-secondary text-sm">
                   {amount} USDC deposited to your Vision balance
@@ -173,7 +175,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               </div>
               <button
                 onClick={handleDone}
-                className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                className="w-full py-3 bg-color-up text-white font-medium rounded-md hover:opacity-90 transition-opacity"
               >
                 Done
               </button>
@@ -200,7 +202,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     if (data.success) {
                       const gasMsg = data.gas?.hash ? ' + 0.5 S gas' : ''
                       setMintResult(`1,000 USDC minted${gasMsg}!`)
-                      refetchL3Usdc()
+                      await refetchL3Usdc()
                     } else {
                       setMintResult(`Error: ${data.error}`)
                     }
@@ -211,19 +213,19 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   }
                 }}
                 disabled={minting || !address}
-                className="w-full text-left p-4 rounded-xl border border-dashed border-yellow-400 bg-yellow-50/50 hover:bg-yellow-50 transition-colors disabled:opacity-50"
+                className="w-full text-left p-4 rounded-card border border-dashed border-color-warning bg-surface-warning/50 hover:bg-surface-warning transition-colors disabled:opacity-50"
               >
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-bold text-yellow-700">
+                  <p className="text-sm font-bold text-color-warning">
                     {minting ? 'Minting...' : 'Mint Test USDC'}
                   </p>
-                  <span className="text-xs font-mono text-yellow-600">Testnet faucet</span>
+                  <span className="text-xs font-mono text-color-warning">Testnet faucet</span>
                 </div>
-                <p className="text-xs text-yellow-600/80 mt-1">
+                <p className="text-xs text-color-warning/80 mt-1">
                   Get 1,000 USDC on L3 for testing (free)
                 </p>
                 {mintResult && (
-                  <p className={`text-xs mt-2 font-medium ${mintResult.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={`text-xs mt-2 font-medium ${mintResult.startsWith('Error') ? 'text-color-down' : 'text-color-up'}`}>
                     {mintResult}
                   </p>
                 )}
@@ -232,7 +234,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               {/* From L3 wallet */}
               <button
                 onClick={() => setMode('l3')}
-                className={`w-full text-left p-4 rounded-xl border transition-colors ${
+                className={`w-full text-left p-4 rounded-card border transition-colors ${
                   isOnL3
                     ? 'border-color-up bg-surface-up/20 hover:bg-surface-up/30'
                     : 'border-border-light bg-muted hover:bg-surface'
@@ -248,14 +250,14 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   Deposit L3 USDC directly into your Vision balance
                 </p>
                 {isOnL3 && (
-                  <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
                 )}
               </button>
 
               {/* From Settlement */}
               <button
                 onClick={() => setMode('settlement')}
-                className={`w-full text-left p-4 rounded-xl border transition-colors ${
+                className={`w-full text-left p-4 rounded-card border transition-colors ${
                   isOnSettlement
                     ? 'border-color-up bg-surface-up/20 hover:bg-surface-up/30'
                     : 'border-border-light bg-muted hover:bg-surface'
@@ -271,7 +273,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   Lock USDC on Settlement. Oracles credit your virtual balance on L3.
                 </p>
                 {isOnSettlement && (
-                  <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
                 )}
               </button>
             </div>
@@ -288,9 +290,9 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               )}
 
               {/* Mode label + wallet balance */}
-              <div className="bg-muted border border-border-light rounded-xl p-3">
+              <div className="bg-muted border border-border-light rounded-card p-3">
                 <div className="flex justify-between items-center">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Settlement'}
                   </p>
                   {mode === 'l3' && l3WalletBalance !== null && (
@@ -313,9 +315,9 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               </div>
 
               {/* Amount input */}
-              <div className="bg-muted border border-border-light rounded-xl p-4">
+              <div className="bg-muted border border-border-light rounded-card p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     Amount
                   </label>
                   {mode === 'l3' && l3WalletBalance !== null && (
@@ -343,13 +345,13 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   min="0"
                   step="1"
                   disabled={isProcessing}
-                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none disabled:opacity-50"
+                  className="w-full bg-card border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-brand focus:outline-none disabled:opacity-50"
                 />
               </div>
 
               {/* Step indicator */}
               {isProcessing && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className="bg-muted border border-border-light rounded-card p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
@@ -369,7 +371,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
 
               {/* Error */}
               {activeError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                   <p className="font-medium">Error</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
@@ -386,7 +388,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <WalletActionButton
                   onClick={handleDeposit}
                   disabled={!amount || parsedAmount === 0n}
-                  className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  className="w-full py-4 bg-color-up text-white font-medium rounded-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                 >
                   {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Settlement'}
                 </WalletActionButton>

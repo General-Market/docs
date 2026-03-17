@@ -80,7 +80,7 @@ export function FillSpeedChart() {
       setAvgFillTime(avg)
       setError(null)
     } catch (e: any) {
-      setError(e.message || 'Failed to fetch data')
+      setError(e.message || 'Unable to load order flow data.')
     } finally {
       setIsLoading(false)
     }
@@ -100,7 +100,7 @@ export function FillSpeedChart() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6">
+      <div className="bg-white rounded-card shadow-card p-6">
         <h2 className="text-xl font-bold text-text-primary mb-4">{t('order_flow.title')}</h2>
         <div className="text-color-down text-sm">{error}</div>
       </div>
@@ -108,7 +108,7 @@ export function FillSpeedChart() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-card p-6">
+    <div className="bg-white rounded-card shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-xl font-bold text-text-primary">{t('order_flow.title')}</h2>
@@ -116,7 +116,7 @@ export function FillSpeedChart() {
         </div>
         {avgFillTime > 0 && (
           <div className="text-right">
-            <p className="text-2xl font-bold text-zinc-900 font-mono tabular-nums">{avgFillTime.toFixed(1)}s</p>
+            <p className="text-2xl font-bold text-text-primary font-mono tabular-nums">{avgFillTime.toFixed(1)}s</p>
             <p className="text-xs text-text-secondary">{t('order_flow.avg_fill_time')}</p>
           </div>
         )}
@@ -124,20 +124,20 @@ export function FillSpeedChart() {
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <div className="bg-muted rounded-lg p-2.5 text-center">
+        <div className="bg-muted rounded-md p-2.5 text-center">
           <p className="text-lg font-bold text-text-primary font-mono tabular-nums">{totalOrders}</p>
           <p className="text-xs text-text-muted">{t('order_flow.total_orders')}</p>
         </div>
-        <div className="bg-surface-up rounded-lg p-2.5 text-center">
+        <div className="bg-surface-up rounded-md p-2.5 text-center">
           <p className="text-lg font-bold text-color-up font-mono tabular-nums">{activeBuys}</p>
           <p className="text-xs text-text-muted">{t('order_flow.active_buys')}</p>
         </div>
-        <div className="bg-surface-down rounded-lg p-2.5 text-center">
+        <div className="bg-surface-down rounded-md p-2.5 text-center">
           <p className="text-lg font-bold text-color-down font-mono tabular-nums">{activeSells}</p>
           <p className="text-xs text-text-muted">{t('order_flow.active_sells')}</p>
         </div>
-        <div className="bg-muted rounded-lg p-2.5 text-center">
-          <p className="text-lg font-bold text-zinc-900 font-mono tabular-nums">{filledOrders}</p>
+        <div className="bg-muted rounded-md p-2.5 text-center">
+          <p className="text-lg font-bold text-text-primary font-mono tabular-nums">{filledOrders}</p>
           <p className="text-xs text-text-muted">{t('order_flow.filled')}</p>
         </div>
       </div>

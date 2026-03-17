@@ -98,21 +98,21 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || 'Transaction failed')
-      capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: actionError.message || 'Transaction failed' })
+      setTxError(actionError.message || t('common.transaction_failed'))
+      capture('lend_failed', { itp_id: market?.collateralToken, action: 'withdraw', error_message: actionError.message || 'transaction_failed' })
       setStep('input')
       resetAction()
     }
   }, [actionError, resetAction])
 
   const handleWithdraw = useCallback(() => {
-    if (!amount || parsedAmount === 0n || !canWithdraw) return
+    if (!amount || parsedAmount === 0n || !canWithdraw || isPending || isConfirming) return
     capture('lend_withdraw_submitted', { itp_id: market?.collateralToken, amount: amount })
     successHandled.current = false
     setTxError(null)
     setStep('withdrawing')
     withdrawCollateral(parsedAmount)
-  }, [amount, parsedAmount, canWithdraw, withdrawCollateral, capture, market?.collateralToken])
+  }, [amount, parsedAmount, canWithdraw, withdrawCollateral, capture, market?.collateralToken, isPending, isConfirming])
 
   const handleMax = () => {
     if (debtAmount === 0n) {
@@ -161,7 +161,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
   const willClosePosition = parsedAmount === collateralAmount && debtAmount === 0n
 
   return (
-    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+    <div className="bg-white rounded-card shadow-card border border-border-light p-6">
       <h2 className="text-lg font-bold text-text-primary mb-4">{t('withdraw_collateral.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
         {debtAmount === 0n
@@ -188,12 +188,12 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
               min="0"
               step="0.1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
+              className="w-full bg-muted border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg focus:border-brand focus:outline-none disabled:opacity-50 input-animate"
             />
             <button
               onClick={handleMax}
               disabled={isProcessing || collateralAmount === 0n}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-brand font-medium hover:text-brand-dark disabled:opacity-50"
             >
               MAX
             </button>
@@ -202,10 +202,10 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
         {/* Projected Health Factor (only if has debt) */}
         {debtAmount > 0n && amount && parsedAmount > 0n && (
-          <div className="bg-muted rounded-xl p-3">
+          <div className="bg-muted rounded-card p-3 animate-fade-up">
             <div className="flex justify-between items-center">
               <span className="text-sm text-text-secondary">{t('withdraw_collateral.projected_health_factor')}</span>
-              <span className={`font-mono tabular-nums font-bold ${
+              <span className={`font-mono tabular-nums font-bold transition-colors ${
                 projectedHealthFactor >= 1.5 ? 'text-color-up' :
                 projectedHealthFactor >= 1.0 ? 'text-color-warning' :
                 'text-color-down'
@@ -214,7 +214,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
               </span>
             </div>
             {projectedHealthFactor < 1.0 && (
-              <p className="text-color-down text-xs mt-2">
+              <p className="text-color-down text-xs mt-2 animate-fade-up">
                 {t('withdraw_collateral.cannot_withdraw_health')}
               </p>
             )}
@@ -223,8 +223,8 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
 
         {/* Close position notice */}
         {willClosePosition && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-            <p className="text-blue-700 text-sm">
+          <div className="bg-muted border border-border-light rounded-card p-3 animate-fade-up">
+            <p className="text-text-secondary text-sm">
               {t('withdraw_collateral.close_position_notice')}
             </p>
           </div>
@@ -233,10 +233,10 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         <button
           onClick={handleWithdraw}
           disabled={!amount || parsedAmount === 0n || isProcessing || !canWithdraw}
-          className={`w-full py-3 font-bold rounded-lg transition-colors ${
+          className={`w-full py-3 font-bold rounded-md transition-colors press ${
             step === 'success'
               ? 'bg-color-up text-white'
-              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+              : 'bg-brand text-white hover:bg-brand-dark disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
           }`}
         >
           {buttonText}
@@ -252,14 +252,14 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         )}
 
         {stuckWarning && (
-          <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
+          <div className="bg-surface-warning border border-color-warning rounded-card p-3 text-color-warning text-sm animate-fade-up">
             <p className="font-bold">{t('common.tx_stuck_title')}</p>
             <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
+          <div className="bg-surface-down border border-color-down rounded-card p-3 text-color-down text-sm animate-fade-up">
             {txError.includes('User rejected') || txError.includes('denied')
               ? t('common.transaction_rejected')
               : <span className="break-all">{txError}</span>}

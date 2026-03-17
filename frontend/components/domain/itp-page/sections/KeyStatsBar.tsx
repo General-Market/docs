@@ -8,7 +8,7 @@ function asOfToday() {
 }
 
 function Skeleton() {
-  return <div className="animate-pulse bg-gray-200 h-9 w-28 rounded" />
+  return <div className="animate-pulse bg-muted h-9 w-28 rounded" />
 }
 
 export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: SectionProps) {
@@ -29,24 +29,24 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
   return (
     <div className="py-6">
       {/* Desktop: horizontal with dividers */}
-      <div className="hidden md:flex items-start divide-x divide-border-light">
+      <div className="hidden md:flex items-start divide-x divide-border-light stagger">
         {/* NAV / Share */}
-        <div className="pr-6">
+        <div className="pr-6 min-w-0 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">NAV / Share</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           {nav > 0 ? (
-            <div className="text-3xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
+            <div className="text-3xl font-bold tabular-nums mt-1 truncate">${nav.toFixed(4)}</div>
           ) : (
             <div className="mt-1"><Skeleton /></div>
           )}
         </div>
 
         {/* 1 Day NAV Change */}
-        <div className="px-6">
+        <div className="px-6 min-w-0 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">1 Day NAV Change</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           {change1d != null && change1dAbs != null ? (
-            <div className={`text-xl font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+            <div className={`text-xl font-bold tabular-nums mt-1 truncate ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {change1d >= 0 ? '▲' : '▼'} {change1dAbs >= 0 ? '+' : ''}{change1dAbs.toFixed(4)} ({change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%)
             </div>
           ) : (
@@ -55,18 +55,18 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
         </div>
 
         {/* Total Value Locked */}
-        <div className="px-6">
+        <div className="px-6 min-w-0 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">Total Value Locked</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
-          <div className="text-xl font-bold tabular-nums mt-1">
+          <div className="text-micro text-text-muted">as of {asOf}</div>
+          <div className="text-xl font-bold tabular-nums mt-1 truncate">
             {aum > 0 ? formatUsd(aum) : '—'}
           </div>
         </div>
 
         {/* Holdings */}
-        <div className="pl-6">
+        <div className="pl-6 min-w-0 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">Holdings</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           <div className="text-xl font-bold tabular-nums mt-1">
             {assetCount > 0 ? assetCount : '—'}
           </div>
@@ -74,19 +74,19 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
       </div>
 
       {/* Mobile: 2-col grid */}
-      <div className="grid grid-cols-2 gap-4 md:hidden">
-        <div className="border-b border-border-light pb-4">
+      <div className="grid grid-cols-2 gap-4 md:hidden stagger">
+        <div className="border-b border-border-light pb-4 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">NAV / Share</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           {nav > 0 ? (
             <div className="text-2xl font-bold tabular-nums mt-1">${nav.toFixed(4)}</div>
           ) : (
             <div className="mt-1"><Skeleton /></div>
           )}
         </div>
-        <div className="border-b border-border-light pb-4">
+        <div className="border-b border-border-light pb-4 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">1 Day NAV Change</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           {change1d != null ? (
             <div className={`text-lg font-bold tabular-nums mt-1 ${change1d >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {change1d >= 0 ? '+' : ''}{change1d.toFixed(2)}%
@@ -95,14 +95,14 @@ export function KeyStatsBar({ itpId, nav, aum, assetCount, sinceInception }: Sec
             <div className="text-lg font-bold tabular-nums mt-1 text-text-muted">—</div>
           )}
         </div>
-        <div className="border-b border-border-light pb-4">
+        <div className="border-b border-border-light pb-4 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">Total Value Locked</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           <div className="text-lg font-bold tabular-nums mt-1">{aum > 0 ? formatUsd(aum) : '—'}</div>
         </div>
-        <div className="border-b border-border-light pb-4">
+        <div className="border-b border-border-light pb-4 animate-fade-up">
           <div className="text-xs text-text-secondary mb-0.5">Holdings</div>
-          <div className="text-[10px] text-text-muted">as of {asOf}</div>
+          <div className="text-micro text-text-muted">as of {asOf}</div>
           <div className="text-lg font-bold tabular-nums mt-1">{assetCount > 0 ? assetCount : '—'}</div>
         </div>
       </div>

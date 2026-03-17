@@ -67,7 +67,7 @@ export function WalletConnectButton() {
     return (
       <button
         disabled
-        className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg opacity-50 cursor-not-allowed"
+        className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-md opacity-50 cursor-not-allowed"
       >
         {t('wallet.login')}
       </button>
@@ -124,7 +124,7 @@ export function WalletConnectButton() {
       <button
         onClick={handleSwitchNetwork}
         disabled={isSwitching}
-        className="px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-lg hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-md hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
       </button>
@@ -136,7 +136,7 @@ export function WalletConnectButton() {
     return (
       <button
         onClick={() => { capture('wallet_disconnected'); resetPostHog(); disconnect() }}
-        className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-lg transition-all hover:bg-red-950/20 hover:border-red-400/30 hover:text-red-400"
+        className="group px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-md transition-colors hover:bg-surface-down hover:border-color-down/30 hover:text-color-down"
       >
         <span className="group-hover:hidden">{truncateAddress(address)}</span>
         <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
@@ -151,7 +151,7 @@ export function WalletConnectButton() {
         href="https://metamask.io/download/"
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm font-medium rounded-md hover:bg-brand-dark transition-colors"
       >
         {t('wallet.install_metamask')}
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,7 +166,7 @@ export function WalletConnectButton() {
     <button
       onClick={handleConnect}
       disabled={isLoading}
-      className="px-4 py-2 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="px-4 py-2 bg-brand text-white text-sm font-medium rounded-md hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? t('wallet.connecting') : t('wallet.login')}
     </button>

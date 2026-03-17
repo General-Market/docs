@@ -39,6 +39,6 @@ export function useBatches() {
         paused: b.paused ?? false,
       }))
     },
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
   })
 }

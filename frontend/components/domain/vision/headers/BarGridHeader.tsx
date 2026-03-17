@@ -49,7 +49,7 @@ export function BarGridHeader({ marketIds }: BarGridHeaderProps) {
           }}
         >
           <div
-            className="rounded-t-sm transition-all"
+            className="rounded-t-sm transition-[height]"
             style={{
               width: barWidth,
               height: bar.height,

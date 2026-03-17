@@ -108,18 +108,18 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     functionName: 'getUserShares',
     args: address ? [itpId as `0x${string}`, address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
+    query: { enabled: !!address && !!itpId, refetchInterval: 30_000 },
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
 
-  // L3 USDC balance (for detecting proceeds)
+  // L3 USDC balance (for detecting proceeds; SSE is primary)
   const { data: l3UsdcRaw } = useReadContract({
     address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address, refetchInterval: 5_000 },
+    query: { enabled: !!address, refetchInterval: 30_000 },
   })
   const l3UsdcBalance = (l3UsdcRaw as bigint) ?? 0n
 
@@ -153,7 +153,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }, [l3UsdcBalance])
 
   const handleSell = useCallback(async () => {
-    if (!publicClient || !amount || insufficientShares) return
+    if (!publicClient || !amount || insufficientShares || isPending || isConfirming) return
     setTxError(null)
     sellHandled.current = false
     snapshotBalances()
@@ -196,7 +196,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
         deadline,
       ],
     })
-  }, [publicClient, amount, insufficientShares, parsedAmount, writeContract, snapshotBalances, deadlineHours, limitPrice, slippageTier, itpId])
+  }, [publicClient, amount, insufficientShares, parsedAmount, writeContract, snapshotBalances, deadlineHours, limitPrice, slippageTier, itpId, isPending, isConfirming])
 
   // Handle tx success — extract orderId, advance to BATCH
   useEffect(() => {
@@ -429,7 +429,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     const proceeds = usdcProceeds ?? ((fillAmount * fillPrice) / BigInt(1e18))
 
     return (
-      <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
+      <div className="bg-muted border border-border-light rounded-card p-4 space-y-2">
         <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
@@ -463,8 +463,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={handleClose}>
+      <div className="bg-card border border-border-light rounded-card shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto animate-modal-in" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
@@ -477,14 +477,14 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             const vid = extractYouTubeId(videoUrl)
             if (!vid) return null
             return (
-              <div className="rounded-lg overflow-hidden mb-4">
+              <div className="rounded-md overflow-hidden mb-4">
                 <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
               </div>
             )
           })()}
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">{tc('wallet.connect_to_sell')}</p>
             </div>
           ) : micro >= 0 ? (
@@ -501,8 +501,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {renderFillDetails()}
 
               {isDone && l3UsdcBalance > 0n && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('usdc_balance_label')}</p>
+                <div className="bg-muted border border-border-light rounded-card p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('usdc_balance_label')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{formatUnits(l3UsdcBalance, COLLATERAL_DECIMALS)} USDC</p>
                 </div>
               )}
@@ -510,7 +510,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {isDone ? (
                 <button
                   onClick={handleReset}
-                  className="w-full py-3 bg-color-down text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  className="w-full py-3 bg-color-down text-white font-medium rounded-md hover:opacity-90 transition-opacity"
                 >
                   {t('sell_more')}
                 </button>
@@ -524,14 +524,14 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               ) : null}
 
               {stuckWarning && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                <div className="bg-surface-warning border border-color-warning rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
@@ -539,23 +539,23 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
-                <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('your_shares_label')}</span>
+              <div className="bg-muted border border-border-light rounded-card p-4 flex justify-between items-center">
+                <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('your_shares_label')}</span>
                 <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</span>
               </div>
 
               {userShares === 0n ? (
-                <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+                <div className="bg-muted border border-border-light rounded-card p-8 text-center">
                   <p className="text-text-secondary">{t('no_shares')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
+                  <div className="bg-muted border border-border-light rounded-card p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('shares_to_sell_label')}</label>
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('shares_to_sell_label')}</label>
                       <button
                         onClick={() => setAmount(formatUnits(userShares, 18))}
-                        className="text-xs text-zinc-700 hover:text-zinc-900"
+                        className="text-xs text-text-secondary hover:text-text-primary"
                       >
                         {tc('actions.max')}
                       </button>
@@ -567,16 +567,16 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder="e.g., 10"
                       min="0"
                       step="0.01"
-                      className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                      className="w-full bg-card border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-brand focus:outline-none input-animate"
                     />
                     {insufficientShares && (
                       <p className="text-color-down text-xs mt-1">{t('insufficient_shares')}</p>
                     )}
                   </div>
 
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
+                  <div className="bg-muted border border-border-light rounded-card p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('min_price_label')}</label>
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('min_price_label')}</label>
                       {navPerShare > 0 && (
                         <span className="text-xs text-text-secondary font-mono">
                           {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
@@ -590,7 +590,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_min_price') : t('no_limit')}
                       min="0"
                       step="0.01"
-                      className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                      className="w-full bg-card border border-border-medium rounded-md px-4 py-2 text-text-primary font-mono tabular-nums focus:border-brand focus:outline-none input-animate"
                     />
                   </div>
 
@@ -609,17 +609,17 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     </button>
                   </div>
                   {showSlippage && (
-                    <div className="bg-muted border border-border-light rounded-xl p-4">
-                      <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
+                    <div className="bg-muted border border-border-light rounded-card p-4">
+                      <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
                       <div className="flex gap-2">
                         {SLIPPAGE_TIERS.map(tier => (
                           <button
                             key={tier.value}
                             onClick={() => setSlippageTier(tier.value)}
-                            className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
+                            className={`flex-1 py-2 rounded-md border text-sm font-mono transition-colors ${
                               slippageTier === tier.value
-                                ? 'border-zinc-900 text-white bg-zinc-900'
-                                : 'border-border-medium text-text-muted hover:border-zinc-500'
+                                ? 'border-brand text-white bg-brand'
+                                : 'border-border-medium text-text-muted hover:border-brand'
                             }`}
                           >
                             {tier.label}
@@ -631,8 +631,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
                   {/* P&L Preview */}
                   {parsedAmount > 0n && costBasis && costBasis.avgCostPerShare > 0n && (
-                    <div className="bg-muted border border-border-light rounded-xl p-4 space-y-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2">{t('estimated_pnl.title')}</p>
+                    <div className="bg-muted border border-border-light rounded-card p-4 space-y-1">
+                      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2">{t('estimated_pnl.title')}</p>
                       <div className="text-xs font-mono space-y-1">
                         <div className="flex justify-between">
                           <span className="text-text-muted">{t('estimated_pnl.avg_cost_basis')}</span>
@@ -669,7 +669,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   <WalletActionButton
                     onClick={handleSell}
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming}
-                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="w-full py-4 bg-color-down text-white font-medium rounded-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity press"
                   >
                     {buttonText}
                   </WalletActionButton>
@@ -684,14 +684,14 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   )}
 
                   {stuckWarning && (
-                    <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                    <div className="bg-surface-warning border border-color-warning rounded-md p-3 text-color-warning text-sm">
                       <p className="font-medium">Transaction may be stuck</p>
                       <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                     </div>
                   )}
 
                   {txError && (
-                    <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                    <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                       <p className="font-medium">{t('error.title')}</p>
                       <p className="text-sm mt-1 break-all">{txError}</p>
                     </div>

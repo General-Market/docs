@@ -323,7 +323,7 @@ function PriceLabels({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <span
           ref={execLabelRef}
-          className="text-[13px] font-bold font-mono whitespace-nowrap"
+          className="text-caption font-bold font-mono whitespace-nowrap"
           style={{ color: COL_GREEN }}
         >
           8 gwei
@@ -339,7 +339,7 @@ function PriceLabels({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <span
           ref={stateLabelRef}
-          className="text-[13px] font-bold font-mono whitespace-nowrap"
+          className="text-caption font-bold font-mono whitespace-nowrap"
           style={{ color: COL_GREEN }}
         >
           50 gwei
@@ -355,7 +355,7 @@ function PriceLabels({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <div
           ref={stormLabelRef}
-          className="text-[12px] font-semibold whitespace-nowrap px-2 py-0.5 rounded-full"
+          className="text-caption font-semibold whitespace-nowrap px-2 py-0.5 rounded-full"
           style={{
             color: '#fff',
             background: COL_RED,
@@ -383,10 +383,10 @@ function TankLabels() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div className="text-center">
-          <div className="text-[12px] font-bold" style={{ color: COL_BLUE }}>
+          <div className="text-caption font-bold" style={{ color: COL_BLUE }}>
             Execution
           </div>
-          <div className="text-[10px] font-mono" style={{ color: '#71717a' }}>
+          <div className="text-micro font-mono" style={{ color: '#71717a' }}>
             300M gas
           </div>
         </div>
@@ -400,10 +400,10 @@ function TankLabels() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div className="text-center">
-          <div className="text-[12px] font-bold" style={{ color: COL_PURPLE }}>
+          <div className="text-caption font-bold" style={{ color: COL_PURPLE }}>
             State Creation
           </div>
-          <div className="text-[10px] font-mono" style={{ color: '#71717a' }}>
+          <div className="text-micro font-mono" style={{ color: '#71717a' }}>
             1M gas
           </div>
         </div>
@@ -417,10 +417,10 @@ function TankLabels() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div className="text-center">
-          <div className="text-[12px] font-bold" style={{ color: COL_AMBER }}>
+          <div className="text-caption font-bold" style={{ color: COL_AMBER }}>
             Reservoir
           </div>
-          <div className="text-[10px]" style={{ color: '#71717a' }}>
+          <div className="text-micro" style={{ color: '#71717a' }}>
             backward compat
           </div>
         </div>
@@ -434,7 +434,7 @@ function TankLabels() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div
-          className="text-[11px] font-medium whitespace-nowrap px-2 py-0.5 rounded border"
+          className="text-label font-medium whitespace-nowrap px-2 py-0.5 rounded border"
           style={{ color: '#71717a', borderColor: '#d4d4d8', background: '#fafafa' }}
         >
           Legacy contracts see this
@@ -636,23 +636,23 @@ function Legend() {
     <div className="flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ background: COL_BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Execution</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Execution</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ background: COL_PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">State creation</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">State creation</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ background: COL_AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Reservoir</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Reservoir</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ background: COL_RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Overflow / spike</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Overflow / spike</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <div className="w-3 h-2 rounded-sm bg-zinc-400 border border-zinc-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">Legacy contract</span>
+        <div className="w-3 h-2 rounded-sm bg-border-dark border border-border-dark" />
+        <span className="text-micro text-text-muted tracking-[0.08em]">Legacy contract</span>
       </div>
     </div>
   )

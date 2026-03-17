@@ -119,7 +119,7 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
             href={marketUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-text-primary hover:text-zinc-900 truncate block"
+            className="text-sm text-text-primary hover:text-text-primary truncate block"
             title={displayTitle}
           >
             {displayTitle}
@@ -135,7 +135,7 @@ const PositionRow = memo(function PositionRow({ position }: PositionRowProps) {
         <div className="flex items-center gap-2">
           <span className="text-xs text-text-muted font-mono truncate">{parsedMarketId.rawId}</span>
           {position.isClosed && (
-            <span className="text-xs text-purple-400 font-mono">Resolved</span>
+            <span className="text-xs text-text-secondary font-mono">Resolved</span>
           )}
         </div>
       </div>
@@ -398,12 +398,12 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-backdrop-in"
         onClick={onClose}
       />
 
       {/* Modal content */}
-      <div className="relative bg-card border border-border-medium rounded-xl shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
+      <div className="relative bg-card border border-border-medium rounded-card shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col animate-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
           <div>
@@ -447,7 +447,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
               value={searchInput}
               onChange={handleSearchChange}
               placeholder={t('portfolio_modal.search_placeholder')}
-              className="w-full px-4 py-2 bg-card border border-border-medium text-text-primary font-mono text-sm focus:outline-none focus:border-zinc-900 placeholder-text-muted rounded-lg"
+              className="w-full px-4 py-2 bg-card border border-border-medium text-text-primary font-mono text-sm focus:outline-none focus:border-brand placeholder-text-muted rounded-md input-animate"
             />
             {searchInput && (
               <button
@@ -477,7 +477,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
             <PositionBreakdown positions={filteredPositions} />
             <button
               onClick={handleExport}
-              className="px-3 py-1 border border-border-medium text-text-muted text-xs font-mono hover:text-text-primary hover:border-zinc-900 transition-colors rounded"
+              className="px-3 py-1 border border-border-medium text-text-muted text-xs font-mono hover:text-text-primary hover:border-brand transition-colors rounded"
             >
               {t('portfolio_modal.export_csv')}
             </button>
@@ -485,7 +485,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Column headers */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
           <span className="flex-1">{t('portfolio_modal.market')}</span>
           <div className="flex items-center gap-3">
             <span className="w-12">{t('portfolio_modal.position')}</span>
@@ -511,7 +511,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         <div className="px-6 py-4 border-t border-border-medium">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-zinc-900 text-white hover:bg-zinc-800 transition-colors rounded-lg"
+            className="w-full px-4 py-2 bg-brand text-white hover:bg-brand-dark transition-colors rounded-md"
           >
             {t('actions.close')}
           </button>

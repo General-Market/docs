@@ -49,7 +49,7 @@ function PerformanceTooltip({
   const data = payload[0].payload as PerformanceDataPoint
 
   return (
-    <div className="bg-card border border-border-medium rounded-xl p-3 font-mono text-sm shadow-card">
+    <div className="bg-card border border-border-medium rounded-card p-3 font-mono text-sm shadow-card">
       <p className="text-text-primary font-bold mb-2">Portfolio Bet #{data.betNumber}</p>
       <div className="space-y-1 text-text-secondary">
         <p>Date: {formatDate(data.timestamp)}</p>
@@ -69,7 +69,7 @@ function PerformanceTooltip({
 function PerformanceGraphSkeleton({ height }: { height: number }) {
   return (
     <div
-      className="bg-card border border-border-light rounded-xl shadow-card animate-pulse"
+      className="bg-card border border-border-light rounded-card shadow-card animate-pulse"
       style={{ height }}
     >
       <div className="h-full flex items-center justify-center">
@@ -97,7 +97,7 @@ function EmptyState({ height }: { height: number }) {
   const t = useTranslations('common')
   return (
     <div
-      className="bg-card border border-border-light rounded-xl shadow-card flex items-center justify-center"
+      className="bg-card border border-border-light rounded-card shadow-card flex items-center justify-center"
       style={{ height }}
     >
       <div className="text-center">
@@ -143,7 +143,7 @@ export function PerformanceGraph({
   if (isError) {
     return (
       <div
-        className="bg-card border border-color-down/50 rounded-xl shadow-card flex items-center justify-center"
+        className="bg-card border border-color-down/50 rounded-card shadow-card flex items-center justify-center"
         style={{ height }}
       >
         <div className="text-center">
@@ -161,7 +161,7 @@ export function PerformanceGraph({
 
   return (
     <div
-      className="bg-card border border-border-light rounded-xl shadow-card"
+      className="animate-fade-in bg-card border border-border-light rounded-card shadow-card"
       role="img"
       aria-label={`Performance graph showing ${data.dataPoints.length} data points with cumulative P&L of $${data.summary.endingPnL.toLocaleString()}`}
     >

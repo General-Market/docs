@@ -16,11 +16,11 @@ import { FAVORABLE_ODDS_THRESHOLD, UNFAVORABLE_ODDS_THRESHOLD, DEFAULT_ODDS_BPS 
  */
 function formatAmount(amount: string): string {
   if (!amount) {
-    return '$-.--'
+    return '\u2014'
   }
   const num = parseFloat(amount)
   if (isNaN(num)) {
-    return '$-.--'
+    return '\u2014'
   }
   return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
@@ -42,7 +42,7 @@ function formatResult(result: string | null): string {
  */
 function formatPortfolioSize(size: number | undefined | null): string {
   if (size === undefined || size === null || size === 0) {
-    return '5'  // Default portfolio size when data not yet synced
+    return '\u2014'
   }
   return size.toLocaleString('en-US')
 }
@@ -112,10 +112,10 @@ interface BetFeedItemProps {
  */
 function MegaPortfolioBadge() {
   return (
-    <Tooltip content="Mega Portfolio - Only AI can manage this scale">
-      <span className="inline-flex items-center gap-1 text-zinc-900 animate-pulse cursor-help" role="img" aria-label="Mega Portfolio">
+    <Tooltip content="Mega Portfolio — 20,000+ markets">
+      <span className="inline-flex items-center gap-1 text-text-primary animate-pulse cursor-help" role="img" aria-label="Mega Portfolio">
         <span>🔥</span>
-        <span className="text-[10px] font-bold uppercase tracking-wide">MEGA</span>
+        <span className="text-micro font-bold uppercase tracking-[0.08em]">MEGA</span>
       </span>
     </Tooltip>
   )
@@ -162,7 +162,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
           <OddsBadge
             display={formatOdds(event.oddsBps)}
             favorability={getOddsFavorability(event.oddsBps)}
-            className="text-[10px] px-1.5 py-0.5"
+            className="text-micro px-1.5 py-0.5"
           />
         )}
       </div>

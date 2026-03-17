@@ -118,19 +118,19 @@ function MetadataForm({
     }
   }
 
-  const inputClass = 'w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none'
+  const inputClass = 'w-full bg-card border border-border-medium rounded-md px-4 py-2 text-text-primary text-sm font-mono focus:border-brand focus:outline-none'
 
   if (metaStep === 'done') {
     return (
       <div className="space-y-4">
-        <div className="bg-surface-up border border-color-up/30 rounded-lg p-4 text-color-up text-center">
+        <div className="bg-surface-up border border-color-up/30 rounded-md p-4 text-color-up text-center">
           <p className="font-medium">Details Saved!</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleReset} className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity">
+          <button onClick={handleReset} className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-md text-sm hover:opacity-90 transition-opacity">
             Create Another
           </button>
-          <button onClick={onClose} className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors">
+          <button onClick={onClose} className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-md text-sm hover:border-brand hover:text-text-primary transition-colors">
             Close
           </button>
         </div>
@@ -143,7 +143,7 @@ function MetadataForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Add Batch Details (optional)</p>
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Add Batch Details (optional)</p>
 
       <div className="space-y-3">
         <div>
@@ -173,13 +173,13 @@ function MetadataForm({
       </div>
 
       {activeError && (
-        <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm break-all">
+        <div className="bg-surface-down border border-color-down/30 rounded-md p-3 text-color-down text-sm break-all">
           {activeError}
         </div>
       )}
 
       {isSaving && (
-        <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
+        <div className="bg-color-info/10 border border-color-info/30 rounded-md p-3 text-color-info text-sm">
           {metaPending || namePending ? 'Confirm in your wallet...' : 'Waiting for confirmation...'}
         </div>
       )}
@@ -188,14 +188,14 @@ function MetadataForm({
         <button
           onClick={handleSave}
           disabled={isSaving || (!hasAnyMeta && !metaDeployerName)}
-          className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-md text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isSaving ? 'Saving...' : 'Save Details'}
         </button>
         <button
           onClick={onClose}
           disabled={isSaving}
-          className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors disabled:opacity-40"
+          className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-md text-sm hover:border-brand hover:text-text-primary transition-colors disabled:opacity-40"
         >
           Skip
         </button>
@@ -362,6 +362,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
   }, [step])
 
   const handleSubmit = useCallback(() => {
+    if (isPending || isConfirming) return
     const marketIds = selectedConfigs.map((c) => c.market.id)
     const resolutionTypes = selectedConfigs.map((c) => c.resolutionType)
     const customThresholds = selectedConfigs.map((c) =>
@@ -374,7 +375,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
       tickDuration,
       customThresholds,
     })
-  }, [selectedConfigs, tickDuration, createBatch])
+  }, [isPending, isConfirming, selectedConfigs, tickDuration, createBatch])
 
   // Track successful batch creation
   useEffect(() => {
@@ -402,9 +403,9 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={onClose}>
       <div
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border-light rounded-card shadow-modal max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-modal-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -417,7 +418,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
           </div>
 
           {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-6 stagger">
             {STEPS.map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div
@@ -440,7 +441,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">{t('create_modal.connect_wallet')}</p>
             </div>
           ) : (
@@ -449,15 +450,15 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
               {step === 'markets' && (
                 <div className="space-y-4">
                   {/* Source dropdown */}
-                  <div className="bg-muted border border-border-light rounded-xl p-4 space-y-3">
+                  <div className="bg-muted border border-border-light rounded-card p-4 space-y-3">
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
                         Source
                       </label>
                       <select
                         value={selectedSource}
                         onChange={(e) => setSelectedSource(e.target.value)}
-                        className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none appearance-none"
+                        className="w-full bg-card border border-border-medium rounded-md px-4 py-2 text-text-primary text-sm font-mono focus:border-brand focus:outline-none appearance-none"
                       >
                         <option value="">All Sources</option>
                         {sources.map((s) => (
@@ -466,7 +467,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
                         Search
                       </label>
                       <input
@@ -474,7 +475,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search by name or ID..."
-                        className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary text-sm font-mono focus:border-zinc-600 focus:outline-none"
+                        className="w-full bg-card border border-border-medium rounded-md px-4 py-2 text-text-primary text-sm font-mono focus:border-brand focus:outline-none"
                       />
                     </div>
                   </div>
@@ -483,13 +484,13 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={selectAllVisible}
-                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors"
+                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-md hover:border-brand hover:text-text-primary transition-colors"
                     >
                       Select All
                     </button>
                     <button
                       onClick={unselectAllVisible}
-                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors"
+                      className="px-3 py-1.5 border border-border-medium text-text-secondary text-xs font-medium rounded-md hover:border-brand hover:text-text-primary transition-colors"
                     >
                       Unselect All
                     </button>
@@ -505,7 +506,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       {markets.length === 0 ? 'No active markets available' : 'No markets match your filter'}
                     </div>
                   ) : (
-                    <div className="max-h-[360px] overflow-y-auto border border-border-light rounded-lg">
+                    <div className="max-h-[360px] overflow-y-auto border border-border-light rounded-md">
                       {filteredMarkets.map((market) => {
                         const isSelected = selectedMarketIds.has(market.id)
                         return (
@@ -557,8 +558,8 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
               {step === 'configure' && (
                 <div className="space-y-4">
                   {/* Tick Duration */}
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3 block">
+                  <div className="bg-muted border border-border-light rounded-card p-4">
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
                       Tick Duration
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -566,10 +567,10 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         <button
                           key={td.value}
                           onClick={() => setTickDuration(td.value)}
-                          className={`px-3 py-2 rounded-lg border text-sm font-mono transition-colors ${
+                          className={`px-3 py-2 rounded-md border text-sm font-mono transition-colors ${
                             tickDuration === td.value
                               ? 'border-terminal text-text-inverse bg-terminal'
-                              : 'border-border-medium text-text-muted hover:border-zinc-500'
+                              : 'border-border-medium text-text-muted hover:border-brand'
                           }`}
                         >
                           {td.label}
@@ -579,15 +580,15 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   </div>
 
                   {/* Per-market resolution type */}
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3 block">
+                  <div className="bg-muted border border-border-light rounded-card p-4">
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
                       Resolution Type per Market
                     </label>
                     <div className="max-h-[320px] overflow-y-auto space-y-3">
                       {selectedConfigs.map((config) => {
                         const needsCustom = isCustomThresholdType(config.resolutionType)
                         return (
-                          <div key={config.market.id} className="bg-card border border-border-light rounded-lg p-3">
+                          <div key={config.market.id} className="bg-card border border-border-light rounded-md p-3">
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-sm font-medium text-text-primary">{config.market.name}</p>
                               <p className="text-xs text-text-muted font-mono">{config.market.id}</p>
@@ -596,7 +597,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                               <select
                                 value={config.resolutionType}
                                 onChange={(e) => updateMarketConfig(config.market.id, 'resolutionType', parseInt(e.target.value, 10))}
-                                className="flex-1 bg-muted border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary font-mono focus:border-zinc-600 focus:outline-none appearance-none"
+                                className="flex-1 bg-muted border border-border-medium rounded-md px-3 py-2 text-sm text-text-primary font-mono focus:border-brand focus:outline-none appearance-none"
                               >
                                 {RESOLUTION_TYPES.map((rt) => (
                                   <option key={rt.value} value={rt.value}>
@@ -612,7 +613,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                                     onChange={(e) => updateMarketConfig(config.market.id, 'customThreshold', e.target.value)}
                                     placeholder="bps"
                                     min="1"
-                                    className="w-20 bg-muted border border-border-medium rounded-lg px-2 py-2 text-sm text-text-primary font-mono tabular-nums text-right focus:border-zinc-600 focus:outline-none"
+                                    className="w-20 bg-muted border border-border-medium rounded-md px-2 py-2 text-sm text-text-primary font-mono tabular-nums text-right focus:border-brand focus:outline-none"
                                   />
                                   <span className="text-xs text-text-muted">bps</span>
                                 </div>
@@ -629,8 +630,8 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
               {/* Step 3: Preview */}
               {step === 'preview' && (
                 <div className="space-y-4">
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Batch Summary</p>
+                  <div className="bg-muted border border-border-light rounded-card p-4">
+                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">Batch Summary</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-text-muted">Markets</span>
@@ -645,7 +646,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     </div>
                   </div>
 
-                  <div className="border border-border-light rounded-lg overflow-hidden">
+                  <div className="border border-border-light rounded-md overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-muted">
                         <tr className="text-text-muted text-xs">
@@ -688,7 +689,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                 <div className="space-y-4">
                   {!isSuccess ? (
                     <>
-                      <div className="bg-muted border border-border-light rounded-xl p-4 text-center">
+                      <div className="bg-muted border border-border-light rounded-card p-4 text-center">
                         <p className="text-sm text-text-secondary mb-1">
                           You are creating a batch with <span className="font-bold text-text-primary">{selectedConfigs.length}</span> market{selectedConfigs.length !== 1 ? 's' : ''}
                         </p>
@@ -698,13 +699,13 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       </div>
 
                       {isPending && (
-                        <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
+                        <div className="bg-color-info/10 border border-color-info/30 rounded-md p-3 text-color-info text-sm">
                           {t('create_modal.step_confirm.confirm_wallet')}
                         </div>
                       )}
 
                       {isConfirming && (
-                        <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
+                        <div className="bg-color-info/10 border border-color-info/30 rounded-md p-3 text-color-info text-sm">
                           <p>Transaction submitted, waiting for confirmation...</p>
                           {txHash && (
                             <p className="text-xs font-mono mt-1 text-color-info/60 break-all">Tx: {txHash}</p>
@@ -713,7 +714,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       )}
 
                       {txError && (
-                        <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm break-all">
+                        <div className="bg-surface-down border border-color-down/30 rounded-md p-3 text-color-down text-sm break-all">
                           {txError}
                         </div>
                       )}
@@ -721,7 +722,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       <WalletActionButton
                         onClick={handleSubmit}
                         disabled={isPending || isConfirming}
-                        className="w-full py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full py-3 bg-terminal text-text-inverse font-medium rounded-md text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed press"
                       >
                         {isPending
                           ? t('create_modal.step_confirm.button.waiting')
@@ -732,7 +733,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     </>
                   ) : !showMetaForm ? (
                     <>
-                      <div className="bg-surface-up border border-color-up/30 rounded-lg p-4 text-color-up text-center">
+                      <div className="bg-surface-up border border-color-up/30 rounded-md p-4 text-color-up text-center">
                         <p className="font-medium text-lg mb-1">{t('create_modal.step_confirm.success.title')}</p>
                         {batchId !== null && (
                           <p className="text-sm font-mono">Batch ID: #{batchId.toString()}</p>
@@ -745,13 +746,13 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       <div className="flex gap-3">
                         <button
                           onClick={() => setShowMetaForm(true)}
-                          className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity"
+                          className="flex-1 py-3 bg-terminal text-text-inverse font-medium rounded-md text-sm hover:opacity-90 transition-opacity"
                         >
                           Add Details
                         </button>
                         <button
                           onClick={onClose}
-                          className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors"
+                          className="flex-1 py-3 border border-border-medium text-text-secondary font-medium rounded-md text-sm hover:border-brand hover:text-text-primary transition-colors"
                         >
                           Skip
                         </button>
@@ -784,7 +785,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   {stepIndex > 0 && (
                     <button
                       onClick={goBack}
-                      className="px-4 py-2.5 border border-border-medium text-text-secondary font-medium rounded-lg text-sm hover:border-zinc-500 hover:text-text-primary transition-colors"
+                      className="px-4 py-2.5 border border-border-medium text-text-secondary font-medium rounded-md text-sm hover:border-brand hover:text-text-primary transition-colors"
                     >
                       Back
                     </button>
@@ -792,7 +793,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   <button
                     onClick={goNext}
                     disabled={!canAdvance}
-                    className="flex-1 py-2.5 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex-1 py-2.5 bg-terminal text-text-inverse font-medium rounded-md text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed press"
                   >
                     {stepIndex === STEPS.length - 2 ? t('create_modal.nav.review_confirm') : t('create_modal.nav.next')}
                   </button>

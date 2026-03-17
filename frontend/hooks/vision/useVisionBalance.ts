@@ -34,7 +34,7 @@ export function useVisionBalance(): UseVisionBalanceReturn {
       return res.json() as Promise<{ realBalance: string; virtualBalance: string; total: string }>
     },
     enabled: !!address,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   })
 
   const realBalance = data ? BigInt(data.realBalance) : 0n

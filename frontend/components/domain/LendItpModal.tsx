@@ -39,9 +39,9 @@ interface LendItpModalProps {
 type Tab = 'borrow' | 'repay'
 
 const LendingErrorFallback = (
-  <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">
-    <h3 className="text-color-down font-semibold mb-2">Something went wrong</h3>
-    <p className="text-text-muted text-sm">Please close and reopen the modal.</p>
+  <div className="bg-surface-down border border-color-down/30 rounded-card p-6 text-center">
+    <h3 className="text-color-down font-semibold mb-2">Module failed to load</h3>
+    <p className="text-text-muted text-sm">Close this dialog and try again.</p>
   </div>
 )
 
@@ -77,9 +77,9 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
   if (!isOpen || !market) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={onClose}>
       <div
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border-light rounded-card shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto animate-modal-in"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -94,7 +94,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
           </p>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">{t('lend_modal.connect_wallet')}</p>
             </div>
           ) : (
@@ -104,9 +104,9 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                 <div className="flex gap-4 border-b border-border-light">
                   <button
                     onClick={() => setActiveTab('borrow')}
-                    className={`pb-3 px-4 text-sm transition-colors border-b-2 ${
+                    className={`pb-3 px-4 text-sm transition-colors border-b-2 press ${
                       activeTab === 'borrow'
-                        ? 'text-text-primary border-zinc-900'
+                        ? 'text-text-primary border-brand'
                         : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
@@ -114,9 +114,9 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                   </button>
                   <button
                     onClick={() => setActiveTab('repay')}
-                    className={`pb-3 px-4 text-sm transition-colors border-b-2 ${
+                    className={`pb-3 px-4 text-sm transition-colors border-b-2 press ${
                       activeTab === 'repay'
-                        ? 'text-text-primary border-zinc-900'
+                        ? 'text-text-primary border-brand'
                         : 'text-text-secondary border-transparent hover:text-text-primary'
                     }`}
                   >
@@ -144,7 +144,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                       <WithdrawCollateral market={market} onSuccess={refetchPosition} />
                     )}
                     {(!position || (position.debtAmount === 0n && position.collateralAmount === 0n)) && (
-                      <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+                      <div className="bg-muted border border-border-light rounded-card p-8 text-center">
                         <p className="text-text-muted">{t('lend_modal.no_position')}</p>
                         <p className="text-text-muted text-sm mt-2">{t('lend_modal.open_position_hint')}</p>
                       </div>

@@ -15,6 +15,19 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   staticPageGenerationTimeout: 180,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
+  experimental: {
+    optimizePackageImports: [
+      'three',
+      '@react-three/fiber',
+      '@react-three/drei',
+      'framer-motion',
+      'recharts',
+      'wagmi',
+      '@tanstack/react-query',
+      'viem',
+      'lucide-react',
+    ],
+  },
   // Include data files in serverless function bundles — fs.readFile paths
   // aren't resolved by nft tracing, so Vercel omits them without this.
   outputFileTracingIncludes: {

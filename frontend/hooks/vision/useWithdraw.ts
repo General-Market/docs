@@ -17,6 +17,7 @@ const ORACLE_REGISTRY_ADDRESS = (
 ) as `0x${string}`
 
 import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
+import { formatError } from '@/lib/format-error'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
@@ -93,7 +94,7 @@ async function fetchBalanceProof(
     }
   }
 
-  throw new Error(`Failed to fetch balance proof from all oracles: ${errors.join('; ')}`)
+  throw new Error('Unable to retrieve withdrawal proof. Try again shortly.')
 }
 
 /**
@@ -171,7 +172,7 @@ export function useWithdraw(): UseWithdrawReturn {
 
     // Validate BLS proof before submitting
     if (!fetchedProof.blsSig || fetchedProof.blsSig === '' || fetchedProof.blsSig === '0x') {
-      setErrorMsg('Balance proof has empty BLS signature. The oracles may not have signed yet — try again in a few seconds.')
+      setErrorMsg('Withdrawal proof not ready. Try again in 30 seconds.')
       setStep('error')
       return
     }
@@ -206,8 +207,7 @@ export function useWithdraw(): UseWithdrawReturn {
   // Error handling — writeContract simulation/submission error
   useEffect(() => {
     if (withdrawError) {
-      const msg = withdrawError.message || 'Withdraw failed'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg(formatError(withdrawError, 'withdrawal'))
       setStep('error')
       resetWithdraw()
     }
@@ -216,8 +216,7 @@ export function useWithdraw(): UseWithdrawReturn {
   // Error handling — on-chain revert (TX submitted but reverted)
   useEffect(() => {
     if (isWithdrawReceiptError && withdrawReceiptError) {
-      const msg = withdrawReceiptError.message || 'Transaction reverted on-chain'
-      setErrorMsg(msg.slice(0, 300))
+      setErrorMsg(formatError(withdrawReceiptError, 'withdrawal'))
       setStep('error')
       resetWithdraw()
     }

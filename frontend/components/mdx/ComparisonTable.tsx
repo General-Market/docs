@@ -6,13 +6,13 @@ interface ComparisonTableProps {
 export function ComparisonTable({ headers, rows }: ComparisonTableProps) {
   return (
     <div className="border border-border-light overflow-x-auto my-8">
-      <table className="w-full text-[14px]">
+      <table className="w-full text-body">
         <thead>
           <tr>
             {headers.map((h) => (
               <th
                 key={h}
-                className="text-left bg-black text-white text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-3"
+                className="text-left bg-black text-white text-label font-semibold tracking-[0.08em] uppercase px-5 py-3"
               >
                 {h}
               </th>

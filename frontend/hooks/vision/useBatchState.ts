@@ -23,6 +23,6 @@ export function useBatchState(batchId: number | null) {
       return res.json()
     },
     enabled: batchId !== null,
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
   })
 }

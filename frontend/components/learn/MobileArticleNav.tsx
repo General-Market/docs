@@ -33,19 +33,19 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
       {/* Horizontal progress bar */}
       <div className="h-[2px] bg-border-light">
         <div
-          className="h-full bg-black transition-all duration-150"
+          className="h-full bg-black transition-[width] duration-150"
           style={{ width: `${scrollProgress * 100}%` }}
         />
       </div>
 
       {/* TOC toggle */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-light">
-        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted">
+        <span className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted">
           Contents
         </span>
         <button
           onClick={() => setOpen(!open)}
-          className="text-[12px] font-semibold text-black"
+          className="text-caption font-semibold text-black press"
         >
           {open ? "Close" : "Menu"}
         </button>
@@ -53,12 +53,12 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 bg-white border-b border-border-light shadow-sm px-4 py-3 space-y-1 max-h-[60vh] overflow-y-auto">
+        <div className="absolute left-0 right-0 bg-white border-b border-border-light shadow-sm px-4 py-3 space-y-1 max-h-[60vh] overflow-y-auto animate-slide-down">
           {headings.map((h) => (
             <button
               key={h.id}
               onClick={() => handleClick(h.id)}
-              className="block w-full text-left text-[13px] text-text-secondary hover:text-black py-1.5 px-2 rounded hover:bg-surface transition-colors"
+              className="block w-full text-left text-caption text-text-secondary hover:text-black py-1.5 px-2 rounded hover:bg-surface transition-colors"
             >
               {h.text}
             </button>

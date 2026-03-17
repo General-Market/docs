@@ -140,13 +140,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const itpSymbol = userState.bridgedItpSymbol || ''
 
   // L3 USDC balance (18 decimals) — read directly from L3 chain
+  // 30s poll for form display; explicit refetch after approve/mint
   const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
     address: INDEX_PROTOCOL.l3Usdc,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address, refetchInterval: 5_000 },
+    query: { enabled: !!address, refetchInterval: 30_000 },
   })
   const usdcBalance = (l3UsdcRaw as bigint) ?? 0n
 
@@ -157,18 +158,18 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
     functionName: 'allowance',
     args: address ? [address, INDEX_PROTOCOL.index] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address, refetchInterval: 5_000 },
+    query: { enabled: !!address, refetchInterval: 30_000 },
   })
   const usdcAllowance = (l3AllowanceRaw as bigint) ?? 0n
 
-  // L3 user shares for this ITP
+  // L3 user shares for this ITP (fallback completion signal; SSE is primary)
   const { data: l3SharesRaw } = useReadContract({
     address: INDEX_PROTOCOL.index,
     abi: INDEX_ABI,
     functionName: 'getUserShares',
     args: address ? [itpId as `0x${string}`, address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address && !!itpId, refetchInterval: 5_000 },
+    query: { enabled: !!address && !!itpId, refetchInterval: 30_000 },
   })
   const userShares = (l3SharesRaw as bigint) ?? 0n
 
@@ -226,7 +227,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       const data = await res.json()
       if (data.success) {
         // Trigger refetch of USDC balance
-        refetchL3Usdc()
+        await refetchL3Usdc()
       }
     } catch {
       // Fallback to direct contract call
@@ -251,7 +252,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }, [userShares])
 
   const handleApprove = useCallback(() => {
-    if (!amount) return
+    if (!amount || isApprovePending || isApproveConfirming || isBuyPending || isBuyConfirming) return
     buyStartTime.current = Date.now()
     capture('buy_submitted', {
       itp_id: itpId, amount_usd: amount, slippage: SLIPPAGE_TIERS[slippageTier].label,
@@ -269,10 +270,10 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
       functionName: 'approve',
       args: [INDEX_PROTOCOL.index, parsedAmount],
     })
-  }, [amount, parsedAmount, writeApprove, snapshotBalances])
+  }, [amount, parsedAmount, writeApprove, snapshotBalances, isApprovePending, isApproveConfirming, isBuyPending, isBuyConfirming])
 
   const handleBuy = useCallback(async () => {
-    if (!publicClient || !amount) return
+    if (!publicClient || !amount || isBuyPending || isBuyConfirming) return
     buyHandled.current = false
     setTxError(null)
 
@@ -313,7 +314,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
         deadline,
       ],
     })
-  }, [publicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuy, micro, snapshotBalances])
+  }, [publicClient, amount, limitPrice, deadlineHours, slippageTier, itpId, parsedAmount, writeBuy, micro, snapshotBalances, isBuyPending, isBuyConfirming])
 
   // Approve success -> save hash, auto-trigger buy
   useEffect(() => {
@@ -452,7 +453,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   // Error handlers
   useEffect(() => {
     if (approveError) {
-      const msg = approveError.message || 'Approval failed'
+      const msg = approveError.message || 'Token approval failed. Check your wallet and try again.'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       capture('buy_failed', {
         itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
@@ -466,7 +467,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
   useEffect(() => {
     if (buyError) {
-      const msg = buyError.message || 'Buy transaction failed'
+      const msg = buyError.message || 'Buy order failed. Check your balance and try again.'
       const shortMsg = msg.includes('Details:') ? msg.split('Details:')[1].trim().slice(0, 200) : msg.slice(0, 200)
       capture('buy_failed', {
         itp_id: itpId, step_name: micro >= 0 ? BuyMicro[micro] : 'INPUT', step_index: micro,
@@ -612,7 +613,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   const renderFillDetails = () => {
     if (!fillPrice || !fillAmount) return null
     return (
-      <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
+      <div className="bg-muted border border-border-light rounded-card p-4 space-y-2">
         <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
@@ -649,8 +650,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-backdrop-in" onClick={handleClose}>
+      <div className="bg-card border border-border-light rounded-card shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto animate-modal-in" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
@@ -663,14 +664,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             const vid = extractYouTubeId(videoUrl)
             if (!vid) return null
             return (
-              <div className="rounded-lg overflow-hidden mb-4">
+              <div className="rounded-md overflow-hidden mb-4">
                 <YouTubeLite videoId={vid} title={itpName || 'ITP'} />
               </div>
             )
           })()}
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className="bg-muted border border-border-light rounded-card p-8 text-center">
               <p className="text-text-secondary">{tc('wallet.connect_to_buy')}</p>
             </div>
           ) : micro >= 0 ? (
@@ -684,7 +685,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 txRefs={txRefs}
               />
               {processStalled && (
-                <div className="bg-muted border border-border-light rounded-lg p-4 text-sm">
+                <div className="bg-muted border border-border-light rounded-md p-4 text-sm">
                   <p className="font-medium text-text-primary mb-1">{t('stall.title')}</p>
                   <p className="text-text-secondary">{t('stall.description')}</p>
                 </div>
@@ -692,8 +693,8 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               {renderFillDetails()}
 
               {userShares > 0n && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('your_itp_shares')}</p>
+                <div className="bg-muted border border-border-light rounded-card p-4">
+                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('your_itp_shares')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
                 </div>
               )}
@@ -701,7 +702,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               {isDone ? (
                 <button
                   onClick={handleReset}
-                  className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  className="w-full py-3 bg-color-up text-white font-medium rounded-md hover:opacity-90 transition-opacity"
                 >
                   {t('buy_more')}
                 </button>
@@ -722,14 +723,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               )}
 
               {stuckWarning && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                <div className="bg-surface-warning border border-color-warning rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
@@ -737,20 +738,20 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-muted border border-border-light rounded-xl p-4 space-y-4">
+              <div className="bg-muted border border-border-light rounded-card p-4 space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('amount_label')}</label>
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('amount_label')}</label>
                     <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
                   </div>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="e.g., 100"
+                    placeholder="Amount in USDC"
                     min="0"
                     step="1"
-                    className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                    className="w-full bg-card border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-brand focus:outline-none input-animate"
                   />
                   {amount && parsedAmount > usdcBalance && (
                     <p className="text-color-down text-xs mt-1">{t('insufficient_usdc')}</p>
@@ -761,7 +762,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                     <button
                       onClick={handleMintTestUsdc}
                       disabled={isMintPending || faucetLoading}
-                      className="px-3 py-1.5 text-xs bg-muted text-text-secondary border border-border-medium rounded hover:border-zinc-500 disabled:opacity-50 transition-colors"
+                      className="px-3 py-1.5 text-xs bg-muted text-text-secondary border border-border-medium rounded hover:border-brand disabled:opacity-50 transition-colors"
                     >
                       {isMintPending || faucetLoading ? t('minting') : t('mint_test_usdc')}
                     </button>
@@ -771,9 +772,9 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 )}
               </div>
 
-              <div className="bg-muted border border-border-light rounded-xl p-4">
+              <div className="bg-muted border border-border-light rounded-card p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('max_price_label')}</label>
+                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('max_price_label')}</label>
                   {navPerShare > 0 && (
                     <span className="text-xs text-text-secondary font-mono">
                       {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
@@ -787,7 +788,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                   placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_limit_price') : t('no_limit')}
                   min="0"
                   step="0.01"
-                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                  className="w-full bg-card border border-border-medium rounded-md px-4 py-2 text-text-primary font-mono tabular-nums focus:border-brand focus:outline-none input-animate"
                 />
                 {!isNavLoading && navPerShare === 0 && (
                   <p className="text-color-warning text-xs mt-2">
@@ -811,17 +812,17 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
                 </button>
               </div>
               {showSlippage && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
+                <div className="bg-muted border border-border-light rounded-card p-4">
+                  <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
                   <div className="flex gap-2">
                     {SLIPPAGE_TIERS.map(tier => (
                       <button
                         key={tier.value}
                         onClick={() => { setSlippageTier(tier.value); capture('buy_slippage_changed', { itp_id: itpId, slippage_tier: tier.label }) }}
-                        className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
+                        className={`flex-1 py-2 rounded-md border text-sm font-mono transition-colors ${
                           slippageTier === tier.value
-                            ? 'border-zinc-900 text-white bg-zinc-900'
-                            : 'border-border-medium text-text-muted hover:border-zinc-500'
+                            ? 'border-brand text-white bg-brand'
+                            : 'border-border-medium text-text-muted hover:border-brand'
                         }`}
                       >
                         {tier.label}
@@ -832,7 +833,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               )}
 
               {hasNonceGap && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                <div className="bg-surface-warning border border-color-warning rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                 </div>
@@ -841,7 +842,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               <WalletActionButton
                 onClick={needsApproval ? handleApprove : handleBuy}
                 disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > usdcBalance || hasNonceGap}
-                className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                className="w-full py-4 bg-color-up text-white font-medium rounded-md hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity press"
               >
                 {buttonText}
               </WalletActionButton>
@@ -856,14 +857,14 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               )}
 
               {stuckWarning && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                <div className="bg-surface-warning border border-color-warning rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className="bg-surface-down border border-color-down/30 rounded-md p-4 text-color-down">
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>

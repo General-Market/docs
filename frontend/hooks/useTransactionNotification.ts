@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useToast } from '@/lib/contexts/ToastContext'
 import { getTxUrl } from '@/lib/utils/basescan'
 import type { ExplorerChain } from '@/lib/utils/basescan'
+import { formatError } from '@/lib/format-error'
 
 interface TransactionNotificationParams {
   /** Transaction hash from wagmi writeContract / sendTransaction */
@@ -87,15 +88,8 @@ export function useTransactionNotification({
     if (errorFired.current === key) return
     errorFired.current = key
 
-    const msg = error.message || 'Transaction failed'
-    // Extract the most useful part of the error
-    const shortMsg = msg.includes('User rejected') || msg.includes('denied')
-      ? `${label} rejected`
-      : msg.includes('Details:')
-        ? `${label} failed: ${msg.split('Details:')[1].trim().slice(0, 120)}`
-        : `${label} failed: ${msg.slice(0, 120)}`
-
-    showError(shortMsg)
+    const cleaned = formatError(error, label.toLowerCase())
+    showError(cleaned)
   }, [error, label, disabled, showError])
 
   // Reset fired flags when hash changes (new transaction)

@@ -5,6 +5,7 @@ import { formatUnits } from 'viem'
 import { useVaultTrades, type VaultTrade } from '@/hooks/useVaultTrades'
 import { useSystemStatus, type RecentOrder } from '@/hooks/useSystemStatus'
 import type { DeployedItpRef } from '@/components/domain/ItpListing'
+import { getCoinMap } from '@/lib/coingecko'
 
 const PAGE_SIZE = 15
 
@@ -161,12 +162,9 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
   const [page, setPage] = useState(0)
   const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
 
-  // Load coin logos
+  // Load coin logos from shared cache (single fetch, shared across components)
   useEffect(() => {
-    fetch('/coin-map.json')
-      .then(r => r.ok ? r.json() : {})
-      .then(data => setCoinMap(data))
-      .catch(() => {})
+    getCoinMap().then(data => setCoinMap(data as Record<string, CoinEntry>))
   }, [])
 
   // Tick relative times every 15s
@@ -222,20 +220,20 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
 
       {/* Error banner */}
       {error && (
-        <div className="px-4 py-2 text-[12px] text-color-down bg-red-50 border border-red-200">
+        <div className="px-4 py-2 text-caption text-color-down bg-surface-down border border-color-down/30">
           {error}
         </div>
       )}
 
       {/* Data table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-[13px] min-w-[780px]">
+        <table className="w-full border-collapse text-caption min-w-[780px]">
           <thead>
             <tr>
               {['Time', 'Token', 'Side', 'Amount', 'Price', 'Fee', 'ITP(s)', 'Trade ID'].map((h, i) => (
                 <th
                   key={h}
-                  className={`text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
+                  className={`text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
                     i === 3 || i === 4 || i === 5 ? 'text-right' : ''
                   }`}
                 >
@@ -248,7 +246,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
             {trades.length === 0 && (
               isLoading ? <TableRowsSkeleton /> : (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-text-muted">
+                  <td colSpan={8} className="px-4 py-8 text-center text-caption text-text-muted">
                     No trades recorded yet
                   </td>
                 </tr>
@@ -263,7 +261,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
               return (
                 <tr key={trade.tradeId.toString()} className="hover:bg-surface">
                   {/* Time */}
-                  <td className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums text-[12px]">
+                  <td className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums text-caption">
                     {formatRelativeTime(trade.timestamp)}
                   </td>
 
@@ -283,28 +281,28 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
                   </td>
 
                   {/* Amount */}
-                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
                     <span className="text-black">{formatAmount18(trade.tokenAmount)}</span>
                     {' '}
-                    <span className="text-text-muted text-[10px]">
+                    <span className="text-text-muted text-micro">
                       (${formatAmount18(trade.usdcAmount, 2)})
                     </span>
                   </td>
 
                   {/* Price */}
-                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
                     {formatPrice(trade.price)}
                   </td>
 
                   {/* Fee */}
-                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-muted">
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-muted">
                     {trade.feeAmount > 0n
                       ? `$${formatAmount18(trade.feeAmount, 2)}`
                       : '\u2014'}
                   </td>
 
                   {/* ITP(s) */}
-                  <td className="px-4 py-3 border-b border-border-light text-[12px] text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light text-caption text-text-secondary">
                     {itpIds ? itpIds.map((id, idx) => {
                       const label = itpNameMap.get(id.toLowerCase()) || truncateAddr(id)
                       return (
@@ -317,7 +315,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
                   </td>
 
                   {/* Trade ID */}
-                  <td className="px-4 py-3 border-b border-border-light font-mono text-[11px] text-text-muted">
+                  <td className="px-4 py-3 border-b border-border-light font-mono text-label text-text-muted">
                     #{trade.tradeId.toString()}
                   </td>
                 </tr>
@@ -329,7 +327,7 @@ export function VaultTradesFeed({ deployedItps }: VaultTradesFeedProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-[12px]">
+        <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-caption">
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}

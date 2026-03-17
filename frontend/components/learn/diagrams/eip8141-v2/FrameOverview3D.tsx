@@ -598,7 +598,7 @@ function Labels({ reducedMotion }: { reducedMotion: boolean }) {
       {/* ACCEPT */}
       <Html center position={[GATE_X, 1.45, 0]} style={labelStyle}>
         <div ref={acceptRef}>
-          <p className="text-[13px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-caption font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
             ACCEPT
           </p>
         </div>

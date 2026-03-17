@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
-import type { BatchHistoryEntry, MarketOutcome } from '@/hooks/vision/useBatchHistory'
+import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+import { formatMarketName } from '@/lib/vision/market-categories'
 
 interface VisualTabProps {
   batch: BatchInfo
@@ -56,7 +57,7 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
   }, [history])
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 stagger">
       {marketIds.map(marketId => {
         const priceInfo = latestPrices[marketId]
         const mktHistory = marketHistory[marketId] || []
@@ -68,11 +69,11 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
         return (
           <div
             key={marketId}
-            className="border border-border-light rounded-card p-3 bg-white"
+            className="border border-border-light rounded-card p-3 bg-white animate-fade-up hover-lift"
           >
             {/* Market header */}
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-mono text-text-primary font-bold truncate max-w-[140px]">
+              <span className="text-xs font-mono text-text-primary font-bold truncate max-w-[140px] min-w-0">
                 {formatMarketName(marketId)}
               </span>
               {priceInfo && (
@@ -91,9 +92,18 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
               </span>
             </div>
 
-            {/* Sparkline placeholder */}
-            <div className="h-8 bg-surface rounded mb-2 flex items-center justify-center">
-              <span className="text-[10px] text-text-muted font-mono">sparkline</span>
+            {/* Price history bar */}
+            <div className="h-8 mb-2 flex items-end gap-px">
+              {(marketHistory[marketId] || []).slice(-8).map((tick: { pctChange: number; wentUp: boolean }, i: number) => (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-sm min-h-[2px] ${tick.wentUp ? 'bg-color-up/30' : 'bg-color-down/30'}`}
+                  style={{ height: `${Math.min(100, Math.max(10, Math.abs(tick.pctChange) * 20))}%` }}
+                />
+              ))}
+              {(!marketHistory[marketId] || marketHistory[marketId].length === 0) && (
+                <div className="flex-1 h-full bg-surface rounded" />
+              )}
             </div>
 
             {/* History row: past results + current bet */}
@@ -124,29 +134,19 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
               )}
             </div>
 
-            {/* UP / DOWN toggle buttons */}
-            <div className="flex gap-1">
-              <button
-                onClick={() => onToggleBet(marketId)}
-                className={`flex-1 py-1.5 rounded text-xs font-bold transition-colors ${
-                  isUp
-                    ? 'bg-color-up text-white'
-                    : 'bg-surface-up text-color-up hover:bg-color-up/20'
-                }`}
-              >
-                {'\u25B2'} UP
-              </button>
-              <button
-                onClick={() => onToggleBet(marketId)}
-                className={`flex-1 py-1.5 rounded text-xs font-bold transition-colors ${
-                  isDown
+            {/* Bet toggle — single button, cycles: none → UP → DOWN → none */}
+            <button
+              onClick={() => onToggleBet(marketId)}
+              className={`w-full py-1.5 rounded-md text-xs font-bold font-mono tracking-wide transition-colors press ${
+                isUp
+                  ? 'bg-color-up text-white'
+                  : isDown
                     ? 'bg-color-down text-white'
-                    : 'bg-surface-down text-color-down hover:bg-color-down/20'
-                }`}
-              >
-                {'\u25BC'} DOWN
-              </button>
-            </div>
+                    : 'bg-muted text-text-muted hover:bg-surface hover:text-text-primary border border-border-light'
+              }`}
+            >
+              {isUp ? '\u25B2 UP' : isDown ? '\u25BC DN' : 'SET BET'}
+            </button>
           </div>
         )
       })}
@@ -154,33 +154,3 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
   )
 }
 
-/** Format market ID into a readable name */
-function formatMarketName(marketId: string): string {
-  // Handle known prefixes: poly_, twitch_, hn_, weather_
-  if (marketId.startsWith('poly_')) return marketId.slice(5).replace(/_/g, ' ')
-  if (marketId.startsWith('twitch_')) return `Twitch: ${marketId.slice(7)}`
-  if (marketId.startsWith('esport_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('hn_')) return `HN #${marketId.slice(3)}`
-  if (marketId.startsWith('weather_')) return marketId.slice(8).replace(/_/g, ' ')
-  if (marketId.startsWith('usgs_water_')) return `USGS ${marketId.slice(11)}`
-  if (marketId.startsWith('noaa_tide_')) return `Tide ${marketId.slice(10)}`
-  if (marketId.startsWith('nrc_')) return marketId.slice(4).replace(/_/g, ' ')
-  if (marketId.startsWith('citybikes_')) return marketId.slice(10).replace(/_/g, ' ')
-  if (marketId.startsWith('court_')) return marketId.slice(6).replace(/_/g, ' ')
-  if (marketId.startsWith('ndbc_')) return `Buoy ${marketId.slice(5)}`
-  if (marketId.startsWith('noaa_met_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('nwps_')) return marketId.slice(5).replace(/_/g, ' ')
-  if (marketId.startsWith('airnow_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('openalex_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('crossref_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('pubmed_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('stackexchange_')) return `SO: ${marketId.slice(14)}`
-  if (marketId.startsWith('parking_')) return marketId.slice(8).replace(/_/g, ' ')
-  if (marketId.startsWith('tomtom_traffic_')) return marketId.slice(15).replace(/_/g, ' ')
-  if (marketId.startsWith('tomtom_evcharge_')) return marketId.slice(16).replace(/_/g, ' ')
-  if (marketId.startsWith('bgg_')) return `BGG: ${marketId.slice(4).replace(/_/g, ' ')}`
-  if (marketId.startsWith('bestbuy_')) return `BB: ${marketId.slice(8).replace(/_/g, ' ')}`
-  if (marketId.startsWith('adzuna_')) return marketId.slice(7).replace(/_/g, ' ').toUpperCase()
-  // Default: replace underscores, uppercase first segment
-  return marketId.replace(/_/g, ' ').toUpperCase()
-}

@@ -119,7 +119,7 @@ export default function TweetGateModal({
       onClick={onClose}
     >
       <div
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full"
+        className="bg-card border border-border-light rounded-card shadow-modal max-w-md w-full"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -148,7 +148,7 @@ export default function TweetGateModal({
             </p>
           ) : (
             <>
-              <div className="bg-surface rounded-lg p-4 text-sm text-text-primary whitespace-pre-line border border-border-light">
+              <div className="bg-surface rounded-md p-4 text-sm text-text-primary whitespace-pre-line border border-border-light">
                 {tweetText}
               </div>
 
@@ -157,7 +157,7 @@ export default function TweetGateModal({
                 <img
                   src={imagePreviewUrl}
                   alt={t('gate.chart_alt')}
-                  className="w-full rounded-lg border border-border-light"
+                  className="w-full rounded-md border border-border-light"
                 />
               )}
 
@@ -166,13 +166,13 @@ export default function TweetGateModal({
                 <button
                   onClick={handleDownloadImage}
                   disabled={!imageReady}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-border-light text-text-primary hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-md border border-border-light text-text-primary hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('gate.download_image')}
                 </button>
                 <button
                   onClick={handleOpenTweet}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-md bg-brand text-white hover:bg-brand-dark transition-colors"
                 >
                   {t('gate.open_x')}
                 </button>
@@ -183,12 +183,12 @@ export default function TweetGateModal({
                 <button
                   onClick={handleConfirm}
                   disabled={!canConfirm}
-                  className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-semibold rounded-md bg-brand text-white hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {unlocking
-                    ? 'Sign with wallet...'
+                    ? 'Signing with wallet...'
                     : countdown > 0
-                      ? `Okay we trust you. Probably. (${countdown}s)`
+                      ? `Verified. Probably. (${countdown}s)`
                       : 'I posted'}
                 </button>
               )}

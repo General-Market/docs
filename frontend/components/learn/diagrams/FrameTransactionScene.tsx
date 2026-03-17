@@ -39,8 +39,8 @@ function FrameBox({ position, label, sub, color = '#e8f5e9', accentColor = '#22c
       {/* Label */}
       <Html center position={[0, h / 2 + 0.22, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
-          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>
+          <p className="text-caption font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
+          <p className="text-[9px] text-text-muted mt-0.5 whitespace-nowrap">{sub}</p>
         </div>
       </Html>
     </group>
@@ -156,7 +156,7 @@ export function FrameTransactionScene() {
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
         <div className="h-[340px] md:h-[400px] cursor-grab active:cursor-grabbing">
-          <ClientOnly fallback={<div className="h-full animate-pulse bg-zinc-50" />}>
+          <ClientOnly fallback={<div className="h-full animate-pulse bg-surface" />}>
             <Canvas flat camera={{ position: [0, 5, 6], fov: 38 }} dpr={[1, 2]} gl={{ antialias: true }}>
               <color attach="background" args={['#ffffff']} />
               <ambientLight intensity={1.2} />
@@ -189,22 +189,22 @@ export function FrameTransactionScene() {
             </Canvas>
           </ClientOnly>
         </div>
-        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
+        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-border-light">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">Validation</span>
+              <span className="text-micro text-text-muted tracking-wide">Validation</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">Execution</span>
+              <span className="text-micro text-text-muted tracking-wide">Execution</span>
             </div>
             <div className="flex items-center gap-1.5">
               <svg className="w-4 h-2" viewBox="0 0 16 8"><path d="M1 7 Q8 1 15 7" stroke="#8b5cf6" fill="none" strokeWidth="1.5" /></svg>
-              <span className="text-[10px] text-text-muted tracking-wide">Shared Calldata</span>
+              <span className="text-micro text-text-muted tracking-wide">Shared Calldata</span>
             </div>
           </div>
-          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

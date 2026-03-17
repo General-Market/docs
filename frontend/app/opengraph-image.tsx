@@ -63,7 +63,7 @@ export default async function Image() {
               margin: 0,
             }}
           >
-            The institutional-grade protocol for on-chain index products
+            On-chain index products and AI prediction markets
           </p>
           <div
             style={{
@@ -76,9 +76,9 @@ export default async function Image() {
           >
             <span>Create Indices</span>
             <span style={{ color: 'rgba(250,250,250,0.2)' }}>|</span>
-            <span>Trade ITPs</span>
+            <span>Trade Funds</span>
             <span style={{ color: 'rgba(250,250,250,0.2)' }}>|</span>
-            <span>Earn Yield</span>
+            <span>Predict Markets</span>
           </div>
         </div>
       </div>

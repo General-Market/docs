@@ -35,7 +35,7 @@ function detectWebGL(): boolean {
 
 function NoWebGLFallback({ text }: { text: string }) {
   return (
-    <div className="h-full flex items-center justify-center bg-zinc-50">
+    <div className="h-full flex items-center justify-center bg-surface">
       <div className="text-center px-6">
         <p className="text-sm text-text-secondary font-medium">{text}</p>
         <p className="text-xs text-text-muted mt-1">
@@ -57,7 +57,7 @@ function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
         </p>
         <button
           onClick={onRetry}
-          className="mt-3 px-4 py-1.5 text-xs font-medium border border-border-medium rounded-md hover:bg-zinc-50 transition-colors"
+          className="mt-3 px-4 py-1.5 text-xs font-medium border border-border-medium rounded-md hover:bg-surface transition-colors"
         >
           Reload scene
         </button>
@@ -70,7 +70,7 @@ function ContextLostOverlay({ onRetry }: { onRetry: () => void }) {
 
 function SceneErrorFallback({ text }: { text: string }) {
   return (
-    <div className="h-full flex items-center justify-center bg-zinc-50">
+    <div className="h-full flex items-center justify-center bg-surface">
       <div className="text-center px-6">
         <p className="text-sm text-text-secondary font-medium">{text}</p>
         <p className="text-xs text-text-muted mt-1">
@@ -168,7 +168,7 @@ export function SceneContainer({
   }, [])
 
   return (
-    <div className="my-12 -mx-4 md:-mx-8" ref={containerRef}>
+    <div className="my-12 -mx-4 md:-mx-8 animate-fade-in" ref={containerRef}>
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
         <div className="sr-only">{srDescription}</div>
         <div
@@ -180,7 +180,7 @@ export function SceneContainer({
           {!hasWebGL ? (
             <NoWebGLFallback text={fallbackText} />
           ) : !mounted ? (
-            <div className="h-full animate-pulse bg-zinc-50" />
+            <div className="h-full animate-pulse bg-surface" />
           ) : (
             <ErrorBoundary
               fallback={<SceneErrorFallback text={fallbackText} />}
@@ -198,9 +198,9 @@ export function SceneContainer({
             </ErrorBoundary>
           )}
         </div>
-        <div className="px-6 pb-4 pt-3 flex items-center justify-between border-t border-zinc-200">
+        <div className="px-6 pb-4 pt-3 flex items-center justify-between border-t border-border-light">
           {legend}
-          <span className="text-[12px] text-text-muted font-mono shrink-0 ml-4">
+          <span className="text-caption text-text-muted font-mono shrink-0 ml-4">
             drag to orbit · scroll to zoom
           </span>
         </div>

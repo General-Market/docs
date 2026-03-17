@@ -24,8 +24,8 @@ export function ArbitrationBadge({ arbitration, compact = false }: ArbitrationBa
   if (compact) {
     return (
       <span
-        className={`px-2 py-1 rounded text-xs font-mono ${
-          isResolved ? 'bg-cyan-800/30 text-cyan-300' : 'bg-orange-800/30 text-orange-300'
+        className={`animate-scale-in transition-colors px-2 py-1 rounded text-xs font-mono ${
+          isResolved ? 'bg-surface-info text-color-info' : 'bg-surface-warning text-color-warning'
         }`}
       >
         {isResolved ? '\u2696\uFE0F Resolved' : '\u2696\uFE0F In Arbitration'}
@@ -34,19 +34,19 @@ export function ArbitrationBadge({ arbitration, compact = false }: ArbitrationBa
   }
 
   return (
-    <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
+    <div className="animate-scale-in bg-surface-warning border border-color-warning/50 rounded-md p-3">
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-orange-400 text-sm font-mono">\u2696\uFE0F Arbitration</span>
+        <span className="text-color-warning text-sm font-mono">\u2696\uFE0F Arbitration</span>
         <span
-          className={`px-2 py-0.5 rounded text-xs font-mono ${
-            isResolved ? 'bg-cyan-800/30 text-cyan-300' : 'bg-orange-800/30 text-orange-300'
+          className={`transition-colors px-2 py-0.5 rounded text-xs font-mono ${
+            isResolved ? 'bg-surface-info text-color-info' : 'bg-surface-warning text-color-warning'
           }`}
         >
           {isResolved ? 'Resolved' : 'Pending'}
         </span>
       </div>
 
-      <div className="space-y-1 text-xs font-mono text-gray-400">
+      <div className="space-y-1 text-xs font-mono text-text-muted">
         <div className="flex justify-between">
           <span>Requested By:</span>
           <span className="text-white/80">{truncateAddress(arbitration.requestedBy, 6)}</span>
@@ -68,7 +68,7 @@ export function ArbitrationBadge({ arbitration, compact = false }: ArbitrationBa
             {arbitration.outcomeWinner && (
               <div className="flex justify-between">
                 <span>Winner:</span>
-                <span className="text-green-400">
+                <span className="text-color-up">
                   {truncateAddress(arbitration.outcomeWinner, 6)}
                 </span>
               </div>
@@ -91,7 +91,7 @@ export function ArbitrationBadge({ arbitration, compact = false }: ArbitrationBa
  */
 export function ArbitrationPendingBadge() {
   return (
-    <span className="px-2 py-1 rounded text-xs font-mono bg-orange-800/30 text-orange-300">
+    <span className="animate-scale-in transition-colors px-2 py-1 rounded text-xs font-mono bg-surface-warning text-color-warning">
       \u2696\uFE0F In Arbitration
     </span>
   )
@@ -102,7 +102,7 @@ export function ArbitrationPendingBadge() {
  */
 export function ArbitrationResolvedBadge() {
   return (
-    <span className="px-2 py-1 rounded text-xs font-mono bg-cyan-800/30 text-cyan-300">
+    <span className="animate-scale-in transition-colors px-2 py-1 rounded text-xs font-mono bg-surface-info text-color-info">
       \u2696\uFE0F Resolved
     </span>
   )

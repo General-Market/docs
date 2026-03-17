@@ -14,9 +14,9 @@ import { describe, it, expect } from 'bun:test'
 describe('formatAmount', () => {
   // Replicate the function logic for testing
   function formatAmount(amount: string): string {
-    if (!amount) return '$-.--'
+    if (!amount) return '\u2014'
     const num = parseFloat(amount)
-    if (isNaN(num)) return '$-.--'
+    if (isNaN(num)) return '\u2014'
     return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
@@ -37,11 +37,11 @@ describe('formatAmount', () => {
   })
 
   it('handles empty string with error indicator', () => {
-    expect(formatAmount('')).toBe('$-.--')
+    expect(formatAmount('')).toBe('\u2014')
   })
 
   it('handles invalid input with error indicator', () => {
-    expect(formatAmount('not-a-number')).toBe('$-.--')
+    expect(formatAmount('not-a-number')).toBe('\u2014')
   })
 
   it('rounds to 2 decimal places', () => {

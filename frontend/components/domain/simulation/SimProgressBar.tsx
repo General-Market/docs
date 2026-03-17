@@ -30,7 +30,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
         </div>
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
+            className="h-full bg-brand rounded-full transition-[width] duration-300 ease-out"
             style={{ width: `${Math.min(progress.pct, 100)}%` }}
           />
         </div>
@@ -64,7 +64,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
       </div>
       <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
         <div
-          className="h-full bg-zinc-900 rounded-full transition-all duration-300 ease-out"
+          className="h-full bg-brand rounded-full transition-[width] duration-300 ease-out"
           style={{ width: `${totalVariants === 0 ? 0 : progress ? ((completedCount + progress.pct / 100) / safeTotalVariants) * 100 : (completedCount / safeTotalVariants) * 100}%` }}
         />
       </div>
@@ -77,7 +77,7 @@ export function SimProgressBar(props: SimProgressBarProps) {
               i < completedCount
                 ? 'bg-color-up'
                 : i === completedCount && progress
-                  ? 'bg-zinc-900 animate-pulse'
+                  ? 'bg-brand animate-pulse'
                   : 'bg-border-light'
             }`}
           />

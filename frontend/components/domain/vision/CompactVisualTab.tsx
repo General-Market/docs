@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { BatchInfo } from '@/hooks/vision/useBatches'
 import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
+import { formatMarketName } from '@/lib/vision/market-categories'
 
 interface CompactVisualTabProps {
   batch: BatchInfo
@@ -63,7 +64,7 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
             <th className="py-1.5 px-2 w-24 text-center">History</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="stagger">
           {marketIds.map(marketId => {
             const priceInfo = latestPrices[marketId]
             const mktHistory = (marketHistory[marketId] || []).slice(-6)
@@ -73,13 +74,13 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
             return (
               <tr
                 key={marketId}
-                className="border-b border-border-light hover:bg-surface transition-colors"
+                className="border-b border-border-light hover:bg-surface transition-colors animate-fade-up"
               >
                 {/* Toggle button */}
                 <td className="py-1 px-2">
                   <button
                     onClick={() => onToggleBet(marketId)}
-                    className={`w-7 h-7 rounded text-[10px] font-bold transition-colors ${
+                    className={`w-7 h-7 rounded text-micro font-bold transition-colors press ${
                       betDirection === undefined
                         ? 'bg-muted text-text-muted hover:bg-surface'
                         : isUp
@@ -92,7 +93,7 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
                 </td>
 
                 {/* Market name */}
-                <td className="py-1 px-2 text-text-primary truncate max-w-[160px]">
+                <td className="py-1 px-2 text-text-primary truncate max-w-[160px] min-w-0 overflow-hidden">
                   {formatMarketName(marketId)}
                 </td>
 
@@ -114,10 +115,17 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
                     : '--'}
                 </td>
 
-                {/* Mini sparkline placeholder */}
+                {/* Mini history bar */}
                 <td className="py-1 px-2">
-                  <div className="h-4 bg-surface rounded flex items-center justify-center">
-                    <span className="text-[8px] text-text-muted">---</span>
+                  <div className="h-4 flex items-end gap-px">
+                    {mktHistory.map((wentUp: boolean, i: number) => (
+                      <div
+                        key={i}
+                        className={`flex-1 rounded-sm min-h-[1px] ${wentUp ? 'bg-color-up/40' : 'bg-color-down/40'}`}
+                        style={{ height: `${40 + i * 10}%` }}
+                      />
+                    ))}
+                    {mktHistory.length === 0 && <div className="flex-1 h-full bg-surface rounded-sm" />}
                   </div>
                 </td>
 
@@ -147,30 +155,3 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
   )
 }
 
-function formatMarketName(marketId: string): string {
-  if (marketId.startsWith('poly_')) return marketId.slice(5).replace(/_/g, ' ')
-  if (marketId.startsWith('twitch_')) return `Twitch: ${marketId.slice(7)}`
-  if (marketId.startsWith('esport_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('hn_')) return `HN #${marketId.slice(3)}`
-  if (marketId.startsWith('weather_')) return marketId.slice(8).replace(/_/g, ' ')
-  if (marketId.startsWith('usgs_water_')) return `USGS ${marketId.slice(11)}`
-  if (marketId.startsWith('noaa_tide_')) return `Tide ${marketId.slice(10)}`
-  if (marketId.startsWith('nrc_')) return marketId.slice(4).replace(/_/g, ' ')
-  if (marketId.startsWith('citybikes_')) return marketId.slice(10).replace(/_/g, ' ')
-  if (marketId.startsWith('court_')) return marketId.slice(6).replace(/_/g, ' ')
-  if (marketId.startsWith('ndbc_')) return `Buoy ${marketId.slice(5)}`
-  if (marketId.startsWith('noaa_met_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('nwps_')) return marketId.slice(5).replace(/_/g, ' ')
-  if (marketId.startsWith('airnow_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('openalex_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('crossref_')) return marketId.slice(9).replace(/_/g, ' ')
-  if (marketId.startsWith('pubmed_')) return marketId.slice(7).replace(/_/g, ' ')
-  if (marketId.startsWith('stackexchange_')) return `SO: ${marketId.slice(14)}`
-  if (marketId.startsWith('parking_')) return marketId.slice(8).replace(/_/g, ' ')
-  if (marketId.startsWith('tomtom_traffic_')) return marketId.slice(15).replace(/_/g, ' ')
-  if (marketId.startsWith('tomtom_evcharge_')) return marketId.slice(16).replace(/_/g, ' ')
-  if (marketId.startsWith('bgg_')) return `BGG: ${marketId.slice(4).replace(/_/g, ' ')}`
-  if (marketId.startsWith('bestbuy_')) return `BB: ${marketId.slice(8).replace(/_/g, ' ')}`
-  if (marketId.startsWith('adzuna_')) return marketId.slice(7).replace(/_/g, ' ').toUpperCase()
-  return marketId.replace(/_/g, ' ').toUpperCase()
-}

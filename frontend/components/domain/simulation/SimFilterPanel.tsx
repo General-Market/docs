@@ -9,7 +9,7 @@ function HelpTip({ text }: { text: string }) {
   return (
     <span className="relative group inline-flex ml-1">
       <span className="w-3.5 h-3.5 rounded-full bg-border-light text-text-muted text-[9px] font-bold inline-flex items-center justify-center cursor-help leading-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-zinc-900 text-white text-[11px] leading-snug rounded-lg whitespace-normal w-52 text-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50 shadow-lg">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-zinc-900 text-white text-label leading-snug rounded-md whitespace-normal w-52 text-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50 shadow-card">
         {text}
       </span>
     </span>
@@ -39,7 +39,7 @@ function Tip({ text, children }: { text: string; children: ReactNode }) {
       {show && typeof document !== 'undefined' && createPortal(
         <div
           style={{ position: 'fixed', top: pos.top, left: pos.left, transform: 'translate(-50%, -100%)', zIndex: 99999 }}
-          className="px-3 py-2.5 bg-zinc-900 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl w-72 whitespace-pre-line pointer-events-none"
+          className="px-3 py-2.5 bg-zinc-900 text-white text-label leading-relaxed rounded-card shadow-modal w-72 whitespace-pre-line pointer-events-none"
         >
           {text}
         </div>,
@@ -330,7 +330,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 1: Category + Top N */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">
             {isCategorySweep ? 'Categories (select 2+)' : 'Category'}
             <HelpTip text="The asset universe to pick from. Each category groups coins by theme (e.g. DeFi, Layer 1, Memes)." />
           </label>
@@ -338,7 +338,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           {isCategorySweep ? (
             <div className="relative">
               <button
-                className="w-full bg-muted border border-border-light rounded-lg px-3 py-2 text-sm text-text-primary text-left hover:border-border-medium transition-colors"
+                className="w-full bg-muted border border-border-light rounded-md px-3 py-2 text-sm text-text-primary text-left hover:border-border-medium transition-colors"
                 onClick={() => setCatSearchOpen(!catSearchOpen)}
               >
                 {filters.sweep_categories.length === 0
@@ -347,7 +347,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                 }
               </button>
               {catSearchOpen && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border-medium rounded-lg shadow-card-hover max-h-60 overflow-y-auto">
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border-medium rounded-md shadow-card-hover max-h-60 overflow-y-auto">
                   <input
                     type="text"
                     className="w-full border-b border-border-light px-3 py-2 text-sm text-text-primary outline-none placeholder:text-text-muted"
@@ -363,7 +363,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     >
                       <input
                         type="checkbox"
-                        className="accent-zinc-900"
+                        className="accent-brand"
                         checked={filters.sweep_categories.includes(c.id)}
                         onChange={() => toggleSweepCategory(c.id)}
                       />
@@ -401,7 +401,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             </div>
           ) : (
             <select
-              className="w-full bg-muted border border-border-light rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:border-border-medium transition-colors"
+              className="w-full bg-muted border border-border-light rounded-md px-3 py-2 text-sm text-text-primary cursor-pointer hover:border-border-medium transition-colors input-animate"
               value={filters.category_id}
               onChange={e => update({ category_id: e.target.value })}
               disabled={catsLoading}
@@ -416,7 +416,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           )}
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Top N<HelpTip text="How many coins to hold. 'Top 10' means the 10 largest by market cap from your chosen category." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Top N<HelpTip text="How many coins to hold. 'Top 10' means the 10 largest by market cap from your chosen category." /></label>
           <div className="flex">
             {TOP_N_OPTIONS.map(n => (
               <button
@@ -425,7 +425,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   sweepDim === 'top_n'
                     ? 'bg-muted text-text-muted border-border-light'
                     : filters.top_n === n
-                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      ? 'bg-brand text-white border-brand'
                       : 'bg-white text-text-secondary hover:bg-muted'
                 }`}
                 onClick={() => { if (sweepDim !== 'top_n') update({ top_n: n }) }}
@@ -440,17 +440,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 2: Strategy family buttons */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Weighting Strategy<HelpTip text="How to distribute money across your holdings. 'Equal' = same amount in each coin. 'MCap' = more money in bigger coins. Others use momentum, volatility, or DeFi metrics." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Weighting Strategy<HelpTip text="How to distribute money across your holdings. 'Equal' = same amount in each coin. 'MCap' = more money in bigger coins. Others use momentum, volatility, or DeFi metrics." /></label>
         <div className="flex flex-wrap gap-1 items-center">
           {STRATEGY_FAMILIES.filter(f => f.group === 'price').map(fam => (
             <button
               key={fam.id}
               title={fam.title}
-              className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+              className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
                 sweepDim === 'weighting' || sweepDim === 'defi_weight'
                   ? 'bg-muted text-text-muted border-border-light'
                   : activeFamily === fam.id
-                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    ? 'bg-brand text-white border-brand'
                     : 'bg-white text-text-secondary border-border-light hover:bg-muted'
               }`}
               onClick={() => selectFamily(fam)}
@@ -460,16 +460,16 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             </button>
           ))}
           <span className="text-xs text-text-muted px-1">|</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">DeFi</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">DeFi</span>
           {STRATEGY_FAMILIES.filter(f => f.group === 'defi').map(fam => (
             <button
               key={fam.id}
               title={fam.title}
-              className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+              className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
                 sweepDim === 'weighting' || sweepDim === 'defi_weight'
                   ? 'bg-muted text-text-muted border-border-light'
                   : activeFamily === fam.id
-                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    ? 'bg-brand text-white border-brand'
                     : 'bg-white text-text-secondary border-border-light hover:bg-muted'
               }`}
               onClick={() => selectFamily(fam)}
@@ -497,7 +497,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   i === (activeFamilyDef.params?.length ?? 0) - 1 ? 'rounded-r-lg' : ''
                 } ${
                   activeParam === p.value
-                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    ? 'bg-brand text-white border-brand'
                     : 'bg-white text-text-muted hover:bg-muted'
                 }`}
                 onClick={() => selectParam(p.value)}
@@ -511,15 +511,15 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 3: Rebalance family */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Rebalance<HelpTip text="How often to re-adjust your portfolio back to target weights. 'Periodic' = fixed schedule. 'Drift Band' = only when a holding drifts too far from its target." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Rebalance<HelpTip text="How often to re-adjust your portfolio back to target weights. 'Periodic' = fixed schedule. 'Drift Band' = only when a holding drifts too far from its target." /></label>
         <div className="flex gap-1">
           <button
             title="Rebalance at fixed time intervals"
-            className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
               sweepDim === 'rebalance'
                 ? 'bg-muted text-text-muted border-border-light'
                 : filters.threshold_pct == null
-                  ? 'bg-zinc-900 text-white border-zinc-900'
+                  ? 'bg-brand text-white border-brand'
                   : 'bg-white text-text-secondary border-border-light hover:bg-muted'
             }`}
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: null, rebalance_days: filters.rebalance_days }) }}
@@ -529,11 +529,11 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </button>
           <button
             title="Rebalance when any holding drifts past a threshold"
-            className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
               sweepDim === 'rebalance'
                 ? 'bg-muted text-text-muted border-border-light'
                 : filters.threshold_pct != null
-                  ? 'bg-zinc-900 text-white border-zinc-900'
+                  ? 'bg-brand text-white border-brand'
                   : 'bg-white text-text-secondary border-border-light hover:bg-muted'
             }`}
             onClick={() => { if (sweepDim !== 'rebalance') update({ threshold_pct: filters.threshold_pct ?? 5 }) }}
@@ -562,7 +562,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     i === REBALANCE_OPTIONS.length - 1 ? 'rounded-r-lg' : ''
                   } ${
                     filters.rebalance_days === r.value
-                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      ? 'bg-brand text-white border-brand'
                       : 'bg-white text-text-muted hover:bg-muted'
                   }`}
                   onClick={() => update({ rebalance_days: r.value })}
@@ -581,7 +581,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     i === arr.length - 1 ? 'rounded-r-lg' : ''
                   } ${
                     filters.threshold_pct === t.value
-                      ? 'bg-zinc-900 text-white border-zinc-900'
+                      ? 'bg-brand text-white border-brand'
                       : 'bg-white text-text-muted hover:bg-muted'
                   }`}
                   onClick={() => update({ threshold_pct: t.value })}
@@ -597,32 +597,32 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 4: Fees + Start Date */}
       <div className="flex flex-wrap gap-4 items-center">
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Base Fee %<HelpTip text="Annual management fee charged on the index (like an ETF expense ratio). 0.1% is typical for crypto index products." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Base Fee %<HelpTip text="Annual management fee charged on the index (like an ETF expense ratio). 0.1% is typical for crypto index products." /></label>
           <input
             type="number"
             step="0.01"
             min="0"
             max="5"
-            className="w-20 bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono"
+            className="w-20 bg-muted border border-border-light rounded-md px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono input-animate"
             value={filters.base_fee_pct}
             onChange={e => update({ base_fee_pct: parseFloat(e.target.value) || 0 })}
           />
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Spread Mult.<HelpTip text="Simulates trading slippage. 1x = realistic spread costs. Higher values model worse execution (e.g. illiquid markets)." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Spread Mult.<HelpTip text="Simulates trading slippage. 1x = realistic spread costs. Higher values model worse execution (e.g. illiquid markets)." /></label>
           <input
             type="number"
             step="0.1"
             min="0"
             max="10"
-            className="w-20 bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono"
+            className="w-20 bg-muted border border-border-light rounded-md px-3 py-1.5 text-sm text-text-primary tabular-nums font-mono input-animate"
             value={filters.spread_multiplier}
             onChange={e => update({ spread_multiplier: parseFloat(e.target.value) || 0 })}
           />
           <span className="text-xs text-text-muted ml-1">x</span>
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Start From<HelpTip text="When to start the backtest. 'All' uses the maximum available history. Shorter periods show more recent performance." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Start From<HelpTip text="When to start the backtest. 'All' uses the maximum available history. Shorter periods show more recent performance." /></label>
           <div className="flex items-center gap-1">
             {[
               { label: 'All', value: '2020-01-01' },
@@ -632,9 +632,9 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             ].map(opt => (
               <button
                 key={opt.label}
-                className={`px-2.5 py-1 text-xs border border-border-light rounded-lg transition-colors ${
+                className={`px-2.5 py-1 text-xs border border-border-light rounded-md transition-colors ${
                   filters.start_date === opt.value
-                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    ? 'bg-brand text-white border-brand'
                     : 'bg-white text-text-muted hover:bg-muted'
                 }`}
                 onClick={() => update({ start_date: opt.value })}
@@ -644,7 +644,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             ))}
             <input
               type="date"
-              className={`bg-muted border rounded-lg px-3 py-1.5 text-sm text-text-primary w-[130px] ${
+              className={`bg-muted border rounded-md px-3 py-1.5 text-sm text-text-primary w-[130px] ${
                 filters.start_date && !['2020-01-01', fiveYearsAgo(), threeYearsAgo(), oneYearAgo()].includes(filters.start_date)
                   ? 'border-border-medium bg-white'
                   : 'border-border-light'
@@ -658,13 +658,13 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       </div>
 
       {/* Row 5: Regime Overlays */}
-      <div className="border border-border-light rounded-xl overflow-hidden">
+      <div className="border border-border-light rounded-card overflow-hidden">
         <button
           className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
           onClick={() => update({} as Partial<SimFilterState>)} // no-op, toggle via local state
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">Regime Overlays<HelpTip text="Optional rules that adjust your strategy based on market sentiment (Fear & Greed Index) or Bitcoin dominance trends." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Regime Overlays<HelpTip text="Optional rules that adjust your strategy based on market sentiment (Fear & Greed Index) or Bitcoin dominance trends." /></span>
           <span className="text-xs text-text-muted">
             {filters.fng_mode || filters.dom_mode ? 'Active' : 'Off'}
           </span>
@@ -672,14 +672,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         <div className="p-4 space-y-4">
           {/* FNG Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Fear & Greed<HelpTip text="Adjusts your strategy based on the Crypto Fear & Greed Index (0-100). Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Fear & Greed<HelpTip text="Adjusts your strategy based on the Crypto Fear & Greed Index (0-100). Hover each mode for a plain-English explanation and backtest results." /></label>
             <div className="flex flex-wrap gap-1">
               {FNG_MODES.map(m => (
                 <Tip key={m.value} text={m.title}>
                   <button
-                    className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                    className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
                       filters.fng_mode === m.value
-                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-brand text-white border-brand'
                         : 'bg-white text-text-secondary border-border-light hover:bg-muted'
                     }`}
                     onClick={() => update({ fng_mode: m.value })}
@@ -690,17 +690,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               ))}
             </div>
             {filters.fng_mode && (
-              <div className="mt-2 pl-3 border-l-2 border-border-light space-y-2">
+              <div className="mt-2 pl-3 border-l-2 border-border-light space-y-2 animate-fade-in">
                 {(FNG_PRESETS[filters.fng_mode]?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
                     {FNG_PRESETS[filters.fng_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
-                          className={`px-2 py-0.5 text-[10px] font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.fng_fear === p.fear && filters.fng_greed === p.greed
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                              ? 'bg-color-up text-white border-color-up'
+                              : 'bg-white text-color-up border-color-up/30 hover:bg-surface-up'
                           }`}
                           onClick={() => update({ fng_fear: p.fear, fng_greed: p.greed })}
                         >
@@ -715,7 +715,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <span className="text-xs text-text-muted block mb-1">Fear &le; {filters.fng_fear}</span>
                   <input
                     type="range" min={5} max={90} step={1}
-                    className="w-28 accent-zinc-900"
+                    className="w-28 accent-brand"
                     value={filters.fng_fear}
                     onChange={e => update({ fng_fear: parseInt(e.target.value) })}
                   />
@@ -724,7 +724,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <span className="text-xs text-text-muted block mb-1">Greed &ge; {filters.fng_greed}</span>
                   <input
                     type="range" min={50} max={95} step={1}
-                    className="w-28 accent-zinc-900"
+                    className="w-28 accent-brand"
                     value={filters.fng_greed}
                     onChange={e => update({ fng_greed: parseInt(e.target.value) })}
                   />
@@ -733,7 +733,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                   <span className="text-xs text-text-muted block mb-1">Cash %</span>
                   <input
                     type="number" step="0.05" min="0" max="1"
-                    className="w-16 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
+                    className="w-16 bg-muted border border-border-light rounded-md px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
                     value={filters.fng_cash_pct}
                     onChange={e => update({ fng_cash_pct: parseFloat(e.target.value) || 0 })}
                   />
@@ -745,14 +745,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
           {/* BTC Dominance Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">BTC Dominance<HelpTip text="Adjusts allocation based on Bitcoin's share of the total crypto market. Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">BTC Dominance<HelpTip text="Adjusts allocation based on Bitcoin's share of the total crypto market. Hover each mode for a plain-English explanation and backtest results." /></label>
             <div className="flex flex-wrap gap-1">
               {DOM_MODES.map(m => (
                 <Tip key={m.value} text={m.title}>
                   <button
-                    className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                    className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
                       filters.dom_mode === m.value
-                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                        ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-brand text-white border-brand'
                         : 'bg-white text-text-secondary border-border-light hover:bg-muted'
                     }`}
                     onClick={() => update({ dom_mode: m.value })}
@@ -763,17 +763,17 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               ))}
             </div>
             {filters.dom_mode && (
-              <div className="flex flex-wrap items-center gap-2 mt-2 pl-3 border-l-2 border-border-light">
+              <div className="flex flex-wrap items-center gap-2 mt-2 pl-3 border-l-2 border-border-light animate-fade-in">
                 {(DOM_PRESETS[filters.dom_mode]?.length ?? 0) > 0 && (
                   <>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
                     {DOM_PRESETS[filters.dom_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
-                          className={`px-2 py-0.5 text-[10px] font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.dom_lookback === p.lookback
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                              ? 'bg-color-up text-white border-color-up'
+                              : 'bg-white text-color-up border-color-up/30 hover:bg-surface-up'
                           }`}
                           onClick={() => update({ dom_lookback: p.lookback })}
                         >
@@ -795,7 +795,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                         i === DOM_LOOKBACK_OPTIONS.length - 1 ? 'rounded-r-lg' : ''
                       } ${
                         filters.dom_lookback === opt.value
-                          ? 'bg-zinc-900 text-white border-zinc-900'
+                          ? 'bg-brand text-white border-brand'
                           : 'bg-white text-text-muted hover:bg-muted'
                       }`}
                       onClick={() => update({ dom_lookback: opt.value })}
@@ -811,12 +811,12 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       </div>
 
       {/* Row 6: VC Overlay */}
-      <div className="border border-border-light rounded-xl overflow-hidden">
+      <div className="border border-border-light rounded-card overflow-hidden">
         <button
           className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">VC Overlay<HelpTip text="Boost or filter coins based on venture capital funding data. Coins backed by top VCs with large recent rounds get higher weight." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">VC Overlay<HelpTip text="Boost or filter coins based on venture capital funding data. Coins backed by top VCs with large recent rounds get higher weight." /></span>
           <span className="text-xs text-text-muted">
             {filters.vc_mode ? 'Active' : 'Off'}
           </span>
@@ -827,9 +827,9 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <button
                 key={m.value}
                 title={m.title}
-                className={`px-2.5 py-1.5 text-xs border rounded-lg transition-colors ${
+                className={`px-2.5 py-1.5 text-xs border rounded-md transition-colors ${
                   filters.vc_mode === m.value
-                    ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-zinc-900 text-white border-zinc-900'
+                    ? m.value === '' ? 'bg-white text-text-secondary border-border-light' : 'bg-brand text-white border-brand'
                     : 'bg-white text-text-secondary border-border-light hover:bg-muted'
                 }`}
                 onClick={() => update({ vc_mode: m.value })}
@@ -839,12 +839,12 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             ))}
           </div>
           {filters.vc_mode && (
-            <div className="flex flex-wrap gap-4 pl-3 border-l-2 border-border-light">
+            <div className="flex flex-wrap gap-4 pl-3 border-l-2 border-border-light animate-fade-in">
               <div>
                 <span className="text-xs text-text-muted block mb-1">Min Funding ($M)</span>
                 <input
                   type="number" step="1" min="0"
-                  className="w-20 bg-muted border border-border-light rounded-lg px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
+                  className="w-20 bg-muted border border-border-light rounded-md px-2 py-1 text-xs text-text-primary tabular-nums font-mono"
                   value={filters.vc_min_amount_m}
                   onChange={e => update({ vc_min_amount_m: parseFloat(e.target.value) || 0 })}
                 />
@@ -858,9 +858,9 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     return (
                       <button
                         key={inv}
-                        className={`px-2 py-1 text-[11px] border rounded-md transition-colors ${
+                        className={`px-2 py-1 text-label border rounded-md transition-colors ${
                           isOn
-                            ? 'bg-zinc-900 text-white border-zinc-900'
+                            ? 'bg-brand text-white border-brand'
                             : 'bg-white text-text-secondary border-border-light hover:bg-muted'
                         }`}
                         onClick={() => {
@@ -885,9 +885,9 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     return (
                       <button
                         key={rt}
-                        className={`px-2 py-1 text-[11px] border rounded-md transition-colors ${
+                        className={`px-2 py-1 text-label border rounded-md transition-colors ${
                           isOn
-                            ? 'bg-zinc-900 text-white border-zinc-900'
+                            ? 'bg-brand text-white border-brand'
                             : 'bg-white text-text-secondary border-border-light hover:bg-muted'
                         }`}
                         onClick={() => {
@@ -911,14 +911,14 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 7: Sweep + Run */}
       <div className="flex flex-wrap gap-4 items-center justify-between pt-2 border-t border-border-light">
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
           <div className="flex flex-wrap gap-y-1">
             {SWEEP_OPTIONS.map(s => (
               <button
                 key={s}
                 className={`px-2.5 py-1.5 text-xs border border-border-light first:rounded-l-lg last:rounded-r-lg -ml-px first:ml-0 transition-colors ${
                   filters.sweep === s
-                    ? 'bg-zinc-900 text-white border-zinc-900'
+                    ? 'bg-brand text-white border-brand'
                     : 'bg-white text-text-secondary hover:bg-muted'
                 }`}
                 onClick={() => update({ sweep: s })}
@@ -929,10 +929,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </div>
         </div>
         <button
-          className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-6 py-2.5 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed press ${
             isLoading
               ? 'bg-muted text-text-secondary hover:bg-border-light'
-              : 'bg-zinc-900 text-white hover:bg-zinc-800'
+              : 'bg-brand text-white hover:bg-brand-dark'
           }`}
           onClick={onRun}
           disabled={!isLoading && !canRun}

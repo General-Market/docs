@@ -63,7 +63,7 @@ async function fetchResolution(betId: string): Promise<Resolution | null> {
     if (response.status === 404) {
       return null // No resolution data yet
     }
-    throw new Error(`Failed to fetch resolution: ${response.statusText}`)
+    throw new Error('Unable to load resolution data.')
   }
 
   return response.json()
@@ -147,7 +147,7 @@ export function getWinRateColorClass(wins: number, total: number): string {
  */
 export function formatResolutionOutcome(resolution: Resolution): string {
   if (resolution.isTie) return 'Tie - Both Refunded'
-  if (resolution.isCancelled) return `Cancelled - ${resolution.cancelReason || 'Unknown reason'}`
+  if (resolution.isCancelled) return `Cancelled — ${resolution.cancelReason || 'Reason unavailable'}`
   if (resolution.creatorWins === true) return 'Creator Wins'
   if (resolution.creatorWins === false) return 'Matcher Wins'
   return 'Pending'

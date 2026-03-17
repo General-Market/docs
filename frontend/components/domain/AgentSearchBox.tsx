@@ -52,13 +52,13 @@ export function AgentSearchBox({ onSearch, isNotFound, onDismissNotFound }: Agen
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder={t('agent_search.placeholder')}
-          className="flex-1 px-4 py-2 rounded-full border-2 border-zinc-900 bg-white text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-black/10"
+          className="flex-1 px-4 py-2 rounded-full border-2 border-brand bg-white text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/20 input-animate"
           aria-label="Wallet address"
         />
         <button
           type="submit"
           disabled={!isValid}
-          className="px-5 py-2 rounded-full border-2 border-zinc-900 bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-5 py-2 rounded-full border-2 border-brand bg-brand text-white text-sm font-semibold hover:bg-brand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors press"
         >
           {t('agent_search.find_rank')}
         </button>
@@ -69,7 +69,7 @@ export function AgentSearchBox({ onSearch, isNotFound, onDismissNotFound }: Agen
           <p className="text-color-down text-sm">{t('agent_search.not_found')}</p>
           <p className="text-text-muted text-xs mt-1">
             {t('agent_search.not_found_hint')}{' '}
-            <a href="/deploy" className="text-zinc-900 hover:underline font-semibold">
+            <a href="/deploy" className="text-text-primary hover:underline font-semibold">
               {t('agent_search.deploy_agent')}
             </a>
           </p>

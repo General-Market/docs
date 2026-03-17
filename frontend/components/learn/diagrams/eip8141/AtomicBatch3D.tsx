@@ -87,7 +87,7 @@ function TX1Cube({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={BLUE} roughness={0.5} />
       </RoundedBox>
       <Html center position={[0, 0, 0.55]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-mono font-bold whitespace-nowrap" style={{ color: '#fff' }}>
+        <p className="text-micro font-mono font-bold whitespace-nowrap" style={{ color: '#fff' }}>
           TX 1: approve
         </p>
       </Html>
@@ -121,7 +121,7 @@ function TX2Cube({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={BLUE} roughness={0.5} />
       </RoundedBox>
       <Html center position={[0, 0, 0.55]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-mono font-bold whitespace-nowrap" style={{ color: '#fff' }}>
+        <p className="text-micro font-mono font-bold whitespace-nowrap" style={{ color: '#fff' }}>
           TX 2: swap
         </p>
       </Html>
@@ -371,7 +371,7 @@ function FrameContainer({
         <meshBasicMaterial color={color} wireframe transparent opacity={0.3} />
       </mesh>
       <Html center position={[0, 0.45, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
+        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
       </Html>
       <Html center position={[0, -0.45, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[8px] font-mono whitespace-nowrap" style={{ color: '#71717a' }}>{sublabel}</p>
@@ -634,12 +634,12 @@ function SectionLabels() {
   return (
     <>
       <Html center position={[0, 1.3, BEFORE_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
           Before: 2 Separate TXs
         </p>
       </Html>
       <Html center position={[0, 1.3, AFTER_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
           After: 1 Frame TX
         </p>
       </Html>
@@ -686,7 +686,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={frontrunRef}>
         <Html center position={[0, 1.6, BEFORE_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-red-50 border border-red-300 rounded px-2 py-0.5">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
               Front-run!
             </p>
           </div>
@@ -695,7 +695,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={atomicRef}>
         <Html center position={[0, -0.25, AFTER_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-green-50 border border-green-200 rounded px-2 py-0.5">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Atomic: no gap
             </p>
           </div>
@@ -751,19 +751,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Vulnerability gap</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Vulnerability gap</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Transaction / Frame</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Transaction / Frame</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Atomic (safe)</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Atomic (safe)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Validation frame</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Validation frame</span>
       </div>
     </div>
   )

@@ -58,7 +58,7 @@ export function Tooltip({ content, children, position = 'top' }: TooltipProps) {
       id={tooltipId}
       role="tooltip"
       style={tooltipStyle}
-      className="px-3 py-2 bg-card text-text-primary border border-border-light shadow-card text-xs rounded-lg whitespace-nowrap max-w-xs"
+      className="px-3 py-2 bg-card text-text-primary border border-border-light shadow-card text-xs rounded-md whitespace-nowrap max-w-xs"
     >
       {content}
     </div>,

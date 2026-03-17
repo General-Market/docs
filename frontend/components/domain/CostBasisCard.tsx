@@ -49,8 +49,8 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
   const fmtUsd = (val: bigint) => `$${fmt(val)}`
 
   return (
-    <div className="bg-card rounded-xl shadow-card border border-border-light p-4 space-y-3">
-      <h4 className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('cost_basis.title')}</h4>
+    <div className="bg-card rounded-card shadow-card border border-border-light p-4 space-y-3 card-interactive">
+      <h4 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('cost_basis.title')}</h4>
 
       <div className="space-y-1 text-xs font-mono">
         <div className="flex justify-between">
@@ -96,7 +96,7 @@ export function CostBasisCard({ itpId }: CostBasisCardProps) {
       {fees && (
         <>
           <div className="border-t border-border-light pt-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('cost_basis.fees_title')}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('cost_basis.fees_title')}</p>
             <div className="space-y-1 text-xs font-mono">
               {fees.tradingFees > 0n && (
                 <div className="flex justify-between">

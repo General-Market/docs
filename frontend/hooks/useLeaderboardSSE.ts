@@ -112,11 +112,29 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pendingDataRef = useRef<LeaderboardResponse | null>(null)
+  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const [state, setState] = useState<SSEState>('disconnected')
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isEnabled, setIsEnabled] = useState(true)
   const [isPolling, setIsPolling] = useState(false)
+
+  /**
+   * Debounced cache update — collect rapid SSE messages and flush once per 200ms
+   */
+  const debouncedSetQueryData = useCallback((data: LeaderboardResponse) => {
+    pendingDataRef.current = data
+    if (!flushTimeoutRef.current) {
+      flushTimeoutRef.current = setTimeout(() => {
+        if (pendingDataRef.current) {
+          queryClient.setQueryData(['leaderboard'], pendingDataRef.current)
+          pendingDataRef.current = null
+        }
+        flushTimeoutRef.current = null
+      }, 200)
+    }
+  }, [queryClient])
 
   /**
    * Fetch leaderboard data via REST API (polling fallback)
@@ -127,6 +145,7 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
       if (response.ok) {
         const rawData = await response.json()
         const data = transformLeaderboardData(rawData)
+        // Polling fallback: write directly (no debounce needed, already throttled by interval)
         queryClient.setQueryData(['leaderboard'], data)
       }
     } catch {
@@ -219,8 +238,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
             const rawData = JSON.parse(event.data)
             const data = transformLeaderboardData(rawData)
 
-            // Update TanStack Query cache without triggering refetch
-            queryClient.setQueryData(['leaderboard'], data)
+            // Debounced cache update — coalesces rapid messages
+            debouncedSetQueryData(data)
           } catch {
             // Failed to parse SSE message - silently ignore malformed data
           }
@@ -232,8 +251,8 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
             const rawData = JSON.parse(event.data)
             const data = transformLeaderboardData(rawData)
 
-            // Update TanStack Query cache
-            queryClient.setQueryData(['leaderboard'], data)
+            // Debounced cache update
+            debouncedSetQueryData(data)
           } catch {
             // Silently ignore malformed events
           }
@@ -315,12 +334,15 @@ export function useLeaderboardSSE(): UseLeaderboardSSEReturn {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
       }
+      if (flushTimeoutRef.current) {
+        clearTimeout(flushTimeoutRef.current)
+      }
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
       }
       setState('disconnected')
     }
-  }, [queryClient, startPolling, stopPolling])
+  }, [queryClient, startPolling, stopPolling, debouncedSetQueryData])
 
   return {
     state,

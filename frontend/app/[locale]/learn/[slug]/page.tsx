@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = getArticle(slug);
 
   if (!article) {
-    return { title: "Article Not Found" };
+    return { title: "Article Not Found \u2014 General Market" };
   }
 
   const { frontmatter } = article;
@@ -135,7 +135,7 @@ export default async function LearnArticlePage({ params }: Props) {
       <div className="max-w-5xl mx-auto flex gap-12 px-6 py-12 md:py-16 w-full">
         <ArticleSidebar headings={headings} category={frontmatter.category} />
 
-        <article className="max-w-3xl flex-1 min-w-0">
+        <article className="max-w-3xl flex-1 min-w-0 animate-fade-up">
           <MDXRemote
             source={content}
             components={mdxComponents}

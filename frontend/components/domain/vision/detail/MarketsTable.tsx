@@ -54,7 +54,7 @@ function formatChangePct(pct: string | null): { text: string; color: string } {
   const num = parseFloat(pct)
   if (isNaN(num)) return { text: '--', color: 'text-text-muted' }
   const sign = num >= 0 ? '+' : ''
-  const color = num > 0 ? 'text-green-600' : num < 0 ? 'text-red-600' : 'text-text-muted'
+  const color = num > 0 ? 'text-color-up' : num < 0 ? 'text-color-down' : 'text-text-muted'
   return { text: `${sign}${num.toFixed(2)}%`, color }
 }
 
@@ -69,9 +69,9 @@ function resolutionBadge(resType: string | undefined) {
   if (!resType) return null
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
-  const bg = isUp ? 'bg-green-100 text-green-700 border-green-200' : isDown ? 'bg-red-100 text-red-700 border-red-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+  const bg = isUp ? 'bg-surface-up text-color-up border-color-up/20' : isDown ? 'bg-surface-down text-color-down border-color-down/20' : 'bg-muted text-text-muted border-border-light'
   return (
-    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${bg}`}>
+    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
       {resType}
     </span>
   )
@@ -142,7 +142,7 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
   if (loading) {
     return (
       <div className="h-[120px] flex items-center justify-center bg-surface/50">
-        <div className="text-[11px] text-text-muted">Loading history...</div>
+        <div className="text-label text-text-muted">Loading history...</div>
       </div>
     )
   }
@@ -150,7 +150,7 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
   if (error) {
     return (
       <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-[11px] text-text-muted">No history available</div>
+        <div className="text-label text-text-muted">No history available</div>
       </div>
     )
   }
@@ -158,7 +158,7 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
   if (points.length < 2) {
     return (
       <div className="h-[60px] flex items-center justify-center bg-surface/50">
-        <div className="text-[11px] text-text-muted">Not enough data ({points.length} point{points.length !== 1 ? 's' : ''})</div>
+        <div className="text-label text-text-muted">Not enough data ({points.length} point{points.length !== 1 ? 's' : ''})</div>
       </div>
     )
   }
@@ -171,15 +171,15 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
   return (
     <div className="bg-surface/50 px-4 py-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+        <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
           7-day history ({points.length.toLocaleString()} points)
         </span>
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-mono text-text-muted">
+          <span className="text-label font-mono text-text-muted">
             {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
           </span>
           {changePct !== null && (
-            <span className={`text-[11px] font-mono font-bold ${changePct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`text-label font-mono font-bold ${changePct >= 0 ? 'text-color-up' : 'text-color-down'}`}>
               {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
             </span>
           )}
@@ -334,7 +334,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             placeholder="Search markets..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setDisplayLimit(100) }}
-            className="px-3 py-1.5 rounded text-[12px] bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[180px]"
+            className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[180px] input-animate"
           />
         </div>
       </div>
@@ -342,7 +342,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
-        <div className="grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+        <div className="grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>Name</div>
           <div className="text-center">Type</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
@@ -354,14 +354,14 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="px-4 py-8 text-center text-[13px] text-text-muted">
+          <div className="px-4 py-8 text-center text-caption text-text-muted">
             Loading markets...
           </div>
         )}
 
         {/* Empty state */}
         {!isLoading && filteredMarkets.length === 0 && (
-          <div className="px-4 py-8 text-center text-[13px] text-text-muted">
+          <div className="px-4 py-8 text-center text-caption text-text-muted">
             {search ? 'No markets match your search' : 'No markets available'}
           </div>
         )}
@@ -379,7 +379,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             return (
               <div key={market.assetId}>
                 <div
-                  className={`grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-[13px] cursor-pointer ${
+                  className={`grid grid-cols-[1fr_80px_100px_80px_80px_80px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -397,7 +397,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                       <div className="font-semibold text-black truncate" title={market.name || market.symbol}>
                         {truncateMiddle(market.name || market.symbol, 28)}
                       </div>
-                      <div className="text-[10px] font-mono text-text-muted mt-0.5 truncate">
+                      <div className="text-micro font-mono text-text-muted mt-0.5 truncate">
                         {truncateMiddle(market.symbol, 20)}{vol ? ` · Vol ${vol}` : ''}
                       </div>
                     </div>
@@ -432,7 +432,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                           consensusOpen === market.assetId ? null : market.assetId
                         )
                       }}
-                      className="inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-bold hover:bg-surface transition-colors cursor-pointer"
+                      className="inline-flex items-center justify-center px-2 py-0.5 rounded text-label font-bold hover:bg-surface transition-colors cursor-pointer"
                     >
                       &mdash;
                     </button>
@@ -444,24 +444,24 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     )}
                   </div>
 
-                  {/* Bet UP/DN */}
+                  {/* Bet toggle */}
                   <div className="flex items-center justify-center gap-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'up') }}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                      className={`px-2.5 py-1 rounded-md text-micro font-bold uppercase transition-colors press ${
                         betState === 'up'
-                          ? 'bg-green-600 text-white shadow-sm'
-                          : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                          ? 'bg-color-up text-white'
+                          : 'bg-surface-up text-color-up hover:bg-color-up/20'
                       }`}
                     >
                       UP
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'down') }}
-                      className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                      className={`px-2.5 py-1 rounded-md text-micro font-bold uppercase transition-colors press ${
                         betState === 'down'
-                          ? 'bg-red-600 text-white shadow-sm'
-                          : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                          ? 'bg-color-down text-white'
+                          : 'bg-surface-down text-color-down hover:bg-color-down/20'
                       }`}
                     >
                       DN
@@ -471,7 +471,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
 
                 {/* Expanded history chart */}
                 {isExpanded && (
-                  <div className="border-b border-border-light">
+                  <div className="border-b border-border-light animate-fade-up">
                     <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} />
                   </div>
                 )}
@@ -481,7 +481,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
           {hasMore && (
             <button
               onClick={() => setDisplayLimit((l) => l + 200)}
-              className="w-full py-3 text-[12px] font-bold text-text-muted hover:text-black hover:bg-surface/50 transition-colors border-t border-border-light cursor-pointer"
+              className="w-full py-3 text-caption font-bold text-text-muted hover:text-black hover:bg-surface/50 transition-colors border-t border-border-light cursor-pointer"
             >
               Show more ({filteredMarkets.length - displayLimit} remaining)
             </button>

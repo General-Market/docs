@@ -20,15 +20,15 @@ interface OddsBadgeProps {
  * Red = unfavorable to matcher (creator has advantage)
  */
 const favorabilityColors: Record<OddsFavorability, string> = {
-  favorable: 'bg-green-900/80 text-green-300 border-green-700',
-  even: 'bg-yellow-900/80 text-yellow-300 border-yellow-700',
-  unfavorable: 'bg-red-900/80 text-red-300 border-red-700'
+  favorable: 'bg-color-up/20 text-color-up border-color-up/50',
+  even: 'bg-color-warning/20 text-color-warning border-color-warning/50',
+  unfavorable: 'bg-color-down/20 text-color-down border-color-down/50'
 }
 
 const favorabilityTooltips: Record<OddsFavorability, string> = {
-  favorable: 'Favorable odds for matchers - higher potential return',
+  favorable: 'Favorable odds for the opposing side - higher potential return',
   even: 'Even odds - balanced risk/reward',
-  unfavorable: 'Unfavorable odds for matchers - lower potential return'
+  unfavorable: 'Unfavorable odds for the opposing side - lower potential return'
 }
 
 /**
@@ -47,7 +47,7 @@ export function OddsBadge({ display, favorability, className = '' }: OddsBadgePr
       <span
         className={`inline-flex items-center px-3 py-1 rounded text-sm font-bold font-mono border cursor-help ${colorClass} ${className}`}
         role="status"
-        aria-label={`Odds: ${display}, ${favorability} for matchers`}
+        aria-label={`Odds: ${display}, ${favorability} for the opposing side`}
       >
         {display} Odds
       </span>

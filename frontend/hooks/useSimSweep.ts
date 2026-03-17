@@ -156,7 +156,7 @@ export function useSimSweep(params: UseSimSweepParams | null): UseSimSweepResult
 
     es.onerror = () => {
       if (statusRef.current === 'loading') {
-        setError('Connection lost')
+        setError('Connection to simulation server lost. Run the simulation again.')
         setStatus('error')
       }
       cleanup()

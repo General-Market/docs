@@ -4,8 +4,12 @@ import { useState, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { PageSection } from '@/components/layout/PageSection'
 import { ItpListing, DeployedItpRef } from '@/components/domain/ItpListing'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useSectionTimeTracker } from '@/hooks/useSectionTimeTracker'
+import { useScrollReveal } from '@/hooks/useScrollReveal'
+import { OnboardingModal } from '@/components/domain/OnboardingModal'
 
 const SectionSkeleton = () => (
   <div className="animate-pulse bg-surface rounded-md h-48" />
@@ -46,6 +50,13 @@ const VaultTradesFeed = dynamic(
   { ssr: false, loading: SectionSkeleton }
 )
 
+const SectionFallback = () => (
+  <div className="py-8 text-center border border-border-light rounded-card bg-surface">
+    <div className="font-mono text-micro font-bold tracking-[0.08em] uppercase text-text-muted mb-2">Section Error</div>
+    <p className="text-text-secondary text-sm">This section encountered an error. Refresh the page to retry.</p>
+  </div>
+)
+
 const SECTION_IDS = ['markets', 'portfolio', 'create', 'lend', 'backtest', 'system', 'ap-feed']
 
 export function HomeClient() {
@@ -56,6 +67,7 @@ export function HomeClient() {
   } | null>(null)
 
   useSectionTimeTracker(SECTION_IDS)
+  const revealRef = useScrollReveal()
 
   const handleDeployIndex = useCallback((holdings: { symbol: string; weight: number }[]) => {
     setDeployHoldings(holdings)
@@ -78,75 +90,66 @@ export function HomeClient() {
   return (
     <>
       <Header />
+      <OnboardingModal />
 
-      <div className="flex-1 overflow-x-clip">
-        <section id="markets">
-          <ItpListing onItpsLoaded={handleItpsLoaded} />
+      <div ref={revealRef} className="flex-1 overflow-x-clip">
+        <section id="markets" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <ItpListing onItpsLoaded={handleItpsLoaded} />
+          </ErrorBoundary>
         </section>
 
         <div className="section-divider" />
-        <section id="portfolio">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
-            </div>
-          </div>
-        </section>
+        <PageSection id="portfolio" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <PortfolioSection expanded={true} onToggle={() => {}} deployedItps={deployedItps} />
+          </ErrorBoundary>
+        </PageSection>
 
         <div className="section-divider" />
-        <section id="create">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <CreateItpSection
-                expanded={true}
-                onToggle={() => {}}
-                initialHoldings={deployHoldings}
-              />
-            </div>
-          </div>
-        </section>
+        <PageSection id="create" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <CreateItpSection
+              expanded={true}
+              onToggle={() => {}}
+              initialHoldings={deployHoldings}
+            />
+          </ErrorBoundary>
+        </PageSection>
 
         <div className="section-divider" />
-        <section id="lend">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <VaultModal inline onClose={() => {}} />
-            </div>
-          </div>
-        </section>
+        <PageSection id="lend" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <VaultModal inline onClose={() => {}} />
+          </ErrorBoundary>
+        </PageSection>
 
         <div className="section-divider" />
-        <section id="backtest">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <BacktestSection
-                expanded={true}
-                onToggle={() => {}}
-                onDeployIndex={handleDeployIndex}
-                deployedItps={deployedItps}
-                onRebalanceItp={handleRebalanceItp}
-              />
-            </div>
-          </div>
-        </section>
+        <PageSection id="backtest" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <BacktestSection
+              expanded={true}
+              onToggle={() => {}}
+              onDeployIndex={handleDeployIndex}
+              deployedItps={deployedItps}
+              onRebalanceItp={handleRebalanceItp}
+            />
+          </ErrorBoundary>
+        </PageSection>
 
         <div className="section-divider" />
-        <section id="system">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <SystemStatusSection deployedItps={deployedItps} />
-            </div>
-          </div>
-        </section>
+        <PageSection id="system" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <SystemStatusSection deployedItps={deployedItps} />
+          </ErrorBoundary>
+        </PageSection>
 
         <div className="section-divider" />
-        <section id="ap-feed">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto">
-              <VaultTradesFeed deployedItps={deployedItps} />
-            </div>
-          </div>
-        </section>
+        <PageSection id="ap-feed" data-fade-in>
+          <ErrorBoundary fallback={<SectionFallback />}>
+            <VaultTradesFeed deployedItps={deployedItps} />
+          </ErrorBoundary>
+        </PageSection>
       </div>
 
       {rebalanceModal && (

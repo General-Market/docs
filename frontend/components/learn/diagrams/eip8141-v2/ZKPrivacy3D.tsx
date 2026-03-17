@@ -248,7 +248,7 @@ function NoLinkLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref}>
       <Html center position={[centerX, ADDR_Y + 0.75, ADDR_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-white/90 border border-red-300 rounded px-2 py-0.5">
-          <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: RED }}>NO LINK</p>
+          <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: RED }}>NO LINK</p>
         </div>
       </Html>
     </group>
@@ -750,7 +750,7 @@ function PhaseLabel({ phase }: { phase: Phase }) {
     <div className="h-6 flex items-center justify-center overflow-hidden">
       {text ? (
         <p
-          className="text-[11px] font-mono font-bold whitespace-nowrap transition-opacity duration-300"
+          className="text-label font-mono font-bold whitespace-nowrap transition-opacity duration-300"
           style={{ color }}
         >
           {text}

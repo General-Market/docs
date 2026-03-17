@@ -12,9 +12,9 @@ import { Skeleton } from '@/components/ui/Skeleton'
  */
 export function StatsGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="stagger grid grid-cols-2 md:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-card rounded-xl shadow-card border border-border-light p-4">
+        <div key={i} className="bg-card rounded-card shadow-card border border-border-light p-4">
           <Skeleton width={100} height={14} className="mb-2" />
           <Skeleton width={80} height={28} />
         </div>
@@ -64,7 +64,7 @@ export function AgentDetailSkeleton() {
         </div>
 
         {/* Performance Graph Section */}
-        <div className="border border-border-light bg-card rounded-xl shadow-card mb-8">
+        <div className="border border-border-light bg-card rounded-card shadow-card mb-8">
           <div className="flex justify-between items-center p-4 border-b border-border-medium">
             <Skeleton width={160} height={24} />
             <Skeleton width={200} height={32} />
@@ -75,7 +75,7 @@ export function AgentDetailSkeleton() {
         </div>
 
         {/* Recent Portfolio Bets Section */}
-        <div className="border border-border-light bg-card rounded-xl shadow-card mb-8">
+        <div className="border border-border-light bg-card rounded-card shadow-card mb-8">
           <div className="flex justify-between items-center p-4 border-b border-border-medium">
             <Skeleton width={180} height={24} />
             <Skeleton width={60} height={20} />

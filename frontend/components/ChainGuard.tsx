@@ -103,19 +103,19 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="border border-border-light bg-card rounded-xl shadow-modal p-8 max-w-md text-center">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-backdrop-in">
+        <div className="border border-border-light bg-card rounded-md shadow-modal p-8 max-w-md text-center animate-fade-up">
           <div className="text-color-warning text-xl font-semibold mb-4">Wrong Network</div>
           <p className="text-text-secondary text-sm mb-2">
-            Your wallet is on chain <span className="text-text-primary font-mono">{chainId}</span>.
+            Your wallet is connected to an unsupported network.
           </p>
           <p className="text-text-secondary text-sm mb-6">
-            Please switch to <span className="text-text-primary font-medium">Index L3</span> (chain {indexL3.id}).
+            Switch to the <span className="text-text-primary font-medium">Index L3</span> network to continue.
           </p>
           <button
             onClick={forceSwitch}
             disabled={isSwitching}
-            className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+            className="px-6 py-3 bg-brand text-white font-medium rounded-md hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full press"
           >
             {isSwitching ? 'Switching...' : 'Switch Network'}
           </button>

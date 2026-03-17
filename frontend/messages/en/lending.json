@@ -66,7 +66,7 @@
     "max_borrow_label": "Max borrow: {amount} USDC",
     "projected_health_factor": "Projected Health Factor",
     "cannot_borrow_health": "Cannot borrow: health factor would be below 1.0",
-    "low_health_warning": "Warning: Low health factor increases liquidation risk",
+    "low_health_warning": "Low health factor \u2014 liquidation risk is elevated. Consider reducing your borrow.",
     "button": {
       "confirm_wallet": "Confirm in wallet...",
       "borrowing": "Borrowing...",
@@ -79,8 +79,8 @@
       "health_factor": "Health Factor",
       "liquidation_price": "Liquidation Price",
       "max_borrow": "Max Borrow",
-      "bundle_label": "Bundle:",
-      "expired": "Quote expired --",
+      "bundle_label": "Steps:",
+      "expired": "Quote expired.",
       "refresh": "refresh",
       "execute_bundle": "Execute Bundle",
       "confirm_wallet": "Confirm in wallet...",
@@ -156,7 +156,7 @@
     "something_went_wrong": "Something went wrong",
     "please_refresh": "Please refresh the page.",
     "transaction_rejected": "Transaction rejected",
-    "transaction_failed": "Transaction failed",
+    "transaction_failed": "Transaction failed. Check your wallet for details.",
     "withdrawal_failed": "Withdrawal failed",
     "tx_stuck_title": "Transaction may be stuck",
     "tx_stuck_description": "Not confirmed after 30s. You can cancel and try again.",
@@ -172,7 +172,7 @@
     "no_position": "No active position to repay or withdraw",
     "open_position_hint": "Switch to the Borrow tab to open a position",
     "something_went_wrong": "Something went wrong",
-    "please_reopen": "Please close and reopen the modal."
+    "please_reopen": "Close this dialog and try again."
   },
   "error": {
     "title": "Error"
@@ -217,8 +217,8 @@
     "unavailable": "Unavailable",
     "loan_asset": "Loan Asset",
     "max_ltv": "Max LTV",
-    "borrow_rate_serm": "Borrow Rate (SERM)",
+    "borrow_rate_serm": "Borrow Rate",
     "protocol": "Protocol",
-    "live_data_unavailable": "Live market data unavailable -- showing config parameters"
+    "live_data_unavailable": "Live market data unavailable \u2014 showing default values"
   }
 }

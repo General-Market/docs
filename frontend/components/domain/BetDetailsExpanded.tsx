@@ -98,7 +98,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
               <span className="text-xs text-text-muted font-sans">{t('bet_details.horizon')}</span>
               <span className={`px-2 py-1 rounded text-xs ${
                 bet.horizon === 'monthly' || bet.horizon === 'quarterly'
-                  ? 'bg-orange-800/30 text-orange-300'
+                  ? 'bg-surface-warning text-color-warning'
                   : 'bg-muted text-text-secondary'
               }`}>
                 {bet.horizon.charAt(0).toUpperCase() + bet.horizon.slice(1)}
@@ -134,7 +134,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
               href={getAddressUrl(bet.fillerAddress)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-text-primary hover:text-zinc-900 transition-colors"
+              className="text-xs font-mono text-text-primary hover:text-text-primary transition-colors"
             >
               {truncateAddress(bet.fillerAddress)}
             </a>
@@ -150,22 +150,22 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
 
       {/* Story 14-1: Early Exit Display */}
       {bet.earlyExit && (
-        <div className="border border-cyan-500/30 bg-cyan-950/20 rounded-xl p-3">
+        <div className="border border-color-info/30 bg-surface-info rounded-card p-3">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-cyan-400 text-sm font-bold">{t('bet_details.early_exit_title')}</span>
+            <span className="text-color-info text-sm font-bold">{t('bet_details.early_exit_title')}</span>
           </div>
           <div className="text-xs text-text-secondary">
             {t('bet_details.early_exit_description')}
           </div>
           {bet.creatorStake && bet.fillerStake && (
-            <div className="mt-2 pt-2 border-t border-cyan-500/20 flex gap-4">
+            <div className="mt-2 pt-2 border-t border-color-info/20 flex gap-4">
               <div>
                 <span className="text-xs text-text-muted block">{t('bet_details.creator_received')}</span>
-                <span className="text-sm font-mono text-cyan-300">{formatUSD(toBaseUnits(bet.creatorStake))}</span>
+                <span className="text-sm font-mono text-color-info">{formatUSD(toBaseUnits(bet.creatorStake))}</span>
               </div>
               <div>
                 <span className="text-xs text-text-muted block">{t('bet_details.filler_received')}</span>
-                <span className="text-sm font-mono text-cyan-300">{formatUSD(toBaseUnits(bet.fillerStake))}</span>
+                <span className="text-sm font-mono text-color-info">{formatUSD(toBaseUnits(bet.fillerStake))}</span>
               </div>
             </div>
           )}
@@ -174,7 +174,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
 
       {/* Portfolio Summary - click to view full list */}
       {portfolioPositions.length > 0 && (
-        <div className="border border-border-light rounded-xl p-3 bg-muted">
+        <div className="border border-border-light rounded-card p-3 bg-muted">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-text-muted font-sans">{t('bet_details.portfolio')}</span>
             <span className="text-sm font-mono text-text-primary font-bold">
@@ -192,7 +192,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
         {portfolioPositions.length > 0 && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-3 py-1.5 bg-zinc-900 text-white text-sm hover:bg-zinc-800 transition-colors rounded-lg"
+            className="px-3 py-1.5 bg-brand text-white text-sm hover:bg-brand-dark transition-colors rounded-md"
           >
             {t('bet_details.view_full_portfolio')}
           </button>
@@ -203,7 +203,7 @@ export function BetDetailsExpanded({ bet }: BetDetailsExpandedProps) {
           href={getTxUrl(bet.txHash)}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 border border-border-medium text-text-muted text-sm hover:text-text-primary hover:border-zinc-900 transition-colors rounded-lg"
+          className="px-3 py-1.5 border border-border-medium text-text-muted text-sm hover:text-text-primary hover:border-brand transition-colors rounded-md"
         >
           {t('bet_details.view_on_explorer')}
         </a>

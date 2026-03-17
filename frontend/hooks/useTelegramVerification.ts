@@ -50,7 +50,7 @@ export function useTelegramVerification() {
       return data
     } catch (error) {
       console.error('Error looking up code:', error)
-      setState(prev => ({ ...prev, status: 'error', error: 'Failed to verify code' }))
+      setState(prev => ({ ...prev, status: 'error', error: 'Verification failed. Check your code and try again.' }))
       return null
     }
   }, [])
@@ -94,7 +94,7 @@ export function useTelegramVerification() {
         setState(prev => ({
           ...prev,
           status: 'error',
-          error: 'Signature rejected. Please try again.',
+          error: 'Signature cancelled. Try again when ready.',
         }))
         return false
       }
@@ -129,7 +129,7 @@ export function useTelegramVerification() {
       setState(prev => ({
         ...prev,
         status: 'error',
-        error: error instanceof Error ? error.message : 'Verification failed',
+        error: 'Verification failed. Request a new code and try again.',
       }))
       return false
     }

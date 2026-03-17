@@ -42,7 +42,7 @@ function LeftPlatform() {
         <meshStandardMaterial color="#fafafa" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Normal TX
         </p>
       </Html>
@@ -64,7 +64,7 @@ function RightPlatform() {
         <meshStandardMaterial color="#fafafa" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Frame TX
         </p>
       </Html>
@@ -362,7 +362,7 @@ function FrameContainer({
         <meshBasicMaterial color={color} wireframe transparent opacity={0.35} />
       </mesh>
       <Html center position={[0, 0.6, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
+        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
       </Html>
       <Html center position={[0, -0.6, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[8px] font-mono whitespace-nowrap" style={{ color: '#71717a' }}>{sublabel}</p>
@@ -440,7 +440,7 @@ function AcceptGate({ reducedMotion }: { reducedMotion: boolean }) {
       </RoundedBox>
       {/* ACCEPT label */}
       <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
+        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
       </Html>
     </group>
   )
@@ -711,7 +711,7 @@ function FrameTXLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={insideLabelRef}>
         <Html center position={[RIGHT_X, -0.15, -1.5]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Auth is INSIDE the TX
             </p>
           </div>
@@ -831,15 +831,15 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Transaction data</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Transaction data</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Auth (sig / frame)</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Auth (sig / frame)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">ACCEPT gate</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">ACCEPT gate</span>
       </div>
     </div>
   )

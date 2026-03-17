@@ -8,6 +8,7 @@ import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
 import { useBatches } from '@/hooks/vision/useBatches'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { PageSection } from '@/components/layout/PageSection'
 import { Link } from '@/i18n/routing'
 
 function formatPoints(n: number): string {
@@ -78,16 +79,14 @@ export default function PointsPageClient() {
 
       <div className="flex-1">
         {/* ═══════════════════ HERO ═══════════════════ */}
-        <section className="bg-black text-white">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-16 md:py-20">
+        <PageSection className="bg-black text-white py-16 md:py-20" data-fade-in>
               <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                 {/* Left: Season + Points */}
                 <div>
-                  <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-white/40 mb-3">
+                  <div className="text-label font-semibold tracking-[0.08em] uppercase text-white/40 mb-3">
                     Season 1
                   </div>
-                  <h1 className="text-[52px] md:text-[64px] font-black tracking-[-0.03em] leading-[1] mb-3">
+                  <h1 className="text-[52px] md:text-[64px] font-black tracking-tight leading-[1] mb-3">
                     {!isConnected ? (
                       'Points'
                     ) : isLoading ? (
@@ -97,13 +96,13 @@ export default function PointsPageClient() {
                     )}
                   </h1>
                   {isConnected && !isLoading && (
-                    <p className="text-[15px] text-white/50 font-medium">
+                    <p className="text-body text-white/50 font-medium">
                       Total points earned
                     </p>
                   )}
                   {!isConnected && (
-                    <p className="text-[15px] text-white/50 max-w-md">
-                      Earn points by providing liquidity across Vision prediction batches. Points will convert to tokens at the end of the season.
+                    <p className="text-body text-white/50 max-w-md">
+                      Earn points by providing liquidity across Vision prediction batches. Points convert to tokens when Season 1 ends. Conversion rate will be announced before the season closes.
                     </p>
                   )}
                 </div>
@@ -112,55 +111,51 @@ export default function PointsPageClient() {
                 {!isConnected ? (
                   <button
                     onClick={handleConnect}
-                    className="px-8 py-3.5 bg-white text-black text-[14px] font-bold tracking-[-0.01em] hover:bg-white/90 transition-colors self-start md:self-end"
+                    className="px-8 py-3.5 bg-white text-black text-body font-bold tracking-[-0.01em] hover:bg-white/90 transition-colors self-start md:self-end"
                   >
                     Connect Wallet
                   </button>
                 ) : !isLoading && (
-                  <div className="flex gap-8 md:gap-12">
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                        Rate
+                  <div className="flex gap-8 md:gap-12 stagger">
+                    <div className="animate-fade-up">
+                      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-white/30 mb-1">
+                        Earning Rate
                       </div>
-                      <div className="text-[28px] font-black font-mono tabular-nums text-green-400">
+                      <div className="text-display font-black font-mono tabular-nums text-color-up">
                         +{formatPoints(totalPointsPerHour)}
-                        <span className="text-[13px] font-semibold text-white/30 ml-1">/hr</span>
+                        <span className="text-caption font-semibold text-white/30 ml-1">/hr</span>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
+                    <div className="animate-fade-up">
+                      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-white/30 mb-1">
                         Batches
                       </div>
-                      <div className="text-[28px] font-black font-mono tabular-nums">
+                      <div className="text-display font-black font-mono tabular-nums">
                         {activeBatches}
-                        <span className="text-[13px] font-semibold text-white/30 ml-1">/ {totalBatches}</span>
+                        <span className="text-caption font-semibold text-white/30 ml-1">/ {totalBatches}</span>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                        Coverage
+                    <div className="animate-fade-up">
+                      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-white/30 mb-1">
+                        Batch Coverage
                       </div>
-                      <div className="text-[28px] font-black font-mono tabular-nums">
+                      <div className="text-display font-black font-mono tabular-nums">
                         {coveragePercent}%
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        </section>
+        </PageSection>
 
         {/* ═══════════════════ HOW IT WORKS ═══════════════════ */}
-        <section className="border-b border-border-light">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-0">
+        <PageSection className="border-b border-border-light py-10" data-fade-in>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-0 stagger">
                 {[
                   {
                     step: '01',
                     title: 'Join batches',
-                    desc: 'Each of the 100 prediction batches emits 100 points every tick (~10 min). That\'s 1.44M points distributed daily across all batches.',
+                    desc: 'Each of the 100 prediction batches emits 100 points every round (~10 min). That\'s approximately 1.44M points distributed daily across all batches.',
                   },
                   {
                     step: '02',
@@ -175,88 +170,80 @@ export default function PointsPageClient() {
                 ].map((item, i) => (
                   <div
                     key={item.step}
-                    className={`py-5 md:py-0 ${i !== 0 ? 'border-t md:border-t-0 md:border-l border-border-light' : ''} ${i !== 0 ? 'md:pl-8' : ''} ${i !== 2 ? 'md:pr-8' : ''}`}
+                    className={`py-5 md:py-0 animate-fade-up ${i !== 0 ? 'border-t md:border-t-0 md:border-l border-border-light' : ''} ${i !== 0 ? 'md:pl-8' : ''} ${i !== 2 ? 'md:pr-8' : ''}`}
                   >
-                    <div className="text-[11px] font-bold text-text-muted tracking-[0.06em] mb-2">
+                    <div className="text-label font-bold text-text-muted tracking-[0.08em] mb-2">
                       {item.step}
                     </div>
-                    <div className="text-[16px] font-extrabold text-black tracking-[-0.01em] mb-1">
+                    <div className="text-subhead font-extrabold text-black tracking-[-0.01em] mb-1">
                       {item.title}
                     </div>
-                    <p className="text-[13px] text-text-secondary leading-relaxed">
+                    <p className="text-caption text-text-secondary leading-relaxed">
                       {item.desc}
                     </p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
+        </PageSection>
 
         {/* ═══════════════════ DAILY BREAKDOWN ═══════════════════ */}
-        <section className="border-b border-border-light">
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-8">
-              <h2 className="text-[20px] font-black tracking-[-0.01em] text-black mb-4">
+        <PageSection className="border-b border-border-light py-8" data-fade-in>
+              <h2 className="text-heading font-black tracking-[-0.01em] text-black mb-4">
                 Daily Points Distribution
               </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
-                <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Per Tick / Batch</div>
-                  <div className="text-[22px] font-black text-black font-mono">100</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light stagger">
+                <div className="p-4 border-r border-border-light animate-fade-up">
+                  <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Per Round / Batch</div>
+                  <div className="text-title font-black text-black font-mono">100</div>
                 </div>
-                <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Ticks / Day</div>
-                  <div className="text-[22px] font-black text-black font-mono">144</div>
+                <div className="p-4 border-r border-border-light animate-fade-up">
+                  <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Rounds / Day</div>
+                  <div className="text-title font-black text-black font-mono">144</div>
                 </div>
-                <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Batches</div>
-                  <div className="text-[22px] font-black text-black font-mono">{totalBatches}</div>
+                <div className="p-4 border-r border-border-light animate-fade-up">
+                  <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Batches</div>
+                  <div className="text-title font-black text-black font-mono">{totalBatches}</div>
                 </div>
-                <div className="p-4">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total / Day</div>
-                  <div className="text-[22px] font-black text-black font-mono">1.44M</div>
+                <div className="p-4 animate-fade-up">
+                  <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Total / Day</div>
+                  <div className="text-title font-black text-black font-mono">~1.44M</div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-border-light p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vision (Prediction Markets)</div>
-                  <p className="text-[13px] text-text-secondary leading-relaxed">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
+                <div className="border border-border-light p-4 card-interactive animate-fade-up">
+                  <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">Vision (Prediction Markets)</div>
+                  <p className="text-caption text-text-secondary leading-relaxed">
                     100 batches across 25,000+ markets. Each batch emits 100 pts every 10 minutes. Earn by depositing USDC into any batch — your share of the pool determines your points.
                   </p>
                 </div>
-                <div className="border border-border-light p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Index (ITPs)</div>
-                  <p className="text-[13px] text-text-secondary leading-relaxed">
-                    Index product points coming in Season 2. Hold ITP shares to earn points from the index protocol. Stay tuned for details on ITP-based point emissions.
+                <div className="border border-border-light p-4 card-interactive animate-fade-up">
+                  <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">Index (ITPs)</div>
+                  <p className="text-caption text-text-secondary leading-relaxed">
+                    Index product points coming in Season 2. Hold ITP shares to earn points from the index protocol. Details on ITP-based points will be announced before Season 2.
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
+        </PageSection>
 
         {/* ═══════════════════ YOUR POSITIONS ═══════════════════ */}
         {isConnected && (
-          <section className="border-b border-border-light">
-            <div className="px-6 lg:px-12">
-              <div className="max-w-site mx-auto py-8">
+          <PageSection className="border-b border-border-light py-8" data-fade-in>
                 {/* Section header */}
                 <div className="flex items-baseline justify-between mb-4">
                   <div>
-                    <h2 className="text-[20px] font-black tracking-[-0.01em] text-black">
+                    <h2 className="text-heading font-black tracking-[-0.01em] text-black">
                       Your Positions
                     </h2>
                     {batches.length > 0 && (
-                      <p className="text-[12px] text-text-muted mt-0.5">
-                        Earning across {activeBatches} batch{activeBatches !== 1 ? 'es' : ''} — {formatPoints(totalPointsPerTick)} pts/tick
+                      <p className="text-caption text-text-muted mt-0.5">
+                        Earning across {activeBatches} batch{activeBatches !== 1 ? 'es' : ''} — {formatPoints(totalPointsPerTick)} pts/round
                       </p>
                     )}
                   </div>
                   {batches.length > 0 && totalBatches > activeBatches && (
                     <Link
                       href="/"
-                      className="text-[12px] font-bold text-black border border-black px-3 py-1.5 hover:bg-black hover:text-white transition-colors"
+                      className="text-caption font-bold text-black border border-black px-3 py-1.5 hover:bg-black hover:text-white transition-colors"
                     >
                       Join {totalBatches - activeBatches} more
                     </Link>
@@ -266,13 +253,13 @@ export default function PointsPageClient() {
                 {/* Empty state */}
                 {!isLoading && batches.length === 0 && (
                   <div className="border border-border-light bg-surface/50 px-6 py-10 text-center">
-                    <p className="text-[15px] font-bold text-black mb-1">No active positions</p>
-                    <p className="text-[13px] text-text-secondary mb-4">
+                    <p className="text-body font-bold text-black mb-1">No active positions</p>
+                    <p className="text-caption text-text-secondary mb-4">
                       Join a Vision batch to start earning points. Empty batches give you 100% of the points.
                     </p>
                     <Link
                       href="/"
-                      className="inline-block px-5 py-2.5 bg-black text-white text-[13px] font-bold hover:bg-zinc-800 transition-colors"
+                      className="inline-block px-5 py-2.5 bg-black text-white text-caption font-bold hover:bg-zinc-800 transition-colors"
                     >
                       Browse Batches
                     </Link>
@@ -294,12 +281,12 @@ export default function PointsPageClient() {
                     <div className="border border-border-light overflow-hidden">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                          <tr className="border-b border-border-light text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
                             <th className="text-left py-2.5 px-4">Batch</th>
                             <th className="text-right py-2.5 px-4">Your Stake</th>
                             <th className="text-right py-2.5 px-4">Pool TVL</th>
                             <th className="text-right py-2.5 px-4">Your Share</th>
-                            <th className="text-right py-2.5 px-4">Pts / Tick</th>
+                            <th className="text-right py-2.5 px-4">Pts / Round</th>
                             <th className="text-right py-2.5 px-4">Pts / Hour</th>
                             <th className="text-right py-2.5 px-4">Est. Total</th>
                           </tr>
@@ -308,11 +295,11 @@ export default function PointsPageClient() {
                           {paginatedBatches.map((b, i) => (
                             <tr
                               key={b.batchId}
-                              className={`border-b border-border-light text-[13px] hover:bg-surface/60 transition-colors ${
+                              className={`border-b border-border-light text-caption hover:bg-surface/60 transition-colors ${
                                 i % 2 === 1 ? 'bg-surface/30' : ''
                               }`}
                             >
-                              <td className="py-3 px-4 font-mono text-[12px] text-text-muted">
+                              <td className="py-3 px-4 font-mono text-caption text-text-muted">
                                 #{b.batchId}
                               </td>
                               <td className="py-3 px-4 text-right font-mono tabular-nums font-semibold text-black">
@@ -322,14 +309,14 @@ export default function PointsPageClient() {
                                 {formatUsd(b.batchTvlUsd)}
                               </td>
                               <td className="py-3 px-4 text-right font-mono tabular-nums font-bold">
-                                <span className={b.myShare >= 0.5 ? 'text-green-600' : b.myShare >= 0.1 ? 'text-black' : 'text-text-secondary'}>
+                                <span className={b.myShare >= 0.5 ? 'text-color-up' : b.myShare >= 0.1 ? 'text-black' : 'text-text-secondary'}>
                                   {(b.myShare * 100).toFixed(1)}%
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right font-mono tabular-nums text-black">
                                 {b.pointsPerTick.toFixed(1)}
                               </td>
-                              <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-green-600">
+                              <td className="py-3 px-4 text-right font-mono tabular-nums font-bold text-color-up">
                                 +{formatPoints(b.pointsPerHour)}
                               </td>
                               <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
@@ -340,8 +327,8 @@ export default function PointsPageClient() {
                         </tbody>
                         {/* Totals row */}
                         <tfoot>
-                          <tr className="bg-black text-white text-[13px] font-bold">
-                            <td className="py-3 px-4 text-[11px] uppercase tracking-[0.06em] font-extrabold">
+                          <tr className="bg-black text-white text-caption font-bold">
+                            <td className="py-3 px-4 text-label uppercase tracking-[0.08em] font-extrabold">
                               Total
                             </td>
                             <td className="py-3 px-4 text-right font-mono tabular-nums">
@@ -352,7 +339,7 @@ export default function PointsPageClient() {
                             <td className="py-3 px-4 text-right font-mono tabular-nums">
                               {totalPointsPerTick.toFixed(1)}
                             </td>
-                            <td className="py-3 px-4 text-right font-mono tabular-nums text-green-400">
+                            <td className="py-3 px-4 text-right font-mono tabular-nums text-color-up">
                               +{formatPoints(totalPointsPerHour)}
                             </td>
                             <td className="py-3 px-4 text-right font-mono tabular-nums">
@@ -367,17 +354,17 @@ export default function PointsPageClient() {
                         <button
                           onClick={() => setPositionsPage(p => Math.max(1, p - 1))}
                           disabled={positionsPage === 1}
-                          className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="text-label font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
                           &larr; Previous
                         </button>
-                        <span className="text-[11px] text-text-muted">
+                        <span className="text-label text-text-muted">
                           Page {positionsPage} of {positionsTotalPages}
                         </span>
                         <button
                           onClick={() => setPositionsPage(p => Math.min(positionsTotalPages, p + 1))}
                           disabled={positionsPage === positionsTotalPages}
-                          className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          className="text-label font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
                           Next &rarr;
                         </button>
@@ -385,22 +372,18 @@ export default function PointsPageClient() {
                     )}
                   </>
                 )}
-              </div>
-            </div>
-          </section>
+          </PageSection>
         )}
 
         {/* ═══════════════════ LEADERBOARD ═══════════════════ */}
-        <section>
-          <div className="px-6 lg:px-12">
-            <div className="max-w-site mx-auto py-8 pb-16">
+        <PageSection className="py-8 pb-16" data-fade-in>
               <div className="flex items-baseline justify-between mb-4">
                 <div>
-                  <h2 className="text-[20px] font-black tracking-[-0.01em] text-black">
+                  <h2 className="text-heading font-black tracking-[-0.01em] text-black">
                     Leaderboard
                   </h2>
-                  <p className="text-[12px] text-text-muted mt-0.5">
-                    {lbLoading ? 'Loading...' : `${leaderboard.length} players ranked by volume`}
+                  <p className="text-caption text-text-muted mt-0.5">
+                    {lbLoading ? 'Loading leaderboard...' : `${leaderboard.length} players ranked by volume`}
                   </p>
                 </div>
               </div>
@@ -408,7 +391,7 @@ export default function PointsPageClient() {
               <div className="border border-border-light overflow-hidden">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border-medium bg-surface/50 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+                    <tr className="border-b border-border-medium bg-surface/50 text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
                       <th className="text-left py-2.5 px-4 w-12">Rank</th>
                       <th className="text-left py-2.5 px-4">Player</th>
                       <th className="text-right py-2.5 px-4">Volume</th>
@@ -419,7 +402,7 @@ export default function PointsPageClient() {
                   <tbody>
                     {lbLoading && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-text-muted">
+                        <td colSpan={5} className="px-4 py-12 text-center text-caption text-text-muted">
                           Loading leaderboard...
                         </td>
                       </tr>
@@ -427,7 +410,7 @@ export default function PointsPageClient() {
 
                     {!lbLoading && leaderboard.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-text-muted">
+                        <td colSpan={5} className="px-4 py-12 text-center text-caption text-text-muted">
                           No players yet — join a batch to compete
                         </td>
                       </tr>
@@ -440,7 +423,7 @@ export default function PointsPageClient() {
                       return (
                         <tr
                           key={entry.walletAddress}
-                          className={`border-b border-border-light text-[13px] transition-colors ${
+                          className={`border-b border-border-light text-caption transition-colors ${
                             isYou
                               ? 'bg-green-50 hover:bg-green-100/60'
                               : i % 2 === 1
@@ -449,17 +432,17 @@ export default function PointsPageClient() {
                           }`}
                         >
                           <td className="py-3 px-4">
-                            <span className={`font-mono font-bold ${rank <= 3 ? 'text-black text-[14px]' : 'text-text-muted text-[12px]'}`}>
+                            <span className={`font-mono font-bold ${rank <= 3 ? 'text-black text-body' : 'text-text-muted text-caption'}`}>
                               {rank <= 3 ? ['', '1st', '2nd', '3rd'][rank] : rank}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
-                              <span className={`font-mono text-[12px] ${isYou ? 'text-green-700 font-bold' : 'text-black font-medium'}`}>
+                              <span className={`font-mono text-caption ${isYou ? 'text-green-700 font-bold' : 'text-black font-medium'}`}>
                                 {truncAddr(entry.walletAddress)}
                               </span>
                               {isYou && (
-                                <span className="text-[10px] font-extrabold uppercase tracking-[0.06em] text-green-600 bg-green-100 px-1.5 py-0.5">
+                                <span className="text-micro font-extrabold uppercase tracking-[0.08em] text-color-up bg-green-100 px-1.5 py-0.5">
                                   You
                                 </span>
                               )}
@@ -471,7 +454,7 @@ export default function PointsPageClient() {
                           <td className="py-3 px-4 text-right font-mono tabular-nums text-text-secondary">
                             {entry.portfolioBets}
                           </td>
-                          <td className={`py-3 px-4 text-right font-mono tabular-nums font-bold ${entry.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <td className={`py-3 px-4 text-right font-mono tabular-nums font-bold ${entry.roi >= 0 ? 'text-color-up' : 'text-red-600'}`}>
                             {entry.roi >= 0 ? '+' : ''}{entry.roi.toFixed(1)}%
                           </td>
                         </tr>
@@ -485,25 +468,23 @@ export default function PointsPageClient() {
                   <button
                     onClick={() => setLeaderboardPage(p => Math.max(1, p - 1))}
                     disabled={leaderboardPage === 1}
-                    className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="text-label font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     &larr; Previous
                   </button>
-                  <span className="text-[11px] text-text-muted">
+                  <span className="text-label text-text-muted">
                     Page {leaderboardPage} of {leaderboardTotalPages}
                   </span>
                   <button
                     onClick={() => setLeaderboardPage(p => Math.min(leaderboardTotalPages, p + 1))}
                     disabled={leaderboardPage === leaderboardTotalPages}
-                    className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="text-label font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     Next &rarr;
                   </button>
                 </div>
               )}
-            </div>
-          </div>
-        </section>
+        </PageSection>
       </div>
 
       <Footer />

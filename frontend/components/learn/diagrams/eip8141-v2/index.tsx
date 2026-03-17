@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 
 const Placeholder = ({ h }: { h: string }) => (
   <div className="my-12 -mx-4 md:-mx-8">
-    <div className="bg-[#f5f5f5] border-t-[3px] border-black animate-pulse" style={{ height: h }} />
+    <div className="bg-surface border-t-[3px] border-black animate-pulse" style={{ height: h }} />
   </div>
 )
 

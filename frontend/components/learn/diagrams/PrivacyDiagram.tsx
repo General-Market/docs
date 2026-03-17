@@ -130,8 +130,8 @@ function MempoolModel({ position, color = '#f59e0b', label = 'Mempool', sub }: {
       {/* Label */}
       <Html center position={[0, 0.35, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-[10px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
-          {sub && <p className="text-[7px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>}
+          <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
+          {sub && <p className="text-[7px] text-text-muted mt-0.5 whitespace-nowrap">{sub}</p>}
         </div>
       </Html>
     </group>
@@ -207,7 +207,7 @@ function ChainModel({ position, color = '#22c55e', label = 'Chain' }: {
         <meshStandardMaterial color={color} roughness={0.4} />
       </instancedMesh>
       <Html center position={[position[0], position[1] + 0.28, position[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
+        <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
       </Html>
     </group>
   )
@@ -432,7 +432,7 @@ export function PrivacyDiagram() {
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
         <div className="h-[420px] md:h-[500px] cursor-grab active:cursor-grabbing">
-          <ClientOnly fallback={<div className="h-full animate-pulse bg-zinc-50" />}>
+          <ClientOnly fallback={<div className="h-full animate-pulse bg-muted" />}>
             <Canvas flat camera={{ position: [0, 6, 7], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>
               <color attach="background" args={['#ffffff']} />
               <ambientLight intensity={1.2} />
@@ -462,23 +462,23 @@ export function PrivacyDiagram() {
 
               {/* Column labels */}
               <Html center position={[-1.5, 1.0, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[11px] text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before</p>
+                <p className="text-label text-red-400 tracking-[0.08em] uppercase whitespace-nowrap font-bold">Before</p>
               </Html>
               <Html center position={[1.5, 1.0, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[11px] text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After</p>
+                <p className="text-label text-color-up tracking-[0.08em] uppercase whitespace-nowrap font-bold">After</p>
               </Html>
 
               {/* ── BEFORE path (red) ── */}
               <PersonModel position={[-1.5, 0, 1.8]} color="#ef4444" />
               <Html center position={[-1.5, 0.55, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[10px] font-bold text-red-600 whitespace-nowrap">User</p>
+                <p className="text-micro font-bold text-color-down whitespace-nowrap">User</p>
               </Html>
               <FlowConnection start={bUser} end={bBroadcaster} color="#ef4444" />
 
               <BroadcasterModel position={[-1.5, 0, 0.2]} color="#ef4444" />
               <Html center position={[-1.5, 0.6, 0.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-[10px] font-bold text-red-600 whitespace-nowrap">Broadcaster</p>
+                  <p className="text-micro font-bold text-color-down whitespace-nowrap">Broadcaster</p>
                   <p className="text-[7px] text-red-400 whitespace-nowrap">centralized relayer</p>
                 </div>
               </Html>
@@ -493,13 +493,13 @@ export function PrivacyDiagram() {
               {/* ── AFTER path (green) ── */}
               <PersonModel position={[1.5, 0, 1.8]} color="#22c55e" />
               <Html center position={[1.5, 0.55, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[10px] font-bold text-emerald-600 whitespace-nowrap">User</p>
+                <p className="text-micro font-bold text-color-up whitespace-nowrap">User</p>
               </Html>
 
               {/* Direct — skips broadcaster */}
               <FlowConnection start={aUser} end={aMempool} color="#22c55e" particleCount={14} />
               <Html center position={[2.6, 0.2, 0.3]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                <p className="text-[9px] text-emerald-500 tracking-[0.1em] uppercase whitespace-nowrap font-bold">Direct!</p>
+                <p className="text-[9px] text-color-up tracking-[0.08em] uppercase whitespace-nowrap font-bold">Direct!</p>
               </Html>
 
               <MempoolModel position={[1.5, 0, -1.2]} color="#22c55e" sub="frame tx" />
@@ -514,22 +514,22 @@ export function PrivacyDiagram() {
             </Canvas>
           </ClientOnly>
         </div>
-        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
+        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-border-light">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">Before (relayer)</span>
+              <span className="text-micro text-text-muted tracking-[0.08em]">Before (relayer)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">After (direct)</span>
+              <span className="text-micro text-text-muted tracking-[0.08em]">After (direct)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <svg className="w-3 h-3 text-red-400" viewBox="0 0 12 12"><path d="M2 2 L10 10 M10 2 L2 10" stroke="currentColor" strokeWidth="2" fill="none" /></svg>
-              <span className="text-[10px] text-text-muted tracking-wide">Eliminated</span>
+              <span className="text-micro text-text-muted tracking-[0.08em]">Eliminated</span>
             </div>
           </div>
-          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

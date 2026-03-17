@@ -382,7 +382,7 @@ function VoteResult({ index, reducedMotion }: { index: number; reducedMotion: bo
         }}
       >
         <span
-          className="text-[14px] font-bold"
+          className="text-body font-bold"
           style={{ color: isBuggy ? RED : GREEN }}
         >
           {isBuggy ? '\u2717' : '\u2713'}
@@ -446,7 +446,7 @@ function VoteTally({ reducedMotion }: { reducedMotion: boolean }) {
           className="flex flex-col items-center gap-1"
           style={{ opacity: 0 }}
         >
-          <p className="text-[11px] font-mono font-bold whitespace-nowrap" style={{ color: '#52525b' }}>
+          <p className="text-label font-mono font-bold whitespace-nowrap" style={{ color: '#52525b' }}>
             <span style={{ color: GREEN }}>4 {'\u2713'}</span>
             {'  '}
             <span style={{ color: RED }}>1 {'\u2717'}</span>
@@ -461,7 +461,7 @@ function VoteTally({ reducedMotion }: { reducedMotion: boolean }) {
           className="flex flex-col items-center gap-1"
           style={{ opacity: 0 }}
         >
-          <p className="text-[13px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-caption font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
             4-of-5 VALID
           </p>
           <p className="text-[8px] font-mono whitespace-nowrap" style={{ color: GREEN }}>
@@ -633,7 +633,7 @@ function ComputingSparks({ reducedMotion }: { reducedMotion: boolean }) {
 function TitleLabel() {
   return (
     <Html center position={[0, 1.6, -1.5]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-      <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#52525b' }}>
+      <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#52525b' }}>
         Multi-Prover Consensus
       </p>
     </Html>
@@ -767,19 +767,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Block</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Block</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Valid proof</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Valid proof</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Buggy proof</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Buggy proof</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Flagged</span>
+        <span className="text-micro text-text-muted tracking-[0.08em]">Flagged</span>
       </div>
     </div>
   )

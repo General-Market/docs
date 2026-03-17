@@ -29,13 +29,13 @@ function getStatusIcon(status: KeeperSignatureStatus): {
 } {
   switch (status) {
     case 'signed':
-      return { icon: '✓', color: 'text-green-600' }
+      return { icon: '✓', color: 'text-color-up' }
     case 'pending':
-      return { icon: '⏳', color: 'text-yellow-600' }
+      return { icon: '⏳', color: 'text-color-warning' }
     case 'failed':
-      return { icon: '✗', color: 'text-red-600' }
+      return { icon: '✗', color: 'text-color-down' }
     case 'timeout':
-      return { icon: '⏱', color: 'text-orange-600' }
+      return { icon: '⏱', color: 'text-color-warning' }
     default:
       return { icon: '?', color: 'text-text-muted' }
   }
@@ -51,11 +51,11 @@ function getStatusText(keeper: KeeperSignature): string {
     case 'pending':
       return 'Pending...'
     case 'failed':
-      return keeper.error || 'Failed'
+      return keeper.error || 'Signature failed'
     case 'timeout':
-      return 'Timeout'
+      return 'Timed out'
     default:
-      return 'Unknown'
+      return 'Status unknown'
   }
 }
 
@@ -130,19 +130,19 @@ export function KeeperSignatureList({
         <span>{t('keeper_signatures.header', { signed: statusCounts.signed, total: keepers.length })}</span>
         <div className="flex gap-2">
           {statusCounts.signed > 0 && (
-            <span className="text-green-600">{t('keeper_signatures.signed', { count: statusCounts.signed })}</span>
+            <span className="text-color-up">{t('keeper_signatures.signed', { count: statusCounts.signed })}</span>
           )}
           {statusCounts.pending > 0 && (
-            <span className="text-yellow-600">{t('keeper_signatures.pending_count', { count: statusCounts.pending })}</span>
+            <span className="text-color-warning">{t('keeper_signatures.pending_count', { count: statusCounts.pending })}</span>
           )}
           {(statusCounts.failed + statusCounts.timeout) > 0 && (
-            <span className="text-red-600">{t('keeper_signatures.failed', { count: statusCounts.failed + statusCounts.timeout })}</span>
+            <span className="text-color-down">{t('keeper_signatures.failed', { count: statusCounts.failed + statusCounts.timeout })}</span>
           )}
         </div>
       </div>
 
       {/* Keeper list */}
-      <div className="space-y-2">
+      <div className="space-y-2 stagger">
         {sortedKeepers.map((keeper) => {
           const { icon, color } = getStatusIcon(keeper.status)
           const statusText = getStatusText(keeper)
@@ -150,7 +150,7 @@ export function KeeperSignatureList({
           return (
             <div
               key={keeper.address}
-              className="flex items-center justify-between py-2 px-3 bg-muted rounded-lg border border-border-light"
+              className="flex items-center justify-between py-2 px-3 bg-muted rounded-md border border-border-light animate-fade-up"
             >
               <div className="flex items-center gap-2">
                 <span className={`text-base ${color}`}>{icon}</span>
@@ -189,9 +189,9 @@ export function KeeperSignatureListCompact({
         <span
           key={keeper.address}
           className={`w-2 h-2 rounded-full ${
-            keeper.status === 'signed' ? 'bg-green-500' :
-            keeper.status === 'pending' ? 'bg-yellow-500' :
-            'bg-red-500'
+            keeper.status === 'signed' ? 'bg-color-up' :
+            keeper.status === 'pending' ? 'bg-color-warning' :
+            'bg-color-down'
           }`}
           title={`${truncateAddress(keeper.address)}: ${keeper.status}`}
         />

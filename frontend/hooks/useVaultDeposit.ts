@@ -75,7 +75,7 @@ export function useVaultDeposit(): UseVaultDepositReturn {
   } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Track which action is in-flight for toast label
-  const actionLabel = useRef('Vault operation')
+  const actionLabel = useRef('Vault transaction')
 
   // Toast notifications
   useTransactionNotification({

@@ -37,10 +37,10 @@ export default function ExplorerPageClient() {
     <main className="min-h-screen bg-page">
       <div className="max-w-site-wide mx-auto px-4 md:px-8">
         <div className="pt-10 pb-4">
-          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">
+          <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">
             Network
           </p>
-          <h1 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">
+          <h1 className="text-display font-black text-black">
             Explorer
           </h1>
         </div>
@@ -53,7 +53,7 @@ export default function ExplorerPageClient() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-[13px] font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                className={`px-4 py-3 text-caption font-semibold border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-black text-black'
                     : 'border-transparent text-text-muted hover:text-text-secondary'
@@ -68,7 +68,7 @@ export default function ExplorerPageClient() {
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-2.5 py-1 text-[11px] font-bold rounded ${
+                className={`px-2.5 py-1 text-label font-bold rounded ${
                   range === r ? 'bg-black text-white' : 'text-text-muted hover:text-black'
                 }`}
               >
@@ -78,17 +78,18 @@ export default function ExplorerPageClient() {
             <button
               onClick={refresh}
               disabled={loading}
-              className="ml-2 px-3 py-1 text-[11px] font-bold text-text-muted hover:text-black disabled:opacity-50"
+              className="ml-2 px-3 py-1 text-label font-bold text-text-muted hover:text-black disabled:opacity-50"
             >
-              {loading ? 'Loading...' : 'Refresh'}
+              {loading ? 'Loading network data...' : 'Refresh'}
             </button>
           </div>
         </div>
 
         {error && (
           <div className="mt-4 border border-color-down/50 bg-surface-down rounded-card px-4 py-3">
-            <p className="text-color-down text-[13px] font-semibold">{error}</p>
-            <button onClick={refresh} className="mt-2 text-[12px] font-bold text-color-info underline">
+            <p className="text-color-down text-caption font-semibold">Unable to load network data.</p>
+            <p className="text-text-secondary text-caption mt-0.5">{error}</p>
+            <button onClick={refresh} className="mt-2 text-caption font-bold text-color-info underline">
               Retry
             </button>
           </div>

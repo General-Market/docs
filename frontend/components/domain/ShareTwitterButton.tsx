@@ -49,7 +49,7 @@ export function ShareTwitterButton({ agent, className = '' }: ShareTwitterButton
     <button
       type="button"
       onClick={handleClick}
-      className={`inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border-light text-text-primary font-mono border border-border-light hover:border-border-medium transition-colors rounded-lg ${className}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border-light text-text-primary font-mono border border-border-light hover:border-border-medium transition-colors rounded-md ${className}`}
       aria-label={t('share.share_aria')}
     >
       <XIcon />

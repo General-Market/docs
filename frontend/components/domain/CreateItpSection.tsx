@@ -9,7 +9,7 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { ensureCorrectChain } from '@/hooks/useChainWrite'
 import { settlementChainId, settlementChain } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
-import { getCoinGeckoUrl } from '@/lib/coingecko'
+import { getCoinGeckoUrl, getCoinMap } from '@/lib/coingecko'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useTranslations } from 'next-intl'
@@ -133,12 +133,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       .catch(() => { /* deployed-assets.json not available — user must select manually */ })
   }, [])
 
-  // Load symbol → {id, image} mapping for logos from static coin-map
+  // Load symbol → {id, image} mapping from shared cache (single fetch)
   useEffect(() => {
-    fetch('/coin-map.json', { signal: AbortSignal.timeout(10_000) })
-      .then(res => res.ok ? res.json() : Promise.reject('not found'))
-      .then((data: Record<string, CoinEntry>) => setCoinMap(data))
-      .catch(() => { /* logos won't show — acceptable fallback */ })
+    getCoinMap().then(data => setCoinMap(data as Record<string, CoinEntry>))
   }, [])
 
   // Pre-populate from backtester when initialHoldings changes
@@ -357,7 +354,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       })
     } catch (e: any) {
       console.error('[CreateITP] writeContractAsync threw:', e)
-      setTxError(e.message || 'Failed to submit transaction')
+      setTxError(e.message || 'Transaction failed. Check your wallet and try again.')
       capture('create_itp_failed', { error_message: e.message || 'writeContractAsync threw', step: 'submit' })
     }
   }
@@ -376,8 +373,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   useEffect(() => {
     if (confirmError) {
       console.error('[CreateITP] confirmError:', confirmError)
-      setTxError(confirmError.message?.slice(0, 200) || 'Confirmation failed')
-      capture('create_itp_failed', { error_message: confirmError.message?.slice(0, 200) || 'Confirmation failed', step: 'confirm' })
+      setTxError(confirmError.message?.slice(0, 200) || 'Transaction may still be processing — check your wallet.')
+      capture('create_itp_failed', { error_message: confirmError.message?.slice(0, 200) || 'Transaction may still be processing', step: 'confirm' })
     }
   }, [confirmError])
 
@@ -421,16 +418,16 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     <div id="create-itp" className="pb-10">
       {/* Section header */}
       <div className="pt-10 mb-6">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
-        <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
+        <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-display font-black text-black">{t('heading.title')}</h2>
+        <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
       </div>
 
       {/* Collapsed toggle button */}
       {!expanded && (
         <button
           onClick={onToggle}
-          className="w-full bg-card rounded-xl shadow-card border border-border-light p-4 hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
+          className="w-full bg-card rounded-card shadow-card border border-border-light p-4 hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
         >
           <div>
             <span className="text-sm text-text-secondary">{t('collapsed.description')}</span>
@@ -463,7 +460,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
                 {/* LEFT — Select Assets */}
                 <div className="border border-border-light">
-                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                  <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('select_assets.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
@@ -476,12 +473,12 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder={tc('actions.search')}
-                        className="bg-card border border-border-medium rounded-lg px-3 py-1 text-sm text-text-primary w-32 focus:outline-none focus:border-zinc-400"
+                        className="bg-card border border-border-medium rounded-md px-3 py-1 text-sm text-text-primary w-32 focus:outline-none focus:border-brand"
                       />
                     </div>
                     <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto">
                       {filteredAssets.map(asset => (
-                        <span key={asset.address} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-all">
+                        <span key={asset.address} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-md px-2.5 py-1.5 text-xs hover:border-border-medium hover:shadow-sm transition-colors">
                           <button
                             onClick={() => addAsset(asset)}
                             className="inline-flex items-center gap-1.5"
@@ -509,7 +506,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
                 {/* RIGHT — Configure Weights */}
                 <div className="border border-border-light">
-                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                  <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('configure_weights.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
@@ -524,14 +521,14 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                           <div className="flex gap-1.5">
                             <button
                               onClick={distributeEvenly}
-                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors"
+                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-md px-2.5 py-1 transition-colors"
                             >
                               {t('configure_weights.equal')}
                             </button>
                             <button
                               onClick={distributeByMcap}
                               disabled={isFetchingMcap}
-                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-lg px-2.5 py-1 transition-colors disabled:opacity-50"
+                              className="text-xs text-text-secondary hover:bg-card border border-border-light rounded-md px-2.5 py-1 transition-colors disabled:opacity-50"
                             >
                               {isFetchingMcap ? t('configure_weights.mcap_loading') : t('configure_weights.mcap')}
                             </button>
@@ -539,7 +536,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                         </div>
                         <div className="space-y-1.5 max-h-80 overflow-y-auto">
                           {selectedAssets.map(asset => (
-                            <div key={asset.address} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light">
+                            <div key={asset.address} className="flex items-center gap-2 bg-card rounded-md px-2 py-1.5 border border-border-light">
                               <CoinLogo symbol={asset.symbol} coinMap={coinMap} size={18} />
                               <span className="w-12 text-text-primary font-mono text-xs tabular-nums truncate">{asset.symbol}</span>
                               <a
@@ -559,7 +556,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                                 max="100"
                                 value={asset.weight}
                                 onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                                className="flex-1 accent-zinc-900"
+                                className="flex-1 accent-brand"
                               />
                               <input
                                 type="number"
@@ -567,7 +564,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                                 max="100"
                                 value={asset.weight}
                                 onChange={(e) => updateWeight(asset.address, Number(e.target.value))}
-                                className="w-12 bg-muted border border-border-medium rounded px-1.5 py-0.5 text-text-primary text-center text-xs font-mono tabular-nums focus:outline-none focus:border-zinc-400"
+                                className="w-12 bg-muted border border-border-medium rounded px-1.5 py-0.5 text-text-primary text-center text-xs font-mono tabular-nums focus:outline-none focus:border-brand"
                               />
                               <span className="text-text-muted text-xs">%</span>
                               <button
@@ -589,7 +586,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                           <button
                             onClick={() => setShowFinalizeModal(true)}
                             disabled={selectedAssets.length === 0 || !isValidWeights}
-                            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="bg-brand text-white font-medium rounded-md px-6 py-2.5 hover:bg-brand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors press"
                           >
                             {t('configure_weights.continue')}
                           </button>
@@ -611,27 +608,27 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
               )}
 
               {hasNonceGap && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
+                <div className="bg-surface-warning border border-color-warning/50 rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.pending_tx_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.pending_tx_description', { count: pendingCount })}</p>
                 </div>
               )}
 
               {stuckWarning && (
-                <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-sm">
+                <div className="bg-surface-warning border border-color-warning/50 rounded-md p-3 text-color-warning text-sm">
                   <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">
+                <div className="bg-color-down/10 border border-color-down/30 rounded-md p-3 text-color-down text-xs break-all">
                   {txError}
                 </div>
               )}
 
               {isSuccess && (
-                <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
+                <div className="bg-color-up/10 border border-color-up/30 rounded-md p-3 text-color-up text-xs">
                   <p className="font-medium">{t('success.title')}</p>
                   <p className="mt-1">{t('success.description')}</p>
                 </div>
@@ -707,7 +704,7 @@ function FinalizeItpModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-md shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
@@ -722,21 +719,21 @@ function FinalizeItpModal({
           {/* Name + Symbol */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
               <input
                 type="text" value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 32))}
                 placeholder={t('finalize.name_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
               <input
                 type="text" value={symbol}
                 onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
                 placeholder={t('finalize.symbol_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none"
               />
             </div>
           </div>
@@ -744,62 +741,62 @@ function FinalizeItpModal({
           {/* Oracle Name */}
           {needsOracleName && (
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
               <input
                 type="text" value={oracleName}
                 onChange={(e) => setOracleName(e.target.value.slice(0, 64))}
                 placeholder={t('finalize.oracle_name_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none"
               />
             </div>
           )}
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, 280))}
               placeholder={t('finalize.description_placeholder')}
               rows={2}
-              className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
+              className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none resize-none"
             />
-            <span className="text-[10px] text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
+            <span className="text-micro text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
           </div>
 
           {/* Website + Video */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
               <input
                 type="url" value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
                 placeholder={t('finalize.website_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
               <input
                 type="url" value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
                 placeholder={t('finalize.video_placeholder')}
-                className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
+                className="w-full bg-muted border border-border-medium text-text-primary rounded-md px-4 py-2 focus:border-brand focus:outline-none"
               />
             </div>
           </div>
 
           {/* Status messages */}
           {txError && (
-            <div className="bg-color-down/10 border border-color-down/30 rounded-lg p-3 text-color-down text-xs break-all">{txError}</div>
+            <div className="bg-color-down/10 border border-color-down/30 rounded-md p-3 text-color-down text-xs break-all">{txError}</div>
           )}
           {stuckWarning && (
-            <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-3 text-orange-400 text-xs">
+            <div className="bg-surface-warning border border-color-warning/50 rounded-md p-3 text-color-warning text-xs">
               {t('finalize.tx_stuck')} <button onClick={onCancel} className="underline">{tc('actions.cancel')}</button>
             </div>
           )}
           {isSuccess && (
-            <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
+            <div className="bg-color-up/10 border border-color-up/30 rounded-md p-3 text-color-up text-xs">
               <p className="font-medium">{t('success.title')}</p>
               <p className="mt-1">{t('success.description')}</p>
             </div>
@@ -814,7 +811,7 @@ function FinalizeItpModal({
           <WalletActionButton
             onClick={onSubmit}
             disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
-            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="bg-brand text-white font-medium rounded-md px-6 py-2.5 hover:bg-brand-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors press"
           >
             {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
           </WalletActionButton>
@@ -838,12 +835,12 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
       {/* Name + Symbol fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.itp_name')}</p>
-          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5">{t('skeleton.itp_name')}</p>
+          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-md animate-pulse" />
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.symbol')}</p>
-          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5">{t('skeleton.symbol')}</p>
+          <div className="w-full h-[38px] bg-muted border border-border-medium rounded-md animate-pulse" />
         </div>
       </div>
 
@@ -851,23 +848,23 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* LEFT — Select Assets */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('select_assets.skeleton_title')}
           </div>
           <div className="p-5">
             <div className="flex justify-between items-center mb-3">
               <span className="text-xs font-semibold text-text-muted">— available</span>
-              <div className="w-32 h-[30px] bg-card border border-border-medium rounded-lg animate-pulse" />
+              <div className="w-32 h-[30px] bg-card border border-border-medium rounded-md animate-pulse" />
             </div>
             <div className="flex flex-wrap gap-1.5">
               {SKELETON_SYMBOLS.map(sym => (
-                <span key={sym} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-lg px-2.5 py-1.5 text-xs opacity-50">
+                <span key={sym} className="inline-flex items-center gap-1.5 bg-card text-text-primary border border-border-light rounded-md px-2.5 py-1.5 text-xs opacity-50">
                   <CoinLogo symbol={sym} coinMap={coinMap} size={18} />
                   <span className="font-medium">{sym}</span>
                 </span>
               ))}
               {[0, 1, 2, 3, 4].map(i => (
-                <div key={i} className="h-[30px] bg-border-light rounded-lg animate-pulse" style={{ width: `${56 + (i % 3) * 12}px` }} />
+                <div key={i} className="h-[30px] bg-border-light rounded-md animate-pulse" style={{ width: `${56 + (i % 3) * 12}px` }} />
               ))}
             </div>
           </div>
@@ -875,7 +872,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
 
         {/* RIGHT — Configure Weights */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('configure_weights.skeleton_title')}
           </div>
           <div className="p-5">
@@ -885,7 +882,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
             </div>
             <div className="space-y-1.5">
               {SKELETON_SYMBOLS.slice(0, 5).map(sym => (
-                <div key={sym} className="flex items-center gap-2 bg-card rounded-lg px-2 py-1.5 border border-border-light opacity-50">
+                <div key={sym} className="flex items-center gap-2 bg-card rounded-md px-2 py-1.5 border border-border-light opacity-50">
                   <CoinLogo symbol={sym} coinMap={coinMap} size={18} />
                   <span className="w-12 text-text-primary font-mono text-xs">{sym}</span>
                   <div className="flex-1 h-1.5 bg-border-light rounded animate-pulse" />

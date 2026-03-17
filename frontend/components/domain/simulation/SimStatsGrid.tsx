@@ -58,13 +58,15 @@ export function SimStatsGrid({ stats }: SimStatsGridProps) {
   ]
 
   return (
-    <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
-      {items.map(item => (
-        <div key={item.label} className="bg-white rounded-xl shadow-card border border-border-light p-6 text-center">
-          <div className="text-xs font-medium uppercase tracking-widest text-text-muted">{item.label}</div>
-          <div className={`text-2xl font-bold tabular-nums font-mono mt-1 ${item.color}`}>{item.value}</div>
-        </div>
-      ))}
+    <div className="border-t-[3px] border-b border-black border-b-border-light bg-surface mb-6">
+      <div className="grid grid-cols-3 md:grid-cols-5 divide-x divide-border-light stagger">
+        {items.map(item => (
+          <div key={item.label} className="px-4 py-4 animate-fade-up hover-lift">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">{item.label}</div>
+            <div className={`text-lg font-bold tabular-nums font-mono mt-0.5 ${item.color}`}>{item.value}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

@@ -4,37 +4,37 @@
   "coreContracts": [
     {
       "name": "Index",
-      "address": "0x97d2117cF135896C308828950Da841FEc4160F07",
+      "address": "0xC61d8C7ed6da43D09072a80e1ebe740876BA981A",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "OracleRegistry",
-      "address": "0xEd8912AD58C46b0902dCE885395935390E734EF1",
+      "address": "0x1DC7d85fd61466BF6c73EEbef4E3fA644818dff5",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Vision",
-      "address": "0x8aF92d1D6397c0073f47D1f754983A2Da51C06C8",
+      "address": "0xAFD85eFB3b8bfC929B508C0c2cF12d5379584D60",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3_WUSDC",
-      "address": "0xDd65a103462E62d98D7Ed71c66C146E2415C4641",
+      "address": "0xF6721b22BecE35FB8862FeCb56ee54d49Cf9b21E",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "CollateralRegistry",
-      "address": "0xba2f31f78F43106cb64f49d0241869a722669015",
+      "address": "0x5606aDed9d331d3669553015a8A8eCe6dCdaba8D",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3BridgeProxy",
-      "address": "0xDd2D80a03CD6f43e94EB10c6a3218420175D5f17",
+      "address": "0xCf388E42A9d929451aa47245208F7557Aa1bACb9",
       "hasCode": true,
       "chain": "l3"
     }
@@ -42,25 +42,31 @@
   "optionalContracts": [
     {
       "name": "MockBitgetVault",
-      "address": "0xCD6305A4f1ABecE4FDbbbB9840A94CcD94AE61ac",
-      "hasCode": false,
+      "address": "0x6126360674ACaB833893107C3FeA842D2244857f",
+      "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Governance",
-      "address": "0xF007f86501737595748EFb92FE2D7D50E7Ec4c46",
+      "address": "0x9c655414Cb0a077510472408fe1232eF82403746",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3BridgeCustody",
-      "address": "0x7d21FB4122A784FE0430b830Fc509d20c398603f",
+      "address": "0x196D751486C69ee41c4753248BF45Edfa8F8Aac8",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "BLSCustody",
-      "address": "0xE9389CBD79df49046a833bC422879a1bB27D985f",
+      "address": "0x7CCc669908F51202ba834dE49D6578A2E8e46416",
+      "hasCode": true,
+      "chain": "l3"
+    },
+    {
+      "name": "L3BridgedItpFactory",
+      "address": "0xde8Bd6360b084AC7982B95122FfF42690621CF9B",
       "hasCode": true,
       "chain": "l3"
     }
@@ -72,10 +78,8 @@
     "stale": false
   },
   "visionBatches": {
-    "count": 45,
+    "count": 47,
     "firstBatchExists": false
   },
-  "staleAddresses": [
-    "[optional] MockBitgetVault (0xCD6305A4f1ABecE4FDbbbB9840A94CcD94AE61ac) has no code on L3"
-  ]
+  "staleAddresses": []
 }
