@@ -373,46 +373,54 @@ cmd_deploy() {
     BLS_PUBKEY_1=$(target/release/bls-tool pubkey --seed-index 1 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 1 failed${NC}"; exit 1; }
     BLS_PUBKEY_2=$(target/release/bls-tool pubkey --seed-index 2 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 2 failed${NC}"; exit 1; }
 
+    # addOracle requires: (address oracle, bytes32 ipPort, bytes pubkey, bytes popSig)
+    # POP = BLS sign of keccak256(abi.encode("INDEX_BLS_POP", chainId, registryAddr, oracleAddr, pubkey))
+    _register_one_oracle() {
+        local IDX=$1 ORACLE_ADDR=$2 IP_PORT=$3 PUBKEY=$4
+        # Convert IP string to bytes32 (right-padded)
+        local IP_BYTES32=$(cast --format-bytes32 "$IP_PORT" 2>/dev/null || printf "0x%-64s" "$(echo -n "$IP_PORT" | xxd -p)" | tr ' ' '0')
+        # Compute POP message hash
+        local POP_MSG=$(cast keccak "$(cast abi-encode 'f(string,uint256,address,address,bytes)' 'INDEX_BLS_POP' $CHAIN_ID $ORACLE_REGISTRY_ADDR $ORACLE_ADDR $PUBKEY)" 2>/dev/null)
+        # Sign POP with BLS key
+        local POP_SIG=$(target/release/bls-tool sign --seed-indices "$IDX" --message-hash "$POP_MSG" 2>/dev/null)
+        if [ -z "$POP_SIG" ]; then echo -e "  ${RED}BLS POP sign failed for oracle $((IDX+1))${NC}"; exit 1; fi
+        # Call addOracle with correct 4-param signature
+        cast send "$ORACLE_REGISTRY_ADDR" \
+            "addOracle(address,bytes32,bytes,bytes)" \
+            "$ORACLE_ADDR" "$IP_BYTES32" "$PUBKEY" "$POP_SIG" \
+            --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+            --legacy --gas-price 200000000 --gas-limit 500000 \
+            > /dev/null 2>&1 || { echo -e "  ${RED}addOracle $((IDX+1)) failed${NC}"; exit 1; }
+    }
+
     echo -e "  Adding oracle 1 ($ORACLE_1_ADDR_BLS)..."
-    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
-        "$ORACLE_1_ADDR_BLS" "$BLS_PUBKEY_0" "oracle-1" \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 1 failed${NC}"; exit 1; }
-    AGG_PUBKEY_1=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0 failed${NC}"; exit 1; }
+    _register_one_oracle 0 "$ORACLE_1_ADDR_BLS" "127.0.0.1:9001" "$BLS_PUBKEY_0"
+    AGG_PUBKEY_1=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0 failed${NC}"; exit 1; }
     cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
         "$AGG_PUBKEY_1" 1 \
         --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
         --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 1 failed${NC}"; exit 1; }
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 1 failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Oracle 1 registered${NC}"
 
     echo -e "  Adding oracle 2 ($ORACLE_2_ADDR_BLS)..."
-    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
-        "$ORACLE_2_ADDR_BLS" "$BLS_PUBKEY_1" "oracle-2" \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 2 failed${NC}"; exit 1; }
-    AGG_PUBKEY_2=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0,1 failed${NC}"; exit 1; }
+    _register_one_oracle 1 "$ORACLE_2_ADDR_BLS" "127.0.0.1:9002" "$BLS_PUBKEY_1"
+    AGG_PUBKEY_2=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1 failed${NC}"; exit 1; }
     cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
         "$AGG_PUBKEY_2" 2 \
         --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
         --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 2 failed${NC}"; exit 1; }
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 2 failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Oracle 2 registered${NC}"
 
     echo -e "  Adding oracle 3 ($ORACLE_3_ADDR_BLS)..."
-    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
-        "$ORACLE_3_ADDR_BLS" "$BLS_PUBKEY_2" "oracle-3" \
-        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
-        --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 3 failed${NC}"; exit 1; }
-    AGG_PUBKEY_3=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1,2 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0,1,2 failed${NC}"; exit 1; }
+    _register_one_oracle 2 "$ORACLE_3_ADDR_BLS" "127.0.0.1:9003" "$BLS_PUBKEY_2"
+    AGG_PUBKEY_3=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1,2 2>/dev/null) || { echo -e "  ${RED}agg-pubkey 0,1,2 failed${NC}"; exit 1; }
     cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
         "$AGG_PUBKEY_3" 3 \
         --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
         --legacy --gas-price 200000000 --gas-limit 500000 \
-        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 3 failed${NC}"; exit 1; }
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey 3 failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Oracle 3 registered${NC}"
 
     # Verify all 3 oracles registered
