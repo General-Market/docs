@@ -168,10 +168,10 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
 
       // Check if Morpho market actually exists (was createMarket called?)
       if (morphoCheck) {
-        // market(bytes32) selector = 0x44e2e5c4
+        // market(bytes32) selector = 0x5c60e39a
         const marketId = morphoCheck.contracts.MARKET_ID.replace('0x', '');
         const marketResult = await l3RpcCall('eth_call', [
-          { to: morphoCheck.contracts.MORPHO, data: '0x44e2e5c4' + marketId },
+          { to: morphoCheck.contracts.MORPHO, data: '0x5c60e39a' + marketId },
           'latest',
         ]) as string;
         // market() returns (..., lastUpdate, fee) — lastUpdate at offset 256-320
