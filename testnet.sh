@@ -596,7 +596,12 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
 
     # Sync deployment files + token registries
     echo -e "${BLUE}[13/14] Syncing deployment files + token registries...${NC}"
+
+    # Patch any stale addresses from broadcast (catches partial deploys, manual reruns)
+    ./sync-deployment.sh testnet $CHAIN_ID 2>/dev/null || true
+    # Now copy the (potentially patched) env deployment back to active
     if [ -d "envs/testnet" ]; then
+        cp envs/testnet/deployment.json "$DEPLOYMENT_FILE" 2>/dev/null || true
         [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
         [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
         [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
@@ -955,7 +960,6 @@ services:
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
 $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
@@ -975,7 +979,6 @@ $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
 $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
@@ -995,7 +998,6 @@ $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
       EXCHANGE_MODE: "mock"
     command:
 $(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
@@ -1050,8 +1052,19 @@ _start_curator_docker() {
     VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
     MARKET_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
     ORACLE_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ITP_NAV_ORACLE'])" 2>/dev/null || echo "")
+    CURATOR_IRM_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ADAPTIVE_IRM'])" 2>/dev/null || echo "")
+    MIRROR_REG_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
+    LOAN_TOKEN_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['loanToken'])" 2>/dev/null || echo "")
     ITP_ADDR=$(read_deployment_addr "BridgedITP")
+    INDEX_ADDR=$(read_deployment_addr "Index")
     REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
+
+    # Copy ITPNAVOracle bytecode for auto market deployment
+    local ORACLE_BC="contracts/out/ITPNAVOracle.sol/ITPNAVOracle.json"
+    if [ -f "$ORACLE_BC" ]; then
+        rsync -az -e "$RSYNC_SSH_BE" "$ORACLE_BC" \
+            "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/oracle-bytecode.json"
+    fi
 
     if [ -z "$MORPHO_ADDR" ] || [ -z "$VAULT_ADDR" ]; then
         echo -e "  ${YELLOW}Curator skipped — no Morpho deployment${NC}"
@@ -1071,6 +1084,7 @@ services:
   curator:
     volumes:
       - /tmp/curator-key.txt:/tmp/curator-key.txt:ro
+      - $VPS_BE_DIR/oracle-bytecode.json:/app/oracle-bytecode.json:ro
     command:
       - "--unified-mode"
       - "--rpc-url"
@@ -1107,6 +1121,16 @@ services:
       - "300"
       - "--data-node-url"
       - "http://localhost:$DATA_NODE_PORT"
+      - "--index-address"
+      - "$INDEX_ADDR"
+      - "--curator-irm-address"
+      - "$CURATOR_IRM_ADDR"
+      - "--loan-token-address"
+      - "$LOAN_TOKEN_ADDR"
+      - "--oracle-bytecode-path"
+      - "/app/oracle-bytecode.json"
+      - "--market-deploy-interval-secs"
+      - "300"
       - "--log-level"
       - "info"
 YEOF
@@ -1450,6 +1474,7 @@ case "${1:-help}" in
     status)      cmd_status ;;
     update)      cmd_update ;;
     refresh-batches) cmd_refresh_batches ;;
+    sync-deployment) ./sync-deployment.sh testnet $CHAIN_ID ;;
     logs)        cmd_logs "$2" ;;
     help|--help|-h)
         echo "Usage: ./testnet.sh <command> [args]"
@@ -1463,6 +1488,7 @@ case "${1:-help}" in
         echo "  status            Check what's running"
         echo "  update            git pull + rebuild + restart on both VPSes"
         echo "  refresh-batches   Redeploy Vision batches with fresh version"
+        echo "  sync-deployment   Patch deployment JSON from latest forge broadcasts"
         echo "  logs [svc]        Tail logs (sonic-proxy, data-node, oracle-1..3, curator, ap, all)"
         echo ""
         echo "Architecture:"
