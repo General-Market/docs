@@ -697,13 +697,17 @@ cmd_start() {
     vps_be_ssh "mkdir -p $VPS_BE_DIR/logs && chmod 777 $VPS_BE_DIR/logs && chmod a+rw $VPS_BE_DIR/logs/* 2>/dev/null; true"
 
     # Write key files on VPS 1 (mounted into containers, never in env_file/environment)
-    # First remove any Docker-created directory stubs (Docker creates dirs for missing mount sources)
-    vps_be_ssh "docker run --rm -v /tmp:/tmp alpine sh -c 'rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt' 2>/dev/null; true"
+    # Docker creates dirs for missing bind-mount sources — must remove with privileged container
+    # Multiple cleanup strategies: Alpine container (root), then direct rm (user), then verify
+    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key.txt /hostmp/curator-key.txt' 2>/dev/null; true"
+    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt /tmp/curator-key.txt 2>/dev/null; true"
     for i in 1 2 3; do
         vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
     done
     # Settlement key shared by all oracles (same deployer key)
     vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
+    # Verify key files are regular files (not directories from Docker bind-mount stubs)
+    vps_be_ssh "for f in /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt; do [ -f \"\$f\" ] || { echo \"FATAL: \$f is not a regular file\"; exit 1; }; done"
     echo -e "  ${GREEN}Files synced${NC}"
 
     # Start sonic-proxy
