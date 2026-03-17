@@ -60,6 +60,14 @@ impl TickScheduler {
         self.batches.write().await.insert(batch.id, batch);
     }
 
+    /// Update config_hash and source_id for a batch (used by config hash repair).
+    pub async fn update_config_hash(&self, batch_id: u64, config_hash: H256, source_id: H256) {
+        if let Some(batch) = self.batches.write().await.get_mut(&batch_id) {
+            batch.config_hash = config_hash;
+            batch.source_id = source_id;
+        }
+    }
+
     /// Register a player joining a batch.
     pub async fn on_player_joined(&self, batch_id: u64, position: PlayerPosition) {
         self.players

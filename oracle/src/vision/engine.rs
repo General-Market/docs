@@ -184,6 +184,7 @@ impl ConfigCache {
         &self,
         data_node_url: &str,
         config_hash: &H256,
+        source_id_h256: Option<&H256>,
     ) -> Result<(String, Vec<MarketConfig>), Box<dyn std::error::Error + Send + Sync>> {
         // Check cache first
         {
@@ -193,22 +194,34 @@ impl ConfigCache {
             }
         }
 
-        // Fetch from data-node
+        // Zero config hash — look up by source_id from recommended batches
+        if config_hash.is_zero() {
+            if let Some(sid_h256) = source_id_h256 {
+                let bytes = sid_h256.as_bytes();
+                let trimmed: Vec<u8> = bytes.iter().copied().take_while(|&b| b != 0).collect();
+                let source_name = String::from_utf8(trimmed).unwrap_or_default();
+                if !source_name.is_empty() {
+                    let recommended = batch_config_orchestrator::fetch_recommended(data_node_url).await?;
+                    if let Some(batch) = recommended.into_iter().find(|b| b.source_id == source_name) {
+                        let source_id = batch.source_id.clone();
+                        let market_configs = Self::parse_market_configs(&batch);
+                        self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone()));
+                        self.known_missing.write().await.remove(config_hash);
+                        return Ok((source_id, market_configs));
+                    }
+                    return Err(format!("No recommended config for source '{}'", source_name).into());
+                }
+            }
+            return Err("Zero config hash with no source_id fallback".into());
+        }
+
+        // Fetch from data-node by config hash
         let hash_hex = format!("0x{}", hex::encode(config_hash));
         let batch = batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex)
             .await?;
 
         let source_id = batch.source_id.clone();
-        let market_configs: Vec<MarketConfig> = batch
-            .markets
-            .iter()
-            .map(|m| MarketConfig {
-                asset_id: m.asset_id.clone(),
-                market_id: H256::from(keccak256(m.asset_id.as_bytes())),
-                resolution_type: parse_resolution_type(&m.resolution_type),
-                threshold_bps: m.threshold_bps,
-            })
-            .collect();
+        let market_configs = Self::parse_market_configs(&batch);
 
         // Cache it and clear from known_missing (config now available)
         self.configs
@@ -218,6 +231,15 @@ impl ConfigCache {
         self.known_missing.write().await.remove(config_hash);
 
         Ok((source_id, market_configs))
+    }
+
+    fn parse_market_configs(batch: &batch_config_orchestrator::RecommendedBatch) -> Vec<MarketConfig> {
+        batch.markets.iter().map(|m| MarketConfig {
+            asset_id: m.asset_id.clone(),
+            market_id: H256::from(keccak256(m.asset_id.as_bytes())),
+            resolution_type: parse_resolution_type(&m.resolution_type),
+            threshold_bps: m.threshold_bps,
+        }).collect()
     }
 
     async fn is_known_missing(&self, config_hash: &H256) -> bool {
@@ -1126,35 +1148,21 @@ pub async fn run(
     let admin_token = config.data_node_token.clone().unwrap_or_default();
 
     // Connect to Postgres for persisting balance updates and resolved ticks
-    let diag = |msg: &str| {
-        use std::io::Write;
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
-            let _ = writeln!(f, "[{}] {}", chrono::Utc::now().format("%H:%M:%S%.3f"), msg);
-        }
-    };
-    diag(&format!("run() entered — connecting to Postgres at {}", config.database_url));
-    let db_pool = match tokio::time::timeout(
-        std::time::Duration::from_secs(10),
-        sqlx::postgres::PgPoolOptions::new()
-            .max_connections(3)
-            .idle_timeout(std::time::Duration::from_secs(300))
-            .connect(&config.database_url)
-    ).await {
-        Ok(Ok(pool)) => {
-            diag("Postgres connected OK");
+    let db_pool = match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(3)
+        .idle_timeout(std::time::Duration::from_secs(300))
+        .acquire_timeout(std::time::Duration::from_secs(10))
+        .connect(&config.database_url).await {
+        Ok(pool) => {
+            tracing::info!("Vision engine connected to Postgres for balance persistence");
             Some(pool)
         }
-        Ok(Err(e)) => {
-            diag(&format!("Postgres connect FAILED: {}", e));
-            None
-        }
-        Err(_) => {
-            diag("Postgres connect TIMED OUT after 10s");
+        Err(e) => {
+            tracing::warn!(error = %e, "Vision engine failed to connect to Postgres — balance updates will be in-memory only");
             None
         }
     };
 
-    diag(&format!("checkpoint A: num_oracles={}, has_bls={}", config.num_oracles, bls_keypair.is_some()));
     // Construct tick consensus orchestrator for multi-oracle BLS consensus.
     // When num_oracles <= 1 or no BLS keypair, we run in single-oracle mode
     // and apply balance updates directly without consensus.
@@ -1501,15 +1509,10 @@ pub async fn run(
         });
     }
 
-    diag(&format!("checkpoint B: consensus={}, about to enter main loop", tick_consensus.is_some()));
     let mut gc_timer = tokio::time::interval(std::time::Duration::from_secs(30));
     gc_timer.tick().await; // consume the immediate first tick
-    diag("checkpoint C: entering main loop");
-    static LOOP_ITER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
     loop {
-        let li = LOOP_ITER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        if li == 0 { diag("checkpoint D: first loop iteration, entering select!"); }
         if shutdown.load(Ordering::Relaxed) {
             tracing::info!("Vision tick engine shutting down");
             break;
@@ -1517,44 +1520,21 @@ pub async fn run(
 
         tokio::select! {
             _ = gc_timer.tick() => {
-                diag("select: gc_timer branch fired");
                 if let Some(ref tc) = tick_consensus {
                     tc.gc_stale_rounds().await;
                 }
             }
             _ = tokio::time::sleep(interval) => {
-                if li < 3 { diag(&format!("select: sleep branch fired (iter {})", li)); }
                 if shutdown.load(Ordering::Relaxed) {
                     tracing::info!("Vision tick engine shutting down");
                     break;
                 }
 
                 let now = get_chain_timestamp(&config.rpc_ws_url).await;
-                if li < 3 { diag(&format!("get_chain_timestamp returned: {}", now)); }
 
-                let batch_count = scheduler.active_batch_count().await;
-                eprintln!("VISION-DIAG: active_batch_count={} (iter {})", batch_count, li);
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
-                eprintln!("VISION-DIAG: due_batches={} (iter {})", due_batches.len(), li);
-                if li < 5 {
-                    use std::io::Write;
-                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
-                        let _ = writeln!(f, "[{}] batch_count={}, due={}", chrono::Utc::now().format("%H:%M:%S%.3f"), batch_count, due_batches.len());
-                    }
-                }
 
                 if due_batches.is_empty() {
-                    static POLL_CTR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-                    let c = POLL_CTR.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    if c % 60 == 0 {
-                        let diag = |msg: &str| {
-                            use std::io::Write;
-                            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
-                                let _ = writeln!(f, "[{}] {}", chrono::Utc::now().format("%H:%M:%S%.3f"), msg);
-                            }
-                        };
-                        diag(&format!("poll #{}: chain_ts={}, batches={}, reveal_window={}, no due", c, now, batch_count, config.reveal_window_secs));
-                    }
                     continue;
                 }
 
@@ -1617,7 +1597,7 @@ pub async fn run(
 
                             // Fetch market configs
                             let (source_id, market_configs) = match config_cache
-                                .get_or_fetch(&config.data_node_url, &batch.config_hash)
+                                .get_or_fetch(&config.data_node_url, &batch.config_hash, Some(&batch.source_id))
                                 .await
                             {
                                 Ok(entry) => entry,

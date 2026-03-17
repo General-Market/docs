@@ -145,6 +145,9 @@ impl ChainListener {
 
         let topics = EventTopics::new();
 
+        // Repair batches with zero config_hash from previous failed contract reads
+        self.repair_zero_config_hashes().await;
+
         // Determine where to start: bookmark from Postgres, or config start_block.
         let mut cursor = match self.get_last_indexed_block().await {
             Some(block) => {
@@ -1199,6 +1202,36 @@ impl ChainListener {
     // =========================================================================
     // Contract read helpers — raw ABI-encoded calls (no abigen!)
     // =========================================================================
+
+    /// Repair batches with zero config_hash by re-fetching from the contract.
+    async fn repair_zero_config_hashes(&self) {
+        let zero_hash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+        let zero_batches: Vec<(i64,)> = match sqlx::query_as(
+            "SELECT id FROM vision_batches WHERE config_hash = $1"
+        ).bind(zero_hash).fetch_all(&self.pool).await {
+            Ok(rows) => rows,
+            Err(e) => { warn!(error = %e, "repair_zero_config_hashes query failed"); return; }
+        };
+        if zero_batches.is_empty() { return; }
+        info!(count = zero_batches.len(), "Repairing batches with zero config_hash");
+        let mut repaired = 0usize;
+        for (bid,) in &zero_batches {
+            if let Some(f) = self.fetch_batch_from_contract(*bid as u64).await {
+                if f.config_hash != H256::zero() {
+                    let h = format!("0x{}", hex::encode(f.config_hash));
+                    let nh = format!("0x{}", hex::encode(f.next_config_hash));
+                    let s = format!("0x{}", hex::encode(f.source_id));
+                    if sqlx::query("UPDATE vision_batches SET config_hash=$1, next_config_hash=$2, source_id=$3, lock_offset=$4, created_at_tick=$5, last_promotion_tick=$6 WHERE id=$7")
+                        .bind(&h).bind(&nh).bind(&s).bind(f.lock_offset as i64).bind(f.created_at_tick as i64).bind(f.last_promotion_tick as i64).bind(*bid)
+                        .execute(&self.pool).await.is_ok() {
+                        self.scheduler.update_config_hash(*bid as u64, f.config_hash, f.source_id).await;
+                        repaired += 1;
+                    }
+                }
+            }
+        }
+        info!(repaired, total = zero_batches.len(), "Config hash repair complete");
+    }
 
     /// Fetch full batch data from Vision.getBatch(uint256).
     ///
