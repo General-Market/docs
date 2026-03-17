@@ -1126,6 +1126,7 @@ pub async fn run(
     let admin_token = config.data_node_token.clone().unwrap_or_default();
 
     // Connect to Postgres for persisting balance updates and resolved ticks
+    tracing::warn!("DIAG: Vision tick engine run() entered — connecting to Postgres at {}", config.database_url);
     let db_pool = match sqlx::postgres::PgPoolOptions::new()
         .max_connections(20)
         .idle_timeout(std::time::Duration::from_secs(300))
@@ -1509,9 +1510,16 @@ pub async fn run(
 
                 let now = get_chain_timestamp(&config.rpc_ws_url).await;
 
+                let batch_count = scheduler.active_batch_count().await;
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
 
                 if due_batches.is_empty() {
+                    // Log every ~30s so we know the engine is alive (poll_interval ~500ms → every 60 polls)
+                    static POLL_CTR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                    let c = POLL_CTR.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if c % 60 == 0 {
+                        tracing::warn!(chain_ts = now, batch_count, reveal_window = config.reveal_window_secs, "DIAG: Vision engine alive, no due batches (poll #{})", c);
+                    }
                     continue;
                 }
 
