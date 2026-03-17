@@ -12,9 +12,9 @@ export async function GET(request: Request) {
     })
     if (!res.ok) throw new Error(`Data-node API ${res.status}`)
     const data = await res.json()
-    const resp = NextResponse.json(data)
-    resp.headers.set('X-Upstream', `${DATA_NODE_SERVER}/vision/leaderboard`)
-    return resp
+    data._source = 'data-node'
+    data._upstream = `${DATA_NODE_SERVER}/vision/leaderboard`
+    return NextResponse.json(data)
   } catch (err) {
     console.error('Vision leaderboard proxy error:', err)
     return NextResponse.json({ leaderboard: [], updatedAt: new Date().toISOString() }, { status: 502 })
