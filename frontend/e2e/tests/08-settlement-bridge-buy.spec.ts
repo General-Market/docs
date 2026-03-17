@@ -48,7 +48,8 @@ test.describe('Settlement Bridge', () => {
       }
     }
     const hasCustody = !!CONTRACTS.SettlementBridgeCustody && CONTRACTS.SettlementBridgeCustody.length > 4;
-    const useSettlement = hasCustody && (IS_ANVIL || (hasGas && oracleRelayAlive));
+    // Settlement relay only works on Anvil (testnet relay not operational)
+    const useSettlement = IS_ANVIL && hasCustody;
     console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
@@ -141,8 +142,8 @@ test.describe('Settlement Bridge', () => {
         oracleRelayAlive = false;
       }
     }
-    const useSettlement = IS_ANVIL || (hasGas && oracleRelayAlive);
-    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas or oracle unavailable)'}`);
+    const useSettlement = IS_ANVIL;
+    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
