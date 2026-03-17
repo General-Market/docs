@@ -55,7 +55,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     uint256 private _saltCounter;
 
     function _nextSalt() internal returns (bytes32) {
-        return keccak256(abi.encode("INDEX_DEPLOY", block.timestamp, block.chainid, ++_saltCounter));
+        // MUST NOT use block.timestamp — it differs between simulation and broadcast on Orbit L3,
+        // causing CREATE2 addresses to diverge. Use only deterministic values.
+        return keccak256(abi.encode("INDEX_DEPLOY_V2", block.chainid, ++_saltCounter));
     }
 
     function _deployProxy(address impl, bytes memory initData) internal returns (address) {
