@@ -11,13 +11,12 @@ import { useAgentBets } from '@/hooks/useAgentBets'
 import { truncateAddress } from '@/lib/utils/address'
 import { formatROI, formatVolume } from '@/lib/utils/formatters'
 import { formatRelativeTime } from '@/lib/utils/time'
-import { PageSection } from '@/components/layout/PageSection'
 
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="py-3 px-4">
-      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{label}</div>
-      <div className={`text-heading font-bold font-mono tabular-nums ${color || 'text-black'}`}>{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{label}</div>
+      <div className={`text-[18px] font-bold font-mono tabular-nums ${color || 'text-black'}`}>{value}</div>
     </div>
   )
 }
@@ -41,14 +40,15 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
         subtitle={address}
       />
 
-      <PageSection as="div" className="w-full pb-16">
+      <div className="px-6 lg:px-12">
+      <div className="max-w-site mx-auto w-full pb-16">
         {isLoading ? (
           <div className="py-12 text-center">
-            <div className="text-sm text-text-muted animate-pulse">Loading player data...</div>
+            <div className="text-sm text-text-muted animate-pulse">Loading agent data...</div>
           </div>
         ) : isError || !agent ? (
           <div className="py-12 text-center">
-            <div className="text-sm text-text-muted">No data found for this player. This address has no bets yet.</div>
+            <div className="text-sm text-text-muted">No data found for this agent. They may not have placed any bets yet.</div>
           </div>
         ) : (
           <>
@@ -69,7 +69,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
 
             {/* Trend Chart */}
             <div className="mt-6 border border-border-light p-6">
-              <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">Performance Trend</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">Performance Trend</div>
               <div className="h-32">
                 <PerformanceGraphMini walletAddress={address} height={128} />
               </div>
@@ -82,10 +82,10 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
             <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
               <StatCard label="Total Bets" value={agent.totalBets.toLocaleString()} />
               <div className="border-l border-border-light">
-                <StatCard label="Avg Portfolio" value={`${agent.avgPortfolioSize.toLocaleString()} markets`} />
+                <StatCard label="Avg Portfolio" value={`${agent.avgPortfolioSize.toLocaleString()} mkts`} />
               </div>
               <div className="border-l border-border-light">
-                <StatCard label="Max Portfolio" value={`${agent.maxPortfolioSize.toLocaleString()} markets`} />
+                <StatCard label="Max Portfolio" value={`${agent.maxPortfolioSize.toLocaleString()} mkts`} />
               </div>
               <div className="border-l border-border-light">
                 <StatCard label="Avg Bet Size" value={`$${agent.avgBetSize.toFixed(2)}`} />
@@ -105,19 +105,19 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
             </div>
             <div className="border border-border-light overflow-x-auto">
               {betsLoading ? (
-                <div className="py-8 text-center text-sm text-text-muted animate-pulse">Loading bet history...</div>
+                <div className="py-8 text-center text-sm text-text-muted animate-pulse">Loading bets...</div>
               ) : bets.length === 0 ? (
-                <div className="py-8 text-center text-sm text-text-muted">No bet history yet</div>
+                <div className="py-8 text-center text-sm text-text-muted">No bets found</div>
               ) : (
                 <table className="w-full text-sm min-w-[600px]">
                   <thead className="bg-surface border-b border-border-light">
                     <tr>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Bet</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Markets</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Amount</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Result</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Status</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Date</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Bet</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Markets</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Amount</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Result</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Status</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Date</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -156,7 +156,8 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
             )}
           </>
         )}
-      </PageSection>
+      </div>
+      </div>
 
       <div className="flex-1" />
       <Footer />

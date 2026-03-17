@@ -21,7 +21,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   if (!active || !payload?.length) return null;
   const item = TGE_AGE_DATA.find((d) => d.tranche === label);
   return (
-    <div className="bg-white border border-border-light p-2 text-caption">
+    <div className="bg-white border border-border-light p-2 text-[12px]">
       <div className="font-semibold text-black">{label}</div>
       <div className="text-text-secondary">
         {payload[0].dataKey === "days"
@@ -35,13 +35,13 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 
 export function TGEAgePerformance() {
   return (
-    <div className="my-8 border border-border-light bg-white p-4 sm:p-6 animate-fade-in">
-      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
+    <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
+      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
         TGE-to-ATH by Founder Age at Launch
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 stagger">
-        <div className="animate-fade-up">
-          <div className="text-label text-text-muted mb-2 uppercase tracking-[0.08em] font-medium">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <div className="text-[11px] text-text-muted mb-2 uppercase tracking-wider font-medium">
             Median Days to ATH
           </div>
           <div className="h-[220px]">
@@ -60,8 +60,8 @@ export function TGEAgePerformance() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="animate-fade-up">
-          <div className="text-label text-text-muted mb-2 uppercase tracking-[0.08em] font-medium">
+        <div>
+          <div className="text-[11px] text-text-muted mb-2 uppercase tracking-wider font-medium">
             Median ATH Multiplier
           </div>
           <div className="h-[220px]">
@@ -81,7 +81,7 @@ export function TGEAgePerformance() {
           </div>
         </div>
       </div>
-      <div className="text-label text-text-muted mt-2">
+      <div className="text-[11px] text-text-muted mt-2">
         Ages adjusted to founder age at TGE time. Multiplier = ATH price / TGE price.
       </div>
     </div>

@@ -148,7 +148,7 @@ function CategoryBar({
   onAllDown: () => void
 }) {
   return (
-    <div className={`flex items-center rounded-md transition-colors ${
+    <div className={`flex items-center rounded-lg transition-colors ${
       isExpanded ? 'bg-terminal' : 'bg-muted hover:bg-surface'
     }`}>
       {/* Main clickable area */}
@@ -156,7 +156,7 @@ function CategoryBar({
         onClick={onToggle}
         className="flex-1 flex items-center gap-2 px-3 py-2.5 text-left"
       >
-        <span className={`text-micro transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''} ${
+        <span className={`text-[10px] transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''} ${
           isExpanded ? 'text-text-inverse' : 'text-text-muted'
         }`}>
           {'\u25B6'}
@@ -164,11 +164,11 @@ function CategoryBar({
         <span className={`text-xs font-bold ${isExpanded ? 'text-text-inverse' : 'text-text-primary'}`}>
           {category.label}
         </span>
-        <span className={`text-micro font-mono ${isExpanded ? 'text-text-inverse/60' : 'text-text-muted'}`}>
+        <span className={`text-[10px] font-mono ${isExpanded ? 'text-text-inverse/60' : 'text-text-muted'}`}>
           {category.markets.length}
         </span>
         {betsSet > 0 && (
-          <span className={`text-micro font-mono px-1.5 py-0.5 rounded ${
+          <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
             isExpanded ? 'bg-white/20 text-white' : 'bg-terminal/10 text-terminal'
           }`}>
             {betsSet}/{category.markets.length}
@@ -181,14 +181,14 @@ function CategoryBar({
         <div className="flex items-center gap-1 pr-2">
           <button
             onClick={(e) => { e.stopPropagation(); onAllUp() }}
-            className="px-2 py-1 rounded text-micro font-bold bg-color-up/20 text-white hover:bg-color-up/40 transition-colors"
+            className="px-2 py-1 rounded text-[10px] font-bold bg-color-up/20 text-white hover:bg-color-up/40 transition-colors"
             title={`All ${category.label} UP`}
           >
             {'\u25B2'}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onAllDown() }}
-            className="px-2 py-1 rounded text-micro font-bold bg-color-down/20 text-white hover:bg-color-down/40 transition-colors"
+            className="px-2 py-1 rounded text-[10px] font-bold bg-color-down/20 text-white hover:bg-color-down/40 transition-colors"
             title={`All ${category.label} DOWN`}
           >
             {'\u25BC'}
@@ -217,7 +217,7 @@ function CategoryContent({
   onToggleBet: (marketId: string) => void
 }) {
   return (
-    <div className="mt-0.5 mb-1.5 border border-border-light rounded-md overflow-hidden">
+    <div className="mt-0.5 mb-1.5 border border-border-light rounded-lg overflow-hidden">
       <table className="w-full text-xs font-mono">
         <thead>
           <tr className="bg-muted text-text-muted text-left">
@@ -249,7 +249,7 @@ function CategoryContent({
                 <td className="py-1 px-2">
                   <button
                     onClick={() => onToggleBet(marketId)}
-                    className={`w-7 h-7 rounded text-micro font-bold transition-colors ${
+                    className={`w-7 h-7 rounded text-[10px] font-bold transition-colors ${
                       bet === undefined
                         ? 'bg-muted text-text-muted hover:bg-surface'
                         : isUp
@@ -262,7 +262,7 @@ function CategoryContent({
                 </td>
 
                 {/* Name (with optional link) */}
-                <td className="py-1 px-2 max-w-[260px] min-w-0 overflow-hidden">
+                <td className="py-1 px-2 max-w-[260px]">
                   {sourceUrl ? (
                     <a
                       href={sourceUrl}

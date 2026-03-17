@@ -15,7 +15,7 @@ export function APBalanceSection({ expanded, onToggle }: APBalanceSectionProps) 
       {!expanded && (
         <button
           onClick={onToggle}
-          className="w-full bg-card rounded-card shadow-card border border-border-light p-4 flex justify-between items-center text-left hover:shadow-card-hover transition-shadow press"
+          className="w-full bg-card rounded-xl shadow-card border border-border-light p-4 flex justify-between items-center text-left hover:shadow-card-hover transition-shadow"
         >
           <div>
             <h2 className="text-lg font-semibold text-text-primary">{t('ap_section.title')}</h2>
@@ -26,7 +26,7 @@ export function APBalanceSection({ expanded, onToggle }: APBalanceSectionProps) 
       )}
 
       {expanded && (
-        <div className="animate-fade-up">
+        <div>
           <APBalanceCard />
         </div>
       )}

@@ -55,10 +55,10 @@ function Pillar({ eip, index }: { eip: typeof EIPS[number]; index: number }) {
       {/* Label above pillar */}
       <Html center position={[0, h / 2 + 0.28, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-micro text-text-muted font-mono">{eip.year}</p>
-          <p className="text-caption font-bold text-black tracking-tight whitespace-nowrap">{eip.name}</p>
-          <p className="text-[9px] text-text-muted mt-0.5 whitespace-nowrap">{eip.sub}</p>
-          <p className={`text-[8px] mt-0.5 font-semibold tracking-[0.08em] uppercase whitespace-nowrap ${isLast ? 'text-color-up' : 'text-text-muted'}`}>
+          <p className="text-[10px] text-zinc-400 font-mono">{eip.year}</p>
+          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">{eip.name}</p>
+          <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">{eip.sub}</p>
+          <p className={`text-[8px] mt-0.5 font-semibold tracking-wide uppercase whitespace-nowrap ${isLast ? 'text-green-600' : 'text-zinc-400'}`}>
             {eip.status}
           </p>
         </div>
@@ -125,7 +125,7 @@ export function EIPTimeline3D() {
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
         <div className="h-[340px] md:h-[400px] cursor-grab active:cursor-grabbing">
-          <ClientOnly fallback={<div className="h-full animate-pulse bg-surface" />}>
+          <ClientOnly fallback={<div className="h-full animate-pulse bg-zinc-50" />}>
             <Canvas flat camera={{ position: [0, 4, 7], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>
               <color attach="background" args={['#ffffff']} />
               <ambientLight intensity={1.2} />
@@ -159,18 +159,18 @@ export function EIPTimeline3D() {
             </Canvas>
           </ClientOnly>
         </div>
-        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-border-light">
+        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-2 rounded-sm bg-border-medium border border-border-dark" />
-              <span className="text-micro text-text-muted tracking-[0.08em]">Attempted</span>
+              <div className="w-3 h-2 rounded-sm bg-zinc-300 border border-zinc-400" />
+              <span className="text-[10px] text-text-muted tracking-wide">Attempted</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-              <span className="text-micro text-text-muted tracking-[0.08em]">THE OMNIBUS</span>
+              <span className="text-[10px] text-text-muted tracking-wide">THE OMNIBUS</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

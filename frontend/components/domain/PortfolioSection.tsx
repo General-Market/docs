@@ -56,10 +56,10 @@ const STATUS_LABELS: Record<number, string> = {
 }
 
 const STATUS_COLORS: Record<number, string> = {
-  0: 'text-color-warning bg-surface-warning',
-  1: 'text-color-info bg-surface-info',
-  2: 'text-color-up bg-surface-up',
-  3: 'text-color-down bg-surface-down',
+  0: 'text-yellow-600 bg-yellow-100',
+  1: 'text-blue-600 bg-blue-100',
+  2: 'text-color-up bg-green-50',
+  3: 'text-color-down bg-red-50',
   4: 'text-text-muted bg-muted',
 }
 
@@ -70,7 +70,7 @@ function PortfolioTooltip({ active, payload }: TooltipProps<number, string>) {
   const data = payload[0].payload as PortfolioHistoryPoint
 
   return (
-    <div className="bg-card border border-border-light rounded-md shadow-card p-3 text-sm">
+    <div className="bg-card border border-border-light rounded-lg shadow-card p-3 text-sm">
       <p className="text-text-primary font-semibold mb-1">{data.date}</p>
       <div className="space-y-1 text-text-secondary">
         <p className="font-mono tabular-nums">{t('tooltip.value_label')} ${data.value.toFixed(2)}</p>
@@ -309,11 +309,11 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       >
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('heading.collapsed_title')}</p>
+            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('heading.collapsed_title')}</p>
             <p className="text-text-primary font-semibold">
               {t('heading.collapsed_description')}
               {activeCount > 0 && (
-                <span className="ml-2 text-xs bg-surface-warning text-color-warning px-2 py-0.5 rounded-full font-mono">
+                <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-mono">
                   {activeCount} {tc('status.active').toLowerCase()}
                 </span>
               )}
@@ -326,7 +326,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="px-3 py-1.5 bg-brand text-white font-semibold rounded-md text-sm hover:bg-brand-dark transition-colors"
+              className="px-3 py-1.5 bg-zinc-900 text-white font-semibold rounded-lg text-sm hover:bg-zinc-800 transition-colors"
             >
               {tc('nav.support')}
             </a>
@@ -342,12 +342,12 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     <div id="portfolio" className="pb-10">
       {/* Section header */}
       <div className="pt-10">
-        <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-display font-black text-black">{t('heading.title')}</h2>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
       </div>
 
       {!address ? (
-        <div className="bg-card rounded-card border border-border-light p-10 text-center mt-6">
+        <div className="bg-card rounded-xl border border-border-light p-10 text-center mt-6">
           <div className="max-w-sm mx-auto">
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -366,31 +366,31 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           <div className="py-5 border-b border-border-light">
             <div className="grid grid-cols-2 md:grid-cols-5">
               <div className="py-3 pr-6">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_value')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_value')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_invested')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_invested')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">
                   ${((mergedSummary ? parseFloat(mergedSummary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.positions')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.positions')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.pnl')}</div>
-                <div className={`text-title font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.pnl')}</div>
+                <div className={`text-[22px] font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                   {totalPnl >= 0 ? '+' : ''}${mergedSummary?.total_pnl || '0.00'}
                 </div>
-                <div className="text-label text-text-muted mt-0.5">
+                <div className="text-[11px] text-text-muted mt-0.5">
                   {totalPnl >= 0 ? '+' : ''}{mergedSummary?.total_pnl_pct || '0.0'}%
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
               </div>
             </div>
           </div>
@@ -398,21 +398,21 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           {/* Active orders banner — always visible when there are incomplete orders */}
           {activeCount > 0 && (
             <div
-              className="mt-5 bg-surface-warning border border-color-warning/30 rounded-md p-3 flex items-center justify-between cursor-pointer hover:bg-surface-warning/80 transition-colors"
+              className="mt-5 bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors"
               onClick={() => setActiveTab('orders')}
             >
               <div className="flex items-center gap-3">
                 <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-color-warning opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-color-warning" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500" />
                 </span>
-                <span className="text-sm font-medium text-color-warning">
+                <span className="text-sm font-medium text-yellow-800">
                   {t('orders_banner.active_orders', { count: activeCount, plural: activeCount !== 1 ? 's' : '' })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 {orders.filter(o => o.status < 2).map((o, i) => (
-                  <span key={`${o.orderId}-${o.timestamp}-${i}`} className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[o.status] || 'text-color-warning bg-surface-warning'}`}>
+                  <span key={`${o.orderId}-${o.timestamp}-${i}`} className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[o.status] || 'text-orange-600 bg-orange-100'}`}>
                     {o.orderId > 0 ? `#${o.orderId}` : 'Settlement'} {o.side === 0 ? t('side.buy') : t('side.sell')} · {STATUS_LABELS[o.status] || 'Relaying'}
                   </span>
                 ))}
@@ -438,7 +438,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`pb-3 text-sm font-semibold border-b-[3px] transition-colors press ${
+                    className={`pb-3 text-sm font-semibold border-b-[3px] transition-colors ${
                       activeTab === tab
                         ? 'border-black text-black'
                         : 'border-transparent text-text-muted hover:text-text-secondary'
@@ -447,7 +447,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                     {label}
                     {count > 0 && (
                       <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                        tab === 'orders' ? 'bg-surface-warning text-color-warning' : 'bg-muted text-text-secondary'
+                        tab === 'orders' ? 'bg-yellow-100 text-yellow-700' : 'bg-zinc-100 text-zinc-600'
                       }`}>
                         {count}
                       </span>
@@ -460,7 +460,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 
           {/* Explorer links */}
           {address && (L3_EXPLORER_URL || SETTLEMENT_EXPLORER_URL) && (
-            <div className="flex gap-4 mt-3 mb-2 text-label text-text-muted">
+            <div className="flex gap-4 mt-3 mb-2 text-[11px] text-text-muted">
               {L3_EXPLORER_URL && (
                 <a
                   href={`${L3_EXPLORER_URL}/address/${address}`}
@@ -491,7 +491,6 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           )}
 
           {/* Tab content */}
-          <div key={activeTab} className="animate-fade-in">
           {activeTab === 'positions' && (
             <>
               <ValueTab history={history} />
@@ -507,7 +506,6 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               error={ordersError}
             />
           )}
-          </div>
         </>
       )}
     </div>
@@ -530,8 +528,8 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
     return (
       <div className="bg-card rounded-md border border-border-light p-8">
         <div className="text-center">
-          <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{t('chart.current_value')}</div>
-          <div className="text-display font-black font-mono tabular-nums text-black">${lastPoint.value.toFixed(2)}</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{t('chart.current_value')}</div>
+          <div className="text-[36px] font-black font-mono tabular-nums text-black">${lastPoint.value.toFixed(2)}</div>
           <div className={`text-sm font-mono tabular-nums mt-2 ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
             {isPositive ? '+' : ''}{lastPoint.pnl.toFixed(2)} ({isPositive ? '+' : ''}{lastPoint.pnl_pct.toFixed(1)}%)
           </div>
@@ -591,7 +589,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
   const clampedPage = Math.min(page, totalPages)
   if (!summary || summary.positions.length === 0) {
     return (
-      <div className="bg-card rounded-card border border-border-light p-10 text-center">
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
         <div className="max-w-sm mx-auto">
           <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -604,7 +602,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
           </p>
           <a
             href="#markets"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand text-white text-sm font-semibold rounded-md hover:bg-brand-dark transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors"
           >
             {t('empty.explore_indexes')}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -621,7 +619,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('positions_table.itp')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.shares')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.avg_cost')}</th>
@@ -636,7 +634,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
               const pnl = parseFloat(pos.pnl)
               return (
                 <tr key={pos.itp_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
-                  <td className="px-4 py-3 text-text-primary text-sm font-semibold max-w-[200px] min-w-0 overflow-hidden truncate">
+                  <td className="px-4 py-3 text-text-primary text-sm font-semibold">
                     {itpNameMap.get(pos.itp_id.toLowerCase())
                       || (() => { try { return itpNameMap.get(BigInt(pos.itp_id).toString()) } catch { return null } })()
                       || pos.itp_id.slice(0, 10) + '...'}
@@ -685,7 +683,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
   const clampedPage = Math.min(page, totalPages)
   if (filledTrades.length === 0) {
     return (
-      <div className="bg-card rounded-card border border-border-light p-10 text-center">
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
         <div className="max-w-sm mx-auto">
           <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -706,7 +704,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('trades_table.date')}</th>
               <th className="text-left px-4 py-3">{t('trades_table.itp')}</th>
               <th className="text-left px-4 py-3">{t('trades_table.side')}</th>
@@ -744,8 +742,8 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
                 <td className="px-4 py-3 text-right">
                   <span className={`text-xs px-2 py-1 rounded-md font-medium ${
                     trade.status === 'filled'
-                      ? 'text-color-up bg-surface-up'
-                      : 'text-color-warning bg-surface-warning'
+                      ? 'text-color-up bg-green-50'
+                      : 'text-yellow-700 bg-yellow-100'
                   }`}>
                     {trade.status}
                   </span>
@@ -796,7 +794,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
 
   if (error) {
     return (
-      <div className="bg-surface-down border border-color-down/30 rounded-card p-4 text-color-down text-sm">
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm">
         {error}
       </div>
     )
@@ -812,7 +810,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
 
   if (openOrders.length === 0) {
     return (
-      <div className="bg-card rounded-card border border-border-light p-10 text-center">
+      <div className="bg-card rounded-xl border border-border-light p-10 text-center">
         <div className="max-w-sm mx-auto">
           <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
             <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -833,7 +831,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('orders_table.id')}</th>
               <th className="text-left px-4 py-3">{t('orders_table.side')}</th>
               <th className="text-right px-4 py-3">{t('orders_table.amount')}</th>
@@ -859,7 +857,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                   ${parseFloat(formatUnits(order.limitPrice, 18)).toFixed(4)}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className={`text-xs px-2 py-1 rounded-md font-medium ${STATUS_COLORS[order.status] || 'text-color-warning bg-surface-warning'}`}>
+                  <span className={`text-xs px-2 py-1 rounded-md font-medium ${STATUS_COLORS[order.status] || 'text-orange-600 bg-orange-100'}`}>
                     {STATUS_LABELS[order.status] || 'Relaying'}
                   </span>
                 </td>
@@ -871,7 +869,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                     <button
                       onClick={() => handleCancel(order.orderId)}
                       disabled={cancellingId === order.orderId}
-                      className="text-xs px-3 py-1 rounded-md font-medium text-color-down bg-surface-down hover:bg-surface-down/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {cancellingId === order.orderId ? t('orders_table.cancelling') : t('orders_table.cancel')}
                     </button>
@@ -944,7 +942,7 @@ function PortfolioSkeleton() {
             key={label}
             className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
           >
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{label}</p>
             <Bone w={idx === 0 ? 'w-28' : idx === 1 ? 'w-24' : 'w-16'} h="h-6" />
           </div>
         ))}
@@ -960,11 +958,11 @@ function PortfolioSkeleton() {
 
       {/* Table skeleton */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-caption">
+        <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr>
               {[t('skeleton.fund'), t('skeleton.ticker'), t('positions_table.shares'), t('skeleton.nav_per_share'), t('positions_table.value'), t('skeleton.avg_cost'), t('positions_table.pnl'), t('skeleton.change_24h')].map(h => (
-                <th key={h} className="text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap">
+                <th key={h} className="text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap">
                   {h}
                 </th>
               ))}

@@ -90,7 +90,7 @@ function PulseBtn({ label, active, onClick }: { label: string; active: boolean; 
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-1.5 text-caption font-medium border transition-colors press ${
+      className={`px-4 py-1.5 text-[12px] font-medium border transition-all ${
         active
           ? "bg-black text-white border-black"
           : "bg-white text-text-secondary border-border-light hover:border-black animate-[pulseBtn_2s_ease-in-out_infinite]"
@@ -105,7 +105,7 @@ function Section({ title, children, accent }: { title: string; children: React.R
   return (
     <div className="mb-6">
       <div
-        className="text-caption font-semibold tracking-[-0.01em] mb-3 pl-3 border-l-[3px]"
+        className="text-[12px] font-semibold tracking-[-0.01em] mb-3 pl-3 border-l-[3px]"
         style={{ borderLeftColor: accent || "#111", color: "#111" }}
       >
         {title}
@@ -125,7 +125,7 @@ function ChartBox({ children, h = "280px" }: { children: React.ReactNode; h?: st
 
 function Comment({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-caption text-text-secondary leading-relaxed mb-5 mt-1 max-w-[680px]">
+    <p className="text-[13px] text-text-secondary leading-relaxed mb-5 mt-1 max-w-[680px]">
       {children}
     </p>
   );
@@ -220,7 +220,7 @@ export function FoundersDashboard() {
   const btcMax = Math.max(...BTC_PRICES) * 1.1;
 
   return (
-    <div className="my-10 space-y-6 animate-fade-in">
+    <div className="my-10 space-y-6">
       {/* Pulse animation for buttons */}
       {!hasInteracted && (
         <style>{`
@@ -232,13 +232,13 @@ export function FoundersDashboard() {
       )}
 
       {/* Tier summary cards */}
-      <div className="grid grid-cols-3 gap-3 stagger">
+      <div className="grid grid-cols-3 gap-3">
         {TIER_SUMMARY.map((t) => (
-          <div key={t.tier} className="border border-border-light bg-white p-3 text-center animate-fade-up">
-            <div className="text-label text-text-muted uppercase tracking-[0.08em] font-medium mb-1">{t.tier}</div>
-            <div className="text-title font-black text-black leading-none">{t.avgAge}</div>
-            <div className="text-micro text-text-muted mt-0.5">avg age</div>
-            <div className="flex justify-center gap-3 text-micro text-text-secondary mt-2">
+          <div key={t.tier} className="border border-border-light bg-white p-3 text-center">
+            <div className="text-[11px] text-text-muted uppercase tracking-wider font-medium mb-1">{t.tier}</div>
+            <div className="text-[24px] font-black text-black leading-none">{t.avgAge}</div>
+            <div className="text-[10px] text-text-muted mt-0.5">avg age</div>
+            <div className="flex justify-center gap-3 text-[10px] text-text-secondary mt-2">
               <span><span className="font-semibold text-black">{t.ageChange}</span> since 2021</span>
               <span><span className="font-semibold text-black">{t.malePct}%</span> male</span>
             </div>
@@ -247,7 +247,7 @@ export function FoundersDashboard() {
       </div>
 
       {/* Tier selector */}
-      <div className="flex justify-center gap-2 stagger">
+      <div className="flex justify-center gap-2">
         {(["100", "500", "2000"] as TierKey[]).map((t) => (
           <PulseBtn key={t} label={`Top ${t}`} active={tier === t} onClick={() => handleTierClick(t)} />
         ))}
@@ -501,7 +501,7 @@ export function FoundersDashboard() {
       {/* ═══════════════ ATH / ATL ═══════════════ */}
 
       <div className="border-t-[3px] border-black pt-6 mt-10">
-        <div className="text-subhead font-black text-black mb-2">Tokens That Hit All-Time High</div>
+        <div className="text-[16px] font-black text-black mb-2">Tokens That Hit All-Time High</div>
         <Comment>
           Quarterly count of tokens reaching their ATH, cross-referenced with founder demographics. Bull market ATH clusters (Q4 2021, Q4 2024) show younger founders and higher American representation.
         </Comment>
@@ -583,7 +583,7 @@ export function FoundersDashboard() {
       </Section>
 
       <div className="border-t-[3px] border-black pt-6 mt-6">
-        <div className="text-subhead font-black text-black mb-2">Tokens That Hit All-Time Low</div>
+        <div className="text-[16px] font-black text-black mb-2">Tokens That Hit All-Time Low</div>
         <Comment>
           Bear market ATL clusters are dominated by younger founders with less documented education. The inverse pattern of ATH demographics.
         </Comment>
@@ -667,7 +667,7 @@ export function FoundersDashboard() {
       {/* ═══════════════ TGE PERFORMANCE ═══════════════ */}
 
       <div className="border-t-[3px] border-black pt-6 mt-10">
-        <div className="text-subhead font-black text-black mb-2">TGE-to-ATH Performance</div>
+        <div className="text-[16px] font-black text-black mb-2">TGE-to-ATH Performance</div>
         <Comment>
           For each token, we measured two things: how many days from its first CoinGecko listing to its all-time high, and the multiplier (ATH price / TGE price). These charts break that down by founder demographics and team composition.
         </Comment>
@@ -679,7 +679,7 @@ export function FoundersDashboard() {
         </Comment>
         <div className="grid grid-cols-2 gap-3">
           <ChartBox h="240px">
-            <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">Median Days to ATH</div>
+            <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">Median Days to ATH</div>
             <ResponsiveContainer width="100%" height="90%">
               <BarChart data={TGE_AGE_DATA} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
@@ -694,7 +694,7 @@ export function FoundersDashboard() {
             </ResponsiveContainer>
           </ChartBox>
           <ChartBox h="240px">
-            <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">Median ATH Multiplier</div>
+            <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">Median ATH Multiplier</div>
             <ResponsiveContainer width="100%" height="90%">
               <BarChart data={TGE_AGE_DATA} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
@@ -742,7 +742,7 @@ export function FoundersDashboard() {
           <Comment>{comment}</Comment>
           <div className="grid grid-cols-2 gap-3">
             <ChartBox h="220px">
-              <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">Days to ATH</div>
+              <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">Days to ATH</div>
               <ResponsiveContainer width="100%" height="85%">
                 <BarChart data={barData} margin={{ top: 5, right: 2, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
@@ -757,7 +757,7 @@ export function FoundersDashboard() {
               </ResponsiveContainer>
             </ChartBox>
             <ChartBox h="220px">
-              <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">ATH Multiplier</div>
+              <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">ATH Multiplier</div>
               <ResponsiveContainer width="100%" height="85%">
                 <BarChart data={barData} margin={{ top: 5, right: 2, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
@@ -775,7 +775,7 @@ export function FoundersDashboard() {
         </Section>
       ))}
 
-      <div className="text-label text-text-muted text-center mt-4">
+      <div className="text-[11px] text-text-muted text-center mt-4">
         Ages adjusted per snapshot year. Tiers use only validated tokens. ATH/ATL counts only tokens with known founders (~1,328 matched).
         Multiplier = ATH price / TGE price. Data: 2,741 companies, 4,675 founders, CoinGecko 2021-2026.
       </div>

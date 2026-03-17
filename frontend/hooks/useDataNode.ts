@@ -123,7 +123,7 @@ export function usePriceHistory(
       const result = await response.json()
       setData(result)
     } catch (e: any) {
-      setError(e.message || 'Unable to load price history.')
+      setError(e.message || 'Failed to fetch price history')
     } finally {
       setIsLoading(false)
     }

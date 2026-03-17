@@ -58,7 +58,7 @@ function LeftPlatform() {
       </RoundedBox>
       {/* Title label */}
       <Html center position={[0, 1.9, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Normal TX
         </p>
       </Html>
@@ -80,7 +80,7 @@ function RightPlatform() {
         <meshStandardMaterial color="#fafafa" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 1.9, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Frame TX
         </p>
       </Html>
@@ -306,7 +306,7 @@ function FrameCompartment({
       </mesh>
       {label && (
         <Html center position={[0, 0.65, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
+          <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
         </Html>
       )}
     </group>
@@ -470,7 +470,7 @@ function AcceptGate({ reducedMotion }: { reducedMotion: boolean }) {
       </mesh>
       {/* ACCEPT label */}
       <Html center position={[0, 1.05, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
       </Html>
     </group>
   )

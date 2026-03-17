@@ -30,7 +30,7 @@ function Entity({ position, label, sub, color, accentColor, delay = 0 }: {
       <Html center position={[0, h / 2 + 0.15, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
           <p className="text-[9px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
-          {sub && <p className="text-[7px] text-text-muted mt-0.5 whitespace-nowrap">{sub}</p>}
+          {sub && <p className="text-[7px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>}
         </div>
       </Html>
     </group>
@@ -139,7 +139,7 @@ export function BeforeAfterScene() {
     <div className="my-12 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
         <div className="h-[420px] md:h-[520px] cursor-grab active:cursor-grabbing">
-          <ClientOnly fallback={<div className="h-full animate-pulse bg-muted" />}>
+          <ClientOnly fallback={<div className="h-full animate-pulse bg-zinc-50" />}>
             <Canvas flat camera={{ position: [0, 6, 8], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>
               <color attach="background" args={['#ffffff']} />
               <ambientLight intensity={1.2} />
@@ -164,13 +164,13 @@ export function BeforeAfterScene() {
               {/* Column labels */}
               <Html center position={[-1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-label text-red-400 tracking-[0.08em] uppercase whitespace-nowrap font-bold">Before 8141</p>
-                  <p className="text-[8px] text-color-down whitespace-nowrap mt-0.5">6 intermediaries</p>
+                  <p className="text-[11px] text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before 8141</p>
+                  <p className="text-[8px] text-red-300 whitespace-nowrap mt-0.5">6 intermediaries</p>
                 </div>
               </Html>
               <Html center position={[1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-label text-color-up tracking-[0.08em] uppercase whitespace-nowrap font-bold">After 8141</p>
+                  <p className="text-[11px] text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After 8141</p>
                   <p className="text-[8px] text-emerald-400 whitespace-nowrap mt-0.5">1 primitive</p>
                 </div>
               </Html>
@@ -207,18 +207,18 @@ export function BeforeAfterScene() {
             </Canvas>
           </ClientOnly>
         </div>
-        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-border-light">
+        <div className="px-6 pb-3 pt-1 flex items-center justify-between border-t border-zinc-200">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-micro text-text-muted tracking-[0.08em]">Before (fragmented)</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Before (fragmented)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-[0.08em]">After (unified)</span>
+              <span className="text-[10px] text-text-muted tracking-wide">After (unified)</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

@@ -159,7 +159,7 @@ export function useSimulation(params: UseSimulationParams | null): UseSimulation
 
     es.onerror = () => {
       if (statusRef.current === 'loading') {
-        setError('Connection to simulation server lost. Run the simulation again.')
+        setError('Connection lost')
         setStatus('error')
       }
       cleanup()

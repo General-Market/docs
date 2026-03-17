@@ -21,7 +21,7 @@ export function DeployAgentCTA() {
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="press w-full bg-brand hover:bg-brand-dark text-white font-bold py-5 px-6 text-xl transition-colors rounded-md animate-fade-up"
+        className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-5 px-6 text-xl transition-colors rounded-xl"
       >
         {t('deploy_agent.cta_button')}
       </button>
@@ -29,7 +29,7 @@ export function DeployAgentCTA() {
   }
 
   return (
-    <div className="animate-fade-up border border-brand/50 bg-muted p-6 relative overflow-hidden rounded-md">
+    <div className="border border-zinc-900/50 bg-muted p-6 relative overflow-hidden rounded-xl">
       {/* Grid background */}
       <div className="absolute inset-0 opacity-5" style={{
         backgroundImage: 'linear-gradient(rgba(24,24,27,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(24,24,27,0.3) 1px, transparent 1px)',
@@ -52,31 +52,31 @@ export function DeployAgentCTA() {
         </div>
 
         {/* How It Works */}
-        <div className="border border-border-light bg-muted p-4 mb-6 rounded-md">
-          <p className="text-text-muted text-xs uppercase tracking-[0.08em] mb-3">{t('deploy_agent.how_it_works_label')}</p>
+        <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
+          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.how_it_works_label')}</p>
           <div className="space-y-2 text-sm">
             <div className="flex items-start gap-3">
-              <span className="text-text-primary font-bold">1.</span>
+              <span className="text-zinc-900 font-bold">1.</span>
               <p className="text-text-secondary">Your AI analyzes <span className="text-text-primary">25,000+ prediction markets</span> simultaneously</p>
             </div>
             <div className="flex items-start gap-3">
-              <span className="text-text-primary font-bold">2.</span>
+              <span className="text-zinc-900 font-bold">2.</span>
               <p className="text-text-secondary">It predicts YES or NO on thousands of events—<span className="text-text-primary">5 min, 1 hour, 24 hours</span> ahead</p>
             </div>
             <div className="flex items-start gap-3">
-              <span className="text-text-primary font-bold">3.</span>
+              <span className="text-zinc-900 font-bold">3.</span>
               <p className="text-text-secondary">Each trade is a <span className="text-text-primary">portfolio of predictions</span>—a complete worldview</p>
             </div>
             <div className="flex items-start gap-3">
-              <span className="text-text-primary font-bold">4.</span>
+              <span className="text-zinc-900 font-bold">4.</span>
               <p className="text-text-secondary">Your AI vs their AI. <span className="text-color-up">Better world model wins the money.</span></p>
             </div>
           </div>
         </div>
 
         {/* Example Trade */}
-        <div className="border border-border-light bg-muted p-4 mb-6 rounded-md">
-          <p className="text-text-muted text-xs uppercase tracking-[0.08em] mb-3">{t('deploy_agent.example_label')}</p>
+        <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
+          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.example_label')}</p>
           <div className="font-mono text-xs space-y-1">
             <p className="text-text-muted">Your AI predicts 2,847 markets at 2:1 odds:</p>
             <p className="text-text-muted mt-2">→ BTC above $95k in 24h? <span className="text-color-up">YES</span></p>
@@ -92,7 +92,7 @@ export function DeployAgentCTA() {
         {/* Deploy Command */}
         <button
           onClick={handleCopy}
-          className="press w-full bg-brand hover:bg-brand-dark text-white font-bold py-4 px-6 text-lg transition-colors mb-3 rounded-md"
+          className="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 px-6 text-lg transition-colors mb-3 rounded-xl"
         >
           {copied ? t('deploy_agent.copy_success') : t('deploy_agent.copy_button')}
         </button>
@@ -100,8 +100,8 @@ export function DeployAgentCTA() {
         {/* Footer */}
         <div className="flex items-center justify-center gap-4 text-xs text-text-muted font-mono">
           <span>{t('deploy_agent.requirements')}</span>
-          <span className="text-text-primary">|</span>
-          <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="text-text-primary hover:text-brand transition-colors">
+          <span className="text-zinc-900">|</span>
+          <a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="text-zinc-900 hover:text-zinc-700 transition-colors">
             {t('deploy_agent.full_docs')}
           </a>
         </div>

@@ -7,7 +7,6 @@ import { useBatches } from '@/hooks/vision/useBatches'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getBatchTickState } from '@/lib/vision/tick'
-import { PageSection } from '@/components/layout/PageSection'
 import { Link } from '@/i18n/routing'
 import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
@@ -108,7 +107,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           </p>
           <button
             onClick={() => router.push('/')}
-            className="text-caption font-bold text-black underline hover:no-underline"
+            className="text-[13px] font-bold text-black underline hover:no-underline"
           >
             Back to Sources
           </button>
@@ -129,33 +128,34 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const totalSet = counts.up + counts.down
 
   return (
-    <PageSection as="div" className="py-6">
+    <div className="px-6 lg:px-12 py-6">
+      <div className="max-w-site mx-auto">
         {/* Source Hero */}
         <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} />
 
         {/* Batch bar */}
         <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
           <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Tick
             </div>
-            <div className="text-subhead font-bold font-mono text-black">
+            <div className="text-[16px] font-bold font-mono text-black">
               {activeBatch ? `#${activeBatch.currentTick}` : '#0'}
             </div>
           </div>
           <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Players
             </div>
-            <div className="text-subhead font-bold font-mono text-black">
+            <div className="text-[16px] font-bold font-mono text-black">
               {activeBatch?.playerCount ?? 0}
             </div>
           </div>
           <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Pool
             </div>
-            <div className="text-subhead font-bold font-mono text-color-up">
+            <div className="text-[16px] font-bold font-mono text-color-up">
               {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
             </div>
           </div>
@@ -163,26 +163,26 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           <div className="flex-1">
             <div className="h-1.5 bg-border-light overflow-hidden">
               <div
-                className="h-full transition-[width] duration-1000 bg-black"
+                className="h-full transition-all duration-1000 bg-black"
                 style={{ width: `${(tickState.elapsed / tickState.tickDuration) * 100}%` }}
               />
             </div>
           </div>
           {/* Set status */}
           <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Set
             </div>
-            <div className="text-subhead font-bold font-mono text-color-up">
+            <div className="text-[16px] font-bold font-mono text-color-up">
               {totalSet}/{totalMarkets}
             </div>
           </div>
           {/* Timer */}
           <div>
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className="text-subhead font-bold font-mono tabular-nums text-black">
+            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
               {formatTime(tickState.remaining)}
             </div>
           </div>
@@ -209,12 +209,13 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         </div>
 
         {/* Related links */}
-        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-caption text-text-secondary">
+        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
           <Link href="/" className="hover:text-black transition-colors">All Sources</Link>
           <Link href="/sources" className="hover:text-black transition-colors">Source Health</Link>
           <Link href="/points" className="hover:text-black transition-colors">Earn Points</Link>
           <Link href="/about" className="hover:text-black transition-colors">About</Link>
         </div>
-    </PageSection>
+      </div>
+    </div>
   )
 }

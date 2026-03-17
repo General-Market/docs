@@ -144,7 +144,7 @@ function BeforeSection({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={tx1Ref} position={[-2, 1.5, 0]}>
         <TxBox position={[0, 0, 0]} size={[1.6, 0.7, 1.0]} color={BLUE} />
         <Html center position={[0, 0.55, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
+          <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
             TX 1: Approve
           </p>
         </Html>
@@ -154,7 +154,7 @@ function BeforeSection({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={tx2Ref} position={[2, 1.5, 0]}>
         <TxBox position={[0, 0, 0]} size={[1.6, 0.7, 1.0]} color={BLUE} />
         <Html center position={[0, 0.55, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
+          <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
             TX 2: Swap
           </p>
         </Html>
@@ -433,7 +433,7 @@ function AfterSection({ reducedMotion }: { reducedMotion: boolean }) {
 
       {/* Frame TX label */}
       <Html center position={[0, -0.65, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+        <p className="text-[11px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
           Frame TX: Atomic
         </p>
       </Html>
@@ -492,7 +492,7 @@ function NoGapLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref}>
       <Html center position={[0, -2.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-green-50 border border-green-300 rounded-md px-3 py-1">
-          <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
             No gap = no front-running
           </p>
         </div>

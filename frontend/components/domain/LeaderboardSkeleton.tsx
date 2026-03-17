@@ -25,8 +25,8 @@ export function LeaderboardSkeleton() {
       <div className="section-bar">
         <div className="flex items-center gap-3">
           <div className="section-bar-title">AGENT LEADERBOARD</div>
-          <div className="w-2 h-2 rounded-full bg-text-muted" />
-          <div className="section-bar-value">Loading leaderboard...</div>
+          <div className="w-2 h-2 rounded-full bg-zinc-500" />
+          <div className="section-bar-value">Loading...</div>
         </div>
       </div>
 
@@ -37,11 +37,13 @@ export function LeaderboardSkeleton() {
             <TableRow>
               <TableHead className="text-center w-16">Rank</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead>ROI</TableHead>
+              <TableHead>P&L</TableHead>
               <TableHead className="hidden lg:table-cell w-28">Trend</TableHead>
               <TableHead className="hidden md:table-cell">Bets</TableHead>
               <TableHead className="hidden md:table-cell">Avg Portfolio</TableHead>
               <TableHead>Max Portfolio</TableHead>
+              <TableHead className="hidden md:table-cell">Win Rate</TableHead>
+              <TableHead className="hidden md:table-cell">ROI</TableHead>
               <TableHead className="hidden md:table-cell">Volume</TableHead>
               <TableHead className="hidden md:table-cell">Last Active</TableHead>
             </TableRow>
@@ -69,6 +71,12 @@ export function LeaderboardSkeleton() {
                 </TableCell>
                 <TableCell>
                   <Skeleton width={60} height={20} />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Skeleton width={48} height={20} />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <Skeleton width={48} height={20} />
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <Skeleton width={72} height={20} />

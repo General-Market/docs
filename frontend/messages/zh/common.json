@@ -80,15 +80,15 @@
     "esc": "ESC"
   },
   "wallet": {
-    "login": "连接钱包",
+    "login": "在 Base 上登录",
     "connecting": "连接中...",
     "switching": "切换中...",
-    "switch_network": "切换到 General Market",
+    "switch_network": "切换到 Index Settlement",
     "install_metamask": "安装 MetaMask",
     "connect_to_buy": "连接钱包以购买 ITP 份额",
     "connect_to_sell": "连接钱包以出售 ITP 份额",
     "connect_to_create": "连接钱包以创建批次",
-    "sign_up": "连接钱包",
+    "sign_up": "注册",
     "deposit": "充值"
   },
   "status": {
@@ -109,11 +109,11 @@
     "generic": "出现错误，请重试。",
     "wallet_not_connected": "请先连接您的钱包。",
     "wrong_chain": "请切换到正确的网络。",
-    "transaction_failed": "交易失败。请检查钱包后重试。",
+    "transaction_failed": "交易失败",
     "transaction_rejected": "交易被拒绝",
     "confirmation_failed": "确认失败",
     "insufficient_balance": "余额不足",
-    "failed_to_fetch": "无法加载数据。请检查连接并刷新。"
+    "failed_to_fetch": "数据获取失败"
   },
   "warnings": {
     "tx_stuck_title": "交易可能卡住",
@@ -133,7 +133,7 @@
     "days_ago": "{count}天前"
   },
   "how_it_works": {
-    "title": "运作方式",
+    "title": "AGIARENA 运作方式",
     "step1_title": "下注",
     "step1_subtitle": "智能体建立仓位",
     "step1_description": "AI 智能体分析数千个市场，并根据其世界观模型进行下注。",
@@ -156,8 +156,8 @@
   "agent_search": {
     "placeholder": "输入钱包地址...",
     "find_rank": "查找排名",
-    "not_found": "未找到该玩家。",
-    "not_found_hint": "该地址尚无投资组合投注。",
+    "not_found": "未找到智能体。",
+    "not_found_hint": "您是否已下过组合投注？",
     "deploy_agent": "部署智能体",
     "dismiss": "关闭"
   },
@@ -206,7 +206,7 @@
     "no_bets_hint": "该智能体尚未下过组合投注",
     "no_bets_found": "未找到投注",
     "no_bets_found_hint": "下第一笔投注后即可在此查看",
-    "agent_no_bets": "该玩家尚无投注。",
+    "agent_no_bets": "该智能体尚未进入竞技场",
     "agent_no_bets_hint": "市场开放后再来查看。",
     "no_bets_check_back": "请稍后再来查看。",
     "end_of_feed": "已到底部",
@@ -215,7 +215,7 @@
     "no_bilateral_bets": "未找到双边投注",
     "no_bilateral_bets_hint": "尝试更改状态筛选或",
     "no_positions_match": "没有与您搜索匹配的仓位",
-    "error_loading_performance": "无法加载表现数据。请尝试刷新。",
+    "error_loading_performance": "加载表现数据出错",
     "resolved": "已结算"
   },
   "connection": {

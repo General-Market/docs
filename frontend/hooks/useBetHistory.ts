@@ -90,8 +90,8 @@ export function useBetHistory({ address, enabled = true }: UseBetHistoryOptions)
     queryKey: ['bets', 'user', address],
     queryFn: () => fetchBetHistory(address!),
     enabled: enabled && !!address,
-    refetchInterval: 30_000,
-    staleTime: 25_000
+    refetchInterval: 5000,
+    staleTime: 3000
   })
 
   return {

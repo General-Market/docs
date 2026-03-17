@@ -3,7 +3,6 @@
 import { useMemo } from 'react'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { SOURCE_CATEGORIES } from '@/lib/vision/source-categories'
-import { PageSection } from '@/components/layout/PageSection'
 
 interface CategoryNavProps {
   activeCategory: string
@@ -34,9 +33,9 @@ export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavPro
 
   return (
     <div className="border-b border-[var(--border)] bg-white">
-      <PageSection as="div">
+      <div className="px-6 lg:px-12">
         <div
-          className="flex items-center gap-1 h-11 overflow-x-auto"
+          className="max-w-site mx-auto flex items-center gap-1 h-11 overflow-x-auto"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {pills.map(p => {
@@ -45,18 +44,18 @@ export function CategoryNav({ activeCategory, onCategoryChange }: CategoryNavPro
               <button
                 key={p.key}
                 onClick={() => onCategoryChange(p.key)}
-                className={`shrink-0 px-4 py-2 text-caption font-medium rounded transition-colors whitespace-nowrap ${
+                className={`shrink-0 px-4 py-2 text-[13px] font-medium rounded transition-all whitespace-nowrap ${
                   isActive
                     ? 'text-black bg-surface font-semibold'
                     : 'text-text-secondary hover:text-black hover:bg-surface'
                 }`}
               >
-                {p.label} <span className="text-label tabular-nums text-text-muted">{p.count}</span>
+                {p.label} <span className="text-[11px] tabular-nums text-text-muted">{p.count}</span>
               </button>
             )
           })}
         </div>
-      </PageSection>
+      </div>
     </div>
   )
 }

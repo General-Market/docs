@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { useTranslations } from 'next-intl'
 import { useAccount, useConnect } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 
@@ -20,7 +19,6 @@ interface WalletActionButtonProps {
  * Styling is applied by the caller via className (use Button variants: buy, sell, default, outline).
  */
 export function WalletActionButton({ onClick, children, className, disabled }: WalletActionButtonProps) {
-  const t = useTranslations('common')
   const { isConnected } = useAccount()
   const { connect, connectors, isPending } = useConnect()
   const [hovered, setHovered] = useState(false)
@@ -65,7 +63,7 @@ export function WalletActionButton({ onClick, children, className, disabled }: W
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {!isConnected && hovered ? t('wallet.login') : children}
+      {!isConnected && hovered ? 'Connect Wallet' : children}
     </button>
   )
 }

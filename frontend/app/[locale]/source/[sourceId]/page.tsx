@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const source = await getSourceDisplayServer(sourceId)
 
   if (!source) {
-    return { title: 'Data Source Not Found \u2014 General Market' }
+    return { title: 'Source Not Found' }
   }
 
   const category = getCategoryLabel(source.category)

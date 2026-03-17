@@ -36,7 +36,8 @@ export function useBacktest() {
       })
 
       if (!res.ok) {
-        throw new Error('Backtest failed. The server may be temporarily unavailable.')
+        const text = await res.text().catch(() => `HTTP ${res.status}`)
+        throw new Error(`Backtest failed: ${text}`)
       }
 
       const data = await res.json()

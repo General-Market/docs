@@ -129,8 +129,8 @@ export function useLeaderboard(): UseLeaderboardReturn {
   } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: fetchLeaderboard,
-    refetchInterval: 30_000, // SSE provides real-time updates; this is fallback
-    staleTime: 25_000
+    refetchInterval: 5000, // 5 seconds for near real-time updates
+    staleTime: 3000 // Consider data stale after 3 seconds
   })
 
   return {

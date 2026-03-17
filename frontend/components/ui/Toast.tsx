@@ -46,28 +46,21 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     success: 'border-l-color-up',
     error: 'border-l-color-down',
     warning: 'border-l-color-warning',
-    info: 'border-l-color-info',
+    info: 'border-l-zinc-400',
   }[toast.type]
 
   const iconColor = {
     success: 'text-color-up',
     error: 'text-color-down',
     warning: 'text-color-warning',
-    info: 'text-color-info',
-  }[toast.type]
-
-  const bgTint = {
-    success: 'bg-surface-up',
-    error: 'bg-surface-down',
-    warning: 'bg-surface-warning',
-    info: 'bg-surface-info',
+    info: 'text-zinc-500',
   }[toast.type]
 
   return (
     <div
       className={`
-        ${bgTint} border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-md shadow-card
-        animate-toast-in transition-[opacity,transform] duration-300 ease-in-out
+        bg-card border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-xl shadow-card
+        transition-all duration-300 ease-in-out
         ${isExiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}
       `}
     >

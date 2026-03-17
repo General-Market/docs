@@ -13,8 +13,8 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="bg-white border border-border-light rounded-card p-3 animate-pulse">
-            <div className="h-3 bg-muted rounded w-20 mb-2" />
-            <div className="h-5 bg-muted rounded w-12" />
+            <div className="h-3 bg-gray-100 rounded w-20 mb-2" />
+            <div className="h-5 bg-gray-100 rounded w-12" />
           </div>
         ))}
       </div>
@@ -24,7 +24,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
   if (!latest) {
     return (
       <div className="bg-white border border-border-light rounded-card p-4 text-center">
-        <p className="text-caption text-text-muted">No data available yet</p>
+        <p className="text-[13px] text-text-muted">No data available yet</p>
       </div>
     )
   }
@@ -33,7 +33,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
     {
       label: 'Network',
       value: latest.worst_status === 'healthy' ? 'Healthy' : latest.worst_status === 'degraded' ? 'Degraded' : 'Unhealthy',
-      color: latest.worst_status === 'healthy' ? 'text-color-up' : latest.worst_status === 'degraded' ? 'text-color-warning' : 'text-color-down',
+      color: latest.worst_status === 'healthy' ? 'text-color-up' : latest.worst_status === 'degraded' ? 'text-yellow-600' : 'text-color-down',
     },
     {
       label: 'Quorum',
@@ -65,13 +65,13 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger" data-fade-in>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {items.map((item) => (
-        <div key={item.label} className="bg-white border border-border-light rounded-card p-3 animate-fade-up card-interactive">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">
+        <div key={item.label} className="bg-white border border-border-light rounded-card p-3">
+          <p className="text-[10px] font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">
             {item.label}
           </p>
-          <p className={`type-stat-value ${item.color}`}>
+          <p className={`text-[18px] font-black tracking-[-0.02em] ${item.color}`}>
             {item.value}
           </p>
         </div>

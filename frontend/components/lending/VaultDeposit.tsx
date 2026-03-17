@@ -80,7 +80,7 @@ export function VaultDeposit() {
 
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
+      setTxError(actionError.message || 'Transaction failed')
       setStep('input')
       setPendingDepositAmount(0n)
       approvalHandled.current = false
@@ -149,7 +149,7 @@ export function VaultDeposit() {
     : t('vault_deposit.button.deposit_usdc')
 
   return (
-    <div className="py-5" data-fade-in>
+    <div className="py-5">
       <div className="section-bar">
         <div>
           <div className="section-bar-title">{t('vault_deposit.section_title')}</div>
@@ -157,11 +157,11 @@ export function VaultDeposit() {
         </div>
       </div>
 
-      <div className="border border-border-light border-t-0 p-5 space-y-4 animate-fade-up">
+      <div className="border border-border-light border-t-0 p-5 space-y-4">
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vault_deposit.amount_label')}</label>
-            <span className="text-label text-text-muted font-mono tabular-nums">
+            <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">{t('vault_deposit.amount_label')}</label>
+            <span className="text-[11px] text-text-muted font-mono tabular-nums">
               {t('vault_deposit.balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}
             </span>
           </div>
@@ -174,28 +174,28 @@ export function VaultDeposit() {
               min="0"
               step="1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-md px-4 py-2.5 text-text-primary text-body font-mono tabular-nums focus:border-brand focus:outline-none disabled:opacity-50 input-animate"
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-2.5 text-text-primary text-[15px] font-mono tabular-nums focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
               onClick={() => setAmount(formattedBalance)}
               disabled={isProcessing}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-bold text-brand hover:text-brand-dark disabled:opacity-50 uppercase tracking-[0.08em]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-900 hover:text-zinc-700 disabled:opacity-50 uppercase tracking-wider"
             >
-              MAX
+              Max
             </button>
           </div>
           {amount && parsedAmount > (usdcBalance as bigint ?? 0n) && (
-            <p className="text-color-down text-label mt-1 animate-fade-up">{t('vault_deposit.insufficient_balance')}</p>
+            <p className="text-color-down text-[11px] mt-1">{t('vault_deposit.insufficient_balance')}</p>
           )}
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > (usdcBalance as bigint ?? 0n)}
-          className={`w-full py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors press ${
+          className={`w-full py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] transition-colors ${
             step === 'success'
               ? 'bg-color-up text-white'
-              : 'bg-brand text-white hover:bg-brand-dark disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
           }`}
         >
           {buttonText}
@@ -204,24 +204,26 @@ export function VaultDeposit() {
         {isProcessing && (
           <button
             onClick={handleCancel}
-            className="w-full text-center text-label text-text-muted hover:text-text-secondary py-1 transition-colors"
+            className="w-full text-center text-[11px] text-text-muted hover:text-text-secondary py-1 transition-colors"
           >
             {t('actions.cancel')}
           </button>
         )}
 
         {stuckWarning && (
-          <div className="bg-surface-warning border border-color-warning p-3 text-color-warning text-caption animate-fade-up">
+          <div className="bg-orange-500/10 border border-orange-300 p-3 text-orange-700 text-[12px]">
             <p className="font-bold">{t('common.tx_stuck_title')}</p>
-            <p className="text-label mt-1">{t('common.tx_stuck_description')}</p>
+            <p className="text-[11px] mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-color-down/10 border border-color-down/30 p-3 text-color-down text-caption animate-fade-up">
+          <div className="bg-color-down/10 border border-color-down/30 p-3 text-color-down text-[12px]">
             {txError.includes('User rejected') || txError.includes('denied')
               ? t('common.transaction_rejected')
-              : t('common.transaction_failed')}
+              : txError.length > 100
+              ? txError.slice(0, 100) + '...'
+              : txError}
           </div>
         )}
       </div>

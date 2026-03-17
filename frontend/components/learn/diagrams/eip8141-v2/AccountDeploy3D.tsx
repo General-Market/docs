@@ -236,7 +236,7 @@ function FactoryNode({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={INDIGO} roughness={0.4} emissive={INDIGO} emissiveIntensity={0.12} />
       </mesh>
       <Html center position={[FACTORY_POS[0], FACTORY_POS[1] + 0.55, FACTORY_POS[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>Factory</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>Factory</p>
       </Html>
     </group>
   )
@@ -671,7 +671,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={fundsRef}>
         <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-amber-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
               Funds waiting
             </p>
           </div>
@@ -681,7 +681,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={deployRef}>
         <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-blue-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
               Frame 0 / Deploy
             </p>
           </div>
@@ -691,7 +691,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={validateRef}>
         <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-purple-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: PURPLE }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: PURPLE }}>
               Frame 1 / Validate
             </p>
           </div>
@@ -701,7 +701,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={executeRef}>
         <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Frame 2 / Execute
             </p>
           </div>

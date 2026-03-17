@@ -128,10 +128,9 @@ export function AnimatedNumber({
     }
   }, [safeValue, duration, disabled, prefersReducedMotion])
 
-  const safeDisplayValue = Number.isFinite(displayValue) ? displayValue : 0
   const formattedValue = formatFn
-    ? formatFn(safeDisplayValue)
-    : safeDisplayValue.toFixed(decimals)
+    ? formatFn(displayValue)
+    : displayValue.toFixed(decimals)
 
   return (
     <span className={`${className} ${justChanged ? 'number-changed' : ''}`}>

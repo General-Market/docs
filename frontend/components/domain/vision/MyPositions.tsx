@@ -46,7 +46,7 @@ function PositionRow({
       {/* Batch info */}
       <div className="min-w-0">
         <p className="text-sm font-bold text-text-primary truncate">{name}</p>
-        <p className="text-micro text-text-muted font-mono">
+        <p className="text-[10px] text-text-muted font-mono">
           {pos.batch.marketCount || pos.batch.marketIds.length} mkts
           {' \u00B7 '}
           {pos.batch.tickDuration / 60}min
@@ -60,7 +60,7 @@ function PositionRow({
         <p className="text-sm font-mono font-bold text-text-primary tabular-nums">
           ${fmtUsdc(pos.balance)}
         </p>
-        <p className={`text-micro font-mono tabular-nums ${profitable ? 'text-color-up' : 'text-color-down'}`}>
+        <p className={`text-[10px] font-mono tabular-nums ${profitable ? 'text-color-up' : 'text-color-down'}`}>
           {fmtPnl(pos.pnl)} ({fmtPct(pos.pnlPercent)})
         </p>
       </div>
@@ -100,7 +100,7 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
         <div className="mb-3 bg-muted border border-border-light rounded-card px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted">
+              <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-text-muted">
                 Vision Balance
               </p>
               <p className="text-sm font-bold text-text-primary tabular-nums font-mono">
@@ -108,10 +108,10 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
               </p>
             </div>
             <div className="text-right">
-              <p className="text-micro text-text-muted font-mono">
+              <p className="text-[10px] text-text-muted font-mono">
                 L3: ${fmtUsdc(realBalance)}
               </p>
-              <p className="text-micro text-text-muted font-mono">
+              <p className="text-[10px] text-text-muted font-mono">
                 Settlement-backed: ${fmtUsdc(virtualBalance)}
               </p>
             </div>
@@ -125,11 +125,11 @@ export function MyPositions({ onSelectBatch }: MyPositionsProps) {
         className="w-full flex items-center justify-between px-1 mb-2"
       >
         <div className="flex items-center gap-2">
-          <span className={`text-micro transition-transform duration-150 ${collapsed ? '' : 'rotate-90'}`}>
+          <span className={`text-[10px] transition-transform duration-150 ${collapsed ? '' : 'rotate-90'}`}>
             {'\u25B6'}
           </span>
           <div>
-            <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand">
+            <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted">
               {t('my_positions.title')}
             </p>
             {!isLoading && positions.length > 0 && (

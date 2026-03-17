@@ -56,7 +56,7 @@ function Platform() {
       </RoundedBox>
       {/* Title label */}
       <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
           After EIP-8141
         </p>
       </Html>
@@ -165,7 +165,7 @@ function FrameCompartment({
         <meshBasicMaterial color={color} wireframe transparent opacity={0.3} />
       </mesh>
       <Html center position={[0, 0.65, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color }}>{label}</p>
       </Html>
     </group>
   )
@@ -322,7 +322,7 @@ function AcceptGate({ reducedMotion }: { reducedMotion: boolean }) {
       </mesh>
       {/* ACCEPT label */}
       <Html center position={[0, 1.05, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>ACCEPT</p>
       </Html>
     </group>
   )

@@ -33,32 +33,32 @@ function getStatusBadge(status: SignatureStatus['status']): {
     case 'collecting':
       return {
         label: 'Collecting',
-        bgColor: 'bg-surface-warning',
-        textColor: 'text-color-warning',
+        bgColor: 'bg-yellow-100',
+        textColor: 'text-yellow-700',
       }
     case 'ready':
       return {
         label: 'Ready',
-        bgColor: 'bg-surface-up',
-        textColor: 'text-color-up',
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-700',
       }
     case 'submitted':
       return {
         label: 'Submitted',
-        bgColor: 'bg-surface-info',
-        textColor: 'text-color-info',
+        bgColor: 'bg-cyan-100',
+        textColor: 'text-cyan-700',
       }
     case 'expired':
       return {
         label: 'Expired',
-        bgColor: 'bg-surface-down',
-        textColor: 'text-color-down',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
       }
     default:
       return {
         label: 'Unknown',
-        bgColor: 'bg-muted',
-        textColor: 'text-text-muted',
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-600',
       }
   }
 }
@@ -68,15 +68,15 @@ function getStatusBadge(status: SignatureStatus['status']): {
  */
 function getProgressColor(percentage: number, thresholdMet: boolean): string {
   if (thresholdMet) {
-    return 'bg-color-up'
+    return 'bg-green-500'
   }
   if (percentage >= 75) {
-    return 'bg-color-warning'
+    return 'bg-yellow-500'
   }
   if (percentage >= 50) {
-    return 'bg-color-warning'
+    return 'bg-orange-500'
   }
-  return 'bg-color-down'
+  return 'bg-red-500'
 }
 
 /**
@@ -169,7 +169,7 @@ export function SignatureProgress({
         {data.status === 'collecting' && (
           <div className="w-16 h-1.5 bg-border-light rounded-full overflow-hidden">
             <div
-              className={`h-full ${progressColor} transition-[width] duration-300`}
+              className={`h-full ${progressColor} transition-all duration-500 ease-out`}
               style={{ width: `${progress.percentage}%` }}
             />
           </div>
@@ -180,11 +180,11 @@ export function SignatureProgress({
 
   // Full mode
   return (
-    <div className="border border-border-light rounded-card p-3 bg-white shadow-card font-mono">
+    <div className="border border-border-light rounded-xl p-3 bg-white shadow-card font-mono">
       {/* Header with status badge */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-text-muted uppercase">{t('signature_progress.label')}</span>
-        <span className={`px-2 py-1 rounded text-xs animate-fade-up ${statusBadge.bgColor} ${statusBadge.textColor}`}>
+        <span className={`px-2 py-1 rounded text-xs ${statusBadge.bgColor} ${statusBadge.textColor}`}>
           {statusBadge.label}
         </span>
       </div>
@@ -193,7 +193,7 @@ export function SignatureProgress({
       <div className="mb-2">
         <div className="w-full h-2 bg-border-light rounded-full overflow-hidden">
           <div
-            className={`h-full ${progressColor} transition-[width] duration-300`}
+            className={`h-full ${progressColor} transition-all duration-500 ease-out`}
             style={{ width: `${progress.percentage}%` }}
           />
         </div>
@@ -204,15 +204,15 @@ export function SignatureProgress({
         <span className="text-text-primary">
           {t('signature_progress.keepers_signed', { signed: progress.signedCount, total: progress.totalKeepers })}
         </span>
-        <span className={progress.thresholdMet ? 'text-color-up' : 'text-text-muted'}>
+        <span className={progress.thresholdMet ? 'text-green-600' : 'text-text-muted'}>
           {t('signature_progress.need_count', { count: progress.requiredCount })}
         </span>
       </div>
 
       {/* Submitted transaction link */}
       {data.status === 'submitted' && data.txHash && (
-        <div className="mt-2 pt-2 border-t border-border-light animate-fade-up">
-          <span className="text-xs text-text-muted">Transaction: </span>
+        <div className="mt-2 pt-2 border-t border-border-light">
+          <span className="text-xs text-text-muted">Tx: </span>
           <span className="text-xs text-color-info">
             {data.txHash.slice(0, 10)}...{data.txHash.slice(-8)}
           </span>

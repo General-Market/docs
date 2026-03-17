@@ -144,27 +144,5 @@
     "loading": "加载 NAV 数据中...",
     "error": "加载图表数据失败",
     "no_data": "此时间段暂无 NAV 数据"
-  },
-  "itp_listing": {
-    "search_placeholder": "按名称或代码搜索基金...",
-    "showing": "显示 {count} / {total} 个基金",
-    "loading": "加载基金中...",
-    "no_match": "没有匹配的基金。",
-    "no_funds": "暂无可用基金。",
-    "ticker": "代码",
-    "fund": "基金名称",
-    "nav": "NAV",
-    "net_assets": "净资产",
-    "shares_outstanding": "流通份额",
-    "trade": "交易",
-    "buy": "买入",
-    "sell": "卖出",
-    "first": "首页",
-    "prev": "上一页",
-    "next": "下一页",
-    "last": "末页",
-    "nav_chart": "NAV 图表",
-    "page_info": "{page} / {total}",
-    "page_range": "{start}\u2013{end} / {total}"
   }
 }

@@ -65,7 +65,7 @@ export function useExplorerHealth(): UseExplorerHealthReturn {
       setLatest(latestData.network || null)
       setError(null)
     } catch (e: any) {
-      setError('Unable to reach the oracle network. Data will refresh automatically.')
+      setError(e.message || 'Failed to fetch explorer data')
     } finally {
       setLoading(false)
     }

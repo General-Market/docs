@@ -7,14 +7,14 @@ export function Footer() {
   const t = useTranslations('common')
 
   return (
-    <footer className="bg-black text-white/60 pt-12 pb-6 px-6 lg:px-12 text-caption">
+    <footer className="bg-zinc-950 text-white/60 pt-12 pb-6 px-6 lg:px-12 text-[12px]">
       <div className="max-w-site mx-auto">
         {/* 3-column grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 pb-10 border-b border-white/10">
           {/* Col 1: Brand */}
           <div>
-            <span className="text-white font-bold text-body tracking-tight">{t('brand.name')}</span>
-            <p className="mt-2 text-white/40 leading-relaxed text-label">
+            <span className="text-white font-bold text-[15px] tracking-tight">{t('brand.name')}</span>
+            <p className="mt-2 text-white/40 leading-relaxed text-[11px]">
               {t('brand.description')}
             </p>
             <div className="flex gap-3 mt-4">
@@ -45,7 +45,7 @@ export function Footer() {
 
           {/* Col 2: Product */}
           <div>
-            <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">{t('footer.product')}</span>
+            <span className="text-white/80 font-semibold text-[11px] uppercase tracking-[0.1em] block mb-3">{t('footer.product')}</span>
             <ul className="space-y-2">
               <li><Link href="/index" className="hover:text-white transition-colors">{t('footer.indexes')}</Link></li>
               <li><Link href="/" className="hover:text-white transition-colors">{t('footer.vision')}</Link></li>
@@ -57,7 +57,7 @@ export function Footer() {
 
           {/* Col 3: Resources */}
           <div>
-            <span className="text-white/80 font-semibold text-label uppercase tracking-[0.08em] block mb-3">{t('footer.resources')}</span>
+            <span className="text-white/80 font-semibold text-[11px] uppercase tracking-[0.1em] block mb-3">{t('footer.resources')}</span>
             <ul className="space-y-2">
               <li><a href="https://docs.generalmarket.io" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.docs')}</a></li>
               <li><a href="https://discord.gg/xsfgzwR6" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{t('footer.discord')}</a></li>
@@ -71,8 +71,8 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <span className="text-white/30 text-micro">{t('footer.copyright')}</span>
-          <p className="text-white/25 text-micro max-w-xl text-center sm:text-right leading-relaxed">
+          <span className="text-white/30 text-[10px]">{t('footer.copyright')}</span>
+          <p className="text-white/25 text-[10px] max-w-xl text-center sm:text-right leading-relaxed">
             {t('footer.disclaimer')}
           </p>
         </div>

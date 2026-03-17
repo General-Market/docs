@@ -244,28 +244,28 @@ export default function BatchEntryPanel({
 
   return (
     <div>
-      <div className="border border-border-light bg-white px-4 py-3">
+      <div className="border border-neutral-200 bg-white px-4 py-3">
         {/* Header + Timer — single compact row */}
         <div className="flex items-center justify-between mb-2">
           <div>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-sm font-semibold text-text-primary">Set predictions for next tick</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">Set predictions for next tick</h2>
               {activeBatch && (
-                <span className="text-micro text-text-muted font-mono">#{activeBatch.id}</span>
+                <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
               )}
             </div>
-            <p className="text-micro text-text-muted">
+            <p className="text-[10px] text-text-muted">
               {activeBatch ? `Tick ${activeBatch.currentTick}` : 'Waiting for batch...'}
             </p>
           </div>
-          <p className="text-title font-mono font-black tracking-tight leading-none text-black">
+          <p className="text-[24px] font-mono font-black tracking-tight leading-none text-black">
             {formatCountdown(tickState.remaining)}
           </p>
         </div>
 
         {/* Bitmap summary — visual bar + labels */}
         <div className="mb-3">
-          <div className="flex items-center justify-between text-micro font-semibold mb-1">
+          <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
             <span className="text-color-up">{counts.up} UP</span>
             <span className="text-color-down">{counts.down} DN</span>
             <span className="text-text-muted">{counts.empty} unset</span>
@@ -273,13 +273,13 @@ export default function BatchEntryPanel({
           <div className="flex h-1.5 rounded-full overflow-hidden bg-border-light">
             {counts.up > 0 && (
               <div
-                className="bg-color-up transition-[width]"
+                className="bg-color-up transition-all"
                 style={{ width: `${(counts.up / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
               />
             )}
             {counts.down > 0 && (
               <div
-                className="bg-color-down transition-[width]"
+                className="bg-color-down transition-all"
                 style={{ width: `${(counts.down / Math.max(counts.up + counts.down + counts.empty, 1)) * 100}%` }}
               />
             )}
@@ -288,13 +288,13 @@ export default function BatchEntryPanel({
 
         {/* Tick status messages */}
         {isJoined && betsSubmittedTick !== null && (
-          <div className="mb-3 rounded-md border border-color-up/20 bg-surface-up px-3 py-2">
-            <p className="text-label font-semibold text-color-up">Your bets are set for the next tick</p>
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <p className="text-[11px] font-semibold text-emerald-700">Your bets are set for the next tick</p>
           </div>
         )}
         {isJoined && betsSubmittedTick === null && !hasPredictions && (
-          <div className="mb-3 rounded-md border border-border-light bg-muted px-3 py-2">
-            <p className="text-label text-text-muted">No bets set — sitting out this tick</p>
+          <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <p className="text-[11px] text-neutral-500">No bets set — sitting out this tick</p>
           </div>
         )}
 
@@ -303,10 +303,10 @@ export default function BatchEntryPanel({
           <button
             type="button"
             onClick={handleConnectWallet}
-            className="w-full mb-3 rounded-md border border-dashed border-border-medium bg-muted px-3 py-2 text-left hover:bg-surface transition-colors"
+            className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
           >
-            <p className="text-label font-bold text-text-primary">Connect Wallet</p>
-            <p className="text-micro text-text-muted mt-0.5">Connect your wallet to start playing</p>
+            <p className="text-[11px] font-bold text-neutral-700">Connect Wallet</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
           </button>
         )}
         {/* Deposit prompt when connected but balance is 0 */}
@@ -314,10 +314,10 @@ export default function BatchEntryPanel({
           <button
             type="button"
             onClick={() => setShowDepositModal(true)}
-            className="w-full mb-3 rounded-md border border-dashed border-color-warning bg-surface-warning px-3 py-2 text-left hover:bg-surface-warning/80 transition-colors"
+            className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2 text-left hover:bg-yellow-100 transition-colors"
           >
-            <p className="text-label font-bold text-color-warning">No Vision balance</p>
-            <p className="text-micro text-color-warning mt-0.5">Deposit USDC to start playing</p>
+            <p className="text-[11px] font-bold text-yellow-700">No Vision balance</p>
+            <p className="text-[10px] text-yellow-600 mt-0.5">Deposit USDC to start playing</p>
           </button>
         )}
 
@@ -331,9 +331,9 @@ export default function BatchEntryPanel({
               placeholder="0.00"
               value={stakeInput}
               onChange={(e) => setStakeInput(e.target.value)}
-              className="w-full rounded-md border border-border-light bg-white px-3 py-1.5 pr-14 text-sm text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-0 transition-colors input-animate [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-medium text-text-muted">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
               USDC
             </span>
           </div>
@@ -343,7 +343,7 @@ export default function BatchEntryPanel({
                 key={amt}
                 type="button"
                 onClick={() => setStakeInput(String(amt))}
-                className="flex-1 rounded border border-border-light py-0.5 text-label font-medium text-text-secondary hover:bg-muted hover:border-border-medium transition-colors press"
+                className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
               >
                 ${amt}
               </button>
@@ -353,11 +353,11 @@ export default function BatchEntryPanel({
 
         {/* Active position indicator + claim/withdraw */}
         {isJoined && position && (
-          <div className="mb-3 rounded-md border border-color-up/20 bg-surface-up px-3 py-2">
+          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
             <div className="flex items-center justify-between">
-              <span className="text-label font-medium text-color-up">Active position</span>
+              <span className="text-[11px] font-medium text-emerald-700">Active position</span>
               <div className="flex items-center gap-2">
-                <span className="text-label font-mono text-color-up">
+                <span className="text-[11px] font-mono text-emerald-700">
                   {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                 </span>
                 {/* Only show withdraw after at least one tick has resolved since joining */}
@@ -365,7 +365,7 @@ export default function BatchEntryPanel({
                   <button
                     type="button"
                     onClick={() => setShowClaimModal(true)}
-                    className="px-2 py-0.5 text-micro font-semibold text-color-up border border-color-up/40 rounded hover:bg-surface-up transition-colors"
+                    className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
                   >
                     Withdraw
                   </button>
@@ -377,13 +377,13 @@ export default function BatchEntryPanel({
 
         {/* Error display — dismissable */}
         {displayError && (
-          <div className="text-label mb-2 rounded-md border border-color-down bg-surface-down px-3 py-2">
+          <div className="text-[11px] mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-color-down line-clamp-2 flex-1">{displayError}</p>
+              <p className="text-red-600 line-clamp-2 flex-1">{displayError}</p>
               <button
                 type="button"
                 onClick={() => { resetJoin(); resetDeposit(); resetSubmit() }}
-                className="text-color-down hover:text-color-down text-sm font-bold flex-shrink-0 leading-none"
+                className="text-red-400 hover:text-red-600 text-sm font-bold flex-shrink-0 leading-none"
                 title="Dismiss"
               >
                 &times;
@@ -393,7 +393,7 @@ export default function BatchEntryPanel({
               <button
                 type="button"
                 onClick={() => { setShowDepositModal(true); resetJoin(); resetDeposit(); resetSubmit() }}
-                className="mt-1.5 px-3 py-1 text-label font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
+                className="mt-1.5 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
               >
                 Deposit USDC
               </button>
@@ -405,14 +405,14 @@ export default function BatchEntryPanel({
         <WalletActionButton
           onClick={handleEnterBatch}
           disabled={!canSubmit || isProcessing}
-          className="w-full rounded-md bg-terminal py-2 text-sm font-semibold text-white hover:opacity-90 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed transition-colors press"
+          className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
         >
           {buttonLabel}
         </WalletActionButton>
 
         {/* Batch info footer */}
         {activeBatch && (
-          <div className="mt-2 flex items-center justify-between text-micro text-text-muted">
+          <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
             <span>{activeBatch.playerCount} players</span>
             <span>{activeBatch.marketCount || marketIds.length} markets</span>
           </div>

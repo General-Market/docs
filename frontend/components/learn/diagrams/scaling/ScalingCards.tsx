@@ -18,7 +18,7 @@ export function ScalingStats() {
   return (
     <div className="my-10 -mx-4 md:-mx-8">
       <div className="bg-white border-t-[3px] border-b border-black border-b-border-light">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-border-light">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-zinc-200">
           {stats.map((s, i) => (
             <motion.div
               key={i}
@@ -28,8 +28,8 @@ export function ScalingStats() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
             >
-              <p className="text-display font-black tracking-tighter text-black">{s.value}</p>
-              <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mt-2">{s.label}</p>
+              <p className="text-[32px] font-black tracking-tighter text-black">{s.value}</p>
+              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-zinc-500 mt-2">{s.label}</p>
             </motion.div>
           ))}
         </div>
@@ -54,10 +54,10 @@ export function ScalingSummary() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-display md:text-display font-black tracking-tight leading-[1.15]">
+          <p className="text-[28px] md:text-[32px] font-black tracking-tight leading-[1.15]">
             Solo stakers survive. 100x throughput. No compromise.
           </p>
-          <p className="text-body text-text-muted mt-5 leading-relaxed">
+          <p className="text-[14px] text-zinc-400 mt-5 leading-relaxed">
             Parallel verification + ePBS + multidimensional gas + PeerDAS + ZK-EVM. Five upgrades, one validated block.
           </p>
         </div>

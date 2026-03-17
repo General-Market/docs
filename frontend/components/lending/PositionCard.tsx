@@ -42,8 +42,8 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-card shadow-card border border-border-light p-6">
-        <h2 className="text-lg font-bold text-text-primary mb-4">{t('position_card.title')}</h2>
+      <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
+        <h2 className="text-lg font-bold text-text-primary mb-4">Your Position</h2>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-muted rounded w-1/2" />
           <div className="h-4 bg-muted rounded w-3/4" />
@@ -67,9 +67,9 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
                       healthFactor >= 1.0 ? 'text-color-warning' :
                       'text-color-down'
 
-  const healthBg = healthFactor >= 1.5 ? 'bg-surface-up border-color-up' :
-                   healthFactor >= 1.0 ? 'bg-surface-warning border-color-warning' :
-                   'bg-surface-down border-color-down'
+  const healthBg = healthFactor >= 1.5 ? 'bg-surface-up border-green-200' :
+                   healthFactor >= 1.0 ? 'bg-surface-warning border-yellow-200' :
+                   'bg-surface-down border-red-200'
 
   // Format last updated time
   const timeSinceUpdate = lastUpdated
@@ -77,15 +77,15 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
     : null
 
   return (
-    <div className={`border rounded-card p-6 card-interactive hover-lift ${healthBg}`}>
+    <div className={`border rounded-xl p-6 ${healthBg}`}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-text-primary">{t('position_card.title')}</h2>
           {crisisLevel && crisisLevel !== 'Normal' && (
             <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-              crisisLevel === 'Emergency' ? 'bg-surface-down text-color-down border border-color-down' :
-              crisisLevel === 'Stress' ? 'bg-surface-warning text-color-warning border border-color-warning' :
-              'bg-surface-warning text-color-warning border border-color-warning'
+              crisisLevel === 'Emergency' ? 'bg-surface-down text-color-down border border-red-300' :
+              crisisLevel === 'Stress' ? 'bg-orange-50 text-orange-700 border border-orange-300' :
+              'bg-surface-warning text-color-warning border border-yellow-300'
             }`}>
               {crisisLevel}
             </span>
@@ -96,9 +96,9 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-4 stagger">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Collateral */}
-        <div className="bg-white/60 rounded-card p-4 animate-fade-up">
+        <div className="bg-white/60 rounded-xl p-4">
           <p className="text-text-muted text-xs mb-1">{t('position_card.collateral')}</p>
           <p className="text-text-primary font-bold text-xl font-mono tabular-nums">
             {parseFloat(collateralFormatted).toFixed(4)}
@@ -107,7 +107,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
         </div>
 
         {/* Debt */}
-        <div className="bg-white/60 rounded-card p-4 animate-fade-up">
+        <div className="bg-white/60 rounded-xl p-4">
           <p className="text-text-muted text-xs mb-1">{t('position_card.debt')}</p>
           <p className="text-text-primary font-bold text-xl font-mono tabular-nums">
             {parseFloat(debtFormatted).toFixed(2)}
@@ -132,7 +132,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
           <span className="text-text-secondary text-sm">{t('position_card.current_nav')}</span>
           <div className="flex items-center gap-2">
             <span className="text-text-primary font-mono tabular-nums">
-              ${priceFormatted?.toFixed(4) ?? '\u2014'}
+              ${priceFormatted?.toFixed(4) ?? '...'}
             </span>
             {isStale && (
               <span className="text-color-down text-xs">{t('position_card.stale')}</span>
@@ -148,7 +148,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
               ? timeSinceUpdate === 0
                 ? t('position_card.just_now')
                 : t('position_card.min_ago', { minutes: timeSinceUpdate })
-              : '\u2014'}
+              : '...'}
           </span>
         </div>
 
@@ -175,7 +175,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
 
       {/* Health Factor Warning */}
       {healthFactor < 1.5 && healthFactor >= 1.0 && (
-        <div className="mt-4 p-3 bg-surface-warning border border-color-warning rounded-card">
+        <div className="mt-4 p-3 bg-surface-warning border border-yellow-200 rounded-xl">
           <p className="text-color-warning text-sm">
             {t('position_card.health_warning')}
           </p>
@@ -183,7 +183,7 @@ export function PositionCard({ market, crisisLevel }: PositionCardProps) {
       )}
 
       {healthFactor < 1.0 && (
-        <div className="mt-4 p-3 bg-surface-down border border-color-down rounded-card">
+        <div className="mt-4 p-3 bg-surface-down border border-red-200 rounded-xl">
           <p className="text-color-down text-sm font-bold">
             {t('position_card.health_danger')}
           </p>

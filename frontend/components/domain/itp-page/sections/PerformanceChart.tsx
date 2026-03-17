@@ -37,7 +37,7 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   }
 
   return (
-    <section className="py-8" data-fade-in>
+    <section className="py-8">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl font-bold text-text-primary">Performance</h2>
@@ -48,7 +48,7 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
             <button
               key={t.value}
               onClick={() => setTf(t.value)}
-              className={`px-3 py-1 text-xs font-semibold rounded transition-colors press ${
+              className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
                 tf === t.value
                   ? 'bg-text-primary text-text-inverse'
                   : 'bg-muted text-text-secondary hover:text-text-primary'
@@ -60,10 +60,10 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
         </div>
       </div>
 
-      <div className="py-4 animate-fade-in">
+      <div className="py-4">
         {isLoading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-pulse bg-muted h-full w-full rounded" />
+            <div className="animate-pulse bg-gray-200 h-full w-full rounded" />
           </div>
         ) : chartData.length === 0 ? (
           <div className="h-[300px] flex items-center justify-center bg-surface rounded">
@@ -81,14 +81,14 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
               <XAxis
                 dataKey="time"
                 tickFormatter={formatTime}
-                tick={{ fontSize: 10, fill: '#999999' }}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 domain={['auto', 'auto']}
                 tickFormatter={(v: number) => `$${v.toFixed(2)}`}
-                tick={{ fontSize: 10, fill: '#999999' }}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
@@ -98,7 +98,7 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
                 labelFormatter={(ts: number) => new Date(ts * 1000).toLocaleString()}
                 contentStyle={{
                   fontSize: 12,
-                  border: '1px solid #E0E0E0',
+                  border: '1px solid #e5e7eb',
                   borderRadius: 6,
                   boxShadow: 'none',
                 }}

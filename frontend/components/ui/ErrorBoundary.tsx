@@ -49,24 +49,23 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="min-h-screen bg-page flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-md border border-border-light bg-card p-8 shadow-card animate-fade-in">
-            <div className="font-mono text-micro font-bold tracking-[0.08em] uppercase text-text-muted mb-4">System Fault</div>
-            <h2 className="text-lg font-bold text-text-primary mb-2">
-              The interface collapsed.
+          <div className="max-w-md w-full rounded-xl border border-color-down bg-surface-down p-6 text-center shadow-card">
+            <h2 className="text-xl font-bold text-color-down font-sans mb-2">
+              Something went wrong
             </h2>
             <p className="text-text-secondary text-sm mb-4">
-              All working things are temporary. This one stopped early. Reload the page to try again.
+              An unexpected error occurred. Please try again.
             </p>
             {this.state.error && (
-              <p className="text-text-muted text-xs font-mono mb-4 break-words border-l-2 border-border-medium pl-3">
+              <p className="text-text-muted text-xs mb-4 break-words">
                 {this.state.error.message}
               </p>
             )}
             <button
               onClick={this.handleRetry}
-              className="px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm rounded-md transition-colors press"
+              className="px-4 py-2 bg-card hover:bg-muted border border-border-medium text-text-primary text-sm rounded-lg transition-colors"
             >
-              Retry
+              Try Again
             </button>
           </div>
         </div>

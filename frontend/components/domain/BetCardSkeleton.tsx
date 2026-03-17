@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
  */
 export function BetCardSkeleton() {
   return (
-    <div className="border border-border-medium rounded-md p-4 bg-terminal/60">
+    <div className="border border-gray-700 rounded-lg p-4 bg-black/50">
       {/* Header with odds badge and status */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
@@ -44,7 +44,7 @@ export function BetCardSkeleton() {
       </div>
 
       {/* Payout info */}
-      <div className="bg-terminal/60 p-3 rounded border border-border-medium mb-4">
+      <div className="bg-gray-900/60 p-3 rounded border border-gray-800 mb-4">
         <Skeleton width={60} height={12} className="mb-2" />
         <div className="space-y-2">
           <div className="flex justify-between">

@@ -50,11 +50,11 @@ function DualBar({
   catKey: string;
 }) {
   return (
-    <div className="border border-border-light bg-white p-4 animate-fade-in hover-lift">
-      <div className="text-caption font-semibold text-black mb-3">{title}</div>
+    <div className="border border-border-light bg-white p-4">
+      <div className="text-[12px] font-semibold text-black mb-3">{title}</div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">
+          <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">
             Days to ATH
           </div>
           <div className="h-[180px]">
@@ -109,7 +109,7 @@ function DualBar({
           </div>
         </div>
         <div>
-          <div className="text-micro text-text-muted mb-1 uppercase tracking-[0.08em] font-medium">
+          <div className="text-[10px] text-text-muted mb-1 uppercase tracking-wider font-medium">
             ATH Multiplier
           </div>
           <div className="h-[180px]">
@@ -211,11 +211,11 @@ export function TeamEduPerformance() {
 
 export function TeamCompPerformanceGrid() {
   return (
-    <div className="my-8 space-y-4 animate-fade-in">
-      <div className="text-caption font-semibold text-black tracking-[-0.01em]">
+    <div className="my-8 space-y-4">
+      <div className="text-[13px] font-semibold text-black tracking-[-0.01em]">
         TGE-to-ATH Performance by Team Composition
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <DualBar data={TGE_GENDER_DATA} title="By Team Gender" catKey="cat" />
         <DualBar
           data={TGE_NAT_DATA}
@@ -233,7 +233,7 @@ export function TeamCompPerformanceGrid() {
           catKey="cat"
         />
       </div>
-      <div className="text-label text-text-muted">
+      <div className="text-[11px] text-text-muted">
         Median values. Multiplier = ATH price / TGE price. Only tokens with confirmed founder data and valid TGE/ATH prices included.
       </div>
     </div>

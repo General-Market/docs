@@ -144,7 +144,7 @@ export function BilateralBetsList({
               setStatusFilter(e.target.value as BilateralBetStatus | 'all')
               setPage(1)
             }}
-            className="bg-muted border border-border-light rounded-md px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
+            className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
             {STATUS_VALUES.map((value) => (
               <option key={value} value={value}>
@@ -160,7 +160,7 @@ export function BilateralBetsList({
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as SortField)}
-            className="bg-muted border border-border-light rounded-md px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
+            className="bg-muted border border-border-light rounded-lg px-3 py-1.5 text-sm font-mono text-text-primary focus:border-border-medium focus:outline-none"
           >
             {SORT_VALUES.map((value) => (
               <option key={value} value={value}>
@@ -170,7 +170,7 @@ export function BilateralBetsList({
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="px-2 py-1.5 border border-border-light rounded-md text-sm font-mono text-text-primary hover:border-border-medium transition-colors press"
+            className="px-2 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium transition-colors"
             title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
           >
             {sortOrder === 'asc' ? '\u2191' : '\u2193'}
@@ -181,7 +181,7 @@ export function BilateralBetsList({
         <div className="flex items-center gap-2">
           <span
             className={`w-2 h-2 rounded-full ${
-              sseConnected ? 'bg-color-up' : 'bg-border-light'
+              sseConnected ? 'bg-green-500' : 'bg-gray-400'
             }`}
             title={sseConnected ? 'Real-time updates active' : 'Real-time updates disconnected'}
           />
@@ -194,19 +194,19 @@ export function BilateralBetsList({
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand" />
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-zinc-900" />
         </div>
       )}
 
       {/* Error State */}
       {isError && (
-        <div className="bg-surface-down border border-color-down rounded-card p-4 text-center">
-          <p className="text-color-down font-mono text-sm">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+          <p className="text-red-600 font-mono text-sm">
             {t('bilateral.failed_to_load', { error: (error as Error)?.message || 'Unknown error' })}
           </p>
           <button
             onClick={() => refetch()}
-            className="mt-2 px-4 py-1 bg-surface-down border border-color-down rounded-md text-sm font-mono text-color-down hover:bg-surface-down/80 transition-colors press"
+            className="mt-2 px-4 py-1 bg-red-100 border border-red-200 rounded-lg text-sm font-mono text-red-700 hover:bg-red-200 transition-colors"
           >
             {tc('retry')}
           </button>
@@ -215,7 +215,7 @@ export function BilateralBetsList({
 
       {/* Empty State */}
       {!isLoading && !isError && sortedBets.length === 0 && (
-        <div className="bg-muted border border-border-light rounded-card p-8 text-center">
+        <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
           <p className="text-text-muted font-mono text-sm">{tc('empty.no_bilateral_bets')}</p>
           {statusFilter !== 'all' && (
             <p className="text-text-muted text-xs mt-2">
@@ -236,14 +236,13 @@ export function BilateralBetsList({
 
       {/* Bets Grid */}
       {!isLoading && !isError && sortedBets.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 stagger">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {sortedBets.map((bet) => (
-            <div key={bet.betId} className="animate-fade-up">
-              <BilateralBetCard
-                bet={bet}
-                currentUserAddress={currentUserAddress}
-              />
-            </div>
+            <BilateralBetCard
+              key={bet.betId}
+              bet={bet}
+              currentUserAddress={currentUserAddress}
+            />
           ))}
         </div>
       )}
@@ -254,7 +253,7 @@ export function BilateralBetsList({
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page <= 1}
-            className="px-3 py-1.5 border border-border-light rounded-md text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors press"
+            className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {tc('pagination.previous')}
           </button>
@@ -264,7 +263,7 @@ export function BilateralBetsList({
           <button
             onClick={() => handlePageChange(page + 1)}
             disabled={page >= totalPages}
-            className="px-3 py-1.5 border border-border-light rounded-md text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors press"
+            className="px-3 py-1.5 border border-border-light rounded-lg text-sm font-mono text-text-primary hover:border-border-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {tc('pagination.next')}
           </button>

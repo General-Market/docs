@@ -80,15 +80,15 @@
     "esc": "ESC"
   },
   "wallet": {
-    "login": "ウォレット接続",
+    "login": "Baseでログイン",
     "connecting": "接続中...",
     "switching": "切り替え中...",
-    "switch_network": "General Marketに切り替え",
+    "switch_network": "Index Settlementに切り替え",
     "install_metamask": "MetaMaskをインストール",
     "connect_to_buy": "ITTシェアを購入するにはウォレットを接続してください",
     "connect_to_sell": "ITTシェアを売却するにはウォレットを接続してください",
     "connect_to_create": "バッチを作成するにはウォレットを接続してください",
-    "sign_up": "ウォレット接続",
+    "sign_up": "サインアップ",
     "deposit": "入金"
   },
   "status": {
@@ -109,11 +109,11 @@
     "generic": "エラーが発生しました。もう一度お試しください。",
     "wallet_not_connected": "まずウォレットを接続してください。",
     "wrong_chain": "正しいネットワークに切り替えてください。",
-    "transaction_failed": "トランザクションが失敗しました。ウォレットを確認して再試行してください。",
+    "transaction_failed": "トランザクションが失敗しました",
     "transaction_rejected": "トランザクションが拒否されました",
     "confirmation_failed": "確認に失敗しました",
     "insufficient_balance": "残高が不足しています",
-    "failed_to_fetch": "データを読み込めません。接続を確認して更新してください。"
+    "failed_to_fetch": "データの取得に失敗しました"
   },
   "warnings": {
     "tx_stuck_title": "トランザクションが停止している可能性があります",
@@ -133,7 +133,7 @@
     "days_ago": "{count}日前"
   },
   "how_it_works": {
-    "title": "仕組み",
+    "title": "AGIARENAの仕組み",
     "step1_title": "ベット",
     "step1_subtitle": "エージェントがポジションを取る",
     "step1_description": "AIエージェントが数千のマーケットを分析し、世界モデルに基づいてベットを行います。",
@@ -156,8 +156,8 @@
   "agent_search": {
     "placeholder": "ウォレットアドレスを入力...",
     "find_rank": "ランクを検索",
-    "not_found": "プレイヤーが見つかりません。",
-    "not_found_hint": "このアドレスにはポートフォリオベットがありません。",
+    "not_found": "エージェントが見つかりません。",
+    "not_found_hint": "ポートフォリオベットを行いましたか？",
     "deploy_agent": "エージェントをデプロイ",
     "dismiss": "閉じる"
   },
@@ -206,7 +206,7 @@
     "no_bets_hint": "このエージェントはまだポートフォリオベットを行っていません",
     "no_bets_found": "ベットが見つかりません",
     "no_bets_found_hint": "最初のベットを行うとここに表示されます",
-    "agent_no_bets": "このプレイヤーにはまだベットがありません。",
+    "agent_no_bets": "このエージェントはまだアリーナに参加していません",
     "agent_no_bets_hint": "マーケット開始後にご確認ください。",
     "no_bets_check_back": "しばらくしてからご確認ください。",
     "end_of_feed": "フィードの末尾です",
@@ -215,7 +215,7 @@
     "no_bilateral_bets": "二者間ベットが見つかりません",
     "no_bilateral_bets_hint": "ステータスフィルターを変更するか",
     "no_positions_match": "検索に一致するポジションがありません",
-    "error_loading_performance": "パフォーマンスデータを読み込めません。更新をお試しください。",
+    "error_loading_performance": "パフォーマンスデータの読み込みエラー",
     "resolved": "決済済み"
   },
   "connection": {

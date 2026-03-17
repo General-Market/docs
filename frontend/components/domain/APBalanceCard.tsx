@@ -97,11 +97,11 @@ export function APBalanceCard() {
   const healthBg = apHealth === 'healthy' ? 'bg-surface-up' : apHealth === 'offline' ? 'bg-surface-down' : 'bg-surface-warning'
 
   return (
-    <div className="bg-white rounded-card shadow-card p-6 animate-fade-in card-interactive">
+    <div className="bg-white rounded-xl shadow-card p-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-md animate-scale-in ${healthColor} ${healthBg}`}>
-            {apHealth || 'Checking AP status...'}
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${healthColor} ${healthBg}`}>
+            {apHealth || 'checking...'}
           </span>
           <button
             onClick={refreshVault}
@@ -121,7 +121,7 @@ export function APBalanceCard() {
       {/* Balances */}
       <div className="space-y-3">
         {/* Native Balance */}
-        <div className="flex justify-between items-center p-3 bg-muted rounded-md">
+        <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
           <div>
             <p className="text-sm text-text-secondary">{t('ap_section.native_gas')}</p>
             <p className="text-xs text-text-muted">ETH</p>
@@ -136,7 +136,7 @@ export function APBalanceCard() {
 
         {/* Collateral Token */}
         {collateralBalance > 0n && (
-          <div className="flex justify-between items-center p-3 bg-muted rounded-md">
+          <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
             <div>
               <p className="text-sm text-text-secondary">{COLLATERAL_SYMBOL}</p>
               <p className="text-xs text-text-muted truncate" style={{ maxWidth: '150px' }}>{COLLATERAL_TOKEN_ADDRESS}</p>
@@ -159,7 +159,7 @@ export function APBalanceCard() {
             {totalTokenCount > 0 && <span className="text-text-muted font-normal ml-2">{t('ap_section.tokens_count', { count: totalTokenCount })}</span>}
           </h3>
           {totalUsdValue > 0 && (
-            <span className="text-sm font-bold text-text-primary font-mono tabular-nums">${totalUsdValue.toFixed(2)}</span>
+            <span className="text-sm font-bold text-zinc-900 font-mono tabular-nums">${totalUsdValue.toFixed(2)}</span>
           )}
         </div>
 
@@ -172,7 +172,7 @@ export function APBalanceCard() {
         ) : vaultAssets.length === 0 ? (
           <div className="text-center py-4 text-text-secondary text-sm">{t('ap_section.no_assets')}</div>
         ) : (
-          <div className="space-y-0 stagger">
+          <div className="space-y-0">
             {/* Table header */}
             <div className="grid grid-cols-4 gap-2 text-xs font-medium text-text-secondary bg-muted px-3 py-2 rounded-t-lg">
               <span>{t('ap_section.asset')}</span>
@@ -203,14 +203,14 @@ export function APBalanceCard() {
                   <button
                     onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
                     disabled={currentPage === 0}
-                    className="px-3 py-1 text-xs bg-muted text-text-primary rounded-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-border-light transition-colors press"
+                    className="px-3 py-1 text-xs bg-muted text-text-primary rounded-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-border-light transition-colors"
                   >
                     {tc('pagination.prev')}
                   </button>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
                     disabled={currentPage >= totalPages - 1}
-                    className="px-3 py-1 text-xs bg-muted text-text-primary rounded-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-border-light transition-colors press"
+                    className="px-3 py-1 text-xs bg-muted text-text-primary rounded-md disabled:opacity-30 disabled:cursor-not-allowed hover:bg-border-light transition-colors"
                   >
                     {tc('pagination.next')}
                   </button>

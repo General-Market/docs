@@ -31,13 +31,13 @@ export default function SourcesPageClient() {
       <div className="max-w-site-wide mx-auto px-4 md:px-8">
         {/* Page header */}
         <div className="pt-10 pb-0">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">
             Data Sources
           </p>
-          <h1 className="text-display font-black text-black">
+          <h1 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">
             Source Monitoring
           </h1>
-          <p className="text-body text-text-secondary mt-1.5">
+          <p className="text-[14px] text-text-secondary mt-1.5">
             Live health status of all data sources feeding market prices.
           </p>
         </div>
@@ -45,56 +45,56 @@ export default function SourcesPageClient() {
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-6 py-5 border-b border-border-light mt-0">
           <div className="py-3 px-4 md:px-0">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Sources
             </p>
-            <p className="text-title font-extrabold font-mono tabular-nums text-black">
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-black">
               {loading ? '--' : sources.length}
             </p>
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Healthy
             </p>
-            <p className="text-title font-extrabold font-mono tabular-nums text-color-up">
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-color-up">
               {loading ? '--' : healthyCt}
             </p>
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Stale
             </p>
-            <p className="text-title font-extrabold font-mono tabular-nums text-color-warning">
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-color-warning">
               {loading ? '--' : staleCt}
             </p>
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Dead
             </p>
-            <p className="text-title font-extrabold font-mono tabular-nums text-color-down">
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-color-down">
               {loading ? '--' : deadCt}
             </p>
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Live Assets
             </p>
-            <p className="text-title font-extrabold font-mono tabular-nums text-black">
+            <p className="text-[22px] font-extrabold font-mono tabular-nums text-black">
               {loading ? '--' : (
                 <>
                   {totalLiveAssets.toLocaleString()}
-                  <span className="text-body text-text-muted font-semibold"> / {totalAssets.toLocaleString()}</span>
+                  <span className="text-[14px] text-text-muted font-semibold"> / {totalAssets.toLocaleString()}</span>
                 </>
               )}
             </p>
           </div>
           <div className="py-3 px-4 md:px-6 md:border-l border-border-light border-t md:border-t-0">
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">
               Last Updated
             </p>
             <div className="flex items-center gap-2">
-              <p className="text-subhead font-extrabold font-mono tabular-nums text-black">
+              <p className="text-[16px] font-extrabold font-mono tabular-nums text-black">
                 {formatLastUpdated(lastUpdated)}
               </p>
               {!loading && (
@@ -110,11 +110,11 @@ export default function SourcesPageClient() {
         {/* Error banner */}
         {error && (
           <div className="mt-4 border border-color-down/50 bg-surface-down rounded-card px-4 py-3" role="alert">
-            <p className="text-color-down text-caption font-semibold">Failed to fetch source data</p>
-            <p className="text-text-secondary text-caption mt-0.5">{error}</p>
+            <p className="text-color-down text-[13px] font-semibold">Failed to fetch source data</p>
+            <p className="text-text-secondary text-[12px] mt-0.5">{error}</p>
             <button
               onClick={refresh}
-              className="mt-2 text-caption font-bold text-color-info underline hover:no-underline"
+              className="mt-2 text-[12px] font-bold text-color-info underline hover:no-underline"
             >
               Retry now
             </button>
@@ -125,12 +125,12 @@ export default function SourcesPageClient() {
         <div className="py-5 pb-10">
           <SectionBar
             title="Data Sources"
-            value={loading ? 'Loading sources...' : `${sources.length} sources tracked`}
+            value={loading ? 'Loading...' : `${sources.length} sources tracked`}
             right={
               <button
                 onClick={refresh}
                 disabled={loading}
-                className="text-label font-bold uppercase tracking-[0.08em] text-white/70 hover:text-white transition-colors disabled:opacity-40"
+                className="text-[11px] font-bold uppercase tracking-wider text-white/70 hover:text-white transition-colors disabled:opacity-40"
               >
                 Refresh
               </button>

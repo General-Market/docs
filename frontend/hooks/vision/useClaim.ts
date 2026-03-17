@@ -17,7 +17,6 @@ const ORACLE_REGISTRY_ADDRESS = (
 ) as `0x${string}`
 
 import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
-import { formatError } from '@/lib/format-error'
 
 export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error'
 
@@ -102,7 +101,7 @@ async function fetchClaimProof(
     }
   }
 
-  throw new Error('Unable to retrieve claim proof. Try again shortly.')
+  throw new Error(`Failed to fetch claim proof from all oracles: ${errors.join('; ')}`)
 }
 
 /**
@@ -208,7 +207,8 @@ export function useClaim(): UseClaimReturn {
   // Error handling
   useEffect(() => {
     if (claimError) {
-      setErrorMsg(formatError(claimError, 'claim'))
+      const msg = claimError.message || 'Claim failed'
+      setErrorMsg(msg.slice(0, 300))
       setStep('error')
       resetClaim()
     }

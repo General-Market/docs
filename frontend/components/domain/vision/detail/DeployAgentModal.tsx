@@ -106,7 +106,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-micro font-mono text-text-muted hover:text-white hover:bg-brand-dark transition-colors"
+      className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 hover:text-white hover:bg-neutral-600 transition-colors"
     >
       {copied ? 'Copied!' : 'Copy'}
     </button>
@@ -138,20 +138,20 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 animate-backdrop-in" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-card shadow-modal overflow-hidden animate-modal-in">
+      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border-light">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <div className="flex items-center gap-2">
             {agent.icon}
-            <h2 className="text-sm font-bold text-text-primary">Deploy with {agent.name}</h2>
+            <h2 className="text-sm font-bold text-neutral-900">Deploy with {agent.name}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-text-muted hover:text-text-secondary transition-colors text-lg leading-none"
+            className="text-neutral-400 hover:text-neutral-600 transition-colors text-lg leading-none"
           >
             &times;
           </button>
@@ -161,11 +161,11 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         <div className="px-5 py-4 space-y-4">
           {steps.map((step) => (
             <div key={step.number}>
-              <p className="text-micro font-bold tracking-[0.08em] text-text-muted uppercase mb-1.5">
+              <p className="text-[10px] font-bold tracking-[0.1em] text-neutral-400 uppercase mb-1.5">
                 {step.number}. {step.title}
               </p>
-              <div className="relative rounded-md bg-terminal px-4 py-3">
-                <pre className="text-caption font-mono text-text-inverse-muted whitespace-pre-wrap leading-relaxed pr-12">
+              <div className="relative rounded-lg bg-neutral-900 px-4 py-3">
+                <pre className="text-[12px] font-mono text-neutral-200 whitespace-pre-wrap leading-relaxed pr-12">
                   {step.code}
                 </pre>
                 <CopyButton text={step.code} />
@@ -175,13 +175,13 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-border-light flex items-center justify-between text-label text-text-muted">
+        <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-400">
           <span>Python 3.10+ &middot; funded wallet</span>
           <a
             href="https://docs.generalmarket.io/guides/vision-bots"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-primary hover:text-text-secondary transition-colors font-medium"
+            className="text-neutral-900 hover:text-neutral-600 transition-colors font-medium"
           >
             Full docs &rarr;
           </a>

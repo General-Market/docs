@@ -42,7 +42,7 @@ function SettlementDetails({
   const loserLoss = parseFloat(totalPot) - parseFloat(winnerPayout)
 
   return (
-    <div className="border border-border-medium rounded-card p-4 space-y-3">
+    <div className="border border-border-medium rounded-xl p-4 space-y-3">
       <h4 className="text-sm font-bold text-text-primary">{t('resolution.settlement_title')}</h4>
 
       <div className="space-y-2">
@@ -73,7 +73,7 @@ function SettlementDetails({
               href={getAddressUrl(winnerAddress)}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-text-primary hover:text-text-primary transition-colors"
+              className="font-mono text-text-primary hover:text-zinc-900 transition-colors"
             >
               {truncateAddress(winnerAddress)}
             </a>
@@ -88,7 +88,7 @@ function SettlementDetails({
                 href={getAddressUrl(loserAddress)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-text-secondary hover:text-text-primary transition-colors"
+                className="font-mono text-text-secondary hover:text-zinc-900 transition-colors"
               >
                 {truncateAddress(loserAddress)}
               </a>
@@ -138,7 +138,7 @@ function TradesBreakdown({ betId }: TradesBreakdownProps) {
   }
 
   return (
-    <div className="border border-border-light rounded-card p-3 space-y-2">
+    <div className="border border-border-light rounded-xl p-3 space-y-2">
       <h4 className="text-sm font-bold text-text-primary">{t('resolution.trade_outcomes')}</h4>
       <div className="max-h-60 overflow-y-auto space-y-1">
         {trades.map((trade, idx) => (
@@ -150,7 +150,7 @@ function TradesBreakdown({ betId }: TradesBreakdownProps) {
               <span className="text-text-secondary font-mono truncate max-w-[120px]" title={trade.ticker}>
                 {trade.ticker}
               </span>
-              <span className="text-text-muted font-mono text-micro uppercase">
+              <span className="text-text-muted font-mono text-[10px] uppercase">
                 {trade.source}
               </span>
             </div>
@@ -168,7 +168,7 @@ function TradesBreakdown({ betId }: TradesBreakdownProps) {
                 )}
               </span>
               <span className={`font-mono font-bold ${
-                trade.cancelled ? 'text-text-muted' :
+                trade.cancelled ? 'text-gray-500' :
                 trade.won === true ? 'text-color-up' :
                 trade.won === false ? 'text-color-down' :
                 trade.exitPrice ? 'text-color-warning' : 'text-text-muted'
@@ -214,7 +214,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
   // No resolution data yet
   if (!resolution) {
     return (
-      <div className="animate-fade-up border border-border-light rounded-card p-4 text-center">
+      <div className="border border-border-light rounded-xl p-4 text-center">
         <p className="text-sm text-text-muted">{t('resolution.no_data')}</p>
         <p className="text-xs text-text-muted mt-1">
           {t('resolution.not_resolved')}
@@ -224,7 +224,7 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
   }
 
   return (
-    <div className="animate-fade-up space-y-4 border border-border-medium rounded-card p-4">
+    <div className="space-y-4 border border-border-medium rounded-xl p-4">
       {/* Main Win Count Display */}
       <div className="text-center space-y-2">
         <div>
@@ -309,22 +309,20 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
 
       {/* Settlement Details - shown when resolved */}
       {resolution.status === 'resolved' && (
-        <div className="animate-fade-up">
-          <SettlementDetails
-            totalPot={resolution.totalPot}
-            platformFee={resolution.platformFee}
-            winnerPayout={resolution.winnerPayout}
-            settlementTxHash={resolution.settlementTxHash}
-            winnerAddress={resolution.winnerAddress}
-            loserAddress={resolution.loserAddress}
-            creatorWins={resolution.creatorWins}
-          />
-        </div>
+        <SettlementDetails
+          totalPot={resolution.totalPot}
+          platformFee={resolution.platformFee}
+          winnerPayout={resolution.winnerPayout}
+          settlementTxHash={resolution.settlementTxHash}
+          winnerAddress={resolution.winnerAddress}
+          loserAddress={resolution.loserAddress}
+          creatorWins={resolution.creatorWins}
+        />
       )}
 
       {/* Tie/Cancelled Status */}
       {resolution.isTie && (
-        <div className="animate-fade-up border border-color-warning/30 rounded-card p-3 text-center">
+        <div className="border border-color-warning/30 rounded-xl p-3 text-center">
           <span className="text-sm font-mono text-color-warning">
             {t('resolution.tie_refund')}
           </span>
@@ -332,9 +330,9 @@ export function PortfolioResolution({ betId, bet }: PortfolioResolutionProps) {
       )}
 
       {resolution.isCancelled && (
-        <div className="animate-fade-up border border-border-light rounded-card p-3 text-center">
+        <div className="border border-border-light rounded-xl p-3 text-center">
           <span className="text-sm font-mono text-text-muted">
-            Cancelled: {resolution.cancelReason || 'Reason unavailable'}
+            Cancelled: {resolution.cancelReason || 'No reason provided'}
           </span>
         </div>
       )}

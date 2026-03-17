@@ -33,7 +33,7 @@ export async function ensureCorrectChain(
   } catch {
     // Fallback: raw wallet RPC
     const provider = (window as any).ethereum
-    if (!provider) throw new Error('No wallet detected. Install a Web3 wallet to continue.')
+    if (!provider) throw new Error('No wallet provider found')
 
     try {
       await provider.request({

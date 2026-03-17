@@ -63,7 +63,7 @@ export function useMorphoActions(market?: MorphoMarketEntry): UseMorphoActionsRe
   } = useWaitForTransactionReceipt({ hash: txHash, chainId: indexL3.id })
 
   // Track which action is in-flight for toast label
-  const actionLabel = useRef('Lending operation')
+  const actionLabel = useRef('Morpho operation')
 
   // Toast notifications
   useTransactionNotification({

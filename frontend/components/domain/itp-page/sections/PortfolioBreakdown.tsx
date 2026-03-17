@@ -5,9 +5,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import type { SectionProps } from '../SectionRenderer'
 
 const COLORS = [
-  '#18181B', '#00A36C', '#3F3F46', '#DC2626', '#52525B',
-  '#008A5A', '#71717A', '#A1A1AA', '#27272A', '#D4D4D8',
-  '#E4E4E7',
+  '#1a1a2e', '#e94560', '#0f3460', '#f97316', '#06b6d4',
+  '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#3b82f6',
+  '#94a3b8',
 ]
 
 export function PortfolioBreakdown({ enrichment }: SectionProps) {
@@ -30,13 +30,13 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
   if (data.length === 0) return null
 
   return (
-    <section data-fade-in>
+    <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">
         Portfolio Composition
       </h2>
-      <div className="py-4 animate-fade-in">
+      <div className="py-4">
         <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="w-64 h-64 flex-shrink-0 card-interactive">
+          <div className="w-64 h-64 flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -57,7 +57,7 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
                   formatter={(value: number) => [`${value.toFixed(2)}%`, 'Weight']}
                   contentStyle={{
                     fontSize: 12,
-                    border: '1px solid #E0E0E0',
+                    border: '1px solid #e5e5e5',
                     borderRadius: 6,
                     boxShadow: 'none',
                   }}
@@ -66,9 +66,9 @@ export function PortfolioBreakdown({ enrichment }: SectionProps) {
             </ResponsiveContainer>
           </div>
 
-          <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-1.5 stagger">
+          <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-1.5">
             {data.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-2 text-sm animate-fade-up">
+              <div key={d.name} className="flex items-center gap-2 text-sm">
                 <div
                   className="w-3 h-3 rounded-sm flex-shrink-0"
                   style={{ backgroundColor: COLORS[i % COLORS.length] }}

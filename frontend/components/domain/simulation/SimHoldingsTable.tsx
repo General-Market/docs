@@ -42,7 +42,7 @@ export function SimHoldingsTable({ runId, date }: SimHoldingsTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted border-b border-border-light bg-muted">
+          <tr className="text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light bg-muted">
             <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.rank')}</th>
             <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.coin')}</th>
             <th className="text-left pb-2 pt-2 pr-2 px-3">{t('holdings.header.symbol')}</th>

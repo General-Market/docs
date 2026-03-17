@@ -77,7 +77,7 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
   const telegramUrl = `https://t.me/${TELEGRAM_BOT_USERNAME}`
 
   return (
-    <div className="border border-border-medium bg-card rounded-card shadow-card mb-8">
+    <div className="border border-border-medium bg-card rounded-xl shadow-card mb-8">
       <div className="flex justify-between items-center p-4 border-b border-border-medium">
         <h2 className="text-lg font-bold text-text-primary">
           {t('telegram.title')}
@@ -86,13 +86,13 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
         {isLoading ? (
           <span className="text-text-muted text-sm">{t('telegram.checking')}</span>
         ) : status?.connected ? (
-          <span className="animate-fade-in text-text-primary text-sm flex items-center gap-2">
+          <span className="text-text-primary text-sm flex items-center gap-2">
             <span className="w-2 h-2 bg-color-up rounded-full" />
             {t('telegram.connected')}
           </span>
         ) : (
-          <span className="animate-fade-in text-color-down text-sm flex items-center gap-2">
-            <span className="w-2 h-2 bg-color-down rounded-full" />
+          <span className="text-[#C40000] text-sm flex items-center gap-2">
+            <span className="w-2 h-2 bg-[#C40000] rounded-full" />
             {t('telegram.not_connected')}
           </span>
         )}
@@ -101,7 +101,7 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
       <div className="p-6">
         {status?.connected ? (
           /* Connected State */
-          <div className="animate-fade-in text-center">
+          <div className="text-center">
             <div className="text-4xl mb-4">✅</div>
             <p className="text-text-primary mb-2">
               {t('telegram.enabled')}
@@ -113,16 +113,16 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
               href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="press inline-block mt-4 px-4 py-2 border border-border-medium text-text-muted hover:text-text-primary hover:bg-card-hover text-sm transition-colors rounded-md"
+              className="inline-block mt-4 px-4 py-2 border border-border-medium text-text-muted hover:text-text-primary hover:bg-card-hover text-sm transition-colors rounded-lg"
             >
               {t('telegram.open_bot')}
             </a>
           </div>
         ) : (
           /* Not Connected State */
-          <div className="animate-fade-in flex flex-col md:flex-row items-center gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-8">
             {/* QR Code */}
-            <div className="animate-fade-up flex-shrink-0">
+            <div className="flex-shrink-0">
               <div className="bg-white p-3 rounded">
                 <QRCodeSVG
                   value={telegramUrl}
@@ -148,7 +148,7 @@ export function TelegramConnect({ walletAddress }: TelegramConnectProps) {
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="press inline-block mt-4 px-4 py-2 bg-brand text-white hover:bg-brand-dark text-sm transition-colors rounded-md"
+                className="inline-block mt-4 px-4 py-2 bg-zinc-900 text-white hover:bg-zinc-800 text-sm transition-colors rounded-lg"
               >
                 Open @{TELEGRAM_BOT_USERNAME}
               </a>

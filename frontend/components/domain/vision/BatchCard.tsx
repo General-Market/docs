@@ -53,14 +53,14 @@ export function BatchCard({ batch, onClick }: BatchCardProps) {
       data-testid="batch-card"
       onClick={onClick}
       className="bg-card border border-border-light rounded-card p-4 cursor-pointer
-                 card-interactive hover-lift hover:bg-card-hover press"
+                 hover:bg-card-hover hover:shadow-card-hover transition-all"
     >
       {thumbnailUrl ? (
         <div className="w-full h-28 mb-3 rounded overflow-hidden bg-muted">
           <img
             src={thumbnailUrl}
             alt={metadata?.name || t('batch_card.batch_number', { id: batch.id })}
-            className="w-full h-full object-cover animate-fade-in"
+            className="w-full h-full object-cover"
           />
         </div>
       ) : (

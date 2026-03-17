@@ -268,7 +268,7 @@ function MilestoneLabel({
       >
         <div className="flex flex-col items-center gap-0">
           <p
-            className="text-micro font-bold font-mono whitespace-nowrap"
+            className="text-[10px] font-bold font-mono whitespace-nowrap"
             style={{ color: milestone.color }}
           >
             {milestone.label}

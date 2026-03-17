@@ -7,7 +7,6 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { indexL3 } from '@/lib/wagmi'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { formatError } from '@/lib/format-error'
 
 /**
  * Vision contract address — will be set once deployed.
@@ -101,7 +100,13 @@ export function useCreateBatch(): UseCreateBatchReturn {
 
   // Propagate write errors
   if (writeError && !error) {
-    setError(formatError(writeError, 'batch creation'))
+    const msg = writeError.message || 'Transaction failed'
+    const shortMsg = msg.includes('User rejected')
+      ? 'Transaction rejected in wallet'
+      : msg.includes('Details:')
+        ? msg.split('Details:')[1].trim().slice(0, 200)
+        : msg.slice(0, 200)
+    setError(shortMsg)
   }
 
   const createBatch = useCallback((params: CreateBatchParams) => {

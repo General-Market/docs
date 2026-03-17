@@ -114,7 +114,7 @@ function BlockProducer() {
         position={[0, 1.55, 0]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">
+        <p className="text-[10px] font-bold text-black tracking-tight whitespace-nowrap">
           Block Producer
         </p>
       </Html>
@@ -562,7 +562,7 @@ function BlobCountLabel({ reducedMotion }: { reducedMotion: boolean }) {
     >
       <p
         ref={labelRef}
-        className="text-body font-bold font-mono whitespace-nowrap"
+        className="text-[14px] font-bold font-mono whitespace-nowrap"
         style={{ color: '#6366f1' }}
       >
         6 blobs/block
@@ -689,7 +689,7 @@ function CoverageLabel({
     >
       <p
         ref={labelRef}
-        className="text-caption font-bold tracking-tight whitespace-nowrap"
+        className="text-[12px] font-bold tracking-tight whitespace-nowrap"
         style={{ color: '#71717a' }}
       >
         0% sampled
@@ -744,19 +744,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_TOWER }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Producer</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Producer</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_INDIGO }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Blob Cells</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Blob Cells</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_GREEN }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Validators</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Validators</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_VIOLET }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">KZG</span>
+        <span className="text-[10px] text-text-muted tracking-wide">KZG</span>
       </div>
     </div>
   )

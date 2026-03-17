@@ -18,7 +18,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className = '', children, interactive = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-md border border-border-light bg-card shadow-card text-text-primary ${interactive ? 'card-interactive cursor-pointer hover-lift' : ''} ${className}`}
+      className={`rounded-md border border-border-light bg-card shadow-card text-text-primary ${interactive ? 'card-interactive cursor-pointer' : ''} ${className}`}
       {...props}
     >
       {children}
@@ -58,7 +58,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className = '', children, ...props }, ref) => (
     <h3
       ref={ref}
-      className={`text-xs uppercase tracking-[0.08em] text-text-muted font-medium ${className}`}
+      className={`text-xs uppercase tracking-wider text-text-muted font-medium ${className}`}
       {...props}
     >
       {children}

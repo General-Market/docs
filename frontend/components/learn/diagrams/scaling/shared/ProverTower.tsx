@@ -147,7 +147,7 @@ export function ProverTower({
             whiteSpace: 'nowrap',
           }}
         >
-          <p className="text-micro font-bold text-black tracking-tight">
+          <p className="text-[10px] font-bold text-black tracking-tight">
             {label}
           </p>
         </Html>

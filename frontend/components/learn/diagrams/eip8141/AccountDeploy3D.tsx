@@ -73,7 +73,7 @@ function FactoryNode({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={INDIGO} roughness={0.4} emissive={INDIGO} emissiveIntensity={0.1} />
       </mesh>
       <Html center position={[FACTORY_POS[0], 1.15, FACTORY_POS[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>Factory</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>Factory</p>
       </Html>
     </group>
   )
@@ -524,7 +524,7 @@ function USDCTarget({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={BLUE} roughness={0.5} emissive={BLUE} emissiveIntensity={0.05} />
       </RoundedBox>
       <Html center position={[USDC_POS[0], 1.1, USDC_POS[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>USDC</p>
+        <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>USDC</p>
       </Html>
     </group>
   )
@@ -584,7 +584,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={deployRef}>
         <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-indigo-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>
               Frame 0: Deploy
             </p>
           </div>
@@ -594,7 +594,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={validateRef}>
         <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Frame 1: ACCEPT
             </p>
           </div>
@@ -604,7 +604,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={executeRef}>
         <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Frame 2: Execute
             </p>
           </div>
@@ -614,7 +614,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={firstTxRef}>
         <Html center position={[0, 1.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-300 rounded px-2 py-1">
-            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               First-ever TX
             </p>
           </div>
@@ -633,15 +633,15 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Factory / Deploy</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Factory / Deploy</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Wallet (committed)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Wallet (committed)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Pre-funded balance</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Pre-funded balance</span>
       </div>
     </div>
   )

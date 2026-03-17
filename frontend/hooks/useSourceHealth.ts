@@ -89,7 +89,7 @@ export function useSourceHealth(): UseSourceHealthReturn {
       setLastUpdated(new Date())
       setError(null)
     } catch (e: any) {
-      setError(e.message || 'Unable to load source status.')
+      setError(e.message || 'Failed to fetch source health')
     } finally {
       setLoading(false)
     }

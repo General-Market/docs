@@ -529,7 +529,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (loading) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">Loading history...</div>
+        <div className="text-[11px] text-text-muted">Loading history...</div>
       </div>
     )
   }
@@ -537,7 +537,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (error) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-color-down">Failed to load: {error}</div>
+        <div className="text-[11px] text-color-down">Failed to load: {error}</div>
       </div>
     )
   }
@@ -545,7 +545,7 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   if (points.length < 2) {
     return (
       <div className="h-[80px] flex items-center justify-center">
-        <div className="text-label text-text-muted">Not enough data points ({points.length})</div>
+        <div className="text-[11px] text-text-muted">Not enough data points ({points.length})</div>
       </div>
     )
   }
@@ -558,8 +558,8 @@ function AssetSparkline({ sourceId, assetId }: { sourceId: string; assetId: stri
   return (
     <div className="px-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">7-day history ({points.length} points)</span>
-        <span className="text-micro font-mono text-text-muted">
+        <span className="text-[10px] text-text-muted">7-day history ({points.length} points)</span>
+        <span className="text-[10px] font-mono text-text-muted">
           {formatValue(points[0].value)} &rarr; {formatValue(points[points.length - 1].value)}
         </span>
       </div>
@@ -705,7 +705,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
       onClick={onClose}
     >
       <div
-        className="bg-card border border-border-light rounded-card shadow-modal max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card border border-border-light rounded-xl shadow-modal max-w-5xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -713,7 +713,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
           <div className="flex justify-between items-center mb-5">
             <div>
               <h2 className="text-lg font-bold text-black">Source Detail</h2>
-              <p className="text-caption font-mono text-text-muted mt-0.5">{sourceId}</p>
+              <p className="text-[13px] font-mono text-text-muted mt-0.5">{sourceId}</p>
             </div>
             <button
               onClick={onClose}
@@ -732,12 +732,12 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
 
           {/* Error state */}
           {error && !loading && (
-            <div className="border border-color-down/50 bg-surface-down rounded-md px-4 py-3 mb-4">
-              <p className="text-color-down text-caption font-semibold">Failed to load</p>
-              <p className="text-text-secondary text-caption mt-0.5">{error}</p>
+            <div className="border border-color-down/50 bg-surface-down rounded-lg px-4 py-3 mb-4">
+              <p className="text-color-down text-[13px] font-semibold">Failed to load</p>
+              <p className="text-text-secondary text-[12px] mt-0.5">{error}</p>
               <button
                 onClick={() => fetchData(sourceId)}
-                className="mt-2 text-caption font-bold text-color-info underline hover:no-underline"
+                className="mt-2 text-[12px] font-bold text-color-info underline hover:no-underline"
               >
                 Retry
               </button>
@@ -748,35 +748,35 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
             <div className="space-y-6">
               {/* Summary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-muted border border-border-light rounded-md p-3">
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className="bg-muted border border-border-light rounded-lg p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
                     Total Assets
                   </p>
-                  <p className="text-heading font-extrabold font-mono tabular-nums text-black">
+                  <p className="text-[20px] font-extrabold font-mono tabular-nums text-black">
                     {totalAssets}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-md p-3">
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className="bg-muted border border-border-light rounded-lg p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
                     Active
                   </p>
-                  <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
+                  <p className="text-[20px] font-extrabold font-mono tabular-nums text-color-up">
                     {activeAssets}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-md p-3">
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className="bg-muted border border-border-light rounded-lg p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
                     Zero Values
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : 'text-black'}`}>
+                  <p className={`text-[20px] font-extrabold font-mono tabular-nums ${zeroCount > 0 ? 'text-color-down' : 'text-black'}`}>
                     {zeroCount}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-md p-3">
-                  <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
+                <div className="bg-muted border border-border-light rounded-lg p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-0.5">
                     Stale
                   </p>
-                  <p className={`text-heading font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : 'text-black'}`}>
+                  <p className={`text-[20px] font-extrabold font-mono tabular-nums ${staleCount > 0 ? 'text-color-warning' : 'text-black'}`}>
                     {staleCount}
                   </p>
                 </div>
@@ -784,20 +784,20 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
 
               {/* Regularity chart */}
               <div>
-                <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-text-secondary mb-3">
                   Data Regularity (Last 24h)
                 </h3>
-                <div className="bg-muted border border-border-light rounded-md p-4">
+                <div className="bg-muted border border-border-light rounded-lg p-4">
                   <SourceHistoryChart buckets={buckets} />
                 </div>
               </div>
 
               {/* Asset table */}
               <div>
-                <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-text-secondary mb-3">
                   Markets ({totalAssets}) <span className="font-normal text-text-muted">— click a row to see history</span>
                 </h3>
-                <div className="border border-border-light overflow-hidden rounded-md">
+                <div className="border border-border-light overflow-hidden rounded-lg">
                   <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <Table aria-label="Source Assets">
                       <TableHeader>
@@ -833,32 +833,32 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                     <div
                                       title={`${asset.symbol} — ${asset.name}\nClick to ${isExpanded ? 'hide' : 'show'} chart`}
                                     >
-                                      <span className="font-semibold text-caption text-black">
+                                      <span className="font-semibold text-[12px] text-black">
                                         {asset.name || asset.symbol}
                                       </span>
-                                      <span className="block font-mono text-micro text-text-muted truncate">
+                                      <span className="block font-mono text-[10px] text-text-muted truncate">
                                         {asset.symbol}
                                       </span>
                                     </div>
                                   </TableCell>
 
                                   {/* Value */}
-                                  <TableCell className={`text-right font-mono tabular-nums text-caption ${asset.isZero ? 'text-color-down font-bold' : ''}`}>
+                                  <TableCell className={`text-right font-mono tabular-nums text-[12px] ${asset.isZero ? 'text-color-down font-bold' : ''}`}>
                                     {formatValue(asset.latestValue)}
                                   </TableCell>
 
                                   {/* Unit */}
-                                  <TableCell className="text-right text-micro text-text-muted whitespace-nowrap">
+                                  <TableCell className="text-right text-[10px] text-text-muted whitespace-nowrap">
                                     {unit}
                                   </TableCell>
 
                                   {/* Age */}
-                                  <TableCell className={`text-right font-mono tabular-nums text-caption ${asset.isStale ? 'text-color-warning font-semibold' : ''}`}>
+                                  <TableCell className={`text-right font-mono tabular-nums text-[12px] ${asset.isStale ? 'text-color-warning font-semibold' : ''}`}>
                                     {formatAge(asset.ageSecs)}
                                   </TableCell>
 
                                   {/* Change% */}
-                                  <TableCell className="text-right font-mono tabular-nums text-caption">
+                                  <TableCell className="text-right font-mono tabular-nums text-[12px]">
                                     {asset.changePct !== null && asset.changePct !== undefined
                                       ? <span className={asset.changePct > 0 ? 'text-color-up' : asset.changePct < 0 ? 'text-color-down' : ''}>
                                           {asset.changePct >= 0 ? '+' : ''}{asset.changePct.toFixed(2)}%
@@ -867,7 +867,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                   </TableCell>
 
                                   {/* Records */}
-                                  <TableCell className="text-right font-mono tabular-nums text-caption">
+                                  <TableCell className="text-right font-mono tabular-nums text-[12px]">
                                     {asset.totalRecords.toLocaleString()}
                                   </TableCell>
 
@@ -876,7 +876,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                     <div className="flex items-center justify-center gap-1">
                                       {asset.isZero && (
                                         <span
-                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-color-down/20 text-color-down"
+                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-color-down/20 text-color-down"
                                           title="Zero value"
                                         >
                                           Zero
@@ -884,7 +884,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                       )}
                                       {asset.isStale && (
                                         <span
-                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-color-warning/20 text-color-warning"
+                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-color-warning/20 text-color-warning"
                                           title="Stale data"
                                         >
                                           Stale
@@ -898,7 +898,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                                       )}
                                       {!asset.isActive && (
                                         <span
-                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] bg-border-light text-text-muted"
+                                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-border-light text-text-muted"
                                           title="Inactive"
                                         >
                                           Off

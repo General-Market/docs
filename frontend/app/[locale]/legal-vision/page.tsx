@@ -36,7 +36,7 @@ export default async function LegalVisionPage({ params }: { params: Promise<{ lo
           <p className="text-text-inverse-muted text-xs mt-1">{t('entity')}</p>
         </div>
 
-        <div className="bg-card rounded-md shadow-card border border-border-light p-8">
+        <div className="bg-card rounded-xl shadow-card border border-border-light p-8">
           <div className="space-y-8 text-text-secondary text-sm leading-relaxed">
             <section>
               <h2 className="text-lg font-semibold text-text-primary mb-3">{t('overview_title')}</h2>

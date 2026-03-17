@@ -112,27 +112,23 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
         pnl: '--',
         pnlClass: 'text-text-primary',
         multiplier: '--',
-        winRate: hitRate && Number.isFinite(hitRate.hitRate) ? `${hitRate.hitRate.toFixed(1)}%` : '--',
+        winRate: hitRate ? `${hitRate.hitRate.toFixed(1)}%` : '--',
       }
     }
 
     const pnl = position.balance - position.totalDeposited + position.totalClaimed
-    const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS)) || 0
+    const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
     const multiplier = position.totalDeposited > 0n
       ? Number(((position.balance + position.totalClaimed) * 10000n) / position.totalDeposited) / 10000
       : 0
-    const safeMultiplier = Number.isFinite(multiplier) ? multiplier : 0
-
-    const balanceNum = parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)) || 0
-    const stakeNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS)) || 0
 
     return {
-      balance: `$${balanceNum.toFixed(2)}`,
-      stake: `$${stakeNum.toFixed(2)}`,
+      balance: `$${parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)}`,
+      stake: `$${parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS)).toFixed(2)}`,
       pnl: `${pnlNum >= 0 ? '+' : '-'}$${Math.abs(pnlNum).toFixed(2)}`,
       pnlClass: pnlNum >= 0 ? 'text-color-up' : 'text-color-down',
-      multiplier: `${safeMultiplier.toFixed(2)}x`,
-      winRate: hitRate && Number.isFinite(hitRate.hitRate) ? `${hitRate.hitRate.toFixed(1)}%` : '--',
+      multiplier: `${multiplier.toFixed(2)}x`,
+      winRate: hitRate ? `${hitRate.hitRate.toFixed(1)}%` : '--',
     }
   }, [position, hitRate])
 
@@ -142,7 +138,7 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
       {metadata && (
         <div className="space-y-3">
           {ytId && (
-            <div className="w-full aspect-video rounded-md overflow-hidden bg-black">
+            <div className="w-full aspect-video rounded-lg overflow-hidden bg-black">
               <iframe
                 src={`https://www.youtube.com/embed/${ytId}`}
                 className="w-full h-full"
@@ -202,36 +198,36 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
 
       {/* Player stats footer */}
       <div className="flex flex-wrap gap-4 py-3 px-4 bg-muted rounded-card border border-border-light">
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.bets_set')}</span>
-          <span className="text-sm font-mono font-bold text-text-primary truncate block">
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.bets_set')}</span>
+          <span className="text-sm font-mono font-bold text-text-primary">
             {totalBets}/{marketCount}
           </span>
         </div>
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.win_rate')}</span>
-          <span className="text-sm font-mono font-bold text-text-primary truncate block">
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.win_rate')}</span>
+          <span className="text-sm font-mono font-bold text-text-primary">
             {stats.winRate}
             {hitRate && hitRate.ticksAnalyzed > 0 && (
               <span className="text-[9px] text-text-muted ml-1">({hitRate.ticksAnalyzed}t)</span>
             )}
           </span>
         </div>
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.balance')}</span>
-          <span className="text-sm font-mono font-bold text-text-primary truncate block">{stats.balance}</span>
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.balance')}</span>
+          <span className="text-sm font-mono font-bold text-text-primary">{stats.balance}</span>
         </div>
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.pnl')}</span>
-          <span className={`text-sm font-mono font-bold ${stats.pnlClass} truncate block`}>{stats.pnl}</span>
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.pnl')}</span>
+          <span className={`text-sm font-mono font-bold ${stats.pnlClass}`}>{stats.pnl}</span>
         </div>
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.stake_per_tick')}</span>
-          <span className="text-sm font-mono font-bold text-text-primary truncate block">{stats.stake}</span>
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.stake_per_tick')}</span>
+          <span className="text-sm font-mono font-bold text-text-primary">{stats.stake}</span>
         </div>
-        <div className="min-w-0">
-          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.multiplier')}</span>
-          <span className="text-sm font-mono font-bold text-text-primary truncate block">{stats.multiplier}</span>
+        <div>
+          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.multiplier')}</span>
+          <span className="text-sm font-mono font-bold text-text-primary">{stats.multiplier}</span>
         </div>
       </div>
 
@@ -240,14 +236,14 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
         <button
           onClick={handleAllUp}
           className="bg-color-up text-white px-3 py-2 rounded-card text-xs font-bold
-                     hover:brightness-110 transition-[filter]"
+                     hover:brightness-110 transition-all"
         >
           {t('expanded_batch.actions.all_up')}
         </button>
         <button
           onClick={handleAllDown}
           className="bg-color-down text-white px-3 py-2 rounded-card text-xs font-bold
-                     hover:brightness-110 transition-[filter]"
+                     hover:brightness-110 transition-all"
         >
           {t('expanded_batch.actions.all_down')}
         </button>
@@ -267,8 +263,8 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
         </button>
         <button
           onClick={handleSubmit}
-          className="bg-brand text-white px-4 py-2 rounded-card text-xs font-bold
-                     hover:bg-brand-dark transition-colors ml-auto"
+          className="bg-terminal text-text-inverse px-4 py-2 rounded-card text-xs font-bold
+                     hover:opacity-90 transition-opacity ml-auto"
           disabled={totalBets === 0}
         >
           {t('expanded_batch.actions.submit')}

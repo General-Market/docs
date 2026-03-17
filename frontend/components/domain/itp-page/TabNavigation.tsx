@@ -96,7 +96,7 @@ export function TabNavigation({ config, sectionProps }: Props) {
             <button
               key={item.id}
               onClick={() => scrollTo(item.id)}
-              className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors press focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary ${
+              className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary ${
                 activeAnchor === item.id
                   ? 'border-b-2 border-text-primary text-text-primary'
                   : 'text-text-muted hover:text-text-secondary'
@@ -118,7 +118,7 @@ export function TabNavigation({ config, sectionProps }: Props) {
           const showAnchor = anchorId !== lastAnchor
           lastAnchor = anchorId
           return (
-            <div key={sectionId} data-fade-in>
+            <div key={sectionId}>
               {i > 0 && <hr className="border-border-light my-8" />}
               {showAnchor && <div id={anchorId} className="scroll-mt-32" />}
               <Section {...sectionProps} />

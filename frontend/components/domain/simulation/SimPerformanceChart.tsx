@@ -96,15 +96,15 @@ function RebalanceItpPicker({ itps, onSelect }: { itps: DeployedItpRef[]; onSele
   return (
     <div className="relative" ref={ref}>
       <button
-        className="text-xs px-4 py-1.5 border border-border-medium text-text-secondary rounded-md hover:border-brand hover:text-text-primary transition-colors font-medium"
+        className="text-xs px-4 py-1.5 border border-border-medium text-text-secondary rounded-lg hover:border-zinc-500 hover:text-text-primary transition-colors font-medium"
         onClick={() => setOpen(!open)}
       >
         Rebalance
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border-medium rounded-md shadow-card-hover min-w-[200px] max-h-60 overflow-y-auto">
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border-medium rounded-lg shadow-card-hover min-w-[200px] max-h-60 overflow-y-auto">
           <div className="px-3 py-2 border-b border-border-light">
-            <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Select ITP to rebalance</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Select ITP to rebalance</span>
           </div>
           {itps.map(itp => (
             <button
@@ -165,13 +165,13 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
       <div className="mb-6" ref={chartContainerRef}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Performance</h3>
+            <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted">Performance</h3>
             {(hasBtc || hasEth) && (
               <div className="flex items-center gap-1">
                 {hasBtc && (
                   <button
                     onClick={() => setShowBtc(v => !v)}
-                    className="text-micro font-semibold px-2 py-0.5 rounded border transition-colors"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
                     style={{
                       color: showBtc ? '#fff' : BTC_COLOR,
                       backgroundColor: showBtc ? BTC_COLOR : 'transparent',
@@ -185,7 +185,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
                 {hasEth && (
                   <button
                     onClick={() => setShowEth(v => !v)}
-                    className="text-micro font-semibold px-2 py-0.5 rounded border transition-colors"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
                     style={{
                       color: showEth ? '#fff' : ETH_COLOR,
                       backgroundColor: showEth ? ETH_COLOR : 'transparent',
@@ -202,7 +202,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
           <div className="flex items-center gap-2">
             {runId && onDeployIndex && (
               <button
-                className="text-xs px-4 py-1.5 bg-brand text-white rounded-md hover:bg-brand-dark transition-colors font-medium"
+                className="text-xs px-4 py-1.5 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors font-medium"
                 onClick={() => onDeployIndex(runId, 'simulation')}
               >
                 Deploy Index
@@ -278,7 +278,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
           {hasBtc && (
             <button
               onClick={() => setShowBtc(v => !v)}
-              className="text-micro font-semibold px-2 py-0.5 rounded border transition-colors"
+              className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
               style={{
                 color: showBtc ? '#fff' : BTC_COLOR,
                 backgroundColor: showBtc ? BTC_COLOR : 'transparent',
@@ -292,7 +292,7 @@ export function SimPerformanceChart(props: SimPerformanceChartProps) {
           {hasEth && (
             <button
               onClick={() => setShowEth(v => !v)}
-              className="text-micro font-semibold px-2 py-0.5 rounded border transition-colors"
+              className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all"
               style={{
                 color: showEth ? '#fff' : ETH_COLOR,
                 backgroundColor: showEth ? ETH_COLOR : 'transparent',
@@ -390,7 +390,7 @@ function SingleTooltip({ active, payload, hasBenchmarks }: any) {
   const ret = ((nav / 1.0) - 1) * 100
 
   return (
-    <div className="bg-white border border-border-medium rounded-md shadow-card p-3 text-xs">
+    <div className="bg-white border border-border-medium rounded-lg shadow-card p-3 text-xs">
       <div className="text-text-muted">{data.nav_date}</div>
       <div className={nav >= 1 ? 'text-color-up' : 'text-color-down'}>
         NAV: ${nav.toFixed(4)}
@@ -412,7 +412,7 @@ function SweepTooltip({ active, payload, labels, hasBenchmarks }: any) {
   const data = payload[0]?.payload
 
   return (
-    <div className="bg-white border border-border-medium rounded-md shadow-card p-3 text-xs max-w-xs">
+    <div className="bg-white border border-border-medium rounded-lg shadow-card p-3 text-xs max-w-xs">
       <div className="text-text-muted mb-1">{date}</div>
       {payload.filter((p: any) => p.dataKey !== 'btc' && p.dataKey !== 'eth').map((p: any, i: number) => {
         const nav = p.value ?? 0

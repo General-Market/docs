@@ -4,7 +4,6 @@ import { use, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { PageSection } from '@/components/layout/PageSection'
 import { ProfileHeader } from '@/components/domain/profile/ProfileHeader'
 import { ProfileTabs } from '@/components/domain/profile/ProfileTabs'
 import { VisionTab } from '@/components/domain/profile/VisionTab'
@@ -43,18 +42,24 @@ function ProfileContent({ address }: { address: string }) {
   if (isLoading) {
     return (
       <>
-        <PageSection as="div" className="border-b border-border-light py-6">
+        <div className="border-b border-border-light">
+          <div className="px-6 lg:px-12">
+            <div className="max-w-site mx-auto py-6">
               <div className="h-12 w-48 bg-surface rounded animate-pulse" />
               <div className="mt-4 flex gap-6">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="h-8 w-20 bg-surface rounded animate-pulse" />
                 ))}
               </div>
-        </PageSection>
+            </div>
+          </div>
+        </div>
         <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
-        <PageSection as="div" className="py-8">
+        <div className="px-6 lg:px-12">
+          <div className="max-w-site mx-auto py-8">
             <div className="h-[140px] bg-surface rounded animate-pulse" />
-        </PageSection>
+          </div>
+        </div>
       </>
     )
   }
@@ -67,17 +72,19 @@ function ProfileContent({ address }: { address: string }) {
         stats={stats}
       />
       <ProfileTabs activeTab={tab} onTabChange={handleTabChange} />
-      <PageSection as="div" className="py-8">
+      <div className="px-6 lg:px-12">
+        <div className="max-w-site mx-auto py-8">
           {tab === 'vision' && profile ? (
             <VisionTab profile={profile} />
           ) : tab === 'vision' ? (
-            <div className="py-16 text-center text-caption text-text-muted">
-              No profile data found. This address may not have participated yet.
+            <div className="py-16 text-center text-[13px] text-text-muted">
+              No profile data found for this address.
             </div>
           ) : (
             <IndexTab address={address} />
           )}
-      </PageSection>
+        </div>
+      </div>
     </>
   )
 }
@@ -90,9 +97,11 @@ export default function ProfilePage({ params }: { params: Promise<{ address: str
       <Header />
       <Suspense
         fallback={
-          <PageSection as="div" className="py-12">
+          <div className="px-6 lg:px-12">
+            <div className="max-w-site mx-auto py-12">
               <div className="h-8 w-32 bg-surface rounded animate-pulse" />
-          </PageSection>
+            </div>
+          </div>
         }
       >
         <ProfileContent address={address} />

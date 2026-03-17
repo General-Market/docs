@@ -103,8 +103,8 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
 
   // Status from admin health, fall back to meta-based check
   const statusLabel = metaStatus === 'healthy' ? 'Live' : metaStatus === 'stale' ? 'Stale' : metaStatus === 'dead' ? 'Dead' : displayMarketCount > 0 ? 'Live' : 'Pending'
-  const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-color-warning' : 'bg-text-muted'
-  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-color-warning' : 'text-text-muted'
+  const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
+  const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
 
   // Bitmap editor counts (from lazy-loaded data)
   const upCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'up').length
@@ -151,7 +151,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
     <Link
       href={`/source/${source.id}`}
       data-testid="source-card"
-      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer card-interactive"
+      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer"
     >
       {/* Brand image area */}
       <div className="relative aspect-video w-full overflow-hidden">
@@ -168,7 +168,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
               loading="lazy"
               className="max-h-[60px] max-w-[90%] object-contain"
             />
-            <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
+            <span className="absolute top-2.5 right-2.5 text-[10px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
               {getCategoryLabel(source.category).toUpperCase()}
             </span>
           </div>
@@ -181,8 +181,8 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
               <>
                 {/* Header */}
                 <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between shrink-0">
-                  <h4 className="text-label font-bold text-[var(--foreground)] truncate">{source.name}</h4>
-                  <span className="text-micro font-bold text-text-muted bg-white px-1.5 py-0.5 rounded">{totalMarkets}</span>
+                  <h4 className="text-[11px] font-bold text-[var(--foreground)] truncate">{source.name}</h4>
+                  <span className="text-[10px] font-bold text-[#999] bg-white px-1.5 py-0.5 rounded">{totalMarkets}</span>
                 </div>
 
                 {/* Scrollable market entries sorted by $ */}
@@ -199,10 +199,10 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
                         onMouseDown={e => handleMouseDown(e, m.assetId)}
                         onMouseEnter={e => handleMouseEnter(e, m.assetId)}
                       >
-                        <span className="text-micro text-[var(--foreground)] truncate mr-2 leading-tight">
+                        <span className="text-[10px] text-[var(--foreground)] truncate mr-2 leading-tight">
                           {m.name || m.symbol}
                         </span>
-                        <span className="text-micro font-mono font-bold text-[var(--foreground)] shrink-0 tabular-nums">
+                        <span className="text-[10px] font-mono font-bold text-[var(--foreground)] shrink-0 tabular-nums">
                           {formatValue(m.value, source.isPrice, source.valueUnit)}
                         </span>
                       </div>
@@ -210,7 +210,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
                   })}
                   {totalMarkets > HOVER_LIST_CAP && (
                     <div className="px-2.5 py-1.5 text-center">
-                      <span className="text-micro font-semibold text-[var(--foreground)]/60">
+                      <span className="text-[10px] font-semibold text-[var(--foreground)]/60">
                         +{totalMarkets - HOVER_LIST_CAP} more
                       </span>
                     </div>
@@ -218,19 +218,19 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
                 </div>
 
                 {/* Footer */}
-                <div className="px-3 py-1 border-t border-[var(--border)] flex items-center gap-3 text-micro font-semibold shrink-0">
+                <div className="px-3 py-1 border-t border-[var(--border)] flex items-center gap-3 text-[10px] font-semibold shrink-0">
                   <span className="text-[var(--up)]">{upCount} UP</span>
                   <span className="text-[var(--down)]">{downCount} DN</span>
-                  <span className="text-text-muted">{sortedMarkets.length - totalSet} —</span>
+                  <span className="text-[#999]">{sortedMarkets.length - totalSet} —</span>
                 </div>
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center">
                 {isLoading ? (
-                  <div className="text-label font-semibold text-text-muted animate-pulse">Loading...</div>
+                  <div className="text-[11px] font-semibold text-text-muted animate-pulse">Loading...</div>
                 ) : (
                   <div className="text-center px-4">
-                    <div className="text-label font-semibold text-text-muted">
+                    <div className="text-[11px] font-semibold text-text-muted">
                       {displayMarketCount > 0 ? `${displayMarketCount} assets` : 'No markets yet'}
                     </div>
                   </div>
@@ -244,12 +244,12 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
       <div className="px-5 pt-4 pb-0">
         <div className="flex justify-between items-start mb-1">
           <div className="min-w-0 flex-1 mr-2">
-            <h3 className="text-subhead font-extrabold text-black tracking-tight">{source.name}</h3>
-            <p className="text-label text-text-muted leading-snug mt-0.5 line-clamp-2">{source.description}</p>
+            <h3 className="text-[16px] font-extrabold text-black tracking-[-0.01em]">{source.name}</h3>
+            <p className="text-[11px] text-text-muted leading-snug mt-0.5 line-clamp-2">{source.description}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <span className={`w-[6px] h-[6px] rounded-full ${statusColor}`} />
-            <span className={`text-label font-semibold ${statusTextColor}`}>
+            <span className={`text-[11px] font-semibold ${statusTextColor}`}>
               {statusLabel}
             </span>
           </div>
@@ -258,23 +258,23 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
         {/* Metrics row */}
         <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
           <div className="py-2.5 pr-3">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Markets</div>
-            <span className="text-body font-bold text-black font-mono tabular-nums">{displayMarketCount || '—'}</span>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Markets</div>
+            <span className="text-[15px] font-bold text-black font-mono tabular-nums">{displayMarketCount || '—'}</span>
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
-            <span className="text-caption font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
+            <span className="text-[13px] font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Updated</div>
-            <span className="text-caption font-bold text-black">{sourceSnapshot?.generatedAt ? formatAge(sourceSnapshot.generatedAt) : '—'}</span>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Updated</div>
+            <span className="text-[13px] font-bold text-black">{sourceSnapshot?.generatedAt ? formatAge(sourceSnapshot.generatedAt) : '—'}</span>
           </div>
         </div>
       </div>
 
       {/* Action button — full bleed outside padding */}
-      <div className="py-2.5 text-center border-t border-border-light bg-brand-light/40 group-hover:bg-brand-light transition-colors">
-        <span className="text-caption font-bold uppercase tracking-[0.08em] text-brand">View Source &rarr;</span>
+      <div className="py-2.5 text-center border-t border-border-light bg-[rgba(22,163,74,0.06)] group-hover:bg-[rgba(22,163,74,0.12)] transition-colors">
+        <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">View Source &rarr;</span>
       </div>
     </Link>
   )

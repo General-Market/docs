@@ -380,7 +380,7 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
   return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>
 }
 
-// ── Consumer hooks — one per data slice, memoized to prevent re-renders ──
+// ── Consumer hooks — one per data slice ──
 
 export function useSSE(): SSEContextValue {
   return useContext(SSEContext)
@@ -388,42 +388,42 @@ export function useSSE(): SSEContextValue {
 
 export function useSSENav(): NavSnapshot[] {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.itpNav, [data.itpNav])
+  return data.itpNav
 }
 
 export function useSSEBalances(): UserBalances | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.userBalances, [data.userBalances])
+  return data.userBalances
 }
 
 export function useSSEAllowances(): UserAllowances | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.userAllowances, [data.userAllowances])
+  return data.userAllowances
 }
 
 export function useSSEOrders(): UserOrder[] {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.userOrders, [data.userOrders])
+  return data.userOrders
 }
 
 export function useSSEPositions(): MorphoPositionSnapshot | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.userPositions, [data.userPositions])
+  return data.userPositions
 }
 
 export function useSSECostBasis(): UserCostBasis | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.userCostBasis, [data.userCostBasis])
+  return data.userCostBasis
 }
 
 export function useSSESystem(): SystemSnapshot | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.systemStatus, [data.systemStatus])
+  return data.systemStatus
 }
 
 export function useSSEOracle(): OracleSnapshot | null {
   const { data } = useContext(SSEContext)
-  return useMemo(() => data.oraclePrices, [data.oraclePrices])
+  return data.oraclePrices
 }
 
 export function useSSEConnectionState(): SSEConnectionState {

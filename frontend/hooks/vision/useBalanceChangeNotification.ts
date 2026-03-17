@@ -56,9 +56,9 @@ export function useBalanceChangeNotification(
     const formatted = parseFloat(formatUnits(absDelta, VISION_USDC_DECIMALS)).toFixed(2)
 
     if (delta > 0n) {
-      showSuccess(`Round settled: +$${formatted}`)
+      showSuccess(`Tick resolved: +$${formatted}`)
     } else {
-      showError(`Round settled: -$${formatted}`)
+      showError(`Tick resolved: -$${formatted}`)
     }
   }, [balance, isJoined, showSuccess, showError])
 

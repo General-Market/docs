@@ -54,7 +54,7 @@ export function P2PSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">P2P Network</h2>
+      <h2 className="text-[16px] font-black tracking-[-0.02em] text-black mb-4">P2P Network</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Connected Peers */}
         <ExplorerChartCard title="Connected Peers" subtitle="Total peers over time" loading={loading}>

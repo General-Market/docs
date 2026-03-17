@@ -14,7 +14,7 @@ function HorizontalBarChart({ data, dataKey, label }: {
 }) {
   if (data.length === 0) return null
   return (
-    <div className="py-4 card-interactive animate-fade-up">
+    <div className="py-4">
       <h3 className="text-sm font-semibold text-text-secondary mb-3">
         {label}
       </h3>
@@ -25,7 +25,7 @@ function HorizontalBarChart({ data, dataKey, label }: {
             type="category"
             dataKey={dataKey}
             width={100}
-            tick={{ fontSize: 11, fill: '#999999' }}
+            tick={{ fontSize: 11, fill: '#6B7280' }}
             axisLine={false}
             tickLine={false}
           />
@@ -33,7 +33,7 @@ function HorizontalBarChart({ data, dataKey, label }: {
             formatter={(value: number) => [value, 'Count']}
             contentStyle={{
               fontSize: 12,
-              border: '1px solid #E0E0E0',
+              border: '1px solid #e5e5e5',
               borderRadius: 6,
               boxShadow: 'none',
             }}
@@ -82,7 +82,7 @@ function NationalityChart({ data }: { data: { label: string; count: number }[] }
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
-    <div className="py-4 card-interactive animate-fade-up">
+    <div className="py-4">
       <h3 className="text-sm font-semibold text-text-secondary mb-3">
         Top Nationalities
       </h3>
@@ -103,20 +103,20 @@ function NationalityChart({ data }: { data: { label: string; count: number }[] }
                     unoptimized
                   />
                 ) : (
-                  <div className="w-5 h-[15px] rounded-[2px] bg-muted" />
+                  <div className="w-5 h-[15px] rounded-[2px] bg-gray-200" />
                 )}
               </div>
-              <span className="text-label text-text-muted w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="text-[11px] text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
-                <div className="flex-1 h-[18px] bg-surface rounded-sm overflow-hidden">
+                <div className="flex-1 h-[18px] bg-gray-50 rounded-sm overflow-hidden">
                   <div
                     className="h-full rounded-r-[3px]"
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-micro text-text-muted w-5 text-right flex-shrink-0">
+                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">
                   {count}
                 </span>
               </div>
@@ -133,7 +133,7 @@ function UniversityChart({ data }: { data: { label: string; count: number }[] })
   const maxCount = Math.max(...data.map(d => d.count))
 
   return (
-    <div className="py-4 card-interactive animate-fade-up">
+    <div className="py-4">
       <h3 className="text-sm font-semibold text-text-secondary mb-3">
         Top Universities
       </h3>
@@ -154,20 +154,20 @@ function UniversityChart({ data }: { data: { label: string; count: number }[] })
                     unoptimized
                   />
                 ) : (
-                  <div className="w-4 h-4 rounded-sm bg-muted" />
+                  <div className="w-4 h-4 rounded-sm bg-gray-200" />
                 )}
               </div>
-              <span className="text-label text-text-muted w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="text-[11px] text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
-                <div className="flex-1 h-[18px] bg-surface rounded-sm overflow-hidden">
+                <div className="flex-1 h-[18px] bg-gray-50 rounded-sm overflow-hidden">
                   <div
                     className="h-full rounded-r-[3px]"
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-micro text-text-muted w-5 text-right flex-shrink-0">
+                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">
                   {count}
                 </span>
               </div>
@@ -184,7 +184,7 @@ export function FounderDemographics({ enrichment }: SectionProps) {
   if (!founders || founders.total_founders === 0) return null
 
   return (
-    <section data-fade-in>
+    <section>
       <div className="mb-4">
         <h2 className="text-2xl font-bold text-text-primary">
           Founder Intelligence
@@ -193,7 +193,7 @@ export function FounderDemographics({ enrichment }: SectionProps) {
           Based on {founders.total_founders} founders across {founders.total_companies_matched} portfolio companies
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <HorizontalBarChart data={founders.age_distribution} dataKey="bucket" label="Age Distribution" />
         <HorizontalBarChart data={founders.gender_split} dataKey="label" label="Gender Split" />
         <NationalityChart data={founders.top_nationalities} />

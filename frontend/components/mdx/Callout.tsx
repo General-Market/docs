@@ -9,11 +9,11 @@ const config = {
     label: "Note",
   },
   warning: {
-    border: "border border-color-warning/30 bg-surface-warning border-l-[3px] border-l-color-warning",
+    border: "border border-yellow-200 bg-yellow-50/50 border-l-[3px] border-l-yellow-500",
     label: "Warning",
   },
   tip: {
-    border: "border border-color-up/30 bg-surface-up border-l-[3px] border-l-color-up",
+    border: "border border-green-200 bg-green-50/50 border-l-[3px] border-l-green-600",
     label: "Tip",
   },
 };
@@ -24,10 +24,10 @@ export function Callout({ type = "info", children }: CalloutProps) {
     <div
       className={`${border} px-5 py-4 my-8`}
     >
-      <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-2">
+      <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted mb-2">
         {label}
       </div>
-      <div className="text-body text-text-secondary leading-relaxed">
+      <div className="text-[15px] text-text-secondary leading-relaxed">
         {children}
       </div>
     </div>

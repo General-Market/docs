@@ -8,7 +8,6 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { VISION_ADDRESS } from '@/lib/vision/constants'
 import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
-import { formatError } from '@/lib/format-error'
 import { indexL3 } from '@/lib/wagmi'
 
 export type WithdrawToSettlementStep = 'idle' | 'withdrawing' | 'polling' | 'done' | 'error'
@@ -178,7 +177,8 @@ export function useWithdrawToSettlement(): UseWithdrawToSettlementReturn {
   // Error handling
   useEffect(() => {
     if (withdrawError) {
-      setErrorMsg('Withdrawal failed. Check your balance and try again.')
+      const msg = withdrawError.message || 'Withdrawal to Settlement failed'
+      setErrorMsg(msg.slice(0, 300))
       setStep('error')
       resetWithdraw()
     }

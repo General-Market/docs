@@ -207,7 +207,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
     <>
       {/* Error */}
       {(sim.error || sweep.error) && (
-        <div className="text-color-down text-sm p-4 bg-surface-down border border-border-light rounded-card mb-6">
+        <div className="text-color-down text-sm p-4 bg-surface-down border border-border-light rounded-xl mb-6">
           {sim.error || sweep.error}
         </div>
       )}
@@ -234,7 +234,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           )}
           {sim.result?.run_id && (
             <div className="mt-6">
-              <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('holdings.title')}</h3>
+              <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">{t('holdings.title')}</h3>
               <SimHoldingsTable runId={sim.result.run_id} />
             </div>
           )}
@@ -287,12 +287,12 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         <div className="fixed inset-0 z-50 bg-page overflow-y-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('fullscreen.label')}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('fullscreen.label')}</p>
               <h2 className="text-lg font-bold text-text-primary">{t('fullscreen.title')}</h2>
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-md transition-colors press"
+              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors"
               title="Exit fullscreen"
             >
               {t('fullscreen.exit')}
@@ -305,9 +305,9 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       <div className="space-y-3 pb-10">
         {/* Section Header */}
         <div className="pt-10">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
-          <h2 className="text-display font-black text-black">{t('heading.title')}</h2>
-          <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+          <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+          <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
         </div>
 
         {/* Filter Panel */}
@@ -330,7 +330,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           <div className="flex justify-end">
             <button
               onClick={() => setIsFullscreen(true)}
-              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-md hover:border-border-medium transition-colors press"
+              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors"
             >
               {t('fullscreen.enter')}
             </button>
@@ -339,7 +339,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
 
         {/* Results */}
         {hasResults && (
-          <div className="border border-border-light p-4 animate-fade-in">
+          <div className="border border-border-light p-4">
             {resultsContent}
           </div>
         )}

@@ -43,9 +43,9 @@ function formatQty(qty: number): string {
 // ── Spread badge color ──
 
 function spreadColor(bps: number): string {
-  if (bps < 10) return 'text-color-up bg-surface-up'
-  if (bps < 50) return 'text-color-warning bg-surface-warning'
-  return 'text-color-down bg-surface-down'
+  if (bps < 10) return 'text-green-600 bg-green-500/10'
+  if (bps < 50) return 'text-yellow-600 bg-yellow-500/10'
+  return 'text-red-600 bg-red-500/10'
 }
 
 // ── Props ──
@@ -90,10 +90,10 @@ export function OrderbookDrawer({
   }, [data])
 
   return (
-    <div className="animate-drawer-in w-[280px] h-full bg-white border border-border-light flex flex-col text-micro font-mono select-none">
+    <div className="w-[280px] h-full bg-white border border-border-light flex flex-col text-[10px] font-mono select-none">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border-light">
-        <span className="text-label font-bold text-black tracking-[0.08em] uppercase">Depth</span>
+        <span className="text-[11px] font-bold text-black tracking-wide uppercase">Depth</span>
         {data && (
           <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${spreadColor(data.spread_bps)}`}>
             {data.spread_bps.toFixed(1)} bps
@@ -112,27 +112,27 @@ export function OrderbookDrawer({
 
       {/* ── Loading / Error / Empty states ── */}
       {error && !data && (
-        <div className="flex-1 flex items-center justify-center text-color-down text-label px-2 text-center">
+        <div className="flex-1 flex items-center justify-center text-red-500 text-[11px] px-2 text-center">
           {error}
         </div>
       )}
       {!error && !data && (
-        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-label gap-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-[11px] gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-3.5 h-3.5 border-2 border-border-light border-t-border-medium rounded-full animate-spin" />
-            Loading order book...
+            <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+            Loading depth...
           </div>
         </div>
       )}
       {!error && data && data.bids.length === 0 && data.asks.length === 0 && (
-        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-label gap-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-[11px] gap-3">
           {data.mid_price > 0 && (
             <div className="text-center">
-              <div className="text-body font-bold text-black">{formatPrice(data.mid_price)}</div>
+              <div className="text-[14px] font-bold text-black">{formatPrice(data.mid_price)}</div>
               <div className="text-[9px] text-text-muted mt-0.5">{data.assets_included} assets priced</div>
             </div>
           )}
-          <div className="text-micro text-text-muted">No open orders</div>
+          <div className="text-[10px] text-text-muted">No orders</div>
         </div>
       )}
 
@@ -140,7 +140,7 @@ export function OrderbookDrawer({
       {data && data.bids.length > 0 && data.asks.length > 0 && (
         <div className="flex-1 flex flex-col min-h-0">
           {/* Column headers */}
-          <div className="flex items-center px-2.5 py-1 text-[9px] text-text-muted uppercase tracking-[0.08em] border-b border-border-light">
+          <div className="flex items-center px-2.5 py-1 text-[9px] text-text-muted uppercase tracking-wider border-b border-border-light">
             <span className="w-[45%]">Price</span>
             <span className="w-[25%] text-right">Size</span>
             <span className="w-[30%] text-right">Total</span>
@@ -159,8 +159,8 @@ export function OrderbookDrawer({
           </div>
 
           {/* Spread line */}
-          <div className="flex items-center justify-between px-2.5 py-1 border-y border-dashed border-border-light bg-surface">
-            <span className="text-caption font-bold text-black">{formatPrice(data.mid_price)}</span>
+          <div className="flex items-center justify-between px-2.5 py-1 border-y border-dashed border-border-light bg-gray-50">
+            <span className="text-[12px] font-bold text-black">{formatPrice(data.mid_price)}</span>
             <span className="text-[9px] text-text-muted">{data.spread_bps.toFixed(1)} bps</span>
           </div>
 
@@ -177,12 +177,12 @@ export function OrderbookDrawer({
           </div>
 
           {/* ── Depth summary footer ── */}
-          <div className="flex items-center justify-between px-2.5 py-1.5 border-t border-border-light bg-surface text-[9px]">
-            <span className="text-color-up font-semibold">Bid {formatUsd(data.total_bid_depth_usd)}</span>
+          <div className="flex items-center justify-between px-2.5 py-1.5 border-t border-border-light bg-gray-50 text-[9px]">
+            <span className="text-green-600 font-semibold">Bid {formatUsd(data.total_bid_depth_usd)}</span>
             <span className="text-text-muted">
               {data.assets_included}/{data.assets_included + data.assets_failed.length} assets
             </span>
-            <span className="text-color-down font-semibold">Ask {formatUsd(data.total_ask_depth_usd)}</span>
+            <span className="text-red-600 font-semibold">Ask {formatUsd(data.total_ask_depth_usd)}</span>
           </div>
 
           {/* ── Per-asset breakdown (collapsible) ── */}
@@ -223,17 +223,17 @@ function OrderbookRow({
   const isBid = side === 'bid'
 
   return (
-    <div className="relative h-[18px] flex items-center px-2.5 hover:bg-surface/50">
+    <div className="relative h-[18px] flex items-center px-2.5 hover:bg-gray-50/50">
       {/* Depth bar */}
       <div
-        className={`absolute top-0 bottom-0 ${isBid ? 'left-0 bg-color-up/10' : 'right-0 bg-color-down/10'}`}
+        className={`absolute top-0 bottom-0 ${isBid ? 'left-0 bg-green-500/10' : 'right-0 bg-red-500/10'}`}
         style={{ width: `${barWidth}%` }}
       />
       {/* Content */}
-      <span className={`relative w-[45%] ${isBid ? 'text-color-up' : 'text-color-down'}`}>
+      <span className={`relative w-[45%] ${isBid ? 'text-green-600' : 'text-red-600'}`}>
         {formatPrice(level.price)}
       </span>
-      <span className={`relative w-[25%] text-right ${isBid ? 'text-color-up' : 'text-color-down'}`}>
+      <span className={`relative w-[25%] text-right ${isBid ? 'text-green-600' : 'text-red-600'}`}>
         {formatQty(level.quantity)}
       </span>
       <span className="relative w-[30%] text-right text-text-secondary">

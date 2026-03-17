@@ -112,8 +112,8 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   // Handle errors
   useEffect(() => {
     if (actionError) {
-      setTxError(actionError.message || t('common.transaction_failed'))
-      capture('lend_failed', { itp_id: itpId, action: 'deposit', error_message: actionError.message || 'transaction_failed' })
+      setTxError(actionError.message || 'Transaction failed')
+      capture('lend_failed', { itp_id: itpId, action: 'deposit', error_message: actionError.message || 'Transaction failed' })
       setStep('input')
       setPendingDepositAmount(0n)
       resetAction()
@@ -132,7 +132,6 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
   }, [amount, parsedAmount, approve])
 
   const handleSubmit = () => {
-    if (isPending || isConfirming || approvalState === 'approving') return
     capture('lend_deposit_submitted', { itp_id: itpId, amount: amount })
     if (needsApproval) {
       handleApprove()
@@ -178,7 +177,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
     : t('deposit_collateral.button.deposit_collateral')
 
   return (
-    <div className="bg-white rounded-card shadow-card border border-border-light p-6">
+    <div className="bg-white rounded-xl shadow-card border border-border-light p-6">
       <h2 className="text-lg font-bold text-text-primary mb-4">{t('deposit_collateral.title')}</h2>
       <p className="text-text-secondary text-sm mb-4">
         {t('deposit_collateral.description')}
@@ -201,28 +200,28 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
               min="0"
               step="0.1"
               disabled={isProcessing}
-              className="w-full bg-muted border border-border-medium rounded-md px-4 py-3 text-text-primary text-lg focus:border-brand focus:outline-none disabled:opacity-50 input-animate"
+              className="w-full bg-muted border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg focus:border-zinc-900 focus:outline-none disabled:opacity-50"
             />
             <button
               onClick={() => setAmount(formattedBalance)}
               disabled={isProcessing}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-primary font-medium hover:text-brand disabled:opacity-50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-900 font-medium hover:text-zinc-700 disabled:opacity-50"
             >
               MAX
             </button>
           </div>
           {amount && parsedAmount > itpBalance && (
-            <p className="text-color-down text-xs mt-1 animate-fade-up">{t('deposit_collateral.insufficient_balance')}</p>
+            <p className="text-color-down text-xs mt-1">{t('deposit_collateral.insufficient_balance')}</p>
           )}
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!amount || parsedAmount === 0n || isProcessing || parsedAmount > itpBalance}
-          className={`w-full py-3 font-bold rounded-md transition-colors press ${
+          className={`w-full py-3 font-bold rounded-lg transition-colors ${
             step === 'success'
               ? 'bg-color-up text-white'
-              : 'bg-brand text-white hover:bg-brand-dark disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
+              : 'bg-zinc-900 text-white hover:bg-zinc-800 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
           }`}
         >
           {buttonText}
@@ -238,14 +237,14 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
         )}
 
         {stuckWarning && (
-          <div className="bg-surface-warning border border-color-warning rounded-card p-3 text-color-warning text-sm animate-fade-up">
+          <div className="bg-surface-warning border border-orange-300 rounded-xl p-3 text-orange-700 text-sm">
             <p className="font-bold">{t('common.tx_stuck_title')}</p>
             <p className="text-xs mt-1">{t('common.tx_stuck_description')}</p>
           </div>
         )}
 
         {txError && (
-          <div className="bg-surface-down border border-color-down rounded-card p-3 text-color-down text-sm animate-fade-up">
+          <div className="bg-surface-down border border-red-300 rounded-xl p-3 text-color-down text-sm">
             {txError.includes('User rejected') || txError.includes('denied')
               ? t('common.transaction_rejected')
               : <span className="break-all">{txError}</span>}

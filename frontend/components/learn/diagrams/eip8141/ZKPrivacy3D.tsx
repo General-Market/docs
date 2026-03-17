@@ -182,7 +182,7 @@ function NoLinkLabel() {
   return (
     <Html center position={[centerX, 1.15, ADDR_Z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
       <div className="bg-white/90 border border-red-300 rounded px-2 py-1">
-        <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: RED }}>NO LINK</p>
+        <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: RED }}>NO LINK</p>
       </div>
     </Html>
   )
@@ -239,7 +239,7 @@ function EnvelopeLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref} visible={false}>
       <Html center position={[ENVELOPE_X, ENVELOPE_Y + 1.1, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-white/90 border border-blue-200 rounded px-2 py-0.5">
-          <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
+          <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: BLUE }}>
             Frame Transaction
           </p>
         </div>
@@ -470,7 +470,7 @@ function AcceptLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref} visible={false}>
       <Html center position={[FRAME0_X, ENVELOPE_Y - 0.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-          <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
             ACCEPT
           </p>
         </div>
@@ -730,7 +730,7 @@ function NoRelayerComparison({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Old way: User -> Relayer -> Contract */}
       <group ref={oldRef} visible={false}>
         <Html center position={[-1.5, -0.5, 2.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <div className="bg-white/90 border border-border-light rounded px-2 py-1">
+          <div className="bg-white/90 border border-zinc-200 rounded px-2 py-1">
             <p className="text-[9px] font-mono whitespace-nowrap text-center leading-tight" style={{ color: GRAY }}>
               Old: User {'->'} <span style={{ color: RED }}>Relayer</span> {'->'} Contract
             </p>
@@ -843,7 +843,7 @@ function PhaseLabels({ reducedMotion }: { reducedMotion: boolean }) {
     <>
       <group ref={noLinkRef}>
         <Html center position={[0, -0.15, 2.5]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-          <p className="text-micro font-mono whitespace-nowrap text-center leading-tight" style={{ color: '#71717a' }}>
+          <p className="text-[10px] font-mono whitespace-nowrap text-center leading-tight" style={{ color: '#71717a' }}>
             No link between deposit and withdrawal
           </p>
         </Html>
@@ -879,21 +879,21 @@ function Legend() {
     <div className="flex items-center gap-5 flex-wrap">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">ZK Paymaster (Frame 0)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">ZK Paymaster (Frame 0)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Withdrawal (Frame 1)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Withdrawal (Frame 1)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">CALLDATAREAD</span>
+        <span className="text-[10px] text-text-muted tracking-wide">CALLDATAREAD</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-2.5 h-2.5 flex items-center justify-center">
-          <span className="text-micro font-bold" style={{ color: RED }}>X</span>
+          <span className="text-[10px] font-bold" style={{ color: RED }}>X</span>
         </div>
-        <span className="text-micro text-text-muted tracking-[0.08em]">No link</span>
+        <span className="text-[10px] text-text-muted tracking-wide">No link</span>
       </div>
     </div>
   )

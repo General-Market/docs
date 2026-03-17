@@ -71,12 +71,12 @@ export function ArticleSidebar({ headings, category }: ArticleSidebarProps) {
   };
 
   return (
-    <nav className="hidden lg:block sticky top-24 w-56 shrink-0 self-start animate-fade-in">
+    <nav className="hidden lg:block sticky top-24 w-56 shrink-0 self-start">
       <div className="relative pl-5">
         {/* Vertical progress track */}
         <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-border-light">
           <div
-            className="w-full transition-[height] duration-150"
+            className="w-full transition-all duration-150"
             style={{
               height: `${scrollProgress * 100}%`,
               backgroundColor: barColor,
@@ -85,14 +85,14 @@ export function ArticleSidebar({ headings, category }: ArticleSidebarProps) {
         </div>
 
         {/* Heading links */}
-        <ul className="space-y-1 stagger">
+        <ul className="space-y-1">
           {headings.map((h) => {
             const isActive = activeId === h.id;
             return (
-              <li key={h.id} className="animate-fade-up">
+              <li key={h.id}>
                 <button
                   onClick={() => handleClick(h.id)}
-                  className={`flex items-center gap-2.5 w-full text-left text-caption leading-snug px-2.5 py-1.5 rounded transition-colors ${
+                  className={`flex items-center gap-2.5 w-full text-left text-[12px] leading-snug px-2.5 py-1.5 rounded transition-colors ${
                     isActive
                       ? "bg-surface font-semibold text-black"
                       : "text-text-muted hover:text-text-secondary"

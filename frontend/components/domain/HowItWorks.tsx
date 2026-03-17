@@ -49,7 +49,7 @@ export function HowItWorks() {
     return (
       <section
         id="how-it-works"
-        className="border border-border-light bg-card rounded-card shadow-card"
+        className="border border-border-light bg-card rounded-xl shadow-card"
         aria-labelledby="how-it-works-heading"
       >
         <button
@@ -68,14 +68,13 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="border border-border-light bg-card rounded-card shadow-card"
+      className="border border-border-light bg-card rounded-xl shadow-card"
       aria-labelledby="how-it-works-heading"
-      data-fade-in
     >
       {/* Header - always visible, acts as toggle */}
       <button
         type="button"
-        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl press"
+        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl"
         onClick={toggleCollapsed}
         aria-expanded={!isCollapsed}
         aria-controls="how-it-works-content"
@@ -92,16 +91,16 @@ export function HowItWorks() {
       {!isCollapsed && (
         <div
           id="how-it-works-content"
-          className="border-t border-border-light p-6 animate-fade-up"
+          className="border-t border-border-light p-6"
         >
           {/* Three-step flow */}
-          <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8 stagger">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
             {STEP_KEYS.map((num, index) => (
-              <div key={num} className="flex items-center animate-fade-up">
+              <div key={num} className="flex items-center">
                 {/* Step card */}
                 <div className="text-center w-40">
-                  <div className="border border-border-medium rounded-card p-4 mb-2">
-                    <div className="text-3xl text-text-primary font-bold mb-1">{num}</div>
+                  <div className="border border-border-medium rounded-xl p-4 mb-2">
+                    <div className="text-3xl text-zinc-900 font-bold mb-1">{num}</div>
                     <div className="text-lg font-bold text-text-primary">{t(`how_it_works.step${num}_title`)}</div>
                   </div>
                   <div className="text-sm text-text-muted">{t(`how_it_works.step${num}_subtitle`)}</div>
@@ -120,7 +119,7 @@ export function HowItWorks() {
           <div className="md:hidden space-y-3 mb-6">
             {STEP_KEYS.map((num) => (
               <div key={num} className="text-xs text-text-muted">
-                <span className="text-text-primary">{num}.</span> {t(`how_it_works.step${num}_description`)}
+                <span className="text-zinc-900">{num}.</span> {t(`how_it_works.step${num}_description`)}
               </div>
             ))}
           </div>

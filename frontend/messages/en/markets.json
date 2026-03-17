@@ -144,27 +144,5 @@
     "loading": "Loading NAV data...",
     "error": "Failed to load chart data",
     "no_data": "No NAV data available for this timeframe"
-  },
-  "itp_listing": {
-    "search_placeholder": "Search by fund name or ticker...",
-    "showing": "Showing {count} of {total} total funds",
-    "loading": "Loading funds...",
-    "no_match": "No funds match your search.",
-    "no_funds": "No funds available.",
-    "ticker": "Ticker",
-    "fund": "Name",
-    "nav": "NAV",
-    "net_assets": "Net Assets",
-    "shares_outstanding": "Shares Outstanding",
-    "trade": "Trade",
-    "buy": "Buy",
-    "sell": "Sell",
-    "first": "First",
-    "prev": "Prev",
-    "next": "Next",
-    "last": "Last",
-    "nav_chart": "NAV chart",
-    "page_info": "{page} / {total}",
-    "page_range": "{start}\u2013{end} of {total}"
   }
 }

@@ -30,7 +30,7 @@ export function usePlayerPosition(batchId: number | undefined) {
     chainId: indexL3.id,
     query: {
       enabled: batchId !== undefined && !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000',
-      refetchInterval: 30_000,
+      refetchInterval: 10000,
     },
   })
 

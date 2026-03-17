@@ -307,10 +307,10 @@ export function SourceHealthTable({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search sources..."
-            className="w-full max-w-xs bg-card border border-border-light rounded px-3 py-1.5 text-caption text-black placeholder:text-text-muted focus:outline-none focus:border-color-info transition-colors"
+            className="w-full max-w-xs bg-card border border-border-light rounded px-3 py-1.5 text-[12px] text-black placeholder:text-text-muted focus:outline-none focus:border-color-info transition-colors"
           />
           {search && (
-            <span className="text-label text-text-muted whitespace-nowrap">
+            <span className="text-[11px] text-text-muted whitespace-nowrap">
               {filteredSources.length} of {sources.length}
             </span>
           )}
@@ -368,10 +368,10 @@ export function SourceHealthTable({
                     data-state={isSelected ? 'selected' : undefined}
                   >
                     {/* Source Name */}
-                    <TableCell className="font-bold text-black text-caption">
+                    <TableCell className="font-bold text-black text-[13px]">
                       <div className="flex flex-col">
                         <span>{source.displayName}</span>
-                        <span className="text-micro font-mono text-text-muted font-normal">
+                        <span className="text-[10px] font-mono text-text-muted font-normal">
                           {source.sourceId}
                         </span>
                       </div>
@@ -381,7 +381,7 @@ export function SourceHealthTable({
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-[0.08em] ${getStatusColor(source.status)} ${getStatusBg(source.status)}`}
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusColor(source.status)} ${getStatusBg(source.status)}`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${getStatusDot(source.status)}`} />
                           {source.status === 'not_started' ? 'OFF' : source.status}
@@ -411,7 +411,7 @@ export function SourceHealthTable({
                     </TableCell>
 
                     {/* Live / Total */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {(() => {
                         const live = Math.max(0, source.activeAssets - source.staleAssets - source.zeroValueAssets)
                         const liveRatio = source.totalAssets > 0 ? live / source.totalAssets : 0
@@ -432,12 +432,12 @@ export function SourceHealthTable({
                     </TableCell>
 
                     {/* Cycle (sync interval) */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {(() => {
                         const freq = getFrequencyLabel(source.syncIntervalSecs)
                         return (
                           <div className="flex flex-col items-end gap-0.5">
-                            <span className={`inline-block px-1.5 py-0 rounded text-micro font-bold uppercase tracking-[0.08em] ${freq.color}`}>
+                            <span className={`inline-block px-1.5 py-0 rounded text-[10px] font-bold uppercase tracking-wider ${freq.color}`}>
                               {freq.label}
                             </span>
                             <span className="text-[9px] text-text-muted">{formatAge(source.syncIntervalSecs)}</span>
@@ -447,12 +447,12 @@ export function SourceHealthTable({
                     </TableCell>
 
                     {/* Records */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {formatNumber(source.totalPriceRecords)}
                     </TableCell>
 
                     {/* Freshness (last sync age) */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       <span
                         className={
                           source.lastSyncAgeSecs > source.syncIntervalSecs * 10
@@ -467,20 +467,20 @@ export function SourceHealthTable({
                     </TableCell>
 
                     {/* Zero Values */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       <span className={highZeros ? 'text-color-info font-bold' : ''}>
                         {source.zeroValueAssets}
                       </span>
                     </TableCell>
 
                     {/* Stale (with dormant/active breakdown + reason) */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {source.staleAssets > 0 ? (
                         <div className="flex flex-col items-end leading-tight" title={source.staleReason}>
                           <span className={source.staleActive > 0 ? 'text-color-warning font-semibold' : 'text-muted-foreground'}>
                             {source.staleAssets}
                           </span>
-                          <span className="text-micro text-muted-foreground max-w-[140px] truncate">
+                          <span className="text-[10px] text-muted-foreground max-w-[140px] truncate">
                             {source.staleDormant > 0
                               ? `${source.staleDormant} dormant`
                               : source.staleReason}
@@ -492,12 +492,12 @@ export function SourceHealthTable({
                     </TableCell>
 
                     {/* Avg Change */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       {source.avgChangePct.toFixed(2)}%
                     </TableCell>
 
                     {/* Max Gap */}
-                    <TableCell className="text-right font-mono tabular-nums text-caption">
+                    <TableCell className="text-right font-mono tabular-nums text-[12px]">
                       <span
                         className={
                           source.syncGapMaxSecs > source.syncIntervalSecs * 10

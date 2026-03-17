@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { ReactNode } from 'react';
-import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { motion } from "framer-motion";
+import { ReactNode } from "react";
 
-/**
- * Section wrapper for learn articles.
- * Uses scroll-triggered fade-in via useScrollReveal + data-fade-in.
- */
-export function FadeInSection({ children, className = '' }: { children: ReactNode; className?: string }) {
-  const ref = useScrollReveal();
+export function FadeInSection({ children }: { children: ReactNode }) {
   return (
-    <div ref={ref} className={className}>
-      <div data-fade-in>{children}</div>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
   );
 }

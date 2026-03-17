@@ -41,15 +41,15 @@ function SequentialPlatform() {
       </RoundedBox>
       {/* Label */}
       <Html center position={[0, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>Sequential</p>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>Sequential</p>
       </Html>
       {/* TPS counter */}
       <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-subhead font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>15 TPS</p>
+        <p className="text-[16px] font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>15 TPS</p>
       </Html>
       {/* Timing label */}
       <Html center position={[0, -0.05, 1.3]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>12s per block</p>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>12s per block</p>
       </Html>
     </group>
   )
@@ -72,15 +72,15 @@ function ParallelPlatform() {
       </RoundedBox>
       {/* Label */}
       <Html center position={[0, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Parallel</p>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Parallel</p>
       </Html>
       {/* TPS counter */}
       <Html center position={[0, 0.95, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-subhead font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>120 TPS</p>
+        <p className="text-[16px] font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>120 TPS</p>
       </Html>
       {/* Timing label */}
       <Html center position={[0, -0.05, 2.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>1.5s per block</p>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>1.5s per block</p>
       </Html>
     </group>
   )
@@ -626,15 +626,15 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Sequential</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Sequential</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Parallel</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Parallel</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
-        <span className="text-micro text-text-muted tracking-[0.08em]">Shared Slots</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Shared Slots</span>
       </div>
     </div>
   )

@@ -132,16 +132,16 @@ describe('AnimatedBetFeedItem', () => {
   })
 
   describe('CSS pulse class selection', () => {
-    test('mega portfolio uses animate-pulse-highlight-strong-bet class', () => {
+    test('mega portfolio uses animate-pulse-red-strong-bet class', () => {
       const isMegaPortfolio = true
-      const pulseClass = isMegaPortfolio ? 'animate-pulse-highlight-strong-bet' : 'animate-pulse-highlight-bet'
-      expect(pulseClass).toBe('animate-pulse-highlight-strong-bet')
+      const pulseClass = isMegaPortfolio ? 'animate-pulse-red-strong-bet' : 'animate-pulse-red-bet'
+      expect(pulseClass).toBe('animate-pulse-red-strong-bet')
     })
 
-    test('regular portfolio uses animate-pulse-highlight-bet class', () => {
+    test('regular portfolio uses animate-pulse-red-bet class', () => {
       const isMegaPortfolio = false
-      const pulseClass = isMegaPortfolio ? 'animate-pulse-highlight-strong-bet' : 'animate-pulse-highlight-bet'
-      expect(pulseClass).toBe('animate-pulse-highlight-bet')
+      const pulseClass = isMegaPortfolio ? 'animate-pulse-red-strong-bet' : 'animate-pulse-red-bet'
+      expect(pulseClass).toBe('animate-pulse-red-bet')
     })
   })
 
