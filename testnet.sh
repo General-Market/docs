@@ -337,7 +337,7 @@ cmd_deploy() {
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow) \
+        --legacy --with-gas-price 200000000) \
         > logs/deploy-core.log 2>&1
 
     # Verify deployment succeeded: check both JSON file exists AND has receipts
@@ -354,8 +354,78 @@ cmd_deploy() {
     fi
     echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
 
-    # 3b: Deploy settlement contracts to Sonic
-    echo -e "${BLUE}[3b/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
+    # 3b: Register oracle BLS keys in OracleRegistry
+    echo -e "${BLUE}[3b/14] Registering oracle BLS keys in OracleRegistry...${NC}"
+    ORACLE_REGISTRY_ADDR=$(read_deployment_addr "OracleRegistry")
+    if [ -z "$ORACLE_REGISTRY_ADDR" ]; then
+        echo -e "  ${RED}OracleRegistry address not found in deployment JSON${NC}"
+        exit 1
+    fi
+    echo -e "  OracleRegistry: $ORACLE_REGISTRY_ADDR"
+
+    # Oracle addresses (Anvil accounts 1-3)
+    ORACLE_1_ADDR_BLS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    ORACLE_2_ADDR_BLS="0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    ORACLE_3_ADDR_BLS="0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+
+    # Generate BLS pubkeys via bls-tool
+    BLS_PUBKEY_0=$(target/release/bls-tool pubkey --seed-index 0 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 0 failed${NC}"; exit 1; }
+    BLS_PUBKEY_1=$(target/release/bls-tool pubkey --seed-index 1 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 1 failed${NC}"; exit 1; }
+    BLS_PUBKEY_2=$(target/release/bls-tool pubkey --seed-index 2 2>/dev/null) || { echo -e "  ${RED}bls-tool pubkey --seed-index 2 failed${NC}"; exit 1; }
+
+    echo -e "  Adding oracle 1 ($ORACLE_1_ADDR_BLS)..."
+    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
+        "$ORACLE_1_ADDR_BLS" "$BLS_PUBKEY_0" "oracle-1" \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 1 failed${NC}"; exit 1; }
+    AGG_PUBKEY_1=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0 failed${NC}"; exit 1; }
+    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+        "$AGG_PUBKEY_1" 1 \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 1 failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Oracle 1 registered${NC}"
+
+    echo -e "  Adding oracle 2 ($ORACLE_2_ADDR_BLS)..."
+    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
+        "$ORACLE_2_ADDR_BLS" "$BLS_PUBKEY_1" "oracle-2" \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 2 failed${NC}"; exit 1; }
+    AGG_PUBKEY_2=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0,1 failed${NC}"; exit 1; }
+    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+        "$AGG_PUBKEY_2" 2 \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 2 failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Oracle 2 registered${NC}"
+
+    echo -e "  Adding oracle 3 ($ORACLE_3_ADDR_BLS)..."
+    cast send "$ORACLE_REGISTRY_ADDR" "addOracle(address,bytes,string)" \
+        "$ORACLE_3_ADDR_BLS" "$BLS_PUBKEY_2" "oracle-3" \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}addOracle 3 failed${NC}"; exit 1; }
+    AGG_PUBKEY_3=$(target/release/bls-tool agg-pubkey-from-seeds --seed-indices 0,1,2 2>/dev/null) || { echo -e "  ${RED}agg-pubkey-from-seeds 0,1,2 failed${NC}"; exit 1; }
+    cast send "$ORACLE_REGISTRY_ADDR" "setAggregatedPubkey(bytes,uint256)" \
+        "$AGG_PUBKEY_3" 3 \
+        --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+        --legacy --gas-price 200000000 --gas-limit 500000 \
+        > /dev/null 2>&1 || { echo -e "  ${RED}setAggregatedPubkey after oracle 3 failed${NC}"; exit 1; }
+    echo -e "  ${GREEN}Oracle 3 registered${NC}"
+
+    # Verify all 3 oracles registered
+    ACTIVE_ORACLE_COUNT=$(cast call "$ORACLE_REGISTRY_ADDR" "activeOracleCount()(uint256)" \
+        --rpc-url "$RPC_URL" 2>/dev/null | tr -d '[:space:]' || echo "0")
+    if [ "$ACTIVE_ORACLE_COUNT" != "3" ]; then
+        echo -e "  ${RED}Oracle registration verification failed — expected 3, got $ACTIVE_ORACLE_COUNT${NC}"
+        exit 1
+    fi
+    echo -e "  ${GREEN}BLS oracle registration complete — $ACTIVE_ORACLE_COUNT active oracles${NC}"
+
+    # 3c: Deploy settlement contracts to Sonic
+    echo -e "${BLUE}[3c/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
 
     # Save L3 deployment before Sonic overwrites it
     # The forge script writes to e2e-full-system.json (not active-deployment.json)
@@ -372,7 +442,7 @@ cmd_deploy() {
             --private-key "$DEPLOYER_KEY" \
             --broadcast \
             --chain-id $SETTLEMENT_CHAIN_ID \
-            --slow) \
+            --legacy --with-gas-price 200000000) \
             > logs/deploy-sonic.log 2>&1 || echo -e "  ${YELLOW}Sonic forge script had errors — check logs/deploy-sonic.log${NC}"
 
         if [ -f "deployments/e2e-full-system.json" ]; then
@@ -391,7 +461,7 @@ cmd_deploy() {
     fi
 
     # Reset Vision DB state (stale batch IDs from previous deployment)
-    echo -e "${BLUE}[3c/14] Resetting Vision database state...${NC}"
+    echo -e "${BLUE}[3d/14] Resetting Vision database state...${NC}"
     if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
         vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements, vision_balance_proofs, vision_batches, vision_batch_state, vision_bitmaps, vision_deposit_orders, vision_kv_store, vision_positions, vision_tick_results, vision_user_balances, vision_withdraw_orders, itp_snapshots, trades, user_shares, oracle_health_snapshots CASCADE;'" \
             && echo -e "  ${GREEN}Vision tables truncated${NC}" \
@@ -475,7 +545,7 @@ cmd_deploy() {
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow) \
+        --legacy --with-gas-price 200000000) \
         >> logs/deploy-morpho.log 2>&1 || echo -e "  ${YELLOW}Morpho deploy had warnings — check logs/deploy-morpho.log${NC}"
     echo -e "  ${GREEN}Morpho deployed${NC}"
 
@@ -489,7 +559,7 @@ cmd_deploy() {
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow) \
+        --legacy --with-gas-price 200000000) \
         >> logs/deploy-vision.log 2>&1 || echo -e "  ${YELLOW}Vision deploy had warnings${NC}"
 
     # Vision batches: do NOT use --slow (causes nonce races on L3 Orbit)
@@ -502,7 +572,8 @@ cmd_deploy() {
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
-        --chain-id $CHAIN_ID) \
+        --chain-id $CHAIN_ID \
+        --legacy --with-gas-price 200000000) \
         >> logs/deploy-vision-batches.log 2>&1 || echo -e "  ${YELLOW}Vision batches had warnings${NC}"
     echo -e "  ${GREEN}Vision deployed${NC}"
 
@@ -549,7 +620,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         MOCK_BITGET_VAULT="$MOCK_VAULT" \
         forge script script/DeployAllTokens.s.sol:DeployAllTokens \
-        --broadcast --legacy --rpc-url "$RPC_URL" \
+        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-tokens.log 2>&1 || { echo -e "  ${RED}Token deploy FAILED — check logs/deploy-tokens.log${NC}"; exit 1; }
@@ -571,7 +642,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         forge script script/Deploy107ITPs_Create.s.sol:Deploy107ITPs_Create \
-        --broadcast --legacy --rpc-url "$RPC_URL" \
+        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; exit 1; }
@@ -585,7 +656,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         INDEX_ADDRESS="$INDEX_ADDR_ITP" \
         L3_WUSDC="$L3_USDC" \
         forge script script/Deploy107ITPs_Vaults.s.sol:Deploy107ITPs_Vaults \
-        --broadcast --legacy --rpc-url "$RPC_URL" \
+        --broadcast --legacy --with-gas-price 200000000 --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
         --chain-id $CHAIN_ID) \
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; exit 1; }
@@ -640,7 +711,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
             rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/ contracts/cache/DeployBatchMarkets.s.sol/$CHAIN_ID/
             (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
                 forge script script/DeployBatchMarkets.s.sol \
-                --rpc-url "$RPC_URL" --broadcast --slow \
+                --rpc-url "$RPC_URL" --broadcast --legacy --with-gas-price 200000000 \
                 --private-key "$DEPLOYER_KEY" \
                 --chain-id $CHAIN_ID) \
                 > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
@@ -1517,7 +1588,7 @@ print(len(configs))
         --private-key "$DEPLOYER_KEY" \
         --broadcast \
         --chain-id $CHAIN_ID \
-        --slow) \
+        --legacy --with-gas-price 200000000) \
         > logs/deploy-vision-batches.log 2>&1
 
     if [ $? -ne 0 ]; then
