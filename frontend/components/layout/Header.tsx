@@ -122,26 +122,6 @@ export function Header() {
 
   const navLinks = isVision ? VISION_NAV : INVESTMENT_NAV
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id)
-          }
-        }
-      },
-      { rootMargin: '-40% 0px -50% 0px' }
-    )
-
-    for (const link of navLinks) {
-      const el = document.getElementById(link.id)
-      if (el) observer.observe(el)
-    }
-
-    return () => observer.disconnect()
-  }, [navLinks])
-
   const scrollTo = (id: string) => {
     capture('section_scrolled_to', { section_name: id })
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -333,46 +313,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* Section Navigation — vertical left rail on desktop, bottom bar on mobile */}
-      {isIndex && (
-      <>
-        {/* Desktop: floating vertical nav on left edge */}
-        <nav className="hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-40 flex-col gap-1 bg-white/90 backdrop-blur-sm border border-border-light rounded-lg p-1.5 shadow-card">
-          {navLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => scrollTo(link.id)}
-              className={`px-3 py-2 text-[11px] font-semibold rounded-md transition-all duration-200 whitespace-nowrap text-left ${
-                activeSection === link.id
-                  ? 'text-white bg-black'
-                  : 'text-text-secondary hover:text-black hover:bg-surface'
-              }`}
-            >
-              {link.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Mobile/Tablet: fixed bottom bar */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border-light safe-area-bottom">
-          <div className="flex items-center justify-around h-12 overflow-x-auto scrollbar-hide px-1">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => scrollTo(link.id)}
-                className={`px-2.5 py-1.5 text-[10px] font-semibold rounded transition-all duration-200 whitespace-nowrap shrink-0 ${
-                  activeSection === link.id
-                    ? 'text-white bg-black'
-                    : 'text-text-muted'
-                }`}
-              >
-                {link.label}
-              </button>
-            ))}
-          </div>
-        </nav>
-      </>
-      )}
+      {/* Section nav removed — now lives in HomeClient as Morpho-style sidebar */}
 
     </div>
     </>
