@@ -1124,7 +1124,6 @@ services:
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
     volumes:
@@ -1143,7 +1142,6 @@ $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
     volumes:
@@ -1162,7 +1160,6 @@ $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
     volumes:
