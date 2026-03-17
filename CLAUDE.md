@@ -130,6 +130,19 @@ All external-facing writing follows the Cioran method. Full guide: `docs/writing
 
 **The test:** Would a reader pause mid-sentence? If not, rewrite.
 
+## E2E Testing Efficiency
+
+For suites >20 tests, **NEVER run the full suite during debugging**. Run only failing tests:
+```bash
+# Run ONE specific test
+npx playwright test --config=e2e/playwright.config.ts e2e/tests/02-buy-itp.spec.ts
+# Run by pattern
+npx playwright test --grep "buy ITP|sell ITP"
+```
+- Fix → run individual test → verify → next failure. Never run 176 tests to check 5 fixes.
+- Full suite is a FINAL validation step only, after all individual tests pass.
+- Time to reach end of dev is the priority. Skip tests we know work.
+
 ## Design Decision Backlog
 
 Log design decisions and failed attempts to `./backlog.md`.

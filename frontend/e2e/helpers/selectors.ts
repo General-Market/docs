@@ -72,12 +72,12 @@ export function modalContainer(page: Page): Locator {
 
 export const buyModal = {
   amountInput(page: Page): Locator {
-    return modalContainer(page).locator('input[placeholder="e.g., 100"]');
+    return page.locator('input[placeholder="Amount in USDC"], input[placeholder="e.g., 100"]');
   },
 
   limitPriceInput(page: Page): Locator {
-    // The second number input in the modal (Max Price)
-    return modalContainer(page).locator('input[type="number"]').nth(1);
+    // Limit price input — uses dynamic placeholder from i18n
+    return page.locator('input[placeholder="Set limit price"], input[placeholder="0 (no limit)"], input[placeholder="Computing price..."]');
   },
 
   mintTestUsdcButton(page: Page): Locator {
@@ -90,7 +90,7 @@ export const buyModal = {
 
   submitButton(page: Page): Locator {
     // The main submit button — text varies by state
-    return modalContainer(page).getByRole('button', { name: /Approve & Buy|Buy ITP/ });
+    return page.getByRole('button', { name: /Approve & Buy|Buy ITP/ });
   },
 
   orderSubmittedBanner(page: Page): Locator {

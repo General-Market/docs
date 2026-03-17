@@ -33,7 +33,14 @@ test.describe('Buy ITP', () => {
       await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     }
 
-    // 4. Click Buy on first ITP
+    // 4. Dismiss welcome dialog if present (blocks pointer events)
+    const skipBtn = page.getByRole('button', { name: 'Skip' });
+    if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await skipBtn.click();
+      await page.waitForTimeout(500);
+    }
+
+    // 5. Click Buy on first ITP
     const buyBtn = buyButton(page);
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
     await buyBtn.click();
