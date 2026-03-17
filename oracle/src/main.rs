@@ -3831,9 +3831,10 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             }
         }
         Err(e) => {
-            // If batch failed because orders are already batched (E021), try fills only
+            // If batch failed because orders are already batched (E021) or cycle already
+            // processed (E019), skip batch and try fills only
             let err_str = format!("{}", e);
-            if err_str.contains("E021") || err_str.contains("already") {
+            if err_str.contains("E021") || err_str.contains("E019") || err_str.contains("already") || err_str.contains("CycleAlreadyProcessed") {
                 info!(cycle = current_cycle, "Orders already batched, attempting fills only");
 
                 let fills: Vec<Fill> = l3_native_orders.iter().enumerate().filter_map(|(i, order)| {
