@@ -141,15 +141,15 @@ export function Header() {
         <div className="px-4 sm:px-6 lg:px-12">
           <div className="max-w-site mx-auto flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
-            <Link href="/" className="shrink-0 flex items-center gap-2.5">
+            <Link href="/" className="shrink-0 flex items-center gap-3">
               <img
                 src="/favicon-32x32.png"
                 alt=""
-                width={24}
-                height={24}
-                className="w-6 h-6"
+                width={32}
+                height={32}
+                className="w-8 h-8"
               />
-              <span className="hidden sm:inline text-title font-black tracking-tight text-black">
+              <span className="text-[18px] sm:text-[20px] font-black tracking-tight text-black">
                 {t('brand.logo_text')}
               </span>
             </Link>
