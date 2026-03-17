@@ -1505,8 +1505,11 @@ pub async fn run(
     let mut gc_timer = tokio::time::interval(std::time::Duration::from_secs(30));
     gc_timer.tick().await; // consume the immediate first tick
     diag("checkpoint C: entering main loop");
+    static LOOP_ITER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
     loop {
+        let li = LOOP_ITER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if li == 0 { diag("checkpoint D: first loop iteration, entering select!"); }
         if shutdown.load(Ordering::Relaxed) {
             tracing::info!("Vision tick engine shutting down");
             break;
@@ -1514,17 +1517,20 @@ pub async fn run(
 
         tokio::select! {
             _ = gc_timer.tick() => {
+                diag("select: gc_timer branch fired");
                 if let Some(ref tc) = tick_consensus {
                     tc.gc_stale_rounds().await;
                 }
             }
             _ = tokio::time::sleep(interval) => {
+                if li < 3 { diag(&format!("select: sleep branch fired (iter {})", li)); }
                 if shutdown.load(Ordering::Relaxed) {
                     tracing::info!("Vision tick engine shutting down");
                     break;
                 }
 
                 let now = get_chain_timestamp(&config.rpc_ws_url).await;
+                if li < 3 { diag(&format!("get_chain_timestamp returned: {}", now)); }
 
                 let batch_count = scheduler.active_batch_count().await;
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
