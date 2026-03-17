@@ -294,7 +294,7 @@ export function Header() {
                     {/* Section nav — scroll-to links (contextual) */}
                     {(isIndex || isVision) && (
                       <div className="px-2 py-1.5 mb-1 border-b border-border-light">
-                        <div className="px-1 mb-1 text-micro font-semibold uppercase tracking-[0.1em] text-text-muted">
+                        <div className="px-1 mb-1 text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
                           Sections
                         </div>
                         {navLinks.map((link) => (
@@ -333,27 +333,45 @@ export function Header() {
         </div>
       </header>
 
-      {/* Sub Header — Section Navigation (scrollable on mobile) */}
+      {/* Section Navigation — vertical left rail on desktop, bottom bar on mobile */}
       {isIndex && (
-      <nav className="bg-white border-b border-border-light">
-        <div className="px-4 sm:px-6 lg:px-12">
-          <div className="max-w-site mx-auto flex items-center gap-1 h-11 overflow-x-auto scrollbar-hide">
+      <>
+        {/* Desktop: floating vertical nav on left edge */}
+        <nav className="hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-40 flex-col gap-1 bg-white/90 backdrop-blur-sm border border-border-light rounded-lg p-1.5 shadow-card">
+          {navLinks.map((link) => (
+            <button
+              key={link.id}
+              onClick={() => scrollTo(link.id)}
+              className={`px-3 py-2 text-[11px] font-semibold rounded-md transition-all duration-200 whitespace-nowrap text-left ${
+                activeSection === link.id
+                  ? 'text-white bg-black'
+                  : 'text-text-secondary hover:text-black hover:bg-surface'
+              }`}
+            >
+              {link.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Mobile/Tablet: fixed bottom bar */}
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-border-light safe-area-bottom">
+          <div className="flex items-center justify-around h-12 overflow-x-auto scrollbar-hide px-1">
             {navLinks.map((link) => (
               <button
                 key={link.id}
                 onClick={() => scrollTo(link.id)}
-                className={`px-3 sm:px-4 py-2 text-caption font-medium rounded transition-all duration-200 whitespace-nowrap shrink-0 ${
+                className={`px-2.5 py-1.5 text-[10px] font-semibold rounded transition-all duration-200 whitespace-nowrap shrink-0 ${
                   activeSection === link.id
-                    ? 'text-black bg-surface font-bold'
-                    : 'text-text-secondary hover:text-black hover:bg-surface hover:font-semibold'
+                    ? 'text-white bg-black'
+                    : 'text-text-muted'
                 }`}
               >
                 {link.label}
               </button>
             ))}
           </div>
-        </div>
-      </nav>
+        </nav>
+      </>
       )}
 
     </div>

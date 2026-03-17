@@ -31,6 +31,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Bottom nav safe area for notched phones */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* ── TYPE UTILITIES — composite classes for repeated patterns ── */
 .type-label {
   font-size: 0.6875rem; line-height: 1.4;
