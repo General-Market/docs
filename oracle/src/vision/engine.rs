@@ -1126,17 +1126,30 @@ pub async fn run(
     let admin_token = config.data_node_token.clone().unwrap_or_default();
 
     // Connect to Postgres for persisting balance updates and resolved ticks
-    tracing::warn!("DIAG: Vision tick engine run() entered — connecting to Postgres at {}", config.database_url);
-    let db_pool = match sqlx::postgres::PgPoolOptions::new()
-        .max_connections(3)
-        .idle_timeout(std::time::Duration::from_secs(300))
-        .connect(&config.database_url).await {
-        Ok(pool) => {
-            tracing::info!("Vision engine connected to Postgres for balance persistence");
+    let diag = |msg: &str| {
+        use std::io::Write;
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
+            let _ = writeln!(f, "[{}] {}", chrono::Utc::now().format("%H:%M:%S%.3f"), msg);
+        }
+    };
+    diag(&format!("run() entered — connecting to Postgres at {}", config.database_url));
+    let db_pool = match tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        sqlx::postgres::PgPoolOptions::new()
+            .max_connections(3)
+            .idle_timeout(std::time::Duration::from_secs(300))
+            .connect(&config.database_url)
+    ).await {
+        Ok(Ok(pool)) => {
+            diag("Postgres connected OK");
             Some(pool)
         }
-        Err(e) => {
-            tracing::warn!(error = %e, "Vision engine failed to connect to Postgres — balance updates will be in-memory only");
+        Ok(Err(e)) => {
+            diag(&format!("Postgres connect FAILED: {}", e));
+            None
+        }
+        Err(_) => {
+            diag("Postgres connect TIMED OUT after 10s");
             None
         }
     };
@@ -1514,11 +1527,16 @@ pub async fn run(
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
 
                 if due_batches.is_empty() {
-                    // Log every ~30s so we know the engine is alive (poll_interval ~500ms → every 60 polls)
                     static POLL_CTR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
                     let c = POLL_CTR.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     if c % 60 == 0 {
-                        tracing::warn!(chain_ts = now, batch_count, reveal_window = config.reveal_window_secs, "DIAG: Vision engine alive, no due batches (poll #{})", c);
+                        let diag = |msg: &str| {
+                            use std::io::Write;
+                            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/vision-engine-diag.log") {
+                                let _ = writeln!(f, "[{}] {}", chrono::Utc::now().format("%H:%M:%S%.3f"), msg);
+                            }
+                        };
+                        diag(&format!("poll #{}: chain_ts={}, batches={}, reveal_window={}, no due", c, now, batch_count, config.reveal_window_secs));
                     }
                     continue;
                 }
