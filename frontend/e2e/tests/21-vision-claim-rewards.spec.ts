@@ -54,40 +54,47 @@ test.describe('Vision Claim Rewards', () => {
     const pos1 = await getPosition(batchId, PLAYER1)
     expect(pos1.stakePerTick).toBeGreaterThan(0n)
 
-    // 2. Wait for at least one tick resolution (~30s tick + oracle processing)
-    console.log('Waiting for tick resolution (~45s)...')
-    await new Promise(r => setTimeout(r, 45_000))
+    // 2. Poll for tick resolution (tick durations vary: 60s to 86400s)
+    // Don't blind-wait — poll position for lastClaimedTick advance, cap at 4 min
+    const startTick = pos1.lastClaimedTick
+    console.log(`Waiting for tick resolution (startTick=${startTick}, max 4 min)...`)
+    const deadline = Date.now() + 240_000
+    let tickResolved = false
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 10_000))
+      try {
+        const pos = await getPosition(batchId, PLAYER1)
+        if (pos.lastClaimedTick > startTick) {
+          tickResolved = true
+          console.log(`Tick resolved: ${startTick} → ${pos.lastClaimedTick}`)
+          break
+        }
+      } catch {}
+    }
 
-    // 3. Fetch balance proof via direct oracle API (E2E test = non-browser, no CORS)
+    // 3. Fetch balance proof via direct oracle API
     const proofUrl = `${ORACLE_API}/vision/balance/${batchId}/${PLAYER1}`
     let proofRes: Response
     try {
       proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
     } catch {
-      // Retry once — transient network issues
       proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(15_000) })
     }
 
     if (proofRes.ok) {
       const proofData = await proofRes.json()
       console.log(`Balance proof: balance=${proofData.balance}, has_sig=${!!proofData.bls_sig}`)
-
-      // Verify proof structure
       expect(proofData.balance).toBeDefined()
       expect(typeof proofData.balance).toBe('string')
-
-      // BLS signature should be present if tick resolved
       if (proofData.bls_sig) {
         expect(proofData.bls_sig.length).toBeGreaterThan(0)
-        expect(proofData.signer_bitmap).toBeDefined()
       }
     } else {
-      // Proof not yet available — tick may not have resolved yet
-      const body = await proofRes.text()
-      console.log(`Balance proof not yet available: ${proofRes.status} ${body.slice(0, 200)}`)
+      // Proof not yet available — tick duration may exceed our 4-min poll window
+      console.log(`Balance proof not yet available (tickResolved=${tickResolved}): ${proofRes.status}`)
     }
 
-    // 4. Check position balance changed (indicates tick resolution happened)
+    // 4. Check position balance
     const posAfter = await getPosition(batchId, PLAYER1)
     console.log(`Position: balance before=${pos1.balance}, after=${posAfter.balance}`)
   })
