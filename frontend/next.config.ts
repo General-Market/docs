@@ -67,7 +67,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${CSP_CONNECT_EXTRA ? " " + CSP_CONNECT_EXTRA : ""}${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${CSP_CONNECT_EXTRA ? " " + CSP_CONNECT_EXTRA : ""}${isDev ? " http://localhost:* ws://localhost:*" : ""}; worker-src 'self' blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
           },
         ],
       },
@@ -106,6 +106,7 @@ const nextConfig: NextConfig = {
         { source: "/rpc", destination: L3_RPC_URL },
         { source: "/api/vision/snapshot/meta", destination: `${DATA_NODE_URL}/snapshot/meta` },
         { source: "/api/vision/snapshot", destination: `${DATA_NODE_URL}/snapshot` },
+        { source: "/api/vision/leaderboard", destination: `${DATA_NODE_URL}/vision/leaderboard` },
         { source: "/api/vision/:path*", destination: `${VISION_API_URL}/vision/:path*` },
         { source: "/health", destination: `${BACKEND_URL}/health` },
       ],
