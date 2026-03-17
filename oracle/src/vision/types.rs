@@ -260,3 +260,28 @@ pub struct PendingVisionWithdraw {
     /// Current status.
     pub status: WithdrawStatus,
 }
+
+// =============================================================================
+// Round-based batch types
+// =============================================================================
+
+/// Lifecycle state of a round-based batch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RoundState {
+    Betting,
+    Locked,
+    Settling,
+    Settled,
+}
+
+/// Full settlement result for a round, ready for BLS signing and on-chain submission.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoundSettlement {
+    pub batch_id: u64,
+    pub players: Vec<Address>,
+    pub payouts: Vec<U256>,
+    /// Per-player: how many markets they predicted correctly
+    pub correct_counts: Vec<u32>,
+    pub total_markets: u32,
+}
