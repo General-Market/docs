@@ -6268,9 +6268,8 @@ async fn admin_force_sync(
 
 async fn admin_sources_health(
     State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
 ) -> Result<Json<SourceHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
-    require_admin_auth(&headers, &state)?;
+    // Read-only health data — no auth required (public monitoring page)
     let now = Utc::now();
 
     // All DB stats come from background cache (refreshed every 60s)
@@ -6497,10 +6496,9 @@ struct SourceAssetEntry {
 
 async fn admin_source_assets(
     State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
     AxumPath(source_id): AxumPath<String>,
 ) -> Result<Json<SourceAssetsResponse>, (StatusCode, Json<ErrorResponse>)> {
-    require_admin_auth(&headers, &state)?;
+    // Read-only asset listing — no auth required
     let pool = &state.pool;
     let now = Utc::now();
 
@@ -6640,11 +6638,10 @@ struct SourceHistoryBucket {
 
 async fn admin_source_history(
     State(state): State<Arc<AppState>>,
-    headers: HeaderMap,
     AxumPath(source_id): AxumPath<String>,
     Query(params): Query<SourceHistoryQuery>,
 ) -> Result<Json<SourceHistoryResponse>, (StatusCode, Json<ErrorResponse>)> {
-    require_admin_auth(&headers, &state)?;
+    // Read-only history data — no auth required
     let pool = &state.pool;
     let hours = params.hours.unwrap_or(24).max(1).min(168); // clamp to 1..168h (1 week max)
 
