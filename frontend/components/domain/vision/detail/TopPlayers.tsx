@@ -37,7 +37,7 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2 border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
+        <div className="grid grid-cols-[36px_1fr_80px_80px_90px_90px] items-center px-4 py-2 border-b border-border-light text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>#</div>
           <div>Player</div>
           <div className="text-right">Batches</div>
@@ -47,13 +47,13 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
         </div>
 
         {isLoading && (
-          <div className="px-4 py-6 text-center text-[13px] text-text-muted">
+          <div className="px-4 py-6 text-center text-caption text-text-muted">
             Loading leaderboard...
           </div>
         )}
 
         {!isLoading && top5.length === 0 && (
-          <div className="px-4 py-6 text-center text-[13px] text-text-muted">
+          <div className="px-4 py-6 text-center text-caption text-text-muted">
             No players yet
           </div>
         )}
@@ -63,20 +63,20 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
           return (
             <div
               key={player.walletAddress}
-              className={`grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-border-light text-[13px] ${
+              className={`grid grid-cols-[36px_1fr_80px_80px_90px_90px] items-center px-4 py-2.5 border-b border-border-light text-caption ${
                 i % 2 === 1 ? 'bg-surface/40' : ''
               }`}
             >
               <div className="font-bold text-text-muted">
                 {player.rank || i + 1}
               </div>
-              <div className="font-mono text-[12px] text-black font-medium truncate">
+              <div className="font-mono text-caption text-black font-medium truncate">
                 {truncateAddress(player.walletAddress)}
               </div>
-              <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
+              <div className="text-right font-mono tabular-nums text-caption text-text-muted">
                 {player.totalBets || 0}
               </div>
-              <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
+              <div className="text-right font-mono tabular-nums text-caption text-text-muted">
                 {formatVolume(player.volume || 0)}
               </div>
               <div className="text-right font-mono tabular-nums font-semibold text-black">
