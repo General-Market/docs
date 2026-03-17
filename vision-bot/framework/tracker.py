@@ -87,10 +87,63 @@ class Tracker:
 
         return to_remove
 
+    def check_rounds(self):
+        """Round-based mode: join current betting batch for each subscription."""
+        urls = self._oracle_urls_fn()
+        if not urls:
+            return
+        for source, timeframe in self._config.get("round_subscriptions", []):
+            try:
+                resp = requests.get(
+                    f"{urls[0]}/vision/rounds/active",
+                    params={"source": source, "timeframe": timeframe},
+                    timeout=10,
+                )
+                if not resp.ok:
+                    continue
+                batches = resp.json().get("rounds", [])
+                for batch in batches:
+                    bid = batch["batchId"]
+                    if bid in self.active_ids:
+                        continue
+                    self._join_round(batch)
+            except Exception as e:
+                log.warning("Round check failed for %s/%d: %s", source, timeframe, e)
+
+    def _join_round(self, batch: dict):
+        """Join a round-based batch: approve USDC, call joinBatchDirect, submit bitmap."""
+        batch_id = batch["batchId"]
+        config_hash = batch.get("configHash", b"\x00" * 32)
+        deposit = self._config.get("deposit", 10) * 10**18
+        stake = self._config.get("stake", 1) * 10**18
+
+        # Generate predictions
+        from framework.core import encode_bitmap, hash_bitmap
+        market_count = batch.get("marketCount", 10)
+        # Use the strategy to predict (or random fallback)
+        bets = ["UP"] * market_count  # placeholder — real impl calls strategy.predict()
+        bitmap = encode_bitmap(bets, market_count)
+        bitmap_hash = hash_bitmap(bitmap)
+
+        # On-chain: approve + join
+        self._executor.approve_usdc(deposit)
+        if isinstance(config_hash, str):
+            config_hash = bytes.fromhex(config_hash.replace("0x", ""))
+        self._executor.join_batch_direct(batch_id, config_hash, deposit, stake, bitmap_hash)
+
+        # Submit bitmap to oracles
+        from framework.chain import submit_bitmap
+        urls = self._oracle_urls_fn()
+        submit_bitmap(urls, self._executor.bot_addr, batch_id, bitmap, bitmap_hash)
+
+        # Track
+        self.on_join(batch_id, deposit, bitmap, bets)
+        log.info("Joined round %d (%d markets)", batch_id, market_count)
+
     def _try_claim(self, batch_id: int, pos: dict):
         """
-        GET /vision/balance/{batch_id}/{player} -- check for bls_signature.
-        If present: call executor.claim_rewards()
+        GET /vision/balance/{batch_id}/{player} -- check for bls_sig.
+        If present: read on-chain position for tick range, call executor.claim_rewards()
         If absent: log and skip
         """
         urls = self._oracle_urls_fn()
@@ -102,19 +155,34 @@ class Tracker:
             if not resp.ok:
                 return
             data = resp.json()
-            bls_sig = data.get("bls_signature")
+            bls_sig = data.get("bls_sig", "")
             if not bls_sig:
                 log.info("Batch %d: claim ready, waiting for BLS proofs", batch_id)
                 return
-            from_tick = pos.get("last_claimed_tick", 0)
-            to_tick = data.get("current_tick", from_tick + 1)
-            new_balance = data.get("balance", pos["balance"])
+            signer_bitmap = int(data.get("signer_bitmap", "0"))
+
+            # Read on-chain position for correct tick range
+            on_chain = self._executor.get_position(batch_id)
+            last_claimed = on_chain["lastClaimedTick"]
+            start_tick = on_chain["startTick"]
+            from_tick = last_claimed + 1 if last_claimed > 0 else start_tick + 1
+
+            to_tick = int(data.get("tick_id", 0))
+            if to_tick == 0 or to_tick < from_tick:
+                log.info("Batch %d: no new ticks to claim (from=%d, oracle_tick=%d)", batch_id, from_tick, to_tick)
+                return
+
+            new_balance = int(data.get("balance", pos["balance"]))
+            ref_nonce = self._executor.last_snapshot_nonce()
+
             self._executor.claim_rewards(
                 batch_id,
                 from_tick,
                 to_tick,
                 new_balance,
                 bytes.fromhex(bls_sig.replace("0x", "")),
+                ref_nonce,
+                signer_bitmap,
             )
             pos["last_claimed_tick"] = to_tick
             pos["balance"] = new_balance
@@ -133,15 +201,19 @@ class Tracker:
             if not resp.ok:
                 return False
             data = resp.json()
-            bls_sig = data.get("bls_signature")
+            bls_sig = data.get("bls_sig", "")
             if not bls_sig:
                 log.info("Batch %d: withdraw ready, waiting for BLS proofs", batch_id)
                 return False
-            final_balance = data.get("balance", pos["balance"])
+            signer_bitmap = int(data.get("signer_bitmap", "0"))
+            final_balance = int(data.get("balance", pos["balance"]))
+            ref_nonce = self._executor.last_snapshot_nonce()
             self._executor.withdraw(
                 batch_id,
                 final_balance,
                 bytes.fromhex(bls_sig.replace("0x", "")),
+                ref_nonce,
+                signer_bitmap,
             )
             pos["balance"] = 0
             log.info("Batch %d: withdrawn (final: %d)", batch_id, final_balance)

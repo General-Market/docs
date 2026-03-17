@@ -129,7 +129,9 @@ VISION_ABI = [
             {"name": "fromTick", "type": "uint256"},
             {"name": "toTick", "type": "uint256"},
             {"name": "newBalance", "type": "uint256"},
-            {"name": "blsSig", "type": "bytes"},
+            {"name": "blsSignature", "type": "bytes"},
+            {"name": "referenceNonce", "type": "uint256"},
+            {"name": "signersBitmask", "type": "uint256"},
         ],
         "outputs": [],
     },
@@ -140,7 +142,9 @@ VISION_ABI = [
         "inputs": [
             {"name": "batchId", "type": "uint256"},
             {"name": "finalBalance", "type": "uint256"},
-            {"name": "blsSig", "type": "bytes"},
+            {"name": "blsSignature", "type": "bytes"},
+            {"name": "referenceNonce", "type": "uint256"},
+            {"name": "signersBitmask", "type": "uint256"},
         ],
         "outputs": [],
     },
@@ -197,6 +201,19 @@ VISION_ABI = [
         "inputs": [{"name": "user", "type": "address"}],
         "outputs": [{"name": "", "type": "uint256"}],
     },
+    {
+        "name": "joinBatchDirect",
+        "type": "function",
+        "stateMutability": "nonpayable",
+        "inputs": [
+            {"name": "batchId", "type": "uint256"},
+            {"name": "configHash", "type": "bytes32"},
+            {"name": "depositAmount", "type": "uint256"},
+            {"name": "stakePerTick", "type": "uint256"},
+            {"name": "bitmapHash", "type": "bytes32"},
+        ],
+        "outputs": [],
+    },
 ]
 
 ORACLE_REGISTRY_ABI = [
@@ -206,6 +223,13 @@ ORACLE_REGISTRY_ABI = [
         "stateMutability": "view",
         "inputs": [],
         "outputs": [{"name": "", "type": "bytes32[]"}],
+    },
+    {
+        "name": "lastSnapshotNonce",
+        "type": "function",
+        "stateMutability": "view",
+        "inputs": [],
+        "outputs": [{"name": "", "type": "uint256"}],
     },
 ]
 
@@ -240,6 +264,7 @@ class Executor:
         private_key: str,
         vision_addr: str,
         usdc_addr: str,
+        oracle_registry_addr: str = "",
     ):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         self.vision = self.w3.eth.contract(
@@ -248,6 +273,12 @@ class Executor:
         self.usdc = self.w3.eth.contract(
             address=Web3.to_checksum_address(usdc_addr), abi=ERC20_ABI
         )
+        self._oracle_registry = None
+        if oracle_registry_addr:
+            self._oracle_registry = self.w3.eth.contract(
+                address=Web3.to_checksum_address(oracle_registry_addr),
+                abi=ORACLE_REGISTRY_ABI,
+            )
         self.account = self.w3.eth.account.from_key(private_key)
         self.bot_addr: str = self.account.address
 
@@ -270,6 +301,12 @@ class Executor:
         return tx_hash
 
     # ── read methods ──
+
+    def last_snapshot_nonce(self) -> int:
+        """Read lastSnapshotNonce from OracleRegistry (for BLS verification)."""
+        if self._oracle_registry is None:
+            return 0
+        return self._oracle_registry.functions.lastSnapshotNonce().call()
 
     def usdc_balance(self) -> int:
         """Return USDC balance of this bot (raw wei)."""
@@ -332,6 +369,16 @@ class Executor:
         tx_hash = self._sign_and_send(tx)
         logger.info("Joined batch %d (tx: %s)", batch_id, tx_hash.hex()[:16])
 
+    def join_batch_direct(
+        self, batch_id: int, config_hash: bytes, deposit: int, stake: int, bitmap_hash: bytes
+    ):
+        """Join a round-based batch with direct USDC transfer."""
+        tx = self.vision.functions.joinBatchDirect(
+            batch_id, config_hash, deposit, stake, bitmap_hash
+        ).build_transaction(self._build_tx(gas=500_000))
+        tx_hash = self._sign_and_send(tx)
+        logger.info("Joined round %d direct (tx: %s)", batch_id, tx_hash.hex()[:16])
+
     def register_bot(self, endpoint: str = "", pubkey_hash: bytes = b""):
         """Register as a bot on the Vision contract."""
         if not endpoint:
@@ -353,10 +400,13 @@ class Executor:
         to_tick: int,
         new_balance: int,
         bls_sig: bytes,
+        reference_nonce: int,
+        signers_bitmask: int,
     ):
         """Claim rewards for a tick range."""
         tx = self.vision.functions.claimRewards(
-            batch_id, from_tick, to_tick, new_balance, bls_sig
+            batch_id, from_tick, to_tick, new_balance, bls_sig,
+            reference_nonce, signers_bitmask,
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
         logger.info(
@@ -364,10 +414,18 @@ class Executor:
             batch_id, from_tick, to_tick, tx_hash.hex()[:16],
         )
 
-    def withdraw(self, batch_id: int, final_balance: int, bls_sig: bytes):
+    def withdraw(
+        self,
+        batch_id: int,
+        final_balance: int,
+        bls_sig: bytes,
+        reference_nonce: int,
+        signers_bitmask: int,
+    ):
         """Withdraw from a batch."""
         tx = self.vision.functions.withdraw(
-            batch_id, final_balance, bls_sig
+            batch_id, final_balance, bls_sig,
+            reference_nonce, signers_bitmask,
         ).build_transaction(self._build_tx(gas=500_000))
         tx_hash = self._sign_and_send(tx)
         logger.info("Withdraw batch=%d (tx: %s)", batch_id, tx_hash.hex()[:16])

@@ -11,6 +11,18 @@ from framework.tracker import Tracker
 def make_mock_executor():
     executor = MagicMock()
     executor.bot_addr = "0x1234567890abcdef1234567890abcdef12345678"
+    executor.last_snapshot_nonce.return_value = 99
+    executor.get_position.return_value = {
+        "bitmapHash": b"\x00" * 32,
+        "configHash": b"\x00" * 32,
+        "stakePerTick": 100_000,
+        "startTick": 0,
+        "balance": 10_000_000,
+        "lastClaimedTick": 0,
+        "joinTimestamp": 1000,
+        "totalDeposited": 10_000_000,
+        "isVirtual": False,
+    }
     return executor
 
 
@@ -81,19 +93,34 @@ def test_try_claim_with_bls_sig():
     tracker.on_join(5, 10_000_000, b"\x00", ["BTC-UP"])
     pos = tracker._positions[5]
 
+    # Mock on-chain position with startTick=0, lastClaimedTick=0 -> fromTick=1
+    executor.get_position.return_value = {
+        "bitmapHash": b"\x00" * 32,
+        "configHash": b"\x00" * 32,
+        "stakePerTick": 100_000,
+        "startTick": 0,
+        "balance": 10_000_000,
+        "lastClaimedTick": 0,
+        "joinTimestamp": 1000,
+        "totalDeposited": 10_000_000,
+        "isVirtual": False,
+    }
+
     mock_resp = MagicMock()
     mock_resp.ok = True
     mock_resp.json.return_value = {
-        "bls_signature": "0xaabb",
-        "current_tick": 5,
+        "bls_sig": "aabb",
+        "signer_bitmap": "7",
+        "tick_id": 5,
         "balance": 15_000_000,
     }
 
     with patch("framework.tracker.requests.get", return_value=mock_resp):
         tracker._try_claim(5, pos)
 
+    # fromTick=1 (startTick 0 + 1), toTick=5, refNonce=99, signersBitmask=7
     executor.claim_rewards.assert_called_once_with(
-        5, 0, 5, 15_000_000, bytes.fromhex("aabb")
+        5, 1, 5, 15_000_000, bytes.fromhex("aabb"), 99, 7
     )
     assert pos["last_claimed_tick"] == 5
     assert pos["balance"] == 15_000_000
@@ -126,7 +153,8 @@ def test_try_withdraw_with_bls_sig():
     mock_resp = MagicMock()
     mock_resp.ok = True
     mock_resp.json.return_value = {
-        "bls_signature": "0xccdd",
+        "bls_sig": "ccdd",
+        "signer_bitmap": "3",
         "balance": 500_000,
     }
 
@@ -135,7 +163,7 @@ def test_try_withdraw_with_bls_sig():
 
     assert result is True
     executor.withdraw.assert_called_once_with(
-        7, 500_000, bytes.fromhex("ccdd")
+        7, 500_000, bytes.fromhex("ccdd"), 99, 3
     )
     assert pos["balance"] == 0
 
@@ -170,8 +198,9 @@ def test_claim_failure_keeps_position():
     mock_resp = MagicMock()
     mock_resp.ok = True
     mock_resp.json.return_value = {
-        "bls_signature": "0xeeff",
-        "current_tick": 2,
+        "bls_sig": "eeff",
+        "signer_bitmap": "7",
+        "tick_id": 2,
         "balance": 20_000_000,
     }
 
@@ -259,3 +288,26 @@ def test_missing_history_file():
     tracker, _, _ = make_tracker(pnl_file="/tmp/nonexistent_test_pnl_xyz.json")
     assert tracker.active_count == 0
     assert tracker._history == []
+
+
+# ─── Test 13: check_rounds joins new round-based batch ───────────────────────
+
+def test_check_rounds_joins_new_batch():
+    tracker, executor, _ = make_tracker({
+        "round_subscriptions": [("crypto", 300)],
+        "deposit": 10,
+        "stake": 1,
+    })
+    # Mock oracle returning active round
+    mock_resp = MagicMock()
+    mock_resp.ok = True
+    mock_resp.json.return_value = {
+        "rounds": [{"batchId": 99, "configHash": "0x" + "ab" * 32, "marketCount": 14}]
+    }
+    with patch("framework.tracker.requests.get", return_value=mock_resp), \
+         patch("framework.chain.submit_bitmap"):
+        tracker.check_rounds()
+
+    executor.approve_usdc.assert_called_once()
+    executor.join_batch_direct.assert_called_once()
+    assert 99 in tracker.active_ids

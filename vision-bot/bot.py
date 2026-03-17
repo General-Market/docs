@@ -140,6 +140,10 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
         tracker.on_join(batch_id, deposit_wei, bitmap, bets)
         risk.record_join(batch_id, deposit_wei)
 
+    # Round-based mode: poll oracle for active rounds, join new ones
+    if cfg.get("round_based", False):
+        tracker.check_rounds()
+
     # Lifecycle: check balances, auto-claim, auto-withdraw
     exited = tracker.check_all()
     for bid in exited:
@@ -166,8 +170,9 @@ def main():
     deploy = load_deployment()
     vision_addr = deploy["contracts"]["Vision"]
     usdc_addr = deploy["contracts"]["L3_WUSDC"]
+    oracle_registry_addr = deploy["contracts"].get("OracleRegistry", "")
 
-    executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr)
+    executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr, oracle_registry_addr)
     risk = RiskCheck(cfg["max_batches"], cfg["max_exposure"] * 10**DECIMALS)
     oracle_urls_fn = lambda: discover_oracles(
         cfg["oracle_discovery"], cfg["oracle_urls"], executor.w3
