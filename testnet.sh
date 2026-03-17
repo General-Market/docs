@@ -594,6 +594,64 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         > logs/deploy-itp-vaults.log 2>&1 || { echo -e "  ${RED}ITP vault deploy FAILED — check logs/deploy-itp-vaults.log${NC}"; exit 1; }
     echo -e "  ${GREEN}ITP vaults deployed${NC}"
 
+    # Deploy Morpho lending markets for ALL ITPs
+    echo -e "${BLUE}[12b/14] Deploying batch lending markets for all ITPs...${NC}"
+    MORPHO_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MORPHO'])" 2>/dev/null || echo "")
+    VAULT_ADDR=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['METAMORPHO_VAULT'])" 2>/dev/null || echo "")
+    CURATOR_IRM=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['ADAPTIVE_IRM'])" 2>/dev/null || echo "")
+    MIRROR_REG=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MIRROR_REGISTRY'])" 2>/dev/null || echo "")
+    LOAN_TOKEN=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['loanToken'])" 2>/dev/null || echo "")
+    EXISTING_MKT_ID=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['contracts']['MARKET_ID'])" 2>/dev/null || echo "")
+    EXISTING_COLLATERAL=$(python3 -c "import json; print(json.load(open('deployments/morpho-e2e.json'))['marketParams']['collateralToken'])" 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
+
+    if [ -n "$MORPHO_ADDR" ] && [ -n "$VAULT_ADDR" ]; then
+        # Discover ITP vaults that need markets
+        INDEX_ADDR_BATCH=$(read_deployment_addr "Index")
+        ITP_COUNT=$(cast call "$INDEX_ADDR_BATCH" "getItpCount()(uint256)" --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
+
+        BATCH_VAULTS=()
+        for i in $(seq 1 "$ITP_COUNT"); do
+            ITP_HEX=$(printf "0x%064x" "$i")
+            V=$(cast call "$INDEX_ADDR_BATCH" "itpVaults(bytes32)(address)" "$ITP_HEX" --rpc-url "$RPC_URL" 2>/dev/null || echo "0x0000000000000000000000000000000000000000")
+            [ "$V" = "0x0000000000000000000000000000000000000000" ] && continue
+            V_LOWER=$(echo "$V" | tr '[:upper:]' '[:lower:]')
+            [ "$V_LOWER" = "$EXISTING_COLLATERAL" ] && continue
+            BATCH_VAULTS+=("$V")
+        done
+
+        NEW_COUNT=${#BATCH_VAULTS[@]}
+        if [ "$NEW_COUNT" -gt 0 ]; then
+            echo -e "  Deploying $NEW_COUNT batch markets..."
+            DEFAULT_LLTV="770000000000000000"
+            DEFAULT_PRICE="1000000000000000000000000000000000000"
+
+            export MORPHO="$MORPHO_ADDR" CURATOR_RATE_IRM="$CURATOR_IRM" METAMORPHO_VAULT="$VAULT_ADDR"
+            export SETTLEMENT_USDC="$LOAN_TOKEN" MIRROR_REGISTRY="$MIRROR_REG"
+            export BATCH_MARKET_COUNT="$NEW_COUNT" EXISTING_MARKET_ID="$EXISTING_MKT_ID"
+            for idx in "${!BATCH_VAULTS[@]}"; do
+                export "ITP_${idx}_ADDRESS=${BATCH_VAULTS[$idx]}"
+                export "ITP_${idx}_LLTV=$DEFAULT_LLTV"
+                export "ITP_${idx}_INITIAL_PRICE=$DEFAULT_PRICE"
+            done
+
+            rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/ contracts/cache/DeployBatchMarkets.s.sol/$CHAIN_ID/
+            (cd contracts && DEPLOYER_KEY="$DEPLOYER_KEY" \
+                forge script script/DeployBatchMarkets.s.sol \
+                --rpc-url "$RPC_URL" --broadcast --slow \
+                --private-key "$DEPLOYER_KEY" \
+                --chain-id $CHAIN_ID) \
+                > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
+
+            # Copy output to frontend
+            [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
+            echo -e "  ${GREEN}$NEW_COUNT batch lending markets deployed${NC}"
+        else
+            echo -e "  ${GREEN}All ITPs already have markets${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}Skipping batch markets — no Morpho deployment${NC}"
+    fi
+
     # Sync deployment files + token registries
     echo -e "${BLUE}[13/14] Syncing deployment files + token registries...${NC}"
 
@@ -604,6 +662,7 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         cp envs/testnet/deployment.json "$DEPLOYMENT_FILE" 2>/dev/null || true
         [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
         [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
+        [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json envs/testnet/batch-markets.json && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
         [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
         # Update Vision address in envs/testnet/.env
         VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
@@ -632,6 +691,11 @@ for a in assets:
 json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
 print(f'{len(deployed)} tokens in deployed-assets.json, {len(smap)} in symbol-map.json')
 " 2>/dev/null && echo -e "  ${GREEN}Token registries synced${NC}" || echo -e "  ${YELLOW}Token registry sync failed${NC}"
+
+    # Sync symbol-map.json + deployment files to VPS immediately after regeneration
+    rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
+    rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
+    echo -e "  ${GREEN}Synced symbol-map + deployment to VPS${NC}"
 
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true
