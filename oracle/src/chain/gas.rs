@@ -120,6 +120,20 @@ impl<M: Middleware> GasEstimator<M> {
                 Ok(U256::from(final_gas))
             }
             Err(e) => {
+                let err_str = format!("{}", e);
+                // Contract reverts (code 3) mean the tx WILL fail on-chain.
+                // Don't use fallback gas — propagate the error so the caller can skip.
+                if err_str.contains("execution reverted") {
+                    warn!(
+                        code = "INFRA-002",
+                        error = %e,
+                        "Gas estimation failed: contract revert — skipping tx"
+                    );
+                    return Err(Error::ChainWrite(format!(
+                        "Contract revert during gas estimation: {}", e
+                    )));
+                }
+                // For non-revert errors (RPC timeout, etc.), use fallback gas
                 warn!(
                     code = "INFRA-002",
                     error = %e,
