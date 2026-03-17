@@ -5,7 +5,7 @@
   "contracts": {
     "Index": "0xC61d8C7ed6da43D09072a80e1ebe740876BA981A",
     "Governance": "0x01f3aa8e7c5bd7e0514aa9cae8c3a6f1493c0121",
-    "OracleRegistry": "0xdb426a42e12f016f15ed4ac2b31263492109c5ac",
+    "OracleRegistry": "0x1DC7d85fd61466BF6c73EEbef4E3fA644818dff5",
     "CollateralRegistry": "0xf66488c43c3961f1fda0a3d07597d6ff4e65935b",
     "L3BridgeCustody": "0xc39cce0cd611d12640ce01f0307ef6293189d4a6",
     "SettlementBridgeCustody": "0x2589d464bdc8f04d6cbdf69cdc8c06d2496264de",
