@@ -79,6 +79,9 @@ DB_NAME="index_prices"
 # Deployment file
 DEPLOYMENT_FILE="deployments/active-deployment.json"
 
+# Export INDEX_L3_RPC_URL for foundry.toml (forge reads from this env var)
+export INDEX_L3_RPC_URL="$RPC_URL"
+
 # rsync SSH (macOS rsync doesn't handle SSH aliases with /)
 RSYNC_SSH_BE="ssh -o ProxyJump=bastion -p 3189"
 
