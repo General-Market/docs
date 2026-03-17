@@ -17,6 +17,7 @@ pub mod data_node_client;
 pub mod health_monitor;
 pub mod liquidator;
 pub mod market_config;
+pub mod market_deployer;
 pub mod quote;
 pub mod quote_server;
 pub mod rate_pusher;

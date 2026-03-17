@@ -173,6 +173,25 @@ pub struct CuratorArgs {
     /// CuratorRateIRM contract address (enables SERM rate pushing from quote API)
     #[arg(long, default_value = "")]
     pub curator_irm_address: String,
+
+    // ========================================================================
+    // Market Deployer Args (Unified Mode)
+    // ========================================================================
+    /// Index contract address (L3) — reads ITP count and vault addresses
+    #[arg(long, default_value = "")]
+    pub index_address: String,
+
+    /// Path to ITPNAVOracle bytecode (forge artifact JSON or raw hex file)
+    #[arg(long, default_value = "")]
+    pub oracle_bytecode_path: String,
+
+    /// Loan token address (L3 USDC)
+    #[arg(long, default_value = "")]
+    pub loan_token_address: String,
+
+    /// Market deployer scan interval in seconds (default: 300 = 5 minutes)
+    #[arg(long, default_value = "300")]
+    pub market_deploy_interval_secs: u64,
 }
 
 impl CuratorArgs {
@@ -598,6 +617,80 @@ impl Default for SermConfig {
             curator_irm_address: Address::zero(),
             rate_push_threshold_bps: 100, // 1% threshold
         }
+    }
+}
+
+/// Resolved configuration for Market Deployer
+#[derive(Clone)]
+pub struct MarketDeployerConfig {
+    pub rpc_url: String,
+    pub private_key: String,
+    pub index_address: Address,
+    pub morpho_address: Address,
+    pub vault_address: Address,
+    pub mirror_registry: Address,
+    pub curator_irm: Address,
+    pub loan_token: Address,
+    pub oracle_bytecode_path: String,
+    pub scan_interval: Duration,
+}
+
+impl std::fmt::Debug for MarketDeployerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarketDeployerConfig")
+            .field("rpc_url", &self.rpc_url)
+            .field("index_address", &self.index_address)
+            .field("morpho_address", &self.morpho_address)
+            .field("vault_address", &self.vault_address)
+            .field("mirror_registry", &self.mirror_registry)
+            .field("curator_irm", &self.curator_irm)
+            .field("loan_token", &self.loan_token)
+            .field("oracle_bytecode_path", &self.oracle_bytecode_path)
+            .field("scan_interval", &self.scan_interval)
+            .finish()
+    }
+}
+
+impl MarketDeployerConfig {
+    /// Build market deployer config from parsed CLI args.
+    /// Returns Err if required fields are missing.
+    pub fn from_args(args: &CuratorArgs) -> Result<Self, String> {
+        if args.index_address.is_empty() {
+            return Err("--index-address required for market deployer".into());
+        }
+        if args.morpho_address.is_empty() {
+            return Err("--morpho-address required for market deployer".into());
+        }
+        if args.vault_address.is_empty() {
+            return Err("--vault-address required for market deployer".into());
+        }
+        if args.mirror_registry_address.is_empty() {
+            return Err("--mirror-registry-address required for market deployer".into());
+        }
+        if args.curator_irm_address.is_empty() {
+            return Err("--curator-irm-address required for market deployer".into());
+        }
+        if args.loan_token_address.is_empty() {
+            return Err("--loan-token-address required for market deployer".into());
+        }
+        if args.oracle_bytecode_path.is_empty() {
+            return Err("--oracle-bytecode-path required for market deployer".into());
+        }
+
+        let private_key = args.effective_private_key()?;
+
+        Ok(Self {
+            rpc_url: args.rpc_url.clone(),
+            private_key,
+            index_address: args.index_address.parse().map_err(|e| format!("Bad index address: {e}"))?,
+            morpho_address: args.morpho_address.parse().map_err(|e| format!("Bad morpho address: {e}"))?,
+            vault_address: args.vault_address.parse().map_err(|e| format!("Bad vault address: {e}"))?,
+            mirror_registry: args.mirror_registry_address.parse().map_err(|e| format!("Bad mirror registry: {e}"))?,
+            curator_irm: args.curator_irm_address.parse().map_err(|e| format!("Bad curator IRM: {e}"))?,
+            loan_token: args.loan_token_address.parse().map_err(|e| format!("Bad loan token: {e}"))?,
+            oracle_bytecode_path: args.oracle_bytecode_path.clone(),
+            scan_interval: Duration::from_secs(args.market_deploy_interval_secs),
+        })
     }
 }
 

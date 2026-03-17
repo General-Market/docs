@@ -616,7 +616,13 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
             BATCH_VAULTS+=("$V")
         done
 
+        MAX_BATCH=29  # MetaMorpho withdraw queue limit = 30 (including existing singleton)
         NEW_COUNT=${#BATCH_VAULTS[@]}
+        if [ "$NEW_COUNT" -gt "$MAX_BATCH" ]; then
+            echo -e "  ${YELLOW}Capping batch to $MAX_BATCH (MetaMorpho queue limit 30)${NC}"
+            BATCH_VAULTS=("${BATCH_VAULTS[@]:0:$MAX_BATCH}")
+            NEW_COUNT=$MAX_BATCH
+        fi
         if [ "$NEW_COUNT" -gt 0 ]; then
             echo -e "  Deploying $NEW_COUNT batch markets..."
             DEFAULT_LLTV="770000000000000000"
@@ -1032,7 +1038,7 @@ services:
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      EXCHANGE_MODE: "mock"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
     volumes:
@@ -1051,7 +1057,7 @@ $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      EXCHANGE_MODE: "mock"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
     volumes:
@@ -1070,7 +1076,7 @@ $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
-      EXCHANGE_MODE: "mock"
+      DATA_NODE_URL: "http://localhost:$DATA_NODE_PORT"
     command:
 $(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
     volumes:

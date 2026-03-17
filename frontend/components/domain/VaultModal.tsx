@@ -19,6 +19,8 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
+import itpIdNames from '@/lib/itp-id-names.json'
+import Link from 'next/link'
 
 // Note: Error fallback uses static English because it renders outside i18n context
 const LendingErrorFallback = (
@@ -320,6 +322,8 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
   const [userBalances, setUserBalances] = useState<Map<string, bigint>>(new Map())
   const [onChainVaults, setOnChainVaults] = useState<string[]>([])
+  // Reverse map: vault address → itpId (full 0x-padded hex)
+  const [vaultToItpId, setVaultToItpId] = useState<Map<string, string>>(new Map())
   // Dynamic market discovery: collateral tokens found in the vault's supply queue
   const [vaultMarketCollaterals, setVaultMarketCollaterals] = useState<Set<string>>(new Set())
   const publicClientRef = useRef(publicClient)
@@ -338,6 +342,7 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
           functionName: 'getItpCount',
         }) as bigint
         const vaults: string[] = []
+        const idMap = new Map<string, string>()
         for (let i = 1n; i <= count; i++) {
           const itpId = '0x' + i.toString(16).padStart(64, '0') as `0x${string}`
           try {
@@ -349,10 +354,12 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
             }) as string
             if (vault && vault !== '0x0000000000000000000000000000000000000000') {
               vaults.push(vault)
+              idMap.set(vault.toLowerCase(), itpId)
             }
           } catch { /* skip */ }
         }
         setOnChainVaults(vaults)
+        setVaultToItpId(idMap)
       } catch { /* Index contract not available */ }
     }
     discoverVaults()
@@ -451,19 +458,24 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
   const liveByCollateral = new Map(liveMarkets.map(m => [m.params.collateralToken.toLowerCase(), m]))
 
   // Build rows: one per unique collateral token, with live data where available
+  const namesMap = itpIdNames as Record<string, { name: string; ticker: string }>
   const rows = allCollateralTokens.map(addr => {
     const live = liveByCollateral.get(addr.toLowerCase())
     const registry = getMorphoMarketForItp(addr)
-    const dynamicMatch = vaultMarketCollaterals.has(addr.toLowerCase())
-    const name = itpNames.get(addr) || 'ITP'
+    const itpId = vaultToItpId.get(addr.toLowerCase()) || ''
+    const idEntry = itpId ? namesMap[itpId] : undefined
+    const itpNum = itpId ? parseInt(itpId.slice(2), 16) : 0
+    const name = idEntry?.name || itpNames.get(addr) || (itpNum ? `ITP #${itpNum}` : 'ITP')
+    const ticker = idEntry?.ticker || ''
     const userBal = userBalances.get(addr) ?? 0n
-    const lltv = registry ? Number(registry.lltv) / 1e16 : dynamicMatch ? 77 : 70
+    const lltv = registry ? Number(registry.lltv) / 1e16 : 77
 
     return {
       collateralToken: addr,
+      itpId,
       name,
+      ticker,
       userBalance: userBal,
-      hasMarket: !!registry || dynamicMatch,
       supplyApy: live && live.borrowApy > 0 ? (live.borrowApy * (live.utilization / 100)).toFixed(2) : '--',
       borrowApy: live ? live.borrowApy.toFixed(2) : '--',
       tvl: live && live.totalBorrowed > 0n
@@ -473,7 +485,7 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
         ? parseFloat(formatUnits(live.totalBorrowed, 18)) / (live.utilization / 100 || 1)
         : 0,
       utilization: live ? `${live.utilization.toFixed(1)}%` : '--',
-      lltv: registry ? `${lltv.toFixed(0)}%` : '--',
+      lltv: `${lltv.toFixed(0)}%`,
     }
   })
 
@@ -519,12 +531,21 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
               rows.map((row) => (
                 <tr key={row.collateralToken} className="border-b border-border-light last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-3 sm:px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-text-primary text-micro font-bold">{row.name.slice(0, 3)}</span>
+                    {row.itpId ? (
+                      <Link href={`/itp/${row.itpId}`} className="flex items-center gap-2 group">
+                        <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
+                          <span className="text-text-primary text-micro font-bold">{row.ticker ? row.ticker.slice(0, 4) : row.name.slice(0, 3)}</span>
+                        </div>
+                        <span className="font-semibold text-text-primary text-sm group-hover:underline">{t('markets_table.market_pair', { name: row.name })}</span>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
+                          <span className="text-text-primary text-micro font-bold">{row.name.slice(0, 3)}</span>
+                        </div>
+                        <span className="font-semibold text-text-primary text-sm">{t('markets_table.market_pair', { name: row.name })}</span>
                       </div>
-                      <span className="font-semibold text-text-primary text-sm">{t('markets_table.market_pair', { name: row.name })}</span>
-                    </div>
+                    )}
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums hidden sm:table-cell">
                     {row.userBalance > 0n ? (
@@ -537,20 +558,14 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
                   <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums text-text-primary hidden sm:table-cell">{row.tvl}</td>
                   <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums text-text-primary hidden sm:table-cell">{row.lltv}</td>
                   <td className="px-4 py-3 text-right">
-                    {row.hasMarket ? (
-                      <WalletActionButton
-                        onClick={() => onBorrow(row.collateralToken, row.name)}
-                        className="px-3 py-1.5 bg-brand text-white text-label font-bold uppercase tracking-[0.08em] hover:bg-brand-dark transition-colors"
-                      >
-                        {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
-                          ? t('actions.manage_position')
-                          : t('actions.borrow')}
-                      </WalletActionButton>
-                    ) : (
-                      <span className="px-3 py-1.5 text-label font-bold uppercase tracking-[0.08em] text-text-muted">
-                        {t('markets_table.coming_soon', { defaultValue: 'Coming Soon' })}
-                      </span>
-                    )}
+                    <WalletActionButton
+                      onClick={() => onBorrow(row.collateralToken, row.name)}
+                      className="px-3 py-1.5 bg-brand text-white text-label font-bold uppercase tracking-[0.08em] hover:bg-brand-dark transition-colors"
+                    >
+                      {activeBorrowCollaterals.has(row.collateralToken.toLowerCase())
+                        ? t('actions.manage_position')
+                        : t('actions.borrow')}
+                    </WalletActionButton>
                   </td>
                 </tr>
               ))

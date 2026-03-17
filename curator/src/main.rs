@@ -574,6 +574,24 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
         info!(listen = %args.quote_api_listen, "Spawned: Quote API server");
     }
 
+    // Task 5: Market Deployer (if config is valid — auto-deploys Morpho markets for new ITPs)
+    if let Ok(config) = curator::config::MarketDeployerConfig::from_args(&args) {
+        let sd = shutdown.clone();
+        match curator::market_deployer::MarketDeployer::new(&config) {
+            Ok(deployer) => {
+                handles.push(tokio::spawn(async move {
+                    deployer.run_loop(sd).await;
+                }));
+                info!("Spawned: Market deployer task (scan every {}s)", args.market_deploy_interval_secs);
+            }
+            Err(e) => {
+                warn!(error = %e, "Market deployer initialization failed, skipping");
+            }
+        }
+    } else {
+        info!("Skipping market deployer task (incomplete config)");
+    }
+
     if handles.is_empty() {
         error!("No tasks could be started — check configuration");
         return Err("No tasks configured".into());
