@@ -8,6 +8,7 @@ const BACKEND_URL = REWRITES_BACKEND_URL;
 const DATA_NODE_URL = DATA_NODE_SERVER;
 const L3_RPC_URL = L3_RPC_SERVER;
 const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
+console.log(`[next.config] DATA_NODE_URL=${DATA_NODE_URL} VISION_API_URL=${VISION_API_URL}`);
 const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
 
