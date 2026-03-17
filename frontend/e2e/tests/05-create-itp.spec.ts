@@ -49,7 +49,7 @@ test.describe('Create ITP', () => {
       await ensureWalletConnected(page, TEST_ADDRESS);
       await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
 
-      const createSection = page.locator('#create-itp');
+      const createSection = page.locator('#create');
       await createSection.scrollIntoViewIfNeeded();
 
       // Wait for assets to load (deployed-assets.json fetch + pre-select)
@@ -94,7 +94,7 @@ test.describe('Create ITP', () => {
       const itpCountBefore = await getItpCountL3();
 
       // 4. Scroll to the Create section
-      const createSection = page.locator('#create-itp');
+      const createSection = page.locator('#create');
       await createSection.scrollIntoViewIfNeeded();
 
       // 5. Wait for assets to load (deployed-assets.json fetch + pre-select)

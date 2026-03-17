@@ -3736,7 +3736,20 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
             let nav = if let Some(cached) = l3_nav_cache.get(&itp_id_str) {
                 *cached
             } else {
-                let fetched = local_nav_fallback;
+                let fetched = match chain_reader.get_itp(order.itp_id.into()).await {
+                    Ok(itp) if !itp.total_supply.is_zero() => {
+                        // NAV per share = total_value / total_supply (both 18 dec)
+                        itp.total_value * ethers::types::U256::exp10(18) / itp.total_supply
+                    }
+                    Ok(_) => {
+                        warn!(itp_id = %itp_id_str, "ITP supply is zero, using fallback NAV");
+                        local_nav_fallback
+                    }
+                    Err(e) => {
+                        warn!(itp_id = %itp_id_str, error = %e, "Failed to fetch ITP, using fallback NAV");
+                        local_nav_fallback
+                    }
+                };
                 l3_nav_cache.insert(itp_id_str.clone(), fetched);
                 fetched
             };

@@ -47,8 +47,9 @@ test.describe('Settlement Bridge', () => {
         oracleRelayAlive = false;
       }
     }
-    const useSettlement = IS_ANVIL || (hasGas && oracleRelayAlive);
-    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas or oracle unavailable)'}`);
+    const hasCustody = !!CONTRACTS.SettlementBridgeCustody && CONTRACTS.SettlementBridgeCustody.length > 4;
+    const useSettlement = hasCustody && (IS_ANVIL || (hasGas && oracleRelayAlive));
+    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
