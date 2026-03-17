@@ -29,6 +29,27 @@ body {
   color: var(--foreground);
   background: var(--background);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── INSTITUTIONAL TYPOGRAPHY — tabular numbers + optical sizing ── */
+.font-mono, [class*="font-mono"] {
+  font-feature-settings: 'tnum' 1, 'kern' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tight tracking on display/heading text — BlackRock convention */
+h1, h2, h3, .type-display, .type-stat-value,
+[class*="text-display"], [class*="text-heading"], [class*="text-title"] {
+  letter-spacing: -0.025em;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+/* Uppercase labels get wider tracking — prevents cramping at small sizes */
+[class*="uppercase"] {
+  letter-spacing: 0.06em;
 }
 
 /* Bottom nav safe area for notched phones */
