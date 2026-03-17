@@ -2474,6 +2474,22 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(500, 10)),
     });
 
+    // Spawn leaderboard precomputation (every 30s from shared Postgres)
+    {
+        let lb = Arc::clone(&app_state.leaderboard_cache);
+        let lb_pool = app_state.pool.clone();
+        tokio::spawn(async move {
+            // Initial refresh
+            lb.refresh(&lb_pool).await;
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+            interval.tick().await; // consume first instant tick
+            loop {
+                interval.tick().await;
+                lb.refresh(&lb_pool).await;
+            }
+        });
+    }
+
     // Spawn chain pollers via run_collector_loop
     macro_rules! spawn_poller {
         ($name:expr, $secs:expr, $fn:path) => {{
