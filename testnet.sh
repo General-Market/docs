@@ -935,6 +935,14 @@ _start_oracles_docker() {
     vps1_compose oracle down || true
     vps_be_ssh "cd $VPS_BE_DIR && rm -f logs/consensus-*.wal"
 
+    # Recreate key files AFTER docker compose down (which may leave dir stubs)
+    vps_be_ssh "docker run --rm -v /tmp:/hostmp alpine sh -c 'rm -rf /hostmp/oracle-key-1.txt /hostmp/oracle-key-2.txt /hostmp/oracle-key-3.txt /hostmp/settlement-key.txt' 2>/dev/null; true"
+    vps_be_ssh "rm -rf /tmp/oracle-key-1.txt /tmp/oracle-key-2.txt /tmp/oracle-key-3.txt /tmp/settlement-key.txt 2>/dev/null; true"
+    for i in 1 2 3; do
+        vps_be_ssh "printf '%s' '${ORACLE_KEYS[$((i-1))]}' > /tmp/oracle-key-$i.txt && chmod 644 /tmp/oracle-key-$i.txt"
+    done
+    vps_be_ssh "printf '%s' '$DEPLOYER_KEY' > /tmp/settlement-key.txt && chmod 644 /tmp/settlement-key.txt"
+
     # Dynamic args
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
     echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here)"
