@@ -37,7 +37,7 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-[36px_1fr_80px_80px_90px_90px] items-center px-4 py-2 border-b border-border-light text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+        <div className="grid grid-cols-[36px_1fr_80px_80px_100px_90px] items-center px-4 py-2 border-b border-border-light text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>#</div>
           <div>Player</div>
           <div className="text-right">Batches</div>
@@ -63,7 +63,7 @@ export function TopPlayers({ batchId, sourceId }: { batchId?: number; sourceId?:
           return (
             <div
               key={player.walletAddress}
-              className={`grid grid-cols-[36px_1fr_80px_80px_90px_90px] items-center px-4 py-2.5 border-b border-border-light text-caption ${
+              className={`grid grid-cols-[36px_1fr_80px_80px_100px_90px] items-center px-4 py-2.5 border-b border-border-light text-caption ${
                 i % 2 === 1 ? 'bg-surface/40' : ''
               }`}
             >

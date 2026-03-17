@@ -66,10 +66,19 @@ function truncateMiddle(str: string, maxLen: number): string {
 }
 
 function resolutionBadge(resType: string | undefined) {
-  if (!resType) return null
+  if (!resType) {
+    return <span className="text-[9px] text-text-muted">&mdash;</span>
+  }
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
-  const bg = isUp ? 'bg-green-100 text-green-700 border-green-200' : isDown ? 'bg-red-100 text-red-700 border-red-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+  const isFlat = resType.startsWith('FLAT')
+  const bg = isUp
+    ? 'bg-green-100 text-green-700 border-green-200'
+    : isDown
+      ? 'bg-red-100 text-red-700 border-red-200'
+      : isFlat
+        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+        : 'bg-gray-100 text-gray-600 border-gray-200'
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
       {resType}
@@ -86,6 +95,9 @@ function formatVolume(vol: string | null): string {
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`
   return num.toFixed(0)
 }
+
+// Mock consensus until real API
+const MOCK_CONSENSUS: ('UP' | 'DN')[] = ['UP', 'DN', 'UP', 'UP', 'DN']
 
 // ── Asset Price History Chart ──
 
@@ -342,12 +354,11 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
-        <div className="grid grid-cols-[1fr_80px_100px_80px_80px_100px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+        <div className="grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>Name</div>
           <div className="text-center">Type</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
           <div className="text-right">1d</div>
-          <div className="text-right">7d</div>
           <div className="text-center">Consensus</div>
           <div className="text-center">Bet</div>
         </div>
@@ -370,7 +381,6 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         <div className="max-h-[600px] overflow-y-auto">
           {visibleMarkets.map((market) => {
             const change1d = formatChangePct(market.changePct)
-            const change7d = formatChangePct(null)
             const vol = formatVolume(market.volume24h)
             const betState = getBetState(market.assetId)
             const isExpanded = expandedAssetId === market.assetId
@@ -379,7 +389,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             return (
               <div key={market.assetId}>
                 <div
-                  className={`grid grid-cols-[1fr_80px_100px_80px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
+                  className={`grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -418,13 +428,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     {change1d.text}
                   </div>
 
-                  {/* 7d change */}
-                  <div className={`text-right font-mono tabular-nums font-semibold ${change7d.color}`}>
-                    {change7d.text}
-                  </div>
 
-                  {/* Consensus */}
-                  <div className="text-center relative">
+                  {/* Consensus — last 5 as colored arrow squares */}
+                  <div className="relative">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -432,9 +438,20 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                           consensusOpen === market.assetId ? null : market.assetId
                         )
                       }}
-                      className="inline-flex items-center justify-center px-2 py-0.5 rounded text-label font-bold hover:bg-surface transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-0.5 w-full cursor-pointer rounded py-0.5 hover:bg-surface/50 transition-colors"
                     >
-                      &mdash;
+                      {MOCK_CONSENSUS.map((dir, idx) => (
+                        <span
+                          key={idx}
+                          className={`inline-flex items-center justify-center w-4 h-4 rounded-sm text-[8px] font-bold ${
+                            dir === 'UP'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {dir === 'UP' ? '↑' : '↓'}
+                        </span>
+                      ))}
                     </button>
                     {consensusOpen === market.assetId && (
                       <ConsensusPopup
