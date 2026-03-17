@@ -72,15 +72,16 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
     }
 
     /// @notice Reset order state after a full redeploy to the same proxy address.
-    /// Clears stale orders and cycle state from the previous deployment.
+    /// Clears stale orders, cycles, and timestamps from the previous deployment.
     function resetOrderState() external {
         if (msg.sender != governance.admin()) {
             revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
         }
-        // Clear individual order records up to current nextOrderId
-        for (uint256 i = 1; i < nextOrderId; i++) {
+        // Clear orders and cycle state — cover range up to 50 (handles multiple resets)
+        uint256 maxId = nextOrderId > 50 ? nextOrderId : 50;
+        for (uint256 i = 1; i <= maxId; i++) {
             delete orders[i];
-            delete cycleProcessed[i + 500_000_000]; // cycle = orderId + 500M
+            delete cycleProcessed[i + 500_000_000];
             delete batchedTimestamp[i];
         }
         nextOrderId = 1;
