@@ -1128,7 +1128,7 @@ pub async fn run(
     // Connect to Postgres for persisting balance updates and resolved ticks
     tracing::warn!("DIAG: Vision tick engine run() entered — connecting to Postgres at {}", config.database_url);
     let db_pool = match sqlx::postgres::PgPoolOptions::new()
-        .max_connections(20)
+        .max_connections(3)
         .idle_timeout(std::time::Duration::from_secs(300))
         .connect(&config.database_url).await {
         Ok(pool) => {
