@@ -124,6 +124,13 @@ export function HomeClient() {
     return () => clearTimeout(exitTimer.current)
   }, [])
 
+  useEffect(() => {
+    const hash = window.location.hash.slice(1)
+    if (hash && ALL_SECTION_IDS.includes(hash)) {
+      setActiveSection(hash)
+    }
+  }, [])
+
   const switchTo = useCallback((id: string) => {
     if (id === activeSection) return
     const prevIdx = ALL_SECTION_IDS.indexOf(activeSection)
