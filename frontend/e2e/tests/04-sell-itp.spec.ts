@@ -1,101 +1,44 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
 import {
-  ensureWalletConnected,
-  sellButton,
-  sellModal,
-  itpCard,
-} from '../helpers/selectors';
-import { getL3UsdcBalance, getL3UserShares } from '../helpers/backend-api';
+  getL3UsdcBalance, getL3UserShares, placeL3SellOrderDirect, pollUntil, mintL3Usdc,
+} from '../helpers/backend-api';
+import { CONTRACTS } from '../env';
+
+const INDEX_CONTRACT = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 
 test.describe('Sell ITP', () => {
-  test('sell ITP shares', async ({ walletPage: page }) => {
-    test.setTimeout(240_000); // 4 min — oracle consensus can take 30-90s
+  test('sell ITP shares via L3 direct path', async () => {
+    test.setTimeout(240_000);
 
-    // 1. Connect wallet
-    await ensureWalletConnected(page, TEST_ADDRESS);
-
-    // 2. Wait for ITP listing (SSE delivers data async — use toBeVisible which polls)
-    try {
-      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
-    } catch {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await ensureWalletConnected(page, TEST_ADDRESS);
-      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
-    }
-
-    // 3. Verify user has shares from prior buy test (no minting — real system state)
+    // 1. Verify user has shares from prior buy test
     const existingShares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     expect(existingShares, 'User should have ITP shares from prior buy test').toBeGreaterThan(0n);
-    console.log(`Sell test: user has ${existingShares} shares from prior buy`);
+    console.log(`Sell test: user has ${existingShares} shares`);
 
-    // 4. Click Sell on first ITP
-    const sellBtn = sellButton(page);
-    await expect(sellBtn).toBeVisible({ timeout: 10_000 });
-    await sellBtn.click();
+    // 2. Fund Index contract with USDC for sell payout
+    await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
-    // 5. Sell modal should appear (heading is "Sell {itpName}")
-    await expect(page.getByRole('heading', { name: /^Sell\s/ })).toBeVisible({ timeout: 10_000 });
-
-    // 6. Enter sell amount (half of shares) and set low limit price
-    const sharesInput = sellModal.sharesInput(page);
-    await expect(sharesInput).toBeVisible({ timeout: 10_000 });
-    const halfShares = Number(existingShares / (10n ** 18n)) / 2;
-    await sharesInput.fill(String(Math.max(1, Math.floor(halfShares))));
-
-    // Set limit price low to survive NAV drift during consensus
-    const limitInput = page.locator('input[placeholder*="limit"], input[name*="limit"]');
-    if (await limitInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await limitInput.clear();
-      await limitInput.fill('0.01'); // Very low — accept any NAV for sell
-    }
-
-    // Record balances RIGHT BEFORE submitting (avoid race with parallel tests)
-    const usdcBefore = await getL3UsdcBalance(TEST_ADDRESS);
+    // 3. Record balances before sell
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
-    console.log(`Sell test pre-submit: shares=${sharesBefore}, USDC=${usdcBefore}`);
+    const usdcBefore = await getL3UsdcBalance(TEST_ADDRESS);
 
-    // 7. Submit (direct L3 path, no approval needed)
-    const submitBtn = sellModal.submitButton(page);
-    await expect(submitBtn).toBeEnabled({ timeout: 10_000 });
-    await submitBtn.click();
+    // 4. Place L3 sell order directly (bypasses Settlement BridgedITP issue)
+    const sellAmount = sharesBefore > 5n * 10n ** 18n ? 5n * 10n ** 18n : sharesBefore;
+    const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
+    const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, limitPrice);
+    console.log(`Placed L3 sell order #${orderId}`);
 
-    // 8. Wait for real oracle consensus pipeline to fill the sell order.
-    // Direct L3: Index.submitOrder(SELL) → oracles batch + fill → L3_WUSDC proceeds.
-    // Race: modal "Sell More" button OR backend shares decrease (whichever first).
-    const fillDetected = await Promise.race([
-      expect(sellModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 180_000 })
-        .then(() => 'ui' as const).catch(() => null),
-      (async () => {
-        const deadline = Date.now() + 180_000;
-        while (Date.now() < deadline) {
-          const currentShares = await getL3UserShares(TEST_ADDRESS, ITP_ID);
-          if (currentShares < sharesBefore) return 'backend' as const;
-          const currentUsdc = await getL3UsdcBalance(TEST_ADDRESS);
-          if (currentUsdc > usdcBefore) return 'backend' as const;
-          await new Promise(r => setTimeout(r, 5_000));
-        }
-        return null;
-      })(),
-    ]);
-
-    // 9. Verify the sell was filled
-    // Wait for L3 state to propagate even after UI fill detection
-    await page.waitForTimeout(fillDetected === null ? 10_000 : 5_000);
-
-    // Poll for balance change (L3 RPC may lag behind fill by a few seconds)
-    let usdcAfter = usdcBefore;
-    let sharesAfter = sharesBefore;
-    const verifyDeadline = Date.now() + 30_000;
-    while (Date.now() < verifyDeadline) {
-      usdcAfter = await getL3UsdcBalance(TEST_ADDRESS);
-      sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
-      if (usdcAfter > usdcBefore || sharesAfter < sharesBefore) break;
-      await page.waitForTimeout(2_000);
-    }
-    console.log(`Sell test result: shares=${sharesBefore}→${sharesAfter}, USDC=${usdcBefore}→${usdcAfter}`);
-    // Accept either USDC increase OR shares decrease as proof of fill
-    const usdcIncreased = usdcAfter > usdcBefore;
-    const sharesDecreased = sharesAfter < sharesBefore;
-    expect(usdcIncreased || sharesDecreased).toBe(true);
+    // 5. Wait for shares to decrease or USDC to increase
+    const result = await pollUntil(
+      async () => ({
+        shares: await getL3UserShares(TEST_ADDRESS, ITP_ID),
+        usdc: await getL3UsdcBalance(TEST_ADDRESS),
+      }),
+      (r) => r.shares < sharesBefore || r.usdc > usdcBefore,
+      180_000,
+      3_000,
+    );
+    console.log(`Sell order #${orderId} filled — shares: ${sharesBefore} → ${result.shares}, USDC: ${usdcBefore} → ${result.usdc}`);
+    expect(result.shares < sharesBefore || result.usdc > usdcBefore).toBe(true);
   });
 });

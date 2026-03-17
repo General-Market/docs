@@ -16,6 +16,13 @@ export function connectWalletButton(page: Page): Locator {
  * wagmi localStorage) and manual connect (clicking the Connect button).
  */
 export async function ensureWalletConnected(page: Page, address: string): Promise<void> {
+  // Dismiss "Welcome to General Market" dialog if present (blocks pointer events)
+  const skipBtn = page.getByRole('button', { name: 'Skip' });
+  if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await skipBtn.click();
+    await page.waitForTimeout(500);
+  }
+
   const truncated = address.slice(0, 6) + '...' + address.slice(-4);
   const addrBtn = page.getByRole('button', { name: truncated });
 
@@ -114,15 +121,15 @@ export const buyModal = {
 
 export const sellModal = {
   sharesInput(page: Page): Locator {
-    return modalContainer(page).locator('input[placeholder="e.g., 10"]');
+    return page.locator('input[placeholder="e.g., 10"]');
   },
 
   maxButton(page: Page): Locator {
-    return modalContainer(page).getByRole('button', { name: 'MAX' });
+    return page.getByRole('button', { name: 'MAX' });
   },
 
   submitButton(page: Page): Locator {
-    return modalContainer(page).getByRole('button', { name: /Approve & Sell|Sell Shares/ });
+    return page.getByRole('button', { name: /Approve & Sell|Sell Shares/ });
   },
 
   orderSubmittedBanner(page: Page): Locator {
@@ -130,7 +137,7 @@ export const sellModal = {
   },
 
   closeButton(page: Page): Locator {
-    return modalContainer(page).locator('button:has-text("×")');
+    return page.locator('button:has-text("×")');
   },
 };
 
