@@ -1020,7 +1020,7 @@ async fn vision_leaderboard(
 
     // Supplement with Postgres deposits for active batches
     if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
-        "SELECT vp.player, SUM(vp.total_deposited::numeric)::bigint as total_deposited
+        "SELECT vp.player, SUM(vp.total_deposited::numeric)::text as total_deposited
          FROM vision_positions vp
          JOIN vision_batches vb ON vp.batch_id = vb.id
          WHERE vb.paused = false
@@ -1032,9 +1032,11 @@ async fn vision_leaderboard(
         for row in rows {
             if let Ok(addr) = row.player.parse::<Address>() {
                 if let Some(entry) = player_data.get_mut(&addr) {
-                    if let Some(dep) = row.total_deposited {
-                        if dep > 0 {
-                            entry.1 = dep as u128;
+                    if let Some(ref dep_str) = row.total_deposited {
+                        if let Ok(dep) = dep_str.parse::<u128>() {
+                            if dep > 0 {
+                                entry.1 = dep;
+                            }
                         }
                     }
                 }
@@ -1230,7 +1232,7 @@ fn build_leaderboard_from_map(
 #[derive(Debug, sqlx::FromRow)]
 struct DepositRow {
     player: String,
-    total_deposited: Option<i64>,
+    total_deposited: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -1571,7 +1573,7 @@ async fn player_profile(
         .fetch_all(&state.pool),
 
         sqlx::query_as::<_, PositionRow>(
-            "SELECT batch_id, balance, total_deposited \
+            "SELECT batch_id, balance::text as balance, total_deposited::text as total_deposited \
              FROM vision_positions WHERE LOWER(player) = $1"
         )
         .bind(&address)
