@@ -11,7 +11,7 @@ import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID,
   DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER,
-  RPC_TIMEOUT,
+  RPC_TIMEOUT, MORPHO_DEPLOYMENT, MORPHO_CONTRACTS, MORPHO_MARKET_PARAMS,
 } from '../env';
 
 /** Retry wrapper for flaky network calls (testnet RPCs, backend). */
@@ -184,11 +184,11 @@ async function getOrderViaL3(orderId: number | string): Promise<OrderData> {
 
 const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC;
 
-const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A52357737A11';
-const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
-const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
-const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
-const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
+const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '';
+const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '';
+const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '';
+const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '';
+const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '';
 /** Deployer account — Anvil #0 locally, real deployer on testnet */
 const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS;
 
@@ -408,8 +408,8 @@ async function keccak256Hex(data: string): Promise<string> {
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
 
 const L3_RPC = ENV_L3_RPC;
-const L3_INDEX = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
-const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const L3_INDEX = CONTRACTS.Index ?? '';
+const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '';
 
 export async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   return withRetry(async () => {
@@ -469,7 +469,10 @@ async function l3SignedSend(to: string, data: string, value?: bigint): Promise<s
           gas: 1_000_000n,
           nonce,
         });
-        await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+        const receipt = await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
+        if (receipt && receipt.status === '0x0') {
+          throw new Error(`Transaction reverted on-chain: ${hash}`);
+        }
         return hash;
       } catch (err: any) {
         if (err?.message?.includes('nonce too low') && attempt < 2) {
@@ -1226,19 +1229,7 @@ export async function deployBridgedItpDirect(
 
 // ── Morpho collateral token (ITP Vault on L3) ──────────────
 
-/** Read collateral token address from morpho-deployment.json */
-function readMorphoCollateral(): string {
-  try {
-    const { readFileSync } = require('fs');
-    const { join } = require('path');
-    const morphoJson = JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
-    return morphoJson.marketParams?.collateralToken || '';
-  } catch {
-    return '';
-  }
-}
-
-export const MORPHO_COLLATERAL = readMorphoCollateral();
+export const MORPHO_COLLATERAL = MORPHO_MARKET_PARAMS.collateralToken ?? '';
 
 /**
  * Mint Morpho collateral tokens (ITP Vault MockERC20) on L3.
@@ -1259,15 +1250,9 @@ export async function mintMorphoCollateral(
 
 // ── Morpho direct operations (bypass browser wallet) ────────
 
-/** Read full Morpho deployment config */
+/** Read full Morpho deployment config — from env.ts (single source of truth) */
 export function readMorphoDeployment() {
-  try {
-    const { readFileSync } = require('fs');
-    const { join } = require('path');
-    return JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
-  } catch {
-    return null;
-  }
+  return (MORPHO_CONTRACTS.MORPHO) ? MORPHO_DEPLOYMENT : null;
 }
 
 /**
