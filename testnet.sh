@@ -90,14 +90,11 @@ vps_chain_ssh() { ssh -o ConnectTimeout=10 "$VPS_CHAIN_HOST" "$@" < /dev/null 2>
 # Settlement RPC for VPS services (through local proxy to avoid 429s)
 SETTLEMENT_RPC_VPS="http://127.0.0.1:8547"
 
-# Cleanup trap: remove local override YAMLs + remote key files on exit (prevents secrets on disk)
+# Cleanup trap: remove local override YAMLs only (NOT key files — containers need them at runtime)
 _cleanup() {
     rm -f "$SCRIPT_DIR"/.data-node-override.yml "$SCRIPT_DIR"/.oracle-override.yml "$SCRIPT_DIR"/.curator-override.yml "$SCRIPT_DIR"/.ap-override.yml
-    # Only clean remote key files if we were starting/stopping services (not on status/logs/deploy)
-    if [ "${_STARTED_SERVICES:-}" = "true" ]; then
-        vps_be_ssh "rm -f /tmp/oracle-key-{1,2,3}.txt /tmp/settlement-key.txt /tmp/curator-key.txt" 2>/dev/null || true
-        vps_chain_ssh "rm -f /tmp/ap-key.txt" 2>/dev/null || true
-    fi
+    # Key files are cleaned up ONLY by cmd_stop (line ~1258), not on exit.
+    # Containers read key files at runtime — deleting them kills running services.
 }
 trap _cleanup EXIT
 
