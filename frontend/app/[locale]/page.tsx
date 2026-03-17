@@ -18,11 +18,11 @@ export default async function VisionPage() {
   return (
     <main className="min-h-screen bg-page flex flex-col">
       <Header />
-      <section className="px-6 lg:px-12 pt-10 pb-4">
-        <h1 className="text-heading md:text-display font-black tracking-tight text-black leading-[1.1]">
+      <section className="px-6 lg:px-12 pt-12 pb-6">
+        <h1 className="text-display font-black text-black">
           {t('h1')}
         </h1>
-        <p className="text-body text-text-secondary mt-2 max-w-2xl leading-relaxed">
+        <p className="text-body text-text-muted mt-3 max-w-xl font-normal leading-relaxed">
           {t('markets.description')}
         </p>
       </section>

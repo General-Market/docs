@@ -69,12 +69,12 @@ h1, h2, h3, .type-display, .type-stat-value,
   letter-spacing: 0.025em; color: #555555;
 }
 .type-stat-value {
-  font-size: 1.25rem; line-height: 1.3;
-  font-weight: 900; letter-spacing: -0.025em;
+  font-size: 2rem; line-height: 1.15;
+  font-weight: 900; letter-spacing: -0.03em;
 }
 .type-display {
-  font-size: 2.75rem; line-height: 1.08;
-  font-weight: 900; letter-spacing: -0.025em;
+  font-size: clamp(2.25rem, 5vw, 3.5rem); line-height: 1.05;
+  font-weight: 900; letter-spacing: -0.035em;
 }
 
 /* ── SECTION BAR — solid black bar (DATA VIEW pattern) ── */
