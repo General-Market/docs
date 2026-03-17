@@ -78,6 +78,8 @@ interface IVision {
     error ZeroAddress();                 // creditBalance with user == address(0)
     error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
     error TooManyBatches();              // nextBatchId >= MAX_BATCHES
+    error InvalidArrayLength();          // players.length != payouts.length or empty
+    error BatchAlreadySettled();         // settleBatch called on already-settled batch
 
     // ============ EVENTS ============
 
@@ -137,6 +139,11 @@ interface IVision {
     /// @param realFees    Fees from real-funded positions (credited to realBalance)
     /// @param virtualFees Fees from virtual-funded positions (credited to virtualBalance)
     event FeeCollected(uint256 realFees, uint256 virtualFees);
+
+    // ============ ROUND-BASED SETTLEMENT EVENTS ============
+
+    event PlayerSettled(uint256 indexed batchId, address indexed player, uint256 payout, uint256 fee);
+    event BatchSettled(uint256 indexed batchId, uint256 playerCount);
 
     // ============ DUAL-BALANCE EVENTS ============
 
@@ -259,6 +266,22 @@ interface IVision {
         bytes32 bitmapHash
     ) external;
 
+    /// @notice Join a batch via direct USDC transfer from player wallet.
+    ///         Unlike joinBatch() which debits from the dual-balance system,
+    ///         this pulls USDC directly via safeTransferFrom.
+    /// @param batchId        the batch to join
+    /// @param configHash     active configHash the player's bitmap is built against
+    /// @param depositAmount  USDC amount to deposit (transferred from player wallet)
+    /// @param stakePerTick   USDC staked per tick
+    /// @param bitmapHash     keccak256 of the player's prediction bitmap
+    function joinBatchDirect(
+        uint256 batchId,
+        bytes32 configHash,
+        uint256 depositAmount,
+        uint256 stakePerTick,
+        bytes32 bitmapHash
+    ) external;
+
     /// @notice Update prediction bitmap. Enforces lock window (Issue 6/F6).
     /// @dev configHash param binds the new bitmap to the active config (Issue 2).
     ///      Triggers _promoteConfigIfNeeded() before checking lock window.
@@ -333,6 +356,28 @@ interface IVision {
         uint256 batchId,
         address player,
         uint256 finalBalance,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external;
+
+    /// @notice Settle an entire batch in one transaction (round-based flow).
+    ///         Oracle computes payouts off-chain, BLS-signs the result, and calls this.
+    ///         Credits realBalance/virtualBalance directly — players withdraw via existing
+    ///         withdrawBalance() or withdrawToSettlement().
+    /// @dev Two-pass design: Pass 1 validates solvency (sum(payouts) <= sum(deposits)),
+    ///      Pass 2 deletes positions and credits balances. Players array MUST be strictly
+    ///      ascending by address to prevent duplicates.
+    /// @param batchId        the batch to settle
+    /// @param players        strictly ascending array of player addresses
+    /// @param payouts        corresponding payout amounts (same length as players)
+    /// @param blsSignature   aggregated BLS signature over settlement data
+    /// @param referenceNonce BLSVerifier snapshot nonce
+    /// @param signersBitmask bitmask of signing oracles
+    function settleBatch(
+        uint256 batchId,
+        address[] calldata players,
+        uint256[] calldata payouts,
         bytes calldata blsSignature,
         uint256 referenceNonce,
         uint256 signersBitmask
