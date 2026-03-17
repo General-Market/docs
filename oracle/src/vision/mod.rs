@@ -14,6 +14,7 @@ pub mod deposit_watcher;
 pub mod engine;
 pub mod pending_ops;
 pub mod resolver;
+pub mod settle_signer;
 pub mod side_matching;
 pub mod tick_consensus;
 pub mod tick_scheduler;
