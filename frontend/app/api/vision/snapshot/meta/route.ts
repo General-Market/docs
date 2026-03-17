@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AA_DATA_NODE_URL } from '@/lib/config'
+import { toDisplayId } from '@/lib/vision/source-ids'
 
 const AA_DATA_NODE = AA_DATA_NODE_URL
 
@@ -35,10 +36,12 @@ export async function GET() {
 
     const assetCounts: Record<string, number> = {}
     const sources = Object.entries(bulk.sources).map(([id, entry]) => {
-      assetCounts[id] = entry.totalAssets
+      const displayId = toDisplayId(id)
+      // Aggregate counts when multiple internal IDs map to one display ID (e.g. sec_13f + sec_efts → sec)
+      assetCounts[displayId] = (assetCounts[displayId] ?? 0) + entry.totalAssets
       return {
-        sourceId: id,
-        displayName: id,
+        sourceId: displayId,
+        displayName: displayId,
         enabled: true,
         syncIntervalSecs: 300,
         lastSync: entry.newestRecord,

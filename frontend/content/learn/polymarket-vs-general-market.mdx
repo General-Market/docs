@@ -1,71 +1,113 @@
 ---
-title: "Polymarket vs General Market (Vision): Which Prediction Market Is Right for You?"
-description: "Honest comparison of Polymarket and Vision (General Market). Markets, fees, bot support, front-running protection, and when to use each platform."
-keywords: ["polymarket alternative", "polymarket vs general market", "polymarket alternative 2026", "prediction market comparison"]
-date: "2026-02-27"
+title: "Vision vs the Field: How General Market Compares to Polymarket and Kalshi"
+description: "Three-way comparison of Polymarket, Kalshi, and Vision (General Market). Markets, fees, settlement, bot support, regulation, and when to use each platform."
+keywords: ["polymarket alternative", "polymarket vs general market", "kalshi alternative", "kalshi vs general market", "prediction market comparison 2026", "polymarket alternative 2026", "kalshi alternative 2026", "regulated prediction market", "polymarket vs kalshi"]
+date: "2026-03-17"
 author: "General Market"
 slug: "polymarket-vs-general-market"
 category: "Comparison"
-readingTime: "7 min read"
+readingTime: "12 min read"
 tldr:
-  - "Polymarket: <strong>~8,000 markets</strong> with public CLOB orderbook. Vision: <strong>25,000+ markets</strong> with sealed parimutuel pools"
-  - "Polymarket averages <strong>~1,200 traders/market</strong> — Vision averages ~19, meaning <strong>less competition for edge</strong>"
-  - "Vision charges <strong>0.3% on profits only</strong> — Polymarket takes variable spread on every trade"
-  - "Vision minimum bet is <strong>$0.10</strong> vs Polymarket's ~$1 — lower barrier to test strategies"
+  - "Polymarket: <strong>~8,000 markets</strong>, deep liquidity on major events. Kalshi: <strong>CFTC-regulated</strong>, US-only. Vision: <strong>400,000+ markets</strong> across 88-98+ data sources"
+  - "Vision averages <strong>~19 traders per market</strong> — thin markets are not a weakness, they are where edge lives"
+  - "Three settlement models: UMA optimistic oracle (hours), centralized clearing (instant), <strong>BLS ceil(2n/3) consensus (~10 minutes)</strong>"
+  - "Vision charges <strong>0.3% on profits only</strong> — Polymarket takes spread, Kalshi takes per-contract fees on every trade"
 ---
 
-Two prediction markets exist. Both accept real money. Both settle outcomes. They share a genus and nothing else. Choosing between them is not a matter of preference — it is a matter of knowing what you actually want, which is harder than it sounds.
+Three prediction markets. Three architectures. Three different convictions about what it means to bet on the future. They share a genus and nothing else. Choosing between them is not a matter of preference — it is a matter of knowing what you actually want, which is harder than it sounds.
 
-## Side-by-Side Comparison
+## The Three-Way Comparison
 
-| Feature | Polymarket | Vision (General Market) |
-|---------|-----------|----------------------|
-| Markets | ~8,000 (politics, crypto, sports, culture) | 25,000+ (79 data sources including weather, earthquakes, space, wildlife, tech) |
-| Model | Order book (CLOB) | Sealed parimutuel pools |
-| Front-running | Possible (public orderbook) | Impossible (sealed commit-reveal) |
-| Fee | Variable spread | 0.3% on profit only |
-| KYC | Required (US) | Not required |
-| Bot support | API + third-party tools | Native (`npx generalmarket init`, on-chain bot registry) |
-| Avg traders/market | ~1,200 | ~19 |
-| Settlement | UMA oracle | BLS 3-of-5 consensus |
-| Chain | Polygon | Arbitrum Orbit L3 |
-| Min bet | ~$1 (varies by market) | $0.10 |
+| Feature | Polymarket | Kalshi | Vision (General Market) |
+|---------|-----------|--------|------------------------|
+| Markets | ~8,000 (politics, crypto, sports, culture) | Hundreds (politics, economics, sports, weather) | 400,000+ (88-98+ data sources: weather, earthquakes, space, wildlife, tech, transport) |
+| Model | Order book (CLOB) | Order book (CLOB) | Sealed parimutuel pools |
+| Regulation | Unregulated (KYC for US) | CFTC-licensed DCM | Decentralized protocol |
+| Chain | Polygon | Off-chain (centralized) | Arbitrum Orbit L3 |
+| Settlement | UMA optimistic oracle | Centralized clearing | BLS ceil(2n/3) consensus |
+| Front-running | Possible (public orderbook) | Possible (public orderbook) | Impossible (sealed commit-reveal) |
+| KYC | Required (US) | Required (US-only) | Not required |
+| Min bet | ~$1 | $1 | $0.10 |
+| Bot support | API + third-party tools | API | Native CLI, on-chain registry, bitmap portfolios |
+| Fee | Variable spread | Per-contract on every trade | 0.3% on profit only |
+| Avg traders/market | ~1,200 | Varies | ~19 |
 
 Numbers are scaffolding. The architecture beneath them is where the divergence lives.
 
-## When to Use Polymarket
+## Market Positioning
 
-Polymarket is the largest decentralized prediction market by volume. It earned that through time and attrition. If the following conditions describe you, there is no reason to look elsewhere.
+Every comparison table flattens a landscape into a list. The real map is two-dimensional.
+
+```
+                    Few Markets            Many Markets
+                ┌──────────────────┬──────────────────┐
+                │                  │                  │
+High Liquidity  │   Kalshi         │   Polymarket      │
+                │   (regulated,    │   (CLOB, deep     │
+                │   curated)       │   on politics)    │
+                │                  │                  │
+                ├──────────────────┼──────────────────┤
+                │                  │                  │
+Low Liquidity   │   (empty)        │   Vision          │
+                │                  │   (sealed, bots,  │
+                │                  │   exotic data)    │
+                │                  │                  │
+                └──────────────────┴──────────────────┘
+```
+
+The top-right quadrant — many markets, deep liquidity — is the prize. Nobody occupies it yet. The question is who arrives first, and from which direction.
+
+**Polymarket** starts top-right and pushes left. Already expanding into weather, sports, culture. The liquidity is there. The bottleneck is market creation — each new market needs an UMA resolution template, a dispute mechanism, sufficient trader interest to justify the overhead. Breadth grows linearly with operational effort.
+
+**Kalshi** sits top-left, constrained by the thing that makes it valuable. Every new contract type requires CFTC approval. The regulatory moat is also a regulatory wall. New market categories arrive on the regulator's schedule, not the market's.
+
+**Vision** occupies the bottom-right. 400,000+ markets, thin liquidity. The trajectory is upward: more bots attract more bots, each one adding liquidity to the pool it trades. Sealed bets and exotic data sources create a gravitational pull for the kind of trader who does not want to compete in a crowd. The question is speed — whether the bottom-right fills in fast enough to matter before the top-right is claimed from above.
+
+Three starting positions. Three vectors. The same destination. The race is architectural as much as it is commercial, and architecture is destiny more often than ambition admits.
+
+## When Polymarket Wins
+
+Polymarket is the largest decentralized prediction market by volume. It earned that through time and attrition.
 
 **Deep liquidity on high-profile events.** Presidential elections, Fed rate decisions, major crypto price movements — Polymarket's order book depth on these is unmatched. Tight spreads, fast execution, real size. If you need to move capital through a crowd, this is the crowd.
 
 **Years of operational proof.** Operating since 2020. Hundreds of millions in volume across multiple election cycles. The UMA oracle has resolved thousands of markets. Platform risk diminishes with every year a system survives its own ambitions.
 
-**A regulated posture.** Polymarket has pursued compliance in the United States, including KYC for US users. If you require a platform that has shaken hands with regulators, that handshake matters.
-
-**The weight of community.** More traders, more discussion, more third-party tools. An active Discord. Analytics dashboards built by strangers. If you want to trade where the noise is loudest, the noise is on Polymarket — and noise, in liquid markets, is just another word for information.
+**The weight of community.** More traders, more discussion, more third-party tools. Analytics dashboards built by strangers. If you want to trade where the noise is loudest, the noise is on Polymarket — and noise, in liquid markets, is just another word for information.
 
 None of this is flattery. Polymarket built something real for a specific purpose. If that purpose is yours, use it.
 
-## When to Use Vision
+## When Kalshi Wins
 
-Vision was built for a different animal entirely. It makes little sense for betting on the next president. It makes considerable sense if any of the following is true.
+Kalshi is the first CFTC-licensed prediction market exchange in the United States. The license is not a marketing claim — it is an institutional fact purchased with years of regulatory process and real legal battles.
 
-**You build AI agents and trading bots.** Vision treats bots as citizens, not trespassers. `npx generalmarket init` scaffolds a complete trading bot. The on-chain bot registry (`registerBot()`) is free and permissionless. Bitmap encoding lets a single transaction cover predictions across 100+ markets simultaneously. On Polymarket, managing 100 positions means 100 separate transactions with 100 gas fees. On Vision, it is one commitment hash. The difference between bureaucracy and brevity.
+**Regulatory compliance is non-negotiable.** If you are a US-based trader who needs every trade to occur on a CFTC-regulated venue, Kalshi is the only option. Segregated customer funds, regulated clearing, a dispute resolution process backed by federal oversight. The law does not care about your technical preferences.
 
-**You want data sources that do not exist elsewhere.** Weather patterns from NOAA. Earthquake frequency from USGS. ISS orbital altitude. Nuclear reactor output. Twitch viewer counts. Bird migration from eBird. Reddit post volumes. Theme park wait times. Vision pulls from 79 data sources across ten categories. Most of these markets exist on no other platform. If your model understands atmospheric pressure better than 18 other traders, you possess a structural edge that no amount of political polling can replicate.
+**Legal certainty on curated events.** Kalshi's contracts are legally recognized event contracts under US law. Presidential elections, GDP figures, hurricane landfalls — centralized resolution backed by a regulator is hard to argue against when centralized truth already exists. The architecture matches the epistemology.
 
-**You hunt in thin markets.** This is the crux. Vision markets average 19 traders. Polymarket's popular markets average around 1,200. In a market with 1,200 sophisticated participants, public information has already been digested and excreted into the price. In a market with 19 participants trading USGS river discharge levels, your calibrated hydrology model is competing against a handful of bots and a few humans making educated guesses. The bar for "edge" drops from Olympic to municipal.
+**Zero blockchain friction.** No wallet setup, no chain interaction, no gas fees. Deposit USD, trade, withdraw USD. The simplicity of surrendering custody. For manual traders who form opinions and place bets, the interface is built for that workflow and nothing else.
 
-**You refuse to broadcast your strategy.** Vision uses sealed commit-reveal. You submit `keccak256(bitmap)` on-chain during the betting window. Nobody — not other traders, not oracles, not the protocol — can see your predictions until the window closes. On Polymarket's public order book, every position is visible the instant you place it. Others can see your bets, infer your strategy, and trade against you. On Vision, your strategy is a hash until it no longer matters.
+Kalshi earned its position. Dismissing it would be dishonest.
 
-**You want global access without confession.** Vision does not require identity verification. Connect a wallet. Trade. No KYC, no country restrictions. This matters for traders outside the US, and for traders who find it philosophically repugnant to submit identity documents in order to wager on seismology.
+## When Vision Wins
 
-**You want to start at the scale of a thought experiment.** The minimum bet on Vision is $0.10. Validate a strategy against real markets with negligible capital before committing anything that would sting to lose.
+Vision was built for a different animal entirely. It makes little sense for betting on the next president. It makes considerable sense under any of the following conditions.
+
+**You build AI agents and trading bots.** Vision treats bots as citizens, not trespassers. Native CLI (`npx generalmarket init`), free on-chain bot registry via `registerBot(endpoint, pubkeyHash)`, bitmap encoding for 100+ predictions in a single transaction. On Polymarket, 100 positions means 100 transactions. On Kalshi, 100 separate order management workflows. On Vision, one commitment hash. The difference between a road that tolerates bicycles and a velodrome.
+
+**You want data sources that do not exist elsewhere.** 88-98+ data sources across ten categories — weather, earthquakes, space, wildlife, tech infrastructure, transport, regulatory filings, academic research, and more. USGS earthquake frequency. NOAA ocean buoy readings. ISS orbital altitude. npm package downloads. These markets exist on Vision. They do not exist on Polymarket or Kalshi. They do not exist anywhere.
+
+**You hunt in thin markets.** Vision markets average 19 traders. Polymarket's popular markets average around 1,200. The bar for "edge" drops from Olympic to municipal. More on this below — it is the thesis, not an apology.
+
+**You refuse to broadcast your strategy.** Sealed commit-reveal. Your predictions are a hash until the window closes. Both Polymarket and Kalshi expose your orders on public order books. For bot operators whose edge depends on proprietary signals, privacy is not a feature. It is the edge itself. See [Sealed Prediction Markets](/learn/sealed-prediction-markets) for the cryptographic details.
+
+**You want global access without confession.** Polymarket requires KYC for US users. Kalshi is US-only. Vision runs on a public blockchain. Anyone with a wallet can trade. No KYC, no country restrictions, no identity verification. This is not a loophole. It is the architecture.
+
+**You want to start at the scale of a thought experiment.** Minimum bet: $0.10. Running a 200-market strategy at minimum stake costs $200 on Kalshi, roughly $200 on Polymarket, and $20 on Vision. The cost of curiosity should be low enough that you can afford to be wrong two hundred times.
 
 ## The Liquidity Question
 
-The honest part. Polymarket has more liquidity, a longer track record, and more traders. Measured purely by volume and depth, Polymarket wins by a margin that is not close.
+The honest part. Polymarket has more liquidity. Kalshi has regulatory weight. Measured purely by volume and depth, both outpace Vision by margins that are not close.
 
 Vision is not contesting that axis. It targets a different geometry: breadth of markets, bet privacy, bot-native infrastructure. The fact that Vision markets average 19 traders is not an embarrassment to explain away. It is the thesis.
 
@@ -73,59 +115,76 @@ Thin markets are inefficient markets. Inefficient markets are where alpha lives.
 
 The caveat is real: thin markets mean lower absolute volume. A bot returning 40% on a $100 position still earns only $40. The opportunity scales as the platform grows. Today, Vision is better suited for traders validating models and capturing edge in low-competition terrain than for those deploying large capital immediately. Tomorrow is a different question. It always is.
 
-## The Bot Builder's Perspective
+Mimetic capital — the kind that flows toward whatever everyone else is already doing — crowds Polymarket's election markets into razor-thin margins. Contrarian capital, the kind that goes where nobody is looking, has a different destination. Both are rational. Only one is underpriced.
 
-If you are building an autonomous trading agent, the platform choice reduces to four structural questions.
-
-**Can other agents see my strategy?** On Polymarket, yes — your orders are public. On Vision, no. Sealed bets mean your model's output stays private. In a world where AI agents are the dominant traders, this is not a feature. It is survival. A model's edge evaporates the moment competitors can observe and replicate its positions.
-
-**How many markets can I cover per transaction?** On Polymarket, one market per order. Managing a diversified portfolio of 50+ markets requires 50+ transactions, each with gas costs and execution risk. On Vision, a single bitmap commitment covers every market in a batch. One transaction. One gas fee. This is why Vision bots routinely trade across 50-100 markets per tick while Polymarket bots concentrate on 3-5 high-conviction positions.
-
-**What data sources can I exploit?** Polymarket's markets cluster around politics, crypto, sports, and culture — domains with heavy competition and near-efficient pricing. Vision's 79 data sources span geophysics, transportation, wildlife, space, academia, and dozens of other niches. If your model has a unique data pipeline — say, correlating NOAA ocean buoy readings with shipping traffic patterns — Vision is likely the only platform where that pipeline translates into tradeable markets.
-
-**How do I register and manage my bot?** On Polymarket, you use the API with third-party tools. There is no formal bot identity system. On Vision, `registerBot(endpoint, pubkeyHash)` registers your agent on-chain for free. Your bot gets a public identity, appears on the leaderboard ranked by P&L and win rate, and can be discovered by other builders. Accountability and reputation without confession.
-
-## Settlement: UMA vs BLS Consensus
+## Settlement Models
 
 Settlement is where trust lives in a prediction market. When a market resolves, someone must declare what happened. The question is who, and under what constraints.
 
-Polymarket uses UMA's optimistic oracle. A proposer submits the outcome. A dispute window opens. If nobody challenges the result, it stands. If someone disputes, UMA token holders vote. This system has functioned for years, but it introduces latency and relies on economic incentives — bonding — to keep proposers honest. Trust anchored in money rather than mathematics.
+**Polymarket — UMA Optimistic Oracle.** A proposer submits the outcome. A dispute window opens. If nobody challenges the result, it stands. If someone disputes, UMA token holders vote. Years of operation. Flexible enough for ambiguous events requiring human judgment. The cost: latency and reliance on economic incentives — bonding — to keep proposers honest. Trust anchored in money rather than mathematics.
 
-Vision uses BLS threshold signatures. Five oracle nodes independently read the data source, compute the outcome, and sign with their BLS private keys. When at least three of five agree, their signatures are aggregated into a single proof verified on-chain. No dispute window. No bonding mechanism. No token holder vote. The outcome is either cryptographically verified or it does not exist. Settlement is deterministic — once the data source updates, markets resolve within the next tick.
+**Kalshi — Centralized Clearing.** Kalshi determines the outcome. CFTC oversight provides the check. Fast, decisive, backed by a regulatory body. Appropriate when centralized truth already exists — election results, published GDP figures, official weather data. The cost: you trust one institution. If that institution is trustworthy, this is elegant. If it is not, you discover the cost too late.
 
-Neither system is objectively superior. UMA is battle-tested and flexible enough to handle ambiguous events requiring human judgment. BLS consensus is faster and more deterministic but works best with quantitative data sources that have clear, machine-readable outcomes. Vision's market design — built around structured data feeds — is specifically optimized for this kind of settlement. The tool fits the material.
+**Vision — BLS Threshold Consensus.** Oracle nodes independently read the data source, compute the outcome, and sign with their BLS private keys on the BN254 curve. When at least ceil(2n/3) agree, their signatures are aggregated into a single proof verified on-chain in one transaction. No dispute window. No bonding mechanism. No token holder vote. No single institution. The outcome is either cryptographically verified or it does not exist.
 
-## The Fee Structure
+The oracle cycle runs in 1 second — five phases at 200ms each: fetch, compute, sign, aggregate, submit. Markets typically resolve within the next tick, roughly every 10 minutes. From data source update to final on-chain settlement: minutes, not hours.
 
-Polymarket charges no explicit trading fees, but the order book spread is the fee wearing a different name. Buy a contract at $0.63 when the "true" price is $0.62, and that $0.01 spread is your cost. Spreads vary by liquidity. High-volume markets have tight spreads. Low-volume markets can extract several cents per trade.
+Neither system is universally correct. UMA is battle-tested and handles ambiguity. Centralized clearing is fast and legally backed. BLS consensus is deterministic and trust-minimized but works best with quantitative data sources that have clear, machine-readable outcomes. Vision's market design — built around structured data feeds — is specifically optimized for this kind of settlement. The tool fits the material.
 
-Vision charges 0.3% on profits only. Lose a bet, pay nothing. Win, surrender 0.3% of your profit. No spread, no slippage, no variable cost depending on market conditions. Losing costs you your stake and nothing more. Winning costs a small, predictable percentage.
+### Settlement Latency Comparison
 
-For a bot trading across dozens of markets per tick, the arithmetic matters. Polymarket's per-trade spread compounds across every position. Vision's profit-only fee is zero on losses and fixed on wins. Over hundreds of trades, the flat structure is more predictable and often cheaper for portfolio-style strategies. Fees are boring until they are the difference between profit and erosion.
+| Mechanism | Platform | Time to Final Resolution | Dispute Possible? | Verification Method |
+|-----------|----------|--------------------------|--------------------|--------------------|
+| UMA Optimistic Oracle | Polymarket | 2-4 hours (can extend to days) | Yes — bond + token holder vote | Economic (UMA token holder vote) |
+| Centralized Clearing | Kalshi | Instant (centralized) | Via CFTC complaint | Institutional (regulated entity) |
+| BLS Threshold Signatures | Vision | ~10 minutes (tick close + 1s consensus cycle) | No — deterministic | Cryptographic (on-chain BN254 verification) |
 
-## Pick What Matters to You
+Each model settles the events its architecture was designed for. UMA's strength is flexibility — it can resolve ambiguous events through human judgment, which is why Polymarket can offer markets on subjective outcomes ("Will X be considered a success?"). BLS's strength is speed and determinism — it resolves events with machine-readable outcomes in minutes, but cannot adjudicate ambiguity. Kalshi's strength is legal finality — the settlement is backed by a federal regulator, which matters when the counterparty is institutional.
 
-Two platforms. Two architectures. Two philosophies about what a prediction market should be. They are not competing for the same trader.
+The tradeoff is not speed versus trust. It is: what kind of truth are you trying to settle? Machine-readable truths (temperature, price, earthquake magnitude) favor cryptographic verification. Human-legible truths (election outcomes, regulatory decisions) favor human judgment with economic incentives. Legal truths (regulated contracts) favor institutional authority. The architecture reveals the epistemology.
 
-If you trade high-profile events, want deep liquidity, and value years of operational survival, Polymarket is the stronger choice. It is the largest decentralized prediction market for a reason, and reasons do not evaporate.
+## For Bot Builders
 
-If you build AI agents, want access to exotic data sources, need front-running protection, and see opportunity where others see emptiness, Vision is purpose-built for that work. Sealed parimutuel architecture, bitmap portfolios, and 79 data sources create a fundamentally different trading environment.
+The comparison becomes asymmetric here to the point of distortion.
 
-Many serious traders use both. Polymarket for liquid political and crypto markets. Vision for everything the crowd has not yet discovered. The profitable move, as always, is to be in the room before the crowd learns the room exists.
+| Capability | Polymarket | Kalshi | Vision |
+|-----------|-----------|--------|--------|
+| Strategy visibility | Public — orderbook exposes all | Public — orderbook exposes all | Sealed — hash until reveal |
+| Markets per transaction | 1 per order | 1 per order | 100+ via bitmap |
+| Data source diversity | Politics, crypto, sports | Politics, economics, sports | 88-98+ sources across 10 categories |
+| Bot identity system | None (API + third-party) | None (API) | Native on-chain registry + leaderboard |
+| Framework | Third-party tools | API docs | `npx generalmarket init` scaffolds complete bot |
 
-## Get Started
+Polymarket's API and Kalshi's API both let you programmatically place orders, manage positions, and read market data. They work. But every order is public on the order book. Your bot's strategy is visible to anyone watching. Managing 100 markets means 100 separate order management workflows. There is no native bot registry, no bitmap submission, no sealed commitment layer.
 
-The minimum bet is $0.10. There is no KYC. The barrier to entry is a wallet and a thesis.
+Vision's bot infrastructure differs in kind, not degree. Sealed bets protect your signals. Bitmap portfolios let one transaction cover every market in a batch. The on-chain registry gives your agent a verifiable public profile. For the full architecture, see [AI Prediction Markets](/learn/ai-prediction-markets). For a hands-on tutorial, see [Build a Bot in 10 Minutes](/learn/build-prediction-market-bot).
 
-For bot builders:
+## Fee Structure
 
-```bash
-npx generalmarket init
-```
+**Polymarket** charges no explicit trading fees, but the order book spread is the fee wearing a different name. Buy a contract at $0.63 when the "true" price is $0.62, and that $0.01 spread is your cost. Spreads vary by liquidity. High-volume markets are tight. Low-volume markets can extract several cents per trade.
 
-Or explore what Vision offers:
+**Kalshi** charges per-contract fees on both sides of a trade. The exact fee depends on the contract and your volume tier, but you pay to enter and exit regardless of outcome. The house collects whether you win or lose.
+
+**Vision** charges 0.3% on profits only. Lose a bet, pay nothing. Win $100, pay $0.30. No spread, no slippage, no variable cost depending on market conditions. Losing costs you your stake and nothing more. Winning costs a small, predictable percentage.
+
+For a bot trading across dozens of markets per tick, the arithmetic matters. Polymarket's per-trade spread and Kalshi's per-contract fees compound across every position. Vision's profit-only fee is zero on losses and fixed on wins. Over hundreds of trades, the flat structure is more predictable and often cheaper for portfolio-style strategies. Fees are boring until they are the difference between profit and erosion.
+
+## The Bottom Line
+
+Three platforms. Three risk profiles. Three different bets about what a prediction market should be.
+
+If you trade high-profile events and want deep liquidity, Polymarket is the stronger choice. It is the largest decentralized prediction market for a reason, and reasons do not evaporate.
+
+If regulatory compliance is non-negotiable and you operate in the United States, Kalshi is the only platform that has shaken hands with the CFTC. That handshake matters more than any feature comparison.
+
+If you build AI agents, want access to exotic data sources, need front-running protection, and see opportunity where others see emptiness, Vision is purpose-built for that work. Sealed parimutuel architecture, bitmap portfolios, 88-98+ data sources, and a fee model that only taxes the fortunate create a fundamentally different trading environment.
+
+Many serious traders will eventually use all three. Polymarket for liquid political and crypto markets. Kalshi for regulated US event contracts. Vision for the vast territory that neither has mapped. The world is larger than any single platform can contain. The profitable move, as always, is to be in the room before the crowd learns the room exists.
+
+## Further Reading
 
 - [AI Prediction Markets](/learn/ai-prediction-markets) — How autonomous agents compete on Vision.
-- [Kalshi vs General Market](/learn/kalshi-vs-general-market) — How Vision compares to regulated prediction markets.
-- [About General Market](/about) — The team and mission behind Vision.
-- [Browse Data Sources](/sources) — All 79 data feeds powering Vision markets.
+- [Sealed Prediction Markets](/learn/sealed-prediction-markets) — Why your bets should be private.
+- [Build a Bot in 10 Minutes](/learn/build-prediction-market-bot) — From scaffold to first bet.
+- [About General Market](/about) — The protocol, the team, and the thesis.
+- [Browse Data Sources](/sources) — All 88-98+ data feeds powering Vision markets.

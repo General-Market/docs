@@ -30,7 +30,8 @@ echo -e "${YELLOW}Switching to: $ENV_NAME${NC}"
 cp "$ENV_DIR/.env" "$REPO_ROOT/frontend/.env.local"
 echo "  .env → frontend/.env.local"
 
-# 2. Copy deployment.json → two locations
+# 2. Patch deployment.json from latest forge broadcasts, then copy to destinations
+"$REPO_ROOT/sync-deployment.sh" "$ENV_NAME" 2>/dev/null || true
 cp "$ENV_DIR/deployment.json" "$REPO_ROOT/deployments/active-deployment.json"
 cp "$ENV_DIR/deployment.json" "$REPO_ROOT/frontend/lib/contracts/deployment.json"
 echo "  deployment.json → deployments/active-deployment.json + frontend/lib/contracts/"

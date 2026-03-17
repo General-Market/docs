@@ -193,7 +193,7 @@ export function BorrowUsdc({ market, onSuccess }: BorrowUsdcProps) {
         {/* Quote API Terms (when in quote mode) */}
         {useQuoteMode && quote && !isExpired && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-            <div className="text-xs text-blue-700 font-bold uppercase tracking-wider">{t('borrow_usdc.quote.title')}</div>
+            <div className="text-xs text-blue-700 font-bold uppercase tracking-[0.08em]">{t('borrow_usdc.quote.title')}</div>
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">{t('borrow_usdc.quote.borrow_apr')}</span>
               <span className="text-text-primary font-mono tabular-nums">{quote.terms.borrowRate}%</span>

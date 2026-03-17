@@ -77,7 +77,7 @@ function ProfileContent({ address }: { address: string }) {
           {tab === 'vision' && profile ? (
             <VisionTab profile={profile} />
           ) : tab === 'vision' ? (
-            <div className="py-16 text-center text-[13px] text-text-muted">
+            <div className="py-16 text-center text-caption text-text-muted">
               No profile data found for this address.
             </div>
           ) : (

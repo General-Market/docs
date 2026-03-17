@@ -143,7 +143,7 @@ function MetadataForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-xs font-medium uppercase tracking-wider text-text-muted">Add Batch Details (optional)</p>
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Add Batch Details (optional)</p>
 
       <div className="space-y-3">
         <div>
@@ -451,7 +451,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                   {/* Source dropdown */}
                   <div className="bg-muted border border-border-light rounded-xl p-4 space-y-3">
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
                         Source
                       </label>
                       <select
@@ -466,7 +466,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-2 block">
+                      <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2 block">
                         Search
                       </label>
                       <input
@@ -558,7 +558,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                 <div className="space-y-4">
                   {/* Tick Duration */}
                   <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3 block">
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
                       Tick Duration
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -580,7 +580,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
 
                   {/* Per-market resolution type */}
                   <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3 block">
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
                       Resolution Type per Market
                     </label>
                     <div className="max-h-[320px] overflow-y-auto space-y-3">
@@ -630,7 +630,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
               {step === 'preview' && (
                 <div className="space-y-4">
                   <div className="bg-muted border border-border-light rounded-xl p-4">
-                    <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Batch Summary</p>
+                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">Batch Summary</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-text-muted">Markets</span>

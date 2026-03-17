@@ -88,14 +88,14 @@ export function StatusBadge({ status, pnl, size = 'md' }: StatusBadgeProps) {
   }
 
   const sizeClasses = size === 'sm'
-    ? 'text-[10px] px-1.5 py-0.5'
+    ? 'text-micro px-1.5 py-0.5'
     : 'text-xs px-2 py-1'
 
   return (
     <span
       className={`inline-flex items-center gap-1 font-medium ${style.color} ${sizeClasses}`}
     >
-      <span aria-hidden="true">{style.icon}</span>
+      <span aria-hidden="true" className={status === 'settling' || status === 'pending' ? 'animate-status-breathe' : undefined}>{style.icon}</span>
       <span>{displayLabel}</span>
     </span>
   )

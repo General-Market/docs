@@ -106,7 +106,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 hover:text-white hover:bg-neutral-600 transition-colors"
+      className="absolute top-2 right-2 rounded px-1.5 py-0.5 text-micro font-mono text-neutral-400 hover:text-white hover:bg-neutral-600 transition-colors"
     >
       {copied ? 'Copied!' : 'Copy'}
     </button>
@@ -161,11 +161,11 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         <div className="px-5 py-4 space-y-4">
           {steps.map((step) => (
             <div key={step.number}>
-              <p className="text-[10px] font-bold tracking-[0.1em] text-neutral-400 uppercase mb-1.5">
+              <p className="text-micro font-bold tracking-[0.08em] text-neutral-400 uppercase mb-1.5">
                 {step.number}. {step.title}
               </p>
               <div className="relative rounded-lg bg-neutral-900 px-4 py-3">
-                <pre className="text-[12px] font-mono text-neutral-200 whitespace-pre-wrap leading-relaxed pr-12">
+                <pre className="text-caption font-mono text-neutral-200 whitespace-pre-wrap leading-relaxed pr-12">
                   {step.code}
                 </pre>
                 <CopyButton text={step.code} />
@@ -175,7 +175,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-400">
+        <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-label text-neutral-400">
           <span>Python 3.10+ &middot; funded wallet</span>
           <a
             href="https://docs.generalmarket.io/guides/vision-bots"

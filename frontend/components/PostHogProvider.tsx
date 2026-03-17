@@ -1,22 +1,36 @@
 'use client'
 
-import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { Suspense, useEffect } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { initPostHog, posthog } from '@/lib/posthog'
 
-function PostHogPageTracker() {
+function PostHogPageTrackerInner() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    if (!pathname) return
-    posthog.capture('page_viewed', {
+    if (!pathname || !posthog.__loaded) return
+
+    const url = searchParams?.toString()
+      ? `${pathname}?${searchParams.toString()}`
+      : pathname
+
+    posthog.capture('$pageview', {
+      $current_url: window.location.origin + url,
       path: pathname,
-      url: window.location.href,
       referrer: document.referrer || undefined,
     })
-  }, [pathname])
+  }, [pathname, searchParams])
 
   return null
+}
+
+function PostHogPageTracker() {
+  return (
+    <Suspense fallback={null}>
+      <PostHogPageTrackerInner />
+    </Suspense>
+  )
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {

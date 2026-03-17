@@ -46,7 +46,7 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-[18px] font-bold text-black mb-4">Orders</h2>
+      <h2 className="text-heading font-bold text-black mb-4">Orders</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Pending Orders */}
         <ExplorerChartCard

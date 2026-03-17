@@ -4,7 +4,7 @@ import {
 } from '../helpers/backend-api';
 import { CONTRACTS } from '../env';
 
-const INDEX_CONTRACT = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Sell ITP', () => {
   test('sell ITP shares via L3 direct path', async () => {

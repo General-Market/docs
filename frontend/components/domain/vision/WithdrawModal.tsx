@@ -58,12 +58,9 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   const onChainBalance = pos?.balance ?? 0n
   const totalDeposited = pos?.totalDeposited ?? 0n
-  const totalClaimed = pos?.totalClaimed ?? 0n
-  const lastClaimedTick = pos?.lastClaimedTick ?? 0n
-  const startTick = pos?.startTick ?? 0n
 
-  // Profit calculation: balance - totalDeposited + totalClaimed (net profit)
-  const profit = onChainBalance > totalDeposited ? onChainBalance - totalDeposited + totalClaimed : 0n
+  // Profit calculation
+  const profit = onChainBalance > totalDeposited ? onChainBalance - totalDeposited : 0n
   const estimatedFee = (profit * 3n) / 1000n // 0.3% on profit
 
   // --- Withdraw hook ---
@@ -90,32 +87,6 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
     reset: resetClaim,
   } = useClaim()
 
-  // Read batch info for current tick
-  const { data: batchData } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'getBatch',
-    args: [BigInt(batchId)],
-    chainId: indexL3.id,
-    query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
-  })
-
-  const batchInfo = batchData as {
-    creator: string
-    marketIds: string[]
-    resolutionTypes: number[]
-    tickDuration: bigint
-    customThresholds: bigint[]
-    createdAtTick: bigint
-    paused: boolean
-  } | undefined
-
-  // Compute claimable tick range
-  const fromTick = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
-  // createdAtTick + elapsed is approximate; the real current tick comes from the batch state
-  // For now use a reasonable estimate — the oracle will validate
-  const hasClaimableTicks = lastClaimedTick < (batchInfo?.createdAtTick ?? 0n) + 100n // rough check
-
   const handleWithdraw = useCallback(() => {
     capture('vision_withdraw_submitted', { batch_id: batchId, amount: onChainBalance > 0n ? formatUnits(onChainBalance, VISION_USDC_DECIMALS) : '0' })
     setMode('withdraw')
@@ -124,12 +95,9 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   const handleClaim = useCallback(() => {
     setMode('claim')
-    // fromTick = lastClaimedTick + 1, toTick = we pass 0 and let oracle determine current tick
-    // In practice the frontend should know the current resolved tick from batch state
-    const from = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
-    // toTick = 0 means "up to latest resolved tick" — oracle handles this
-    claim(BigInt(batchId), from, 0n)
-  }, [batchId, lastClaimedTick, startTick, claim])
+    // Hook reads on-chain position + oracle proof internally to derive tick range
+    claim(BigInt(batchId))
+  }, [batchId, claim])
 
   const handleReset = useCallback(() => {
     setMode('choose')
@@ -180,7 +148,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                 )}
                 {mode === 'claim' && claimProof && (
                   <p className="text-text-secondary text-sm">
-                    {t('withdraw_modal.rewards_claimed', { from: claimProof.fromTick, to: claimProof.toTick })}
+                    {t('withdraw_modal.rewards_claimed_balance', { amount: parseFloat(formatUnits(BigInt(claimProof.balance), VISION_USDC_DECIMALS)).toFixed(2) })}
                   </p>
                 )}
                 {(withdrawHash || claimHash) && (
@@ -207,13 +175,13 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
               {/* Position overview */}
               <div className="bg-muted border border-border-light rounded-xl p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                     {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
+                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.total_deposited')}</span>
                   <span className="text-sm text-text-secondary tabular-nums font-mono">
                     {totalDeposited > 0n ? parseFloat(formatUnits(totalDeposited, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
                   </span>
@@ -221,13 +189,13 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                 {profit > 0n && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.profit')}</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.profit')}</span>
                       <span className="text-sm text-color-up tabular-nums font-mono">
                         +{parseFloat(formatUnits(profit, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.est_fee')}</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('withdraw_modal.est_fee')}</span>
                       <span className="text-sm text-text-muted tabular-nums font-mono">
                         -{parseFloat(formatUnits(estimatedFee, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                       </span>

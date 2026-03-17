@@ -10,13 +10,13 @@
     },
     {
       "name": "OracleRegistry",
-      "address": "0x1DC7d85fd61466BF6c73EEbef4E3fA644818dff5",
+      "address": "0xdb426a42e12f016f15ed4ac2b31263492109c5ac",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Vision",
-      "address": "0xabe5329da780e2b7a67b29a31a5177159d454339",
+      "address": "0x5fb50038155c62f3f3af424e400e18ddb973541f",
       "hasCode": true,
       "chain": "l3"
     },
@@ -28,7 +28,7 @@
     },
     {
       "name": "CollateralRegistry",
-      "address": "0xf0f722b5617a06b139946df530bd237e912b1c5d",
+      "address": "0xf66488c43c3961f1fda0a3d07597d6ff4e65935b",
       "hasCode": true,
       "chain": "l3"
     },
@@ -42,25 +42,25 @@
   "optionalContracts": [
     {
       "name": "MockBitgetVault",
-      "address": "0xc958ee7daf17855d77d257f32074639840c2ccb2",
+      "address": "0x243dbffed5fc52e6312d65eaa6689171aed12eb6",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Governance",
-      "address": "0x4834aeb0fe23478bedbb86801e965dda97904df6",
+      "address": "0x01f3aa8e7c5bd7e0514aa9cae8c3a6f1493c0121",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "L3BridgeCustody",
-      "address": "0x8e241fc7fe7c65a56cbea800d3e21e3dcaa73f27",
+      "address": "0xc39cce0cd611d12640ce01f0307ef6293189d4a6",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "BLSCustody",
-      "address": "0xbbd347ff5ca864bde5ecd4c7134f505725b962a6",
+      "address": "0xe742a1e7bdff4770ef63c7acd8f1e7ab75bb97c1",
       "hasCode": true,
       "chain": "l3"
     },

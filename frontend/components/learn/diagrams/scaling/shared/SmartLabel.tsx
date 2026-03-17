@@ -19,7 +19,7 @@ import { ReactNode } from 'react'
  *
  * Usage:
  *   <SmartLabel position={[0, 2, 0]} priority={1}>
- *     <p className="text-[10px] font-bold">ACCEPT</p>
+ *     <p className="text-micro font-bold">ACCEPT</p>
  *   </SmartLabel>
  */
 

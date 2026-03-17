@@ -49,13 +49,13 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
       }
     : null
 
-  // Per-source snapshot for market list
+  // Per-source snapshot — API proxy translates display→internal IDs
   const { data: snapshotData } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
   const bitmapEditor = useBitmapEditor()
 
-  // Find source schedule from meta
+  // Find source schedule from meta (meta proxy translates to display IDs)
   const sourceSchedule = useMemo(() => {
     if (!meta?.sources) return undefined
     return meta.sources.find((s) => s.sourceId === sourceId)
@@ -107,7 +107,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           </p>
           <button
             onClick={() => router.push('/')}
-            className="text-[13px] font-bold text-black underline hover:no-underline"
+            className="text-caption font-bold text-black underline hover:no-underline"
           >
             Back to Sources
           </button>
@@ -131,31 +131,31 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
     <div className="px-6 lg:px-12 py-6">
       <div className="max-w-site mx-auto">
         {/* Source Hero */}
-        <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} />
+        <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={tickState.remaining} tickDuration={tickDuration} />
 
         {/* Batch bar */}
         <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
               Tick
             </div>
-            <div className="text-[16px] font-bold font-mono text-black">
+            <div className="text-subhead font-bold font-mono text-black">
               {activeBatch ? `#${activeBatch.currentTick}` : '#0'}
             </div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
               Players
             </div>
-            <div className="text-[16px] font-bold font-mono text-black">
+            <div className="text-subhead font-bold font-mono text-black">
               {activeBatch?.playerCount ?? 0}
             </div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
               Pool
             </div>
-            <div className="text-[16px] font-bold font-mono text-color-up">
+            <div className="text-subhead font-bold font-mono text-color-up">
               {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
             </div>
           </div>
@@ -170,19 +170,19 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
           </div>
           {/* Set status */}
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
               Set
             </div>
-            <div className="text-[16px] font-bold font-mono text-color-up">
+            <div className="text-subhead font-bold font-mono text-color-up">
               {totalSet}/{totalMarkets}
             </div>
           </div>
           {/* Timer */}
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
+            <div className="text-subhead font-bold font-mono tabular-nums text-black">
               {formatTime(tickState.remaining)}
             </div>
           </div>
@@ -209,7 +209,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         </div>
 
         {/* Related links */}
-        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-[12px] text-text-secondary">
+        <div className="mt-8 pt-6 border-t border-border-light flex flex-wrap gap-4 text-caption text-text-secondary">
           <Link href="/" className="hover:text-black transition-colors">All Sources</Link>
           <Link href="/sources" className="hover:text-black transition-colors">Source Health</Link>
           <Link href="/points" className="hover:text-black transition-colors">Earn Points</Link>

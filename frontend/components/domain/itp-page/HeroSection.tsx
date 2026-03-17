@@ -10,7 +10,7 @@ export function HeroSection({ label, symbol, name, onBuy }: HeroSectionProps) {
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 py-6">
       <div>
         {label && (
-          <div className="text-xs font-semibold uppercase tracking-widest text-text-secondary mb-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-text-secondary mb-2">
             {label}
           </div>
         )}

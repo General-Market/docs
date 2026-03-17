@@ -63,7 +63,7 @@ export function TickSquaresLegend() {
   const labels = ['Loss', '', '', '', '', '', '', 'Win']
 
   return (
-    <div className="flex items-center gap-1 text-[10px] text-text-muted">
+    <div className="flex items-center gap-1 text-micro text-text-muted">
       <span>Loss</span>
       {[...LOSS_COLORS].reverse().map((c, i) => (
         <div

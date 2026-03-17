@@ -6,6 +6,7 @@ import { DATA_NODE_SERVER } from '@/lib/config'
 
 export interface SourceDisplayServer {
   sourceId: string
+  internalIds?: string[]
   name: string
   description: string
   category: string
@@ -71,7 +72,9 @@ export async function getSourceDisplayServer(
   sourceId: string,
 ): Promise<SourceDisplayServer | undefined> {
   const registry = await getSourceRegistryServer()
-  return registry.sources.find(s => s.sourceId === sourceId)
+  return registry.sources.find(
+    s => s.sourceId === sourceId || s.internalIds?.includes(sourceId),
+  )
 }
 
 /**

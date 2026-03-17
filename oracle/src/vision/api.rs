@@ -187,6 +187,9 @@ pub struct BalanceResponse {
     pub bls_sig: String,
     /// Signer bitmap (decimal string, uint256). Bit at node_index is set.
     pub signer_bitmap: String,
+    /// Tick ID at which this proof was generated (latest resolved tick for this player).
+    /// 0 if proof not yet available.
+    pub tick_id: u64,
 }
 
 /// Revealed bitmap for a player after the reveal window has passed.
@@ -773,7 +776,7 @@ async fn get_balance(
 
     // Try stored proof from DB first (has BLS signature, generated at tick end)
     if let Ok(Some(row)) = sqlx::query(
-        "SELECT balance, bls_sig, signer_bitmap
+        "SELECT balance, bls_sig, signer_bitmap, tick_id
          FROM vision_balance_proofs
          WHERE batch_id = $1 AND LOWER(player) = LOWER($2)"
     )
@@ -786,6 +789,7 @@ async fn get_balance(
         let balance: String = row.get("balance");
         let bls_sig: Vec<u8> = row.get("bls_sig");
         let signer_bitmap: String = row.get("signer_bitmap");
+        let tick_id: i64 = row.get("tick_id");
 
         // Get stake_per_tick from in-memory state
         let stake = state.scheduler.get_batch_state(batch_id).await
@@ -801,6 +805,7 @@ async fn get_balance(
             stake_per_tick: stake,
             bls_sig: hex::encode(&bls_sig),
             signer_bitmap,
+            tick_id: tick_id as u64,
         };
         return (StatusCode::OK, Json(response)).into_response();
     }
@@ -832,6 +837,7 @@ async fn get_balance(
                         stake_per_tick: pos.stake_per_tick.to_string(),
                         bls_sig: String::new(),
                         signer_bitmap: "0".to_string(),
+                        tick_id: 0,
                     };
                     (StatusCode::OK, Json(response)).into_response()
                 }
@@ -1912,10 +1918,14 @@ mod tests {
             player: "0x0000000000000000000000000000000000000001".into(),
             balance: "5000000000000000000".into(),
             stake_per_tick: "100000000000000000".into(),
+            bls_sig: String::new(),
+            signer_bitmap: "0".into(),
+            tick_id: 42,
         };
         let json = serde_json::to_string(&resp).unwrap();
         assert!(json.contains("\"batch_id\":1"));
         assert!(json.contains("\"balance\":\"5000000000000000000\""));
+        assert!(json.contains("\"tick_id\":42"));
     }
 
     #[test]

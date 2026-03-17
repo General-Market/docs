@@ -76,7 +76,7 @@ function UserNode({ reducedMotion }: { reducedMotion: boolean }) {
       </mesh>
       {/* User label */}
       <Html center position={[0, 0.85, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           User
         </p>
       </Html>
@@ -195,7 +195,7 @@ function PaymasterNode({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={INDIGO} roughness={0.4} emissive={INDIGO} emissiveIntensity={0.05} />
       </mesh>
       <Html center position={[0, 1.55, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: INDIGO }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: INDIGO }}>
           Paymaster
         </p>
       </Html>
@@ -284,7 +284,7 @@ function TargetNode({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color={BLUE} roughness={0.5} emissive={BLUE} emissiveIntensity={0.08} />
       </RoundedBox>
       <Html center position={[0, 0.65, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
+        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>
           Target
         </p>
       </Html>
@@ -734,7 +734,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={paysGasRef}>
         <Html center position={[PAYMASTER_X, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-indigo-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: INDIGO }}>
               Pays gas in ETH
             </p>
           </div>
@@ -743,7 +743,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={acceptRef}>
         <Html center position={[PAYMASTER_X, -0.15, -1.0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               ACCEPT
             </p>
           </div>
@@ -752,7 +752,7 @@ function AnimatedLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={feeRef}>
         <Html center position={[(USER_X + PAYMASTER_X) / 2, -0.1, 1.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-amber-200 rounded px-2 py-1">
-            <p className="text-[10px] font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
+            <p className="text-micro font-bold font-mono whitespace-nowrap" style={{ color: AMBER }}>
               Fee collected: RAI
             </p>
           </div>
@@ -824,21 +824,21 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">RAI tokens</span>
+        <span className="text-micro text-text-muted tracking-wide">RAI tokens</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">ETH (gas)</span>
+        <span className="text-micro text-text-muted tracking-wide">ETH (gas)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Paymaster</span>
+        <span className="text-micro text-text-muted tracking-wide">Paymaster</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }}>
           <div className="w-full h-full rounded-sm opacity-50" />
         </div>
-        <span className="text-[10px] text-text-muted tracking-wide">CALLDATAREAD</span>
+        <span className="text-micro text-text-muted tracking-wide">CALLDATAREAD</span>
       </div>
     </div>
   )

@@ -47,18 +47,8 @@ export const SETTLEMENT_CHAIN_ID = ENV_SETTLEMENT_CHAIN_ID;
 /** Known ITP ID from deployment */
 export const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
-/** Contract addresses — from deployment.json with Anvil fallbacks */
-export const CONTRACTS = {
-  Index: ENV_CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
-  SettlementBridgeCustody: ENV_CONTRACTS.SettlementBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
-  SETTLEMENT_USDC: ENV_CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-  BridgedITP: ENV_CONTRACTS.BridgedITP ?? '0x8D308d3D699A85472d874DBDBbffd16bc9fBD856',
-  BridgeProxy: ENV_CONTRACTS.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b',
-  BridgedItpFactory: ENV_CONTRACTS.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1',
-  Morpho: ENV_CONTRACTS.Morpho ?? '0x23228469b3439d81DC64e3523068976201bA08C3',
-  L3_WUSDC: ENV_CONTRACTS.L3_WUSDC ?? ENV_CONTRACTS.USDC ?? '',
-  Vision: ENV_CONTRACTS.Vision ?? '',
-} as const;
+/** Contract addresses — from active-deployment.json via env.ts (single source of truth) */
+export const CONTRACTS = ENV_CONTRACTS;
 
 // ── Wallet Fixture Factory ──────────────────────────────────
 

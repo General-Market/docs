@@ -882,14 +882,14 @@ function PhaseLabel({ reducedMotion }: { reducedMotion: boolean }) {
       <div className="text-center">
         <p
           ref={labelRef}
-          className="text-[13px] font-bold font-mono whitespace-nowrap"
+          className="text-caption font-bold font-mono whitespace-nowrap"
           style={{ color: COL_BLUE }}
         >
           Original: 4 columns
         </p>
         <p
           ref={sublabelRef}
-          className="text-[10px] mt-0.5 whitespace-nowrap"
+          className="text-micro mt-0.5 whitespace-nowrap"
           style={{ color: '#71717a' }}
         >
           Raw data
@@ -1045,19 +1045,19 @@ function Legend() {
           <div className="w-1.5 h-2 rounded-sm" style={{ backgroundColor: COL_BLUE }} />
           <div className="w-1.5 h-2 rounded-sm" style={{ backgroundColor: COL_GREEN }} />
         </div>
-        <span className="text-[10px] text-text-muted tracking-wide">Data</span>
+        <span className="text-micro text-text-muted tracking-wide">Data</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm opacity-40" style={{ backgroundColor: COL_PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Parity</span>
+        <span className="text-micro text-text-muted tracking-wide">Parity</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COL_GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Online</span>
+        <span className="text-micro text-text-muted tracking-wide">Online</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COL_RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Offline</span>
+        <span className="text-micro text-text-muted tracking-wide">Offline</span>
       </div>
     </div>
   )

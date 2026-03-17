@@ -1,17 +1,19 @@
 ---
 title: "Sealed Prediction Markets: Why Your Bets Should Be Private"
-description: "How sealed commit-reveal betting works in prediction markets. Front-running protection, parimutuel pools, and why privacy matters for AI trading agents."
-keywords: ["sealed bid prediction market", "prediction market no front running", "parimutuel prediction market", "sealed bet"]
-date: "2026-02-27"
+description: "How sealed commit-reveal betting works in prediction markets. Front-running protection, parimutuel pools, BLS consensus, and why privacy is the only defensible architecture for AI trading."
+keywords: ["sealed bid prediction market", "prediction market no front running", "parimutuel prediction market", "sealed bet", "AI prediction market", "BLS consensus prediction market", "commit reveal betting"]
+date: "2026-03-17"
 author: "General Market"
 slug: "sealed-prediction-markets"
 category: "Technical"
-readingTime: "5 min read"
+readingTime: "14 min read"
 tldr:
   - "Public orderbooks turn every trader into an <strong>involuntary signal broadcaster</strong> — sealed bets fix this"
   - "Vision's commit-reveal makes front-running <strong>mathematically impossible</strong>, not just discouraged"
   - "Sealed bets <strong>protect your alpha</strong> — no copycat extraction, no MEV, no information leakage"
   - "Parimutuel pools mean <strong>no counterparty risk</strong> — winners split losers' stakes deterministically"
+  - "The dominant strategy in a sealed parimutuel is <strong>truth-telling</strong> — accuracy is the only profitable skill"
+  - "The architecture cannot be replicated by adding a feature flag — it requires <strong>four interdependent layers</strong>, each depending on the one below"
 ---
 
 The moment you place a bet on a public orderbook, you have already lost something. Not money — information. Your position is broadcast to every participant before the market settles. If your model is any good, you are publishing your edge for free, a gift to strangers who did none of the work. Sealed prediction markets exist because someone finally noticed that transparency, taken to its logical extreme, is a form of theft. Vision implements this through commit-reveal cryptography. Front-running does not become difficult. It becomes impossible.
@@ -20,7 +22,23 @@ The moment you place a bet on a public orderbook, you have already lost somethin
 
 On Polymarket or Kalshi, your order enters a public orderbook. Everyone sees it — traders, bots, validators. Your conviction becomes communal property before it has time to pay you.
 
-Three pathologies follow from this single architectural sin:
+### The $500 Bet That Became $50
+
+A concrete scenario, because abstractions are comfortable and comfort is the enemy of understanding.
+
+Trader A builds a model predicting rainfall above 2mm in São Paulo from NOAA satellite data. The model is good. Trader A bets $500 on a public orderbook platform — a weather market, modest stakes, honest work.
+
+Within three blocks, four copycat bots detect the order. They have no model. They have no opinion about rainfall. They have a websocket connection to the mempool and a policy that says: *follow the smart money*. Each copies the position. The pool on that side goes from $500 to $2,500.
+
+The outcome resolves correctly. It rains. Trader A was right.
+
+But Trader A's share of the winnings is now one-fifth of what it would have been alone. The payout that should have been ~$450 becomes ~$90. Same model, same outcome, same correctness. The architecture extracted 80% of the reward and distributed it to parasites.
+
+On Vision: the bet is sealed. The hash goes on-chain. Nobody sees the bitmap. The four bots have nothing to follow because there is nothing visible to follow. Trader A keeps the full edge. Same model, same outcome, 5x more profit. Privacy is not a preference. It is the difference between a viable strategy and a charity.
+
+### Three Pathologies
+
+Three pathologies follow from the single architectural sin of public bets:
 
 **Copycat extraction.** A bot with a 65% win rate becomes, against its will, a signal tower. On Polymarket, bot wallets are public and tracked by monitoring tools. The moment a strong bot places a large bet, lesser bots copy the position. The original did the work of building and calibrating a model. Everyone else harvests the signal like crows following a plow. This is not theoretical. It is the ordinary state of affairs.
 
@@ -29,6 +47,28 @@ Three pathologies follow from this single architectural sin:
 **Alpha decay through information leakage.** Suppose you built a model that predicts earthquake aftershock frequency from USGS data. The moment you express that view on a public orderbook, you are teaching the market what you know. Your edge disappears — not because your model degraded, but because your competitors learned your strategy by watching you use it. Knowledge, once visible, belongs to everyone.
 
 The diagnosis is simple: public bets conscript every participant into involuntary broadcasting.
+
+## The Nash Equilibrium Argument
+
+This is not a philosophical preference. It is a different equilibrium.
+
+In a public CLOB (central limit orderbook), the dominant strategy is not truth-telling. It is front-running the truthful. The Nash equilibrium includes parasitic strategies — copycat bots, MEV sandwiching, order flow analysis — that extract value without contributing a single unit of signal. The truthful participant subsidizes the entire ecosystem of surveillance. Accuracy is a cost center. Speed is the profit center.
+
+In a sealed parimutuel, the dominant strategy *is* truth-telling. Your payout is proportional to how wrong everyone else was. Copying is impossible — bets are sealed behind `keccak256`. Front-running is impossible — there is no orderbook to front-run. The only way to profit is to be more accurate than the pool. The mechanism selects for calibration. Everything else is noise.
+
+### The Two-Player Proof
+
+Reduce it to the simplest case. Two players. One market.
+
+Player A has a model with 70% accuracy. Player B has a model with 60% accuracy.
+
+**In a public CLOB:** B watches A's visible orders. B copies A's positions. Over 100 rounds, both converge toward ~65% effective accuracy. A's edge — the ten percentage points earned through superior modeling — evaporates. B paid nothing for it. A's investment in data, calibration, and compute becomes a public good, consumed without consent.
+
+**In a sealed parimutuel:** A submits a hash. B submits a hash. Neither sees the other. Over 100 rounds, A wins ~70% of the time. B wins ~60%. A captures the full surplus of superior accuracy. B cannot improve by observation, only by building a better model.
+
+The sealed mechanism preserves information advantage. The open mechanism destroys it. This is not a design preference. It is the difference between a system that rewards research and a system that rewards surveillance.
+
+For a population of agents, the implications compound. In a public CLOB with *n* participants, every accurate agent becomes a free signal source for *n-1* others. The equilibrium converges toward uniform mediocrity — everyone knows what everyone else knows, because everyone can see what everyone else does. In a sealed parimutuel, each agent's accuracy is private. The distribution of skill remains heterogeneous. Alpha persists.
 
 ## How Sealed Commit-Reveal Works
 
@@ -40,33 +80,51 @@ Vision hides bets until resolution. Your predictions are invisible during the en
 
 **Step 3: Reveal the bitmap to oracles off-chain.** After the commitment window closes, your bot sends the plaintext bitmap to the oracle node network via `POST /vision/bitmap`. The oracles verify that `keccak256(revealedBitmap) == onChainHash`. Match: accepted. Mismatch: discarded. This reveal reaches only the oracle nodes — not other participants, not the public chain. The audience arrives after the performance is over.
 
-**Step 4: Resolution.** At tick close, oracles fetch actual closing prices from data sources, compare each bit against reality, and calculate scores. Winners split losers' stakes. Payouts are verified by BLS 3-of-5 consensus among oracle nodes, then distributed on-chain.
+**Step 4: Resolution.** At tick close, oracles fetch actual closing prices from data sources, compare each bit against reality, and calculate scores. Winners split losers' stakes. Payouts are verified by BLS consensus (BN254 curve, `ceil(2n/3)` threshold — currently 2-of-3 on testnet, targeting 14-of-20 in production) and distributed on-chain.
 
-The flow:
+### Timeline
 
 ```
-Commit keccak256(bitmap) on-chain
-        |
-   Betting window (nobody can see your bets)
-        |
-Reveal plaintext bitmap to oracles (POST /vision/bitmap)
-        |
-   Tick closes, oracles fetch real prices
-        |
-Compare bitmap vs outcomes, distribute pool (BLS-verified)
+T=0              T=5min           T=10min          T=15min
+ │                │                │                │
+ Window           Window           Reveal           Resolution
+ opens            closes           to oracles       + payout
+ │                │                │                │
+ Commit           No new           Oracles          Winners
+ hash             bets             verify           split
+ on-chain         accepted         hash match       pool
+ │                │                │                │
+ ├────────────────┤────────────────┤────────────────┤
+   SEALED PHASE      CLOSED PHASE     VERIFICATION
+   (bets hidden)     (no changes)     (payouts)
 ```
 
 The essential property: during the entire betting window, no participant, no validator, no frontend operator, no oracle can see your predictions. By the time anyone reads your bitmap, the window is sealed and no new bets are possible. Front-running is not merely difficult. It is structurally excluded from reality.
 
+## The Oracle Infrastructure
+
+The sealed mechanism demands an oracle network that is fast, deterministic, and Byzantine-fault-tolerant. Handwaving will not suffice. Here is what runs underneath.
+
+**BLS consensus on BN254.** Every tick resolution requires a BLS aggregate signature on the BN254 curve — the same curve supported by EVM precompiles (`ecAdd`, `ecMul`, `ecPairing` at addresses 0x06–0x08). Signatures are G1 points (64 bytes). Public keys are G2 points (128 bytes). Verification happens on-chain in a single `ecPairing` call. No off-chain trust assumptions. No multisig with a Discord group chat holding the keys.
+
+**Threshold: `ceil(2n/3)`.** The quorum formula is `(n * 2 + 2) / 3` — Byzantine fault tolerance. On the current testnet: 3 nodes, threshold 2. Production target: 20 nodes, threshold 14. Fourteen of twenty oracles must independently agree on prices before a single tick resolves. Disagreement above 20% triggers a retry cycle. The system tolerates minority failures without halting. It does not tolerate majority collusion. Nothing does.
+
+**1-second cycle, 5 phases.** Each oracle cycle completes in 1,000 milliseconds, divided into five phases of 200ms each:
+
+```
+PROCESS_FILLS → NETTING → INVENTORY_CHECK → GENERATE_BATCH → SIGN_SUBMIT
+    200ms         200ms        200ms              200ms           200ms
+```
+
+Wall-clock aligned via NTP (±200ms tolerance). All nodes derive the same cycle number from `unix_timestamp_ms / 1000`. No leader election. No coordination overhead. The cycle is the clock. The clock is the consensus.
+
+**482,698 registered assets. 258,716 with 1-day+ history. 88 active data sources.** This is not a prototype with three price feeds and a dream. The data node ingests from NOAA weather stations, USGS seismographs, Deutsche Bahn train delays, Cloudflare Radar internet outages, eBird migration patterns, PyPI package downloads, SEC filings, Bureau of Labor Statistics reports, and seventy-nine others. Each source produces deterministic, machine-readable data. No human judges. No resolution committees. No "we'll figure it out when the market closes."
+
+**Tick duration: configurable per batch.** Minimum 60 seconds. Maximum 604,800 seconds (one week). Typical: 600 seconds (10 minutes). The tick is the atomic unit of settlement. Every bet within a tick resolves simultaneously. No partial fills. No hanging orders. The tick ends, the math runs, the money moves.
+
 ## Why This Matters for AI Agents
 
-Sealed bets rearrange the game theory for automated trading in a way that favors the patient and the precise.
-
-**Your model's edge stays private.** On a public orderbook, a bot with a novel weather-prediction model hemorrhages its strategy with every trade. Other bots reverse-engineer the pattern. Within weeks, the edge is extinct. On Vision, your bitmap is an opaque commitment. Other participants know you bet. They do not know what you bet. Your model can maintain its advantage indefinitely — or at least until the underlying signal decays on its own terms, not because you were forced to advertise it.
-
-**No copycat convergence.** When fifty bots trade the same niche market on a public platform, they observe each other and gradually collapse onto identical positions. Profitability evaporates for everyone — a tragedy of shared information. In a sealed environment, each bot operates in epistemic isolation. Convergence happens only if bots independently reach the same conclusion from the same data. That is the market functioning correctly. Not a structural failure — a structural feature.
-
-**Accuracy is the only axis that matters.** Without information leakage, you cannot win by being fast, by owning low-latency infrastructure, by front-running slower participants. You win by being right. This is the environment where a well-calibrated model has the highest expected value. It is also why most serious AI agents on Vision trade 50+ markets per tick rather than crowding into a handful of conspicuous events. Breadth rewards calibration. Depth rewards infrastructure. Sealed markets chose calibration.
+Sealed bets rearrange the game theory for automated trading. Your model's edge stays private — no copycat convergence, no reverse-engineering from observed positions. Accuracy becomes the only axis that matters, not latency or infrastructure proximity. This is why most serious AI agents on Vision trade 50+ markets per tick rather than crowding into a handful of conspicuous events. For the full picture of how agents exploit this architecture, see [AI Prediction Markets](/learn/ai-prediction-markets).
 
 ## The Parimutuel Model
 
@@ -74,15 +132,27 @@ Vision uses parimutuel pools, not orderbooks. The difference is not cosmetic. It
 
 All bets enter a shared pot. When the market resolves, winners split losers' stakes. No market maker. No spread. No liquidity fragmented across bid-ask levels. The pool is the pool — indivisible, democratic, indifferent to your reputation.
 
+### A Concrete Payout
+
+Numbers clarify what prose obscures.
+
+Twenty participants enter a batch. Each stakes $10. The pool holds $200.
+
+The market resolves. Fifteen predicted wrong. Five predicted right.
+
+Losers forfeit their stakes: $150. Winners split $150 evenly among five. Each winner receives $30 in winnings plus their original $10 stake. Total return: $40. Net profit: $30. A 3x return on a binary prediction.
+
+Now consider a more contrarian outcome. Same pool, same $200. But only two predicted correctly. Eighteen were wrong. Losers' stakes: $180. Split between two winners: $90 each. Each wagered $10, gets back $100. Net profit: $90. A 9x return.
+
+The mathematics reward loneliness. The more wrong the crowd is, the larger your share of being right. Contrarian accuracy — the precise variety of edge a specialized AI agent can sustain over time — is the only edge that compounds in a parimutuel system. Being correct is necessary. Being correct when others are not is where the money lives.
+
 The fee is 0.3% (30 basis points) on profits only:
 
 ```
 fee = (winnings * 30) / 10000
 ```
 
-Lose, and you pay nothing. You are charged only when you profit. Compare this to an orderbook where you pay the spread on every trade regardless of outcome, plus slippage if you move size, plus gas on every individual order. The orderbook taxes participation. The parimutuel pool taxes success. One of these seems more honest.
-
-Payout scales with how wrong the crowd was. If you are the sole correct predictor in a pool of twenty, you take a larger share than if fifteen others also saw what you saw. This rewards contrarian accuracy — the precise variety of edge a specialized AI agent can sustain over time.
+Minimum stake per tick: 0.1 USDC. Lose, and you pay nothing. You are charged only when you profit. Compare this to an orderbook where you pay the spread on every trade regardless of outcome, plus slippage if you move size, plus gas on every individual order. The orderbook taxes participation. The parimutuel pool taxes success. One of these seems more honest.
 
 ## Order Book vs Sealed Parimutuel
 
@@ -90,11 +160,40 @@ Payout scales with how wrong the crowd was. If you are the sole correct predicto
 |--------|------------------------------|---------------------------|
 | Bet visibility | Public from submission | Sealed until resolution |
 | Front-running | Possible (MEV, copycat bots) | Impossible (commit-reveal) |
+| Dominant strategy | Speed and information extraction | Accuracy and calibration |
+| Nash equilibrium | Includes parasitic strategies | Selects for truth-telling |
 | Fee model | Spread + slippage on every trade | 0.3% on profit only |
 | Market maker needed | Yes (or wide spreads) | No (pool-based) |
 | Strategy privacy | None (positions are public) | Full (bitmap is hashed) |
 | Transaction cost per market | One tx per market | One tx covers all markets |
-| What wins | Speed and infrastructure | Accuracy and calibration |
+| Oracle verification | Varies (often centralized) | BLS consensus, BN254, ceil(2n/3) threshold |
+
+## Why This Can't Be Copied Quickly
+
+The sealed bet is the visible feature. It is also the least interesting part. Beneath it, four architectural layers depend on each other in strict sequence. Remove any layer and the structure above it collapses.
+
+**Layer 1: Deterministic data sources.** Vision markets resolve against machine-readable data — prices, temperatures, packet counts, train delays. No human judges. No resolution committees debating whether an event "really" happened. This is not a philosophical commitment to objectivity. It is a prerequisite for automation. You cannot run 482,698 markets with a panel of referees. 88 active data sources, each producing timestamped, deterministic output. The data node alone is 28,000 lines of Rust.
+
+**Layer 2: Oracle infrastructure.** Deterministic data is useless without a system to fetch, verify, and sign it. The oracle network runs 1-second cycles across multiple nodes, with BLS consensus on BN254 ensuring that no single node can fabricate a resolution. The threshold is `ceil(2n/3)` — Byzantine fault tolerance, not multisig theater. Building this from scratch means implementing BLS signature aggregation, P2P gossip protocols, NTP-synchronized wall-clock cycles, bitmap verification, balance proof aggregation, and on-chain verification through EVM precompiles. The oracle and common libraries together: 211,000 lines of Rust.
+
+**Layer 3: Tick-based parimutuel settlement.** Continuous trading (CLOBs) cannot support sealed bets — the orderbook *is* the price discovery mechanism, and hiding orders breaks it entirely. You need discrete settlement periods (ticks) where all bets are collected, sealed, and resolved simultaneously. This requires the parimutuel model: no market makers, no bid-ask matching, just a pool that distributes winnings at tick close. The Vision smart contract: 29 Solidity contracts, 14,700 lines, handling dual-balance accounting, bitmap commitment verification, configurable tick durations, and BLS-verified batch resolution.
+
+**Layer 4: Sealed commit-reveal.** Only now, with deterministic data, oracle consensus, and tick-based parimutuel settlement in place, can you implement sealed bets. The commit-reveal mechanism is the thinnest layer — a `keccak256` hash on commit, a verification on reveal. Trivial in isolation. Meaningless without everything beneath it.
+
+The dependency chain:
+
+```
+Sealed bets        ← requires parimutuel (can't seal a CLOB)
+  Parimutuel       ← requires tick-based settlement (can't pool continuous trades)
+    Tick settlement ← requires deterministic data (can't automate human-judged events)
+      Deterministic data ← requires oracle infrastructure (88 live feeds, BLS consensus)
+```
+
+Each layer depends on the one below it. Copying the top — adding a "sealed bet" checkbox to an existing CLOB platform — produces nothing. The orderbook still exists. The orders are still visible in the mempool. The prices still move before your transaction confirms. The checkbox is decorative.
+
+Estimated time to replicate the full stack from scratch: 12–18 months of focused engineering. 211,000 lines of Rust across oracle, common, data-node, and curator crates. 29 smart contracts. 88 data source integrations, each with its own API quirks, rate limits, and failure modes. This is not a weekend project with a good idea. It is infrastructure — the kind that accrues value precisely because it is tedious to build and expensive to replicate.
+
+The moat is not a feature. It is the architecture itself. And architecture, unlike features, cannot be copied from a blog post.
 
 ## Try It
 
@@ -109,6 +208,5 @@ The scaffold handles bitmap encoding, hash commitment, and reveal submission. Yo
 ## Further Reading
 
 - [AI Prediction Markets](/learn/ai-prediction-markets) -- Why Vision is built for autonomous agents from the ground up.
-- [Prediction Market Bots](/learn/prediction-market-bots) -- How automated agents are beating human traders on Vision.
 - [Build a Bot in 10 Minutes](/learn/build-prediction-market-bot) -- Step-by-step tutorial from scaffold to first bet.
 - [About General Market](/about) -- The protocol behind Vision and ITPs.

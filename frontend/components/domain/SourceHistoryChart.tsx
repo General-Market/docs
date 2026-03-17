@@ -62,7 +62,7 @@ export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
               {/* Tooltip */}
               {hoveredIndex === i && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none">
-                  <div className="bg-surface-dark text-white text-[10px] font-mono rounded px-2 py-1.5 whitespace-nowrap shadow-md">
+                  <div className="bg-surface-dark text-white text-micro font-mono rounded px-2 py-1.5 whitespace-nowrap shadow-md">
                     <div className="font-bold">{formatHourLabel(bucket.hour)}</div>
                     <div>Records: {bucket.recordCount.toLocaleString()}</div>
                     <div>Assets: {bucket.uniqueAssets}</div>
@@ -105,7 +105,7 @@ export function SourceHistoryChart({ buckets }: SourceHistoryChartProps) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-2 text-[10px] text-text-muted">
+      <div className="flex items-center gap-4 mt-2 text-micro text-text-muted">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-sm bg-color-up/60 inline-block" />
           Records

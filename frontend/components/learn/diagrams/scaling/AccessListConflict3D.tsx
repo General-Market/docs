@@ -96,7 +96,7 @@ function LeftPlatform() {
         <meshStandardMaterial color="#f8fafc" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 0.2, -2.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: '#64748b' }}>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#64748b' }}>
           Transactions
         </p>
       </Html>
@@ -115,7 +115,7 @@ function CenterPlatform() {
         <meshStandardMaterial color="#fffbeb" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 0.2, -2.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: COL_CONFLICT }}>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: COL_CONFLICT }}>
           Conflict Detection
         </p>
       </Html>
@@ -134,7 +134,7 @@ function RightPlatform() {
         <meshStandardMaterial color="#f0fdf4" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 0.2, -2.2]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: COL_LANE }}>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: COL_LANE }}>
           Parallel Lanes
         </p>
       </Html>
@@ -777,19 +777,19 @@ function Legend() {
     <div className="flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-1.5">
         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COL_READ }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Read slot</span>
+        <span className="text-micro text-text-muted tracking-wide">Read slot</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COL_WRITE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Write slot</span>
+        <span className="text-micro text-text-muted tracking-wide">Write slot</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_CONFLICT }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Conflict</span>
+        <span className="text-micro text-text-muted tracking-wide">Conflict</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: COL_LANE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Parallel Lane</span>
+        <span className="text-micro text-text-muted tracking-wide">Parallel Lane</span>
       </div>
     </div>
   )

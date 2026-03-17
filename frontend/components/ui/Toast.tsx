@@ -26,6 +26,7 @@ interface ToastProps {
  */
 export function Toast({ toast, onDismiss }: ToastProps) {
   const [isExiting, setIsExiting] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     const duration = toast.duration ?? 5000
@@ -36,6 +37,11 @@ export function Toast({ toast, onDismiss }: ToastProps) {
 
     return () => clearTimeout(timer)
   }, [toast.id, toast.duration, onDismiss])
+
+  // Entrance animation — invisible on mount, visible on next frame
+  useEffect(() => {
+    requestAnimationFrame(() => setIsVisible(true))
+  }, [])
 
   const handleDismiss = () => {
     setIsExiting(true)
@@ -61,7 +67,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       className={`
         bg-card border border-border-light ${accentBar} border-l-4 text-text-primary p-4 rounded-xl shadow-card
         transition-all duration-300 ease-in-out
-        ${isExiting ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'}
+        ${isExiting ? 'opacity-0 translate-x-4 scale-[0.97]' : isVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-6 scale-[0.97]'}
       `}
     >
       <div className="flex items-start justify-between gap-3">

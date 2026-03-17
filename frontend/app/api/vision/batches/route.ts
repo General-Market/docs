@@ -1,5 +1,6 @@
 import { DATA_NODE_SERVER, ORACLE_VISION_URL } from '@/lib/config'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
+import { toDisplayId } from '@/lib/vision/source-ids'
 
 // Reverse maps from vision-batches.json: batchId → source name, batchId → configHash
 const BATCH_ID_TO_SOURCE: Record<number, string> = {}
@@ -48,7 +49,7 @@ export async function GET() {
     for (const batch of (data.batches ?? [])) {
       const name = BATCH_ID_TO_SOURCE[batch.id]
       if (name) {
-        batch.source_id = name
+        batch.source_id = toDisplayId(name)
         batch.market_count = marketCounts[name] ?? batch.market_count ?? 0
       }
       const deployConfigHash = BATCH_ID_TO_CONFIG_HASH[batch.id]

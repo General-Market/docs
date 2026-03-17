@@ -25,13 +25,12 @@ import {
   pollUntil,
   botLogs,
 } from "../helpers/swarm-api";
-import { FRONTEND_URL } from "../env";
+import { FRONTEND_URL, VISION_BATCHES } from "../env";
 import type { Hex } from "viem";
 
-// Batch IDs from vision-batches.json (object: { batches: { name: { batchId, ... } } })
-import visionBatchesDeploy from "../../../deployments/vision-batches.json";
+// Batch IDs from env.ts VISION_BATCHES (single source of truth)
 const BATCH_ENTRIES = Object.values(
-  (visionBatchesDeploy as any).batches || {}
+  VISION_BATCHES.batches || {}
 ) as Array<{ batchId: number; tickDuration: number }>;
 const BATCH_IDS: number[] = BATCH_ENTRIES.map((b) => b.batchId);
 

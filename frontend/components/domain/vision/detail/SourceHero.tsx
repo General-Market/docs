@@ -3,11 +3,14 @@
 import type { VisionSource } from '@/lib/vision/sources'
 import type { SourceSchedule } from '@/hooks/vision/useMarketSnapshot'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
+import { GeometricPulse } from './GeometricPulse'
 
 interface SourceHeroProps {
   source: VisionSource
   sourceSchedule?: SourceSchedule
   marketCount?: number
+  tickRemaining?: number
+  tickDuration?: number
 }
 
 function formatLastSync(lastSync: string | null): string {
@@ -21,7 +24,7 @@ function formatLastSync(lastSync: string | null): string {
   return date.toLocaleDateString()
 }
 
-export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroProps) {
+export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration }: SourceHeroProps) {
   const isLive = sourceSchedule?.status === 'healthy'
   const categoryLabel = getCategoryLabel(source.category)
 
@@ -62,15 +65,20 @@ export function SourceHero({ source, sourceSchedule, marketCount }: SourceHeroPr
         )}
       </div>
 
-      {/* Right half — brand logo */}
+      {/* Right half — brand logo with geometric pulse */}
       <div
-        className="w-full sm:w-1/2 min-h-[80px] sm:min-h-[100px] flex items-center justify-center animate-fade-in"
+        className="relative w-full sm:w-1/2 min-h-[80px] sm:min-h-[100px] flex items-center justify-center animate-fade-in"
         style={{ background: source.brandBg }}
       >
+        <GeometricPulse
+          brandBg={source.brandBg}
+          tickRemaining={tickRemaining}
+          tickDuration={tickDuration}
+        />
         <img
           src={source.logo}
           alt={source.name}
-          className="max-h-[64px] max-w-[80%] object-contain"
+          className="relative z-10 max-h-[64px] max-w-[80%] object-contain"
         />
       </div>
     </div>

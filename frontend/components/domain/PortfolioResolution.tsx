@@ -150,7 +150,7 @@ function TradesBreakdown({ betId }: TradesBreakdownProps) {
               <span className="text-text-secondary font-mono truncate max-w-[120px]" title={trade.ticker}>
                 {trade.ticker}
               </span>
-              <span className="text-text-muted font-mono text-[10px] uppercase">
+              <span className="text-text-muted font-mono text-micro uppercase">
                 {trade.source}
               </span>
             </div>

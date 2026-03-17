@@ -72,6 +72,29 @@ export const DEPLOYER_ADDRESS = DEPLOYMENT.accounts?.admin ?? '0xC0d3ca67da45613
 /** Anvil deployer (account #0) — used for impersonated txs on local Anvil */
 export const ANVIL_DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
+// ── Morpho deployment — single load, empty if missing ───────
+export const MORPHO_DEPLOYMENT = (() => {
+  try {
+    const path = join(__dirname, '..', 'lib', 'contracts', 'morpho-deployment.json')
+    return JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return { contracts: {}, marketParams: {} }
+  }
+})()
+
+export const MORPHO_CONTRACTS = MORPHO_DEPLOYMENT.contracts ?? {}
+export const MORPHO_MARKET_PARAMS = MORPHO_DEPLOYMENT.marketParams ?? {}
+
+// ── Vision batches — single load, empty if missing ──────────
+export const VISION_BATCHES = (() => {
+  try {
+    const path = join(__dirname, '..', '..', 'deployments', 'vision-batches.json')
+    return JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return { vision: '', batches: {} }
+  }
+})()
+
 // ── Testnet-aware timeouts ──────────────────────────────────
 export const POLL_TIMEOUT = IS_ANVIL ? 60_000 : 180_000
 export const CONSENSUS_TIMEOUT = IS_ANVIL ? 90_000 : 240_000

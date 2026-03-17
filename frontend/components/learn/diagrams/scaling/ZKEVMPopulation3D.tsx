@@ -75,7 +75,7 @@ function ReExecutionPlatform() {
         <meshStandardMaterial color={LIGHT_RED} roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 1.5, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>Re-execution</p>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>Re-execution</p>
       </Html>
       <Html center position={[0, 1.22, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[9px] tracking-wide whitespace-nowrap" style={{ color: '#71717a' }}>Today</p>
@@ -98,7 +98,7 @@ function ProofVerificationPlatform() {
         <meshStandardMaterial color={LIGHT_GREEN} roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 1.5, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>Proof Verification</p>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>Proof Verification</p>
       </Html>
       <Html center position={[0, 1.22, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <p className="text-[9px] tracking-wide whitespace-nowrap" style={{ color: '#71717a' }}>ZK-EVM</p>
@@ -287,7 +287,7 @@ function LeftTimer({ reducedMotion }: { reducedMotion: boolean }) {
     >
       <p
         ref={labelRef}
-        className="text-[16px] font-bold font-mono tracking-tight whitespace-nowrap"
+        className="text-subhead font-bold font-mono tracking-tight whitespace-nowrap"
         style={{ color: '#71717a' }}
       >
         0.0s
@@ -623,7 +623,7 @@ function RightTimer({ reducedMotion }: { reducedMotion: boolean }) {
     >
       <p
         ref={labelRef}
-        className="text-[16px] font-bold font-mono tracking-tight whitespace-nowrap"
+        className="text-subhead font-bold font-mono tracking-tight whitespace-nowrap"
         style={{ color: '#71717a' }}
       >
         0.0s
@@ -847,19 +847,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Block</span>
+        <span className="text-micro text-text-muted tracking-wide">Block</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Re-execute</span>
+        <span className="text-micro text-text-muted tracking-wide">Re-execute</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: VIOLET }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Prover</span>
+        <span className="text-micro text-text-muted tracking-wide">Prover</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Verified</span>
+        <span className="text-micro text-text-muted tracking-wide">Verified</span>
       </div>
     </div>
   )

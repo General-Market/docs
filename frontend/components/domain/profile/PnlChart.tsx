@@ -30,7 +30,7 @@ export function PnlChart({ history }: PnlChartProps) {
   if (history.length === 0) {
     return (
       <div className="border border-border-light rounded p-6 h-[140px] flex items-center justify-center">
-        <span className="text-[13px] text-text-muted">No P&L data yet</span>
+        <span className="text-caption text-text-muted">No P&L data yet</span>
       </div>
     )
   }
@@ -50,7 +50,7 @@ export function PnlChart({ history }: PnlChartProps) {
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`px-2 py-0.5 text-[10px] font-semibold rounded transition-colors ${
+              className={`px-2 py-0.5 text-micro font-semibold rounded transition-colors ${
                 range === r
                   ? 'bg-black text-white'
                   : 'text-text-muted hover:text-black'
@@ -62,7 +62,7 @@ export function PnlChart({ history }: PnlChartProps) {
         </div>
 
         {/* Current value */}
-        <div className={`text-[16px] font-extrabold font-mono ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
+        <div className={`text-subhead font-extrabold font-mono ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
           {currentPnl >= 0 ? '+' : ''}${currentPnl.toFixed(2)}
         </div>
       </div>

@@ -24,41 +24,33 @@ export interface ClaimProof {
   balance: string
   blsSig: string
   signerBitmap: string
-  fromTick: number
-  toTick: number
+  /** Latest resolved tick from oracle — used as toTick for claimRewards */
+  tickId: number
 }
 
 export interface UseClaimReturn {
-  /** Execute the full claim flow: fetch BLS proof -> claimRewards tx */
-  claim: (batchId: bigint, fromTick: bigint, toTick: bigint) => void
-  /** Claim tx hash */
+  /** Claim rewards: fetch proof from oracle, read on-chain position, submit claimRewards tx */
+  claim: (batchId: bigint) => void
   claimHash: `0x${string}` | undefined
-  /** Current step */
   step: ClaimStep
-  /** Whether wallet prompt is pending */
   isPending: boolean
-  /** Whether a tx is confirming on-chain */
   isConfirming: boolean
-  /** The fetched claim proof (available after fetch) */
   proof: ClaimProof | null
-  /** Error message if any */
   error: string | null
-  /** Reset to idle state */
   reset: () => void
 }
 
 /**
- * Fetch a BLS-signed balance proof for a tick range from oracle nodes.
- * Uses the Next.js proxy first (avoids CORS), then falls back to direct oracle URLs.
+ * Fetch a BLS-signed balance proof from oracle nodes.
+ * The proof uses the WITHDRAW domain hash — valid for both claimRewards and withdraw.
+ * Returns the balance, BLS signature, signer bitmap, and the tick at which the proof was generated.
  */
-async function fetchClaimProof(
+async function fetchBalanceProof(
   batchId: bigint,
   player: string,
-  fromTick: bigint,
-  toTick: bigint,
 ): Promise<ClaimProof> {
   const errors: string[] = []
-  const path = `/vision/balance/${batchId}/${player}?fromTick=${fromTick}&toTick=${toTick}`
+  const path = `/vision/balance/${batchId}/${player}`
 
   // Try proxied path first (same-origin, no CORS issues)
   const proxyUrl = `${VISION_API_URL}${path}`
@@ -70,8 +62,7 @@ async function fetchClaimProof(
         balance: data.balance,
         blsSig: data.blsSig || data.bls_sig || '',
         signerBitmap: data.signerBitmap || data.signer_bitmap || '0',
-        fromTick: Number(fromTick),
-        toTick: Number(toTick),
+        tickId: Number(data.tickId || data.tick_id || 0),
       }
     }
     const errBody = await res.text().catch(() => 'Unknown error')
@@ -90,8 +81,7 @@ async function fetchClaimProof(
           balance: data.balance,
           blsSig: data.blsSig || data.bls_sig || '',
           signerBitmap: data.signerBitmap || data.signer_bitmap || '0',
-          fromTick: Number(fromTick),
-          toTick: Number(toTick),
+          tickId: Number(data.tickId || data.tick_id || 0),
         }
       }
       const errBody = await res.text().catch(() => 'Unknown error')
@@ -101,19 +91,20 @@ async function fetchClaimProof(
     }
   }
 
-  throw new Error(`Failed to fetch claim proof from all oracles: ${errors.join('; ')}`)
+  throw new Error(`Failed to fetch balance proof from all oracles: ${errors.join('; ')}`)
 }
 
 /**
  * Hook to claim rewards from a Vision batch without fully withdrawing.
  *
  * Flow:
- * 1. Fetch BLS-signed balance proof from oracle node (with tick range)
- * 2. Read referenceNonce from OracleRegistry on-chain
- * 3. Call Vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSignature, referenceNonce, signersBitmask)
+ * 1. Fetch BLS-signed balance proof from oracle (includes tick_id of latest resolved tick)
+ * 2. Read on-chain position for lastClaimedTick / startTick
+ * 3. Compute fromTick = lastClaimedTick + 1 (or startTick + 1 for first claim)
+ * 4. Call Vision.claimRewards(batchId, fromTick, toTick, newBalance, blsSignature, referenceNonce, signersBitmask)
  *
- * Tick range: from lastClaimedTick+1 to current resolved tick.
- * The contract verifies the BLS signature and updates the player's balance.
+ * The BLS proof uses the same WITHDRAW domain hash as withdraw() — no tick range in the signature.
+ * The contract validates tick monotonicity separately.
  */
 export function useClaim(): UseClaimReturn {
   const { address } = useAccount()
@@ -121,6 +112,7 @@ export function useClaim(): UseClaimReturn {
   const [step, setStep] = useState<ClaimStep>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [proof, setProof] = useState<ClaimProof | null>(null)
+  const [activeBatchId, setActiveBatchId] = useState<bigint | null>(null)
 
   const claimHandled = useRef(false)
 
@@ -132,6 +124,21 @@ export function useClaim(): UseClaimReturn {
     chainId: indexL3.id,
     query: { enabled: ORACLE_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
   })
+
+  // Read on-chain position for tick range computation
+  const { data: position } = useReadContract({
+    address: VISION_ADDRESS,
+    abi: VISION_ABI,
+    functionName: 'getPosition',
+    args: address && activeBatchId !== null ? [activeBatchId, address] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: !!address && activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  const pos = position as {
+    lastClaimedTick: bigint
+    startTick: bigint
+  } | undefined
 
   // --- Claim tx ---
   const {
@@ -146,7 +153,6 @@ export function useClaim(): UseClaimReturn {
     isSuccess: isClaimSuccess,
   } = useWaitForTransactionReceipt({ hash: claimHash, chainId: indexL3.id })
 
-  // Toast notifications for claim
   useTransactionNotification({
     hash: claimHash,
     isPending: isClaimPending,
@@ -156,18 +162,19 @@ export function useClaim(): UseClaimReturn {
     label: 'Claim rewards',
   })
 
-  const claim = useCallback(async (batchId: bigint, fromTick: bigint, toTick: bigint) => {
+  const claim = useCallback(async (batchId: bigint) => {
     if (!address) return
 
     setErrorMsg(null)
     setProof(null)
     claimHandled.current = false
+    setActiveBatchId(batchId)
 
-    // Step 1: Fetch BLS-signed balance proof for tick range
+    // Step 1: Fetch BLS-signed balance proof (includes tick_id)
     setStep('fetching-proof')
     let fetchedProof: ClaimProof
     try {
-      fetchedProof = await fetchClaimProof(batchId, address, fromTick, toTick)
+      fetchedProof = await fetchBalanceProof(batchId, address)
       setProof(fetchedProof)
     } catch (e) {
       setErrorMsg((e as Error).message)
@@ -175,7 +182,34 @@ export function useClaim(): UseClaimReturn {
       return
     }
 
-    // Step 2: Submit claimRewards tx with BLS proof + referenceNonce + signersBitmask
+    if (!fetchedProof.blsSig || fetchedProof.blsSig === '' || fetchedProof.blsSig === '0x') {
+      setErrorMsg('Balance proof has empty BLS signature. Oracles may not have resolved yet — try again shortly.')
+      setStep('error')
+      return
+    }
+
+    if (fetchedProof.tickId === 0) {
+      setErrorMsg('No resolved tick yet for this batch.')
+      setStep('error')
+      return
+    }
+
+    // Step 2: Compute tick range from on-chain position
+    // Position may not be loaded yet via useReadContract, so we fetch it directly
+    // Note: pos comes from the useReadContract above, which may be stale.
+    // For robustness, we compute fromTick from the latest on-chain data.
+    const lastClaimed = pos?.lastClaimedTick ?? 0n
+    const startTickVal = pos?.startTick ?? 0n
+    const fromTick = lastClaimed > 0n ? lastClaimed + 1n : startTickVal + 1n
+    const toTick = BigInt(fetchedProof.tickId)
+
+    if (toTick < fromTick) {
+      setErrorMsg(`No new ticks to claim (last claimed: ${lastClaimed}, latest resolved: ${fetchedProof.tickId})`)
+      setStep('error')
+      return
+    }
+
+    // Step 3: Submit claimRewards tx
     setStep('claiming')
     const refNonce = lastSnapshotNonce ? BigInt(lastSnapshotNonce.toString()) : 0n
     const signersBitmask = BigInt(fetchedProof.signerBitmap || '0')
@@ -194,7 +228,7 @@ export function useClaim(): UseClaimReturn {
         signersBitmask,
       ],
     })
-  }, [address, writeClaim, lastSnapshotNonce])
+  }, [address, writeClaim, lastSnapshotNonce, pos])
 
   // Claim success -> done
   useEffect(() => {
@@ -218,6 +252,7 @@ export function useClaim(): UseClaimReturn {
     setStep('idle')
     setErrorMsg(null)
     setProof(null)
+    setActiveBatchId(null)
     resetClaim()
   }, [resetClaim])
 

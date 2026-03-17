@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { IS_ANVIL, ORACLE_URLS } from '../env';
+import { IS_ANVIL, ORACLE_URLS, DEPLOYER_ADDRESS } from '../env';
 
 import {
   getOracleHealth,
@@ -26,7 +26,7 @@ import {
   placeL3BuyOrderDirect,
 } from '../helpers/backend-api';
 
-const TEST_ADDRESS = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
+const TEST_ADDRESS = DEPLOYER_ADDRESS;
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
 // Kill/restart tests only on Anvil with RUN_RESILIENCE=1

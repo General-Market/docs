@@ -203,14 +203,14 @@ export function BilateralBetCard({
         {/* Status indicators */}
         <div className="flex items-center gap-2">
           {canDispute && (
-            <span className="text-[10px] text-orange-600 font-mono">{t('bilateral.can_dispute')}</span>
+            <span className="text-micro text-orange-600 font-mono">{t('bilateral.can_dispute')}</span>
           )}
           {bet.txHash && (
             <a
               href={getTxUrl(bet.txHash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-text-muted hover:text-text-primary font-mono"
+              className="text-micro text-text-muted hover:text-text-primary font-mono"
             >
               Tx \u2197
             </a>

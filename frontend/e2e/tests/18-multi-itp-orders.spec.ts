@@ -20,17 +20,8 @@ import {
   startSettlementBlockMiner,
 } from '../helpers/backend-api';
 
-// Read Index contract address from deployment.json
-const INDEX_CONTRACT = (() => {
-  try {
-    const { readFileSync } = require('fs');
-    const { join } = require('path');
-    const path = join(__dirname, '..', '..', '..', 'deployments', 'active-deployment.json');
-    return JSON.parse(readFileSync(path, 'utf-8')).contracts.Index;
-  } catch {
-    return '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
-  }
-})();
+import { CONTRACTS } from '../env';
+const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 /** Build the bytes32 ITP ID from a number (1-indexed) */
 function itpIdFromNumber(n: number): string {

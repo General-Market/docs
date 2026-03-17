@@ -2,6 +2,7 @@
   "sources": [
     {
       "sourceId": "coingecko",
+      "internalIds": ["crypto"],
       "name": "CoinGecko Crypto",
       "description": "Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.",
       "category": "finance",
@@ -26,6 +27,7 @@
     },
     {
       "sourceId": "defillama",
+      "internalIds": ["defi"],
       "name": "DefiLlama DeFi",
       "description": "DeFi protocol analytics — TVL, yields, fees, volumes across all major chains and protocols.",
       "category": "finance",
@@ -38,6 +40,7 @@
     },
     {
       "sourceId": "finnhub",
+      "internalIds": ["stocks"],
       "name": "Finnhub Stocks",
       "description": "Real-time stock market data — US equities, forex, and crypto with company fundamentals.",
       "category": "finance",
@@ -170,6 +173,7 @@
     },
     {
       "sourceId": "fred",
+      "internalIds": ["rates"],
       "name": "FRED Interest Rates",
       "description": "Federal Reserve Economic Data — interest rates, yield curves, money supply, employment, inflation.",
       "category": "economic",
@@ -194,6 +198,7 @@
     },
     {
       "sourceId": "treasury",
+      "internalIds": ["bonds"],
       "name": "US Treasury Yields",
       "description": "Daily yield curve rates — T-bills, notes, and bonds from 1-month to 30-year maturities.",
       "category": "economic",
@@ -302,6 +307,7 @@
     },
     {
       "sourceId": "sec",
+      "internalIds": ["sec_13f", "sec_efts", "sec_insider"],
       "name": "SEC Filings",
       "description": "Institutional investment disclosures — 13F holdings, EDGAR filings, and insider transactions.",
       "category": "regulatory",
@@ -614,6 +620,7 @@
     },
     {
       "sourceId": "pandascore",
+      "internalIds": ["esports"],
       "name": "Esports",
       "description": "Esports match tracking — live scores across CS2, LoL, Dota 2, Valorant, and more.",
       "category": "entertainment",
@@ -842,6 +849,7 @@
     },
     {
       "sourceId": "gtfs_rt",
+      "internalIds": ["gtfs_transit"],
       "name": "Transit Realtime",
       "description": "Public transit feeds — real-time bus/rail positions, service alerts, schedule adherence.",
       "category": "transport",
@@ -1090,6 +1098,18 @@
       "prefixes": ["mil_aircraft_"],
       "valueLabel": "Count",
       "valueUnit": "",
+      "isPrice": false
+    },
+    {
+      "sourceId": "lichess",
+      "name": "Lichess Chess",
+      "description": "Live chess activity — player counts, game starts, and tournament participation on Lichess.",
+      "category": "entertainment",
+      "logo": "/source-imgs/new-hackernews.svg",
+      "brandBg": "#f5f5f5",
+      "prefixes": ["lichess_"],
+      "valueLabel": "Players",
+      "valueUnit": "online",
       "isPrice": false
     }
   ],

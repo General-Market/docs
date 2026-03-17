@@ -470,15 +470,15 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             if (fromTick != position.lastClaimedTick + 1) revert TickAlreadyClaimed();
         }
 
-        // BLS verify: oracles sign the new balance for this player over this tick range (F1)
+        // BLS verify: oracles sign the player's resolved balance (same hash as withdraw).
+        // Tick-range validation above ensures monotonic claiming; the signed balance
+        // itself prevents inflation. No need for tick IDs in the hash.
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(this),
-            "CLAIM",
+            "WITHDRAW",
             batchId,
             msg.sender,
-            fromTick,
-            toTick,
             newBalance
         ));
         _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);

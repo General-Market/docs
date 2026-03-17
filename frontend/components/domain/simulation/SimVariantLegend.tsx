@@ -26,7 +26,7 @@ export function SimVariantLegend({ variants, onDeployIndex }: SimVariantLegendPr
 
   return (
     <div className="border border-border-light rounded-xl bg-card p-3 space-y-0.5">
-      <div className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">Variants</div>
+      <div className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">Variants</div>
       {variants.map((v, i) => {
         const color = SWEEP_COLORS[i % SWEEP_COLORS.length]
         const ret = v.stats.total_return_pct
@@ -52,7 +52,7 @@ export function SimVariantLegend({ variants, onDeployIndex }: SimVariantLegendPr
 
             {isHovered && onDeployIndex && (
               <button
-                className="text-[10px] font-medium px-2 py-0.5 bg-zinc-900 text-white rounded hover:bg-zinc-800 transition-colors flex-shrink-0 whitespace-nowrap"
+                className="text-micro font-medium px-2 py-0.5 bg-zinc-900 text-white rounded hover:bg-zinc-800 transition-colors flex-shrink-0 whitespace-nowrap"
                 onClick={(e) => {
                   e.stopPropagation()
                   onDeployIndex(v.runId, v.label)

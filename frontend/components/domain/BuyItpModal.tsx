@@ -693,7 +693,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               {userShares > 0n && (
                 <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">{t('your_itp_shares')}</p>
+                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('your_itp_shares')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</p>
                 </div>
               )}
@@ -740,7 +740,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               <div className="bg-muted border border-border-light rounded-xl p-4 space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('amount_label')}</label>
+                    <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('amount_label')}</label>
                     <span className="text-xs text-text-muted font-mono">{t('balance_label', { amount: parseFloat(formattedBalance).toFixed(2) })}</span>
                   </div>
                   <input
@@ -773,7 +773,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
 
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('max_price_label')}</label>
+                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('max_price_label')}</label>
                   {navPerShare > 0 && (
                     <span className="text-xs text-text-secondary font-mono">
                       {t('nav_label', { nav: navPerShare.toFixed(6), priced: pricedAssetCount, total: totalAssetCount })}
@@ -812,7 +812,7 @@ export function BuyItpModal({ itpId, videoUrl, onClose }: BuyItpModalProps) {
               </div>
               {showSlippage && (
                 <div className="bg-muted border border-border-light rounded-xl p-4">
-                  <label className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-3">{t('slippage_label')}</label>
+                  <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
                   <div className="flex gap-2">
                     {SLIPPAGE_TIERS.map(tier => (
                       <button

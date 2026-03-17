@@ -127,11 +127,11 @@ export function TransactionStepper({
                         : stepCurrent
                         ? 'bg-zinc-900 text-white ring-2 ring-zinc-400'
                         : 'bg-white text-text-muted border-2 border-border-light'
-                    }`}
+                    } ${stepDoneNode ? 'animate-done-ring' : ''}`}
                   >
                     {isDoneNode ? (
                       <svg className={`w-4 h-4 ${stepDoneNode ? '' : 'text-text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        <path className={stepDoneNode ? 'animate-checkmark-draw' : ''} strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : stepDone ? (
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -149,7 +149,7 @@ export function TransactionStepper({
                 </div>
                 {/* Label */}
                 <span
-                  className={`text-[10px] mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
+                  className={`text-micro mt-1.5 text-center leading-tight font-medium whitespace-nowrap ${
                     stepDone || stepDoneNode || stepCurrent
                       ? 'text-text-primary'
                       : 'text-text-muted'
@@ -193,7 +193,7 @@ export function TransactionStepper({
 
       {/* Completed tx hash links */}
       {completedTxLinks.length > 0 && (
-        <div className="mt-2 flex justify-center gap-3 flex-wrap text-[10px] font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-3 flex-wrap text-micro font-mono text-text-muted">
           {completedTxLinks.map((tx, i) => (
             <a
               key={i}
@@ -211,7 +211,7 @@ export function TransactionStepper({
 
       {/* Tx refs (order IDs) */}
       {txRefs && txRefs.length > 0 && (
-        <div className="mt-2 flex justify-center gap-4 text-[10px] font-mono text-text-muted">
+        <div className="mt-2 flex justify-center gap-4 text-micro font-mono text-text-muted">
           {txRefs.map((ref, i) => (
             ref.explorerUrl ? (
               <a key={i} href={ref.explorerUrl} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors">

@@ -731,6 +731,17 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
                 --chain-id $CHAIN_ID) \
                 > logs/deploy-batch-markets.log 2>&1 || echo -e "  ${YELLOW}Batch markets had warnings — check logs/deploy-batch-markets.log${NC}"
 
+            # Strip Foundry cast annotations from lltv values (e.g. "770...000 [7.7e17]" → "770...000")
+            if [ -f "deployments/batch-markets.json" ]; then
+                python3 -c "
+import json, re
+d = json.load(open('deployments/batch-markets.json'))
+for m in d.get('markets', []):
+    if 'lltv' in m:
+        m['lltv'] = re.sub(r'\s*\[.*\]$', '', m['lltv'])
+json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
+" 2>/dev/null || true
+            fi
             # Copy output to frontend
             [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
             echo -e "  ${GREEN}$NEW_COUNT batch lending markets deployed${NC}"
@@ -760,6 +771,9 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         fi
         echo -e "  ${GREEN}Synced deployment JSONs + Vision address → envs/testnet/${NC}"
     fi
+
+    # Sync sources-display.json to frontend (data-node is source of truth)
+    [ -f "data-node/config/sources-display.json" ] && cp data-node/config/sources-display.json frontend/data/sources-display.json
 
     # Regenerate deployed-assets.json and symbol-map.json from assets.json.
     # Must happen BEFORE switch-env so oracles/data-node get fresh symbol maps.

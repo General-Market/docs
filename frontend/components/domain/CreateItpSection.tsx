@@ -421,9 +421,9 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     <div id="create-itp" className="pb-10">
       {/* Section header */}
       <div className="pt-10 mb-6">
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
-        <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
+        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
       </div>
 
       {/* Collapsed toggle button */}
@@ -463,7 +463,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
                 {/* LEFT — Select Assets */}
                 <div className="border border-border-light">
-                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                  <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('select_assets.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
@@ -509,7 +509,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
                 {/* RIGHT — Configure Weights */}
                 <div className="border border-border-light">
-                  <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+                  <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
                     {t('configure_weights.title', { count: selectedAssets.length })}
                   </div>
                   <div className="p-5">
@@ -722,7 +722,7 @@ function FinalizeItpModal({
           {/* Name + Symbol */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.name_label')}</label>
               <input
                 type="text" value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 32))}
@@ -731,7 +731,7 @@ function FinalizeItpModal({
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.symbol_label')}</label>
               <input
                 type="text" value={symbol}
                 onChange={(e) => setSymbol(e.target.value.toUpperCase().slice(0, 10))}
@@ -744,7 +744,7 @@ function FinalizeItpModal({
           {/* Oracle Name */}
           {needsOracleName && (
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
               <input
                 type="text" value={oracleName}
                 onChange={(e) => setOracleName(e.target.value.slice(0, 64))}
@@ -756,7 +756,7 @@ function FinalizeItpModal({
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.description_label')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, 280))}
@@ -764,13 +764,13 @@ function FinalizeItpModal({
               rows={2}
               className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none resize-none"
             />
-            <span className="text-[10px] text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
+            <span className="text-micro text-text-muted">{t('finalize.char_count', { count: description.length })}</span>
           </div>
 
           {/* Website + Video */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.website_label')}</label>
               <input
                 type="url" value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value.slice(0, 128))}
@@ -779,7 +779,7 @@ function FinalizeItpModal({
               />
             </div>
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5 block">{t('finalize.video_label')}</label>
               <input
                 type="url" value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value.slice(0, 256))}
@@ -838,11 +838,11 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
       {/* Name + Symbol fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.itp_name')}</p>
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5">{t('skeleton.itp_name')}</p>
           <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5">{t('skeleton.symbol')}</p>
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1.5">{t('skeleton.symbol')}</p>
           <div className="w-full h-[38px] bg-muted border border-border-medium rounded-lg animate-pulse" />
         </div>
       </div>
@@ -851,7 +851,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* LEFT — Select Assets */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('select_assets.skeleton_title')}
           </div>
           <div className="p-5">
@@ -875,7 +875,7 @@ function CreateSkeleton({ coinMap }: { coinMap: Record<string, CoinEntry> }) {
 
         {/* RIGHT — Configure Weights */}
         <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-[12px] font-bold uppercase tracking-[0.08em]">
+          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
             {t('configure_weights.skeleton_title')}
           </div>
           <div className="p-5">

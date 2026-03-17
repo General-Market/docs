@@ -324,7 +324,7 @@ export function VirtualTradeList({ betId, height = 400, isSettled = false }: Vir
   return (
     <div className="relative">
       {/* Column headers */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted sticky top-0 z-10">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-[0.08em] text-text-muted sticky top-0 z-10">
         <span className="w-10">#</span>
         <span className="w-28">{t('virtual_trades.ticker')}</span>
         <span className="w-16">{t('virtual_trades.source')}</span>

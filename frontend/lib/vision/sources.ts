@@ -43,9 +43,19 @@ export function getBatchKey(sourceId: string): string {
   return sourceId
 }
 
-/** @deprecated Use useSourceRegistry() hook */
+/** Map display sourceIds → data-node internal IDs for API calls */
+const DISPLAY_TO_INTERNAL: Record<string, string> = {
+  coingecko: 'crypto',
+  defillama: 'defi',
+  finnhub: 'stocks',
+  fred: 'rates',
+  treasury: 'bonds',
+  gtfs_rt: 'gtfs_transit',
+  pandascore: 'esports',
+}
+
 export function getDataNodeSourceId(sourceId: string): string {
-  return sourceId
+  return DISPLAY_TO_INTERNAL[sourceId] ?? sourceId
 }
 
 /** @deprecated Use meta.assetCounts from useMarketSnapshotMeta() */

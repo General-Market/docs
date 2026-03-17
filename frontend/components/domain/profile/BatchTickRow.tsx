@@ -19,7 +19,7 @@ export function BatchTickRow({ batch }: BatchTickRowProps) {
     <div className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface transition-colors border-b border-border-light last:border-b-0">
       {/* Batch info */}
       <div className="w-[140px] shrink-0">
-        <div className="text-[13px] font-semibold text-black truncate">
+        <div className="text-caption font-semibold text-black truncate">
           {batch.sourceId} #{batch.batchId}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
@@ -27,7 +27,7 @@ export function BatchTickRow({ batch }: BatchTickRowProps) {
             {batch.status === 'active' ? 'Active' : 'Exited'}
           </span>
         </div>
-        <div className="text-[10px] text-text-muted mt-0.5">
+        <div className="text-micro text-text-muted mt-0.5">
           {batch.tickCount} ticks &middot; ${batch.deposited.toFixed(0)} in
         </div>
       </div>
@@ -36,7 +36,7 @@ export function BatchTickRow({ batch }: BatchTickRowProps) {
       <TickSquares ticks={batch.ticks} />
 
       {/* ROI */}
-      <div className={`w-[72px] shrink-0 text-right text-[14px] font-mono font-extrabold ${roiColor}`}>
+      <div className={`w-[72px] shrink-0 text-right text-body font-mono font-extrabold ${roiColor}`}>
         {formatROI(batch.roi)}
       </div>
     </div>

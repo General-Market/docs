@@ -19,7 +19,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-6 py-3 text-[14px] font-semibold transition-all border-b-[3px] ${
+              className={`px-6 py-3 text-body font-semibold transition-all border-b-[3px] ${
                 activeTab === tab.id
                   ? 'text-black border-black'
                   : 'text-text-secondary border-transparent hover:text-black'

@@ -561,7 +561,7 @@ function GasMeter({ reducedMotion }: { reducedMotion: boolean }) {
         <meshStandardMaterial color="#f59e0b" roughness={0.4} />
       </RoundedBox>
       <Html center transform distanceFactor={5} position={[0, 0.42, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[14px] tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#f59e0b' }}>
+        <p className="text-body tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#f59e0b' }}>
           Metering
         </p>
       </Html>
@@ -629,7 +629,7 @@ function MetadataLabel({
   return (
     <group ref={groupRef} visible={false}>
       <Html center transform distanceFactor={5} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[12px] font-mono font-bold whitespace-nowrap" style={{ color }}>
+        <p className="text-caption font-mono font-bold whitespace-nowrap" style={{ color }}>
           {text}
         </p>
       </Html>
@@ -676,12 +676,12 @@ function TodaySide({ reducedMotion }: { reducedMotion: boolean }) {
       <EntropyParticles reducedMotion={reducedMotion} />
       <FailedAnalysisBeam reducedMotion={reducedMotion} />
       <Html center transform distanceFactor={5} position={[0, -0.78, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[13px] font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
+        <p className="text-caption font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
           ~2100 gas/call
         </p>
       </Html>
       <Html center transform distanceFactor={5} position={[0, 0.85, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[18px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
+        <p className="text-heading tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>
           Today: Mixed Bytecode
         </p>
       </Html>
@@ -743,24 +743,24 @@ function EOFSide({ reducedMotion }: { reducedMotion: boolean }) {
       <GasMeter reducedMotion={reducedMotion} />
       <MetadataOutput reducedMotion={reducedMotion} />
       <Html center transform distanceFactor={5} position={[0.85, HEADER_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Header</p>
+        <p className="text-subhead font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>Header</p>
       </Html>
       <Html center transform distanceFactor={5} position={[0.85, CODE1_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 1</p>
+        <p className="text-subhead font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 1</p>
       </Html>
       <Html center transform distanceFactor={5} position={[0.85, CODE2_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 2</p>
+        <p className="text-subhead font-bold whitespace-nowrap" style={{ color: '#3b82f6' }}>Code 2</p>
       </Html>
       <Html center transform distanceFactor={5} position={[0.85, DATA_Y, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[16px] font-bold whitespace-nowrap" style={{ color: '#6366f1' }}>Data</p>
+        <p className="text-subhead font-bold whitespace-nowrap" style={{ color: '#6366f1' }}>Data</p>
       </Html>
       <Html center transform distanceFactor={5} position={[0, -1.08, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[13px] font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
+        <p className="text-caption font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
           ~100 gas/call
         </p>
       </Html>
       <Html center transform distanceFactor={5} position={[0, 1.15, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[18px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
+        <p className="text-heading tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>
           With EOF: Structured
         </p>
       </Html>
@@ -801,19 +801,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#a1a1aa' }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Mixed bytecode</span>
+        <span className="text-micro text-text-muted tracking-wide">Mixed bytecode</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Code</span>
+        <span className="text-micro text-text-muted tracking-wide">Code</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#6366f1' }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Data</span>
+        <span className="text-micro text-text-muted tracking-wide">Data</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Analysis</span>
+        <span className="text-micro text-text-muted tracking-wide">Analysis</span>
       </div>
     </div>
   )
