@@ -8,7 +8,6 @@ import {
 import {
   getL3UserShares,
   mintL3Shares,
-  mintMorphoCollateral,
   placeL3BuyOrderDirect,
   pollUntil,
   withdrawCollateralDirect,
@@ -43,10 +42,6 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
       }
     }
-
-    // Mint Morpho collateral (ITP Vault MockERC20 on L3)
-    await mintMorphoCollateral(TEST_ADDRESS, 100n * 10n ** 18n);
-    console.log('Minted 100 Morpho collateral tokens on L3');
 
     // Connect wallet and check if UI Borrow button is available
     await ensureWalletConnected(page, TEST_ADDRESS);
