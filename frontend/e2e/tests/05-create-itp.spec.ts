@@ -87,15 +87,17 @@ test.describe('Create ITP', () => {
       // 1. Connect wallet
       await ensureWalletConnected(page, TEST_ADDRESS);
 
-      // 2. Wait for page to fully load (ITP listing may be empty on fresh testnet)
-      await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
+      // 2. Click the Create tab in the sidebar to activate the section
+      const createTab = page.getByRole('link', { name: /Create/i }).first();
+      await expect(createTab).toBeVisible({ timeout: 15_000 });
+      await createTab.click();
+      await page.waitForTimeout(1_000);
 
       // 3. Record current ITP count on L3 before creating
       const itpCountBefore = await getItpCountL3();
 
-      // 4. Scroll to the Create section
+      // 4. The create section should now be visible
       const createSection = page.locator('#create');
-      await createSection.scrollIntoViewIfNeeded();
 
       // 5. Wait for assets to load (deployed-assets.json fetch + pre-select)
       await expect(createSection.getByText('BTC', { exact: true })).toBeVisible({ timeout: 30_000 });
