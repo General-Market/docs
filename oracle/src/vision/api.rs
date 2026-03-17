@@ -275,9 +275,8 @@ async fn list_batches(
                 let current_tick = state.scheduler.next_tick_for_batch(batch_id).await;
 
                 let config_hash_str = row.config_hash.clone().unwrap_or_default();
-                let source_id_str = row.source_id.clone().unwrap_or_default();
                 let market_count = market_counts
-                    .get(&source_id_str)
+                    .get(&config_hash_str)
                     .copied()
                     .unwrap_or(0);
 
@@ -307,19 +306,14 @@ async fn list_batches(
     }
 }
 
-/// Fetch market counts per source_id (keccak256 hex) from the data-node recommended batches endpoint.
-///
-/// Keys the map by `0x{keccak256(source_name)}` so it matches the on-chain source_id bytes32,
-/// which is stable even when the recommended config_hash drifts due to market list changes.
+/// Fetch market counts per config_hash from the data-node recommended batches endpoint.
 async fn fetch_market_counts(data_node_url: &str) -> std::collections::HashMap<String, usize> {
     use super::batch_config_orchestrator;
-    use ethers::utils::keccak256;
     let mut counts = std::collections::HashMap::new();
     match batch_config_orchestrator::fetch_recommended(data_node_url).await {
         Ok(batches) => {
             for batch in batches {
-                let source_hash = format!("0x{}", hex::encode(keccak256(batch.source_id.as_bytes())));
-                counts.insert(source_hash, batch.markets.len());
+                counts.insert(batch.config_hash, batch.markets.len());
             }
         }
         Err(e) => {
