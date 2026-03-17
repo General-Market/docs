@@ -409,7 +409,11 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Admin endpoints
         .route("/admin/truncate/:table", axum::routing::post(admin_truncate))
         .route("/admin/reset-session", axum::routing::post(admin_reset_session))
-        // Source monitoring endpoints
+        // Source monitoring endpoints (read-only, public)
+        .route("/sources/health", get(admin_sources_health))
+        .route("/sources/:source_id/assets", get(admin_source_assets))
+        .route("/sources/:source_id/history", get(admin_source_history))
+        // Legacy admin paths (same handlers, kept for backward compat)
         .route("/admin/sources/health", get(admin_sources_health))
         .route("/admin/sources/:source_id/assets", get(admin_source_assets))
         .route("/admin/sources/:source_id/history", get(admin_source_history))
