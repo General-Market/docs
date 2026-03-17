@@ -1154,6 +1154,7 @@ pub async fn run(
         }
     };
 
+    diag(&format!("checkpoint A: num_oracles={}, has_bls={}", config.num_oracles, bls_keypair.is_some()));
     // Construct tick consensus orchestrator for multi-oracle BLS consensus.
     // When num_oracles <= 1 or no BLS keypair, we run in single-oracle mode
     // and apply balance updates directly without consensus.
@@ -1500,8 +1501,10 @@ pub async fn run(
         });
     }
 
+    diag(&format!("checkpoint B: consensus={}, about to enter main loop", tick_consensus.is_some()));
     let mut gc_timer = tokio::time::interval(std::time::Duration::from_secs(30));
     gc_timer.tick().await; // consume the immediate first tick
+    diag("checkpoint C: entering main loop");
 
     loop {
         if shutdown.load(Ordering::Relaxed) {
