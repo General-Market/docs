@@ -15,7 +15,7 @@ import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ORACLE_URLS,
-  RPC_TIMEOUT,
+  RPC_TIMEOUT, BACKEND_URL,
 } from '../env'
 
 /** Retry wrapper for flaky network calls (testnet RPCs). */
@@ -898,6 +898,19 @@ export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{
         // Use joinTimestamp to detect past joins — stakePerTick resets to 0 after withdraw
         // but the contract still flags the player as AlreadyJoined
         if (pos.joinTimestamp === 0n) {
+          // Verify source has snapshot data (prevents all-voided ticks)
+          try {
+            const snapshotResp = await fetch(`${BACKEND_URL}/vision/snapshot?source=${entry.sourceName}&limit=1`)
+            if (snapshotResp.ok) {
+              const snapshot = await snapshotResp.json()
+              if (!snapshot.snapshots || snapshot.snapshots.length === 0) {
+                console.log(`Skipping batch ${entry.batchId} — source ${entry.sourceName} has no snapshot data`)
+                continue
+              }
+            }
+          } catch {
+            // If snapshot check fails, still try the batch
+          }
           const liveConfigHash = await getBatchConfigHash(entry.batchId)
           return { batchId: entry.batchId, configHash: liveConfigHash }
         }
