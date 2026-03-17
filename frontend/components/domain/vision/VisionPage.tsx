@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useScrollReveal } from '@/hooks/useScrollReveal'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
@@ -12,7 +11,6 @@ import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { PageSection } from '@/components/layout/PageSection'
 
 export function VisionPage() {
   const t = useTranslations('vision')
@@ -20,30 +18,29 @@ export function VisionPage() {
   const { data: batches, isLoading } = useBatches()
   const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const revealRef = useScrollReveal()
 
   useEffect(() => {
     capture('vision_page_viewed')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex-1" ref={revealRef}>
+    <div className="flex-1">
       {/* Vision Section */}
-      <PageSection id="vision" as="div" className="py-section">
-        <div data-fade-in>
+      <section id="vision" className="px-6 lg:px-12 py-12">
+        <div className="max-w-site mx-auto">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <div>
-                <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
-                <h2 className="text-display font-black tracking-tight text-black leading-[1.1] animate-hero-in">{t('heading.title')}</h2>
-                <p className="text-body text-text-secondary mt-1.5">
+                <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-brand mb-1.5">{t('heading.label')}</p>
+                <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+                <p className="text-[14px] text-text-secondary mt-1.5">
                   {t('heading.description', { count: batches?.length || 0 })}
                 </p>
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold
-                                 hover:bg-brand-dark transition-colors shrink-0 self-start sm:self-auto press"
+                                 hover:bg-brand-dark transition-colors shrink-0 self-start sm:self-auto"
               >
                 {t('actions.create_batch')}
               </button>
@@ -76,8 +73,8 @@ export function VisionPage() {
                   ))}
                 </div>
                 {expandedBatchId !== null && batches.find(b => b.id === expandedBatchId) && (
-                  <div key={expandedBatchId} className="mt-4 p-4 bg-surface border border-border-medium rounded-card animate-batch-reveal">
-                    <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">Batch details failed to load. Try collapsing and re-expanding.</div>}>
+                  <div className="mt-4 p-4 bg-surface border border-border-medium rounded-card">
+                    <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">Batch details unavailable.</div>}>
                       <ExpandedBatch
                         batchId={expandedBatchId}
                         batch={batches.find(b => b.id === expandedBatchId)!}
@@ -94,7 +91,7 @@ export function VisionPage() {
                 action={
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold hover:bg-brand-dark transition-colors press"
+                    className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold hover:bg-brand-dark transition-colors"
                   >
                     {t('actions.create_batch')}
                   </button>
@@ -102,21 +99,21 @@ export function VisionPage() {
               />
             )}
         </div>
-      </PageSection>
+      </section>
 
       <div className="section-divider" />
 
       {/* Leaderboard */}
-      <PageSection id="leaderboard" as="div" className="pt-block-sm pb-section">
-        <div data-fade-in style={{ '--stagger-delay': 1 } as React.CSSProperties}>
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-brand mb-1.5">{t('leaderboard.label')}</p>
-          <h3 className="text-title font-bold tracking-tight text-black leading-[1.1] animate-hero-in">{t('leaderboard.title')}</h3>
-          <p className="text-body text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
+      <section id="leaderboard" className="px-6 lg:px-12 pt-6 pb-12">
+        <div className="max-w-site mx-auto">
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-brand mb-1.5">{t('leaderboard.label')}</p>
+          <h3 className="text-[24px] font-bold tracking-[-0.02em] text-black leading-[1.1]">{t('leaderboard.title')}</h3>
+          <p className="text-[14px] text-text-secondary mt-1.5">{t('leaderboard.description')}</p>
           <ErrorBoundary fallback={<div className="py-8 text-center text-text-muted font-mono text-sm">Leaderboard unavailable.</div>}>
             <VisionLeaderboard />
           </ErrorBoundary>
         </div>
-      </PageSection>
+      </section>
 
       {/* Create Batch Modal */}
       {showCreateModal && (
