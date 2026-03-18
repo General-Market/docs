@@ -57,7 +57,6 @@ interface IVision {
 
     error BatchNotFound();
     error BatchPaused();
-    error BatchAlreadyExists();          // sourceId already has a batch — F5
     error Unauthorized();
     error InsufficientDeposit();
     error StakeBelowMinimum();
@@ -77,7 +76,6 @@ interface IVision {
     error AlreadyProcessed();            // depositProcessed[depositId] already true
     error ZeroAddress();                 // creditBalance with user == address(0)
     error ZeroAmount();                  // depositBalance/withdrawBalance/withdrawToSettlement with amount == 0
-    error TooManyBatches();              // nextBatchId >= MAX_BATCHES
     error InvalidArrayLength();          // players.length != payouts.length or empty
     error BatchAlreadySettled();         // settleBatch called on already-settled batch
 

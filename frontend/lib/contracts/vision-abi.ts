@@ -105,35 +105,6 @@ export const VISION_ABI = [
     type: 'function',
   },
 
-  // ============ ROUND-BASED SETTLEMENT ============
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'configHash', type: 'bytes32' },
-      { name: 'depositAmount', type: 'uint256' },
-      { name: 'stakePerTick', type: 'uint256' },
-      { name: 'bitmapHash', type: 'bytes32' },
-    ],
-    name: 'joinBatchDirect',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-  {
-    inputs: [
-      { name: 'batchId', type: 'uint256' },
-      { name: 'players', type: 'address[]' },
-      { name: 'payouts', type: 'uint256[]' },
-      { name: 'blsSignature', type: 'bytes' },
-      { name: 'referenceNonce', type: 'uint256' },
-      { name: 'signersBitmask', type: 'uint256' },
-    ],
-    name: 'settleBatch',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-
   // ============ PLAYER OPERATIONS ============
   {
     inputs: [
@@ -271,7 +242,7 @@ export const VISION_ABI = [
     type: 'function',
   },
 
-  // ============ ORACLE OPERATIONS ============
+  // ============ ISSUER OPERATIONS ============
   {
     inputs: [
       { name: 'batchId', type: 'uint256' },
@@ -610,28 +581,6 @@ export const VISION_ABI = [
       { indexed: false, name: 'name', type: 'string' },
     ],
     name: 'DeployerNameUpdated',
-    type: 'event',
-  },
-
-  // ============ ROUND-BASED EVENTS ============
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: true, name: 'player', type: 'address' },
-      { indexed: false, name: 'payout', type: 'uint256' },
-      { indexed: false, name: 'fee', type: 'uint256' },
-    ],
-    name: 'PlayerSettled',
-    type: 'event',
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, name: 'batchId', type: 'uint256' },
-      { indexed: false, name: 'playerCount', type: 'uint256' },
-    ],
-    name: 'BatchSettled',
     type: 'event',
   },
 ] as const

@@ -173,8 +173,7 @@ contract VisionBatchTest is TestHelper {
         );
 
         assertEq(batchId, 0, "First batch should be ID 0");
-        assertTrue(vision.sourceIdHasBatch(SOURCE_ID), "sourceId should have batch");
-        assertEq(vision.sourceIdToBatchId(SOURCE_ID), 0, "sourceId should map to batch 0");
+        assertEq(vision.latestBatchForSource(SOURCE_ID), 0, "latestBatchForSource should map to batch 0");
 
         IVision.Batch memory batch = vision.getBatch(batchId);
         assertEq(batch.sourceId, SOURCE_ID);
@@ -183,38 +182,43 @@ contract VisionBatchTest is TestHelper {
         assertEq(batch.lockOffset, LOCK_OFFSET);
     }
 
-    function test_createBatchAndJoin_secondCallJoinsExisting() public {
+    function test_createBatchAndJoin_sameSourceCreatesNewBatch() public {
         // Player 1 creates batch
         address player1 = makeAddr("player1");
         _preparePlayer(player1, 10e18);
 
-        bytes memory blsSig = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
+        bytes memory blsSig1 = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
 
         vm.prank(player1);
         uint256 batchId1 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
-            blsSig, REF_NONCE, SIGNERS_BITMASK,
+            blsSig1, REF_NONCE, SIGNERS_BITMASK,
             10e18, 1e18, keccak256("bitmap1")
         );
 
-        // Player 2 calls createBatchAndJoin with same sourceId
+        // Player 2 calls createBatchAndJoin with same sourceId — creates NEW batch
         address player2 = makeAddr("player2");
         _preparePlayer(player2, 5e18);
+
+        bytes memory blsSig2 = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
 
         vm.prank(player2);
         uint256 batchId2 = vision.createBatchAndJoin(
             SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
-            blsSig, REF_NONCE, SIGNERS_BITMASK,
+            blsSig2, REF_NONCE, SIGNERS_BITMASK,
             5e18, 1e18, keccak256("bitmap2")
         );
 
-        // Should return same batch ID — no new batch created
-        assertEq(batchId1, batchId2, "Should join existing batch, not create new");
-        assertEq(vision.nextBatchId(), 1, "Only 1 batch should exist");
+        // Multiple batches per source — each call creates a new batch
+        assertTrue(batchId2 > batchId1, "Second call should create a new batch");
+        assertEq(vision.nextBatchId(), 2, "Two batches should exist");
 
-        // Both players should have positions
+        // Each player has position in their respective batch
         assertTrue(vision.getPosition(batchId1, player1).stakePerTick > 0, "Player 1 should have position");
         assertTrue(vision.getPosition(batchId2, player2).stakePerTick > 0, "Player 2 should have position");
+
+        // latestBatchForSource points to the most recent
+        assertEq(vision.latestBatchForSource(SOURCE_ID), batchId2, "Should point to latest batch");
     }
 
     function test_createBatchAndJoin_differentSourceIds() public {
@@ -249,8 +253,8 @@ contract VisionBatchTest is TestHelper {
 
         assertEq(batchIdA, 0, "First source should get batch 0");
         assertEq(batchIdB, 1, "Second source should get batch 1");
-        assertTrue(vision.sourceIdHasBatch(sourceA));
-        assertTrue(vision.sourceIdHasBatch(sourceB));
+        assertEq(vision.latestBatchForSource(sourceA), batchIdA);
+        assertEq(vision.latestBatchForSource(sourceB), batchIdB);
     }
 
     // ════════════════════════════════════════════════
@@ -532,53 +536,4 @@ contract VisionBatchTest is TestHelper {
         assertEq(vision.getBatchIdBySourceId(SOURCE_ID), batchId);
     }
 
-    // ════════════════════════════════════════════════
-    // Test 8: MAX_BATCHES cap enforcement
-    // ════════════════════════════════════════════════
-
-    function test_createBatch_revertsAtMaxBatches() public {
-        // Force nextBatchId to MAX_BATCHES (200) via direct storage write.
-        // nextBatchId is at slot 2 per `forge inspect Vision storage-layout`.
-        // This skips creating 200 real batches (200 BLS FFI calls would be impractical).
-        // The cap check fires before BLS verification, so BLS is irrelevant here.
-        vm.store(address(vision), bytes32(uint256(2)), bytes32(uint256(200)));
-        assertEq(vision.nextBatchId(), 200, "Storage write sanity check");
-
-        // Attempt to create one more batch — must revert with TooManyBatches
-        bytes32 overflowSource = keccak256("overflow_source");
-        bytes32 overflowConfig = keccak256("overflow_config");
-        bytes32 message = keccak256(abi.encode(
-            block.chainid,
-            address(vision),
-            "CREATE_BATCH",
-            overflowSource,
-            overflowConfig,
-            TICK_DURATION,
-            LOCK_OFFSET
-        ));
-        bytes memory blsSig = signWithTestOracles(message);
-
-        vm.expectRevert(IVision.TooManyBatches.selector);
-        vision.createBatch(
-            overflowSource, overflowConfig, TICK_DURATION, LOCK_OFFSET,
-            blsSig, REF_NONCE, SIGNERS_BITMASK
-        );
-    }
-
-    function test_createBatch_idempotentCallDoesNotCountTowardsCap() public {
-        // Create a real batch so sourceIdHasBatch[SOURCE_ID] = true
-        _createBatch();
-
-        // Force nextBatchId to MAX_BATCHES — cap is reached
-        vm.store(address(vision), bytes32(uint256(2)), bytes32(uint256(200)));
-
-        // Idempotent call (same sourceId) must still succeed — it short-circuits before the cap check
-        bytes memory blsSig = _signCreateBatch(SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET);
-        uint256 batchId = vision.createBatch(
-            SOURCE_ID, CONFIG_HASH, TICK_DURATION, LOCK_OFFSET,
-            blsSig, REF_NONCE, SIGNERS_BITMASK
-        );
-        assertEq(batchId, 0, "Idempotent call should return existing batch 0");
-        assertEq(vision.nextBatchId(), 200, "nextBatchId should be unchanged");
-    }
 }

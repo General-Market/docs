@@ -181,7 +181,7 @@ contract DeployAllVisionBatches is DeployBLSHelper {
         // Collect batch IDs by reading from Vision contract
         batchIds = new uint256[](count);
         for (uint i = 0; i < count; i++) {
-            batchIds[i] = Vision(visionAddr).sourceIdToBatchId(sourceIds[i]);
+            batchIds[i] = Vision(visionAddr).latestBatchForSource(sourceIds[i]);
         }
 
         // Report results

@@ -15,7 +15,7 @@ import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 ///   - Issue 2:  `joinBatch()` and `updateBitmap()` require `configHash` param
 ///   - Issue 3:  Deferred promotion via `nextConfigHash`/`nextLockOffset`
 ///   - Issue 4:  BLS messages use `keccak256(abi.encode(chainid, address(this), "TAG", ...))`
-///   - Issue 5:  `sourceIdToBatchId` mapping + `sourceId` in Batch struct
+///   - Issue 5:  `latestBatchForSource` mapping + `sourceId` in Batch struct
 ///   - Issue 6:  `updateBitmap()` enforces lock window via `_requireNotLocked`
 ///   - Issue 7:  `_currentTickId()` has underflow guard
 ///   - Issue 8:  NO second nonce — uses existing BLSVerifier 256-nonce sliding window
@@ -32,8 +32,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant MIN_TICK_DURATION = 60;       // 1 minute minimum
     uint256 public constant MAX_TICK_DURATION = 604800;   // 1 week maximum
-    uint256 public constant MAX_BATCHES = 200;
-
     // ============ IMMUTABLES ============
 
     IERC20 public immutable USDC;
@@ -50,16 +48,10 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
     uint256 public accumulatedVirtualFees;
     address public feeCollector;
 
-    /// @notice sourceId => batchId (F5/F13 idempotency + reverse lookup)
-    /// @dev A sourceId of bytes32(0) is never valid.
-    ///      Value 0 means "no batch exists for this source" since batchIds start at 0
-    ///      but we use a separate existence flag via batch.tickDuration > 0.
-    mapping(bytes32 => uint256) public sourceIdToBatchId;
-
-    /// @notice Tracks whether a sourceId has ever been assigned a batch.
-    /// @dev Needed because batchId 0 is a valid batch. Without this, we cannot
-    ///      distinguish "no batch" from "batch 0".
-    mapping(bytes32 => bool) public sourceIdHasBatch;
+    /// @notice sourceId => latest batchId (reverse lookup for the most recent batch)
+    /// @dev Multiple batches can share a sourceId (round-based flow). This always
+    ///      points to the most recently created batch for a given source.
+    mapping(bytes32 => uint256) public latestBatchForSource;
 
     // Bot registry state
     mapping(address => Bot) internal _bots;
@@ -232,9 +224,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         _joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash);
     }
 
-    /// @notice Internal idempotent batch creation (F5).
-    ///         If sourceId already has a batch, returns existing batchId without
-    ///         re-verifying BLS (the batch already passed BLS at creation).
+    /// @notice Internal batch creation. Multiple batches per sourceId are allowed
+    ///         (round-based flow). Each call always creates a new batch.
     function _createBatch(
         bytes32 sourceId,
         bytes32 configHash,
@@ -244,13 +235,6 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         uint256 referenceNonce,
         uint256 signersBitmask
     ) internal returns (uint256 batchId) {
-        // Idempotency check (F5): if sourceId already has a batch, return it
-        if (sourceIdHasBatch[sourceId]) {
-            return sourceIdToBatchId[sourceId];
-        }
-
-        // Hard cap: reject batch creation once MAX_BATCHES is reached
-        if (nextBatchId >= MAX_BATCHES) revert TooManyBatches();
 
         // Validate parameters
         if (tickDuration < MIN_TICK_DURATION || tickDuration > MAX_TICK_DURATION) revert InvalidTickDuration();
@@ -284,9 +268,8 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         b.paused = false;
         // nextConfigHash, nextLockOffset default to 0 (no pending update)
 
-        // Register reverse lookup (F5/F13)
-        sourceIdToBatchId[sourceId] = batchId;
-        sourceIdHasBatch[sourceId] = true;
+        // Register reverse lookup (latest batch for this source)
+        latestBatchForSource[sourceId] = batchId;
 
         emit BatchCreated(batchId, sourceId, msg.sender, configHash, tickDuration, lockOffset);
     }
@@ -348,8 +331,9 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
 
     /// @inheritdoc IVision
     function getBatchIdBySourceId(bytes32 sourceId) external view returns (uint256) {
-        if (!sourceIdHasBatch[sourceId]) revert BatchNotFound();
-        return sourceIdToBatchId[sourceId];
+        uint256 batchId = latestBatchForSource[sourceId];
+        if (batchId == 0 && _batches[0].sourceId != sourceId) revert BatchNotFound();
+        return batchId;
     }
 
     /// @inheritdoc IVision
@@ -409,6 +393,50 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
             joinTimestamp: block.timestamp,
             totalDeposited: depositAmount,
             isVirtual: usedVirtual
+        });
+
+        emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash, configHash);
+    }
+
+    /// @inheritdoc IVision
+    function joinBatchDirect(
+        uint256 batchId,
+        bytes32 configHash,
+        uint256 depositAmount,
+        uint256 stakePerTick,
+        bytes32 bitmapHash
+    ) external nonReentrant {
+        _requireBatchExists(batchId);
+        Batch storage b = _batches[batchId];
+        if (b.paused) revert BatchPaused();
+
+        // Promote pending config if needed (F3)
+        _promoteConfigIfNeeded(batchId);
+
+        // Enforce lock window (F6)
+        _requireNotLocked(batchId);
+
+        // Config binding (Issue 2): player's bitmap must match active config
+        if (b.configHash != configHash) revert BatchNotFound();
+
+        if (_positions[batchId][msg.sender].stakePerTick != 0) revert AlreadyJoined();
+        if (stakePerTick < MIN_STAKE_PER_TICK) revert StakeBelowMinimum();
+        if (depositAmount < stakePerTick) revert InsufficientDeposit();
+
+        // Transfer USDC directly from player wallet (NOT dual-balance system)
+        USDC.safeTransferFrom(msg.sender, address(this), depositAmount);
+
+        uint256 tickId = _currentTickId(batchId);
+        _positions[batchId][msg.sender] = PlayerPosition({
+            bitmapHash: bitmapHash,
+            configHash: configHash,
+            stakePerTick: stakePerTick,
+            startTick: tickId,
+            balance: depositAmount,
+            lastClaimedTick: 0,
+            joinTimestamp: block.timestamp,
+            totalDeposited: depositAmount,
+            isVirtual: false  // direct USDC deposit is always real
         });
 
         emit PlayerJoined(batchId, msg.sender, stakePerTick, bitmapHash, configHash);
@@ -760,6 +788,86 @@ contract Vision is IVision, ReentrancyGuard, BLSVerifier {
         }
 
         emit ForceWithdrawn(batchId, player, payout);
+    }
+
+    /// @inheritdoc IVision
+    /// @dev Credits realBalance/virtualBalance directly (same pattern as withdraw()).
+    ///      Players use existing withdrawBalance() or withdrawToSettlement() to extract funds.
+    ///      No direct USDC transfer in loop — avoids DoS from reverting recipients.
+    ///      No new pendingPayout mapping — reuses the dual-balance system.
+    function settleBatch(
+        uint256 batchId,
+        address[] calldata players,
+        uint256[] calldata payouts,
+        bytes calldata blsSignature,
+        uint256 referenceNonce,
+        uint256 signersBitmask
+    ) external nonReentrant {
+        Batch storage b = _batches[batchId];
+        if (b.tickDuration == 0) revert BatchNotFound();
+        if (b.paused) revert BatchAlreadySettled();
+        if (players.length != payouts.length) revert InvalidArrayLength();
+        if (players.length == 0) revert InvalidArrayLength();
+
+        // Single BLS check for entire batch
+        bytes32 payoutsHash = keccak256(abi.encode(players, payouts));
+        bytes32 message = keccak256(abi.encode(
+            block.chainid,
+            address(this),
+            "SETTLE_BATCH",
+            batchId,
+            payoutsHash
+        ));
+        _verifyBLS(message, blsSignature, referenceNonce, signersBitmask);
+
+        // Two-pass: first validate solvency, then mutate state.
+        // This avoids wasteful storage writes on revert paths.
+
+        // Pass 1: accumulate totals, verify all players exist, enforce no duplicates
+        uint256 totalPayouts;
+        uint256 totalDeposits;
+        for (uint256 i = 0; i < players.length; i++) {
+            // Require strictly ascending addresses — prevents duplicate entries
+            // which would inflate totalDeposits and bypass the solvency check.
+            if (i > 0 && uint160(players[i]) <= uint160(players[i - 1])) revert InvalidArrayLength();
+            PlayerPosition storage pos = _positions[batchId][players[i]];
+            if (pos.stakePerTick == 0) revert NotJoined();
+            totalPayouts += payouts[i];
+            totalDeposits += pos.totalDeposited;
+        }
+        if (totalPayouts > totalDeposits) revert InsolventPayout();
+
+        // Pass 2: settle each player — credit to realBalance/virtualBalance
+        for (uint256 i = 0; i < players.length; i++) {
+            PlayerPosition storage pos = _positions[batchId][players[i]];
+
+            uint256 payout = payouts[i];
+            uint256 profit = payout > pos.totalDeposited ? payout - pos.totalDeposited : 0;
+            uint256 fee = (profit * PROTOCOL_FEE_BPS) / BPS_DENOMINATOR;
+            uint256 netPayout = payout - fee;
+
+            // Read isVirtual BEFORE delete (SOL-2 pattern from existing withdraw)
+            bool isVirtual = pos.isVirtual;
+
+            // Delete position (CEI)
+            delete _positions[batchId][players[i]];
+
+            // Route fees and payout to correct balance bucket
+            if (isVirtual) {
+                accumulatedVirtualFees += fee;
+                virtualBalance[players[i]] += netPayout;
+                totalVirtualBalance += netPayout;
+            } else {
+                accumulatedRealFees += fee;
+                realBalance[players[i]] += netPayout;
+                totalRealBalance += netPayout;
+            }
+
+            emit PlayerSettled(batchId, players[i], netPayout, fee);
+        }
+
+        b.paused = true;
+        emit BatchSettled(batchId, players.length);
     }
 
     // ============ DUAL-BALANCE OPERATIONS ============

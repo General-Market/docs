@@ -130,11 +130,11 @@ contract VisionTest is TestHelper {
         assertEq(vision.nextBatchId(), 2, "nextBatchId should be 2");
     }
 
-    function test_createBatch_idempotent() public {
+    function test_createBatch_sameSourceCreatesNewBatch() public {
         // First call creates the batch
         uint256 batchId1 = _createDefaultBatch();
 
-        // Second call with same sourceId returns existing batch (no BLS needed)
+        // Second call with same sourceId creates a NEW batch (no idempotency)
         bytes32 message = keccak256(abi.encode(
             block.chainid,
             address(vision),
@@ -157,15 +157,15 @@ contract VisionTest is TestHelper {
             SIGNERS_BITMASK
         );
 
-        assertEq(batchId1, batchId2, "Idempotent: should return same batch ID");
-        assertEq(vision.nextBatchId(), 1, "Should not have created a second batch");
+        assertTrue(batchId2 > batchId1, "Should create a new batch");
+        assertEq(vision.nextBatchId(), 2, "Should have created two batches");
+        assertEq(vision.latestBatchForSource(SOURCE_ID), batchId2, "Latest should be second batch");
     }
 
     function test_createBatch_sourceIdMapping() public {
         uint256 batchId = _createDefaultBatch();
 
-        assertTrue(vision.sourceIdHasBatch(SOURCE_ID), "sourceIdHasBatch should be true");
-        assertEq(vision.sourceIdToBatchId(SOURCE_ID), batchId, "sourceIdToBatchId should map correctly");
+        assertEq(vision.latestBatchForSource(SOURCE_ID), batchId, "latestBatchForSource should map correctly");
         assertEq(vision.getBatchIdBySourceId(SOURCE_ID), batchId, "getBatchIdBySourceId should work");
     }
 
