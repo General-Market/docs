@@ -433,9 +433,9 @@ cmd_deploy() {
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
     # Deploy core system (must run from contracts/ for foundry.toml remappings)
-    # Clean forge cache first — stale cache causes 0-receipt broadcasts
+    # Only clean broadcast (not cache — recompilation takes 20+ min)
     echo -e "${BLUE}[3/14] Deploying core contracts (Index, OracleRegistry, USDC, BridgeProxy)...${NC}"
-    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
     # Forge may exit non-zero even on partial success (nonce races on redeployment).
     # We verify success via deployment JSON + receipt count below, not forge exit code.
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
