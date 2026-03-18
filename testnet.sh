@@ -396,10 +396,14 @@ cmd_deploy() {
         command -v $cmd &>/dev/null || { echo -e "${RED}$cmd not found${NC}"; exit 1; }
     done
 
-    # Clean ALL broadcast dirs to prevent stale addresses from previous deploys
+    # Clean secondary broadcast dirs (tokens, ITPs, Morpho, Vision) — NOT core deployment.
+    # Core deployment broadcast is preserved if valid (step 3 checks receipts before re-deploying).
     echo -e "${BLUE}[0/14] Cleaning stale broadcast data...${NC}"
-    rm -rf contracts/broadcast/*/111222333/
-    echo -e "  ${GREEN}Broadcast dirs cleaned${NC}"
+    rm -rf contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/Deploy107ITPs_Create.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/Deploy107ITPs_Vaults.s.sol/$CHAIN_ID/
+    rm -rf contracts/broadcast/DeployBatchMarkets.s.sol/$CHAIN_ID/
+    echo -e "  ${GREEN}Secondary broadcast dirs cleaned (core preserved)${NC}"
 
     # Check L3 is reachable
     echo -e "${BLUE}[1/14] Checking L3 RPC...${NC}"
@@ -722,11 +726,12 @@ cmd_deploy() {
     # Deploy Morpho (no timelock wait)
     echo -e "${BLUE}[5/14] Deploying Morpho (forked, no timelock)...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
-    # Use L3BridgedItpFactory (L3-chain), NOT BridgedItpFactory (Settlement-chain after merge)
-    ITP_VAULT=$(read_deployment_addr "L3BridgedItpFactory")
-    if [ -z "$ITP_VAULT" ]; then
-        # Fallback: read from L3-only deployment JSON (before merge)
-        ITP_VAULT=$(python3 -c "import json; print(json.load(open('deployments/e2e-full-system-l3.json'))['contracts']['BridgedItpFactory'])" 2>/dev/null)
+    # Collateral token must be an ERC20, NOT the BridgedItpFactory (which is a factory contract).
+    # Prefer ITP_Vault (ERC4626 vault wrapping ITP shares) if deployed; fall back to MOCK_USDT.
+    ITP_VAULT=$(read_deployment_addr "ITP_Vault")
+    if [ -z "$ITP_VAULT" ] || [ "$ITP_VAULT" = "None" ]; then
+        ITP_VAULT=$(read_deployment_addr "MOCK_USDT")
+        echo -e "  ${YELLOW}ITP_Vault not found — using MOCK_USDT ($ITP_VAULT) as Morpho collateral${NC}"
     fi
     ORACLE_REGISTRY=$(read_deployment_addr "OracleRegistry")
 
@@ -862,8 +867,45 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     [ "$VERIFY_FAIL" = "1" ] && { echo -e "  ${RED}Token verification failed — assets.json out of sync${NC}"; exit 1; }
     echo -e "  ${GREEN}Token addresses verified on-chain${NC}"
 
-    # Phase: Create ITPs
-    echo -e "${BLUE}[10/14] Generating ITP deploy scripts...${NC}"
+    # Phase: Fetch fresh prices then create ITPs
+    echo -e "${BLUE}[10/14] Fetching fresh Bitget prices for ITP creation...${NC}"
+    CREATION_PRICES_FILE="data/creation-prices.json"
+    BITGET_RESP=$(curl -sf --connect-timeout 10 --max-time 30 \
+        "https://api.bitget.com/api/v2/spot/market/tickers" 2>/dev/null || echo "")
+    if [ -n "$BITGET_RESP" ]; then
+        PRICE_JSON=$(python3 -c "
+import json, sys
+resp = json.loads(sys.stdin.read())
+tickers = resp.get('data', [])
+result = {}
+for t in tickers:
+    sym = t.get('symbol', '')
+    price_str = t.get('lastPr', '0')
+    try:
+        price_f = float(price_str)
+        if price_f > 0:
+            price_18dec = int(price_f * 1e18)
+            result[sym] = str(price_18dec)
+    except:
+        pass
+json.dump(result, sys.stdout)
+" <<< "$BITGET_RESP" 2>/dev/null || echo "")
+        if [ -n "$PRICE_JSON" ] && [ "$PRICE_JSON" != "" ]; then
+            echo "$PRICE_JSON" > "$CREATION_PRICES_FILE"
+            PRICE_COUNT=$(python3 -c "import json; print(len(json.load(open('$CREATION_PRICES_FILE'))))" 2>/dev/null || echo "0")
+            if [ "$PRICE_COUNT" -ge 50 ]; then
+                echo -e "  ${GREEN}Fetched $PRICE_COUNT fresh Bitget prices${NC}"
+            else
+                echo -e "  ${YELLOW}Only $PRICE_COUNT prices found — NAV may deviate from \$1${NC}"
+            fi
+        else
+            echo -e "  ${YELLOW}Price extraction failed — using existing creation-prices.json${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}Bitget API unreachable — using existing creation-prices.json${NC}"
+    fi
+
+    echo -e "  Generating ITP deploy scripts..."
     python3 scripts/deploy-107-itps.py || { echo -e "${RED}ITP generator failed${NC}"; exit 1; }
     echo -e "  ${GREEN}Generated ITP create + vault scripts${NC}"
 
