@@ -1,14 +1,17 @@
 import { NextRequest } from 'next/server'
-import { DATA_NODE_SERVER } from '@/lib/config'
+
+// Runtime env var — no build-time import. Reads on every request so
+// env changes take effect without rebuilding.
+const DATA_NODE_URL = process.env.DATA_NODE_URL || process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
 
 /**
  * Streaming proxy for data-node endpoints.
  * Next.js rewrites buffer entire responses, breaking SSE.
  * This route streams directly without buffering.
  *
- * GET /api/dn/sim/run-stream?... → DATA_NODE_SERVER/sim/run-stream?...
- * GET /api/dn/sim/categories → DATA_NODE_SERVER/sim/categories
- * GET /api/dn/portfolio?... → DATA_NODE_SERVER/portfolio?...
+ * GET /api/dn/sim/run-stream?... → DATA_NODE_URL/sim/run-stream?...
+ * GET /api/dn/sim/categories → DATA_NODE_URL/sim/categories
+ * GET /api/dn/portfolio?... → DATA_NODE_URL/portfolio?...
  */
 
 export const runtime = 'nodejs'
@@ -21,7 +24,7 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params
-  const upstream = `${DATA_NODE_SERVER}/${path.join('/')}${request.nextUrl.search}`
+  const upstream = `${DATA_NODE_URL}/${path.join('/')}${request.nextUrl.search}`
 
   try {
     const res = await fetch(upstream, {

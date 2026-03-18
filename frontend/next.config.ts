@@ -1,14 +1,9 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
-import { REWRITES_BACKEND_URL, DATA_NODE_SERVER, L3_RPC_SERVER, CSP_CONNECT_EXTRA } from "./lib/config";
+import { CSP_CONNECT_EXTRA } from "./lib/config";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-const BACKEND_URL = REWRITES_BACKEND_URL;
-const DATA_NODE_URL = DATA_NODE_SERVER;
-const L3_RPC_URL = L3_RPC_SERVER;
-const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
-console.log(`[next.config] DATA_NODE_URL=${DATA_NODE_URL} VISION_API_URL=${VISION_API_URL}`);
 const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -21,6 +16,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/itp-enrichment": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
     "/\\[locale\\]/itp/\\[itpId\\]": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
+    "/api/config": ["./lib/itp-id-names.json", "./lib/config/blacklisted-itps.json", "./data/sources-display.json"],
   },
   // Webpack config to handle WalletConnect's pino-pretty optional dependency
   webpack: (config) => {
@@ -74,12 +70,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // All backend/data-node/oracle/vision/rpc proxies are now handled by
+  // catch-all route handlers under app/api/. Only locale routing and docs
+  // proxy remain as rewrites.
   async rewrites() {
     return {
-      // beforeFiles: high-priority rewrites that must fire before filesystem routes
       beforeFiles: [
-        // Vision leaderboard → data-node (precomputed, not oracle)
-        { source: "/api/vision/leaderboard", destination: `${DATA_NODE_URL}/vision/leaderboard` },
         // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
         { source: "/docs", destination: `${DOCS_URL}/` },
         { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },
@@ -90,28 +86,7 @@ const nextConfig: NextConfig = {
           destination: "/en/:path",
         },
       ],
-      // afterFiles: proxy rewrites for backend, data-node, RPC
-      afterFiles: [
-        { source: "/api/leaderboard", destination: `${BACKEND_URL}/api/leaderboard` },
-        { source: "/api/leaderboard/:path*", destination: `${BACKEND_URL}/api/leaderboard/:path*` },
-        { source: "/api/bets/:path*", destination: `${BACKEND_URL}/api/bets/:path*` },
-        { source: "/api/agents/:path*", destination: `${BACKEND_URL}/api/agents/:path*` },
-        { source: "/api/resolutions/:path*", destination: `${BACKEND_URL}/api/resolutions/:path*` },
-        { source: "/api/telegram/:path*", destination: `${BACKEND_URL}/api/telegram/:path*` },
-        { source: "/api/sse/:path*", destination: `${BACKEND_URL}/api/sse/:path*` },
-        { source: "/api/keepers/:path*", destination: `${BACKEND_URL}/api/keepers/:path*` },
-        { source: "/api/markets/:path*", destination: `${BACKEND_URL}/api/markets/:path*` },
-        { source: "/api/market-prices", destination: `${BACKEND_URL}/api/market-prices` },
-        { source: "/api/market-stats/:path*", destination: `${BACKEND_URL}/api/market-stats/:path*` },
-        { source: "/api/categories", destination: `${BACKEND_URL}/api/categories` },
-        { source: "/api/snapshots/:path*", destination: `${BACKEND_URL}/api/snapshots/:path*` },
-        { source: "/dn/:path*", destination: `${DATA_NODE_URL}/:path*` },
-        { source: "/rpc", destination: L3_RPC_URL },
-        { source: "/api/vision/snapshot/meta", destination: `${DATA_NODE_URL}/snapshot/meta` },
-        { source: "/api/vision/snapshot", destination: `${DATA_NODE_URL}/snapshot` },
-        { source: "/api/vision/:path*", destination: `${VISION_API_URL}/vision/:path*` },
-        { source: "/health", destination: `${BACKEND_URL}/health` },
-      ],
+      afterFiles: [],
       fallback: [],
     };
   },
