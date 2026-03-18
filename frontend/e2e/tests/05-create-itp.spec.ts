@@ -10,6 +10,19 @@ import {
 } from '../helpers/backend-api';
 import { IS_ANVIL } from '../env';
 
+/**
+ * Click the "Create Index" sidebar nav item.
+ * Desktop and mobile navs both render <button> elements with this label.
+ * Target the first visible one to avoid ambiguity.
+ */
+async function navigateToCreateSection(page: import('@playwright/test').Page) {
+  const createBtn = page.getByRole('button', { name: 'Create Index' }).first();
+  await expect(createBtn).toBeVisible({ timeout: 15_000 });
+  await createBtn.click();
+  // Wait for section transition animation to settle
+  await page.waitForTimeout(1_000);
+}
+
 test.describe('Create ITP', () => {
   test('create ITP via frontend + Settlement bridge relay', async ({ walletPage: page }) => {
     test.setTimeout(600_000); // 10 min — bridge relay on real testnet (Sonic->L3->Sonic) needs more time
@@ -45,12 +58,17 @@ test.describe('Create ITP', () => {
         console.log(`ITP2: ${state2.assets.length} assets, NAV=${state2.nav}`);
       }
 
-      // 4. Verify the create UI components load
+      // 4. Connect wallet and wait for page hydration
       await ensureWalletConnected(page, TEST_ADDRESS);
+
+      // The page starts on Markets section — wait for it to be visible
       await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
 
+      // 5. Navigate to Create Index via sidebar
+      await navigateToCreateSection(page);
+
+      // The create section wrapper (motion.div id="create") is now active
       const createSection = page.locator('#create');
-      await createSection.scrollIntoViewIfNeeded();
 
       // Wait for assets to load (deployed-assets.json fetch + pre-select)
       await expect(createSection.getByText('BTC', { exact: true })).toBeVisible({ timeout: 30_000 });
@@ -60,12 +78,12 @@ test.describe('Create ITP', () => {
       await expect(equalBtn).toBeVisible({ timeout: 15_000 });
       console.log('Create ITP UI components loaded successfully');
 
-      // 5. Click Equal and verify weights distribute
+      // 6. Click Equal and verify weights distribute
       await equalBtn.click();
       await expect(createSection.getByText('Total: 100%').first()).toBeVisible({ timeout: 3_000 });
       console.log('Equal weight distribution works');
 
-      // 6. Open finalize modal and verify fields
+      // 7. Open finalize modal and verify fields
       const continueBtn = createSection.getByRole('button', { name: /Continue/ });
       await expect(continueBtn).toBeEnabled({ timeout: 5_000 });
       await continueBtn.click();
@@ -88,10 +106,7 @@ test.describe('Create ITP', () => {
       await ensureWalletConnected(page, TEST_ADDRESS);
 
       // 2. Click "Create Index" in the sidebar to activate the section
-      const createTab = page.getByRole('button', { name: 'Create Index' });
-      await expect(createTab).toBeVisible({ timeout: 15_000 });
-      await createTab.click();
-      await page.waitForTimeout(1_000);
+      await navigateToCreateSection(page);
 
       // 3. Record current ITP count on L3 before creating
       const itpCountBefore = await getItpCountL3();
