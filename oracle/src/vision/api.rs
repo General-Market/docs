@@ -969,6 +969,9 @@ struct LeaderboardEntry {
     portfolio_bets: usize,
     avg_portfolio_size: f64,
     largest_portfolio: usize,
+    rounds_played: u64,
+    rounds_won: u64,
+    avg_correct_pct: f64,
 }
 
 /// Query params for leaderboard filtering.
@@ -976,6 +979,20 @@ struct LeaderboardEntry {
 struct LeaderboardQuery {
     batch_id: Option<u64>,
     source_id: Option<String>,
+    /// Include settled round results from `vision_round_players`. Defaults to true.
+    include_rounds: Option<bool>,
+}
+
+/// Aggregated per-player row from `vision_round_players`.
+#[derive(Debug, sqlx::FromRow)]
+struct RoundStatsRow {
+    player: String,
+    total_payout: Option<String>,
+    total_deposited: Option<String>,
+    wins: Option<String>,
+    rounds_played: Option<i64>,
+    total_correct: Option<i64>,
+    total_markets: Option<i64>,
 }
 
 /// Vision leaderboard — aggregates player balances across batches.
@@ -996,13 +1013,16 @@ async fn vision_leaderboard(
         return leaderboard_from_postgres(&state.pool, None, Some(bid)).await;
     }
 
+    let include_rounds = query.include_rounds.unwrap_or(true);
+
     // No filter — aggregate from in-memory scheduler (active batches only)
     let all_ids = state.scheduler.get_all_batch_ids().await;
 
-    // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins)
+    // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins,
+    //            rounds_played, rounds_won, total_correct, total_markets)
     let mut player_data: std::collections::HashMap<
         Address,
-        (u128, u128, usize, usize, usize),
+        (u128, u128, usize, usize, usize, u64, u64, u64, u64),
     > = std::collections::HashMap::new();
 
     for batch_id in &all_ids {
@@ -1011,7 +1031,9 @@ async fn vision_leaderboard(
                 continue;
             }
             for p in &players {
-                let entry = player_data.entry(p.player).or_insert((0, 0, 0, 0, 0));
+                let entry = player_data
+                    .entry(p.player)
+                    .or_insert((0, 0, 0, 0, 0, 0, 0, 0, 0));
                 let balance = p.balance.as_u128();
                 entry.0 += balance;
                 let initial = p.initial_deposit.as_u128();
@@ -1048,6 +1070,59 @@ async fn vision_leaderboard(
                 }
             }
         }
+    }
+
+    // Merge settled round results from Postgres (vision_round_players)
+    if include_rounds {
+        if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(
+            "SELECT player,
+                    SUM(payout::numeric)::text as total_payout,
+                    SUM(deposited::numeric)::text as total_deposited,
+                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                    COUNT(*)::bigint as rounds_played,
+                    SUM(correct_count)::bigint as total_correct,
+                    SUM(total_markets)::bigint as total_markets
+             FROM vision_round_players
+             GROUP BY player",
+        )
+        .fetch_all(&state.pool)
+        .await
+        {
+            for row in round_rows {
+                if let Ok(addr) = row.player.parse::<Address>() {
+                    let entry = player_data
+                        .entry(addr)
+                        .or_insert((0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+                    // Add round payout to total balance
+                    if let Some(ref p) = row.total_payout {
+                        if let Ok(v) = p.parse::<u128>() {
+                            entry.0 += v;
+                        }
+                    }
+                    // Add round deposited to total deposited
+                    if let Some(ref d) = row.total_deposited {
+                        if let Ok(v) = d.parse::<u128>() {
+                            entry.1 += v;
+                        }
+                    }
+
+                    let rp = row.rounds_played.unwrap_or(0) as u64;
+                    let rw = row.wins.as_deref().unwrap_or("0").parse::<u64>().unwrap_or(0);
+
+                    // Count rounds as batches too (for overall win_rate)
+                    entry.2 += rp as usize;
+                    entry.4 += rw as usize;
+
+                    // Round-specific fields
+                    entry.5 += rp;
+                    entry.6 += rw;
+                    entry.7 += row.total_correct.unwrap_or(0) as u64;
+                    entry.8 += row.total_markets.unwrap_or(0) as u64;
+                }
+            }
+        }
+        // If the table doesn't exist yet the query simply fails and we skip — no panic.
     }
 
     let leaderboard = build_leaderboard_from_map(player_data);
@@ -1137,33 +1212,82 @@ async fn leaderboard_from_postgres(
     };
 
     let decimals = 1e18_f64;
-    let mut entries: Vec<(String, f64, f64, usize, usize)> = rows
-        .into_iter()
-        .map(|r| {
-            let bal: f64 = r.total_balance.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
-            let dep: f64 = r.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
-            let batches = r.batches_joined.unwrap_or(0) as usize;
-            let wins = r.wins.unwrap_or(0) as usize;
-            (r.player, bal, dep, batches, wins)
-        })
-        .collect();
+
+    // (bal, dep, batches, wins, rounds_played, rounds_won, total_correct, total_markets)
+    let mut merged: std::collections::HashMap<String, (f64, f64, usize, usize, u64, u64, u64, u64)> =
+        std::collections::HashMap::new();
+
+    for r in rows {
+        let bal: f64 = r.total_balance.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+        let dep: f64 = r.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+        let batches = r.batches_joined.unwrap_or(0) as usize;
+        let wins = r.wins.unwrap_or(0) as usize;
+        let entry = merged.entry(r.player).or_insert((0.0, 0.0, 0, 0, 0, 0, 0, 0));
+        entry.0 += bal;
+        entry.1 += dep;
+        entry.2 += batches;
+        entry.3 += wins;
+    }
+
+    // Merge settled round results
+    if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(
+        "SELECT player,
+                SUM(payout::numeric)::text as total_payout,
+                SUM(deposited::numeric)::text as total_deposited,
+                SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                COUNT(*)::bigint as rounds_played,
+                SUM(correct_count)::bigint as total_correct,
+                SUM(total_markets)::bigint as total_markets
+         FROM vision_round_players
+         GROUP BY player",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        for row in round_rows {
+            let entry = merged
+                .entry(row.player)
+                .or_insert((0.0, 0.0, 0, 0, 0, 0, 0, 0));
+
+            let payout: f64 = row.total_payout.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+            let dep: f64 = row.total_deposited.as_deref().unwrap_or("0").parse().unwrap_or(0.0);
+            entry.0 += payout;
+            entry.1 += dep;
+
+            let rp = row.rounds_played.unwrap_or(0) as u64;
+            let rw = row.wins.as_deref().unwrap_or("0").parse::<u64>().unwrap_or(0);
+
+            entry.2 += rp as usize;
+            entry.3 += rw as usize;
+            entry.4 += rp;
+            entry.5 += rw;
+            entry.6 += row.total_correct.unwrap_or(0) as u64;
+            entry.7 += row.total_markets.unwrap_or(0) as u64;
+        }
+    }
 
     // Sort by PnL descending
+    let mut entries: Vec<_> = merged.into_iter().collect();
     entries.sort_by(|a, b| {
-        let pnl_a = a.1 - a.2;
-        let pnl_b = b.1 - b.2;
+        let pnl_a = a.1 .0 - a.1 .1;
+        let pnl_b = b.1 .0 - b.1 .1;
         pnl_b.partial_cmp(&pnl_a).unwrap_or(std::cmp::Ordering::Equal)
     });
 
     let leaderboard: Vec<LeaderboardEntry> = entries
         .iter()
         .enumerate()
-        .map(|(i, (addr, bal, dep, batches, wins))| {
+        .map(|(i, (addr, (bal, dep, batches, wins, rounds_played, rounds_won, total_correct, total_markets)))| {
             let pnl = (bal - dep) / decimals;
             let deposited = dep / decimals;
             let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
             let win_rate = if *batches > 0 {
                 *wins as f64 / *batches as f64 * 100.0
+            } else {
+                0.0
+            };
+            let avg_correct_pct = if *total_markets > 0 {
+                *total_correct as f64 / *total_markets as f64 * 100.0
             } else {
                 0.0
             };
@@ -1177,6 +1301,9 @@ async fn leaderboard_from_postgres(
                 portfolio_bets: *batches,
                 avg_portfolio_size: 0.0,
                 largest_portfolio: 0,
+                rounds_played: *rounds_played,
+                rounds_won: *rounds_won,
+                avg_correct_pct: (avg_correct_pct * 10.0).round() / 10.0,
             }
         })
         .collect();
@@ -1192,17 +1319,20 @@ async fn leaderboard_from_postgres(
 }
 
 /// Convert in-memory player_data map to sorted LeaderboardEntry vec.
+///
+/// Tuple layout: (total_balance, total_deposited, batches_joined, largest_batch_markets,
+///                batch_wins, rounds_played, rounds_won, total_correct, total_markets)
 fn build_leaderboard_from_map(
-    player_data: std::collections::HashMap<Address, (u128, u128, usize, usize, usize)>,
+    player_data: std::collections::HashMap<
+        Address,
+        (u128, u128, usize, usize, usize, u64, u64, u64, u64),
+    >,
 ) -> Vec<LeaderboardEntry> {
-    let mut entries: Vec<(Address, u128, u128, usize, usize, usize)> = player_data
-        .into_iter()
-        .map(|(addr, (bal, dep, batches, largest, wins))| (addr, bal, dep, batches, largest, wins))
-        .collect();
+    let mut entries: Vec<_> = player_data.into_iter().collect();
 
     entries.sort_by(|a, b| {
-        let pnl_a = a.1 as i128 - a.2 as i128;
-        let pnl_b = b.1 as i128 - b.2 as i128;
+        let pnl_a = a.1 .0 as i128 - a.1 .1 as i128;
+        let pnl_b = b.1 .0 as i128 - b.1 .1 as i128;
         pnl_b.cmp(&pnl_a)
     });
 
@@ -1210,27 +1340,47 @@ fn build_leaderboard_from_map(
     entries
         .iter()
         .enumerate()
-        .map(|(i, (addr, bal, dep, batches, _largest, wins))| {
-            let pnl = (*bal as i128 - *dep as i128) as f64 / decimals;
-            let deposited = *dep as f64 / decimals;
-            let roi = if deposited > 0.0 { pnl / deposited * 100.0 } else { 0.0 };
-            let win_rate = if *batches > 0 {
-                *wins as f64 / *batches as f64 * 100.0
-            } else {
-                0.0
-            };
-            LeaderboardEntry {
-                rank: i + 1,
-                wallet_address: format!("{:?}", addr),
-                pnl: (pnl * 100.0).round() / 100.0,
-                win_rate: (win_rate * 10.0).round() / 10.0,
-                roi: (roi * 100.0).round() / 100.0,
-                total_volume: (deposited * 100.0).round() / 100.0,
-                portfolio_bets: *batches,
-                avg_portfolio_size: 0.0,
-                largest_portfolio: 0,
-            }
-        })
+        .map(
+            |(
+                i,
+                (
+                    addr,
+                    (bal, dep, batches, _largest, wins, rounds_played, rounds_won, total_correct, total_markets),
+                ),
+            )| {
+                let pnl = (*bal as i128 - *dep as i128) as f64 / decimals;
+                let deposited = *dep as f64 / decimals;
+                let roi = if deposited > 0.0 {
+                    pnl / deposited * 100.0
+                } else {
+                    0.0
+                };
+                let win_rate = if *batches > 0 {
+                    *wins as f64 / *batches as f64 * 100.0
+                } else {
+                    0.0
+                };
+                let avg_correct_pct = if *total_markets > 0 {
+                    *total_correct as f64 / *total_markets as f64 * 100.0
+                } else {
+                    0.0
+                };
+                LeaderboardEntry {
+                    rank: i + 1,
+                    wallet_address: format!("{:?}", addr),
+                    pnl: (pnl * 100.0).round() / 100.0,
+                    win_rate: (win_rate * 10.0).round() / 10.0,
+                    roi: (roi * 100.0).round() / 100.0,
+                    total_volume: (deposited * 100.0).round() / 100.0,
+                    portfolio_bets: *batches,
+                    avg_portfolio_size: 0.0,
+                    largest_portfolio: 0,
+                    rounds_played: *rounds_played,
+                    rounds_won: *rounds_won,
+                    avg_correct_pct: (avg_correct_pct * 10.0).round() / 10.0,
+                }
+            },
+        )
         .collect()
 }
 
