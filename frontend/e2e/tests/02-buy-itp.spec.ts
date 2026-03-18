@@ -42,8 +42,10 @@ test.describe('Buy ITP', () => {
     await expect(tableRow.first()).toBeVisible({ timeout: 30_000 });
 
     // 5. Extract ITP ID from the first row (for shares tracking later)
+    //    Row id is "itp-card-0x0000...0002" — extract the hex part
     const firstRowId = await tableRow.first().getAttribute('id') ?? '';
-    const ITP_ID = ('0x' + (firstRowId.replace('itp-card-', '') || '0000000000000000000000000000000000000000000000000000000000000001').padStart(64, '0')) as `0x${string}`;
+    const rawId = firstRowId.replace('itp-card-', '');
+    const ITP_ID = (rawId.startsWith('0x') ? rawId : '0x' + rawId.padStart(64, '0')) as `0x${string}`;
     console.log(`Buy test: targeting ${firstRowId}, ITP_ID=${ITP_ID}`);
 
     // 6. Click "Buy" button in the first table row.
