@@ -6,6 +6,7 @@ import { getAssetCountForSource, getSourceStatusFromMeta } from '@/lib/vision/so
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { CardTilt } from '@/components/ui/CardTilt'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
@@ -105,15 +106,24 @@ export function SourcesGrid() {
       <div className="px-6 lg:px-12 py-6">
         <div className="max-w-site mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light">
-            {filteredSources.map(source => (
-              <SourceCard
-                key={source.sourceId}
-                source={{ ...source, id: source.sourceId }}
-                bitmapEditor={bitmapEditor}
-                metaAssetCount={meta?.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : undefined}
-                metaStatus={meta?.sources ? getSourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
-              />
-            ))}
+            {filteredSources.map((source, i) => {
+              const col = i % 4
+              const row = Math.floor(i / 4)
+              return (
+                <CardTilt
+                  key={source.sourceId}
+                  delay={row + col}
+                  brandColor={source.brandBg}
+                >
+                  <SourceCard
+                    source={{ ...source, id: source.sourceId }}
+                    bitmapEditor={bitmapEditor}
+                    metaAssetCount={meta?.assetCounts ? getAssetCountForSource(source.sourceId, meta.assetCounts) : undefined}
+                    metaStatus={meta?.sources ? getSourceStatusFromMeta(source.sourceId, meta.sources) : undefined}
+                  />
+                </CardTilt>
+              )
+            })}
           </div>
         </div>
       </div>

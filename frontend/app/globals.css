@@ -451,8 +451,56 @@ input[type="number"] {
   100% { transform: scale(1); opacity: 0; }
 }
 
+/* ── SOURCE CARD CASCADE — scroll-reveal with diagonal stagger ── */
+@keyframes source-cascade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.94);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Modern browsers: scroll-driven entrance */
+@supports (animation-timeline: view()) {
+  .source-card-cascade {
+    animation: source-cascade linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 30%;
+  }
+}
+
+/* Fallback: IO-triggered transition with diagonal stagger delay */
+@supports not (animation-timeline: view()) {
+  .source-card-cascade {
+    opacity: 0;
+    transform: translateY(20px) scale(0.94);
+    filter: blur(3px);
+    transition: opacity 0.5s var(--ease-out-expo),
+                transform 0.5s var(--ease-out-expo),
+                filter 0.5s var(--ease-out-expo);
+    transition-delay: calc(var(--d, 0) * 40ms);
+  }
+  .source-card-cascade.cascade-revealed {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
 /* Respect reduced motion for all overdrive animations */
 @media (prefers-reduced-motion: reduce) {
+  .source-card-cascade {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
   .live-ambient-pulse { animation: none; }
   .animate-status-breathe { animation: none; }
   .animate-batch-reveal { animation: none; opacity: 1; transform: none; }
