@@ -1,13 +1,14 @@
 'use client'
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import { Link } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import type { VisionSource } from '@/lib/vision/sources'
 import { getDataNodeSourceId } from '@/lib/vision/sources'
 import { getCategoryLabel } from '@/lib/vision/source-categories'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
 /** Max entries shown in the hover overlay */
 const HOVER_LIST_CAP = 100
@@ -86,6 +87,8 @@ function formatValue(v: string, isPrice?: boolean, unit?: string): string {
 }
 
 export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
+  const router = useRouter()
+
   // Fetch per-source data immediately on mount
   const dataNodeId = getDataNodeSourceId(source.id)
   const { data: sourceSnapshot, isLoading } = useSourceSnapshot(dataNodeId)
@@ -110,6 +113,20 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
   const upCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'up').length
   const downCount = sortedMarkets.filter(m => getCellState(bitmapEditor.state, m.assetId) === 'down').length
   const totalSet = upCount + downCount
+
+  // Count-up: start at 0, tick to real value when card enters viewport
+  const metricsRef = useRef<HTMLDivElement>(null)
+  const [metricsVisible, setMetricsVisible] = useState(false)
+  useEffect(() => {
+    const el = metricsRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setMetricsVisible(true); io.disconnect() } },
+      { threshold: 0.1 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   // Drag-paint state
   const paintRef = useRef<{ active: boolean; target: CellState }>({ active: false, target: 'up' })
@@ -157,21 +174,32 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
   // Per-source logo size overrides
   const logoSize = source.id === 'pumpfun' ? { w: 280, h: 80, maxH: '80px' } : { w: 240, h: 60, maxH: '60px' }
 
+  // View Transitions API — morph card brand into detail hero
+  const handleViewTransition = useCallback((e: React.MouseEvent) => {
+    const d = document as any
+    if (!d.startViewTransition) return
+    e.preventDefault()
+    d.startViewTransition(() => {
+      router.push(`/source/${source.id}`)
+    })
+  }, [router, source.id])
+
   // Hide card if source has no working data (covers meta-down scenario)
   if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
 
   return (
     <Link
       href={`/source/${source.id}`}
+      onClick={handleViewTransition}
       data-testid="source-card"
-      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer"
+      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer fluid-card"
     >
       {/* Brand image area */}
       <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
           {/* Brand logo face */}
           <div
             className={`absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full ${isLightBg ? 'border-b border-border-light' : ''}`}
-            style={brandStyle}
+            style={{ ...brandStyle, viewTransitionName: `source-brand-${source.id}` } as React.CSSProperties}
           >
             <Image
               src={source.logo}
@@ -270,10 +298,19 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
         </div>
 
         {/* Metrics row */}
-        <div className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
+        <div ref={metricsRef} className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
           <div className="py-2.5 pr-3">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Markets</div>
-            <span className="text-body font-bold text-black font-mono tabular-nums">{displayMarketCount || '—'}</span>
+            <span className="text-body font-bold text-black font-mono tabular-nums">
+              {displayMarketCount ? (
+                <AnimatedNumber
+                  value={metricsVisible ? displayMarketCount : 0}
+                  decimals={0}
+                  duration={800}
+                  formatFn={(v) => Math.round(v).toLocaleString()}
+                />
+              ) : '—'}
+            </span>
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
             <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
