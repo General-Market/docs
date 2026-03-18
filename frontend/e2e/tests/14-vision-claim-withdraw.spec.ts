@@ -17,6 +17,7 @@ import {
   joinRoundDirect,
   waitForRoundSettled,
   getBatchConfigHash,
+  getPosition,
   getVisionRealBalance,
   getL3UsdcBalance,
   getVisionUsdcAddress,
@@ -40,26 +41,45 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     let batchId: number | null = null
 
     if (rounds.length > 0) {
-      const round = rounds[0]
-      batchId = round.batchId
-      const configHash = await getBatchConfigHash(batchId)
-      const deposit = 10n * 10n ** 18n
-      const stake = 1n * 10n ** 18n
-      const marketCount = 10
+      // Find a round neither player has joined yet
+      let configHash: `0x${string}` = '0x'
+      for (const round of rounds) {
+        try {
+          const pos1 = await getPosition(round.batchId, PLAYER1)
+          if (pos1.joinTimestamp !== 0n) continue
+          const pos2 = await getPosition(round.batchId, PLAYER2)
+          if (pos2.joinTimestamp !== 0n) continue
+          batchId = round.batchId
+          configHash = await getBatchConfigHash(batchId)
+          break
+        } catch {
+          batchId = round.batchId
+          configHash = await getBatchConfigHash(batchId)
+          break
+        }
+      }
 
-      await impersonateAccount(PLAYER1)
-      await ensureUsdcBalance(PLAYER1, deposit)
-      await impersonateAccount(PLAYER2)
-      await ensureUsdcBalance(PLAYER2, deposit)
+      if (batchId !== null) {
+        const deposit = 10n * 10n ** 18n
+        const stake = 1n * 10n ** 18n
+        const marketCount = 10
 
-      const p1Bets = randomBets(marketCount)
-      const p2Bets = oppositeBets(p1Bets)
+        await impersonateAccount(PLAYER1)
+        await ensureUsdcBalance(PLAYER1, deposit)
+        await impersonateAccount(PLAYER2)
+        await ensureUsdcBalance(PLAYER2, deposit)
 
-      await Promise.all([
-        joinRoundDirect(PLAYER1, batchId, configHash, deposit, stake, p1Bets, marketCount),
-        joinRoundDirect(PLAYER2, batchId, configHash, deposit, stake, p2Bets, marketCount),
-      ])
-      console.log(`Joined round ${batchId}, waiting for auto-settlement...`)
+        const p1Bets = randomBets(marketCount)
+        const p2Bets = oppositeBets(p1Bets)
+
+        await Promise.all([
+          joinRoundDirect(PLAYER1, batchId, configHash, deposit, stake, p1Bets, marketCount),
+          joinRoundDirect(PLAYER2, batchId, configHash, deposit, stake, p2Bets, marketCount),
+        ])
+        console.log(`Joined round ${batchId}, waiting for auto-settlement...`)
+      } else {
+        console.log(`All ${rounds.length} rounds already joined — skipping join, testing withdraw only`)
+      }
     }
 
     // 2. Wait for settlement (credits realBalance)

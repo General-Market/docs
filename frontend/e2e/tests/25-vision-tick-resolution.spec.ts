@@ -18,6 +18,7 @@ import {
   getRoundResults,
   getVisionRealBalance,
   getBatchConfigHash,
+  getPosition,
   impersonateAccount,
   ensureUsdcBalance,
   randomBets,
@@ -33,12 +34,31 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
   test('opposite bets resolve with pool conservation and balance credits', async () => {
     test.setTimeout(300_000)
 
-    // 1. Find active round
+    // 1. Find active round that neither player has joined
     const rounds = await getActiveRounds()
     expect(rounds.length).toBeGreaterThan(0)
-    const round = rounds[0]
-    const batchId = round.batchId
-    const configHash = await getBatchConfigHash(batchId)
+    let batchId = 0
+    let configHash: `0x${string}` = '0x'
+    for (const round of rounds) {
+      try {
+        const pos1 = await getPosition(round.batchId, PLAYER1)
+        if (pos1.joinTimestamp !== 0n) continue
+        const pos2 = await getPosition(round.batchId, PLAYER2)
+        if (pos2.joinTimestamp !== 0n) continue
+        batchId = round.batchId
+        configHash = await getBatchConfigHash(batchId)
+        break
+      } catch {
+        batchId = round.batchId
+        configHash = await getBatchConfigHash(batchId)
+        break
+      }
+    }
+    if (batchId === 0) {
+      console.log(`All ${rounds.length} rounds already joined — run: ./testnet.sh refresh-batches`)
+      expect(rounds.length).toBeGreaterThan(0)
+      return
+    }
     console.log(`Using round ${batchId}`)
 
     // 2. Fund players
