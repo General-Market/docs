@@ -48,37 +48,25 @@ function formatTvl(tvl: number): string {
   return `$${tvl.toFixed(2)}`
 }
 
-interface LeaderboardEntry {
-  rank: number
-  walletAddress: string
-  pnl: number
-  winRate: number
-  totalVolume: number
-  portfolioBets: number
-}
-
 export function VisionSection({ snapshots, latest, loading }: SectionProps) {
   const [batches, setBatches] = useState<BatchData[]>([])
   const [batchLoading, setBatchLoading] = useState(true)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
 
   useEffect(() => {
     let cancelled = false
-    async function fetchData() {
-      const [batchRes, lbRes] = await Promise.allSettled([
-        fetch('/api/vision/batches').then(r => r.ok ? r.json() : null),
-        fetch('/api/dn/vision/leaderboard').then(r => r.ok ? r.json() : null),
-      ])
-      if (cancelled) return
-      if (batchRes.status === 'fulfilled' && batchRes.value) {
-        setBatches(batchRes.value.batches ?? [])
+    async function fetchBatches() {
+      try {
+        const res = await fetch('/api/vision/batches')
+        if (!res.ok) throw new Error(`${res.status}`)
+        const data = await res.json()
+        if (!cancelled) setBatches(data.batches ?? [])
+      } catch {
+        if (!cancelled) setBatches([])
+      } finally {
+        if (!cancelled) setBatchLoading(false)
       }
-      if (lbRes.status === 'fulfilled' && lbRes.value) {
-        setLeaderboard(lbRes.value.leaderboard ?? [])
-      }
-      setBatchLoading(false)
     }
-    fetchData()
+    fetchBatches()
     return () => { cancelled = true }
   }, [])
 
@@ -151,8 +139,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           </div>
           <div className="border-t border-border-light pt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-title font-black text-black tracking-tight">{batchStats.total}</span>
-              <span className="text-caption text-text-muted">total batches</span>
+              <span className="text-[24px] font-black text-black tracking-tight">{batchStats.total}</span>
+              <span className="text-[12px] text-text-muted">total batches</span>
             </div>
             <div className="mt-1.5 flex gap-4">
               <MiniBar label="Active" value={batchStats.active} total={batchStats.total} color="#000" />
@@ -167,12 +155,12 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
         <div className="h-full flex flex-col">
           <div className="flex items-baseline gap-3 mb-3">
             <div>
-              <span className="text-label text-text-muted block">Total TVL</span>
-              <span className="text-heading font-black text-black tracking-tight">{formatTvl(poolStats.totalTvl)}</span>
+              <span className="text-[11px] text-text-muted block">Total TVL</span>
+              <span className="text-[20px] font-black text-black tracking-tight">{formatTvl(poolStats.totalTvl)}</span>
             </div>
             <div className="ml-auto text-right">
-              <span className="text-label text-text-muted block">Avg Players / Batch</span>
-              <span className="text-subhead font-bold text-black">{poolStats.avgPlayers.toFixed(1)}</span>
+              <span className="text-[11px] text-text-muted block">Avg Players / Batch</span>
+              <span className="text-[16px] font-bold text-black">{poolStats.avgPlayers.toFixed(1)}</span>
             </div>
           </div>
           <div className="flex-1 min-h-0">
@@ -212,7 +200,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <p className="text-caption text-text-muted">No batch data available</p>
+                <p className="text-[12px] text-text-muted">No batch data available</p>
               </div>
             )}
           </div>
@@ -258,7 +246,7 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">No batch data available</p>
+              <p className="text-[12px] text-text-muted">No batch data available</p>
             </div>
           )}
         </div>
@@ -298,52 +286,6 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
           </AreaChart>
         </ResponsiveContainer>
       </ExplorerChartCard>
-
-      {/* Top Players — from data-node leaderboard */}
-      <ExplorerChartCard
-        title="Top Players"
-        subtitle={`${leaderboard.length} ranked players`}
-        loading={batchLoading}
-      >
-        <div className="h-full overflow-y-auto">
-          {leaderboard.length > 0 ? (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border-light">
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">#</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">Player</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">Volume</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right pr-2">Win%</th>
-                  <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">P&L</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.slice(0, 10).map((p) => (
-                  <tr key={p.walletAddress} className="border-b border-border-light last:border-0">
-                    <td className="py-1 pr-2 text-label text-text-muted">{p.rank}</td>
-                    <td className="py-1 pr-2 text-label font-mono text-black">
-                      {p.walletAddress.slice(0, 6)}...{p.walletAddress.slice(-4)}
-                    </td>
-                    <td className="py-1 pr-2 text-label font-mono text-right text-text-muted">
-                      {p.totalVolume >= 1000 ? `$${(p.totalVolume / 1000).toFixed(1)}K` : `$${p.totalVolume.toFixed(0)}`}
-                    </td>
-                    <td className="py-1 pr-2 text-label font-mono text-right text-black font-semibold">
-                      {p.winRate.toFixed(1)}%
-                    </td>
-                    <td className={`py-1 text-label font-mono text-right font-semibold ${p.pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                      {p.pnl >= 0 ? '+' : ''}${p.pnl.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <p className="text-caption text-text-muted">No player data</p>
-            </div>
-          )}
-        </div>
-      </ExplorerChartCard>
     </div>
   )
 }
@@ -353,8 +295,8 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
 function StatBlock({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-black/[0.03] rounded-lg px-3 py-2.5 text-center">
-      <div className="text-heading font-black text-black tracking-tight leading-none">{value}</div>
-      <div className="text-micro text-text-muted mt-1 leading-tight">{label}</div>
+      <div className="text-[20px] font-black text-black tracking-tight leading-none">{value}</div>
+      <div className="text-[10px] text-text-muted mt-1 leading-tight">{label}</div>
     </div>
   )
 }
@@ -364,8 +306,8 @@ function MiniBar({ label, value, total, color }: { label: string; value: number;
   return (
     <div className="flex-1">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-micro text-text-muted">{label}</span>
-        <span className="text-micro font-medium text-black">{pct.toFixed(0)}%</span>
+        <span className="text-[10px] text-text-muted">{label}</span>
+        <span className="text-[10px] font-medium text-black">{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 bg-black/5 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />

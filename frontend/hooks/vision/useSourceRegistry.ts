@@ -4,7 +4,6 @@ import useSWR from 'swr'
 
 interface SourceDisplay {
   sourceId: string
-  internalIds?: string[]
   name: string
   description: string
   category: string
@@ -44,24 +43,7 @@ export function useSourceRegistry(): SourceRegistry & { isLoading: boolean } {
 }
 
 export function findSource(sources: SourceDisplay[], sourceId: string) {
-  return sources.find(
-    s => s.sourceId === sourceId || s.internalIds?.includes(sourceId),
-  )
-}
-
-/**
- * Resolve the data-node internal source ID from either a display or internal sourceId.
- * When the URL uses a display ID (e.g. "coingecko"), returns the first internal ID ("crypto")
- * so API calls to the data-node hit the correct DB rows.
- */
-export function resolveInternalId(sources: SourceDisplay[], sourceId: string): string {
-  const entry = findSource(sources, sourceId)
-  if (!entry) return sourceId
-  // If sourceId matches the display ID and there are internal aliases, use the first one
-  if (entry.sourceId === sourceId && entry.internalIds?.length) {
-    return entry.internalIds[0]
-  }
-  return sourceId
+  return sources.find(s => s.sourceId === sourceId)
 }
 
 export function getCategoryForMarket(sources: SourceDisplay[], marketId: string): string {

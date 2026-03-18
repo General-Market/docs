@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useReadContract, useConnect } from 'wagmi'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -11,10 +11,11 @@ import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
 import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
+import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getBatchTickState } from '@/lib/vision/tick'
-import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
 import { WithdrawModal } from '../WithdrawModal'
@@ -49,18 +50,24 @@ export default function BatchEntryPanel({
   marketIds = [],
 }: BatchEntryPanelProps) {
   // -- Batch data --
-  // Fetch live batch list from oracles (for display: playerCount, tvl, currentTick)
+  // Fetch live batch list from issuers (for display: playerCount, tvl, currentTick)
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
     if (!batches || batches.length === 0) return null
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Config hash from API batch data (no on-chain read needed)
+  // -- Read configHash from on-chain batch state --
   const activeBatchId = activeBatch?.id ?? null
-  const configHash = activeBatch?.configHash
-    ? activeBatch.configHash as `0x${string}`
-    : (activeBatch?.sourceId ? `0x${'0'.repeat(64)}` as `0x${string}` : undefined)
+  const { data: onChainBatch } = useReadContract({
+    address: VISION_ADDRESS,
+    abi: VISION_ABI,
+    functionName: 'getBatch',
+    args: activeBatchId !== null ? [BigInt(activeBatchId)] : undefined,
+    chainId: indexL3.id,
+    query: { enabled: activeBatchId !== null && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
+  const configHash = (onChainBatch as any)?.configHash as `0x${string}` | undefined
 
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
@@ -94,7 +101,6 @@ export default function BatchEntryPanel({
     submitBitmap,
     isSubmitting,
     error: submitError,
-    reset: resetSubmit,
   } = useSubmitBitmap()
 
   // -- Wallet connection --
@@ -139,14 +145,13 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // All markets must be explicitly set (up or down) before entering.
-  const allMarketsSet = marketIds.length > 0 && counts.empty === 0
-  // New joins require: stake + configHash + all markets set.
-  // Deposits (already joined) only require stake.
+  // Betting is always open — no lock window in continuous betting.
+  // Unset markets default to DOWN — no need to require explicit predictions to submit.
+  // New joins require: stake + configHash + markets loaded.
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (!!configHash && allMarketsSet))
+    && (isJoined || (!!configHash && marketIds.length > 0))
 
-  // -- After on-chain join succeeds, submit bitmap to oracles --
+  // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
     if (joinStep !== 'done' || !encodedBitmap || !bitmapHash || !activeBatch) return
     submitBitmap({
@@ -178,11 +183,6 @@ export default function BatchEntryPanel({
   // -- Enter batch handler --
   const handleEnterBatch = useCallback(() => {
     if (!activeBatch || !canSubmit) return
-
-    // Clear any previous errors before starting
-    resetJoin()
-    resetDeposit()
-    resetSubmit()
 
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
     const depositAmount = BigInt(Math.round(stakeValue * 1e18))
@@ -232,7 +232,6 @@ export default function BatchEntryPanel({
       if (stakeValue > 0) return `Deposit ${stakeValue} USDC`
       return 'Deposit More'
     }
-    if (!allMarketsSet) return `Set all ${counts.empty} remaining markets`
     if (stakeValue > 0) return `Enter Batch \u2014 ${stakeValue} USDC`
     return 'Enter Batch'
   }, [isConnected, joinStep, depositStep, isJoinPending, isJoinConfirming, isDepositPending, isDepositConfirming, isSubmitting, stakeValue, isJoined])
@@ -251,21 +250,21 @@ export default function BatchEntryPanel({
             <div className="flex items-baseline gap-2">
               <h2 className="text-sm font-semibold text-neutral-900">Set predictions for next tick</h2>
               {activeBatch && (
-                <span className="text-micro text-neutral-400 font-mono">#{activeBatch.id}</span>
+                <span className="text-[10px] text-neutral-400 font-mono">#{activeBatch.id}</span>
               )}
             </div>
-            <p className="text-micro text-text-muted">
+            <p className="text-[10px] text-text-muted">
               {activeBatch ? `Tick ${activeBatch.currentTick}` : 'Waiting for batch...'}
             </p>
           </div>
-          <p className="text-title font-mono font-black tracking-tight leading-none text-black">
+          <p className="text-[24px] font-mono font-black tracking-tight leading-none text-black">
             {formatCountdown(tickState.remaining)}
           </p>
         </div>
 
         {/* Bitmap summary — visual bar + labels */}
         <div className="mb-3">
-          <div className="flex items-center justify-between text-micro font-semibold mb-1">
+          <div className="flex items-center justify-between text-[10px] font-semibold mb-1">
             <span className="text-color-up">{counts.up} UP</span>
             <span className="text-color-down">{counts.down} DN</span>
             <span className="text-text-muted">{counts.empty} unset</span>
@@ -289,12 +288,12 @@ export default function BatchEntryPanel({
         {/* Tick status messages */}
         {isJoined && betsSubmittedTick !== null && (
           <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-            <p className="text-label font-semibold text-emerald-700">Your bets are set for the next tick</p>
+            <p className="text-[11px] font-semibold text-emerald-700">Your bets are set for the next tick</p>
           </div>
         )}
         {isJoined && betsSubmittedTick === null && !hasPredictions && (
           <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
-            <p className="text-label text-neutral-500">No bets set — sitting out this tick</p>
+            <p className="text-[11px] text-neutral-500">No bets set — sitting out this tick</p>
           </div>
         )}
 
@@ -305,8 +304,8 @@ export default function BatchEntryPanel({
             onClick={handleConnectWallet}
             className="w-full mb-3 rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 text-left hover:bg-neutral-100 transition-colors"
           >
-            <p className="text-label font-bold text-neutral-700">Connect Wallet</p>
-            <p className="text-micro text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
+            <p className="text-[11px] font-bold text-neutral-700">Connect Wallet</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">Connect your wallet to start playing</p>
           </button>
         )}
         {/* Deposit prompt when connected but balance is 0 */}
@@ -316,8 +315,8 @@ export default function BatchEntryPanel({
             onClick={() => setShowDepositModal(true)}
             className="w-full mb-3 rounded-md border border-dashed border-yellow-400 bg-yellow-50 px-3 py-2 text-left hover:bg-yellow-100 transition-colors"
           >
-            <p className="text-label font-bold text-yellow-700">No Vision balance</p>
-            <p className="text-micro text-yellow-600 mt-0.5">Deposit USDC to start playing</p>
+            <p className="text-[11px] font-bold text-yellow-700">No Vision balance</p>
+            <p className="text-[10px] text-yellow-600 mt-0.5">Deposit USDC to start playing</p>
           </button>
         )}
 
@@ -333,7 +332,7 @@ export default function BatchEntryPanel({
               onChange={(e) => setStakeInput(e.target.value)}
               className="w-full rounded-md border border-neutral-200 bg-white px-3 py-1.5 pr-14 text-sm text-neutral-900 placeholder-neutral-300 focus:border-neutral-400 focus:outline-none focus:ring-0 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-micro font-medium text-neutral-400">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-neutral-400">
               USDC
             </span>
           </div>
@@ -343,7 +342,7 @@ export default function BatchEntryPanel({
                 key={amt}
                 type="button"
                 onClick={() => setStakeInput(String(amt))}
-                className="flex-1 rounded border border-neutral-200 py-0.5 text-label font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+                className="flex-1 rounded border border-neutral-200 py-0.5 text-[11px] font-medium text-neutral-600 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
               >
                 ${amt}
               </button>
@@ -355,9 +354,9 @@ export default function BatchEntryPanel({
         {isJoined && position && (
           <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
             <div className="flex items-center justify-between">
-              <span className="text-label font-medium text-emerald-700">Active position</span>
+              <span className="text-[11px] font-medium text-emerald-700">Active position</span>
               <div className="flex items-center gap-2">
-                <span className="text-label font-mono text-emerald-700">
+                <span className="text-[11px] font-mono text-emerald-700">
                   {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
                 </span>
                 {/* Only show withdraw after at least one tick has resolved since joining */}
@@ -365,7 +364,7 @@ export default function BatchEntryPanel({
                   <button
                     type="button"
                     onClick={() => setShowClaimModal(true)}
-                    className="px-2 py-0.5 text-micro font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
+                    className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
                   >
                     Withdraw
                   </button>
@@ -375,29 +374,29 @@ export default function BatchEntryPanel({
           </div>
         )}
 
-        {/* Error display — dismissable */}
+        {/* Error display — with dismiss to reset state for retry */}
         {displayError && (
-          <div className="text-label mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-red-600 line-clamp-2 flex-1">{displayError}</p>
-              <button
-                type="button"
-                onClick={() => { resetJoin(); resetDeposit(); resetSubmit() }}
-                className="text-red-400 hover:text-red-600 text-sm font-bold flex-shrink-0 leading-none"
-                title="Dismiss"
-              >
-                &times;
-              </button>
+          <div className="text-[11px] text-red-600 mb-2 flex items-start justify-between gap-2">
+            <div>
+              <p className="line-clamp-2">{displayError}</p>
+              {displayError.includes('Insufficient Vision balance') && (
+                <button
+                  type="button"
+                  onClick={() => setShowDepositModal(true)}
+                  className="mt-1 px-3 py-1 text-[11px] font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
+                >
+                  Deposit USDC
+                </button>
+              )}
             </div>
-            {displayError.includes('Insufficient Vision balance') && (
-              <button
-                type="button"
-                onClick={() => { setShowDepositModal(true); resetJoin(); resetDeposit(); resetSubmit() }}
-                className="mt-1.5 px-3 py-1 text-label font-semibold text-white bg-color-up rounded hover:opacity-90 transition-opacity"
-              >
-                Deposit USDC
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => { resetJoin(); resetDeposit() }}
+              className="text-neutral-400 hover:text-neutral-600 text-xs flex-shrink-0"
+              title="Dismiss"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -412,7 +411,7 @@ export default function BatchEntryPanel({
 
         {/* Batch info footer */}
         {activeBatch && (
-          <div className="mt-2 flex items-center justify-between text-micro text-neutral-400">
+          <div className="mt-2 flex items-center justify-between text-[10px] text-neutral-400">
             <span>{activeBatch.playerCount} players</span>
             <span>{activeBatch.marketCount || marketIds.length} markets</span>
           </div>

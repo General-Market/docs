@@ -5,7 +5,6 @@ import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { getAssetCountForSource, getSourceStatusFromMeta } from '@/lib/vision/sources'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
-import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { CategoryNav } from './CategoryNav'
 import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
@@ -50,52 +49,55 @@ export function SourcesGrid() {
       {/* Next batches horizontal scroll */}
       <NextBatches />
 
-      {/* Stats bar — full-bleed black, iShares convention: number dominates, label whispers */}
+      {/* Section bar — stats on black bar */}
       {showSectionBar && (
-        <div className="bg-black text-white">
-          <div className="max-w-site mx-auto px-6 lg:px-12 py-5 flex items-end">
-            <div className="flex items-end gap-10">
-              <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Sources</span>
-                <AnimatedNumber value={sourceCount} decimals={0} duration={1200} className="text-stat font-black font-mono tabular-nums" />
+        <div className="px-6 lg:px-12">
+          <div className="max-w-site mx-auto">
+            <div className="bg-black text-white px-5 py-3 flex items-center">
+              <div className="flex items-center gap-6">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[20px] font-black">{sourceCount}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Sources</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  {statsLoading ? (
+                    <span className="inline-block w-16 h-5 bg-white/10 rounded animate-pulse" />
+                  ) : (
+                    <span className="text-[20px] font-black">
+                      {liveAssetCount > 0 ? liveAssetCount.toLocaleString() : '—'}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Assets</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[20px] font-black">{categoryCount}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/40">Categories</span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Assets</span>
-                {statsLoading ? (
-                  <span className="inline-block w-20 h-8 bg-white/10 rounded animate-pulse" />
-                ) : (
-                  <AnimatedNumber
-                    value={liveAssetCount}
-                    decimals={0}
-                    duration={1600}
-                    className="text-stat font-black font-mono tabular-nums"
-                    formatFn={(v) => v > 0 ? Math.round(v).toLocaleString() : '—'}
-                  />
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Categories</span>
-                <AnimatedNumber value={categoryCount} decimals={0} duration={1000} className="text-stat font-black font-mono tabular-nums" />
-              </div>
-            </div>
 
-            {/* Live uptime — right aligned, quieter */}
-            <div className="ml-auto flex items-center gap-3 live-ambient-pulse">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
-                <span className="text-label font-semibold text-green-400 uppercase">Live</span>
+              {/* Live uptime indicator — right aligned */}
+              <div className="ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                  </span>
+                  <span className="text-[12px] font-bold text-green-400 uppercase tracking-[0.04em]">Live</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: '99.99%' }} />
+                  </div>
+                  <span className="text-[11px] font-mono font-bold text-white/60">99.99%</span>
+                </div>
+                <button
+                  onClick={() => setShowSectionBar(false)}
+                  className="text-white/40 hover:text-white transition-colors text-[18px] leading-none ml-2"
+                  aria-label="Dismiss"
+                >
+                  &times;
+                </button>
               </div>
-              <span className="text-label font-mono font-bold text-white/50 tabular-nums">99.99%</span>
-              <button
-                onClick={() => setShowSectionBar(false)}
-                className="text-white/30 hover:text-white transition-colors text-title leading-none ml-1"
-                aria-label="Dismiss"
-              >
-                &times;
-              </button>
             </div>
           </div>
         </div>

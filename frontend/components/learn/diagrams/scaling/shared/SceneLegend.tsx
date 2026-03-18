@@ -4,7 +4,7 @@
  * SceneLegend — shared legend component for 3D article scenes.
  *
  * Renders color swatches with labels at a readable size.
- * Replaces the per-scene Legend functions that used text-micro / w-3 h-2.
+ * Replaces the per-scene Legend functions that used text-[10px] / w-3 h-2.
  *
  * Usage:
  *   <SceneLegend items={[
@@ -27,7 +27,7 @@ export function SceneLegend({ items }: { items: LegendItem[] }) {
             className="w-4 h-3 rounded-[3px] shrink-0"
             style={{ backgroundColor: color }}
           />
-          <span className="text-caption text-text-secondary font-medium tracking-wide whitespace-nowrap">
+          <span className="text-[13px] text-text-secondary font-medium tracking-wide whitespace-nowrap">
             {label}
           </span>
         </div>

@@ -485,7 +485,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Column headers */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-wider text-text-muted">
           <span className="flex-1">{t('portfolio_modal.market')}</span>
           <div className="flex items-center gap-3">
             <span className="w-12">{t('portfolio_modal.position')}</span>

@@ -81,7 +81,7 @@ function ExecutionLayer() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-heading font-bold uppercase tracking-[0.08em]"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: BLUE }}
         >
           Execution
@@ -96,7 +96,7 @@ function ExecutionLayer() {
         position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        <p className="text-label font-mono whitespace-nowrap" style={{ color: BLUE, opacity: 0.7 }}>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: BLUE, opacity: 0.7 }}>
           15M gas →
         </p>
       </Html>
@@ -126,7 +126,7 @@ function DataLayer() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-heading font-bold uppercase tracking-[0.08em]"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: INDIGO }}
         >
           Data
@@ -141,7 +141,7 @@ function DataLayer() {
         position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        <p className="text-label font-mono whitespace-nowrap" style={{ color: INDIGO, opacity: 0.7 }}>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: INDIGO, opacity: 0.7 }}>
           8 MB/sec
         </p>
       </Html>
@@ -171,7 +171,7 @@ function ProofsLayer() {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-heading font-bold uppercase tracking-[0.08em]"
+          className="text-[18px] font-bold uppercase tracking-wider"
           style={{ color: VIOLET }}
         >
           Proofs
@@ -186,7 +186,7 @@ function ProofsLayer() {
         position={[1.4, FLOOR_H / 2 + 0.02, -FLOOR_D / 2 + 0.15]}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
-        <p className="text-label font-mono whitespace-nowrap" style={{ color: VIOLET, opacity: 0.7 }}>
+        <p className="text-[11px] font-mono whitespace-nowrap" style={{ color: VIOLET, opacity: 0.7 }}>
           1 proof per block
         </p>
       </Html>
@@ -617,7 +617,7 @@ function ValidLabel({ reducedMotion }: { reducedMotion: boolean }) {
       position={[0, 0.22, 0]}
       style={{ pointerEvents: 'none', userSelect: 'none' }}
     >
-      <p ref={ref} className="text-title font-bold transition-none" style={{ color: GREEN, opacity: 0 }}>
+      <p ref={ref} className="text-[22px] font-bold transition-none" style={{ color: GREEN, opacity: 0 }}>
         VALID
       </p>
     </Html>
@@ -765,19 +765,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-blue-400 border border-blue-500" />
-        <span className="text-micro text-text-muted tracking-wide">Execution</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Execution</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-indigo-400 border border-indigo-500" />
-        <span className="text-micro text-text-muted tracking-wide">Data</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Data</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-violet-400 border border-violet-500" />
-        <span className="text-micro text-text-muted tracking-wide">Proofs</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Proofs</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-        <span className="text-micro text-text-muted tracking-wide">Valid</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Valid</span>
       </div>
     </div>
   )

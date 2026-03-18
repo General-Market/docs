@@ -78,7 +78,7 @@ export default async function LearnPage() {
         <SectionBar title="Articles" value={String(articles.length)} />
 
         {articles.length === 0 ? (
-          <p className="text-body text-text-secondary mt-8">
+          <p className="text-[14px] text-text-secondary mt-8">
             No articles yet. Check back soon.
           </p>
         ) : (
@@ -89,20 +89,20 @@ export default async function LearnPage() {
                 href={`/learn/${article.frontmatter.slug}`}
                 className="border-r border-b border-border-light p-6 hover:border-black transition-colors group flex flex-col"
               >
-                <div className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-3">
+                <div className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted mb-3">
                   {article.frontmatter.category}
                 </div>
-                <div className="text-subhead font-extrabold tracking-[-0.01em] text-black leading-snug mb-2">
+                <div className="text-[16px] font-extrabold tracking-[-0.01em] text-black leading-snug mb-2">
                   {article.frontmatter.title}
                 </div>
-                <div className="text-body text-text-secondary leading-relaxed mb-4 flex-1">
+                <div className="text-[14px] text-text-secondary leading-relaxed mb-4 flex-1">
                   {article.frontmatter.description}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-caption text-text-muted">
+                  <div className="text-[12px] text-text-muted">
                     {article.frontmatter.readingTime}
                   </div>
-                  <div className="text-caption font-bold uppercase tracking-[0.04em] text-black group-hover:underline">
+                  <div className="text-[12px] font-bold uppercase tracking-[0.04em] text-black group-hover:underline">
                     Read
                   </div>
                 </div>

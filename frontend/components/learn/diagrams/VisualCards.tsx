@@ -24,8 +24,8 @@ function StatCardsBase({ stats, accentColor = 'black' }: {
               transition={{ delay: i * 0.1, duration: 0.5 }}
             >
               <p className="text-3xl md:text-5xl font-black tracking-tighter" style={{ color: accentColor }}>{s.value}</p>
-              <p className="text-caption font-bold text-black mt-2 tracking-tight">{s.label}</p>
-              {s.sub && <p className="text-micro text-text-muted mt-1">{s.sub}</p>}
+              <p className="text-[13px] font-bold text-black mt-2 tracking-tight">{s.label}</p>
+              {s.sub && <p className="text-[10px] text-text-muted mt-1">{s.sub}</p>}
             </motion.div>
           ))}
         </div>
@@ -76,8 +76,8 @@ function BenefitGridBase({ benefits, columns = 3 }: {
             >
               <div className="absolute top-0 left-0 right-0 h-[2px] transition-colors" style={{ backgroundColor: b.accent || '#000' }} />
               <span className="text-2xl mb-3 block">{b.icon}</span>
-              <p className="text-caption font-bold text-black tracking-tight">{b.title}</p>
-              <p className="text-label text-text-muted mt-1.5 leading-relaxed">{b.description}</p>
+              <p className="text-[13px] font-bold text-black tracking-tight">{b.title}</p>
+              <p className="text-[11px] text-text-muted mt-1.5 leading-relaxed">{b.description}</p>
             </motion.div>
           ))}
         </div>
@@ -130,13 +130,13 @@ function ComparisonBase({ before, after, beforeLabel = 'Before', afterLabel = 'A
           >
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-micro font-bold tracking-[0.15em] uppercase text-red-400">{beforeLabel}</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-red-400">{beforeLabel}</span>
             </div>
             <div className="space-y-2.5">
               {before.items.map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="text-red-400 text-label mt-0.5 shrink-0">✕</span>
-                  <span className="text-caption text-zinc-600 leading-relaxed">{item}</span>
+                  <span className="text-red-400 text-[11px] mt-0.5 shrink-0">✕</span>
+                  <span className="text-[12px] text-zinc-600 leading-relaxed">{item}</span>
                 </div>
               ))}
             </div>
@@ -151,13 +151,13 @@ function ComparisonBase({ before, after, beforeLabel = 'Before', afterLabel = 'A
           >
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-micro font-bold tracking-[0.15em] uppercase text-emerald-500">{afterLabel}</span>
+              <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-emerald-500">{afterLabel}</span>
             </div>
             <div className="space-y-2.5">
               {after.items.map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="text-emerald-500 text-label mt-0.5 shrink-0">✓</span>
-                  <span className="text-caption text-black font-medium leading-relaxed">{item}</span>
+                  <span className="text-emerald-500 text-[11px] mt-0.5 shrink-0">✓</span>
+                  <span className="text-[12px] text-black font-medium leading-relaxed">{item}</span>
                 </div>
               ))}
             </div>
@@ -222,22 +222,22 @@ export function HegotaSummary() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-micro font-bold tracking-[0.2em] uppercase text-zinc-500 mb-4">The Hegota Fork</p>
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500 mb-4">The Hegota Fork</p>
           <p className="text-xl md:text-2xl font-black tracking-tight leading-tight">
             One mechanism. Every use case. No intermediaries.
           </p>
           <div className="grid grid-cols-3 gap-6 mt-8 pt-6 border-t border-zinc-800">
             <div>
               <p className="text-2xl md:text-3xl font-black text-white">10</p>
-              <p className="text-micro text-zinc-500 mt-1">years of research</p>
+              <p className="text-[10px] text-zinc-500 mt-1">years of research</p>
             </div>
             <div>
               <p className="text-2xl md:text-3xl font-black text-white">1</p>
-              <p className="text-micro text-zinc-500 mt-1">EIP to rule them all</p>
+              <p className="text-[10px] text-zinc-500 mt-1">EIP to rule them all</p>
             </div>
             <div>
               <p className="text-2xl md:text-3xl font-black text-emerald-400">&lt;1yr</p>
-              <p className="text-micro text-zinc-500 mt-1">to ship</p>
+              <p className="text-[10px] text-zinc-500 mt-1">to ship</p>
             </div>
           </div>
         </div>

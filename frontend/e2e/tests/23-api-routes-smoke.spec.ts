@@ -3,7 +3,7 @@
  * Verifies each route returns valid response shapes.
  */
 import { test, expect } from '../fixtures/wallet';
-import { IS_ANVIL, FRONTEND_URL, DEPLOYER_ADDRESS } from '../env';
+import { IS_ANVIL, FRONTEND_URL } from '../env';
 
 const BASE = FRONTEND_URL;
 
@@ -35,7 +35,7 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('POST /api/faucet returns 200 with valid address', async () => {
     const res = await apiPost('/api/faucet', {
-      address: DEPLOYER_ADDRESS,
+      address: '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4',
     });
     expect(res.status).toBeLessThan(500);
   });
@@ -66,7 +66,7 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('GET /api/vision/batches returns valid response', async () => {
     const res = await apiGet('/api/vision/batches');
-    // On testnet, oracle may return 502 if no batches configured
+    // On testnet, issuer may return 502 if no batches configured
     if (res.ok) {
       const data = await res.json();
       const batches = data.batches || data;
@@ -103,13 +103,13 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('GET /api/vision/leaderboard returns valid response', async () => {
     const res = await apiGet('/api/vision/leaderboard');
-    // On testnet, oracle may return 502 if no leaderboard data
+    // On testnet, issuer may return 502 if no leaderboard data
     if (res.ok) {
       const data = await res.json();
       expect(data).toHaveProperty('leaderboard');
       expect(Array.isArray(data.leaderboard)).toBe(true);
     } else {
-      // 502 is acceptable — oracle returns fallback empty leaderboard
+      // 502 is acceptable — issuer returns fallback empty leaderboard
       const data = await res.json();
       expect(data).toHaveProperty('leaderboard');
     }

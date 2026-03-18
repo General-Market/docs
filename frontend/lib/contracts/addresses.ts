@@ -13,7 +13,7 @@ export const INDEX_PROTOCOL = {
   index: c.Index as `0x${string}`,
   bridgeProxy: c.BridgeProxy as `0x${string}`,
   bridgedItpFactory: c.BridgedItpFactory as `0x${string}`,
-  oracleRegistry: c.OracleRegistry as `0x${string}`,
+  issuerRegistry: c.IssuerRegistry as `0x${string}`,
   assetPairRegistry: c.CollateralRegistry as `0x${string}`,
   mockBitgetVault: c.MockBitgetVault as `0x${string}`,
   settlementCustody: c.SettlementBridgeCustody as `0x${string}`,

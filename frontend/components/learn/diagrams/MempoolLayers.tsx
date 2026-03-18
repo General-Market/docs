@@ -144,7 +144,7 @@ function PoolModel({ position, color = '#f59e0b', label, sub }: {
       </instancedMesh>
       <Html center position={[position[0], position[1] + 0.38, position[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
+          <p className="text-[10px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
           {sub && <p className="text-[7px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>}
         </div>
       </Html>
@@ -221,7 +221,7 @@ function ChainModel({ position, color = '#22c55e' }: {
         <meshStandardMaterial color={color} roughness={0.4} />
       </instancedMesh>
       <Html center position={[position[0], position[1] + 0.28, position[2]]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro font-bold text-black tracking-tight whitespace-nowrap">ACCEPT</p>
+        <p className="text-[10px] font-bold text-black tracking-tight whitespace-nowrap">ACCEPT</p>
         <p className="text-[7px] text-zinc-500 whitespace-nowrap text-center">gas flag</p>
       </Html>
     </group>
@@ -495,18 +495,18 @@ export function MempoolLayers() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-micro text-text-muted tracking-wide">Users</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Users</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-amber-100 border border-amber-300" />
-              <span className="text-micro text-text-muted tracking-wide">Mempool</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Mempool</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">Chain</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Chain</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

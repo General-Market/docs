@@ -91,7 +91,7 @@ function SignerSphere({
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap"
+          className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap"
           style={{ color: PURPLE }}
         >
           {label}
@@ -241,7 +241,7 @@ function HexVault({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <div className="flex flex-col items-center gap-0">
           <p
-            className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap"
+            className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap"
             style={{ color: BLUE }}
           >
             Frame 0
@@ -423,7 +423,7 @@ function AcceptLabel() {
     >
       <div ref={ref} style={{ opacity: 0, transition: 'opacity 0.15s' }}>
         <p
-          className="text-body font-bold font-mono whitespace-nowrap tracking-wide"
+          className="text-[14px] font-bold font-mono whitespace-nowrap tracking-wide"
           style={{ color: GREEN }}
         >
           ACCEPT
@@ -577,7 +577,7 @@ function UsdcTarget({ reducedMotion }: { reducedMotion: boolean }) {
       >
         <div className="flex flex-col items-center gap-0">
           <p
-            className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap"
+            className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap"
             style={{ color: BLUE }}
           >
             Frame 1
@@ -741,7 +741,7 @@ function VerifiedLabel() {
     >
       <div ref={ref} style={{ opacity: 0, transition: 'opacity 0.1s' }}>
         <p
-          className="text-label font-bold font-mono whitespace-nowrap tracking-wide"
+          className="text-[11px] font-bold font-mono whitespace-nowrap tracking-wide"
           style={{ color: GREEN }}
         >
           Verified

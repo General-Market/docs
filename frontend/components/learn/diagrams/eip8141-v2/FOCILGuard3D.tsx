@@ -54,7 +54,7 @@ function LeftPlatform() {
         <meshStandardMaterial color="#fafafa" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 2.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
           Without FOCIL
         </p>
       </Html>
@@ -76,7 +76,7 @@ function RightPlatform() {
         <meshStandardMaterial color="#fafafa" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 2.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
           With FOCIL
         </p>
       </Html>
@@ -375,7 +375,7 @@ function CensoredLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref}>
       <Html center position={[LEFT_X, -0.35, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-red-50 border border-red-300 rounded px-3 py-1">
-          <p className="text-label font-bold whitespace-nowrap" style={{ color: RED }}>
+          <p className="text-[11px] font-bold whitespace-nowrap" style={{ color: RED }}>
             Censored
           </p>
         </div>
@@ -404,7 +404,7 @@ function ProtectedLabel({ reducedMotion }: { reducedMotion: boolean }) {
     <group ref={ref}>
       <Html center position={[RIGHT_X, -0.35, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="bg-green-50 border border-green-300 rounded px-3 py-1">
-          <p className="text-label font-bold whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-[11px] font-bold whitespace-nowrap" style={{ color: GREEN }}>
             Protected
           </p>
         </div>

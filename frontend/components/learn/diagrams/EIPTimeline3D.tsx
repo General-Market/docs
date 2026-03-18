@@ -55,10 +55,10 @@ function Pillar({ eip, index }: { eip: typeof EIPS[number]; index: number }) {
       {/* Label above pillar */}
       <Html center position={[0, h / 2 + 0.28, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-micro text-zinc-400 font-mono">{eip.year}</p>
-          <p className="text-caption font-bold text-black tracking-tight whitespace-nowrap">{eip.name}</p>
+          <p className="text-[10px] text-zinc-400 font-mono">{eip.year}</p>
+          <p className="text-[12px] font-bold text-black tracking-tight whitespace-nowrap">{eip.name}</p>
           <p className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">{eip.sub}</p>
-          <p className={`text-[8px] mt-0.5 font-semibold tracking-[0.08em] uppercase whitespace-nowrap ${isLast ? 'text-green-600' : 'text-zinc-400'}`}>
+          <p className={`text-[8px] mt-0.5 font-semibold tracking-wide uppercase whitespace-nowrap ${isLast ? 'text-green-600' : 'text-zinc-400'}`}>
             {eip.status}
           </p>
         </div>
@@ -163,14 +163,14 @@ export function EIPTimeline3D() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-zinc-300 border border-zinc-400" />
-              <span className="text-micro text-text-muted tracking-wide">Attempted</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Attempted</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-              <span className="text-micro text-text-muted tracking-wide">THE OMNIBUS</span>
+              <span className="text-[10px] text-text-muted tracking-wide">THE OMNIBUS</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

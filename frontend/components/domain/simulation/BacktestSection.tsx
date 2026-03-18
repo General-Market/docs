@@ -30,7 +30,7 @@ interface BacktestSectionProps {
 export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItps, onRebalanceItp }: BacktestSectionProps) {
   const t = useTranslations('backtest')
   const [filters, setFilters] = useState<SimFilterState>({
-    category_id: 'all',
+    category_id: 'made-in-china',
     top_n: 5,
     weighting: 'multi_factor_90',
     rebalance_days: 30,
@@ -234,7 +234,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           )}
           {sim.result?.run_id && (
             <div className="mt-6">
-              <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('holdings.title')}</h3>
+              <h3 className="text-xs font-medium uppercase tracking-widest text-text-muted mb-3">{t('holdings.title')}</h3>
               <SimHoldingsTable runId={sim.result.run_id} />
             </div>
           )}
@@ -287,7 +287,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
         <div className="fixed inset-0 z-50 bg-page overflow-y-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('fullscreen.label')}</p>
+              <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('fullscreen.label')}</p>
               <h2 className="text-lg font-bold text-text-primary">{t('fullscreen.title')}</h2>
             </div>
             <button
@@ -305,9 +305,9 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
       <div className="space-y-3 pb-10">
         {/* Section Header */}
         <div className="pt-10">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-          <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
-          <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+          <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+          <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+          <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
         </div>
 
         {/* Filter Panel */}

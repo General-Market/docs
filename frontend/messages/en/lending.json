@@ -149,8 +149,7 @@
     },
     "loading": "Loading markets...",
     "no_markets": "No markets available",
-    "market_pair": "{name} / USDC",
-    "coming_soon": "Coming Soon"
+    "market_pair": "{name} / USDC"
   },
   "common": {
     "something_went_wrong": "Something went wrong",

@@ -163,7 +163,7 @@ describe('AC6: Read-Only Notice', () => {
   })
 
   it('notice styling is subtle (small, gray, italic)', () => {
-    const styleClasses = 'text-micro text-gray-600 italic'
+    const styleClasses = 'text-[10px] text-gray-600 italic'
     expect(styleClasses).toContain('text-gray-600')
     expect(styleClasses).toContain('italic')
   })

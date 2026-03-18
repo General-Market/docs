@@ -8,7 +8,6 @@ const BACKEND_URL = REWRITES_BACKEND_URL;
 const DATA_NODE_URL = DATA_NODE_SERVER;
 const L3_RPC_URL = L3_RPC_SERVER;
 const VISION_API_URL = process.env.NEXT_PUBLIC_VISION_API_URL || "http://localhost:10001";
-console.log(`[next.config] DATA_NODE_URL=${DATA_NODE_URL} VISION_API_URL=${VISION_API_URL}`);
 const DOCS_URL = process.env.DOCS_URL || "https://docs.generalmarket.io";
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -16,12 +15,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   staticPageGenerationTimeout: 180,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
-  // Include data files in serverless function bundles — fs.readFile paths
-  // aren't resolved by nft tracing, so Vercel omits them without this.
-  outputFileTracingIncludes: {
-    "/api/itp-enrichment": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
-    "/\\[locale\\]/itp/\\[itpId\\]": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
-  },
   // Webpack config to handle WalletConnect's pino-pretty optional dependency
   webpack: (config) => {
     config.resolve.fallback = {
@@ -68,7 +61,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${CSP_CONNECT_EXTRA ? " " + CSP_CONNECT_EXTRA : ""}${isDev ? " http://localhost:* ws://localhost:*" : ""}; worker-src 'self' blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
+            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: https://*.walletconnect.com; connect-src 'self' https://cdn.jsdelivr.net wss://relay.walletconnect.com https://*.walletconnect.com https://*.reown.com https://rpc.walletconnect.org https://us.i.posthog.com https://us-assets.i.posthog.com${CSP_CONNECT_EXTRA ? " " + CSP_CONNECT_EXTRA : ""}${isDev ? " http://localhost:* ws://localhost:*" : ""}; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://secure.walletconnect.com https://secure.walletconnect.org; frame-ancestors 'none'`,
           },
         ],
       },
@@ -76,10 +69,8 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      // beforeFiles: high-priority rewrites that must fire before filesystem routes
+      // beforeFiles: locale routing fallback — fires even if middleware doesn't execute on Vercel Edge
       beforeFiles: [
-        // Vision leaderboard → data-node (precomputed, not oracle)
-        { source: "/api/vision/leaderboard", destination: `${DATA_NODE_URL}/vision/leaderboard` },
         // Docs proxy — must be before locale rewrite (Mintlify at docs.generalmarket.io)
         { source: "/docs", destination: `${DOCS_URL}/` },
         { source: "/docs/:path*", destination: `${DOCS_URL}/:path*` },

@@ -135,7 +135,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
       switch (settlementStep) {
         case 'approving': return 'Approving USDC on Settlement...'
         case 'depositing': return 'Locking USDC in SettlementBridgeCustody...'
-        case 'polling': return 'Waiting for oracles to credit your balance...'
+        case 'polling': return 'Waiting for issuers to credit your balance...'
         case 'done': return 'Deposit credited!'
         default: return ''
       }
@@ -248,7 +248,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   Deposit L3 USDC directly into your Vision balance
                 </p>
                 {isOnL3 && (
-                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>
                 )}
               </button>
 
@@ -268,10 +268,10 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   )}
                 </div>
                 <p className="text-xs text-text-muted mt-1">
-                  Lock USDC on Settlement. Oracles credit your virtual balance on L3.
+                  Lock USDC on Settlement. Issuers credit your virtual balance on L3.
                 </p>
                 {isOnSettlement && (
-                  <span className="inline-block mt-2 text-micro font-mono text-color-up">Currently connected</span>
+                  <span className="inline-block mt-2 text-[10px] font-mono text-color-up">Currently connected</span>
                 )}
               </button>
             </div>
@@ -290,7 +290,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               {/* Mode label + wallet balance */}
               <div className="bg-muted border border-border-light rounded-xl p-3">
                 <div className="flex justify-between items-center">
-                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
                     {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Settlement'}
                   </p>
                   {mode === 'l3' && l3WalletBalance !== null && (
@@ -315,7 +315,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               {/* Amount input */}
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
                     Amount
                   </label>
                   {mode === 'l3' && l3WalletBalance !== null && (

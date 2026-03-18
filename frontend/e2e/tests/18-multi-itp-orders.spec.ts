@@ -2,7 +2,7 @@
  * Multi-ITP Order Processing E2E Tests
  *
  * Verifies that buy/sell orders work for ITP2 (not just ITP1).
- * Tests the multi-ITP oracle fix (per-order itp_id + per-ITP NAV cache)
+ * Tests the multi-ITP issuer fix (per-order itp_id + per-ITP NAV cache)
  * and the sell fills race condition fix (has_any_active_bridge_orders guard).
  *
  * Uses L3 direct path (no Settlement bridge needed) to avoid Settlement gas issues.
@@ -20,8 +20,17 @@ import {
   startSettlementBlockMiner,
 } from '../helpers/backend-api';
 
-import { CONTRACTS } from '../env';
-const INDEX_CONTRACT = CONTRACTS.Index ?? '';
+// Read Index contract address from deployment.json
+const INDEX_CONTRACT = (() => {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const path = join(__dirname, '..', '..', '..', 'deployments', 'active-deployment.json');
+    return JSON.parse(readFileSync(path, 'utf-8')).contracts.Index;
+  } catch {
+    return '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+  }
+})();
 
 /** Build the bytes32 ITP ID from a number (1-indexed) */
 function itpIdFromNumber(n: number): string {
@@ -31,7 +40,7 @@ function itpIdFromNumber(n: number): string {
 import { IS_ANVIL } from '../env';
 
 test.describe('Multi-ITP Order Processing', () => {
-  test('buy ITP2 order fills via oracle consensus', async () => {
+  test('buy ITP2 order fills via issuer consensus', async () => {
     test.setTimeout(240_000);
 
     // 1. Verify ITP2 exists
@@ -98,13 +107,13 @@ test.describe('Multi-ITP Order Processing', () => {
     const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     console.log(`ITP2 L3 shares before sell: ${l3SharesBefore}`);
 
-    // 5. Start Settlement block miner (oracles need blocks for confirmation)
+    // 5. Start Settlement block miner (issuers need blocks for confirmation)
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       // 6. Place L3 sell order for ITP2
       const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
-      const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
+      const limitPrice = 1n;
       const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
       console.log(`Placed ITP2 L3 sell order #${orderId}`);
 
@@ -152,7 +161,7 @@ test.describe('Multi-ITP Order Processing', () => {
     console.log(`ITP1 L3 shares before sell: ${l3SharesBefore}`);
 
     const sellAmount = l3SharesBefore > 25n * 10n ** 18n ? 25n * 10n ** 18n : l3SharesBefore;
-    const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
+    const limitPrice = 1n;
     const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp1Id, sellAmount, limitPrice);
     console.log(`Placed ITP1 L3 sell order #${orderId}`);
 

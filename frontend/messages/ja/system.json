@@ -6,7 +6,7 @@
   },
   "stats": {
     "consensus_status": "コンセンサスステータス",
-    "active_oracles": "アクティブ発行者",
+    "active_issuers": "アクティブ発行者",
     "avg_fill_speed": "平均約定速度",
     "orders_total": "注文数（合計）",
     "l3_block": "L3ブロック"
@@ -16,10 +16,10 @@
     "healthy": "● 正常",
     "offline": "● オフライン"
   },
-  "oracle_network": {
+  "issuer_network": {
     "section_title": "発行者ネットワーク",
     "section_subtitle": "BLSコンセンサスノード",
-    "oracle_label": "発行者 {name}",
+    "issuer_label": "発行者 {name}",
     "node_details": {
       "address": "アドレス",
       "bls_pubkey": "BLS公開鍵",
@@ -93,7 +93,7 @@
     "label": "Performance",
     "consensus_threshold": "Consensus Threshold",
     "bls_required": "BLS signatures required",
-    "active_oracles": "Active Oracles",
+    "active_issuers": "Active Issuers",
     "processing_orders": "Processing orders",
     "network": "Network",
     "orbit_chain": "Orbit chain"

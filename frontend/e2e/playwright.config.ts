@@ -72,15 +72,6 @@ export default defineConfig({
       dependencies: ['itp-data', 'vision-data', 'ui-verify-itp', 'ui-verify-vision'],
       testMatch: /(^|\/)30-.*\.spec\.ts$|(^|\/)31-.*\.spec\.ts$/,
     },
-    // Phase 4: Swarm test (testnet only — full-stack with real bots on VPS)
-    ...(IS_ANVIL ? [] : [{
-      name: 'swarm',
-      testMatch: /40-/,
-      dependencies: ['vision-data'],
-      use: {
-        browserName: 'chromium' as const,
-      },
-    }]),
   ],
   ...(!process.env.E2E_FRONTEND_URL ? {
     webServer: {

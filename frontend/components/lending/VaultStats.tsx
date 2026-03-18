@@ -36,7 +36,7 @@ export function VaultStats() {
     {
       label: t('vault_stats.vault'),
       value: vaultInfo ? vaultInfo.name : null,
-      fontSize: 'text-subhead',
+      fontSize: 'text-[16px]',
     },
   ]
 
@@ -47,11 +47,11 @@ export function VaultStats() {
           key={stat.label}
           className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
         >
-          <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{stat.label}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{stat.label}</p>
           {isLoading || error || !stat.value ? (
             <Bone w={idx === 0 ? 'w-16' : 'w-24'} h="h-6" />
           ) : (
-            <p className={`${stat.fontSize || 'text-title'} font-extrabold font-mono tabular-nums ${stat.color || 'text-black'}`}>
+            <p className={`${stat.fontSize || 'text-[22px]'} font-extrabold font-mono tabular-nums ${stat.color || 'text-black'}`}>
               {stat.value}
             </p>
           )}

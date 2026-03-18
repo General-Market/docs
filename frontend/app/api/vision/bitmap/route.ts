@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VISION_ORACLE_URLS } from '@/lib/config'
+import { VISION_ISSUER_URLS } from '@/lib/config'
 
-const ORACLE_URLS = VISION_ORACLE_URLS
+const ISSUER_URLS = VISION_ISSUER_URLS
 
 /**
- * Fan-out bitmap submission to all oracle nodes.
- * The browser POSTs here (same-origin, no CORS), and we forward to each oracle server-side.
+ * Fan-out bitmap submission to all issuer nodes.
+ * The browser POSTs here (same-origin, no CORS), and we forward to each issuer server-side.
  */
 export async function POST(req: NextRequest) {
   const body = await req.text()
 
   const results = await Promise.all(
-    ORACLE_URLS.map(async (url) => {
+    ISSUER_URLS.map(async (url) => {
       try {
         const res = await fetch(`${url}/vision/bitmap`, {
           method: 'POST',

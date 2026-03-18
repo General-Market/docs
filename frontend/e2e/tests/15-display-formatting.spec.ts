@@ -158,11 +158,11 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(5_000)
-      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
+      await page.waitForTimeout(3_000)
+      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
 
@@ -180,11 +180,6 @@ test.describe('Display Formatting — ITP Cards', () => {
       if (!hasNav) continue
       const text = await value.first().textContent() || ''
       const num = parseDollar(text)
-      // Accept NAV=0 on testnet when data-node hasn't synced prices yet
-      if (num === 0) {
-        console.log('NAV is 0 — data-node may not have synced prices yet (testnet)')
-        continue
-      }
       expect(num).toBeGreaterThan(0.01)
       expect(num).toBeLessThan(10000)
     }
@@ -196,11 +191,11 @@ test.describe('Display Formatting — ITP Cards', () => {
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
     const cards = itpCard(page)
-    let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
+    let hasCards = await cards.first().isVisible({ timeout: 30_000 }).catch(() => false)
     if (!hasCards) {
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(5_000)
-      hasCards = await cards.first().isVisible({ timeout: 90_000 }).catch(() => false)
+      await page.waitForTimeout(3_000)
+      hasCards = await cards.first().isVisible({ timeout: 45_000 }).catch(() => false)
     }
     expect(hasCards).toBe(true)
 
@@ -246,12 +241,11 @@ test.describe('Display Formatting — Source Cards', () => {
     expect(barText).toContain('Sources')
 
     // If asset count loaded (not "—"), verify it's a plausible number
-    // On fresh deploys, asset count may be 0 until data-node syncs market_assets
     const assetMatch = barText.match(/([\d,]+)\s*Assets/)
     if (assetMatch) {
       const count = parseInt(assetMatch[1].replace(/,/g, ''))
-      expect(count).toBeGreaterThanOrEqual(0)
-      expect(count).toBeLessThan(1_000_000) // Not a raw bigint
+      expect(count).toBeGreaterThan(0)
+      expect(count).toBeLessThan(100_000) // Not a raw bigint
     }
   })
 

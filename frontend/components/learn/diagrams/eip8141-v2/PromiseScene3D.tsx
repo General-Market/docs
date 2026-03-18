@@ -57,7 +57,7 @@ function Platform() {
       </RoundedBox>
       {/* Title label */}
       <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
           Before EIP-8141
         </p>
       </Html>

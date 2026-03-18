@@ -13,7 +13,6 @@ import type {
 
 // ─── Process-level caches (survive across requests within same lambda) ───
 let coinMapCache: Record<string, CoinMapEntry> | null = null
-let symbolMapCache: Record<string, { pair: string; source: string }> | null = null
 let foundersLookupCache: Record<string, { age?: number; gender: string; nationality: string; university?: string }[]> | null = null
 
 // DeFiLlama + CoinGecko caches with TTL (5 min)
@@ -27,13 +26,6 @@ async function loadCoinMap(): Promise<Record<string, CoinMapEntry>> {
   const raw = await fs.readFile(path.join(process.cwd(), 'public/coin-map.json'), 'utf-8')
   coinMapCache = JSON.parse(raw)
   return coinMapCache!
-}
-
-async function loadSymbolMap(): Promise<Record<string, { pair: string; source: string }>> {
-  if (symbolMapCache) return symbolMapCache
-  const raw = await fs.readFile(path.join(process.cwd(), 'data/symbol-map.json'), 'utf-8')
-  symbolMapCache = JSON.parse(raw)
-  return symbolMapCache!
 }
 
 async function loadFoundersLookup(): Promise<typeof foundersLookupCache> {
@@ -292,33 +284,22 @@ async function fetchFundingData(
 /** Core enrichment logic — usable from both the API route and server components */
 export async function computeEnrichment(itpId: string): Promise<ItpEnrichment> {
   let rawHoldings: { symbol: string; weight: number; price: number; name: string }[] = []
-
-  // Resolve holdings via /chain/l3/itp-state → symbol-map → coin symbols
   try {
-    const stateRes = await fetch(
-      `${AA_DATA_NODE_URL}/chain/l3/itp-state?itp_id=${encodeURIComponent(itpId)}`,
+    const snapshotRes = await fetch(
+      `${AA_DATA_NODE_URL}/snapshot?itp_id=${encodeURIComponent(itpId)}`,
       { signal: AbortSignal.timeout(5000) }
     )
-    if (stateRes.ok) {
-      const state = await stateRes.json()
-      const addresses: string[] = state.assets || []
-      const symbolMap = await loadSymbolMap()
-
-      const equalWeight = addresses.length > 0 ? 1 / addresses.length : 0
-      rawHoldings = addresses.map((addr) => {
-        const entry = symbolMap[addr.toLowerCase()]
-        // Strip quote currency suffix (USDT/USDC) from trading pair
-        const symbol = entry?.pair?.replace(/USD[TC]$/i, '') || ''
-        return {
-          symbol: symbol.toUpperCase(),
-          weight: equalWeight,
-          price: 0,
-          name: symbol.toUpperCase(),
-        }
-      }).filter(h => h.symbol)
+    if (snapshotRes.ok) {
+      const snapshot = await snapshotRes.json()
+      rawHoldings = (snapshot.assets || []).map((a: any) => ({
+        symbol: a.symbol || '',
+        weight: a.weight || 0,
+        price: a.price || 0,
+        name: a.name || a.symbol || '',
+      }))
     }
   } catch {
-    // itp-state endpoint down — fallback below
+    // Snapshot endpoint down — fallback below
   }
 
   // Fallback: load holdings from deployed-assets.json (equal weight ITP #1)

@@ -252,7 +252,7 @@ export function BetCard({ bet, className = '' }: BetCardProps) {
         </Link>
 
         {/* Read-only notice (AC6) */}
-        <span className="text-micro text-text-muted italic">
+        <span className="text-[10px] text-text-muted italic">
           {t('bet_card.bot_notice')}
         </span>
       </div>

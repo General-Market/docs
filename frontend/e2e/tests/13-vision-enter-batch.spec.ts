@@ -81,18 +81,11 @@ test.describe('Vision Enter Batch (UI)', () => {
     await expect(stakeBtn).toBeVisible({ timeout: 5_000 })
     await stakeBtn.click()
 
-    // 7. Click "Enter Batch" button (or "Deposit" if already joined)
-    // If already joined from a previous run, the UI shows deposit controls — test still passes
+    // 7. Click "Enter Batch" button
+    // Batch may be locked (resolving phase) — wait up to full tick cycle (600s for space/ISS)
     const enterBatchBtn = page.getByRole('button', { name: /Enter Batch|Deposit/ })
+    // Use expect().toBeEnabled() which actually polls, unlike locator.isEnabled() which returns immediately
     await expect(enterBatchBtn).toBeEnabled({ timeout: 240_000 })
-
-    // Check if already joined (button says "Deposit more" or similar)
-    const btnText = await enterBatchBtn.textContent()
-    if (btnText && /Deposit/i.test(btnText) && !/Enter/i.test(btnText)) {
-      console.log('Already joined batch — deposit flow verified')
-      return // Test passes — player is in the batch from a previous run
-    }
-
     await enterBatchBtn.click()
 
     // 8. Wait for the join process to complete

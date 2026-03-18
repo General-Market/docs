@@ -226,9 +226,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
       label: t('stats.consensus_status'),
       value: sys.isLoading ? t('consensus_values.checking') : sys.isHealthy ? t('consensus_values.healthy') : t('consensus_values.offline'),
       color: sys.isLoading ? 'text-text-muted' : sys.isHealthy ? 'text-color-up' : 'text-color-down',
-      fontSize: 'text-heading',
+      fontSize: 'text-[18px]',
     },
-    { label: t('stats.active_oracles'), value: `${sys.activeOracles} / ${sys.totalOracles}` },
+    { label: t('stats.active_issuers'), value: `${sys.activeIssuers} / ${sys.totalIssuers}` },
     {
       label: t('stats.avg_fill_speed'),
       value: sys.avgFillTimeSeconds > 0
@@ -241,7 +241,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     {
       label: t('stats.l3_block'),
       value: sys.l3BlockNumber > 0n ? `#${sys.l3BlockNumber.toLocaleString()}` : '—',
-      fontSize: 'text-subhead',
+      fontSize: 'text-[16px]',
     },
   ]
 
@@ -249,9 +249,9 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
     <div>
       {/* Section header */}
       <div className="pt-10 pb-0">
-        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
-        <p className="text-body text-text-secondary mt-1.5">{t('heading.description')}</p>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-[14px] text-text-secondary mt-1.5">{t('heading.description')}</p>
       </div>
 
       {/* Stats Row */}
@@ -261,8 +261,8 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             key={stat.label}
             className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
           >
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{stat.label}</p>
-            <p className={`${stat.fontSize || 'text-title'} font-extrabold font-mono tabular-nums ${stat.color || 'text-black'}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{stat.label}</p>
+            <p className={`${stat.fontSize || 'text-[22px]'} font-extrabold font-mono tabular-nums ${stat.color || 'text-black'}`}>
               {stat.value}
             </p>
           </div>
@@ -272,11 +272,11 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
       {/* Content area */}
       <div className="py-5 pb-10">
 
-        {/* ORACLE NETWORK — BLS Consensus Nodes */}
+        {/* ISSUER NETWORK — BLS Consensus Nodes */}
         <div className="section-bar">
           <div>
-            <div className="section-bar-title">{t('oracle_network.section_title')}</div>
-            <div className="section-bar-value">{t('oracle_network.section_subtitle')}</div>
+            <div className="section-bar-title">{t('issuer_network.section_title')}</div>
+            <div className="section-bar-value">{t('issuer_network.section_subtitle')}</div>
           </div>
         </div>
 
@@ -284,34 +284,34 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
         <div className="grid grid-cols-1 md:grid-cols-3 border border-border-light" style={{ margin: '20px 0' }}>
           {activeNodes.length === 0 && (
             sys.isLoading ? <NodeGridSkeleton /> : (
-              <div className="col-span-full px-5 py-8 text-center text-caption text-text-muted">{t('oracle_network.no_nodes')}</div>
+              <div className="col-span-full px-5 py-8 text-center text-[13px] text-text-muted">{t('issuer_network.no_nodes')}</div>
             )
           )}
           {activeNodes.map((node, idx) => (
             <div key={node.id} className={`px-5 py-4 ${idx < activeNodes.length - 1 ? 'border-r border-border-light' : ''}`}>
-              <div className="text-caption font-extrabold text-black mb-2">
-                <span className="text-color-up">●</span> {t('oracle_network.oracle_label', { name: NODE_NAMES[idx] || node.id })}
+              <div className="text-[13px] font-extrabold text-black mb-2">
+                <span className="text-color-up">●</span> {t('issuer_network.issuer_label', { name: NODE_NAMES[idx] || node.id })}
               </div>
               <div>
                 {[
                   // Show address only if it's a real hex address, otherwise show node ID
-                  { label: t('oracle_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
-                  { label: t('oracle_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
-                  { label: t('oracle_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
-                  { label: t('oracle_network.node_details.status'), value: t('oracle_network.status_active'), color: 'text-color-up' },
+                  { label: t('issuer_network.node_details.address'), value: node.addr.startsWith('0x') ? truncateAddr(node.addr) : `node-${node.id}` },
+                  { label: t('issuer_network.node_details.bls_pubkey'), value: node.blsPubkeyShort },
+                  { label: t('issuer_network.node_details.registered'), value: formatTimestamp(node.registeredAt) },
+                  { label: t('issuer_network.node_details.status'), value: t('issuer_network.status_active'), color: 'text-color-up' },
                   { label: 'Uptime', value: formatUptime(node.registeredAt), color: 'text-color-up' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-[3px]">
-                    <span className="text-label text-text-muted font-medium">{row.label}</span>
-                    <span className={`text-label font-semibold font-mono ${row.color || 'text-black'}`}>{row.value}</span>
+                    <span className="text-[11px] text-text-muted font-medium">{row.label}</span>
+                    <span className={`text-[11px] font-semibold font-mono ${row.color || 'text-black'}`}>{row.value}</span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center py-[3px]">
-                  <span className="text-label text-text-muted font-medium">{t('oracle_network.node_details.ap_vault')}</span>
+                  <span className="text-[11px] text-text-muted font-medium">{t('issuer_network.node_details.ap_vault')}</span>
                   <LiveValue
                     value={vault.totalUsdValue || sys.vaultUsdValue}
                     format={formatUsdCompact}
-                    className="text-label font-semibold font-mono text-color-up"
+                    className="text-[11px] font-semibold font-mono text-color-up"
                   />
                 </div>
               </div>
@@ -332,7 +332,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
             <div className="border border-border-light border-t-0 bg-surface h-[220px] flex items-center justify-center overflow-hidden">
               {sys.fillTimeBuckets.length === 0 ? (
                 sys.isLoading ? <ChartSkeleton bars={8} /> : (
-                  <span className="text-caption text-text-muted">{t('fill_speed.no_data')}</span>
+                  <span className="text-[13px] text-text-muted">{t('fill_speed.no_data')}</span>
                 )
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -372,7 +372,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                 <div className="section-bar-title">{t('inventory.section_title')}</div>
                 <div className="section-bar-value flex items-center gap-2">
                   {inventoryAssets.length > 0
-                    ? <><span>{inventoryAssets.length} tokens — page {vaultPage + 1}/{vaultTotalPages}</span><LiveValue value={inventoryTotalAum} format={(v) => `AUM ${formatUsdCompact(v)}`} className="text-micro font-mono text-color-up" /></>
+                    ? <><span>{inventoryAssets.length} tokens — page {vaultPage + 1}/{vaultTotalPages}</span><LiveValue value={inventoryTotalAum} format={(v) => `AUM ${formatUsdCompact(v)}`} className="text-[10px] font-mono text-color-up" /></>
                     : t('inventory.section_subtitle')}
                 </div>
               </div>
@@ -381,7 +381,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
               {inventoryAssets.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center">
                   {(ranking.isLoading || vault.isLoading) ? <ChartSkeleton bars={6} horizontal /> : (
-                    <span className="text-caption text-text-muted">{t('inventory.no_data')}</span>
+                    <span className="text-[13px] text-text-muted">{t('inventory.no_data')}</span>
                   )}
                 </div>
               ) : (
@@ -445,13 +445,13 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
 
         {/* Data table */}
         <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-caption min-w-[640px]">
+        <table className="w-full border-collapse text-[13px] min-w-[640px]">
           <thead>
             <tr>
               {[t('recent_activity.table.time'), t('recent_activity.table.order_id'), t('recent_activity.table.fund'), t('recent_activity.table.type'), t('recent_activity.table.amount'), t('recent_activity.table.fill_time'), t('recent_activity.table.signers'), t('recent_activity.table.status')].map((h, i) => (
                 <th
                   key={h}
-                  className={`text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
+                  className={`text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap ${
                     i === 4 || i === 5 ? 'text-right' : ''
                   }`}
                 >
@@ -463,7 +463,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
           <tbody>
             {sys.recentOrders.length === 0 && (
               sys.isLoading ? <TableRowsSkeleton cols={8} rows={4} /> : (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-caption text-text-muted">{t('recent_activity.no_data')}</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-[13px] text-text-muted">{t('recent_activity.no_data')}</td></tr>
               )
             )}
             {ordersPageItems.map((order) => {
@@ -473,7 +473,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   <td className="px-4 py-3 border-b border-border-light font-mono text-text-secondary tabular-nums">
                     {formatTime(order.blockTimestamp)}
                   </td>
-                  <td className="px-4 py-3 border-b border-border-light font-mono text-label text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light font-mono text-[11px] text-text-secondary">
                     #{order.orderId.toString()}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light font-bold text-black">
@@ -485,14 +485,14 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
                     {order.side === 0 ? t('recent_activity.side_buy') : t('recent_activity.side_sell')}
                   </td>
-                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
                     {amountFormatted}
                   </td>
-                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-caption text-text-secondary">
+                  <td className="px-4 py-3 border-b border-border-light text-right font-mono tabular-nums text-[12px] text-text-secondary">
                     {order.fillTimeSeconds != null ? formatFillTime(order.fillTimeSeconds) : '—'}
                   </td>
                   <td className="px-4 py-3 border-b border-border-light text-text-secondary">
-                    {order.status === 'filled' ? `${sys.activeOracles}/${sys.totalOracles}` : '—'}
+                    {order.status === 'filled' ? `${sys.activeIssuers}/${sys.totalIssuers}` : '—'}
                   </td>
                   <td className={`px-4 py-3 border-b border-border-light font-bold ${order.status === 'filled' ? 'text-color-up' : 'text-color-warning'}`}>
                     {order.status === 'filled' ? t('recent_activity.status_confirmed') : t('recent_activity.status_pending')}
@@ -506,7 +506,7 @@ export function SystemStatusSection({ deployedItps }: SystemStatusSectionProps) 
 
         {/* Pagination controls */}
         {ordersTotalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-caption">
+          <div className="flex items-center justify-center gap-3 py-3 border-t border-border-light text-[12px]">
             <button
               onClick={() => setOrdersPage(p => Math.max(0, p - 1))}
               disabled={ordersPage === 0}
@@ -563,14 +563,14 @@ function NodeGridSkeleton() {
     <>
       {[0, 1, 2].map(idx => (
         <div key={idx} className={`px-5 py-4 ${idx < 2 ? 'border-r border-border-light' : ''}`}>
-          <div className="text-caption font-extrabold text-black mb-2 flex items-center gap-1.5">
+          <div className="text-[13px] font-extrabold text-black mb-2 flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-border-light animate-pulse" />
             <Bone w="w-20" h="h-4" />
           </div>
           <div className="space-y-[6px]">
             {['Address', 'BLS Pubkey', 'Registered', 'Status', 'AP Vault'].map(label => (
               <div key={label} className="flex justify-between items-center py-[3px]">
-                <span className="text-label text-text-muted font-medium">{label}</span>
+                <span className="text-[11px] text-text-muted font-medium">{label}</span>
                 <Bone w={label === 'Address' ? 'w-24' : label === 'BLS Pubkey' ? 'w-28' : 'w-16'} h="h-3" />
               </div>
             ))}

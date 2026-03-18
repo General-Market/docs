@@ -24,7 +24,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
   if (!latest) {
     return (
       <div className="bg-white border border-border-light rounded-card p-4 text-center">
-        <p className="text-caption text-text-muted">No data available yet</p>
+        <p className="text-[13px] text-text-muted">No data available yet</p>
       </div>
     )
   }
@@ -68,10 +68,10 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
       {items.map((item) => (
         <div key={item.label} className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">
+          <p className="text-[10px] font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">
             {item.label}
           </p>
-          <p className={`text-heading font-black tracking-tight ${item.color}`}>
+          <p className={`text-[18px] font-black tracking-[-0.02em] ${item.color}`}>
             {item.value}
           </p>
         </div>

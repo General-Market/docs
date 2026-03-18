@@ -309,7 +309,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
       >
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('heading.collapsed_title')}</p>
+            <p className="text-xs font-medium uppercase tracking-widest text-text-muted mb-1">{t('heading.collapsed_title')}</p>
             <p className="text-text-primary font-semibold">
               {t('heading.collapsed_description')}
               {activeCount > 0 && (
@@ -342,8 +342,8 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     <div id="portfolio" className="pb-10">
       {/* Section header */}
       <div className="pt-10">
-        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
+        <h2 className="text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]">{t('heading.title')}</h2>
       </div>
 
       {!address ? (
@@ -366,31 +366,31 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           <div className="py-5 border-b border-border-light">
             <div className="grid grid-cols-2 md:grid-cols-5">
               <div className="py-3 pr-6">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_value')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_value')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_invested')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.total_invested')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">
                   ${((mergedSummary ? parseFloat(mergedSummary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.positions')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.positions')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.pnl')}</div>
-                <div className={`text-title font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.pnl')}</div>
+                <div className={`text-[22px] font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                   {totalPnl >= 0 ? '+' : ''}${mergedSummary?.total_pnl || '0.00'}
                 </div>
-                <div className="text-label text-text-muted mt-0.5">
+                <div className="text-[11px] text-text-muted mt-0.5">
                   {totalPnl >= 0 ? '+' : ''}{mergedSummary?.total_pnl_pct || '0.0'}%
                 </div>
               </div>
               <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
+                <div className="text-[22px] font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
               </div>
             </div>
           </div>
@@ -460,7 +460,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
 
           {/* Explorer links */}
           {address && (L3_EXPLORER_URL || SETTLEMENT_EXPLORER_URL) && (
-            <div className="flex gap-4 mt-3 mb-2 text-label text-text-muted">
+            <div className="flex gap-4 mt-3 mb-2 text-[11px] text-text-muted">
               {L3_EXPLORER_URL && (
                 <a
                   href={`${L3_EXPLORER_URL}/address/${address}`}
@@ -528,7 +528,7 @@ function ValueTab({ history }: { history: PortfolioHistoryPoint[] }) {
     return (
       <div className="bg-card rounded-md border border-border-light p-8">
         <div className="text-center">
-          <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{t('chart.current_value')}</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{t('chart.current_value')}</div>
           <div className="text-[36px] font-black font-mono tabular-nums text-black">${lastPoint.value.toFixed(2)}</div>
           <div className={`text-sm font-mono tabular-nums mt-2 ${isPositive ? 'text-color-up' : 'text-color-down'}`}>
             {isPositive ? '+' : ''}{lastPoint.pnl.toFixed(2)} ({isPositive ? '+' : ''}{lastPoint.pnl_pct.toFixed(1)}%)
@@ -619,7 +619,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('positions_table.itp')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.shares')}</th>
               <th className="text-right px-4 py-3">{t('positions_table.avg_cost')}</th>
@@ -704,7 +704,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('trades_table.date')}</th>
               <th className="text-left px-4 py-3">{t('trades_table.itp')}</th>
               <th className="text-left px-4 py-3">{t('trades_table.side')}</th>
@@ -831,7 +831,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="text-text-secondary text-label font-bold uppercase tracking-[0.08em] border-b-[3px] border-black">
+            <tr className="text-text-secondary text-[11px] font-bold uppercase tracking-wider border-b-[3px] border-black">
               <th className="text-left px-4 py-3">{t('orders_table.id')}</th>
               <th className="text-left px-4 py-3">{t('orders_table.side')}</th>
               <th className="text-right px-4 py-3">{t('orders_table.amount')}</th>
@@ -942,7 +942,7 @@ function PortfolioSkeleton() {
             key={label}
             className={`py-3 px-4 md:px-6 ${idx > 0 ? 'md:border-l border-border-light' : 'md:pl-0'} ${idx >= 2 ? 'border-t md:border-t-0 border-border-light' : ''}`}
           >
-            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{label}</p>
             <Bone w={idx === 0 ? 'w-28' : idx === 1 ? 'w-24' : 'w-16'} h="h-6" />
           </div>
         ))}
@@ -958,11 +958,11 @@ function PortfolioSkeleton() {
 
       {/* Table skeleton */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-caption">
+        <table className="w-full border-collapse text-[13px]">
           <thead>
             <tr>
               {[t('skeleton.fund'), t('skeleton.ticker'), t('positions_table.shares'), t('skeleton.nav_per_share'), t('positions_table.value'), t('skeleton.avg_cost'), t('positions_table.pnl'), t('skeleton.change_24h')].map(h => (
-                <th key={h} className="text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap">
+                <th key={h} className="text-left text-[11px] font-bold uppercase tracking-[0.06em] text-text-secondary px-4 py-3 border-b-[3px] border-black whitespace-nowrap">
                   {h}
                 </th>
               ))}

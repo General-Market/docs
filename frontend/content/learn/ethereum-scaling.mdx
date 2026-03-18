@@ -1,0 +1,114 @@
+---
+title: "How Ethereum Scales: The Complete Roadmap"
+description: "Ethereum is engineering a 100x throughput increase over the next three years without breaking solo staking. Parallel verification, ePBS, multidimensional gas, PeerDAS blobs, and ZK-EVM — visualized in 3D."
+keywords: ["Ethereum scaling", "Ethereum roadmap", "gas limits", "ePBS", "PeerDAS", "blobs", "ZK-EVM", "parallel verification", "multidimensional gas", "Ethereum throughput", "Glamsterdam", "access lists", "data availability sampling", "EOF", "EVM Object Format"]
+date: "2026-03-01"
+author: "General Market"
+slug: "ethereum-scaling"
+category: "Education"
+readingTime: "15 min read"
+tldr:
+  - "Five independent upgrades converge to <strong>100x Ethereum's throughput</strong> over 3 years"
+  - "Parallel verification and ePBS unlock <strong>10-30x higher gas limits</strong> per block"
+  - "Multidimensional gas <strong>decouples compute from state growth</strong> — each resource priced independently"
+  - "PeerDAS lets validators <strong>sample blobs instead of downloading them</strong> — 8 MB/sec data"
+  - "ZK-EVM replaces re-execution with <strong>proof verification</strong> — solo stakers survive the throughput increase"
+---
+
+Ethereum processes about 15 million gas per block today. Five independent upgrades compound to 100x that number over three years.
+
+<ScalingStats />
+
+## The Roadmap
+
+Three layers compound: execution (gas limits), data (blob throughput), proofs (ZK verification).
+
+<RoadmapStaircase3D />
+
+## Parallel Block Verification
+
+Access lists let validators verify non-conflicting transactions simultaneously — 5-8x faster on 8 cores.
+
+<ParallelVerification3D />
+
+### How Access Lists Enable Parallelism
+
+Each transaction declares which storage slots it reads and writes — the EVM groups non-conflicting transactions into parallel lanes.
+
+<AccessListConflict3D />
+
+## ePBS: Using the Whole Slot
+
+Separates block building from proposing, giving validators the full 12-second slot to verify larger blocks.
+
+<EPBSSlotClock3D />
+
+### The Slot Budget
+
+Today validators verify in ~300ms (2.5% of the slot) — ePBS restructures timing to give 4 seconds, enabling 13x larger blocks.
+
+<SlotBudget3D />
+
+## Gas Evolution
+
+Each resource (compute, state, calldata, blobs) gets its own gas limit and fee market.
+
+<GasEvolution3D />
+
+### The Overflow Reservoir
+
+The Glamsterdam reservoir gives legacy contracts a single gas number while specialized dimensions price each resource independently.
+
+<GasReservoir3D />
+
+## Blobs and PeerDAS
+
+Validators sample random blob columns instead of downloading everything — scales to 128 blobs/block.
+
+<BlobSampling3D />
+
+### Erasure Coding
+
+Reed-Solomon coding expands blob data with parity columns — any 50% of validators can reconstruct the full dataset.
+
+<ErasureCoding3D />
+
+## ZK-EVM: Staged Rollout
+
+Validators verify a succinct proof instead of re-executing every transaction. A Raspberry Pi can validate.
+
+<ZKEVMPopulation3D />
+
+### Prover Consensus
+
+Five independent prover teams generate proofs separately — 3-of-5 must agree, so a single buggy implementation can't compromise the network.
+
+<ProverConsensus3D />
+
+## EOF: Structured Contracts
+
+Explicit code/data sections enable static analysis, faster parallel execution, and cheaper ZK circuits.
+
+<EOFContainerization3D />
+
+## Full Stack Convergence
+
+Parallel verification × ePBS × multidimensional gas × PeerDAS × ZK-EVM = 100x throughput.
+
+<FullStackLayers3D />
+
+<ScalingSummary />
+
+## Sources
+
+- [Vitalik Buterin, "Possible futures of the Ethereum protocol, part 1: The Surge"](https://vitalik.eth.limo/general/2024/10/17/futures1.html) — Long-term scaling roadmap.
+- [EIP-4844: Shard Blob Transactions](https://eips.ethereum.org/EIPS/eip-4844) — Proto-danksharding specification.
+- [PeerDAS specification](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/das-core.md) — Data availability sampling protocol.
+- [EOF: EVM Object Format (EIP-3540, EIP-7692)](https://eips.ethereum.org/EIPS/eip-3540) — Structured bytecode container.
+- [Ethereum Roadmap](https://ethereum.org/en/roadmap/) — Official roadmap overview.
+
+## Further Reading
+
+- [What Are ITPs?](/learn/what-are-itps) — How on-chain index products work on General Market.
+- [AI Prediction Markets](/learn/ai-prediction-markets) — How AI agents trade prediction markets.
+- [EIP-8141: Account Abstraction, Finally](/learn/eip-8141-account-abstraction) — The omnibus account abstraction EIP.

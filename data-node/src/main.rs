@@ -510,6 +510,31 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("ECB euro rates provider started");
     }
 
+    // 5b. BoE (FX rates) — gated on boe_enabled flag, schedule-aware
+    if args.boe_enabled {
+        let pool_c = pool.clone();
+        let bh = broadcast_hub.clone();
+        let pw = price_writer.clone();
+        spawn_resilient("boe", pw.clone(), move || {
+            let pool_c = pool_c.clone();
+            let bh = bh.clone();
+            let pw = pw.clone();
+            async move {
+                match market_data::sources::boe::BoeMarketSource::from_env() {
+                    Ok(source) => {
+                        let engine = market_data::ScheduledSyncEngine::new(pool_c, Box::new(source), bh, pw);
+                        engine.run().await;
+                    }
+                    Err(e) => {
+                        tracing::error!("BoE init failed: {e}");
+                        tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    }
+                }
+            }
+        });
+        info!("Bank of England FX rates provider started");
+    }
+
     // 6. EIA (energy) — gated on API key, schedule-aware
     if let Some(ref key) = args.eia_api_key {
         std::env::set_var("EIA_API_KEY", key);
@@ -2225,6 +2250,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         // ECB
         if !args.ecb_enabled {
             tracker.record_not_started("ecb", "ECB disabled (--ecb-enabled not set)");
+        }
+        // BoE
+        if !args.boe_enabled {
+            tracker.record_not_started("boe", "BoE disabled (--boe-enabled not set)");
         }
         // EIA
         if args.eia_api_key.is_none() {

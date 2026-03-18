@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { VISION_API_URL, VISION_ORACLE_URLS } from '@/lib/config'
+import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type DepositStatus = 'pending' | 'credited' | 'refunded' | 'unknown'
 
@@ -13,7 +13,7 @@ export interface UseDepositStatusReturn {
 }
 
 /**
- * Poll oracle API for the status of a cross-chain deposit order.
+ * Poll issuer API for the status of a cross-chain deposit order.
  * GET /vision/deposit/:orderId/status
  */
 export function useDepositStatus(orderId: string | null): UseDepositStatusReturn {
@@ -65,8 +65,8 @@ export function useDepositStatus(orderId: string | null): UseDepositStatusReturn
         // Proxy failed, try direct
       }
 
-      // Fallback: direct oracle URLs
-      for (const url of VISION_ORACLE_URLS) {
+      // Fallback: direct issuer URLs
+      for (const url of VISION_ISSUER_URLS) {
         try {
           const res = await fetch(`${url}/vision/deposit/${orderId}/status`)
           if (res.ok) {
@@ -75,7 +75,7 @@ export function useDepositStatus(orderId: string | null): UseDepositStatusReturn
             return
           }
         } catch {
-          // Try next oracle
+          // Try next issuer
         }
       }
       setStatus('pending')

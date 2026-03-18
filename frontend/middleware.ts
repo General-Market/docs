@@ -52,10 +52,6 @@ export function middleware(request: NextRequest) {
   url.pathname = `/${locale}${pathname}`
   const response = NextResponse.rewrite(url)
 
-  // Prevent Vercel CDN from caching locale-dependent rewrites —
-  // without this, the first visitor's locale gets served to everyone.
-  response.headers.set('x-middleware-cache', 'no-cache')
-
   // Set cookie for future visits (if detected from geo)
   if (!cookieLocale && locale !== DEFAULT_LOCALE) {
     response.cookies.set('NEXT_LOCALE', locale, {

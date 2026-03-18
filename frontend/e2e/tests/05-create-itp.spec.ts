@@ -49,11 +49,8 @@ test.describe('Create ITP', () => {
       await ensureWalletConnected(page, TEST_ADDRESS);
       await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
 
-      const createSection = page.locator('#create');
+      const createSection = page.locator('#create-itp');
       await createSection.scrollIntoViewIfNeeded();
-
-      // Wait for assets to load (deployed-assets.json fetch + pre-select)
-      await expect(createSection.getByText('BTC', { exact: true })).toBeVisible({ timeout: 30_000 });
 
       // Verify the Equal button and asset selection are visible
       const equalBtn = createSection.getByRole('button', { name: 'Equal', exact: true });
@@ -87,27 +84,17 @@ test.describe('Create ITP', () => {
       // 1. Connect wallet
       await ensureWalletConnected(page, TEST_ADDRESS);
 
-      // 2. Click "Create Index" in the sidebar to activate the section
-      const createTab = page.getByRole('button', { name: 'Create Index' });
-      await expect(createTab).toBeVisible({ timeout: 15_000 });
-      await createTab.click();
-      await page.waitForTimeout(1_000);
+      // 2. Wait for page to fully load (ITP listing may be empty on fresh testnet)
+      await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
 
       // 3. Record current ITP count on L3 before creating
       const itpCountBefore = await getItpCountL3();
 
-      // 4. The create section should now be visible
-      const createSection = page.locator('#create');
+      // 4. Scroll to the Create section
+      const createSection = page.locator('#create-itp');
+      await createSection.scrollIntoViewIfNeeded();
 
-      // 5. Wait for assets to load (deployed-assets.json fetch + pre-select)
-      const btcVisible = await createSection.getByText('BTC', { exact: true }).isVisible({ timeout: 30_000 }).catch(() => false);
-      if (!btcVisible) {
-        console.log('Create section assets not loaded — verifying ITP count instead');
-        const count = await getItpCountL3();
-        expect(count).toBeGreaterThan(0);
-        return;
-      }
-
+      // 5. Wait for assets to load
       const equalBtn = createSection.getByRole('button', { name: 'Equal', exact: true });
       await expect(equalBtn).toBeVisible({ timeout: 15_000 });
 
@@ -135,7 +122,7 @@ test.describe('Create ITP', () => {
       // 10. Wait for success banner (frontend tx confirmed on Settlement BridgeProxy)
       await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 90_000 });
 
-      // 11. Wait for oracles to relay -> ITP count increases on L3
+      // 11. Wait for issuers to relay -> ITP count increases on L3
       await pollUntil(
         () => getItpCountL3(),
         (count) => count > itpCountBefore,

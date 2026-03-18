@@ -4644,6 +4644,7 @@ const SOURCE_META: &[(&str, &str, u64)] = &[
     ("worldbank", "World Bank", 604800),                   // worldbank
     ("eia", "US Energy (EIA)", 86400),                     // eia
     ("ecb", "ECB Euro Rates", 86400),                      // ecb
+    ("boe", "Bank of England FX Rates", 86400),            // boe
     ("weather", "Weather (Open-Meteo)", 3600),             // openmeteo
     ("sec_13f", "SEC EDGAR 13F", 21600),                   // sec_edgar
     ("sec_efts", "SEC EFTS Filing Counts", 14400),         // sec_efts

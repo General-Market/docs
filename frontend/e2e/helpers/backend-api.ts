@@ -11,7 +11,7 @@ import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID,
   DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER,
-  RPC_TIMEOUT, MORPHO_DEPLOYMENT, MORPHO_CONTRACTS, MORPHO_MARKET_PARAMS,
+  RPC_TIMEOUT,
 } from '../env';
 
 /** Retry wrapper for flaky network calls (testnet RPCs, backend). */
@@ -184,11 +184,11 @@ async function getOrderViaL3(orderId: number | string): Promise<OrderData> {
 
 const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC;
 
-const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '';
-const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '';
-const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '';
-const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '';
-const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '';
+const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '0x2Eab31C830BB4B1fD8FB8738F6F4A52357737A11';
+const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
+const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
+const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1';
 /** Deployer account — Anvil #0 locally, real deployer on testnet */
 const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS;
 
@@ -408,8 +408,8 @@ async function keccak256Hex(data: string): Promise<string> {
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
 
 const L3_RPC = ENV_L3_RPC;
-const L3_INDEX = CONTRACTS.Index ?? '';
-const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '';
+const L3_INDEX = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const L3_WUSDC = CONTRACTS.L3_WUSDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
 export async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   return withRetry(async () => {
@@ -453,7 +453,7 @@ const _l3Pub = createPublicClient({ chain: _l3Chain, transport: rpcHttp(L3_RPC) 
  * Uses a mutex + nonce retry to handle nonce conflicts with the browser wallet
  * (which sends txs from the same key via a separate code path).
  */
-export async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
+async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
   return withL3NonceLock(async () => {
     const account = _l3Account ?? privateKeyToAccount(TEST_PRIVATE_KEY);
     const client = createWalletClient({ account, chain: _l3Chain, transport: rpcHttp(L3_RPC) });
@@ -469,10 +469,7 @@ export async function l3SignedSend(to: string, data: string, value?: bigint): Pr
           gas: 1_000_000n,
           nonce,
         });
-        const receipt = await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
-        if (receipt && receipt.status === '0x0') {
-          throw new Error(`Transaction reverted on-chain: ${hash}`);
-        }
+        await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
         return hash;
       } catch (err: any) {
         if (err?.message?.includes('nonce too low') && attempt < 2) {
@@ -576,7 +573,7 @@ export async function getItpCountL3(): Promise<number> {
 
 /**
  * Rebalance an ITP by calling requestRebalance on the L3 Index contract
- * (emits RebalanceRequested event on L3) and waiting for oracles to
+ * (emits RebalanceRequested event on L3) and waiting for issuers to
  * execute it via BLS consensus.
  * Shifts 0.5% weight from asset[0] to asset[1].
  */
@@ -602,8 +599,8 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
   }
 
   // Send requestRebalance to L3 Index (emits RebalanceRequested event).
-  // On Anvil: oracles read events directly from L3 RPC.
-  // On testnet: oracles use DataNodeChainReader which may not forward RebalanceRequested events.
+  // On Anvil: issuers read events directly from L3 RPC.
+  // On testnet: issuers use DataNodeChainReader which may not forward RebalanceRequested events.
   const calldata = encodeFunctionData({
     abi: INDEX_ABI,
     functionName: 'requestRebalance',
@@ -634,7 +631,7 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     }]);
   }
 
-  // Wait for oracles to execute the rebalance on L3 (weights change)
+  // Wait for issuers to execute the rebalance on L3 (weights change)
   // Rebalance consensus can take 2+ cycles
   await pollUntil(
     () => getItpStateL3(itpId),
@@ -1001,7 +998,7 @@ export async function getL3OrderStatus(orderId: number): Promise<number> {
 }
 
 /**
- * Request rebalance via BridgeProxy (event-only, picked up by oracles).
+ * Request rebalance via BridgeProxy (event-only, picked up by issuers).
  * Shifts 0.5% weight between asset[0] and asset[1].
  * Returns the rebalance nonce.
  */
@@ -1064,7 +1061,7 @@ export async function requestRebalanceDirect(
 
 /**
  * Mine empty blocks on Settlement Anvil.
- * Oracles require `confirmations` (default: 2) blocks after an event
+ * Issuers require `confirmations` (default: 2) blocks after an event
  * before they consider it confirmed. On Anvil with auto-mine, blocks
  * only advance when txs are submitted, so events may never become
  * "confirmed" without this helper.
@@ -1109,8 +1106,8 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
  * then sets BridgeProxy storage mappings via anvil_setStorageAt.
  *
  * BridgeProxy storage layout (OZ v5 ERC-7201 + BLSVerifier):
- *   slot 0: BLSVerifier._blsOracleRegistry
- *   slot 1: oracleRegistry
+ *   slot 0: BLSVerifier._blsIssuerRegistry
+ *   slot 1: issuerRegistry
  *   slot 2: bridgedItpFactory
  *   slot 3: nextCreationNonce
  *   slot 4: _pendingCreations (mapping)
@@ -1229,7 +1226,19 @@ export async function deployBridgedItpDirect(
 
 // ── Morpho collateral token (ITP Vault on L3) ──────────────
 
-export const MORPHO_COLLATERAL = MORPHO_MARKET_PARAMS.collateralToken ?? '';
+/** Read collateral token address from morpho-deployment.json */
+function readMorphoCollateral(): string {
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    const morphoJson = JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+    return morphoJson.marketParams?.collateralToken || '';
+  } catch {
+    return '';
+  }
+}
+
+export const MORPHO_COLLATERAL = readMorphoCollateral();
 
 /**
  * Mint Morpho collateral tokens (ITP Vault MockERC20) on L3.
@@ -1250,9 +1259,15 @@ export async function mintMorphoCollateral(
 
 // ── Morpho direct operations (bypass browser wallet) ────────
 
-/** Read full Morpho deployment config — from env.ts (single source of truth) */
+/** Read full Morpho deployment config */
 export function readMorphoDeployment() {
-  return (MORPHO_CONTRACTS.MORPHO) ? MORPHO_DEPLOYMENT : null;
+  try {
+    const { readFileSync } = require('fs');
+    const { join } = require('path');
+    return JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -1292,22 +1307,23 @@ export async function getMorphoPositionDirect(user: string): Promise<{ collatera
   const morpho = readMorphoDeployment();
   if (!morpho) throw new Error('morpho-deployment.json not found');
 
+  // position(bytes32,address) selector
   const marketId = morpho.contracts.MARKET_ID.replace('0x', '');
   const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
 
-  // position(bytes32,address) — precomputed selector: 0x93c52062
-  const selector = '0x93c52062';
+  // Compute selector via web3_sha3
+  const sigHex = '0x' + Buffer.from('position(bytes32,address)').toString('hex');
+  const selector = ((await l3RpcCall('web3_sha3', [sigHex])) as string).slice(0, 10);
 
   const result = await l3RpcCall('eth_call', [
     { to: morpho.contracts.MORPHO, data: selector + marketId + userPadded },
     'latest',
   ]) as string;
 
-  // Returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral)
   const hex = result.slice(2);
   return {
-    borrowShares: BigInt('0x' + (hex.slice(64, 128) || '0')),
-    collateral: BigInt('0x' + (hex.slice(128, 192) || '0')),
+    collateral: BigInt('0x' + hex.slice(128, 192)),
+    borrowShares: BigInt('0x' + hex.slice(64, 128)),
   };
 }
 

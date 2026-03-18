@@ -29,12 +29,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Log error for debugging - could integrate with error tracking service
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
-    posthog.capture('$exception', {
-      $exception_type: error.name,
-      $exception_message: error.message,
-      $exception_source: 'react_error_boundary',
-      $exception_component_stack: errorInfo.componentStack?.slice(0, 1000),
+    posthog.capture('error_boundary_triggered', {
+      error_message: error.message,
+      component_stack: errorInfo.componentStack?.slice(0, 500),
     })
   }
 

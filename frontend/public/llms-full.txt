@@ -50,9 +50,9 @@ Users select assets and assign percentage weights (must sum to 100%). The smart 
 1. User approves USDC spend on L3
 2. User calls `submitOrder(itpId, amount, BUY)` — USDC is escrowed
 3. The order enters PENDING status on-chain
-4. Oracle nodes collect pending orders in COLLECT phase (200ms)
-5. The leader oracle proposes a batch in PROPOSE phase (200ms)
-6. Peer oracle nodes validate and BLS-sign the batch hash
+4. Issuer nodes collect pending orders in COLLECT phase (200ms)
+5. The leader issuer proposes a batch in PROPOSE phase (200ms)
+6. Peer issuer nodes validate and BLS-sign the batch hash
 7. The leader aggregates signatures (threshold: ceil(2n/3))
 8. `confirmBatch()` is submitted on-chain with aggregated BLS signature → BATCHED
 9. The Authorized Participant (AP) receives the TradeRequest event and executes trades on Bitget exchange
@@ -126,14 +126,14 @@ A bitmap is a packed binary representation of a player's bets across all markets
 
 Bitmaps follow a commit-reveal scheme:
 1. **Commit** — the player submits `keccak256(bitmap)` on-chain when joining the batch
-2. **Reveal** — the player sends the actual bitmap bytes to oracle nodes via `POST /vision/bitmap`
+2. **Reveal** — the player sends the actual bitmap bytes to issuer nodes via `POST /vision/bitmap`
 
 The sealed commitment prevents front-running: other players cannot see bet directions until after the commitment deadline.
 
 ### Ticks and Resolution
 
 At the end of each tick:
-1. Oracle nodes fetch closing prices for all markets
+1. Issuer nodes fetch closing prices for all markets
 2. Each market resolves to a binary outcome based on price movement and the configured resolution type
 3. Each player's bitmap is compared against actual outcomes
 4. The tick pool (sum of all players' stakePerTick) is distributed to winners proportionally
@@ -154,10 +154,10 @@ At the end of each tick:
 
 ### Balance Proofs and BLS Verification
 
-Player balances are tracked off-chain by oracle nodes and verified on-chain via BLS signatures. To claim rewards or withdraw:
-1. Player requests a BLS-signed balance proof from the oracle network
-2. Oracle nodes compute the player's balance (deposits + winnings - losses - fees)
-3. Oracles produce a BLS-signed message containing the balance
+Player balances are tracked off-chain by issuer nodes and verified on-chain via BLS signatures. To claim rewards or withdraw:
+1. Player requests a BLS-signed balance proof from the issuer network
+2. Issuer nodes compute the player's balance (deposits + winnings - losses - fees)
+3. Issuers produce a BLS-signed message containing the balance
 4. Player submits the balance and BLS signature to the Vision contract
 5. The contract verifies the BLS signature and updates the player's on-chain balance
 
@@ -186,11 +186,11 @@ payout = winnings - fee
 
 ### Vision API Endpoints
 
-**Vision API** (served by oracle nodes):
+**Vision API** (served by issuer nodes):
 - `GET /vision/batches` — all active batches (id, markets, tick duration, player count, TVL)
 - `GET /vision/batch/{batchId}/state` — batch state with player positions
 - `GET /vision/batch/{batchId}/history` — tick resolution history (outcomes, pool size, winners/losers)
-- `POST /vision/bitmap` — submit sealed bitmap to oracle node (player, batch_id, bitmap_hex, expected_hash)
+- `POST /vision/bitmap` — submit sealed bitmap to issuer node (player, batch_id, bitmap_hex, expected_hash)
 - `GET /vision/balance/{batchId}/{player}` — BLS-signed balance proof (optional: ?fromTick=N&toTick=M for claim range)
 
 **Data Node API** (market data):
@@ -203,7 +203,7 @@ The protocol supports automated trading bots. Reference implementation: `vision-
 Bot lifecycle:
 1. Register via `registerBot(endpoint, pubkeyHash)` — free, no collateral
 2. Poll `GET /vision/batches` for active batches
-3. For each batch: generate bets → encode bitmap → compute keccak256 hash → approve USDC → call `joinBatch()` → POST bitmap to all oracle nodes
+3. For each batch: generate bets → encode bitmap → compute keccak256 hash → approve USDC → call `joinBatch()` → POST bitmap to all issuer nodes
 4. Periodically claim rewards via BLS balance proofs
 
 Bitmap encoding (Python):
@@ -247,7 +247,7 @@ def encode_bitmap(bets: list[str], market_count: int) -> bytes:
 ### Smart Contracts — Registries
 | Contract | Purpose |
 |----------|---------|
-| OracleRegistry.sol | Oracle BLS keys, aggregated pubkey, key rotation |
+| IssuerRegistry.sol | Issuer BLS keys, aggregated pubkey, key rotation |
 | CollateralRegistry.sol | Whitelisted collateral tokens |
 | AssetPairRegistry.sol | Trading pairs configuration |
 | FeeRegistry.sol | Fee tiers and deployer fee claiming |
@@ -260,15 +260,15 @@ def encode_bitmap(bets: list[str], market_count: int) -> bytes:
 | ErrorsLib.sol | Custom error definitions (E001–E069+) |
 | EventsLib.sol | Event definitions |
 
-### Oracle Nodes (Consensus Layer)
-3+ oracle nodes run BLS consensus:
+### Issuer Nodes (Consensus Layer)
+3+ issuer nodes run BLS consensus:
 - **BLS Curve**: BN254 (EVM precompile compatible)
 - **Threshold**: ceil(2n/3) signatures required
 - **Message Format**: keccak256(chainId, contractAddress, cycleNumber, orderIds)
 - **P2P Transport**: TCP with TLS, static + on-chain peer discovery
 - **Leader Election**: Round-robin per cycle
 
-Oracle nodes also handle Vision tick resolution, bitmap verification, and BLS balance proof generation.
+Issuer nodes also handle Vision tick resolution, bitmap verification, and BLS balance proof generation.
 
 ### Authorized Participant (AP)
 Executes ITP trades on centralized exchanges (Bitget):
@@ -327,7 +327,7 @@ Base URL: `https://www.generalmarket.io/api` (proxied to data node)
 ## Security Model
 
 - **BLS Verification**: Never bypassed — all batch confirmations and Vision balance proofs require valid aggregated BLS signatures
-- **Oracle Isolation**: Oracle nodes cannot communicate directly with the AP — oracle nodes read on-chain data only
+- **Issuer Isolation**: Issuer nodes cannot communicate directly with the AP — issuer nodes read on-chain data only
 - **Price Tolerance**: 0.1% maximum deviation per fill
 - **Order Timeout**: 60 seconds with automatic retry (up to 3 attempts)
 - **Escrow**: USDC is locked on-chain during the ITP order lifecycle
@@ -355,7 +355,7 @@ Base URL: `https://www.generalmarket.io/api` (proxied to data node)
 - **NAV**: Net Asset Value — total value of underlying assets per share
 - **BLS**: Boneh-Lynn-Shacham signature scheme — enables signature aggregation for consensus
 - **AP**: Authorized Participant — entity that executes trades on exchanges for the protocol
-- **Oracle**: Consensus node that batches orders and produces BLS signatures
+- **Issuer**: Consensus node that batches orders and produces BLS signatures
 - **L3**: Layer 3 — Arbitrum Orbit chain where the protocol operates
 - **Morpho**: DeFi lending protocol integrated for ITP collateral lending
 - **Rebalance**: Updating ITP asset quantities to match new target weights while preserving NAV
@@ -366,5 +366,5 @@ Base URL: `https://www.generalmarket.io/api` (proxied to data node)
 - **Tick**: One resolution interval within a Vision batch (5min to 1 day)
 - **Resolution Type**: Threshold configuration for Vision market outcomes (UP_0, UP_30, UP_X, DOWN_0, DOWN_30, DOWN_X, FLAT_0, FLAT_X)
 - **Sealed Commitment**: keccak256 hash of a bitmap, committed on-chain before reveal to prevent front-running
-- **Balance Proof**: BLS-signed message from oracle nodes attesting to a player's Vision batch balance
+- **Balance Proof**: BLS-signed message from issuer nodes attesting to a player's Vision batch balance
 - **Bot Registry**: On-chain registry for automated Vision trading bots (free registration, no collateral)

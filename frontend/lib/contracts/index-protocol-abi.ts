@@ -586,8 +586,8 @@ export const BRIDGED_ITP_ABI = [
   },
 ] as const
 
-// OracleRegistry ABI - for BLS verification nonce
-export const ORACLE_REGISTRY_ABI = [
+// IssuerRegistry ABI - for BLS verification nonce
+export const ISSUER_REGISTRY_ABI = [
   {
     inputs: [],
     name: 'lastSnapshotNonce',

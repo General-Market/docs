@@ -16,20 +16,36 @@ import {
   pollUntil,
   checkRpc,
 } from '../helpers/backend-api';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-import {
-  IS_ANVIL, L3_RPC, SETTLEMENT_RPC, CONTRACTS, DEPLOYER_ADDRESS,
-  MORPHO_CONTRACTS, MORPHO_MARKET_PARAMS,
-} from '../env';
+// -- Deployment addresses --
+const _activeDeploy = (() => {
+  try {
+    return JSON.parse(readFileSync(join(__dirname, '../../../deployments/active-deployment.json'), 'utf-8'));
+  } catch {
+    return { contracts: {} };
+  }
+})();
+const INDEX_CONTRACT = _activeDeploy.contracts?.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 
-const INDEX_CONTRACT = CONTRACTS.Index ?? '';
-const MORPHO = MORPHO_CONTRACTS.MORPHO;
-const ORACLE = MORPHO_CONTRACTS.ITP_NAV_ORACLE;
-const MARKET_ID = MORPHO_CONTRACTS.MARKET_ID;
-const COLLATERAL_TOKEN = MORPHO_MARKET_PARAMS.collateralToken;
-const LOAN_TOKEN = MORPHO_MARKET_PARAMS.loanToken;
-const LLTV = MORPHO_MARKET_PARAMS.lltv; // "770000000000000000" = 77%
-const DEPLOYER = DEPLOYER_ADDRESS;
+const morphoDeploy = (() => {
+  try {
+    return JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+  } catch {
+    return { contracts: {}, marketParams: {} };
+  }
+})();
+
+const MORPHO = morphoDeploy.contracts?.MORPHO;
+const ORACLE = morphoDeploy.contracts?.ITP_NAV_ORACLE;
+const MARKET_ID = morphoDeploy.contracts?.MARKET_ID;
+const COLLATERAL_TOKEN = morphoDeploy.marketParams?.collateralToken;
+const LOAN_TOKEN = morphoDeploy.marketParams?.loanToken;
+const LLTV = morphoDeploy.marketParams?.lltv; // "770000000000000000" = 77%
+
+import { IS_ANVIL, L3_RPC, SETTLEMENT_RPC } from '../env';
+const DEPLOYER = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 
 async function l3RpcCall(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(L3_RPC, {
@@ -367,7 +383,7 @@ test.describe('Morpho Oracle & Health Factor', () => {
       // Testnet: verify oracle has been updated recently (not stale)
       test.setTimeout(30_000);
 
-      // Pre-check: if collateral token is missing, oracle won't be updated by oracles
+      // Pre-check: if collateral token is missing, oracle won't be updated by issuers
       const collateralCode = await l3RpcCall('eth_getCode', [COLLATERAL_TOKEN, 'latest']);
       const morphoFunctional = collateralCode && collateralCode !== '0x';
 
@@ -387,10 +403,10 @@ test.describe('Morpho Oracle & Health Factor', () => {
       console.log(`Oracle last updated: ${lastUpdated}, current: ${currentTimestamp}, staleness: ${staleness}s`);
 
       if (morphoFunctional) {
-        // Oracle is updated when oracles submit setItpNav during rebalance.
-        // On testnet, rebalances are infrequent — oracles may idle for days
+        // Oracle is updated when issuers submit setItpNav during rebalance.
+        // On testnet, rebalances are infrequent — issuers may idle for days
         // without triggering NAV push. Use 7-day window for testnet.
-        // TODO: Add periodic NAV heartbeat in oracles so oracle stays fresh
+        // TODO: Add periodic NAV heartbeat in issuers so oracle stays fresh
         // independently of rebalance cycles.
         expect(staleness, 'Oracle should not be stale for more than 7 days').toBeLessThan(7 * 24 * 3600);
       } else {
@@ -423,6 +439,6 @@ test.describe('Morpho Oracle & Health Factor', () => {
     const totalBorrowShares = BigInt('0x' + hex.slice(192, 256));
 
     expect(totalSupplyAssets).toBeGreaterThanOrEqual(totalBorrowAssets);
-    expect(totalSupplyShares).toBeGreaterThanOrEqual(0n);
+    expect(totalSupplyShares).toBeGreaterThan(0n);
   });
 });

@@ -66,7 +66,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
     <div className="flex justify-between py-3 border-b border-border-light">
       <div>
         <span className="text-sm text-text-secondary">{f.label}</span>
-        {f.asOf && <div className="text-micro text-text-muted">as of {asOfToday()}</div>}
+        {f.asOf && <div className="text-[10px] text-text-muted">as of {asOfToday()}</div>}
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-text-primary text-right">{f.value}</span>
@@ -145,7 +145,7 @@ export function FundFacts({ itpId, symbol, nav, assetCount, createdAt, enrichmen
           <span className="text-sm font-bold text-text-primary">0.00%</span>
         </div>
       </div>
-      <p className="text-micro text-text-muted mt-3">
+      <p className="text-[10px] text-text-muted mt-3">
         The fee amounts shown above are as of the current prospectus. Network gas costs apply to all on-chain transactions and are not included in the expense ratio.
       </p>
     </section>

@@ -55,7 +55,6 @@ export function CopyButton({ text, className = '', onCopy, size = 16 }: CopyButt
         {copied ? (
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="animate-icon-swap"
             width={size}
             height={size}
             viewBox="0 0 24 24"
@@ -89,7 +88,7 @@ export function CopyButton({ text, className = '', onCopy, size = 16 }: CopyButt
       {/* Tooltip */}
       {showTooltip && (
         <span
-          className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-card border border-border-light shadow-card text-xs text-color-up rounded whitespace-nowrap z-50 animate-success-pop"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-card border border-border-light shadow-card text-xs text-color-up rounded whitespace-nowrap z-50"
           role="status"
           aria-live="polite"
         >

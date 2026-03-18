@@ -33,7 +33,7 @@ export interface UseDepositToVisionReturn {
   orderId: `0x${string}` | null
   /** Current step */
   step: DepositToVisionStep
-  /** Deposit status from oracle API (pending/credited/refunded/unknown) */
+  /** Deposit status from issuer API (pending/credited/refunded/unknown) */
   depositStatus: DepositStatus
   /** Error message if any */
   error: string | null
@@ -49,7 +49,7 @@ export interface UseDepositToVisionReturn {
  * 2. Call SettlementBridgeCustody.depositToVision(usdcAmount) on Settlement
  * 3. Poll Vision.virtualBalance(address) on L3 until credited
  *
- * The oracles observe the SettlementBridgeCustody event and call Vision.creditBalance() on L3.
+ * The issuers observe the SettlementBridgeCustody event and call Vision.creditBalance() on L3.
  */
 export function useDepositToVision(): UseDepositToVisionReturn {
   const { address } = useAccount()
@@ -64,7 +64,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
   const depositHandled = useRef(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // --- Deposit status from oracle API ---
+  // --- Deposit status from issuer API ---
   const { status: depositStatus } = useDepositStatus(orderId)
 
   // --- Approve USDC on Settlement ---
@@ -207,7 +207,7 @@ export function useDepositToVision(): UseDepositToVisionReturn {
     resetDeposit()
   }, [isDepositSuccess, depositReceipt, currentVirtualBalance, resetDeposit])
 
-  // Poll L3 virtualBalance until it increases (oracles credited)
+  // Poll L3 virtualBalance until it increases (issuers credited)
   useEffect(() => {
     if (step !== 'polling' || initialVirtualBalance === null) return
 

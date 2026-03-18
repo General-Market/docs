@@ -33,8 +33,8 @@ export const SETTLEMENT_RPC = process.env.E2E_SETTLEMENT_RPC_URL || 'http://loca
 export const BACKEND_URL = process.env.E2E_BACKEND_URL || 'http://localhost:8200'
 export const VISION_API = process.env.E2E_VISION_API_URL || 'http://localhost:10001'
 export const FRONTEND_URL = process.env.E2E_FRONTEND_URL || 'http://localhost:3000'
-export const ORACLE_URLS = (
-  process.env.E2E_ORACLE_URLS || 'http://localhost:10001,http://localhost:10002,http://localhost:10003'
+export const ISSUER_URLS = (
+  process.env.E2E_ISSUER_URLS || 'http://localhost:10001,http://localhost:10002,http://localhost:10003'
 ).split(',').map(s => s.trim())
 export const AP_URL = process.env.E2E_AP_URL || process.env.NEXT_PUBLIC_AP_URL || 'http://localhost:9100'
 
@@ -52,7 +52,7 @@ export const PLAYER2_KEY = (
 
 // Anvil account #7 — used exclusively for vision-data E2E tests.
 // Separate nonce space from DEPLOYER_KEY so vision-data and itp-data can run in parallel.
-// Safe: default ORACLE_COUNT=3, only accounts #1-#3 used as oracles.
+// Safe: default ISSUER_COUNT=3, only accounts #1-#3 used as issuers.
 export const VISION_PLAYER_KEY = (
   process.env.E2E_VISION_PLAYER_KEY || '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356'
 ) as `0x${string}`
@@ -71,29 +71,6 @@ export const DEPLOYER_ADDRESS = DEPLOYMENT.accounts?.admin ?? '0xC0d3ca67da45613
 
 /** Anvil deployer (account #0) — used for impersonated txs on local Anvil */
 export const ANVIL_DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-
-// ── Morpho deployment — single load, empty if missing ───────
-export const MORPHO_DEPLOYMENT = (() => {
-  try {
-    const path = join(__dirname, '..', 'lib', 'contracts', 'morpho-deployment.json')
-    return JSON.parse(readFileSync(path, 'utf-8'))
-  } catch {
-    return { contracts: {}, marketParams: {} }
-  }
-})()
-
-export const MORPHO_CONTRACTS = MORPHO_DEPLOYMENT.contracts ?? {}
-export const MORPHO_MARKET_PARAMS = MORPHO_DEPLOYMENT.marketParams ?? {}
-
-// ── Vision batches — single load, empty if missing ──────────
-export const VISION_BATCHES = (() => {
-  try {
-    const path = join(__dirname, '..', '..', 'deployments', 'vision-batches.json')
-    return JSON.parse(readFileSync(path, 'utf-8'))
-  } catch {
-    return { vision: '', batches: {} }
-  }
-})()
 
 // ── Testnet-aware timeouts ──────────────────────────────────
 export const POLL_TIMEOUT = IS_ANVIL ? 60_000 : 180_000

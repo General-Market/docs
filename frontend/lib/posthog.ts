@@ -9,32 +9,13 @@ export function initPostHog() {
 
   posthog.init(key, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
-    ui_host: 'https://us.posthog.com',
-
-    // ── Autocapture & pageviews ──
     autocapture: true,
-    capture_pageview: false,  // manual via App Router hook
+    capture_pageview: false, // manual via App Router hook
     capture_pageleave: true,
     person_profiles: 'identified_only',
-
-    // ── Session replay ──
     session_recording: {
       maskAllInputs: false,
-      maskTextSelector: '[data-ph-mask]',
-      recordCrossOriginIframes: true,
     },
-
-    // ── Heatmaps ──
-    enable_heatmaps: true,
-
-    // ── Error tracking ──
-    capture_exceptions: true,
-
-    // ── Scroll depth ──
-    scroll_root_selector: ['#main-content', 'main'],
-
-    // ── Performance ──
-    persistence: 'localStorage+cookie',
   })
 }
 

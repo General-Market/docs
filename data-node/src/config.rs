@@ -143,6 +143,10 @@ pub struct ServeArgs {
     #[arg(long, default_value = "false", env = "ECB_ENABLED")]
     pub ecb_enabled: bool,
 
+    /// Enable Bank of England exchange rates (no key needed)
+    #[arg(long, default_value = "false", env = "BOE_ENABLED")]
+    pub boe_enabled: bool,
+
     /// OpenMeteo sync interval in seconds (0 = disabled, no key needed)
     #[arg(long, default_value = "0", env = "OPENMETEO_SYNC_INTERVAL_SECS")]
     pub openmeteo_sync_interval: u64,

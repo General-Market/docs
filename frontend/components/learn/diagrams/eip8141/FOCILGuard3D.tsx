@@ -74,7 +74,7 @@ function LeftPlatform() {
         <meshStandardMaterial color="#fef2f2" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
           Without FOCIL
         </p>
       </Html>
@@ -96,7 +96,7 @@ function RightPlatform() {
         <meshStandardMaterial color="#f0fdf4" roughness={0.7} />
       </RoundedBox>
       <Html center position={[0, 2.0, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+        <p className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
           With FOCIL
         </p>
       </Html>
@@ -740,7 +740,7 @@ function InclusionLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={leftRef}>
         <Html center position={[LEFT_X + 1.5, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-red-200 rounded px-2 py-1">
-            <p className="text-body font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
+            <p className="text-[14px] font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
               {SIMPLE_INDICES.length}/{TX_DEFS.length}
             </p>
           </div>
@@ -749,7 +749,7 @@ function InclusionLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={rightRef}>
         <Html center position={[RIGHT_X + 1.5, 1.2, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2 py-1">
-            <p className="text-body font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[14px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               {TX_DEFS.length}/{TX_DEFS.length}
             </p>
           </div>
@@ -783,7 +783,7 @@ function VerdictLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={leftRef}>
         <Html center position={[LEFT_X, -0.15, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-red-200 rounded px-2.5 py-1">
-            <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
+            <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: RED }}>
               Censored
             </p>
           </div>
@@ -792,7 +792,7 @@ function VerdictLabels({ reducedMotion }: { reducedMotion: boolean }) {
       <group ref={rightRef}>
         <Html center position={[RIGHT_X, -0.15, 1.8]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
           <div className="bg-white/90 border border-green-200 rounded px-2.5 py-1">
-            <p className="text-label font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+            <p className="text-[11px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
               Censorship resistant
             </p>
           </div>
@@ -922,29 +922,29 @@ function Legend() {
     <div className="flex items-center gap-4 flex-wrap">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: BLUE }} />
-        <span className="text-micro text-text-muted tracking-wide">Simple TX</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Simple TX</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-micro text-text-muted tracking-wide">Multisig</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Multisig</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: INDIGO }} />
-        <span className="text-micro text-text-muted tracking-wide">Paymaster</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Paymaster</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PINK }} />
-        <span className="text-micro text-text-muted tracking-wide">Privacy</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Privacy</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">FOCIL shield</span>
+        <span className="text-[10px] text-text-muted tracking-wide">FOCIL shield</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm relative" style={{ backgroundColor: RED }}>
           <span className="absolute inset-0 flex items-center justify-center text-white text-[7px] font-bold">X</span>
         </div>
-        <span className="text-micro text-text-muted tracking-wide">Censored</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Censored</span>
       </div>
     </div>
   )

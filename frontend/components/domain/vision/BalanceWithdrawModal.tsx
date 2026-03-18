@@ -21,7 +21,7 @@ interface BalanceWithdrawModalProps {
  *
  * Two paths:
  * - "To L3 wallet": uses useWithdrawBalance (debits realBalance, sends L3 USDC)
- * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, oracles release on Settlement)
+ * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, issuers release on Settlement)
  */
 export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   const { isConnected } = useAccount()
@@ -102,7 +102,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
     if (mode === 'settlement') {
       switch (settlementStep) {
         case 'withdrawing': return 'Submitting withdrawal request...'
-        case 'polling': return 'Waiting for oracles to release on Settlement...'
+        case 'polling': return 'Waiting for issuers to release on Settlement...'
         case 'done': return 'Withdrawal initiated! USDC will arrive on Settlement shortly.'
         default: return ''
       }
@@ -139,7 +139,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 )}
                 {mode === 'settlement' && (
                   <p className="text-xs text-text-muted mt-2">
-                    USDC will arrive on Settlement once oracles process the release.
+                    USDC will arrive on Settlement once issuers process the release.
                   </p>
                 )}
               </div>
@@ -178,7 +178,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {realBalance === 0n && (
-                  <span className="inline-block mt-2 text-micro text-text-muted">No real balance</span>
+                  <span className="inline-block mt-2 text-[10px] text-text-muted">No real balance</span>
                 )}
               </button>
 
@@ -196,7 +196,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   <div>
                     <p className="text-sm font-bold text-text-primary">To Settlement</p>
                     <p className="text-xs text-text-muted mt-1">
-                      Release virtual balance USDC on Settlement via oracles
+                      Release virtual balance USDC on Settlement via issuers
                     </p>
                   </div>
                   <span className="text-xs font-mono text-text-secondary">
@@ -204,7 +204,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {virtualBalance === 0n && (
-                  <span className="inline-block mt-2 text-micro text-text-muted">No virtual balance</span>
+                  <span className="inline-block mt-2 text-[10px] text-text-muted">No virtual balance</span>
                 )}
               </button>
             </div>
@@ -223,7 +223,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {/* Mode label */}
               <div className="bg-muted border border-border-light rounded-xl p-3">
                 <div className="flex justify-between items-center">
-                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
                     {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                   </p>
                   <span className="text-xs font-mono text-text-secondary">
@@ -235,7 +235,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {/* Amount input */}
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
                     Amount (USDC)
                   </label>
                   <button

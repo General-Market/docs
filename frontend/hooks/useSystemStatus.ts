@@ -5,7 +5,7 @@ import { useSSESystem, useSSE, type SystemSnapshot } from '@/hooks/useSSE'
 
 // ── Types ──
 
-export interface OracleNode {
+export interface IssuerNode {
   id: number
   addr: string
   ip: string
@@ -39,14 +39,14 @@ export interface VaultAssetBar {
 
 export interface UseSystemStatusReturn {
   isHealthy: boolean
-  activeOracles: number
-  totalOracles: number
+  activeIssuers: number
+  totalIssuers: number
   totalOrders: number
   lastCycleNumber: number
   pendingOrders: number
   l3BlockNumber: bigint
   avgFillTimeSeconds: number
-  nodes: OracleNode[]
+  nodes: IssuerNode[]
   recentOrders: RecentOrder[]
   fillTimeBuckets: FillTimeBucket[]
   topVaultAssets: VaultAssetBar[]
@@ -57,7 +57,7 @@ export interface UseSystemStatusReturn {
 // ── Transform SSE snapshot to hook return types ──
 
 function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isLoading'> {
-  const nodes: OracleNode[] = snap.nodes.map(n => ({
+  const nodes: IssuerNode[] = snap.nodes.map(n => ({
     id: n.id,
     addr: n.addr,
     ip: n.ip || '—',
@@ -106,8 +106,8 @@ function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isL
 
   return {
     isHealthy: snap.is_healthy,
-    activeOracles: snap.active_oracles,
-    totalOracles: snap.total_oracles,
+    activeIssuers: snap.active_issuers,
+    totalIssuers: snap.total_issuers,
     totalOrders: snap.total_orders,
     lastCycleNumber: snap.last_cycle_number,
     pendingOrders: snap.pending_orders,
@@ -123,8 +123,8 @@ function snapshotToState(snap: SystemSnapshot): Omit<UseSystemStatusReturn, 'isL
 
 const EMPTY_STATE: Omit<UseSystemStatusReturn, 'isLoading'> = {
   isHealthy: false,
-  activeOracles: 0,
-  totalOracles: 0,
+  activeIssuers: 0,
+  totalIssuers: 0,
   totalOrders: 0,
   lastCycleNumber: 0,
   pendingOrders: 0,

@@ -43,7 +43,7 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">Cycle Performance</h2>
+      <h2 className="text-[16px] font-black tracking-[-0.02em] text-black mb-4">Cycle Performance</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Cycle Duration */}
         <ExplorerChartCard title="Cycle Duration" subtitle="Average cycle duration (ms)" loading={loading}>
@@ -72,7 +72,7 @@ export function CycleSection({ snapshots, latest, loading }: SectionProps) {
             >
               {slowCycleCount}
             </p>
-            <p className="text-caption text-text-muted mt-1">
+            <p className="text-[12px] text-text-muted mt-1">
               out of {snapshots.length} snapshot{snapshots.length !== 1 ? 's' : ''}
             </p>
           </div>

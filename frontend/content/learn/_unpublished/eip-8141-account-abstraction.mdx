@@ -1,0 +1,79 @@
+---
+title: "EIP-8141: Account Abstraction, Finally"
+description: "After a decade of research, EIP-8141 wraps up every remaining problem account abstraction was meant to solve. Frame Transactions — N calls, one primitive, every use case. Visualized in 3D."
+keywords: ["EIP-8141", "account abstraction", "frame transactions", "Ethereum", "smart wallets", "paymaster", "gas abstraction", "quantum resistance", "FOCIL", "Hegota fork"]
+date: "2026-03-01"
+author: "General Market"
+slug: "eip-8141-account-abstraction"
+category: "Education"
+readingTime: "12 min read"
+tldr:
+  - "EIP-8141 introduces <strong>Frame Transactions</strong> — a single primitive that solves every AA use case"
+  - "A transaction is <strong>N calls</strong> that can read each other's calldata, with opcodes to authorize sender and gas payer"
+  - "Paymasters become <strong>on-chain contracts</strong> — pay gas in any token, no intermediaries"
+  - "Privacy protocols can use the <strong>public mempool</strong> directly — no more relayer UX pain"
+---
+
+After a decade of proposals — EIP-86 (2016), ERC-4337 (2021), EIP-3074 (2023), EIP-7702 (2024) — account abstraction on Ethereum is getting one omnibus EIP that wraps up every remaining problem. EIP-8141, targeting the Hegota fork.
+
+## Normal TX vs Frame TX
+
+Today, a transaction is one call signed by one key. EIP-8141 replaces this with Frame Transactions — N ordered calls that can read each other's data and authorize the sender via the `ACCEPT` opcode — a separate paymaster frame can optionally cover gas.
+
+<NormalVsFrame3D />
+
+## How Frame Transactions Work
+
+Each frame starts untrusted. When a validation frame returns `ACCEPT`, the protocol authorizes the sender for subsequent execution frames — granting the account's full permissions. `CALLDATAREAD` lets any frame inspect another frame's calldata. If no validation frame returns `ACCEPT`, the entire transaction reverts.
+
+<FrameOverview3D />
+
+## Multisig Authentication
+
+A multisig wallet collects signatures from multiple parties into a single validation frame. The validator contract checks all signatures, returns `ACCEPT`, and the execution frame transfers funds — all atomic, all in one transaction.
+
+<MultisigAuth3D />
+
+## Gas in Any Token
+
+You hold RAI but no ETH. A paymaster — an on-chain contract — covers gas in ETH, then collects its fee in RAI from your wallet. No bundler, no intermediary. `CALLDATAREAD` links the paymaster's validation to your execution frame.
+
+<PaymasterFlow3D />
+
+## New Account Deployment
+
+If the account doesn't exist yet, prepend a deployment frame. A deterministic factory (EIP-7997) deploys the wallet contract, then validation and execution frames run atomically — same address on every chain.
+
+<AccountDeploy3D />
+
+## Privacy Without Relayers
+
+Today's privacy protocols (Railgun, Privacy Pools) need centralized relayers to broadcast transactions — revealing timing metadata and creating single points of failure. With Frame Transactions, a ZK-SNARK paymaster verifies proofs and pays gas directly. No link between deposit and withdrawal. No relayer. Combined with 2D nonces (RIP-7712), this lets a single privacy contract handle parallel withdrawals without timing correlation.
+
+<ZKPrivacy3D />
+
+## Censorship Resistance: FOCIL
+
+Without FOCIL (Fork-Choice Enforced Inclusion Lists), a block builder can silently censor smart wallet transactions. With FOCIL, a committee of validators forces inclusion — AA transactions, privacy transactions, sponsored gas transactions all get through.
+
+<FOCILGuard3D />
+
+## Atomic Operations
+
+Separate transactions create a vulnerability window — an attacker can front-run between your approve and your spend. Frame Transactions bundle everything atomically. Approve + execute in one transaction, no gap for exploitation.
+
+<AtomicBatch3D />
+
+## Sources
+
+- [Vitalik Buterin on X](https://x.com/VitalikButerin/status/2027774090627715377) — Original announcement.
+- [Vitalik Buterin on Bluesky](https://firefly.social/post/bsky/qmajrxvehl6ss6w2h4uuv5bg_3mftz4rccp22b) — Cross-posted announcement.
+
+## Further Reading
+
+- [EIP-8141 Specification](https://eips.ethereum.org/EIPS/eip-8141) — The full EIP.
+- [EIP-86 (2016)](https://github.com/ethereum/EIPs/issues/86) — Where it all started.
+- [EIP-7997: Deterministic Factory](https://ethereum-magicians.org/t/eip-7997-deterministic-factory-predeploy/24998) — Cross-chain address consistency.
+- [RIP-7712: 2D Nonces](https://docs.erc4337.io/core-standards/rip-7712.html) — Parallel nonce channels for privacy.
+- [How Ethereum Scales](/learn/ethereum-scaling) — The complete Ethereum scaling roadmap.
+- [What Are ITPs?](/learn/what-are-itps) — How on-chain index products work on General Market.

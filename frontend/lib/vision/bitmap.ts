@@ -4,7 +4,7 @@
  * Each bit represents a player's bet on a market:
  *   1 = UP, 0 = DOWN
  *
- * Bit ordering is big-endian within each byte, matching the oracle's
+ * Bit ordering is big-endian within each byte, matching the issuer's
  * `get_bitmap_bit` function in resolver.rs:
  *   - Bit 0 is the MSB of byte 0
  *   - Bit 7 is the LSB of byte 0

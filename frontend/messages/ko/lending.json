@@ -149,8 +149,7 @@
     },
     "loading": "마켓 로딩 중...",
     "no_markets": "이용 가능한 마켓이 없습니다",
-    "market_pair": "{name} / USDC",
-    "coming_soon": "Coming Soon"
+    "market_pair": "{name} / USDC"
   },
   "common": {
     "something_went_wrong": "문제가 발생했습니다",

@@ -541,7 +541,7 @@ function Labels({ reducedMotion }: { reducedMotion: boolean }) {
       {/* UNTRUSTED */}
       <Html center position={[UNTRUSTED_X, 1.5, 0]} style={labelStyle}>
         <div ref={untrustedRef}>
-          <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
+          <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: RED }}>
             Untrusted
           </p>
         </div>
@@ -550,7 +550,7 @@ function Labels({ reducedMotion }: { reducedMotion: boolean }) {
       {/* TRUSTED */}
       <Html center position={[TRUSTED_X, 1.5, 0]} style={labelStyle}>
         <div ref={trustedRef}>
-          <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: GREEN }}>
             Trusted
           </p>
         </div>
@@ -559,7 +559,7 @@ function Labels({ reducedMotion }: { reducedMotion: boolean }) {
       {/* ACCEPT */}
       <Html center position={[GATE_X, 1.0, 0]} style={labelStyle}>
         <div ref={acceptRef}>
-          <p className="text-caption font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
+          <p className="text-[13px] font-bold font-mono whitespace-nowrap" style={{ color: GREEN }}>
             ACCEPT
           </p>
         </div>
@@ -595,15 +595,15 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-micro text-text-muted tracking-wide">Untrusted (before ACCEPT)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Untrusted (before ACCEPT)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">Trusted (after ACCEPT)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Trusted (after ACCEPT)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-micro text-text-muted tracking-wide">CALLDATAREAD</span>
+        <span className="text-[10px] text-text-muted tracking-wide">CALLDATAREAD</span>
       </div>
     </div>
   )

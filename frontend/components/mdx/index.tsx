@@ -6,6 +6,58 @@ import { ComparisonTable } from "./ComparisonTable";
 import { CodeBlock } from "./CodeBlock";
 import { FadeInSection } from "@/components/learn/FadeInSection";
 import {
+  FrameTransactionScene,
+  PaymasterFlow,
+  MempoolLayers,
+  EIPTimeline,
+  EIPTimeline3D,
+  PrivacyDiagram,
+  BeforeAfterScene,
+  FrameFlow,
+  FlowNormalTx,
+  FlowAtomicOps,
+  FlowNewAccount,
+  FlowPrivacyZK,
+  StatsOverview,
+  StatsUnlocked,
+  EOABenefits,
+  CapabilityCards,
+  FOCILComparison,
+  QuantumComparison,
+  HegotaSummary,
+} from "@/components/learn/diagrams";
+import {
+  RoadmapStaircase3D,
+  ParallelVerification3D,
+  EPBSSlotClock3D,
+  GasEvolution3D,
+  BlobSampling3D,
+  ZKEVMPopulation3D,
+  EOFContainerization3D,
+  FullStackLayers3D,
+  ScalingStats,
+  ScalingSummary,
+  AccessListConflict3D,
+  SlotBudget3D,
+  ErasureCoding3D,
+  GasReservoir3D,
+  ProverConsensus3D,
+} from "@/components/learn/diagrams/scaling";
+import {
+  NormalVsFrame3D,
+  FrameOverview3D,
+  MultisigAuth3D,
+  AccountDeploy3D,
+  PaymasterFlow3D as PaymasterFlow3DNew,
+  ZKPrivacy3D,
+  FOCILGuard3D,
+  AtomicBatch3D,
+  PromiseScene3D,
+  PayoffScene3D,
+  HistoryTimeline3D,
+  SocialProof3D,
+} from "@/components/learn/diagrams/eip8141-v2";
+import {
   FoundersStats,
   FoundersAgeTimeline,
   TGEAgePerformance,
@@ -46,7 +98,7 @@ function slugify(text: string): string {
 export const mdxComponents: MDXComponents = {
   // Headings
   h1: ({ children }) => (
-    <h1 className="text-display md:text-[40px] font-black tracking-tight text-black leading-[1.1] mb-4">
+    <h1 className="text-[32px] md:text-[40px] font-black tracking-[-0.02em] text-black leading-[1.1] mb-4">
       {children}
     </h1>
   ),
@@ -57,7 +109,7 @@ export const mdxComponents: MDXComponents = {
       <FadeInSection>
         <h2
           id={id}
-          className="scroll-mt-24 border-t-[3px] border-black pt-8 mt-16 mb-6 text-display md:text-display font-black tracking-tight text-black leading-[1.1]"
+          className="scroll-mt-24 border-t-[3px] border-black pt-8 mt-16 mb-6 text-[28px] md:text-[32px] font-black tracking-[-0.02em] text-black leading-[1.1]"
         >
           {children}
         </h2>
@@ -65,14 +117,14 @@ export const mdxComponents: MDXComponents = {
     );
   },
   h3: ({ children }) => (
-    <h3 className="text-heading font-bold tracking-[-0.01em] text-black mt-8 mb-3">
+    <h3 className="text-[20px] font-bold tracking-[-0.01em] text-black mt-8 mb-3">
       {children}
     </h3>
   ),
 
   // Text
   p: ({ children }) => (
-    <p className="text-body text-text-secondary leading-relaxed mb-4">
+    <p className="text-[15px] text-text-secondary leading-relaxed mb-4">
       {children}
     </p>
   ),
@@ -82,12 +134,12 @@ export const mdxComponents: MDXComponents = {
 
   // Lists
   ul: ({ children }) => (
-    <ul className="list-disc ml-5 space-y-2 text-body text-text-secondary leading-relaxed mb-4 marker:text-text-muted">
+    <ul className="list-disc ml-5 space-y-2 text-[15px] text-text-secondary leading-relaxed mb-4 marker:text-text-muted">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal ml-5 space-y-2 text-body text-text-secondary leading-relaxed mb-4 marker:text-text-muted marker:font-mono marker:font-bold">
+    <ol className="list-decimal ml-5 space-y-2 text-[15px] text-text-secondary leading-relaxed mb-4 marker:text-text-muted marker:font-mono marker:font-bold">
       {children}
     </ol>
   ),
@@ -121,36 +173,36 @@ export const mdxComponents: MDXComponents = {
   // Table
   table: ({ children }) => (
     <div className="border border-border-light overflow-x-auto my-8">
-      <table className="w-full text-body">{children}</table>
+      <table className="w-full text-[14px]">{children}</table>
     </div>
   ),
   thead: ({ children }) => <thead>{children}</thead>,
   th: ({ children }) => (
-    <th className="text-left bg-black text-white text-label font-semibold tracking-[0.08em] uppercase px-5 py-3">
+    <th className="text-left bg-black text-white text-[11px] font-semibold tracking-[0.1em] uppercase px-5 py-3">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-5 py-3.5 text-body text-text-secondary border-t border-border-light">
+    <td className="px-5 py-3.5 text-[14px] text-text-secondary border-t border-border-light">
       {children}
     </td>
   ),
 
   // Code
   code: ({ children }) => (
-    <code className="bg-zinc-100 text-caption font-mono px-1.5 py-0.5 text-zinc-800 rounded-sm border border-zinc-200">
+    <code className="bg-zinc-100 text-[13px] font-mono px-1.5 py-0.5 text-zinc-800 rounded-sm border border-zinc-200">
       {children}
     </code>
   ),
   pre: ({ children }) => (
-    <pre className="bg-zinc-950 text-zinc-100 border border-zinc-800 overflow-x-auto p-5 my-8 text-caption font-mono leading-relaxed rounded-sm">
+    <pre className="bg-zinc-950 text-zinc-100 border border-zinc-800 overflow-x-auto p-5 my-8 text-[13px] font-mono leading-relaxed rounded-sm">
       {children}
     </pre>
   ),
 
   // Blockquote
   blockquote: ({ children }) => (
-    <blockquote className="border-l-[3px] border-black bg-surface/50 px-6 py-5 my-8 text-subhead text-text-secondary leading-relaxed italic">
+    <blockquote className="border-l-[3px] border-black bg-surface/50 px-6 py-5 my-8 text-[16px] text-text-secondary leading-relaxed italic">
       {children}
     </blockquote>
   ),
@@ -159,6 +211,54 @@ export const mdxComponents: MDXComponents = {
   Callout,
   ComparisonTable,
   CodeBlock,
+  FrameTransactionScene,
+  PaymasterFlow,
+  MempoolLayers,
+  EIPTimeline,
+  EIPTimeline3D,
+  PrivacyDiagram,
+  BeforeAfterScene,
+  FrameFlow,
+  FlowNormalTx,
+  FlowAtomicOps,
+  FlowNewAccount,
+  FlowPrivacyZK,
+  StatsOverview,
+  StatsUnlocked,
+  EOABenefits,
+  CapabilityCards,
+  FOCILComparison,
+  QuantumComparison,
+  HegotaSummary,
+  // Scaling article
+  RoadmapStaircase3D,
+  ParallelVerification3D,
+  EPBSSlotClock3D,
+  GasEvolution3D,
+  BlobSampling3D,
+  ZKEVMPopulation3D,
+  EOFContainerization3D,
+  FullStackLayers3D,
+  ScalingStats,
+  ScalingSummary,
+  AccessListConflict3D,
+  SlotBudget3D,
+  ErasureCoding3D,
+  GasReservoir3D,
+  ProverConsensus3D,
+  // EIP-8141 article (new 3D scenes)
+  NormalVsFrame3D,
+  FrameOverview3D,
+  MultisigAuth3D,
+  AccountDeploy3D,
+  PaymasterFlow3D: PaymasterFlow3DNew,
+  ZKPrivacy3D,
+  FOCILGuard3D,
+  AtomicBatch3D,
+  PromiseScene3D,
+  PayoffScene3D,
+  HistoryTimeline3D,
+  SocialProof3D,
   // Founders demographics article
   FoundersStats,
   FoundersAgeTimeline,

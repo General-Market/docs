@@ -54,12 +54,12 @@ function BatchCard({ item }: { item: BatchWithTick }) {
     <Link
       href={`/source/${item.sourceKey}`}
       className={`
-        shrink-0 flex flex-col px-5 py-4 border bg-white transition-all w-[220px] cursor-pointer
+        shrink-0 flex flex-col px-4 py-3 border bg-white transition-all w-[200px] cursor-pointer
         ${item.isLocked ? 'border-red-300 border-2' : 'border-border-light hover:border-black'}
       `}
     >
-      {/* Source name — quiet, lets the number dominate */}
-      <div className="flex items-center gap-2 mb-2 min-w-0">
+      {/* Header: logo + name */}
+      <div className="flex items-center gap-2 mb-1.5 min-w-0">
         {item.logo && (
           <Image
             src={item.logo}
@@ -69,37 +69,37 @@ function BatchCard({ item }: { item: BatchWithTick }) {
             className="rounded-sm object-contain shrink-0"
           />
         )}
-        <span className="text-label font-semibold text-text-secondary truncate leading-tight">
+        <span className="text-[11px] font-bold text-black truncate leading-tight">
           {item.displayName}
         </span>
       </div>
 
-      {/* Timer — the hero of the card */}
+      {/* Timer — large */}
       <span
-        className={`text-stat font-black tabular-nums leading-none font-mono ${item.isLocked ? 'text-red-600' : 'text-black'}`}
+        className={`text-[24px] font-bold tabular-nums tracking-tight leading-none font-mono ${item.isLocked ? 'text-red-600' : 'text-black'}`}
       >
         {formatTimer(item.remaining)}
       </span>
 
       {/* Progress bar */}
-      <div className="h-[3px] bg-border-light mt-3 mb-2 overflow-hidden">
+      <div className="h-1 bg-border-light mt-2 mb-1.5 overflow-hidden">
         <div
           className={`h-full transition-all duration-1000 ${item.isLocked ? 'bg-red-500' : 'bg-black'}`}
           style={{ width: progressWidth }}
         />
       </div>
 
-      {/* Footer: category + tick + tick# */}
+      {/* Footer: category + tick duration */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className={`text-micro font-bold uppercase px-1.5 py-0.5 rounded ${catColors}`}>
+          <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${catColors}`}>
             {item.category}
           </span>
-          <span className="text-micro font-medium text-text-muted">
+          <span className="text-[9px] font-semibold text-text-muted">
             {formatTickDuration(item.tickDuration)}
           </span>
         </div>
-        <span className="text-micro font-bold font-mono text-text-muted tabular-nums">
+        <span className="text-[9px] font-bold text-text-muted">
           #{item.batch.currentTick}
         </span>
       </div>
@@ -146,7 +146,7 @@ export function NextBatches() {
           logo,
           displayName,
           category,
-          sourceKey: source?.sourceId ?? batch.sourceId,
+          sourceKey: batch.sourceId,
         }
       })
       .sort((a, b) => a.remaining - b.remaining)
@@ -160,10 +160,10 @@ export function NextBatches() {
     <div className="px-6 lg:px-12">
       <div className="max-w-site mx-auto">
         <div className="flex items-center justify-between pt-4 pb-2">
-          <div className="text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted">
             Live Batches
           </div>
-          <div className="flex items-center gap-3 text-micro font-semibold text-text-muted">
+          <div className="flex items-center gap-3 text-[10px] font-semibold text-text-muted">
             <span>{sortedBatches.length} batches</span>
             {lockedCount > 0 && (
               <span className="text-red-500">{lockedCount} locked</span>

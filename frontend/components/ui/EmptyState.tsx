@@ -53,7 +53,7 @@ export function EmptyState({
   className = '',
 }: EmptyStateProps) {
   return (
-    <div className={`py-12 text-center animate-fade-in ${className}`}>
+    <div className={`py-12 text-center ${className}`}>
       {/* Icon */}
       <div className="text-text-muted font-mono text-lg whitespace-pre mb-4" aria-hidden="true">
         {ICONS[icon]}

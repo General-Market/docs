@@ -28,8 +28,8 @@ export function ScalingStats() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
             >
-              <p className="text-display font-black tracking-tighter text-black">{s.value}</p>
-              <p className="text-label font-semibold tracking-[0.08em] uppercase text-zinc-500 mt-2">{s.label}</p>
+              <p className="text-[32px] font-black tracking-tighter text-black">{s.value}</p>
+              <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-zinc-500 mt-2">{s.label}</p>
             </motion.div>
           ))}
         </div>
@@ -54,10 +54,10 @@ export function ScalingSummary() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-display md:text-display font-black tracking-tight leading-[1.15]">
+          <p className="text-[28px] md:text-[32px] font-black tracking-tight leading-[1.15]">
             Solo stakers survive. 100x throughput. No compromise.
           </p>
-          <p className="text-body text-zinc-400 mt-5 leading-relaxed">
+          <p className="text-[14px] text-zinc-400 mt-5 leading-relaxed">
             Parallel verification + ePBS + multidimensional gas + PeerDAS + ZK-EVM. Five upgrades, one validated block.
           </p>
         </div>

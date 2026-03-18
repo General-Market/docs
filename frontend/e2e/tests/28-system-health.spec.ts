@@ -12,10 +12,10 @@ const BASE = FRONTEND_URL
 test.describe('System Health', () => {
   test('System Status section loads on /index', async ({ page }) => {
     await page.goto('/index')
-    await expect(page.getByText(/Active Oracles/i).first()).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText(/Active Issuers/i).first()).toBeVisible({ timeout: 30_000 })
   })
 
-  test('oracle nodes show active status', async ({ page }) => {
+  test('issuer nodes show active status', async ({ page }) => {
     // Navigate directly to System section via hash
     await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await page.waitForTimeout(3_000)
@@ -40,12 +40,12 @@ test.describe('System Health', () => {
       })
       if (res.ok) {
         const data = await res.json()
-        console.log('Oracle nodes not visible via SSE — explorer health:', JSON.stringify(data).slice(0, 200))
+        console.log('Issuer nodes not visible via SSE — explorer health:', JSON.stringify(data).slice(0, 200))
         // Explorer health responds = system is functional, SSE just didn't populate nodes in time
         expect(data).toBeDefined()
       } else {
         // Both SSE and API failed — real issue
-        expect(hasNodes, 'Oracle nodes not visible via SSE and explorer health API returned ' + res.status).toBe(true)
+        expect(hasNodes, 'Issuer nodes not visible via SSE and explorer health API returned ' + res.status).toBe(true)
       }
     }
   })

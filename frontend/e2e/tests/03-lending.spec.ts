@@ -8,6 +8,7 @@ import {
 import {
   getL3UserShares,
   mintL3Shares,
+  mintMorphoCollateral,
   placeL3BuyOrderDirect,
   pollUntil,
   withdrawCollateralDirect,
@@ -18,7 +19,6 @@ import {
   getMorphoPositionDirect,
   readMorphoDeployment,
   l3RpcCall,
-  l3SignedSend,
 } from '../helpers/backend-api';
 import { IS_ANVIL } from '../env';
 
@@ -43,6 +43,10 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         await mintL3Shares(TEST_ADDRESS, ITP_ID, 100n * 10n ** 18n);
       }
     }
+
+    // Mint Morpho collateral (ITP Vault MockERC20 on L3)
+    await mintMorphoCollateral(TEST_ADDRESS, 100n * 10n ** 18n);
+    console.log('Minted 100 Morpho collateral tokens on L3');
 
     // Connect wallet and check if UI Borrow button is available
     await ensureWalletConnected(page, TEST_ADDRESS);
@@ -152,64 +156,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         }
       }
 
-      // Verify MORPHO contract has code before attempting deposits
-      const morphoAddr = morphoCheck?.contracts?.MORPHO;
-      if (morphoAddr) {
-        const morphoCode = await l3RpcCall('eth_getCode', [morphoAddr, 'latest']);
-        if (!morphoCode || morphoCode === '0x') {
-          console.log(`MORPHO at ${morphoAddr} has no code — stale deployment, skipping lending cycle`);
-          return;
-        }
-      }
-
-      // Check if Morpho market actually exists (was createMarket called?)
-      if (morphoCheck) {
-        // market(bytes32) selector = 0x5c60e39a
-        const marketId = morphoCheck.contracts.MARKET_ID.replace('0x', '');
-        const marketResult = await l3RpcCall('eth_call', [
-          { to: morphoCheck.contracts.MORPHO, data: '0x5c60e39a' + marketId },
-          'latest',
-        ]) as string;
-        // market() returns (..., lastUpdate, fee) — lastUpdate at offset 256-320
-        const hex = (marketResult || '').slice(2);
-        const lastUpdate = hex.length >= 320 ? BigInt('0x' + (hex.slice(256, 320) || '0')) : 0n;
-        if (lastUpdate === 0n) {
-          console.log('Morpho market not created on-chain (lastUpdate=0) — lending cycle requires market creation');
-          return;
-        }
-        console.log(`Morpho market exists (lastUpdate=${lastUpdate})`);
-      }
-
-      // Step 0: Deposit USDC into ITP vault to get vault tokens (collateral)
-      // The Morpho market uses ITP vault tokens (ERC4626) as collateral, not raw USDC
-      const vaultAddr = morphoCheck!.marketParams.collateralToken;
-      const vaultUsdcAmount = 20n * 10n ** 18n;
-      // Ensure user has USDC
-      await mintL3Usdc(TEST_ADDRESS, vaultUsdcAmount);
-      // Approve USDC to vault
-      const usdcAddr = morphoCheck!.marketParams.loanToken;
-      const approveData = '0x095ea7b3' +
-        vaultAddr.replace('0x', '').toLowerCase().padStart(64, '0') +
-        'f'.repeat(64);
-      await l3SignedSend(usdcAddr, approveData);
-      // Deposit USDC into vault: deposit(uint256 assets, address receiver)
-      const depositVaultData = '0x6e553f65' +
-        vaultUsdcAmount.toString(16).padStart(64, '0') +
-        TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
-      await l3SignedSend(vaultAddr, depositVaultData);
-
-      // Verify vault tokens were received
-      const vaultBalData = '0x70a08231' + TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
-      const vaultBal = BigInt(await l3RpcCall('eth_call', [{ to: vaultAddr, data: vaultBalData }, 'latest']) as string || '0x0');
-      if (vaultBal === 0n) {
-        console.log('Vault deposit did not produce tokens — vault may need initialization or different deposit flow');
-        console.log('Verifying Morpho infrastructure instead');
-        expect(morphoCheck!.contracts.MORPHO).toBeTruthy();
-        return;
-      }
-      console.log(`Deposited USDC into vault — got ${vaultBal} vault tokens`);
-
-      // Step 1: Deposit vault tokens as Morpho collateral
+      // Step 1: Deposit Collateral (direct RPC)
       const posBefore = await getMorphoPositionDirect(TEST_ADDRESS);
       console.log(`Position before deposit: collateral=${posBefore.collateral}`);
 

@@ -93,7 +93,7 @@ export function VisualTab({ batch, history, bets, onToggleBet }: VisualTabProps)
 
             {/* Sparkline placeholder */}
             <div className="h-8 bg-surface rounded mb-2 flex items-center justify-center">
-              <span className="text-micro text-text-muted font-mono">sparkline</span>
+              <span className="text-[10px] text-text-muted font-mono">sparkline</span>
             </div>
 
             {/* History row: past results + current bet */}

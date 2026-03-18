@@ -37,8 +37,8 @@ function StepBox({ position, label, sub, color = '#fff', accentColor = '#888', i
       </mesh>
       <Html center position={[0, h / 2 + 0.24, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="text-center">
-          <p className="text-micro font-mono font-bold" style={{ color: accentColor }}>{String(index + 1).padStart(2, '0')}</p>
-          <p className="text-label font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
+          <p className="text-[10px] font-mono font-bold" style={{ color: accentColor }}>{String(index + 1).padStart(2, '0')}</p>
+          <p className="text-[11px] font-bold text-black tracking-tight whitespace-nowrap">{label}</p>
           <p className="text-[8px] text-zinc-500 mt-0.5 whitespace-nowrap">{sub}</p>
         </div>
       </Html>
@@ -156,18 +156,18 @@ export function PaymasterFlow() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-micro text-text-muted tracking-wide">Validate</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Validate</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-yellow-100 border border-yellow-300" />
-              <span className="text-micro text-text-muted tracking-wide">Paymaster</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Paymaster</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-blue-100 border border-blue-300" />
-              <span className="text-micro text-text-muted tracking-wide">Execute</span>
+              <span className="text-[10px] text-text-muted tracking-wide">Execute</span>
             </div>
           </div>
-          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
+          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

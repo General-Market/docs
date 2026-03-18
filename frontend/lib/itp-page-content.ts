@@ -11,7 +11,7 @@ export const ITP_PAGE_CONTENT: Record<string, {
     whyPoints: [
       "Direct exposure to the protocols that move assets between chains. As the multi-chain thesis plays out, bridge usage grows with every new L2 and L1 deployment.",
       "Market-cap weighting across 10 cross-chain tokens concentrates capital in LINK and other proven infrastructure, rebalanced monthly to reflect shifting adoption.",
-      "Every holding and weight change is settled on-chain with BLS-verified oracle consensus. No custodian decides your cross-chain allocation.",
+      "Every holding and weight change is settled on-chain with BLS-verified issuer consensus. No custodian decides your cross-chain allocation.",
     ],
     objective:
       "The Cross-Chain & Interoperability Index seeks to capture the toll revenue of inter-chain asset transfer by holding the top 10 cross-chain communication protocols weighted by market cap. Rebalanced every 30 days, it tilts toward whichever bridge or messaging protocol the market currently values most.",
@@ -81,7 +81,7 @@ export const ITP_PAGE_CONTENT: Record<string, {
     whyPoints: [
       "Fan tokens capture the loyalty economy of professional sports. BAR, PSG, JUV, ATM represent clubs with hundreds of millions of fans and recurring engagement cycles.",
       "Equal weighting across 10 fan tokens ensures no single club dominates. Each matchday, transfer window, and tournament creates volume regardless of broader crypto sentiment.",
-      "Settled on-chain with BLS-verified oracle consensus. Sports engagement data drives a market that moves independently of BTC correlation.",
+      "Settled on-chain with BLS-verified issuer consensus. Sports engagement data drives a market that moves independently of BTC correlation.",
     ],
     objective:
       "The Fan Token Index provides equal-weighted exposure to the top 10 sports fan tokens, rebalanced monthly. It captures the intersection of crypto and professional sports, where engagement is seasonal, recurring, and largely uncorrelated to broader crypto markets.",

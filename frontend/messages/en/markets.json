@@ -123,7 +123,7 @@
     "status": {
       "step1_wallet": "Step 1/2: Confirm in your wallet...",
       "step1_confirming": "Step 1/2: Confirming on-chain...",
-      "step2_executing": "Step 2/2: Executing rebalance on L3 (oracle consensus)...",
+      "step2_executing": "Step 2/2: Executing rebalance on L3 (issuer consensus)...",
       "tx_label": "Tx:"
     },
     "success": {

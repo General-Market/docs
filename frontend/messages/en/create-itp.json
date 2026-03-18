@@ -30,8 +30,8 @@
     "name_placeholder": "e.g., DeFi Blue Chips",
     "symbol_label": "Symbol (max 10)",
     "symbol_placeholder": "e.g., DEFI",
-    "oracle_name_label": "Oracle Name (max 64)",
-    "oracle_name_placeholder": "e.g., Vanguard Labs",
+    "issuer_name_label": "Issuer Name (max 64)",
+    "issuer_name_placeholder": "e.g., Vanguard Labs",
     "description_label": "Description (optional)",
     "description_placeholder": "Brief description shown on ITP cards",
     "website_label": "Website (optional)",
@@ -51,7 +51,7 @@
   },
   "success": {
     "title": "ITP Request Created!",
-    "description": "Waiting for oracle consensus..."
+    "description": "Waiting for issuer consensus..."
   },
   "errors": {
     "fill_all_fields": "Please fill in all fields and ensure weights sum to 100%",

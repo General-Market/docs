@@ -2,11 +2,11 @@
  * Settlement bridge buy + sell (backend-only, no browser).
  *
  * When Settlement gas is available: tests the full bridge flow
- *   Buy:  SettlementBridgeCustody -> oracles relay -> L3 fill -> BridgedITP mint
- *   Sell: SettlementBridgeCustody -> oracles relay -> L3 sell -> USDC on Settlement
+ *   Buy:  SettlementBridgeCustody -> issuers relay -> L3 fill -> BridgedITP mint
+ *   Sell: SettlementBridgeCustody -> issuers relay -> L3 sell -> USDC on Settlement
  *
  * When Settlement gas is insufficient (testnet): falls back to L3 direct orders
- *   to verify the oracle buy/sell pipeline still works end-to-end.
+ *   to verify the issuer buy/sell pipeline still works end-to-end.
  */
 
 import { test, expect } from '@playwright/test';
@@ -26,31 +26,18 @@ import {
   BRIDGED_ITP,
   SETTLEMENT_USDC,
 } from '../helpers/backend-api';
-import { IS_ANVIL, CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS } from '../env';
+import { IS_ANVIL, CONTRACTS } from '../env';
 
-const TEST_ADDRESS = DEPLOYER_ADDRESS;
+const TEST_ADDRESS = '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4';
 const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
-const INDEX_CONTRACT = CONTRACTS.Index ?? '';
+const INDEX_CONTRACT = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 
 test.describe('Settlement Bridge', () => {
-  test('buy ITP via Settlement bridge — oracles relay to L3, BridgedITP minted', async () => {
+  test('buy ITP via Settlement bridge — issuers relay to L3, BridgedITP minted', async () => {
     test.setTimeout(480_000);
 
-    const hasGas = await hasSettlementGas();
-    let oracleRelayAlive = false;
-    if (hasGas && !IS_ANVIL) {
-      try {
-        const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
-        const data = await res.json();
-        oracleRelayAlive = data.status === 'healthy';
-      } catch {
-        oracleRelayAlive = false;
-      }
-    }
-    const hasCustody = !!CONTRACTS.SettlementBridgeCustody && CONTRACTS.SettlementBridgeCustody.length > 4;
-    // Settlement relay only works on Anvil (testnet relay not operational)
-    const useSettlement = IS_ANVIL && hasCustody;
-    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
+    const useSettlement = IS_ANVIL || await hasSettlementGas();
+    console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas)'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
@@ -61,6 +48,7 @@ test.describe('Settlement Bridge', () => {
 
       if (useSettlement) {
         // Full Settlement bridge path
+        const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
         const usdcAmount = 100_000_000n; // 100 USDC (6 decimals)
 
         const orderId = await placeBuyOrderDirect(TEST_ADDRESS, ITP_ID, usdcAmount, limitPrice);
@@ -90,23 +78,18 @@ test.describe('Settlement Bridge', () => {
         console.log(`L3 shares increased: ${sharesBefore} -> ${sharesAfter}`);
         expect(sharesAfter).toBeGreaterThan(sharesBefore);
 
-        // Wait for BridgedITP mint (if deployed)
-        if (BRIDGED_ITP) {
-          try {
-            const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
-            const bridgedItpAfter = await pollUntil(
-              async () => BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS)),
-              (balance) => balance > bridgedItpBefore,
-              240_000,
-              3_000,
-            );
-            console.log(`BridgedITP minted: ${bridgedItpBefore} -> ${bridgedItpAfter}`);
-            expect(bridgedItpAfter).toBeGreaterThan(bridgedItpBefore);
-          } catch {
-            console.log(`BridgedITP mint timed out — L3 shares verified`);
-          }
-        } else {
-          console.log('BridgedITP not deployed — skipping BridgedITP balance check');
+        // Wait for BridgedITP mint
+        try {
+          const bridgedItpAfter = await pollUntil(
+            async () => BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS)),
+            (balance) => balance > bridgedItpBefore,
+            240_000,
+            3_000,
+          );
+          console.log(`BridgedITP minted: ${bridgedItpBefore} -> ${bridgedItpAfter}`);
+          expect(bridgedItpAfter).toBeGreaterThan(bridgedItpBefore);
+        } catch {
+          console.log(`BridgedITP mint timed out — L3 shares verified`);
         }
       } else {
         // L3 direct path (no Settlement gas)
@@ -128,39 +111,21 @@ test.describe('Settlement Bridge', () => {
     }
   });
 
-  test('sell ITP via Settlement bridge — oracles relay to L3, USDC returned on Settlement', async () => {
+  test('sell ITP via Settlement bridge — issuers relay to L3, USDC returned on Settlement', async () => {
     test.setTimeout(360_000);
 
-    const hasGas = await hasSettlementGas();
-    let oracleRelayAlive = false;
-    if (hasGas && !IS_ANVIL) {
-      try {
-        const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
-        const data = await res.json();
-        oracleRelayAlive = data.status === 'healthy';
-      } catch {
-        oracleRelayAlive = false;
-      }
-    }
-    const useSettlement = IS_ANVIL;
-    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
+    const useSettlement = IS_ANVIL || await hasSettlementGas();
+    console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct (low Settlement gas)'}`);
 
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
       if (useSettlement) {
         // Full Settlement bridge sell path
-        // If BridgedITP not deployed, fall back to L3 direct
-        if (!BRIDGED_ITP) {
-          console.log('BridgedITP not deployed — falling back to L3 direct sell');
-          await doL3DirectSell();
-          return;
-        }
-
         const bridgedItpBalance = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
         console.log(`BridgedITP balance before sell: ${bridgedItpBalance}`);
 
-        // If no BridgedITP balance, fall back to L3 direct
+        // If no BridgedITP, fall back to L3 direct
         if (bridgedItpBalance === 0n) {
           console.log('No BridgedITP balance — falling back to L3 direct sell');
           await doL3DirectSell();
@@ -178,7 +143,7 @@ test.describe('Settlement Bridge', () => {
         const usdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
         const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
 
-        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
+        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 0n);
         console.log(`Settlement bridge sell order placed: orderId=${orderId}`);
 
         const usdcAfter = await pollUntil(
@@ -210,7 +175,7 @@ test.describe('Settlement Bridge', () => {
       await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
       const sellAmount = l3SharesBefore > 25n * 10n ** 18n ? 25n * 10n ** 18n : l3SharesBefore;
-      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
+      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 1n);
       console.log(`L3 direct sell order placed: orderId=${orderId}`);
 
       // Poll for order status = 2 (Filled) instead of shares change

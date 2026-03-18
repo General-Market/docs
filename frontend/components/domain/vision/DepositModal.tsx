@@ -114,7 +114,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {/* Current batch balance */}
               {currentBalance && (
                 <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('deposit_modal.batch_balance')}</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.batch_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                     {parseFloat(formatUnits(BigInt(currentBalance), VISION_USDC_DECIMALS)).toFixed(2)} USDC
                   </span>
@@ -124,7 +124,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {/* Amount input */}
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('deposit_modal.amount_label')}</label>
+                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('deposit_modal.amount_label')}</label>
                   <span className="text-xs text-text-muted font-mono">
                     {t('deposit_modal.balance_label', { amount: balance > 0n ? parseFloat(formatUnits(balance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00' })}
                   </span>

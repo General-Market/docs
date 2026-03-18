@@ -274,12 +274,12 @@ function TodayClock({ reducedMotion }: { reducedMotion: boolean }) {
 
       {/* Label: "Today" */}
       <Html center position={[LEFT_X, 0.8, CLOCK_Y - 1.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>Today</p>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#ef4444' }}>Today</p>
       </Html>
 
       {/* Utilization percentage */}
       <Html center position={[LEFT_X, 0, CLOCK_Y + 1.7]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-caption font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>2.5%</p>
+        <p className="text-[12px] font-bold font-mono whitespace-nowrap" style={{ color: '#ef4444' }}>2.5%</p>
       </Html>
 
       {/* Gas limit label */}
@@ -605,12 +605,12 @@ function EPBSClock({ reducedMotion }: { reducedMotion: boolean }) {
 
       {/* Label: "With ePBS" */}
       <Html center position={[RIGHT_X, 0.8, CLOCK_Y - 1.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>With ePBS</p>
+        <p className="text-[10px] tracking-[0.12em] uppercase font-bold whitespace-nowrap" style={{ color: '#22c55e' }}>With ePBS</p>
       </Html>
 
       {/* Utilization percentage: 100+50+150 = 300 out of 360 = ~83% */}
       <Html center position={[RIGHT_X, 0, CLOCK_Y + 1.7]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-caption font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>~83%</p>
+        <p className="text-[12px] font-bold font-mono whitespace-nowrap" style={{ color: '#22c55e' }}>~83%</p>
       </Html>
 
       {/* Gas limit label */}
@@ -645,19 +645,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
-        <span className="text-micro text-text-muted tracking-wide">Verification (Today)</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Verification (Today)</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#3b82f6' }} />
-        <span className="text-micro text-text-muted tracking-wide">Build</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Build</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
-        <span className="text-micro text-text-muted tracking-wide">Propose</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Propose</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
-        <span className="text-micro text-text-muted tracking-wide">Verify</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Verify</span>
       </div>
     </div>
   )

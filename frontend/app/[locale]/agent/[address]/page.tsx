@@ -15,8 +15,8 @@ import { formatRelativeTime } from '@/lib/utils/time'
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="py-3 px-4">
-      <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{label}</div>
-      <div className={`text-heading font-bold font-mono tabular-nums ${color || 'text-black'}`}>{value}</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{label}</div>
+      <div className={`text-[18px] font-bold font-mono tabular-nums ${color || 'text-black'}`}>{value}</div>
     </div>
   )
 }
@@ -69,7 +69,7 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
 
             {/* Trend Chart */}
             <div className="mt-6 border border-border-light p-6">
-              <div className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">Performance Trend</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted mb-3">Performance Trend</div>
               <div className="h-32">
                 <PerformanceGraphMini walletAddress={address} height={128} />
               </div>
@@ -112,12 +112,12 @@ export default function AgentPage({ params }: { params: Promise<{ address: strin
                 <table className="w-full text-sm min-w-[600px]">
                   <thead className="bg-surface border-b border-border-light">
                     <tr>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Bet</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Markets</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Amount</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Result</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left">Status</th>
-                      <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-right">Date</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Bet</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Markets</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Amount</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Result</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Status</th>
+                      <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-right">Date</th>
                     </tr>
                   </thead>
                   <tbody>

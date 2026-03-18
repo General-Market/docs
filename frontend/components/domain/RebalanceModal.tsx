@@ -344,7 +344,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
           ],
         })
 
-        // Execute on L3 via raw RPC (deployer simulates oracle consensus)
+        // Execute on L3 via raw RPC (deployer simulates issuer consensus)
         const hash = await rpcCall(L3_RPC, 'eth_sendTransaction', [{
           from: DEPLOYER,
           to: L3_INDEX,

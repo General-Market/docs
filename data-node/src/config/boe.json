@@ -1,0 +1,263 @@
+[
+  {
+    "asset_id": "boe_usd_gbp",
+    "symbol": "USD/GBP",
+    "name": "US Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLUSS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_eur_gbp",
+    "symbol": "EUR/GBP",
+    "name": "Euro / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLERS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_jpy_gbp",
+    "symbol": "JPY/GBP",
+    "name": "Japanese Yen / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLJYS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_chf_gbp",
+    "symbol": "CHF/GBP",
+    "name": "Swiss Franc / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLSFS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_aud_gbp",
+    "symbol": "AUD/GBP",
+    "name": "Australian Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLADS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_cad_gbp",
+    "symbol": "CAD/GBP",
+    "name": "Canadian Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLCDS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_nzd_gbp",
+    "symbol": "NZD/GBP",
+    "name": "New Zealand Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLNDS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_sek_gbp",
+    "symbol": "SEK/GBP",
+    "name": "Swedish Krona / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLSKS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_nok_gbp",
+    "symbol": "NOK/GBP",
+    "name": "Norwegian Krone / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLNKS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_dkk_gbp",
+    "symbol": "DKK/GBP",
+    "name": "Danish Krone / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLDKS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_hkd_gbp",
+    "symbol": "HKD/GBP",
+    "name": "Hong Kong Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLHDS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_sgd_gbp",
+    "symbol": "SGD/GBP",
+    "name": "Singapore Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLSGS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_zar_gbp",
+    "symbol": "ZAR/GBP",
+    "name": "South African Rand / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLZRS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_cny_gbp",
+    "symbol": "CNY/GBP",
+    "name": "Chinese Yuan / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK89",
+    "active": true
+  },
+  {
+    "asset_id": "boe_inr_gbp",
+    "symbol": "INR/GBP",
+    "name": "Indian Rupee / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK97",
+    "active": true
+  },
+  {
+    "asset_id": "boe_krw_gbp",
+    "symbol": "KRW/GBP",
+    "name": "South Korean Won / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK93",
+    "active": true
+  },
+  {
+    "asset_id": "boe_try_gbp",
+    "symbol": "TRY/GBP",
+    "name": "Turkish Lira / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK95",
+    "active": true
+  },
+  {
+    "asset_id": "boe_sar_gbp",
+    "symbol": "SAR/GBP",
+    "name": "Saudi Riyal / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLSRS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_ils_gbp",
+    "symbol": "ILS/GBP",
+    "name": "Israeli Shekel / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK78",
+    "active": true
+  },
+  {
+    "asset_id": "boe_myr_gbp",
+    "symbol": "MYR/GBP",
+    "name": "Malaysian Ringgit / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK83",
+    "active": true
+  },
+  {
+    "asset_id": "boe_thb_gbp",
+    "symbol": "THB/GBP",
+    "name": "Thai Baht / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK87",
+    "active": true
+  },
+  {
+    "asset_id": "boe_twd_gbp",
+    "symbol": "TWD/GBP",
+    "name": "Taiwan Dollar / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLTWS",
+    "active": true
+  },
+  {
+    "asset_id": "boe_czk_gbp",
+    "symbol": "CZK/GBP",
+    "name": "Czech Koruna / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK25",
+    "active": true
+  },
+  {
+    "asset_id": "boe_huf_gbp",
+    "symbol": "HUF/GBP",
+    "name": "Hungarian Forint / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK33",
+    "active": true
+  },
+  {
+    "asset_id": "boe_pln_gbp",
+    "symbol": "PLN/GBP",
+    "name": "Polish Zloty / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLBK47",
+    "active": true
+  },
+  {
+    "asset_id": "boe_bgn_gbp",
+    "symbol": "BGN/GBP",
+    "name": "Bulgarian Lev / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLZOS3",
+    "active": true
+  },
+  {
+    "asset_id": "boe_ron_gbp",
+    "symbol": "RON/GBP",
+    "name": "Romanian Leu / Sterling",
+    "category": "macro",
+    "subcategory": "fx_rates",
+    "api_ref": "XUDLZOS4",
+    "active": true
+  },
+  {
+    "asset_id": "boe_bank_rate",
+    "symbol": "BANK_RATE",
+    "name": "BoE Bank Rate",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "IUDBEDR",
+    "active": true
+  },
+  {
+    "asset_id": "boe_sonia",
+    "symbol": "SONIA",
+    "name": "SONIA (Sterling Overnight Index Average)",
+    "category": "macro",
+    "subcategory": "interest_rates",
+    "api_ref": "IUDSOIA",
+    "active": true
+  }
+]

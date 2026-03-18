@@ -2,9 +2,9 @@
  * SettlementBridgeCustody.sol ABI — Settlement-side contract for cross-chain deposits to Vision.
  *
  * Users call depositToVision() on Settlement to lock USDC (6 dec).
- * Oracles observe the event and call Vision.creditBalance() on L3 (18 dec).
- * After crediting, oracles call completeVisionDeposit() to mark the order done.
- * If crediting fails, oracles can call refundVisionDeposit() to return USDC.
+ * Issuers observe the event and call Vision.creditBalance() on L3 (18 dec).
+ * After crediting, issuers call completeVisionDeposit() to mark the order done.
+ * If crediting fails, issuers can call refundVisionDeposit() to return USDC.
  */
 
 export const SETTLEMENT_BRIDGE_CUSTODY_ABI = [
@@ -17,7 +17,7 @@ export const SETTLEMENT_BRIDGE_CUSTODY_ABI = [
     type: 'function',
   },
 
-  // ============ ORACLE OPERATIONS ============
+  // ============ ISSUER OPERATIONS ============
   {
     inputs: [
       { name: 'orderId', type: 'bytes32' },

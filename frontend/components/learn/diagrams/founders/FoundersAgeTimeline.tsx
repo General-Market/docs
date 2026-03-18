@@ -15,7 +15,7 @@ import { AGE_TIMELINE } from "./data";
 export function FoundersAgeTimeline() {
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
         Average Founder Age by Market Cap Tier (2021-2026)
       </div>
       <div className="h-[300px] sm:h-[340px]">
@@ -74,7 +74,7 @@ export function FoundersAgeTimeline() {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div className="text-label text-text-muted mt-2">
+      <div className="text-[11px] text-text-muted mt-2">
         Ages adjusted per snapshot year. Tiers use only validated tokens with confirmed founder data.
       </div>
     </div>

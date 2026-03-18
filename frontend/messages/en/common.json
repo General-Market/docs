@@ -148,7 +148,7 @@
   },
   "bot_notice": {
     "title": "AI-Powered Trading",
-    "description": "All orders on General Market are processed by authorized oracles. This dashboard displays bot activity in real-time.",
+    "description": "All orders on General Market are processed by authorized issuers. This dashboard displays bot activity in real-time.",
     "learn_more": "Learn how AI agents work",
     "dismiss": "Dismiss notice",
     "badge": "Bets placed by AI agents"

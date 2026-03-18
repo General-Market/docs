@@ -222,6 +222,18 @@
       "isPrice": false
     },
     {
+      "sourceId": "boe",
+      "name": "Bank of England FX",
+      "description": "Daily spot exchange rates observed around 4pm London — 27 currencies against Sterling, sourced from Bloomberg BFIX and LSEG.",
+      "category": "economic",
+      "logo": "/source-imgs/new-boe.svg",
+      "brandBg": "#1d1d1d",
+      "prefixes": ["boe_"],
+      "valueLabel": "Rate",
+      "valueUnit": "vs GBP",
+      "isPrice": false
+    },
+    {
       "sourceId": "worldbank",
       "name": "World Bank Indicators",
       "description": "Development indicators — GDP, population, poverty, health, education for 200+ countries.",

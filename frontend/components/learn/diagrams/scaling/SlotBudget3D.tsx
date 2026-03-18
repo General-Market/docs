@@ -231,13 +231,13 @@ function PulsingMultiplierLabel({ reducedMotion }: { reducedMotion: boolean }) {
       <Html center style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="flex flex-col items-center">
           <span
-            className="text-heading font-black font-mono whitespace-nowrap"
+            className="text-[18px] font-black font-mono whitespace-nowrap"
             style={{ color: GREEN }}
           >
             13x more time
           </span>
           <span
-            className="text-micro font-mono whitespace-nowrap mt-0.5"
+            className="text-[10px] font-mono whitespace-nowrap mt-0.5"
             style={{ color: '#86efac' }}
           >
             to verify
@@ -371,7 +371,7 @@ function TodayBar({ reducedMotion }: { reducedMotion: boolean }) {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap"
+          className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap"
           style={{ color: '#a1a1aa' }}
         >
           Today
@@ -441,7 +441,7 @@ function TodayBar({ reducedMotion }: { reducedMotion: boolean }) {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-label font-bold font-mono whitespace-nowrap"
+          className="text-[11px] font-bold font-mono whitespace-nowrap"
           style={{ color: RED }}
         >
           2.5% used
@@ -542,7 +542,7 @@ function EPBSBar({ reducedMotion }: { reducedMotion: boolean }) {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-label tracking-[0.08em] uppercase font-bold whitespace-nowrap"
+          className="text-[11px] tracking-[0.12em] uppercase font-bold whitespace-nowrap"
           style={{ color: GREEN }}
         >
           ePBS
@@ -640,7 +640,7 @@ function EPBSBar({ reducedMotion }: { reducedMotion: boolean }) {
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <p
-          className="text-label font-bold font-mono whitespace-nowrap"
+          className="text-[11px] font-bold font-mono whitespace-nowrap"
           style={{ color: GREEN }}
         >
           33% used
@@ -687,19 +687,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-micro text-text-muted tracking-wide">Verify</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Verify</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-micro text-text-muted tracking-wide">Propose</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Propose</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREY }} />
-        <span className="text-micro text-text-muted tracking-wide">Gossip / Attest</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Gossip / Attest</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: RED }} />
-        <span className="text-micro text-text-muted tracking-wide">Overflow</span>
+        <span className="text-[10px] text-text-muted tracking-wide">Overflow</span>
       </div>
     </div>
   )

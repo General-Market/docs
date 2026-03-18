@@ -10,13 +10,13 @@
     },
     {
       "name": "OracleRegistry",
-      "address": "0xdb426a42e12f016f15ed4ac2b31263492109c5ac",
+      "address": "0x1DC7d85fd61466BF6c73EEbef4E3fA644818dff5",
       "hasCode": true,
       "chain": "l3"
     },
     {
       "name": "Vision",
-      "address": "0x5fb50038155c62f3f3af424e400e18ddb973541f",
+      "address": "0xAFD85eFB3b8bfC929B508C0c2cF12d5379584D60",
       "hasCode": true,
       "chain": "l3"
     },
@@ -78,7 +78,7 @@
     "stale": false
   },
   "visionBatches": {
-    "count": 47,
+    "count": 43,
     "firstBatchExists": false
   },
   "staleAddresses": []

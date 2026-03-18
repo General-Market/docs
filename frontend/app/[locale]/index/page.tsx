@@ -36,7 +36,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         <section aria-label={t('markets.title')}>
           <h2>{t('markets.title')}</h2>
           <p>{t('markets.description')}</p>
-          {[...itps].sort((a, b) => (b.aum || 0) - (a.aum || 0)).slice(0, 50).map((itp) => (
+          {itps.map((itp) => (
             <article key={itp.itpId}>
               <h3>{itp.name} ({itp.symbol})</h3>
               <p>{tArticle('nav_per_share', { nav: itp.nav.toFixed(4) })}</p>

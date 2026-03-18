@@ -92,7 +92,7 @@ export function ArticleSidebar({ headings, category }: ArticleSidebarProps) {
               <li key={h.id}>
                 <button
                   onClick={() => handleClick(h.id)}
-                  className={`flex items-center gap-2.5 w-full text-left text-caption leading-snug px-2.5 py-1.5 rounded transition-colors ${
+                  className={`flex items-center gap-2.5 w-full text-left text-[12px] leading-snug px-2.5 py-1.5 rounded transition-colors ${
                     isActive
                       ? "bg-surface font-semibold text-black"
                       : "text-text-muted hover:text-text-secondary"

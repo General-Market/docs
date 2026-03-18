@@ -6,7 +6,7 @@ export const REWRITES_BACKEND_URL = process.env.BACKEND_URL || 'http://localhost
 export const AA_DATA_NODE_URL = process.env.AA_DATA_NODE_URL || 'http://localhost:8200'
 export const L3_RPC_SERVER = process.env.L3_RPC_URL || process.env.NEXT_PUBLIC_L3_RPC_URL || 'http://localhost:8545'
 export const DATA_NODE_SERVER = process.env.DATA_NODE_URL || process.env.NEXT_PUBLIC_DATA_NODE_URL || 'http://localhost:8200'
-export const ORACLE_VISION_URL = process.env.ORACLE_VISION_URL || 'http://localhost:10001'
+export const ISSUER_VISION_URL = process.env.ISSUER_VISION_URL || 'http://localhost:10001'
 export const CSP_CONNECT_EXTRA = (process.env.CSP_CONNECT_EXTRA || '').trim()
 
 // ── Client-side URLs (NEXT_PUBLIC_ prefix for browser exposure) ──
@@ -24,16 +24,12 @@ export const SETTLEMENT_EXPLORER_URL = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLOR
 
 // Vision API — proxied through Next.js rewrites to avoid CORS.
 // In dev: /api/vision/* → localhost:10001/vision/*
-// In prod: /api/vision/* → oracle health port
+// In prod: /api/vision/* → issuer health port
 export const VISION_API_URL = '/api'
 
-// Vision oracle URLs — for bitmap submission, balance proofs, withdrawals.
-// On HTTPS, use /api proxy to avoid mixed content blocks.
-// On HTTP (local dev / E2E), use direct oracle URLs.
-const rawOracleUrls = (
-  process.env.NEXT_PUBLIC_ORACLE_URLS ||
+// Vision issuer URLs — for bitmap submission, balance proofs, withdrawals.
+// These point to each issuer's health port (Vision routes merged in).
+export const VISION_ISSUER_URLS = (
+  process.env.NEXT_PUBLIC_ISSUER_URLS ||
   'http://localhost:10001,http://localhost:10002,http://localhost:10003'
 ).split(',').map(s => s.trim())
-export const VISION_ORACLE_URLS = typeof window !== 'undefined' && window.location?.protocol === 'https:'
-  ? ['/api/vision']  // Single proxy endpoint — next.config.ts rewrite handles it
-  : rawOracleUrls

@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
+import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { locales, type Locale } from '@/i18n/config'
 import {
@@ -56,15 +56,13 @@ export default async function LocaleLayout({ children, params }: Props) {
     notFound()
   }
 
-  setRequestLocale(locale)
-
   const [messages, tJsonLd] = await Promise.all([
-    getMessages({ locale }),
+    getMessages(),
     getTranslations({ locale, namespace: 'seo.json_ld' }),
   ])
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
+    <NextIntlClientProvider messages={messages}>
       <OrganizationJsonLd description={tJsonLd('org_description')} />
       <WebsiteJsonLd description={tJsonLd('website_description')} />
       <SoftwareApplicationJsonLd description={tJsonLd('app_description')} />

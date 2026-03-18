@@ -49,7 +49,7 @@ export interface UseJoinBatchReturn {
  * 3. Call Vision.joinBatch(batchId, configHash, depositAmount, stakePerTick, bitmapHash)
  *
  * After joinBatch succeeds, the caller should use useSubmitBitmap to reveal
- * the actual bitmap bytes to the oracle nodes.
+ * the actual bitmap bytes to the issuer nodes.
  */
 export function useJoinBatch(): UseJoinBatchReturn {
   const { address } = useAccount()

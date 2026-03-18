@@ -40,12 +40,12 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
 
       {/* TOC toggle */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border-light">
-        <span className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted">
+        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase text-text-muted">
           Contents
         </span>
         <button
           onClick={() => setOpen(!open)}
-          className="text-caption font-semibold text-black"
+          className="text-[12px] font-semibold text-black"
         >
           {open ? "Close" : "Menu"}
         </button>
@@ -58,7 +58,7 @@ export function MobileArticleNav({ headings }: MobileArticleNavProps) {
             <button
               key={h.id}
               onClick={() => handleClick(h.id)}
-              className="block w-full text-left text-caption text-text-secondary hover:text-black py-1.5 px-2 rounded hover:bg-surface transition-colors"
+              className="block w-full text-left text-[13px] text-text-secondary hover:text-black py-1.5 px-2 rounded hover:bg-surface transition-colors"
             >
               {h.text}
             </button>

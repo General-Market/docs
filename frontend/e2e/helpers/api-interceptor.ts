@@ -4,27 +4,31 @@
  * this intercepts browser requests and responds with data from direct RPC calls.
  */
 import type { Page, Route } from '@playwright/test';
-import {
-  SETTLEMENT_RPC as ENV_SETTLEMENT_RPC, L3_RPC as ENV_L3_RPC, CONTRACTS, RPC_TIMEOUT,
-  MORPHO_CONTRACTS, MORPHO_MARKET_PARAMS,
-} from '../env';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { SETTLEMENT_RPC as ENV_SETTLEMENT_RPC, L3_RPC as ENV_L3_RPC, CONTRACTS, RPC_TIMEOUT } from '../env';
 
 const SETTLEMENT_RPC = ENV_SETTLEMENT_RPC;
 const L3_RPC = ENV_L3_RPC;
-const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '';
-const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '';
-const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '';
-const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '';
+const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '0x0B306BF915C4d645ff596e518fAf3F9669b97016';
+const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '0x59b670e9fA9D0A427751Af201D676719a970857b';
+const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '0x4ed7c70F96B99c776995fB64377f0d4aB3B0e1C1';
 
-// Morpho addresses — from env.ts (single source of truth)
+// Read Morpho addresses from deployment JSON
 function readMorphoDeployment() {
-  return {
-    morpho: MORPHO_CONTRACTS.MORPHO || '',
-    marketId: MORPHO_CONTRACTS.MARKET_ID || '',
-    mockOracle: MORPHO_CONTRACTS.ITP_NAV_ORACLE || MORPHO_CONTRACTS.MOCK_ORACLE || '',
-    collateralToken: MORPHO_MARKET_PARAMS.collateralToken || '',
-    loanToken: MORPHO_MARKET_PARAMS.loanToken || '',
-  };
+  try {
+    const morphoJson = JSON.parse(readFileSync(join(__dirname, '../../lib/contracts/morpho-deployment.json'), 'utf-8'));
+    return {
+      morpho: morphoJson.contracts?.MORPHO || '',
+      marketId: morphoJson.contracts?.MARKET_ID || '',
+      mockOracle: morphoJson.contracts?.ITP_NAV_ORACLE || morphoJson.contracts?.MOCK_ORACLE || '',
+      collateralToken: morphoJson.marketParams?.collateralToken || '',
+      loanToken: morphoJson.marketParams?.loanToken || '',
+    };
+  } catch {
+    return { morpho: '', marketId: '', mockOracle: '', collateralToken: '', loanToken: '' };
+  }
 }
 
 const MORPHO_DEPLOY = readMorphoDeployment();
