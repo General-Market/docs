@@ -7,7 +7,9 @@
  * Usage: called from global-setup.ts — prints a clear report and marks
  * addresses as "stale" so tests can make informed decisions.
  */
-import { L3_RPC, SETTLEMENT_RPC, CONTRACTS, DEPLOYMENT, IS_ANVIL, MORPHO_DEPLOYMENT, VISION_BATCHES } from '../env'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import { L3_RPC, SETTLEMENT_RPC, CONTRACTS, DEPLOYMENT, IS_ANVIL } from '../env'
 
 // ── Types ──
 
@@ -143,9 +145,10 @@ export async function validateDeployment(): Promise<DeploymentHealth> {
 
   // 4. Validate Morpho deployment
   const morpho = { deployed: false, collateralTokenAlive: false, oracleAlive: false, stale: true }
-  const morphoDeploy = MORPHO_DEPLOYMENT
-  if (morphoDeploy.contracts?.MORPHO && l3Reachable) {
+  const morphoPath = join(__dirname, '..', '..', 'lib', 'contracts', 'morpho-deployment.json')
+  if (existsSync(morphoPath) && l3Reachable) {
     try {
+      const morphoDeploy = JSON.parse(readFileSync(morphoPath, 'utf-8'))
       const morphoAddr = morphoDeploy.contracts?.MORPHO
       if (morphoAddr) {
         const code = await rpcGetCode(L3_RPC, morphoAddr)
@@ -170,8 +173,12 @@ export async function validateDeployment(): Promise<DeploymentHealth> {
 
   // 5. Validate Vision batches
   const visionBatches = { count: 0, firstBatchExists: false }
-  if (VISION_BATCHES.batches && l3Reachable) {
-    visionBatches.count = VISION_BATCHES.batchCount ?? Object.keys(VISION_BATCHES.batches ?? {}).length
+  const visionPath = join(__dirname, '..', '..', 'lib', 'contracts', 'vision-batches.json')
+  if (existsSync(visionPath) && l3Reachable) {
+    try {
+      const visionDeploy = JSON.parse(readFileSync(visionPath, 'utf-8'))
+      visionBatches.count = visionDeploy.batchCount ?? Object.keys(visionDeploy.batches ?? {}).length
+    } catch { /* vision batches JSON malformed */ }
   }
 
   _cached = {
