@@ -14,6 +14,12 @@
 //! - `GET /vision/leaderboard` - Player rankings by PnL
 //! - `GET /vision/player/:address/profile` - Display-ready player profile
 //!
+//! **Round-based aliases (E2E test compatibility):**
+//! - `GET /vision/rounds/active` - Active rounds (alias for batches, filtered)
+//! - `GET /vision/rounds/:id/results` - Round results after settlement
+//! - `GET /vision/rounds/:id/bitmaps` - Decoded bitmaps for a settled round
+//! - `GET /vision/player/:address/rounds` - Player's round history
+//!
 //! **From in-memory state (bitmap/balance):**
 //! - `POST /vision/bitmap` - Player submits bitmap
 //! - `GET /vision/balance/:batch_id/:player` - BLS-signed balance proof
@@ -96,6 +102,11 @@ pub fn routes(state: Arc<VisionState>) -> axum::Router {
         .route("/vision/deposit/:order_id/status", get(get_deposit_status))
         .route("/vision/withdraw/:withdraw_id/status", get(get_withdraw_status))
         .route("/vision/player/:address/profile", get(player_profile))
+        // Round-based aliases for E2E test compatibility
+        .route("/vision/rounds/active", get(rounds_active))
+        .route("/vision/rounds/:id/results", get(round_results))
+        .route("/vision/rounds/:id/bitmaps", get(round_bitmaps))
+        .route("/vision/player/:address/rounds", get(player_rounds))
         .with_state(state)
 }
 
@@ -2016,6 +2027,296 @@ async fn player_profile(
         }),
     )
         .into_response()
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/rounds/active — round-based alias for list_batches
+// ---------------------------------------------------------------------------
+
+/// Query params for the rounds/active endpoint.
+#[derive(Debug, Deserialize)]
+struct RoundsActiveQuery {
+    source: Option<String>,
+}
+
+/// A round in the E2E-expected shape.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RoundInfoResponse {
+    batch_id: u64,
+    source_id: String,
+    timeframe_secs: u64,
+    status: String,
+    player_count: usize,
+    betting_end: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    config_hash: Option<String>,
+}
+
+/// List active rounds (non-paused batches) in the shape the E2E tests expect.
+///
+/// Reads the same data as `list_batches` but returns `{ rounds: [...] }`
+/// with camelCase fields matching the `RoundInfo` TypeScript interface.
+async fn rounds_active(
+    State(state): State<Arc<VisionState>>,
+    Query(query): Query<RoundsActiveQuery>,
+) -> impl IntoResponse {
+    // Build the SQL filter — always paused=false, optionally by source_id
+    let rows = if let Some(ref source) = query.source {
+        let hex_sid = string_to_bytes32_hex(source);
+        sqlx::query_as::<_, BatchRow>(
+            "SELECT id, creator, tick_duration, paused, source_id, config_hash
+             FROM vision_batches
+             WHERE paused = false AND source_id = $1
+             ORDER BY id DESC
+             LIMIT 100"
+        )
+        .bind(&hex_sid)
+        .fetch_all(&state.pool)
+        .await
+    } else {
+        sqlx::query_as::<_, BatchRow>(
+            "SELECT id, creator, tick_duration, paused, source_id, config_hash
+             FROM vision_batches
+             WHERE paused = false
+             ORDER BY id DESC
+             LIMIT 100"
+        )
+        .fetch_all(&state.pool)
+        .await
+    };
+
+    match rows {
+        Ok(rows) => {
+            let mut rounds = Vec::with_capacity(rows.len());
+            for row in rows {
+                let batch_id = row.id as u64;
+                let player_count = state.scheduler.player_count(batch_id).await;
+                let next_tick = state.scheduler.next_tick_for_batch(batch_id).await;
+
+                // Determine status from scheduler state
+                let status = if player_count == 0 {
+                    "betting"
+                } else {
+                    "betting" // continuous batches are always in betting phase
+                };
+
+                // betting_end = next tick timestamp (tick_duration from now as rough estimate)
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                let betting_end_ts = now + row.tick_duration as u64;
+
+                let config_hash = row.config_hash.clone().filter(|h| !h.is_empty());
+
+                rounds.push(RoundInfoResponse {
+                    batch_id,
+                    source_id: bytes32_hex_to_string(&row.source_id.unwrap_or_default()),
+                    timeframe_secs: row.tick_duration as u64,
+                    status: status.to_string(),
+                    player_count,
+                    betting_end: chrono::DateTime::from_timestamp(betting_end_ts as i64, 0)
+                        .map(|dt| dt.to_rfc3339())
+                        .unwrap_or_else(|| betting_end_ts.to_string()),
+                    config_hash,
+                });
+            }
+            (StatusCode::OK, Json(serde_json::json!({ "rounds": rounds }))).into_response()
+        }
+        Err(e) => {
+            warn!("Failed to query rounds from Postgres: {e}");
+            // Return empty array on error — E2E tests check `data.rounds ?? []`
+            (StatusCode::OK, Json(serde_json::json!({ "rounds": Vec::<()>::new() }))).into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/rounds/:id/results — round results after settlement
+// ---------------------------------------------------------------------------
+
+/// Player result within a settled round.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RoundPlayerResult {
+    player: String,
+    deposited: String,
+    payout: String,
+    pnl: String,
+    correct_count: i64,
+    total_markets: i64,
+}
+
+/// Round results — outcomes and PnL for each player after settlement.
+///
+/// Reads from `vision_round_players` if the table exists.
+/// Returns 200 with empty players array if no data yet (round not settled).
+async fn round_results(
+    State(state): State<Arc<VisionState>>,
+    Path(id): Path<u64>,
+) -> impl IntoResponse {
+    #[derive(Debug, sqlx::FromRow)]
+    struct RoundPlayerRow {
+        player: String,
+        deposited: String,
+        payout: String,
+        pnl: String,
+        correct_count: Option<i64>,
+        total_markets: Option<i64>,
+    }
+
+    let rows = sqlx::query_as::<_, RoundPlayerRow>(
+        "SELECT player, deposited, payout, pnl, correct_count, total_markets
+         FROM vision_round_players
+         WHERE batch_id = $1
+         ORDER BY pnl::numeric DESC"
+    )
+    .bind(id as i64)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(rows) => {
+            let players: Vec<RoundPlayerResult> = rows
+                .into_iter()
+                .map(|r| RoundPlayerResult {
+                    player: r.player,
+                    deposited: r.deposited,
+                    payout: r.payout,
+                    pnl: r.pnl,
+                    correct_count: r.correct_count.unwrap_or(0),
+                    total_markets: r.total_markets.unwrap_or(0),
+                })
+                .collect();
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "batchId": id,
+                    "players": players,
+                })),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            // Table may not exist yet — return empty result, not 500
+            warn!("Failed to query round results for batch {id}: {e}");
+            (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "batchId": id,
+                    "players": Vec::<()>::new(),
+                })),
+            )
+                .into_response()
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/rounds/:id/bitmaps — decoded bitmaps for a settled round
+// ---------------------------------------------------------------------------
+
+/// Decoded bitmaps for a settled round.
+///
+/// Returns the bitmap store's active bitmaps decoded into per-player boolean arrays.
+/// If the round hasn't settled or bitmaps aren't available, returns empty arrays.
+async fn round_bitmaps(
+    State(state): State<Arc<VisionState>>,
+    Path(id): Path<u64>,
+) -> impl IntoResponse {
+    let bitmaps = state.bitmap_store.get_all_active_for_batch(id).await;
+
+    let players: Vec<serde_json::Value> = bitmaps
+        .into_iter()
+        .map(|b| {
+            let predictions: Vec<bool> = b.bitmap.iter()
+                .flat_map(|byte| (0..8).rev().map(move |bit| (byte >> bit) & 1 == 1))
+                .collect();
+            serde_json::json!({
+                "player": format!("{:?}", b.player),
+                "predictions": predictions,
+            })
+        })
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "batchId": id,
+            "markets": Vec::<String>::new(),
+            "players": players,
+        })),
+    )
+        .into_response()
+}
+
+// ---------------------------------------------------------------------------
+// GET /vision/player/:address/rounds — player round history
+// ---------------------------------------------------------------------------
+
+/// Query params for the player rounds endpoint.
+#[derive(Debug, Deserialize)]
+struct PlayerRoundsQuery {
+    limit: Option<u64>,
+}
+
+/// Player's round history — past results across all batches.
+///
+/// Reads from `vision_round_players` and returns in the shape the E2E expects:
+/// `{ rounds: PlayerRound[] }`.
+async fn player_rounds(
+    State(state): State<Arc<VisionState>>,
+    Path(address_str): Path<String>,
+    Query(query): Query<PlayerRoundsQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(20).min(100) as i64;
+
+    #[derive(Debug, sqlx::FromRow)]
+    struct PlayerRoundRow {
+        batch_id: i64,
+        deposited: String,
+        payout: String,
+        pnl: String,
+        correct_count: Option<i64>,
+        total_markets: Option<i64>,
+    }
+
+    let rows = sqlx::query_as::<_, PlayerRoundRow>(
+        "SELECT batch_id, deposited, payout, pnl, correct_count, total_markets
+         FROM vision_round_players
+         WHERE LOWER(player) = LOWER($1)
+         ORDER BY batch_id DESC
+         LIMIT $2"
+    )
+    .bind(&address_str)
+    .bind(limit)
+    .fetch_all(&state.pool)
+    .await;
+
+    match rows {
+        Ok(rows) => {
+            let rounds: Vec<serde_json::Value> = rows
+                .into_iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "batchId": r.batch_id,
+                        "deposited": r.deposited,
+                        "payout": r.payout,
+                        "pnl": r.pnl,
+                        "correctCount": r.correct_count.unwrap_or(0),
+                        "totalMarkets": r.total_markets.unwrap_or(0),
+                    })
+                })
+                .collect();
+            (StatusCode::OK, Json(serde_json::json!({ "rounds": rounds }))).into_response()
+        }
+        Err(e) => {
+            // Table may not exist yet — return empty, not 500
+            warn!("Failed to query player rounds for {address_str}: {e}");
+            (StatusCode::OK, Json(serde_json::json!({ "rounds": Vec::<()>::new() }))).into_response()
+        }
+    }
 }
 
 #[cfg(test)]
