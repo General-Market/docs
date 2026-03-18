@@ -16,10 +16,10 @@ test.describe('Vision Leaderboard', () => {
     })
     expect(res.ok).toBe(true)
     const data = await res.json()
-    expect(data.entries).toBeDefined()
+    expect(data.leaderboard).toBeDefined()
 
-    if (data.entries.length > 0) {
-      const entry = data.entries[0]
+    if (data.leaderboard.length > 0) {
+      const entry = data.leaderboard[0]
       // Core fields that must exist on every leaderboard entry
       expect(entry).toHaveProperty('walletAddress')
       expect(entry).toHaveProperty('pnl')
@@ -45,7 +45,7 @@ test.describe('Vision Leaderboard', () => {
     })
     expect(res.ok).toBe(true)
     const data = await res.json()
-    const entries = data.entries ?? []
+    const entries = data.leaderboard ?? []
 
     // Look for PLAYER1 from the round lifecycle tests (test 41)
     const p1 = entries.find(
