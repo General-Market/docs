@@ -49,23 +49,29 @@ export async function ensureWalletConnected(page: Page, address: string): Promis
   await expect(addrBtn).toBeVisible({ timeout: 30_000 });
 }
 
-// ── ITP Listing ─────────────────────────────────────────────
+// ── ITP Listing (table-based) ────────────────────────────────
 
+/** Each ITP is a <tr> row with id="itp-card-{itpId}" inside the product table */
 export function itpCard(page: Page): Locator {
   return page.locator('[id^="itp-card-"]');
 }
 
-export function buyButton(page: Page): Locator {
-  // The "Buy" button on an ITP card (accent background, small)
-  return itpCard(page).first().getByRole('button', { name: 'Buy', exact: true });
+/** Nth ITP row (0-indexed). Defaults to first. */
+export function itpRow(page: Page, index = 0): Locator {
+  return itpCard(page).nth(index);
 }
 
-export function sellButton(page: Page): Locator {
-  return itpCard(page).first().getByRole('button', { name: 'Sell', exact: true });
+export function buyButton(page: Page, rowIndex = 0): Locator {
+  // "Buy" text link/button inside a table row — WalletActionButton renders <button>
+  return itpRow(page, rowIndex).getByRole('button', { name: 'Buy', exact: true });
+}
+
+export function sellButton(page: Page, rowIndex = 0): Locator {
+  return itpRow(page, rowIndex).getByRole('button', { name: 'Sell', exact: true });
 }
 
 export function borrowButtonOnCard(page: Page): Locator {
-  // Borrow button may not be on the first card (sorted by TVL) — find any card that has one
+  // Borrow button may not be on the first row — find any row that has one
   return itpCard(page).getByRole('button', { name: 'Borrow', exact: true }).first();
 }
 
@@ -78,12 +84,18 @@ export function modalContainer(page: Page): Locator {
 // ── Buy Modal ───────────────────────────────────────────────
 
 export const buyModal = {
+  /** Modal heading — "Buy {itpName}" */
+  heading(page: Page): Locator {
+    return page.getByRole('heading', { name: /^Buy\s/ });
+  },
+
   amountInput(page: Page): Locator {
-    return page.locator('input[placeholder="Amount in USDC"], input[placeholder="e.g., 100"]');
+    // Placeholder is "e.g., 100" (i18n key: amount placeholder)
+    return page.locator('input[placeholder="e.g., 100"]');
   },
 
   limitPriceInput(page: Page): Locator {
-    // Limit price input — uses dynamic placeholder from i18n
+    // Limit price input — placeholder varies: "Set limit price" | "0 (no limit)" | "Computing price..."
     return page.locator('input[placeholder="Set limit price"], input[placeholder="0 (no limit)"], input[placeholder="Computing price..."]');
   },
 
@@ -96,7 +108,7 @@ export const buyModal = {
   },
 
   submitButton(page: Page): Locator {
-    // The main submit button — text varies by state
+    // Text cycles: "Approve & Buy" | "Buy ITP" | wallet-pending states
     return page.getByRole('button', { name: /Approve & Buy|Buy ITP/ });
   },
 
@@ -106,6 +118,11 @@ export const buyModal = {
 
   buyMoreButton(page: Page): Locator {
     return page.getByRole('button', { name: 'Buy More' });
+  },
+
+  /** Balance display above the amount input: "Balance: 1,234.56 USDC" */
+  balanceText(page: Page): Locator {
+    return page.getByText(/Balance:\s*[\d,.]+\s*USDC/);
   },
 
   slippageButton(page: Page, label: string): Locator {

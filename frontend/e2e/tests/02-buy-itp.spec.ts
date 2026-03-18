@@ -24,7 +24,8 @@ test.describe('Buy ITP', () => {
     // 2. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 3. Wait for ITP listing to load (SSE delivers data async — use toBeVisible which polls)
+    // 3. Wait for ITP table rows to load (SSE/REST delivers data async)
+    //    The ItpListing renders a <table> with <tr id="itp-card-{itpId}"> rows.
     try {
       await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     } catch {
@@ -33,27 +34,27 @@ test.describe('Buy ITP', () => {
       await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     }
 
-    // 4. Click Buy on first ITP
+    // 4. Click Buy on first ITP table row
     const buyBtn = buyButton(page);
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
     await buyBtn.click();
 
-    // 5. Buy modal should appear (heading is "Buy {itpName}")
-    await expect(page.getByRole('heading', { name: /^Buy\s/ })).toBeVisible({ timeout: 10_000 });
+    // 5. Buy modal should appear — heading is "Buy {itpName}"
+    await expect(buyModal.heading(page)).toBeVisible({ timeout: 10_000 });
 
-    // 6. Wait for USDC balance to load (wagmi reads via /rpc proxy, initial query may take a few seconds)
-    await expect(page.getByText(/Balance:\s*[1-9][\d,.]*\s*USDC/)).toBeVisible({ timeout: 30_000 });
+    // 6. Wait for USDC balance to appear in modal (wagmi reads via /rpc proxy)
+    //    Balance text: "Balance: 1,234.56 USDC" — must show a nonzero amount
+    await expect(buyModal.balanceText(page)).toBeVisible({ timeout: 30_000 });
 
     // 7. Enter buy amount (100 USDC)
     const amountInput = buyModal.amountInput(page);
     await expect(amountInput).toBeVisible({ timeout: 5_000 });
     await amountInput.fill('100');
 
-    // 8. Limit price should auto-fill from NAV — wait for it, fallback to manual fill
+    // 8. Limit price — set a high absolute limit ($20) to cover any realistic NAV drift
+    //    during oracle consensus (30-90s)
     const limitInput = buyModal.limitPriceInput(page);
-    // Set a high absolute limit price — dynamic NAV calculation fails because NAV drifts
-    // during oracle consensus (30-90s). Test 03's placeL3BuyOrderDirect uses $10 and works.
-    const limitPrice = '20.000000'; // $20 — covers any realistic ITP NAV
+    const limitPrice = '20.000000';
     await limitInput.clear();
     await limitInput.fill(limitPrice);
 
@@ -62,23 +63,22 @@ test.describe('Buy ITP', () => {
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     console.log(`Buy test: sharesBefore=${sharesBefore}`);
 
-    // 8. Click Approve & Buy (or Buy ITP if already approved)
+    // 9. Click Approve & Buy (or Buy ITP if already approved)
     const submitBtn = buyModal.submitButton(page);
     await expect(submitBtn).toBeEnabled({ timeout: 15_000 });
     await submitBtn.click();
 
-    // 9. Wait for buy tx to be confirmed (stepper enters "Process" phase)
-    // Direct L3 path: order goes to Index.submitOrder, oracles batch + fill on L3
-    // UI micro-step text: "Batching order..." then "Executing trades..."
+    // 10. Wait for buy tx to be confirmed (stepper enters "Process" phase)
+    //     Micro-step labels: "Batching order..." then "Executing trades..."
     await expect(page.getByText(/Batching order|Executing trades/)).toBeVisible({ timeout: 60_000 });
 
-    // 10. Extract L3 order ID from the modal (shows "L3 #N")
+    // 11. Extract L3 order ID from the modal stepper txRefs ("L3 #N")
     const l3OrderIdText = await page.getByText(/L3 #\d+/).textContent({ timeout: 30_000 }).catch(() => null);
     const orderId = l3OrderIdText ? parseInt(l3OrderIdText.match(/#(\d+)/)?.[1] || '0') || null : null;
     console.log(`Buy test: orderId=${orderId}`);
 
-    // 11. Wait for real oracle consensus pipeline to fill the order.
-    // Race: modal "Buy More" button OR backend order status change (whichever first).
+    // 12. Wait for real oracle consensus pipeline to fill the order.
+    //     Race: modal "Buy More" button OR backend order status change (whichever first).
     const fillDetected = await Promise.race([
       expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 210_000 })
         .then(() => 'ui' as const).catch(() => null),
@@ -101,7 +101,7 @@ test.describe('Buy ITP', () => {
       })(),
     ]);
 
-    // 12. Verify the buy was filled
+    // 13. Verify the buy was filled
     if (fillDetected === null) {
       await page.waitForTimeout(15_000);
     }
