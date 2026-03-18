@@ -101,6 +101,24 @@ _cleanup() {
 }
 trap _cleanup EXIT
 
+wait_for_service() {
+    local url=$1
+    local name=$2
+    local expected_nonce=$3
+    local max_attempts=30
+    echo "Waiting for $name to detect new deployment..."
+    for i in $(seq 1 $max_attempts); do
+        local nonce=$(curl -sf "$url/admin/health" 2>/dev/null | jq -r '.deployment_nonce // 0')
+        if [ "$nonce" = "$expected_nonce" ]; then
+            echo -e "  ${GREEN}$name detected nonce $nonce${NC}"
+            return 0
+        fi
+        sleep 2
+    done
+    echo -e "  ${YELLOW}WARNING: $name did not detect nonce $expected_nonce after $max_attempts attempts${NC}"
+    return 1
+}
+
 # Run docker compose on a VPS. Errors are NOT suppressed.
 # All arguments are script-controlled (no user input), so simple concatenation is safe.
 # IMPORTANT: pass each docker compose arg separately, e.g. vps1_compose dir "up" "-d" "--build"
@@ -144,18 +162,16 @@ _sync_docker_files() {
 _sync_config_files() {
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data-node/.env" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data-node/.env"
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
-    # Sync deployment JSONs to both VPSes (truncate first to avoid stale data from longer previous files)
+    # Sync deployment JSONs to VPSes — file watcher on services detects changes automatically
     for f in active-deployment.json morpho-e2e.json vision-batches.json; do
         if [ -f "$SCRIPT_DIR/deployments/$f" ]; then
-            vps_be_ssh "truncate -s 0 $VPS_BE_DIR/deployments/$f 2>/dev/null; true"
-            ssh "$VPS_BE_HOST" "cat > $VPS_BE_DIR/deployments/$f" < "$SCRIPT_DIR/deployments/$f" 2>/dev/null
+            rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/deployments/$f" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/$f" 2>/dev/null || true
         fi
     done
     if [ -f "$SCRIPT_DIR/deployments/active-deployment.json" ]; then
-        vps_chain_ssh "truncate -s 0 $VPS_CHAIN_DIR/deployments/active-deployment.json 2>/dev/null; true"
-        ssh "$VPS_CHAIN_HOST" "cat > $VPS_CHAIN_DIR/deployments/active-deployment.json" < "$SCRIPT_DIR/deployments/active-deployment.json" 2>/dev/null
+        rsync -az -e "ssh -o ProxyJump=bastion -p 3189" "$SCRIPT_DIR/deployments/active-deployment.json" "$VPS_CHAIN_USER@$VPS_CHAIN_IP:$VPS_CHAIN_DIR/deployments/active-deployment.json" 2>/dev/null || true
     fi
-    # Sync deployment.json to frontend and envs (ensures consistency across all locations)
+    # Keep local copies for switch-env compatibility
     if [ -f "$SCRIPT_DIR/deployments/active-deployment.json" ]; then
         cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/frontend/lib/contracts/deployment.json"
         cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/envs/testnet/deployment.json"
@@ -657,14 +673,33 @@ cmd_deploy() {
         echo -e "  ${GREEN}Merged L3 + Sonic deployment${NC}"
     fi
 
-    # Reset Vision DB state (stale batch IDs from previous deployment)
-    echo -e "${BLUE}[3d/14] Resetting Vision database state...${NC}"
-    if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
-        vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements, vision_balance_proofs, vision_batches, vision_batch_state, vision_bitmaps, vision_deposit_orders, vision_kv_store, vision_positions, vision_tick_results, vision_user_balances, vision_withdraw_orders, itp_snapshots, trades, user_shares, oracle_health_snapshots CASCADE;'" \
-            && echo -e "  ${GREEN}Vision tables truncated${NC}" \
-            || echo -e "  ${YELLOW}Vision table truncate failed — tables may not exist yet${NC}"
+    # Bump deployment nonce — services auto-detect and flush stale DB state
+    echo -e "${BLUE}[3d/14] Bumping deployment nonce (services auto-flush)...${NC}"
+    local INDEX_ADDR_NONCE
+    INDEX_ADDR_NONCE=$(read_deployment_addr "Index")
+    if [ -n "$INDEX_ADDR_NONCE" ] && cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null; then
+        cast send "$INDEX_ADDR_NONCE" "bumpDeploymentNonce()" \
+            --rpc-url "$RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --legacy || echo -e "  ${YELLOW}Nonce bump failed — services will flush on restart${NC}"
+        local DEPLOY_NONCE
+        DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
+        echo -e "  ${GREEN}Deployment nonce now: $DEPLOY_NONCE — services will auto-flush${NC}"
     else
-        echo -e "  ${YELLOW}Vision tables don't exist yet — skip (data-node will create on first start)${NC}"
+        # Fallback: manual TRUNCATE for contracts without deploymentNonce
+        echo -e "  ${YELLOW}Contract lacks deploymentNonce — falling back to manual TRUNCATE${NC}"
+        if vps_be_ssh "psql -U max -d $DB_NAME -c \"SELECT 1 FROM information_schema.tables WHERE table_name='vision_last_resolved'\" 2>/dev/null | grep -q '1 row'"; then
+            vps_be_ssh "psql -U max -d $DB_NAME -c 'TRUNCATE vision_last_resolved, vision_reference_prices, signed_batch_configs, batch_configs, batch_settlements, vision_balance_proofs, vision_batches, vision_batch_state, vision_bitmaps, vision_deposit_orders, vision_kv_store, vision_positions, vision_tick_results, vision_user_balances, vision_withdraw_orders, itp_snapshots, trades, user_shares, oracle_health_snapshots CASCADE;'" \
+                && echo -e "  ${GREEN}Vision tables truncated${NC}" \
+                || echo -e "  ${YELLOW}Vision table truncate failed — tables may not exist yet${NC}"
+        else
+            echo -e "  ${YELLOW}Vision tables don't exist yet — skip (data-node will create on first start)${NC}"
+        fi
+        # Also try manual reload if services are running
+        for port in 8200 9001 8400 8300; do
+            curl -sf -X POST "http://$VPS_BE_IP:$port/admin/reload" 2>/dev/null && \
+                echo -e "  ${GREEN}Triggered manual reload on port $port${NC}" || true
+        done
     fi
 
     # Run oracle DB migrations (schema may have changed between deploys)
@@ -1060,20 +1095,21 @@ json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
 
     # Patch any stale addresses from broadcast (catches partial deploys, manual reruns)
     ./sync-deployment.sh testnet $CHAIN_ID 2>/dev/null || true
-    # Now copy the (potentially patched) env deployment back to active
-    if [ -d "envs/testnet" ]; then
-        cp envs/testnet/deployment.json "$DEPLOYMENT_FILE" 2>/dev/null || true
-        [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
-        [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
-        [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json envs/testnet/batch-markets.json && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
-        [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
-        # Update Vision address in envs/testnet/.env (active-deployment.json is source of truth)
-        VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
-        if [ -n "$VISION_ADDR" ] && [ -f "envs/testnet/.env" ]; then
-            sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/testnet/.env
-        fi
-        echo -e "  ${GREEN}Synced deployment JSONs + Vision address → envs/testnet/${NC}"
+    # Single source of truth: active-deployment.json
+    # Services detect changes via file watcher. Frontend reads via /api/deployment endpoint.
+    cp envs/testnet/deployment.json "$DEPLOYMENT_FILE" 2>/dev/null || true
+    # Keep local copy for switch-env compatibility
+    [ -f "$DEPLOYMENT_FILE" ] && cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
+    # Supplementary JSONs still need one copy each
+    [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
+    [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json envs/testnet/batch-markets.json && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
+    [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
+    # Update Vision address in envs/testnet/.env
+    VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
+    if [ -n "$VISION_ADDR" ] && [ -f "envs/testnet/.env" ]; then
+        sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/testnet/.env
     fi
+    echo -e "  ${GREEN}Deployment JSON synced (single source of truth)${NC}"
 
     # Sync sources-display.json to frontend (data-node is source of truth)
     [ -f "data-node/config/sources-display.json" ] && cp data-node/config/sources-display.json frontend/data/sources-display.json
@@ -1142,12 +1178,14 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         fi
     fi
 
-    # Final deployment.json sync before Vercel deploy
+    # Final deployment sync — VPS file watcher detects changes automatically
     echo -e "${BLUE}[13.5/14] Final deployment sync...${NC}"
-    cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
-    cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
+    # Single scp to VPS — file watcher handles the rest
     rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
-    echo -e "  ${GREEN}Synced deployment.json to frontend, envs, and VPS${NC}"
+    # Keep local copies for switch-env compatibility
+    cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json 2>/dev/null || true
+    cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    echo -e "  ${GREEN}Deployment synced to VPS (file watcher), envs, and frontend${NC}"
 
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true

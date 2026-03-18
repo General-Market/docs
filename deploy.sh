@@ -33,6 +33,24 @@ cd "$SCRIPT_DIR"
 
 # ── Helpers ───────────────────────────────────────────────────
 
+wait_for_service() {
+    local url=$1
+    local name=$2
+    local expected_nonce=$3
+    local max_attempts=30
+    echo "Waiting for $name to detect new deployment..."
+    for i in $(seq 1 $max_attempts); do
+        local nonce=$(curl -sf "$url/admin/health" 2>/dev/null | jq -r '.deployment_nonce // 0')
+        if [ "$nonce" = "$expected_nonce" ]; then
+            echo -e "  ${GREEN}$name detected nonce $nonce${NC}"
+            return 0
+        fi
+        sleep 2
+    done
+    echo -e "  ${YELLOW}WARNING: $name did not detect nonce $expected_nonce after $max_attempts attempts${NC}"
+    return 1
+}
+
 vps_data_node_running() {
     # Use pgrep -x with the exact binary name to avoid self-matching
     # ConnectTimeout prevents hanging on SSH multiplexing issues
@@ -230,7 +248,6 @@ ssh "$VPS_HOST" "mkdir -p $VPS_DIR/logs && cd $VPS_DIR && nohup ./target/release
     --database-url postgres:///$DB_NAME \
     --rpc-url http://localhost/ \
     --settlement-rpc-url http://localhost/ \
-    --ecb-enabled \
     --openmeteo-sync-interval 300 \
     > logs/data-node.log 2>&1 &
     echo \$!" 2>/dev/null | grep -v 'Unauthorized\|monitored'
@@ -245,6 +262,37 @@ else
     echo -e "  ${RED}Failed to start data-node on VPS${NC}"
     echo -e "  ${YELLOW}Check logs: ssh $VPS_HOST 'tail -50 $VPS_DIR/logs/data-node.log'${NC}"
     exit 1
+fi
+
+# ── Bump deployment nonce (if supported) ─────────────────────
+# Services auto-detect nonce changes and flush stale state.
+# DEPLOYER_KEY must be set in environment (e.g., from system.env) for nonce bump.
+L3_RPC_URL="http://142.132.164.24/"
+INDEX_ADDRESS=$(python3 -c "import json; print(json.load(open('$SCRIPT_DIR/deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+if [ -n "$INDEX_ADDRESS" ] && [ -n "$DEPLOYER_KEY" ]; then
+    echo -e "${BLUE}Bumping deployment nonce...${NC}"
+    if cast call "$INDEX_ADDRESS" "deploymentNonce()" --rpc-url "$L3_RPC_URL" 2>/dev/null; then
+        cast send "$INDEX_ADDRESS" "bumpDeploymentNonce()" \
+            --rpc-url "$L3_RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --legacy || { echo -e "${RED}FATAL: nonce bump failed${NC}"; exit 1; }
+
+        NEW_NONCE=$(cast call "$INDEX_ADDRESS" "deploymentNonce()" --rpc-url "$L3_RPC_URL")
+        echo -e "  ${GREEN}Deployment nonce now: $NEW_NONCE${NC}"
+        echo -e "  Services will auto-detect and flush."
+
+        # Wait for data-node to pick up the new nonce
+        wait_for_service "http://142.132.164.24:$DATA_NODE_PORT" "data-node" "$NEW_NONCE" || true
+    else
+        echo -e "  ${YELLOW}Contract lacks deploymentNonce — using legacy flush${NC}"
+        # Fallback: try manual reload if service supports it
+        curl -sf -X POST "http://142.132.164.24:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
+            echo -e "  ${GREEN}Triggered manual reload on data-node${NC}" || true
+    fi
+elif [ -n "$INDEX_ADDRESS" ]; then
+    echo -e "  ${YELLOW}DEPLOYER_KEY not set — skipping nonce bump. Try manual reload.${NC}"
+    curl -sf -X POST "http://142.132.164.24:$DATA_NODE_PORT/admin/reload" 2>/dev/null && \
+        echo -e "  ${GREEN}Triggered manual reload on data-node${NC}" || true
 fi
 
 echo ""

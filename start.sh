@@ -113,6 +113,24 @@ print_help() {
     echo "    Defaults to dummy values."
 }
 
+wait_for_service() {
+    local url=$1
+    local name=$2
+    local expected_nonce=$3
+    local max_attempts=30
+    echo "Waiting for $name to detect new deployment..."
+    for i in $(seq 1 $max_attempts); do
+        local nonce=$(curl -sf "$url/admin/health" 2>/dev/null | jq -r '.deployment_nonce // 0')
+        if [ "$nonce" = "$expected_nonce" ]; then
+            echo -e "  ${GREEN}$name detected nonce $nonce${NC}"
+            return 0
+        fi
+        sleep 2
+    done
+    echo -e "  ${YELLOW}WARNING: $name did not detect nonce $expected_nonce after $max_attempts attempts${NC}"
+    return 1
+}
+
 # Log level (overridable via env or --stress flag)
 LOG_LEVEL=${LOG_LEVEL:-info}
 
@@ -834,7 +852,7 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
             $PSQL -d index_prices -f ../oracle/migrations/003_create_vision_balance_proofs.sql > /dev/null 2>&1 || true
             # Reset chain listener bookmark (Anvil restarts from block 0 each session)
             $PSQL -d index_prices -c "UPDATE vision_kv_store SET value = '0' WHERE key = 'chain_listener_last_block';" > /dev/null 2>&1 || true
-            $PSQL -d index_prices -c "TRUNCATE vision_batches, vision_positions, vision_tick_results;" > /dev/null 2>&1 || true
+            # Table truncation is now automatic — services flush on deployment nonce change
             echo -e "  ${GREEN}Vision database tables created (bookmark reset)${NC}"
         fi
     else
@@ -874,6 +892,25 @@ json.dump(deploy, open('../deployments/active-deployment.json', 'w'), indent=2)
     fi  # end VISION_ENABLED
 
 fi  # end SKIP_DEPLOY
+
+# ============ STEP 6c: Bump deployment nonce ============
+# Services auto-detect nonce changes and flush stale state (tables, caches, WAL)
+if [ "$SKIP_DEPLOY" = false ]; then
+    INDEX_ADDR_NONCE=$(python3 -c "import json; print(json.load(open('deployments/active-deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+    if [ -n "$INDEX_ADDR_NONCE" ]; then
+        echo -e "${BLUE}[6c/$TOTAL_STEPS] Bumping deployment nonce...${NC}"
+        if cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null; then
+            cast send "$INDEX_ADDR_NONCE" "bumpDeploymentNonce()" \
+                --rpc-url "$RPC_URL" \
+                --private-key "$DEPLOYER_KEY" \
+                --legacy > /dev/null 2>&1 || echo -e "  ${YELLOW}Nonce bump failed — services will flush on restart${NC}"
+            DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
+            echo -e "  ${GREEN}Deployment nonce: $DEPLOY_NONCE — services will auto-flush${NC}"
+        else
+            echo -e "  ${YELLOW}Contract lacks deploymentNonce — services will use legacy flush${NC}"
+        fi
+    fi
+fi
 
 # ============ STEP 7: Sync frontend addresses ============
 echo -e "${BLUE}[7/$TOTAL_STEPS] Syncing frontend addresses...${NC}"
@@ -955,8 +992,9 @@ else
         set +a
     fi
 
-    # On fresh deploy, pass --reset-session so data-node truncates session tables
-    # and resets cursors atomically before collectors start
+    # On fresh deploy, pass --reset-session so data-node truncates session tables.
+    # This is a legacy mechanism — services now auto-flush on deployment nonce change.
+    # Kept as belt-and-suspenders until all services support nonce-based flush.
     RESET_SESSION_FLAG=""
     if [ "$SKIP_DEPLOY" = false ]; then
         RESET_SESSION_FLAG="--reset-session"
@@ -996,7 +1034,6 @@ else
         ${ADZUNA_APP_ID:+--adzuna-app-id "$ADZUNA_APP_ID"} \
         ${ADZUNA_APP_KEY:+--adzuna-app-key "$ADZUNA_APP_KEY"} \
         ${PRIM_API_KEY:+--prim-api-key "$PRIM_API_KEY"} \
-        --ecb-enabled \
         --openmeteo-sync-interval 300 \
         $RESET_SESSION_FLAG \
         > logs/data-node.log 2>&1 &
