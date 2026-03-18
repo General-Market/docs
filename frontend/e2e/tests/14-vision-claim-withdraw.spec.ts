@@ -24,6 +24,7 @@ import {
   depositToVisionBalance,
   impersonateAccount,
   ensureUsdcBalance,
+  ensureBatchExists,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
@@ -33,7 +34,10 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
   test('settle round then withdraw from Vision balance to L3 wallet', async ({ walletPage: page }) => {
     test.setTimeout(300_000)
 
-    // 0. Deposit USDC to Vision balance so we always have something to withdraw
+    // 0. Ensure batches exist (Vision was deployed)
+    await ensureBatchExists()
+
+    // 0.1. Deposit USDC to Vision balance so we always have something to withdraw
     await depositToVisionBalance(PLAYER1, 50n * 10n ** 18n)
 
     // 1. Join a round so we can verify settlement credits realBalance
@@ -62,11 +66,12 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
         const deposit = 10n * 10n ** 18n
         const stake = 1n * 10n ** 18n
         const marketCount = 10
+        const visionUsdc = await getVisionUsdcAddress()
 
         await impersonateAccount(PLAYER1)
-        await ensureUsdcBalance(PLAYER1, deposit)
+        await ensureUsdcBalance(PLAYER1, deposit, visionUsdc)
         await impersonateAccount(PLAYER2)
-        await ensureUsdcBalance(PLAYER2, deposit)
+        await ensureUsdcBalance(PLAYER2, deposit, visionUsdc)
 
         const p1Bets = randomBets(marketCount)
         const p2Bets = oppositeBets(p1Bets)
