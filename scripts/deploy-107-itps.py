@@ -13,6 +13,7 @@ Also generates:
 
 import json
 import os
+import urllib.request
 from Crypto.Hash import keccak
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -279,6 +280,39 @@ echo "=== ALL DONE ==="
 """
 
 
+FALLBACK_SYMBOLS = {
+    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "DOT", "LINK", "AVAX",
+    "TRX", "SHIB", "MATIC", "LTC", "UNI", "ATOM", "XLM", "ETC", "FIL", "HBAR",
+    "APT", "ARB", "OP", "NEAR", "ICP", "VET", "ALGO", "FTM", "SAND", "MANA",
+    "AXS", "AAVE", "GRT", "EOS", "XTZ", "EGLD", "FLOW", "THETA", "CHZ", "ENJ",
+    "CRV", "COMP", "MKR", "SNX", "ZEC", "DASH", "IOTA", "NEO", "WAVES", "KAVA",
+    "ONE", "CELO", "ZIL", "RVN", "HOT", "BAT", "STORJ", "SC", "DGB", "KSM",
+    "SUI", "SEI", "TIA", "INJ", "WLD", "PYTH", "JTO", "BONK", "PEPE", "WIF",
+}
+
+
+def fetch_valid_bitget_symbols():
+    """Fetch tradeable spot symbols from Bitget. Returns set of base symbols (e.g. 'BTC')."""
+    url = "https://api.bitget.com/api/v2/spot/public/products"
+    try:
+        resp = urllib.request.urlopen(url, timeout=10)
+        products = json.loads(resp.read())["data"]
+        # Each product has a 'symbol' field like 'BTCUSDT'. Extract base by stripping quote.
+        valid = set()
+        for p in products:
+            sym = p.get("symbol", "")
+            for quote in ("USDT", "USDC"):
+                if sym.endswith(quote):
+                    valid.add(sym[: -len(quote)])
+                    break
+        print(f"Fetched {len(valid)} valid Bitget base symbols")
+        return valid
+    except Exception as e:
+        print(f"Warning: Could not fetch Bitget pairs: {e}")
+        print(f"Falling back to {len(FALLBACK_SYMBOLS)} hardcoded symbols")
+        return FALLBACK_SYMBOLS
+
+
 def main():
     print("Loading...")
     manifest = load_json(MANIFEST_PATH)
@@ -294,6 +328,9 @@ def main():
     N = len(sym_idx)
     print(f"  {len(manifest)} ITPs, {N} tokens (from all-token-symbols.json), {len(prices)} prices")
 
+    # Validate symbols against Bitget tradeable pairs before building ITPs
+    valid_bitget_symbols = fetch_valid_bitget_symbols()
+
     bt_map = {i["ticker"]: i for i in backtest["itps"]}
 
     itps = []
@@ -302,7 +339,15 @@ def main():
         if not bt or not bt.get("current_holdings"):
             print(f"SKIP {m['ticker']}: 0 holdings")
             continue
-        h = normalize_weights(bt["current_holdings"], prices)
+        filtered_holdings = [
+            hld for hld in bt["current_holdings"]
+            if hld.get("symbol") in valid_bitget_symbols
+        ]
+        removed = len(bt["current_holdings"]) - len(filtered_holdings)
+        if removed:
+            dropped = [hld["symbol"] for hld in bt["current_holdings"] if hld.get("symbol") not in valid_bitget_symbols]
+            print(f"  {m['ticker']}: dropped {removed} non-Bitget symbols: {dropped}")
+        h = normalize_weights(filtered_holdings, prices)
         if not h:
             print(f"SKIP {m['ticker']}: empty after filter")
             continue
