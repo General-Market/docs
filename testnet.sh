@@ -155,6 +155,11 @@ _sync_config_files() {
         vps_chain_ssh "truncate -s 0 $VPS_CHAIN_DIR/deployments/active-deployment.json 2>/dev/null; true"
         ssh "$VPS_CHAIN_HOST" "cat > $VPS_CHAIN_DIR/deployments/active-deployment.json" < "$SCRIPT_DIR/deployments/active-deployment.json" 2>/dev/null
     fi
+    # Sync deployment.json to frontend and envs (ensures consistency across all locations)
+    if [ -f "$SCRIPT_DIR/deployments/active-deployment.json" ]; then
+        cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/frontend/lib/contracts/deployment.json"
+        cp "$SCRIPT_DIR/deployments/active-deployment.json" "$SCRIPT_DIR/envs/testnet/deployment.json"
+    fi
 }
 
 # Kill any old bare-metal processes to prevent port conflicts
