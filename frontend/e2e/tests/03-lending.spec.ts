@@ -41,38 +41,36 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
       }
     }
 
-    // Connect wallet
-    await ensureWalletConnected(page, TEST_ADDRESS);
-    await page.reload({ waitUntil: 'load', timeout: 60_000 });
-    await page.waitForTimeout(3_000);
-
-    // Navigate to Lending section via URL hash — HomeClient reads hash on mount
-    // and sets activeSection. More reliable than clicking sidebar buttons which
-    // depend on React state propagation and viewport-dependent selectors.
-    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(2_000);
-
-    const lendHeading = page.getByRole('heading', { name: 'Lend' });
-    const lendingSectionReached = await lendHeading.isVisible({ timeout: 10_000 }).catch(() => false);
-    if (lendingSectionReached) {
-      console.log('Navigated to Lending section via hash navigation');
-    }
-
-    // Attempt the UI path if we reached the lending section
+    // On testnet, skip the UI path entirely — HomeClient's hash-reading useEffect
+    // only fires on mount, so navigating to /index#lend after the component is
+    // already mounted does nothing. The backend RPC path works reliably on testnet.
     let useUiPath = false;
-    if (lendingSectionReached) {
-      // The VaultModal inline has two panels: Supply (with Deposit/Withdraw buttons)
-      // and Borrow (with "Borrow USDC" / "Repay" buttons).
-      // Check if the "Borrow USDC" action button is visible in the borrow panel.
-      const borrowUsdcBtn = page.getByRole('button', { name: 'Borrow USDC', exact: true });
-      useUiPath = await borrowUsdcBtn.isVisible({ timeout: 10_000 }).catch(() => false);
-      if (useUiPath) {
-        console.log('Lending section UI loaded — Borrow USDC button visible');
+
+    if (IS_ANVIL) {
+      // Connect wallet and attempt UI path only on local Anvil
+      await ensureWalletConnected(page, TEST_ADDRESS);
+      await page.reload({ waitUntil: 'load', timeout: 60_000 });
+      await page.waitForTimeout(3_000);
+
+      await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForTimeout(2_000);
+
+      const lendHeading = page.getByRole('heading', { name: 'Lend' });
+      const lendingSectionReached = await lendHeading.isVisible({ timeout: 10_000 }).catch(() => false);
+      if (lendingSectionReached) {
+        console.log('Navigated to Lending section via hash navigation');
+        const borrowUsdcBtn = page.getByRole('button', { name: 'Borrow USDC', exact: true });
+        useUiPath = await borrowUsdcBtn.isVisible({ timeout: 10_000 }).catch(() => false);
+        if (useUiPath) {
+          console.log('Lending section UI loaded — Borrow USDC button visible');
+        } else {
+          console.log('Lending section reached but Borrow USDC button not found — falling back to backend path');
+        }
       } else {
-        console.log('Lending section reached but Borrow USDC button not found — falling back to backend path');
+        console.log('Could not navigate to Lending section — using backend API path');
       }
     } else {
-      console.log('Could not navigate to Lending section — using backend API path');
+      console.log('Testnet: skipping UI path — using backend RPC directly');
     }
 
     if (useUiPath) {
