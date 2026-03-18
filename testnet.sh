@@ -1572,7 +1572,8 @@ YEOF
     # Keep override on VPS — containers need it for restarts (command, volumes, env vars)
 
     # Verify all 3 oracles are running (BLS threshold is 2/3 — all must be up)
-    sleep 3
+    # Oracle needs ~10s to initialize: state reconstruction + P2P connection
+    sleep 15
     local all_ok=true
     for i in 1 2 3; do
         if ! check_docker_service "$VPS_BE_HOST" "$VPS_BE_DIR" "oracle" "oracle-$i"; then
