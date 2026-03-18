@@ -196,9 +196,9 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
     >
       {/* Brand image area */}
       <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
-          {/* Brand logo face */}
+          {/* Brand logo face — fades out on hover */}
           <div
-            className={`absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full ${isLightBg ? 'border-b border-border-light' : ''}`}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 group-hover:opacity-0 ${isLightBg ? 'border-b border-border-light' : ''}`}
             style={{ ...brandStyle, viewTransitionName: `source-brand-${source.id}` } as React.CSSProperties}
           >
             <Image
@@ -215,9 +215,9 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
             </span>
           </div>
 
-          {/* Market list overlay — rolls in from bottom on hover */}
+          {/* Market list overlay — crossfades in on hover */}
           <div
-            className="absolute inset-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0 bg-[var(--surface)] flex flex-col"
+            className="absolute inset-0 opacity-0 scale-[0.98] transition-[opacity,transform] duration-300 group-hover:opacity-100 group-hover:scale-100 bg-[var(--surface)] flex flex-col"
           >
             {sortedMarkets.length > 0 ? (
               <>
