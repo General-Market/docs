@@ -42,8 +42,9 @@ impl<'a> StateBuilder<'a> {
             OracleState::new()
         };
 
-        // Set observation period
-        state.set_observation_period(1);
+        // Skip observation period — observe_cycle() is never called in the main loop,
+        // so any non-zero value permanently locks the oracle in price-only mode.
+        state.set_observation_period(0);
 
         info!(
             node_id,
