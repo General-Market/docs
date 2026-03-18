@@ -788,16 +788,16 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         echo -e "  ${GREEN}Added Vision to active-deployment.json${NC}"
     fi
 
-    # Ensure Vision address matches vision-batches.json (batches live on this contract)
-    VISION_BATCHES_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
-    if [ -n "$VISION_BATCHES_ADDR" ]; then
+    # Ensure vision-batches.json matches active-deployment.json (active-deployment is source of truth)
+    ACTIVE_VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
+    if [ -n "$ACTIVE_VISION_ADDR" ]; then
         python3 -c "
 import json
-d = json.load(open('$DEPLOYMENT_FILE'))
-d['contracts']['Vision'] = '$VISION_BATCHES_ADDR'
-json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+d = json.load(open('deployments/vision-batches.json'))
+d['vision'] = '$ACTIVE_VISION_ADDR'
+json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
 "
-        echo -e "  ${GREEN}Vision address synced with vision-batches.json${NC}"
+        echo -e "  ${GREEN}vision-batches.json synced with active-deployment.json${NC}"
     fi
 
     # Fund test accounts with L3 USDC
@@ -1067,8 +1067,8 @@ json.dump(d, open('deployments/batch-markets.json', 'w'), indent=2)
         [ -f "deployments/morpho-e2e.json" ] && cp deployments/morpho-e2e.json envs/testnet/morpho-deployment.json
         [ -f "deployments/batch-markets.json" ] && cp deployments/batch-markets.json envs/testnet/batch-markets.json && cp deployments/batch-markets.json frontend/lib/contracts/batch-markets.json
         [ -f "deployments/vision-batches.json" ] && cp deployments/vision-batches.json envs/testnet/vision-batches.json
-        # Update Vision address in envs/testnet/.env
-        VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+        # Update Vision address in envs/testnet/.env (active-deployment.json is source of truth)
+        VISION_ADDR=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
         if [ -n "$VISION_ADDR" ] && [ -f "envs/testnet/.env" ]; then
             sed -i '' "s|^NEXT_PUBLIC_VISION_ADDRESS=.*|NEXT_PUBLIC_VISION_ADDRESS=${VISION_ADDR}|" envs/testnet/.env
         fi
@@ -1127,18 +1127,18 @@ print(f'Merged symbol-map: {len(smap)} entries')
     rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
     echo -e "  ${GREEN}Synced symbol-map + deployment to VPS${NC}"
 
-    # Final safety check: ensure Vision address matches vision-batches.json before switching env
-    VISION_BATCHES_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
-    if [ -n "$VISION_BATCHES_ADDR" ]; then
-        CURRENT_VISION=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
-        if [ "$CURRENT_VISION" != "$VISION_BATCHES_ADDR" ]; then
+    # Final safety check: ensure vision-batches.json matches active-deployment.json before switching env
+    ACTIVE_VISION_FINAL=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE')).get('contracts', {}).get('Vision', ''))" 2>/dev/null || echo "")
+    if [ -n "$ACTIVE_VISION_FINAL" ]; then
+        BATCHES_VISION=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+        if [ "$BATCHES_VISION" != "$ACTIVE_VISION_FINAL" ]; then
             python3 -c "
 import json
-d = json.load(open('$DEPLOYMENT_FILE'))
-d['contracts']['Vision'] = '$VISION_BATCHES_ADDR'
-json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
+d = json.load(open('deployments/vision-batches.json'))
+d['vision'] = '$ACTIVE_VISION_FINAL'
+json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
 "
-            echo -e "  ${YELLOW}Corrected stale Vision address in active-deployment.json${NC}"
+            echo -e "  ${YELLOW}Corrected stale Vision address in vision-batches.json${NC}"
         fi
     fi
 
@@ -1220,10 +1220,10 @@ cmd_start() {
     fi
     ACTIVE_VISION=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
     BATCHES_VISION=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
-    if [ -n "$BATCHES_VISION" ] && [ "$ACTIVE_VISION" != "$BATCHES_VISION" ]; then
-        echo -e "  ${YELLOW}Vision address mismatch — fixing...${NC}"
-        python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['Vision']='$BATCHES_VISION'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
-        cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    if [ -n "$ACTIVE_VISION" ] && [ "$ACTIVE_VISION" != "$BATCHES_VISION" ]; then
+        echo -e "  ${YELLOW}Vision address mismatch — fixing vision-batches.json...${NC}"
+        python3 -c "import json; d=json.load(open('deployments/vision-batches.json')); d['vision']='$ACTIVE_VISION'; json.dump(d,open('deployments/vision-batches.json','w'),indent=2)"
+        cp deployments/vision-batches.json frontend/lib/contracts/vision-batches.json 2>/dev/null || true
     fi
     echo -e "  ${GREEN}Deployment consistent${NC}"
 
@@ -1440,7 +1440,7 @@ _start_oracles_docker() {
     L3_FROM_BLOCK=$(cast block-number --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
     echo -e "  L3 block: $L3_FROM_BLOCK (oracles start from here)"
 
-    VISION_ADDR=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    VISION_ADDR=$(read_deployment_addr "Vision" 2>/dev/null || echo "")
     BRIDGE_PROXY=$(read_deployment_addr "SettlementBridgeProxy")
     [ -z "$BRIDGE_PROXY" ] && BRIDGE_PROXY=$(read_deployment_addr "BridgeProxy")
     VISION_SETTLEMENT_CUSTODY=$(read_deployment_addr "SettlementBridgeCustody")
