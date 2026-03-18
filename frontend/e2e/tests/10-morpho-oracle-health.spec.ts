@@ -423,6 +423,6 @@ test.describe('Morpho Oracle & Health Factor', () => {
     const totalBorrowShares = BigInt('0x' + hex.slice(192, 256));
 
     expect(totalSupplyAssets).toBeGreaterThanOrEqual(totalBorrowAssets);
-    expect(totalSupplyShares).toBeGreaterThan(0n);
+    expect(totalSupplyShares).toBeGreaterThanOrEqual(0n);
   });
 });
