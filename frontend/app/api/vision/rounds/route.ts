@@ -1,4 +1,4 @@
-import { ORACLE_VISION_URL } from '@/lib/config'
+import { ISSUER_VISION_URL as ORACLE_VISION_URL } from '@/lib/config'
 
 export async function GET(request: Request) {
   try {
