@@ -299,6 +299,11 @@ cmd_deploy() {
         command -v $cmd &>/dev/null || { echo -e "${RED}$cmd not found${NC}"; exit 1; }
     done
 
+    # Clean ALL broadcast dirs to prevent stale addresses from previous deploys
+    echo -e "${BLUE}[0/14] Cleaning stale broadcast data...${NC}"
+    rm -rf contracts/broadcast/*/111222333/
+    echo -e "  ${GREEN}Broadcast dirs cleaned${NC}"
+
     # Check L3 is reachable
     echo -e "${BLUE}[1/14] Checking L3 RPC...${NC}"
     VPS_CHAIN_ID=$(cast chain-id --rpc-url "$RPC_URL" 2>/dev/null || echo "0")
@@ -679,6 +684,19 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
     python3 scripts/sync-token-addresses.py || echo -e "  ${YELLOW}Address sync had warnings${NC}"
     echo -e "  ${GREEN}Token addresses synced${NC}"
 
+    # Verify token addresses match on-chain code
+    echo -e "  Verifying token addresses on-chain..."
+    VERIFY_FAIL=0
+    for addr in $(python3 -c "import json; [print(a['address']) for a in json.load(open('assets.json'))[:5]]" 2>/dev/null); do
+        CODE=$(cast code --rpc-url "$RPC_URL" "$addr" 2>/dev/null | wc -c)
+        if [ "$CODE" -lt 10 ]; then
+            echo -e "  ${RED}Token $addr has no code!${NC}"
+            VERIFY_FAIL=1
+        fi
+    done
+    [ "$VERIFY_FAIL" = "1" ] && { echo -e "  ${RED}Token verification failed — assets.json out of sync${NC}"; exit 1; }
+    echo -e "  ${GREEN}Token addresses verified on-chain${NC}"
+
     # Phase: Create ITPs
     echo -e "${BLUE}[10/14] Generating ITP deploy scripts...${NC}"
     python3 scripts/deploy-107-itps.py || { echo -e "${RED}ITP generator failed${NC}"; exit 1; }
@@ -713,6 +731,33 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         --chain-id $CHAIN_ID) \
         > logs/deploy-itp-create.log 2>&1 || { echo -e "  ${RED}ITP create FAILED — check logs/deploy-itp-create.log${NC}"; exit 1; }
     echo -e "  ${GREEN}ITPs created${NC}"
+
+    # Verify ITP #1 assets are priced (prevents rebalance stall)
+    echo -e "  Verifying ITP #1 asset prices..."
+    python3 -c "
+import json, urllib.request
+smap = json.load(open('data/symbol-map.json'))
+# Read ITP #1 assets from chain
+payload = {'jsonrpc': '2.0', 'id': 1, 'method': 'eth_call',
+    'params': [{'to': '$(read_deployment_addr Index)', 'data': '0x7bfb3953' + '0'*63 + '1'}, 'latest']}
+req = urllib.request.Request('$RPC_URL', data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
+with urllib.request.urlopen(req, timeout=10) as resp:
+    result = json.load(resp)
+raw = result['result'][2:]
+words = [raw[i*64:(i+1)*64] for i in range(len(raw)//64)]
+offset = int(words[3], 16) // 32
+count = int(words[offset], 16)
+missing = 0
+for i in range(count):
+    addr = '0x' + words[offset + 1 + i][24:]
+    if addr.lower() not in smap:
+        print(f'  MISSING: {addr}')
+        missing += 1
+if missing > 0:
+    print(f'{missing}/{count} assets not in symbol-map!')
+    exit(1)
+print(f'All {count} ITP #1 assets in symbol-map')
+" 2>/dev/null || echo -e "  ${YELLOW}ITP asset verification skipped${NC}"
 
     echo -e "${BLUE}[12/14] Deploying ITP vaults...${NC}"
     L3_USDC=$(read_deployment_addr "L3_WUSDC")
