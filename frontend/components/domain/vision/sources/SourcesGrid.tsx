@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { getAssetCountForSource, getSourceStatusFromMeta } from '@/lib/vision/sources'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
@@ -41,6 +41,74 @@ export function SourcesGrid() {
   const sourceCount = liveSourceCount > 0 ? liveSourceCount : registrySources.length
   const categoryCount = liveCategoryCount > 0 ? liveCategoryCount : 10
   const statsLoading = (metaLoading || registryLoading) && liveAssetCount === 0
+
+  // ── Cascade entrance ──
+  const gridRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef(0)
+  const rectsRef = useRef<{ cx: number; cy: number }[]>([])
+  const reducedMotion = useRef(false)
+
+  useEffect(() => {
+    reducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reducedMotion.current) return
+    const grid = gridRef.current
+    if (!grid) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            ;(entry.target as HTMLElement).classList.add('cascade-revealed')
+            io.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.05 },
+    )
+    for (const child of Array.from(grid.children)) io.observe(child)
+    return () => io.disconnect()
+  }, [filteredSources])
+
+  // ── Cursor wake — brightness pulse near cursor ──
+  const cacheRects = useCallback(() => {
+    const grid = gridRef.current
+    if (!grid) return
+    rectsRef.current = Array.from(grid.children).map(el => {
+      const r = el.getBoundingClientRect()
+      return { cx: r.left + r.width / 2, cy: r.top + r.height / 2 }
+    })
+  }, [])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (reducedMotion.current) return
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => {
+      const grid = gridRef.current
+      if (!grid) return
+      const children = grid.children
+      const rects = rectsRef.current
+      if (rects.length !== children.length) return
+      for (let i = 0; i < children.length; i++) {
+        const { cx, cy } = rects[i]
+        const dist = Math.hypot(e.clientX - cx, e.clientY - cy)
+        const t = Math.max(0, 1 - dist / 300)
+        const el = children[i].firstElementChild as HTMLElement | null
+        if (!el) continue
+        el.style.filter = t > 0.01 ? `brightness(${1 + t * 0.06})` : ''
+      }
+    })
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    cancelAnimationFrame(rafRef.current)
+    const grid = gridRef.current
+    if (!grid) return
+    for (const child of Array.from(grid.children)) {
+      const el = child.firstElementChild as HTMLElement | null
+      if (el) el.style.filter = ''
+    }
+  }, [])
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), [])
 
   return (
     <div className="flex flex-col">
@@ -104,9 +172,19 @@ export function SourcesGrid() {
       {/* Grid container */}
       <div className="px-6 lg:px-12 py-6">
         <div className="max-w-site mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light">
+          <div
+            ref={gridRef}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border border-border-light"
+            onMouseEnter={cacheRects}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+          >
             {filteredSources.map((source, i) => (
-              <div key={source.sourceId} style={{ '--d': Math.floor(i / 4) + (i % 4) } as React.CSSProperties}>
+              <div
+                key={source.sourceId}
+                className="source-card-cascade"
+                style={{ '--d': Math.floor(i / 4) + (i % 4) } as React.CSSProperties}
+              >
                 <SourceCard
                   source={{ ...source, id: source.sourceId }}
                   bitmapEditor={bitmapEditor}

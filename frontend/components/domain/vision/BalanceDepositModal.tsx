@@ -8,9 +8,9 @@ import { useDepositToVision } from '@/hooks/vision/useDepositToVision'
 import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS } from '@/lib/vision/constants'
-import { USDC_ADDRESS } from '@/lib/contracts/addresses'
+import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { indexL3, settlementChain } from '@/lib/wagmi'
+import { VISION_ABI } from '@/lib/contracts/vision-abi'
 
 const ERC20_BALANCE_ABI = [{
   name: 'balanceOf', type: 'function', stateMutability: 'view',
@@ -95,14 +95,24 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   const isOnSettlement = chainId === settlementChain.id
   const isOnL3 = chainId === indexL3.id
 
-  // Read wallet USDC balance on L3 (always read, regardless of connected chain)
+  // Read Vision's actual USDC address from the contract (not deployment JSON)
+  const { data: visionUsdcAddress } = useReadContract({
+    address: VISION_ADDRESS,
+    abi: VISION_ABI,
+    functionName: 'USDC',
+    chainId: indexL3.id,
+    query: { enabled: VISION_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+  })
+
+  // Read wallet USDC balance on L3 using the address Vision actually uses
+  const l3UsdcAddr = visionUsdcAddress as `0x${string}` | undefined
   const { data: l3UsdcRaw, refetch: refetchL3Usdc } = useReadContract({
-    address: USDC_ADDRESS,
+    address: l3UsdcAddr,
     abi: ERC20_BALANCE_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: indexL3.id,
-    query: { enabled: !!address },
+    query: { enabled: !!address && !!l3UsdcAddr },
   })
 
   // Read wallet USDC balance on Settlement

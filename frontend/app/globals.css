@@ -451,6 +451,27 @@ input[type="number"] {
   100% { transform: scale(1); opacity: 0; }
 }
 
+/* ── SOURCE CARD CASCADE — IO-triggered entrance with diagonal stagger ── */
+.source-card-cascade {
+  opacity: 0;
+  transform: translateY(18px) scale(0.95);
+  filter: blur(2px);
+  transition: opacity 0.55s var(--ease-out-expo),
+              transform 0.55s var(--ease-out-expo),
+              filter 0.55s var(--ease-out-expo);
+  transition-delay: calc(var(--d, 0) * 45ms);
+}
+.source-card-cascade.cascade-revealed {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Wake — smooth brightness transition on card content */
+.source-card-cascade > * {
+  transition: filter 180ms ease-out;
+}
+
 /* ── SOURCE BRAND SHIMMER — ambient light sweep across card grid ── */
 @keyframes brand-shimmer {
   0%, 100% { background-position: 200% 0; }
@@ -487,6 +508,8 @@ input[type="number"] {
 
 /* Respect reduced motion for all overdrive animations */
 @media (prefers-reduced-motion: reduce) {
+  .source-card-cascade { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
+  .source-card-cascade > * { transition: none !important; }
   .source-brand-shimmer::after { animation: none !important; opacity: 0 !important; }
   .live-ambient-pulse { animation: none; }
   .animate-status-breathe { animation: none; }

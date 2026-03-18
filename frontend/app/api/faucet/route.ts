@@ -8,7 +8,7 @@ import { privateKeyToAccount } from 'viem/accounts'
  *
  * POST /api/faucet { address: "0x...", amount?: "1000", gas?: true }
  *
- * - Default: mints L3 USDC only
+ * - Default: mints L3 USDC only (reads USDC address from Vision contract)
  * - gas=true: also sends 0.5 S (Sonic testnet native token) for settlement txs
  */
 
@@ -17,7 +17,8 @@ import { L3_RPC_SERVER, SETTLEMENT_RPC_URL } from '@/lib/config'
 const DEPLOYER_KEY = '0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537' as const
 
 import _deployment from '@/lib/contracts/deployment.json'
-const L3_WUSDC = (_deployment.contracts.L3_WUSDC || '0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6') as `0x${string}`
+const VISION_ADDRESS = (_deployment.contracts.Vision || '0x0000000000000000000000000000000000000000') as `0x${string}`
+const L3_WUSDC_FALLBACK = (_deployment.contracts.L3_WUSDC || '0xcb6C040bd4E1742840AD5542C6fDDaF74dB73AF6') as `0x${string}`
 const L3_CHAIN_ID = _deployment.chainId || 111222333
 const SETTLEMENT_CHAIN_ID = Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337
 const MAX_MINT = 10_000 // max 10k USDC per request
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     const account = privateKeyToAccount(DEPLOYER_KEY)
     const results: Record<string, any> = {}
 
-    // 1. Mint L3 USDC
+    // 1. Mint L3 USDC — read actual USDC address from Vision contract
     const parsedAmount = parseUnits(String(amount), 18) // L3 USDC = 18 decimals
     const l3Chain = {
       id: L3_CHAIN_ID,
@@ -71,8 +72,23 @@ export async function POST(req: NextRequest) {
       transport: http(L3_RPC_SERVER),
     })
 
+    // Read Vision's USDC address from the contract, fall back to deployment JSON
+    let l3Usdc = L3_WUSDC_FALLBACK
+    if (VISION_ADDRESS !== '0x0000000000000000000000000000000000000000') {
+      try {
+        const usdcFromVision = await l3Public.readContract({
+          address: VISION_ADDRESS,
+          abi: [{ inputs: [], name: 'USDC', outputs: [{ name: '', type: 'address' }], stateMutability: 'view', type: 'function' }],
+          functionName: 'USDC',
+        })
+        if (usdcFromVision) l3Usdc = usdcFromVision as `0x${string}`
+      } catch {
+        // Vision not deployed or USDC() missing — use fallback
+      }
+    }
+
     const mintHash = await l3Wallet.writeContract({
-      address: L3_WUSDC,
+      address: l3Usdc,
       abi: MINT_ABI,
       functionName: 'mint',
       args: [address as `0x${string}`, parsedAmount],
