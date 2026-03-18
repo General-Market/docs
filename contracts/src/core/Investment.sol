@@ -69,6 +69,7 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         governance = IGovernance(governance_);
         usdc = IERC20(usdc_);
         nextOrderId = 1; // Start from 1, 0 reserved for "no order"
+        deploymentNonce = 1;
     }
 
     /// @notice Reset order state after a full redeploy to the same proxy address.
@@ -86,6 +87,20 @@ contract Investment is InvestmentStorage, Initializable, UUPSUpgradeable, Reentr
         }
         nextOrderId = 1;
         lastProcessedCycleNumber = 0;
+    }
+
+    // ============ DEPLOYMENT TRACKING ============
+
+    event DeploymentNonceUpdated(uint256 newNonce);
+
+    /// @notice Increment deployment nonce. Call after any deploy that changes contract state.
+    /// @dev Only callable by governance admin — uses inline check (no onlyGovernance modifier).
+    function bumpDeploymentNonce() external {
+        if (msg.sender != governance.admin()) {
+            revert ErrorsLib.E061_Unauthorized(msg.sender, governance.admin());
+        }
+        deploymentNonce++;
+        emit DeploymentNonceUpdated(deploymentNonce);
     }
 
     /// @notice Set the OracleRegistry address (admin only, one-time setup)

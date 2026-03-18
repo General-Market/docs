@@ -53,11 +53,14 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     // Uses block.timestamp so each redeploy on the same chain gets unique proxy addresses.
     // Prevents stale storage from previous deploys bleeding through ERC1967 proxy reuse.
     uint256 private _saltCounter;
+    uint256 private _deployerStartNonce;
 
     function _nextSalt() internal returns (bytes32) {
         // MUST NOT use block.timestamp — it differs between simulation and broadcast on Orbit L3,
         // causing CREATE2 addresses to diverge. Use only deterministic values.
-        return keccak256(abi.encode("INDEX_DEPLOY_V3", block.chainid, ++_saltCounter));
+        // Salt uses deployer nonce at script start (fetched once) to ensure uniqueness across redeploys.
+        // Each deploy gets fresh addresses because the deployer nonce differs.
+        return keccak256(abi.encode("INDEX_DEPLOY", block.chainid, _deployerStartNonce, ++_saltCounter));
     }
 
     function _deployProxy(address impl, bytes memory initData) internal returns (address) {
@@ -95,6 +98,8 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         _logHeader();
 
         uint256 deployerPrivateKey = _getDeployerKey();
+        // Capture deployer nonce for CREATE2 salt uniqueness across redeploys
+        _deployerStartNonce = vm.getNonce(admin);
         vm.startBroadcast(deployerPrivateKey);
 
         _deployTokens();
@@ -279,6 +284,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         } else {
             console.log("  OracleRegistry governance verified (admin matches deployer)");
         }
+
+        // Bump deployment nonce so services detect the new deployment
+        Investment(payable(indexProxy)).bumpDeploymentNonce();
+        console.log("  DeploymentNonce bumped to", Investment(payable(indexProxy)).deploymentNonce());
     }
 
     function _registerOracles() internal {

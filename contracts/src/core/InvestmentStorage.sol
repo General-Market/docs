@@ -160,6 +160,11 @@ abstract contract InvestmentStorage {
     /// @notice Timeout for BATCHED orders in seconds (default: 300s = 5 min)
     uint256 public constant BATCHED_TIMEOUT = 300;
 
+    // ============ DEPLOYMENT TRACKING ============
+
+    /// @notice Incremented on each deployment/state change. Services poll this to detect staleness.
+    uint256 public deploymentNonce;
+
     // ============ STORAGE GAP ============
 
     /// @dev Reserved storage slots for future upgrades.
@@ -175,8 +180,9 @@ abstract contract InvestmentStorage {
     ///        assetAddressToIndex(26), assetIndexRegistered(27),
     ///        stalenessLimits(28), venuePools(29), _itpNavs(30),
     ///        _bridgeNonceToItpId(31), authorizedBridge(32),
-    ///        failedFillEscrow(33), batchedTimestamp(34) = 35 slots used
+    ///        failedFillEscrow(33), batchedTimestamp(34),
+    ///        deploymentNonce(35) = 36 slots used
     ///      Target: 50 total slots for upgradeability buffer
-    ///      Gap: 50 - 35 = 15 slots
-    uint256[15] private __gap;
+    ///      Gap: 50 - 36 = 14 slots
+    uint256[14] private __gap;
 }
