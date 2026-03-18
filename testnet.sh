@@ -1337,8 +1337,6 @@ _start_oracles_docker() {
       - "--signature-threshold"
       - "2"
       - "--registry-sync"
-      - "--data-node-url"
-      - "http://localhost:$DATA_NODE_PORT"
       - "--deployment-file"
       - "/app/deployments/active-deployment.json"
       - "--symbol-map-file"
