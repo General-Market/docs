@@ -77,6 +77,18 @@ impl SymbolMap {
         keys.into_iter()
     }
 
+    /// Get all distinct trading pair symbols in sorted order.
+    ///
+    /// Used for startup validation against live exchange ticker lists.
+    /// Deduplicates pairs so stablecoins mapped to the same pair (e.g. USDC
+    /// native + USDC.e both → USDCUSDT) appear only once.
+    pub fn all_pairs(&self) -> impl Iterator<Item = &str> {
+        let mut pairs: Vec<&str> = self.map.values().map(|s| s.as_str()).collect();
+        pairs.sort_unstable();
+        pairs.dedup();
+        pairs.into_iter()
+    }
+
     /// Create default symbol map with common Settlement chain tokens
     ///
     /// Includes mappings for:

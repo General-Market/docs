@@ -11,9 +11,60 @@ use crate::{
 use common::integrations::bitget::{BitgetReadOnlyClientImpl, BitgetReadOnlyConfig};
 use common::integrations::oneinch::{CachedQuoteClient, OneInchQuoteClient, OneInchRateLimitHandler, QuoteCacheConfig};
 use common::mocks::MockBitgetReadOnlyClient;
+use common::traits::BitgetReadOnlyClient;
 use common::types::ExchangeMode;
+use std::collections::HashSet;
 use std::sync::Arc;
 use tracing::{error, info, warn};
+
+/// Validate symbol map against live Bitget tickers.
+///
+/// Fetches all tickers in a single bulk call and emits a WARN for every pair
+/// in `symbol_map` that is absent from Bitget's response.  Missing pairs will
+/// produce "ticker not found" errors during price consensus — better to surface
+/// them immediately at startup.
+///
+/// Failures in the bulk fetch are logged but do not abort startup: we cannot
+/// afford to refuse to start just because Bitget is momentarily unreachable.
+async fn validate_symbol_map_against_bitget<C: BitgetReadOnlyClient>(
+    client: &C,
+    symbol_map: &SymbolMap,
+    node_id: u32,
+) {
+    match client.get_all_tickers().await {
+        Ok(tickers) => {
+            let valid: HashSet<String> = tickers.into_iter().map(|t| t.symbol).collect();
+            let mut untradeable: Vec<String> = symbol_map
+                .all_pairs()
+                .filter(|pair| !valid.contains(*pair))
+                .map(|s| s.to_string())
+                .collect();
+            untradeable.sort();
+
+            if untradeable.is_empty() {
+                info!(
+                    node_id,
+                    total = symbol_map.len(),
+                    "All symbol-map pairs confirmed tradeable on Bitget"
+                );
+            } else {
+                warn!(
+                    node_id,
+                    count = untradeable.len(),
+                    pairs = %untradeable.join(", "),
+                    "Symbol-map contains pairs not found on Bitget — price fetch will fail for these assets"
+                );
+            }
+        }
+        Err(e) => {
+            warn!(
+                node_id,
+                error = %e,
+                "Bulk ticker fetch for symbol validation failed — cannot confirm all pairs are tradeable"
+            );
+        }
+    }
+}
 
 /// Builder for price-related components
 pub struct PriceBuilder<'a> {
@@ -35,7 +86,7 @@ impl<'a> PriceBuilder<'a> {
         let symbol_map = self.load_symbol_map();
 
         // Build price fetcher: prefer BackendPriceFetcher, fall back to BitgetPriceFetcher
-        let fetcher: Arc<dyn PriceFetcher> = self.build_price_fetcher(&symbol_map)?;
+        let fetcher: Arc<dyn PriceFetcher> = self.build_price_fetcher(&symbol_map).await?;
 
         // Build DEX price source
         let dex_source = self.build_dex_source(&shared_cached_client).await;
@@ -67,13 +118,19 @@ impl<'a> PriceBuilder<'a> {
         }
     }
 
-    fn build_price_fetcher(&self, symbol_map: &SymbolMap) -> Result<Arc<dyn PriceFetcher>, BootstrapError> {
+    async fn build_price_fetcher(&self, symbol_map: &SymbolMap) -> Result<Arc<dyn PriceFetcher>, BootstrapError> {
         // Check if data-node backend URL is configured (config or env var)
         let data_node_url = self.config.data_node_url.clone()
             .or_else(|| std::env::var("DATA_NODE_URL").ok());
 
         if let Some(url) = data_node_url {
-            info!(self.node_id, url = %url, "Using BackendPriceFetcher (data-node backend)");
+            info!(
+                self.node_id,
+                url = %url,
+                symbols = symbol_map.len(),
+                pairs = %symbol_map.all_pairs().collect::<Vec<_>>().join(", "),
+                "Using BackendPriceFetcher (data-node backend) — symbol inventory logged"
+            );
             let fetcher = BackendPriceFetcher::new(url, symbol_map.clone());
             return Ok(Arc::new(fetcher));
         }
@@ -102,6 +159,7 @@ impl<'a> PriceBuilder<'a> {
             ExchangeMode::Mock => {
                 info!(self.node_id, "Using MockBitgetReadOnlyClient (no Bitget credentials needed)");
                 let client = MockBitgetReadOnlyClient::new();
+                // Mock client has no real tickers — skip validation
                 let fetcher = BitgetPriceFetcher::new(Arc::new(client), symbol_map.clone());
                 Ok(Arc::new(fetcher))
             }
@@ -130,18 +188,22 @@ impl<'a> PriceBuilder<'a> {
                     )));
                 }
 
-                let fetcher = self.build_bitget_fetcher(symbol_map)?;
+                let fetcher = self.build_bitget_fetcher_with_validation(symbol_map).await?;
                 Ok(Arc::new(fetcher))
             }
         }
     }
 
-    fn build_bitget_fetcher(&self, symbol_map: &SymbolMap) -> Result<BitgetPriceFetcher<BitgetReadOnlyClientImpl>, BootstrapError> {
+    async fn build_bitget_fetcher_with_validation(&self, symbol_map: &SymbolMap) -> Result<BitgetPriceFetcher<BitgetReadOnlyClientImpl>, BootstrapError> {
         let bitget_config = BitgetReadOnlyConfig::from_env()
             .map_err(|e| BootstrapError::Config(format!("Failed to load Bitget config: {}", e)))?;
 
         let client = BitgetReadOnlyClientImpl::new(bitget_config)
             .map_err(|e| BootstrapError::Config(format!("Failed to create Bitget client: {}", e)))?;
+
+        // Validate all mapped pairs against live Bitget tickers before committing to this map.
+        // Untradeable pairs (ICX, ZAMA, DBR, etc.) are logged as WARN — startup is not aborted.
+        validate_symbol_map_against_bitget(&client, symbol_map, self.node_id).await;
 
         let fetcher = BitgetPriceFetcher::new(Arc::new(client), symbol_map.clone());
         info!(self.node_id, "BitgetPriceFetcher initialized");
