@@ -453,7 +453,7 @@ const _l3Pub = createPublicClient({ chain: _l3Chain, transport: rpcHttp(L3_RPC) 
  * Uses a mutex + nonce retry to handle nonce conflicts with the browser wallet
  * (which sends txs from the same key via a separate code path).
  */
-async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
+export async function l3SignedSend(to: string, data: string, value?: bigint): Promise<string> {
   return withL3NonceLock(async () => {
     const account = _l3Account ?? privateKeyToAccount(TEST_PRIVATE_KEY);
     const client = createWalletClient({ account, chain: _l3Chain, transport: rpcHttp(L3_RPC) });

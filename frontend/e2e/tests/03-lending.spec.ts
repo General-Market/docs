@@ -18,6 +18,7 @@ import {
   getMorphoPositionDirect,
   readMorphoDeployment,
   l3RpcCall,
+  l3SignedSend,
 } from '../helpers/backend-api';
 import { IS_ANVIL } from '../env';
 
@@ -179,7 +180,26 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
         console.log(`Morpho market exists (lastUpdate=${lastUpdate})`);
       }
 
-      // Step 1: Deposit Collateral (direct RPC)
+      // Step 0: Deposit USDC into ITP vault to get vault tokens (collateral)
+      // The Morpho market uses ITP vault tokens (ERC4626) as collateral, not raw USDC
+      const vaultAddr = morphoCheck!.marketParams.collateralToken;
+      const vaultUsdcAmount = 20n * 10n ** 18n;
+      // Ensure user has USDC
+      await mintL3Usdc(TEST_ADDRESS, vaultUsdcAmount);
+      // Approve USDC to vault
+      const usdcAddr = morphoCheck!.marketParams.loanToken;
+      const approveData = '0x095ea7b3' +
+        vaultAddr.replace('0x', '').toLowerCase().padStart(64, '0') +
+        'f'.repeat(64);
+      await l3SignedSend(usdcAddr, approveData);
+      // Deposit USDC into vault: deposit(uint256 assets, address receiver)
+      const depositVaultData = '0x6e553f65' +
+        vaultUsdcAmount.toString(16).padStart(64, '0') +
+        TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
+      await l3SignedSend(vaultAddr, depositVaultData);
+      console.log(`Deposited ${vaultUsdcAmount} USDC into vault for collateral tokens`);
+
+      // Step 1: Deposit vault tokens as Morpho collateral
       const posBefore = await getMorphoPositionDirect(TEST_ADDRESS);
       console.log(`Position before deposit: collateral=${posBefore.collateral}`);
 
