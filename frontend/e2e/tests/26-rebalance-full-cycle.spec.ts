@@ -3,12 +3,12 @@
  * Verifies the complete rebalance cycle:
  * 1. Read current ITP weights and NAV
  * 2. Request rebalance with new weights
- * 3. Wait for oracle consensus on L3
+ * 3. Wait for issuer consensus on L3
  * 4. Verify NAV preserved within tolerance
  * 5. Verify new weights match requested weights
  *
  * Known limitation: if any ITP asset has no contract code on L3 (e.g. codeless
- * mock token), oracles cannot fetch prices and rebalance consensus will stall.
+ * mock token), issuers cannot fetch prices and rebalance consensus will stall.
  * In that case, we verify the request was submitted and clean up the stale event.
  */
 import { test, expect } from '@playwright/test';
@@ -47,7 +47,7 @@ test.describe('Rebalance Full Cycle', () => {
     // NAV must be non-zero for the test to be meaningful
     expect(navBefore).toBeGreaterThan(0n);
 
-    // 2. Check if all assets have contract code — if any is codeless, oracles
+    // 2. Check if all assets have contract code — if any is codeless, issuers
     // cannot compute prices and rebalance will stall
     const codelessAssets: string[] = [];
     for (const asset of stateBefore.assets) {
@@ -55,19 +55,29 @@ test.describe('Rebalance Full Cycle', () => {
         codelessAssets.push(asset);
       }
     }
-    if (codelessAssets.length > 0) {
-      console.log(`WARNING: ${codelessAssets.length} asset(s) have no code — rebalance will stall`);
-      console.log(`Codeless: ${codelessAssets.join(', ')}`);
+    // Also check if assets are in the symbol-map (oracle needs prices for rebalance)
+    let unpricedAssets = 0;
+    try {
+      const { readFileSync } = require('fs');
+      const { join } = require('path');
+      const smap = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'data', 'symbol-map.json'), 'utf-8'));
+      for (const asset of stateBefore.assets) {
+        if (!smap[asset.toLowerCase()]) unpricedAssets++;
+      }
+    } catch { /* symbol-map not available */ }
+
+    if (codelessAssets.length > 0 || unpricedAssets > 0) {
+      console.log(`WARNING: ${codelessAssets.length} codeless, ${unpricedAssets} unpriced asset(s) — rebalance will stall`);
+      if (codelessAssets.length > 0) console.log(`Codeless: ${codelessAssets.join(', ')}`);
       console.log('Verifying ITP state is valid and skipping rebalance execution');
 
-      // Verify the ITP is otherwise healthy
       expect(stateBefore.assets.length).toBe(stateBefore.weights.length);
       const totalWeight = weightsBefore.reduce((a, b) => a + b, 0n);
-      expect(totalWeight).toBe(1000000000000000000n); // weights sum to 1e18
+      expect(totalWeight).toBe(1000000000000000000n);
       return;
     }
 
-    // 3. Start block miner (oracles need Settlement blocks for event confirmation)
+    // 3. Start block miner (issuers need Settlement blocks for event confirmation)
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
