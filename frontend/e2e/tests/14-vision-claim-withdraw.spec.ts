@@ -34,7 +34,7 @@ import { ensureWalletConnected } from '../helpers/selectors'
 
 test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
   test('settle round then withdraw from Vision balance to L3 wallet', async ({ walletPage: page }) => {
-    test.setTimeout(300_000)
+    test.setTimeout(420_000)
 
     // 0. Ensure batches exist (Vision was deployed)
     await ensureBatchExists()

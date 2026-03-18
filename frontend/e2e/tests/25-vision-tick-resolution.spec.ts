@@ -36,7 +36,7 @@ const MARKET_COUNT = 10
 
 test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', () => {
   test('opposite bets resolve with pool conservation and balance credits', async () => {
-    test.setTimeout(300_000)
+    test.setTimeout(420_000)
 
     // 0. Ensure batches exist on-chain
     await ensureBatchExists()

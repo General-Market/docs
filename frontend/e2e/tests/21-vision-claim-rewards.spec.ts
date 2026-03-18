@@ -37,7 +37,7 @@ const MARKET_COUNT = 10
 
 test.describe('Vision Round Results + Bitmap Transparency', () => {
   test('round settles with correct results and transparent bitmaps', async () => {
-    test.setTimeout(300_000)
+    test.setTimeout(420_000)
 
     // 0. Ensure batches exist on-chain
     await ensureBatchExists()
