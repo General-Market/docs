@@ -1,4 +1,4 @@
-import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
+import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
 import { ensureWalletConnected, buyModal } from '../helpers/selectors';
 import { getL3UserShares, getL3UsdcBalance, getOrder, mintL3Usdc } from '../helpers/backend-api';
 import { parseUnits } from 'viem';
@@ -41,10 +41,12 @@ test.describe('Buy ITP', () => {
     const tableRow = page.locator('tr[id^="itp-card-"]');
     await expect(tableRow.first()).toBeVisible({ timeout: 30_000 });
 
-    // 5. Click "Buy" button in the first table row.
-    //    WalletActionButton renders <button> with text "Buy" inside each <tr>.
-    //    When wallet is connected, it fires onClick (opens BuyItpModal).
-    //    When not connected, it shows "Connect Wallet" on hover — but we connected in step 2.
+    // 5. Extract ITP ID from the first row (for shares tracking later)
+    const firstRowId = await tableRow.first().getAttribute('id') ?? '';
+    const ITP_ID = ('0x' + (firstRowId.replace('itp-card-', '') || '0000000000000000000000000000000000000000000000000000000000000001').padStart(64, '0')) as `0x${string}`;
+    console.log(`Buy test: targeting ${firstRowId}, ITP_ID=${ITP_ID}`);
+
+    // 6. Click "Buy" button in the first table row.
     const buyBtn = tableRow.first().getByRole('button', { name: 'Buy', exact: true });
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
     await buyBtn.click();
@@ -60,11 +62,14 @@ test.describe('Buy ITP', () => {
     await expect(amountInput).toBeVisible({ timeout: 5_000 });
     await amountInput.fill('100');
 
-    // 9. Limit price — set a high absolute limit ($20) to cover any realistic NAV drift
+    // 9. Limit price — wait for NAV auto-fill, then override with high limit
+    //    The React effect auto-fills limit from NAV+5%. If we fill before it runs,
+    //    the effect overwrites our value. Wait for non-empty value first.
     const limitInput = buyModal.limitPriceInput(page);
-    const limitPrice = '20.000000';
-    await limitInput.clear();
-    await limitInput.fill(limitPrice);
+    await expect(limitInput).not.toHaveValue('', { timeout: 15_000 }).catch(() => {});
+    await page.waitForTimeout(500); // let React effect settle
+    await limitInput.fill(''); // clear auto-filled value
+    await limitInput.fill('20.000000'); // set high limit to cover any NAV
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
     // to avoid race with parallel lending test's mintL3Shares
