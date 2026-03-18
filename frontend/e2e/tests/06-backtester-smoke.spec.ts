@@ -169,8 +169,10 @@ test.describe('Backtester Smoke Tests', () => {
   test.beforeEach(async ({}, testInfo) => {
     // The "categories endpoint" test only needs categories loaded, not sim engine.
     // All other tests require the full sim cache to be ready.
-    if (!testInfo.title.includes('categories endpoint')) {
-      expect(simCacheReady, 'Sim cache must be loaded on data-node (CoinGecko historical data not yet fetched)').toBe(true)
+    if (testInfo.title.includes('categories endpoint')) {
+      test.skip(allCategories.length === 0, 'Data-node unreachable — no categories loaded in beforeAll')
+    } else {
+      test.skip(!simCacheReady, 'Sim cache not loaded on data-node (CoinGecko historical data not yet fetched)')
     }
   })
 

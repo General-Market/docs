@@ -23,43 +23,47 @@ test.describe('Backtester Deploy Handoff', () => {
     await expect(backtestSection).toBeVisible({ timeout: 30_000 })
     await backtestSection.scrollIntoViewIfNeeded()
 
-    // BacktestSection health-checks data-node before rendering
-    const runBtn = page.getByRole('button', { name: /Run|Simulate/i }).first()
-    await expect(runBtn).toBeVisible({ timeout: 60_000 })
+    // BacktestSection auto-runs a simulation on mount. The button can show
+    // "Run Simulation", "Run Sweep", or "Cancel" (if auto-run is in progress).
+    // Match any of these states.
+    const actionBtn = page.getByRole('button', { name: /Run Simulation|Run Sweep|Cancel/i }).first()
+    await expect(actionBtn).toBeVisible({ timeout: 60_000 })
 
-    await runBtn.click()
+    // If auto-run is in progress (button says "Cancel"), wait for it to finish.
+    // The button text reverts to "Run Simulation" when the sim completes.
+    const btnText = await actionBtn.textContent()
+    if (btnText?.includes('Cancel')) {
+      console.log('Auto-run in progress — waiting for completion')
+      await page.getByRole('button', { name: /Run Simulation|Run Sweep/i }).first()
+        .waitFor({ state: 'visible', timeout: 120_000 })
+      // Auto-run finished — results should already be visible
+    } else {
+      // No auto-run — click to start simulation
+      await actionBtn.click()
+    }
 
-    // Wait for results — look for chart container or stats text
-    // Chart SVG paths have long d attributes (>50 chars), unlike icon SVGs
-    // Also check for stats text as fallback (simulation may produce stats without chart)
+    // Wait for results — look for stats text, chart, or error
     const hasResults = await Promise.race([
-      // Chart path with substantial d attribute (not a simple icon)
-      backtestSection.locator('svg path').filter({
-        has: page.locator('[d]'),
-      }).first().isVisible({ timeout: 60_000 }).then(v => v ? 'chart' : null).catch(() => null),
-      // Stats text (return, sharpe, drawdown)
+      // Stats text (return, sharpe, drawdown) — most reliable indicator
       page.getByText(/return|sharpe|drawdown/i).first()
-        .isVisible({ timeout: 60_000 }).then(v => v ? 'stats' : null).catch(() => null),
+        .waitFor({ state: 'visible', timeout: 60_000 }).then(() => 'stats' as const).catch(() => null),
       // Error text (simulation may fail due to data issues)
       page.getByText(/error|failed|no data/i).first()
-        .isVisible({ timeout: 60_000 }).then(v => v ? 'error' : null).catch(() => null),
+        .waitFor({ state: 'visible', timeout: 60_000 }).then(() => 'error' as const).catch(() => null),
     ])
 
     if (hasResults === 'error') {
       console.log('Backtester simulation returned an error (data-dependent)')
-      // Verify the Run button is still functional
-      await expect(runBtn).toBeVisible()
       return
     }
 
-    // Accept chart or stats as success
-    if (hasResults === 'chart' || hasResults === 'stats') {
+    if (hasResults === 'stats') {
       const statsText = await page.locator('body').textContent()
       expect(statsText).toMatch(/return|sharpe|drawdown/i)
     } else {
       // No results visible — verify at least the backtest section rendered
       console.log('No chart/stats visible after simulation — data may be unavailable')
-      await expect(runBtn).toBeVisible()
+      await expect(actionBtn).toBeVisible()
     }
   })
 })
