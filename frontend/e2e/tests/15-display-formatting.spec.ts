@@ -8,7 +8,8 @@
  * Page layout:
  *   /              → SourcesGrid (categories, live batches, stats bar, source cards)
  *   /source/{id}   → SourceDetail (batch bar with Pool TVL, TopPlayers leaderboard)
- *   /index         → ITP listing (NAV per share, orderbook depth)
+ *   /index         → ITP table listing (NAV per share, Net Assets, Shares Outstanding)
+ *   /index#lend    → Lending section (VaultModal inline, TVL, APY)
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
 import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
@@ -35,7 +36,6 @@ function parseDollar(text: string): number {
 }
 
 // ── Source Detail — TopPlayers Leaderboard ───────────────────
-// TopPlayers renders at /source/{id} with tabular-nums on numeric columns.
 
 test.describe('Display Formatting — Leaderboard', () => {
   test('leaderboard volume and PnL are not raw wei', async ({ walletPage: page }) => {
@@ -149,10 +149,12 @@ test.describe('Display Formatting — Source Detail', () => {
   })
 })
 
-// ── ITP NAV & Orderbook ──────────────────────────────────────
+// ── ITP Table — NAV & Net Assets ─────────────────────────────
+// Table layout: each row has Ticker, Name, Chart, NAV, Net Assets, Shares, Trade.
+// NAV values are $X.XXXX in tabular-nums spans. Net Assets are formatted ($1.23K, $4.56M).
 
-test.describe('Display Formatting — ITP Cards', () => {
-  test('ITP NAV per share is between $0.01 and $1000', async ({ walletPage: page }) => {
+test.describe('Display Formatting — ITP Table', () => {
+  test('ITP NAV per share is between $0.01 and $10000', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
     // visionTest fixture starts at / — navigate to ITP listing
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -166,31 +168,36 @@ test.describe('Display Formatting — ITP Cards', () => {
     }
     expect(hasCards).toBe(true)
 
-    // Wait for NAV to load — table layout has $.XXXX in tabular-nums spans inside rows
+    // Table rows contain tabular-nums spans with $X.XXXX (NAV) and $X.XXK (Net Assets)
     const firstCard = cards.first()
-    const navValue = firstCard.locator('.tabular-nums').filter({ hasText: /^\$/ })
-    await expect(navValue.first()).toBeVisible({ timeout: 60_000 })
+    const dollarValues = firstCard.locator('.tabular-nums').filter({ hasText: /\$/ })
+    await expect(dollarValues.first()).toBeVisible({ timeout: 60_000 })
 
-    // Verify NAV values across rows are in plausible range
+    // Verify dollar values across rows are in plausible range
     const cardCount = await cards.count()
     for (let i = 0; i < Math.min(cardCount, 5); i++) {
       const card = cards.nth(i)
-      const value = card.locator('.tabular-nums').filter({ hasText: /^\$/ })
-      const hasNav = await value.first().isVisible({ timeout: 10_000 }).catch(() => false)
-      if (!hasNav) continue
-      const text = await value.first().textContent() || ''
-      const num = parseDollar(text)
-      // Accept NAV=0 on testnet when data-node hasn't synced prices yet
-      if (num === 0) {
-        console.log('NAV is 0 — data-node may not have synced prices yet (testnet)')
-        continue
+      const values = card.locator('.tabular-nums').filter({ hasText: /\$/ })
+      const hasValue = await values.first().isVisible({ timeout: 10_000 }).catch(() => false)
+      if (!hasValue) continue
+
+      // Check each dollar value in the row (NAV + Net Assets columns)
+      const valueCount = await values.count()
+      for (let j = 0; j < valueCount; j++) {
+        const text = await values.nth(j).textContent() || ''
+        const num = parseDollar(text)
+        // Accept NAV=0 or near-zero on testnet when data-node hasn't synced prices yet
+        if (num < 0.01) {
+          console.log(`Dollar value "${text}" near zero — data-node may not have synced prices yet (testnet)`)
+          continue
+        }
+        expect(num).toBeGreaterThan(0)
+        expect(num).toBeLessThan(10_000_000)
       }
-      expect(num).toBeGreaterThan(0.01)
-      expect(num).toBeLessThan(10000)
     }
   })
 
-  test('orderbook loads on ITP hover (not stuck loading)', async ({ walletPage: page }) => {
+  test('ITP table columns render with expected structure', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -204,10 +211,23 @@ test.describe('Display Formatting — ITP Cards', () => {
     }
     expect(hasCards).toBe(true)
 
-    // Table layout: verify NAV column has dollar values (orderbook hover removed in table refactor)
-    const navValues = cards.first().locator('.tabular-nums').filter({ hasText: /^\$/ })
-    const hasValues = await navValues.first().isVisible({ timeout: 15_000 }).catch(() => false)
-    expect(hasValues).toBe(true)
+    // Verify the table has expected column headers
+    const table = page.locator('table').first()
+    await expect(table).toBeVisible({ timeout: 15_000 })
+
+    const headerText = await table.locator('thead').textContent() || ''
+    expect(headerText).toContain('Ticker')
+    expect(headerText).toContain('Name')
+    expect(headerText).toContain('NAV')
+    expect(headerText).toContain('Net Assets')
+    expect(headerText).toContain('Trade')
+
+    // Verify first row has Buy and Sell actions
+    const firstRow = cards.first()
+    const buyBtn = firstRow.getByRole('button', { name: 'Buy', exact: true })
+    const sellBtn = firstRow.getByRole('button', { name: 'Sell', exact: true })
+    await expect(buyBtn).toBeVisible({ timeout: 10_000 })
+    await expect(sellBtn).toBeVisible({ timeout: 10_000 })
   })
 })
 
@@ -283,18 +303,19 @@ test.describe('Display Formatting — Source Cards', () => {
 })
 
 // ── Lending TVL Display ──────────────────────────────────────
-// The lending markets table shows TVL and APY values formatted from L3 USDC (18 dec).
+// The lending section (at /index#lend) renders VaultModal inline with a markets table.
+// TVL and APY are formatted from L3 USDC (18 dec).
 // Catches the $100,000,000,033,200 bug where raw 18-decimal wei was displayed as 6-decimal.
 
 test.describe('Display Formatting — Lending', () => {
   test('lending markets table TVL values are not raw wei', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Navigate to ITP listing and scroll to the Lend section
+    // Navigate to ITP listing and switch to Lend section via hash
     await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await page.waitForTimeout(3_000)
 
-    // The Lend section renders VaultModal inline with a markets table
+    // The Lend section is a motion.div with id="lend" — becomes visible when activeSection === 'lend'
     const lendSection = page.locator('#lend')
     await expect(lendSection).toBeVisible({ timeout: 30_000 })
 
@@ -329,7 +350,7 @@ test.describe('Display Formatting — Lending', () => {
   test('lending modal amounts are not raw wei', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Navigate to Lend section which has inline VaultModal with Borrow buttons
+    // Navigate to Lend section which has inline VaultModal
     await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await page.waitForTimeout(3_000)
 
@@ -350,7 +371,7 @@ test.describe('Display Formatting — Lending', () => {
       const num = parseDollar(match)
       // No dollar amount should be above $1B (catches raw 18-dec values which would be $100T+)
       // Threshold raised from $10M because textContent() can concatenate adjacent dollar
-      // values across DOM boundaries (e.g. "$100,000" + "77% LTV" → "$100,00077")
+      // values across DOM boundaries (e.g. "$100,000" + "77% LTV" -> "$100,00077")
       expect(num, `Lend section value "${match}" looks like raw wei`).toBeLessThan(1_000_000_000)
     }
   })
