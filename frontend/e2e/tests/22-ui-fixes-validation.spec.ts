@@ -9,6 +9,7 @@
  * Other tests verify DOM rendering without wallet transactions.
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
+import { ensureWalletConnected, itpRow, buyButton, sellButton } from '../helpers/selectors';
 
 // ── Slippage Gear Icon ─────────────────────────────────────
 
@@ -16,21 +17,20 @@ test.describe('Slippage Gear Icon', () => {
   test('buy modal: slippage is hidden behind gear icon by default', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // Wait for ITP cards with Buy button — retry if data-node is slow
-    const buyButton = page.getByRole('button', { name: 'Buy' }).first();
-    let hasBuy = await buyButton.isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!hasBuy) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
-      hasBuy = await buyButton.isVisible({ timeout: 45_000 }).catch(() => false);
-    }
-    expect(hasBuy).toBe(true);
-    await buyButton.click();
+    // Ensure wallet is connected — WalletActionButton only calls onClick when connected
+    await ensureWalletConnected(page, TEST_ADDRESS);
+
+    // Wait for ITP table rows with Buy button — retry if data-node is slow
+    const firstRow = itpRow(page, 0);
+    await expect(firstRow).toBeVisible({ timeout: 45_000 });
+    const buyBtn = buyButton(page, 0);
+    await expect(buyBtn).toBeVisible({ timeout: 15_000 });
+    await buyBtn.click();
     await page.waitForTimeout(1_000);
 
     // Check if modal actually opened (gear icon should be inside it)
     const gearButton = page.locator('button[title="Slippage"]');
-    await expect(gearButton).toBeVisible({ timeout: 10_000 });
+    await expect(gearButton).toBeVisible({ timeout: 15_000 });
 
     // The 0.3% tier button should NOT be visible by default (hidden behind gear)
     const tightTier = page.locator('button').filter({ hasText: /^0\.3%$/ });
@@ -47,21 +47,20 @@ test.describe('Slippage Gear Icon', () => {
   test('sell modal: slippage is hidden behind gear icon by default', async ({ walletPage: page }) => {
     test.setTimeout(180_000);
 
-    // Wait for ITP cards with Sell button — retry if data-node is slow
-    const sellButton = page.getByRole('button', { name: 'Sell' }).first();
-    let hasSell = await sellButton.isVisible({ timeout: 30_000 }).catch(() => false);
-    if (!hasSell) {
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.waitForTimeout(3_000);
-      hasSell = await sellButton.isVisible({ timeout: 45_000 }).catch(() => false);
-    }
-    expect(hasSell).toBe(true);
-    await sellButton.click();
+    // Ensure wallet is connected
+    await ensureWalletConnected(page, TEST_ADDRESS);
+
+    // Wait for ITP table rows with Sell button — retry if data-node is slow
+    const firstRow = itpRow(page, 0);
+    await expect(firstRow).toBeVisible({ timeout: 45_000 });
+    const sellBtn = sellButton(page, 0);
+    await expect(sellBtn).toBeVisible({ timeout: 15_000 });
+    await sellBtn.click();
     await page.waitForTimeout(1_000);
 
     // Check if sell modal actually opened
     const gearButton = page.locator('button[title="Slippage"]');
-    await expect(gearButton).toBeVisible({ timeout: 10_000 });
+    await expect(gearButton).toBeVisible({ timeout: 15_000 });
 
     // The 0.3% tier button should NOT be visible by default
     const tightTier = page.locator('button').filter({ hasText: /^0\.3%$/ });

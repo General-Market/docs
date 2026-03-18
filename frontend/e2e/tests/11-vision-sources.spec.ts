@@ -43,6 +43,10 @@ test.describe('Vision Sources — Browse', () => {
 
   test('category pills are visible with counts', async ({ page }) => {
     await page.goto('/')
+    // Wait for source cards first — pills render from same data
+    const cards = sourceCard(page)
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 })
+
     // "All" pill should be visible
     const allPill = categoryPill(page, 'All')
     await expect(allPill).toBeVisible({ timeout: 15_000 })
@@ -53,9 +57,10 @@ test.describe('Vision Sources — Browse', () => {
   })
 
   test('category filtering reduces visible cards', async ({ page }) => {
+    test.setTimeout(180_000)
     await page.goto('/')
     const cards = sourceCard(page)
-    await expect(cards.first()).toBeVisible({ timeout: 15_000 })
+    await expect(cards.first()).toBeVisible({ timeout: 30_000 })
 
     // Wait for card count to stabilize (sources grid may still be rendering)
     let allCount = 0
@@ -63,9 +68,9 @@ test.describe('Vision Sources — Browse', () => {
       const c = await cards.count()
       expect(c).toBeGreaterThan(10)
       allCount = c
-    }).toPass({ timeout: 15_000 })
+    }).toPass({ timeout: 30_000 })
     // Extra settle — NextBatches re-sorts every 1s which can change card visibility
-    await page.waitForTimeout(2_000)
+    await page.waitForTimeout(3_000)
     allCount = await cards.count()
 
     // Click "Finance" category
@@ -176,13 +181,18 @@ test.describe('Vision Sources — Detail', () => {
   })
 
   test('detail page shows Enter Batch panel', async ({ page }) => {
-    await page.goto('/source/coingecko')
+    test.setTimeout(120_000)
+    await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // Wait for source hero to confirm page loaded
+    const title = sourceHeroTitle(page)
+    await expect(title).toBeVisible({ timeout: 30_000 })
+
     const heading = enterBatchHeading(page)
-    await expect(heading).toBeVisible({ timeout: 15_000 })
+    await expect(heading).toBeVisible({ timeout: 30_000 })
 
     // Enter Batch button should be present
     const btn = enterBatchButton(page)
-    await expect(btn).toBeVisible()
+    await expect(btn).toBeVisible({ timeout: 15_000 })
   })
 
   test('stake input and quick amount buttons are visible', async ({ page }) => {

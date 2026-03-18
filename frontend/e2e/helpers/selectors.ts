@@ -314,7 +314,9 @@ export function sourceCard(page: Page): Locator {
 
 /** Category filter pills (All, Finance, Economic, etc.) */
 export function categoryPill(page: Page, label: string): Locator {
-  return page.getByRole('button', { name: new RegExp(`^${label}\\s+\\d+$`) });
+  // Accessible name may or may not have whitespace between label and count
+  // depending on JSX whitespace normalization. Match both "All 76" and "All76".
+  return page.getByRole('button', { name: new RegExp(`^${label}\\s*\\d+$`) });
 }
 
 /** Stats bar on browse page (black bar with Sources/Assets/Categories counts) */

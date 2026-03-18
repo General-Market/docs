@@ -23,17 +23,21 @@ test.describe('Multi-ITP Lending Visibility', () => {
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Navigate to the Lend section which shows the markets table inline
-    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(3_000);
+    // Click the Lending sidebar nav to activate the lend section.
+    // Hash navigation (/index#lend) only works on initial mount — the walletPage
+    // fixture already loaded /index, so the hash useEffect won't re-fire.
+    const lendingNav = page.getByRole('button', { name: /Lending/i }).first();
+    await expect(lendingNav).toBeVisible({ timeout: 30_000 });
+    await lendingNav.click();
+    await page.waitForTimeout(2_000);
 
-    const lendSection = page.locator('#lend');
-    await expect(lendSection).toBeVisible({ timeout: 30_000 });
-    await lendSection.scrollIntoViewIfNeeded();
+    const lendSect = page.locator('#lend');
+    await expect(lendSect).toBeVisible({ timeout: 30_000 });
 
-    // Wait for markets table to render
-    const marketsTable = lendSection.locator('table');
-    await expect(marketsTable.first()).toBeVisible({ timeout: 30_000 });
+    // Wait for the markets table — VaultModal renders table only when wallet is connected
+    // and on-chain vault discovery completes. Use page-scoped locator for resilience.
+    const marketsTable = page.locator('table').first();
+    await expect(marketsTable).toBeVisible({ timeout: 60_000 });
 
     // Count table body rows (each row = one ITP market)
     const tableRows = marketsTable.locator('tbody tr');
@@ -53,17 +57,18 @@ test.describe('Multi-ITP Lending Visibility', () => {
 
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Navigate to Lend section
-    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(3_000);
+    // Click Lending sidebar nav to activate section
+    const lendingNav = page.getByRole('button', { name: /Lending/i }).first();
+    await expect(lendingNav).toBeVisible({ timeout: 30_000 });
+    await lendingNav.click();
+    await page.waitForTimeout(2_000);
 
-    const lendSection = page.locator('#lend');
-    await expect(lendSection).toBeVisible({ timeout: 30_000 });
-    await lendSection.scrollIntoViewIfNeeded();
+    const lendSect = page.locator('#lend');
+    await expect(lendSect).toBeVisible({ timeout: 30_000 });
 
     // Wait for table and on-chain discovery
-    const marketsTable = lendSection.locator('table');
-    await expect(marketsTable.first()).toBeVisible({ timeout: 30_000 });
+    const marketsTable = page.locator('table').first();
+    await expect(marketsTable).toBeVisible({ timeout: 60_000 });
     await page.waitForTimeout(5_000);
 
     // Check for "Coming Soon" text (ITPs without Morpho market)

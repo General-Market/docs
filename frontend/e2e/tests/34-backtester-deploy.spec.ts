@@ -9,10 +9,15 @@ test.describe('Backtester Deploy Handoff', () => {
   test('simulation produces results with chart', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
 
-    // Navigate directly to Backtest section
-    await page.goto('/index#backtest', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // walletPage starts at /index (markets section active).
+    // Hash navigation (/index#backtest) won't re-fire the useEffect that reads
+    // window.location.hash — it only runs on first mount. Click sidebar nav instead.
     await ensureWalletConnected(page, TEST_ADDRESS)
-    await page.waitForTimeout(3_000)
+
+    const backtestNav = page.getByRole('button', { name: /Backtesting/i }).first()
+    await expect(backtestNav).toBeVisible({ timeout: 30_000 })
+    await backtestNav.click()
+    await page.waitForTimeout(2_000)
 
     const backtestSection = page.locator('#backtest')
     await expect(backtestSection).toBeVisible({ timeout: 30_000 })
