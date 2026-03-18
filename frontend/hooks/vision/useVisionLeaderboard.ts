@@ -4,21 +4,36 @@ import { useQuery } from '@tanstack/react-query'
 import { VISION_API_URL } from '@/lib/config'
 import type { AgentRanking, LeaderboardResponse } from '@/hooks/useLeaderboard'
 
+/** Extended Vision leaderboard entry with round-based fields */
+export interface VisionLeaderboardEntry extends AgentRanking {
+  roundsPlayed: number
+  roundsWon: number
+  avgCorrectPct: number
+}
+
+export interface VisionLeaderboardResponse {
+  leaderboard: VisionLeaderboardEntry[]
+  updatedAt: string
+}
+
+function parseNum(v: unknown): number {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v
+  if (typeof v === 'string') { const n = parseFloat(v); return isNaN(n) ? 0 : n }
+  return 0
+}
+
 /**
- * Fetches Vision leaderboard via the Next.js proxy to the oracle.
- * Returns data in the same AgentRanking format as the ITP leaderboard.
- * Optionally filters by sourceId (all-time) or batchId (single batch).
+ * Fetches Vision leaderboard from the issuer API.
+ * Returns data in the same AgentRanking format as the ITP leaderboard,
+ * extended with round-based fields: roundsPlayed, roundsWon, avgCorrectPct.
  */
-async function fetchVisionLeaderboard(batchId?: number, sourceId?: string): Promise<LeaderboardResponse> {
+async function fetchVisionLeaderboard(batchId?: number): Promise<VisionLeaderboardResponse> {
   if (!VISION_API_URL) {
     return { leaderboard: [], updatedAt: new Date().toISOString() }
   }
 
-  const searchParams = new URLSearchParams()
-  if (sourceId) searchParams.set('source_id', sourceId)
-  else if (batchId !== undefined) searchParams.set('batch_id', String(batchId))
-  const qs = searchParams.toString()
-  const response = await fetch(`${VISION_API_URL}/vision/leaderboard${qs ? `?${qs}` : ''}`)
+  const params = batchId !== undefined ? `?batch_id=${batchId}` : ''
+  const response = await fetch(`${VISION_API_URL}/vision/leaderboard${params}`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch Vision leaderboard: ${response.status}`)
@@ -27,25 +42,32 @@ async function fetchVisionLeaderboard(batchId?: number, sourceId?: string): Prom
   const data = await response.json()
   const entries = data.leaderboard ?? []
 
-  const leaderboard: AgentRanking[] = entries.map((e: Record<string, unknown>) => {
-    const pnl = typeof e.pnl === 'string' ? parseFloat(e.pnl as string) : (e.pnl as number) ?? 0
-    const winRate = typeof e.winRate === 'string' ? parseFloat(e.winRate as string) : (e.winRate as number) ?? 0
-    const roi = typeof e.roi === 'string' ? parseFloat(e.roi as string) : (e.roi as number) ?? 0
-    const totalVolume = typeof e.totalVolume === 'string' ? parseFloat(e.totalVolume as string) : (e.totalVolume as number) ?? 0
-    const avgPortfolioSize = typeof e.avgPortfolioSize === 'string' ? parseFloat(e.avgPortfolioSize as string) : (e.avgPortfolioSize as number) ?? 0
+  const leaderboard: VisionLeaderboardEntry[] = entries.map((e: Record<string, unknown>) => {
+    const pnl = parseNum(e.pnl)
+    const winRate = parseNum(e.winRate)
+    const roi = parseNum(e.roi)
+    const totalVolume = parseNum(e.totalVolume)
+    const avgPortfolioSize = parseNum(e.avgPortfolioSize)
+    const roundsPlayed = parseNum(e.roundsPlayed)
+    const roundsWon = parseNum(e.roundsWon)
+    const avgCorrectPct = parseNum(e.avgCorrectPct)
 
     return {
       rank: (e.rank as number) ?? 0,
       walletAddress: (e.walletAddress as string) ?? '',
-      pnl: isNaN(pnl) ? 0 : pnl,
-      winRate: isNaN(winRate) ? 0 : winRate,
-      roi: isNaN(roi) ? 0 : roi,
-      totalVolume: isNaN(totalVolume) ? 0 : totalVolume,
+      pnl,
+      winRate,
+      roi,
+      totalVolume,
       portfolioBets: (e.portfolioBets as number) ?? 0,
-      avgPortfolioSize: isNaN(avgPortfolioSize) ? 0 : avgPortfolioSize,
+      avgPortfolioSize,
       largestPortfolio: (e.largestPortfolio as number) ?? 0,
+      // Round-based fields
+      roundsPlayed,
+      roundsWon,
+      avgCorrectPct,
       // Aliases
-      volume: isNaN(totalVolume) ? 0 : totalVolume,
+      volume: totalVolume,
       totalBets: (e.portfolioBets as number) ?? 0,
       maxPortfolioSize: (e.largestPortfolio as number) ?? 0,
     }
@@ -57,16 +79,16 @@ async function fetchVisionLeaderboard(batchId?: number, sourceId?: string): Prom
   }
 }
 
-export function useVisionLeaderboard(batchId?: number, sourceId?: string) {
+export function useVisionLeaderboard(batchId?: number) {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['vision-leaderboard', sourceId ?? batchId],
-    queryFn: () => fetchVisionLeaderboard(batchId, sourceId),
+    queryKey: ['vision-leaderboard', batchId],
+    queryFn: () => fetchVisionLeaderboard(batchId),
     refetchInterval: 5000,
     staleTime: 3000,
   })
 
   return {
-    leaderboard: data?.leaderboard ?? [],
+    leaderboard: (data?.leaderboard ?? []) as VisionLeaderboardEntry[],
     updatedAt: data?.updatedAt ?? null,
     isLoading,
     isError,
