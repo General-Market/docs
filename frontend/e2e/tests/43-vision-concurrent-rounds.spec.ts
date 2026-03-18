@@ -53,8 +53,8 @@ test.describe.serial('Vision Concurrent Rounds', () => {
     round2BatchId = rounds[1].batchId
     expect(round1BatchId).not.toBe(round2BatchId)
 
-    round1ConfigHash = rounds[0].configHash ?? await getBatchConfigHash(round1BatchId)
-    round2ConfigHash = rounds[1].configHash ?? await getBatchConfigHash(round2BatchId)
+    round1ConfigHash = await getBatchConfigHash(round1BatchId)
+    round2ConfigHash = await getBatchConfigHash(round2BatchId)
 
     console.log(`Round A: batchId=${round1BatchId}, Round B: batchId=${round2BatchId}`)
   })

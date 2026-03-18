@@ -89,7 +89,8 @@ test.describe('Vision', () => {
     expect(rounds.length).toBeGreaterThan(0)
     const round = rounds[0]
     const batchId = round.batchId
-    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
+    // Always read configHash from chain — oracle DB may have stale values from prior deploy
+    const configHash = await getBatchConfigHash(batchId)
 
     // 2. Pre-fund players so balance-diff assertions aren't polluted by minting
     const deposit = 10n * 10n ** 18n // 10 USDC (18 dec, L3)

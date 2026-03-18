@@ -39,7 +39,7 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
     expect(rounds.length).toBeGreaterThan(0)
     const round = rounds[0]
     const batchId = round.batchId
-    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
+    const configHash = await getBatchConfigHash(batchId)
 
     // 2. Fund and join with opposite bets
     await impersonateAccount(PLAYER1)

@@ -38,7 +38,7 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     expect(rounds.length).toBeGreaterThan(0)
     const round = rounds[0]
     const batchId = round.batchId
-    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
+    const configHash = await getBatchConfigHash(batchId)
     console.log(`Using round ${batchId}`)
 
     // 2. Fund players

@@ -42,7 +42,7 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     if (rounds.length > 0) {
       const round = rounds[0]
       batchId = round.batchId
-      const configHash = round.configHash ?? await getBatchConfigHash(batchId)
+      const configHash = await getBatchConfigHash(batchId)
       const deposit = 10n * 10n ** 18n
       const stake = 1n * 10n ** 18n
       const marketCount = 10
