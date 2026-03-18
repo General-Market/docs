@@ -440,7 +440,7 @@ cmd_deploy() {
     forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
         --rpc-url "$RPC_URL" \
         --private-key "$DEPLOYER_KEY" \
-        --broadcast \
+        --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price 200000000) \
         > logs/deploy-core.log 2>&1
