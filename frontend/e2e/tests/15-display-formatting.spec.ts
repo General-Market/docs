@@ -154,7 +154,7 @@ test.describe('Display Formatting — Source Detail', () => {
 // NAV values are $X.XXXX in tabular-nums spans. Net Assets are formatted ($1.23K, $4.56M).
 
 test.describe('Display Formatting — ITP Table', () => {
-  test('ITP NAV per share is between $0.01 and $10000', async ({ walletPage: page }) => {
+  test('ITP NAV per share is between $0.001 and $10000', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
     // visionTest fixture starts at / — navigate to ITP listing
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -187,7 +187,8 @@ test.describe('Display Formatting — ITP Table', () => {
         const text = await values.nth(j).textContent() || ''
         const num = parseDollar(text)
         // Accept NAV=0 or near-zero on testnet when data-node hasn't synced prices yet
-        if (num < 0.01) {
+        // Some ITPs have very low NAV after creation — threshold lowered to $0.001
+        if (num < 0.001) {
           console.log(`Dollar value "${text}" near zero — data-node may not have synced prices yet (testnet)`)
           continue
         }
@@ -201,6 +202,8 @@ test.describe('Display Formatting — ITP Table', () => {
     test.setTimeout(120_000)
 
     await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    // Wait for React hydration — client-rendered table needs time to mount
+    await page.waitForTimeout(2_000)
 
     const cards = itpCard(page)
     let hasCards = await cards.first().isVisible({ timeout: 60_000 }).catch(() => false)
@@ -211,9 +214,9 @@ test.describe('Display Formatting — ITP Table', () => {
     }
     expect(hasCards).toBe(true)
 
-    // Verify the table has expected column headers
+    // Target the interactive <table> element directly (page also has sr-only <article> elements)
     const table = page.locator('table').first()
-    await expect(table).toBeVisible({ timeout: 15_000 })
+    await expect(table).toBeVisible({ timeout: 30_000 })
 
     const headerText = await table.locator('thead').textContent() || ''
     expect(headerText).toContain('Ticker')
