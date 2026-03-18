@@ -2,8 +2,8 @@
  * Vision Sources E2E tests.
  *
  * Tests the sources browse page and individual source detail pages.
- * Source cards render from static data (VISION_SOURCES) so these tests
- * don't require backend or chain infrastructure.
+ * Source cards render from dynamic API data (useSourceRegistry) so
+ * tests verify structural elements rather than hardcoded source names.
  */
 import { test, expect } from '@playwright/test'
 import {
@@ -75,7 +75,8 @@ test.describe('Vision Sources — Browse', () => {
     await financePill.click({ force: true })
 
     // Wait for the Finance pill to show active state (re-render started)
-    await expect(financePill).toHaveClass(/font-semibold/, { timeout: 15_000 })
+    // CategoryNav uses font-bold for the active pill
+    await expect(financePill).toHaveClass(/font-bold/, { timeout: 15_000 })
 
     // Wait for re-render — card count should be smaller.
     // Use polling instead of fixed timeout for reliability.
@@ -101,35 +102,37 @@ test.describe('Vision Sources — Browse', () => {
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // CoinGecko should be present (first finance source)
-    await expect(page.getByText('CoinGecko Crypto').first()).toBeVisible()
+    // First card should have a visible h3 (source name)
+    const firstCard = cards.first()
+    await expect(firstCard.locator('h3').first()).toBeVisible()
 
-    // Category badge should show "FINANCE" on the card
-    await expect(page.getByText('FINANCE').first()).toBeVisible()
+    // Category badge should be visible on the card (rendered as uppercase span)
+    // Badge text is dynamic from API — just verify some uppercase badge exists
+    await expect(firstCard.locator('span.uppercase').first()).toBeVisible()
   })
 
-  test('source card has View Source action link', async ({ page }) => {
+  test('source card is a navigable link', async ({ page }) => {
     await page.goto('/')
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // First card should have a "VIEW SOURCE" action link
+    // Each source card is a <Link> (renders as <a>) wrapping the entire card
+    // The [data-testid="source-card"] element itself is the <a> tag
     const firstCard = cards.first()
-    await expect(firstCard.getByRole('link', { name: /view source/i }).first()).toBeVisible()
+    const href = await firstCard.getAttribute('href')
+    expect(href).toBeTruthy()
+    expect(href).toContain('/source/')
   })
 
-  test('clicking View Source navigates to detail page', async ({ page }) => {
+  test('clicking source card navigates to detail page', async ({ page }) => {
     await page.goto('/')
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 15_000 })
 
-    // Click VIEW SOURCE link on first card to navigate to detail
-    const firstCard = cards.first()
-    const viewLink = firstCard.getByRole('link', { name: /view source/i }).first()
-    await expect(viewLink).toBeVisible({ timeout: 5_000 })
-    await viewLink.click()
+    // Click the first source card (the card itself is a link to /source/{id})
+    await cards.first().click()
 
-    // Should navigate to /source/{id} — use networkidle for Next.js client-side routing
+    // Should navigate to /source/{id}
     await page.waitForURL(/\/source\//, { timeout: 60_000, waitUntil: 'domcontentloaded' })
     expect(page.url()).toContain('/source/')
   })

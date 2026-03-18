@@ -117,7 +117,7 @@ async function supplyCollateral(user: string, amount: bigint): Promise<void> {
     const loanPad = LOAN_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const collPad = COLLATERAL_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const oraclePad = ORACLE.replace('0x', '').toLowerCase().padStart(64, '0');
-    const irmPad = morphoDeploy.contracts.ADAPTIVE_IRM.replace('0x', '').toLowerCase().padStart(64, '0');
+    const irmPad = MORPHO_CONTRACTS.ADAPTIVE_IRM.replace('0x', '').toLowerCase().padStart(64, '0');
     const lltvPad = BigInt(LLTV).toString(16).padStart(64, '0');
     const userPad = user.replace('0x', '').toLowerCase().padStart(64, '0');
     const bytesOffset = '100'.padStart(64, '0');
@@ -141,7 +141,7 @@ async function borrow(user: string, amount: bigint): Promise<void> {
     const loanPad = LOAN_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const collPad = COLLATERAL_TOKEN.replace('0x', '').toLowerCase().padStart(64, '0');
     const oraclePad = ORACLE.replace('0x', '').toLowerCase().padStart(64, '0');
-    const irmPad = morphoDeploy.contracts.ADAPTIVE_IRM.replace('0x', '').toLowerCase().padStart(64, '0');
+    const irmPad = MORPHO_CONTRACTS.ADAPTIVE_IRM.replace('0x', '').toLowerCase().padStart(64, '0');
     const lltvPad = BigInt(LLTV).toString(16).padStart(64, '0');
     const amountHex = amount.toString(16).padStart(64, '0');
     const sharesHex = '0'.padStart(64, '0');

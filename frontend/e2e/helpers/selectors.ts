@@ -354,9 +354,9 @@ export function marketsSearchInput(page: Page): Locator {
   return page.locator('input[placeholder="Search markets..."]');
 }
 
-/** Enter Batch panel heading */
+/** Enter Batch panel heading — BatchEntryPanel uses "Set predictions for next tick" */
 export function enterBatchHeading(page: Page): Locator {
-  return page.getByText('Enter Batch', { exact: false }).first();
+  return page.getByText(/Set predictions|Enter Batch/i).first();
 }
 
 /** Enter Batch submit button */
