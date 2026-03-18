@@ -9,6 +9,7 @@ import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 type Mode = 'choose' | 'l3' | 'settlement'
 
@@ -111,8 +112,8 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -291,7 +292,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 <WalletActionButton
                   onClick={handleWithdraw}
                   disabled={!amount || parsedAmount === 0n || insufficientBalance}
-                  className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
                 >
                   {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                 </WalletActionButton>
@@ -309,7 +310,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

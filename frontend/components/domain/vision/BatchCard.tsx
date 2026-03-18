@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { BatchInfo } from '@/hooks/vision/useBatches'
 import { useBatchMetadata } from '@/hooks/vision/useBatchMetadata'
 import { useVisionDeployerName } from '@/hooks/vision/useVisionDeployerName'
+import { SpringCard } from '@/components/ui/spring'
 import { SparklineHeader } from './headers/SparklineHeader'
 import { BarGridHeader } from './headers/BarGridHeader'
 import { HeatmapHeader } from './headers/HeatmapHeader'
@@ -49,7 +50,7 @@ export function BatchCard({ batch, onClick }: BatchCardProps) {
   const thumbnailUrl = metadata?.imageUrl || (ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : null)
 
   return (
-    <div
+    <SpringCard
       data-testid="batch-card"
       onClick={onClick}
       className="bg-card border border-border-light rounded-card p-4 cursor-pointer
@@ -82,6 +83,6 @@ export function BatchCard({ batch, onClick }: BatchCardProps) {
         <span>&middot;</span>
         <span>{t('batch_card.tvl_usdc', { amount: tvlUsdc.toLocaleString() })}</span>
       </div>
-    </div>
+    </SpringCard>
   )
 }

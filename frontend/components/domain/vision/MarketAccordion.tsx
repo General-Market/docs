@@ -5,6 +5,7 @@ import type { BatchInfo } from '@/hooks/vision/useBatches'
 import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 import type { ResolvedMarket } from '@/hooks/vision/useResolvedMarkets'
 import { categorizeMarkets, formatMarketName, type MarketCategory } from '@/lib/vision/market-categories'
+import { SpringExpand } from '@/components/ui/spring'
 
 interface MarketAccordionProps {
   batch: BatchInfo
@@ -113,7 +114,7 @@ export function MarketAccordion({ batch, history, bets, onToggleBet, onBulkBet, 
               onAllUp={() => onBulkBet(cat.markets, true)}
               onAllDown={() => onBulkBet(cat.markets, false)}
             />
-            {isExpanded && (
+            <SpringExpand isOpen={isExpanded}>
               <CategoryContent
                 markets={cat.markets}
                 bets={bets}
@@ -122,7 +123,7 @@ export function MarketAccordion({ batch, history, bets, onToggleBet, onBulkBet, 
                 resolvedMarkets={resolvedMarkets}
                 onToggleBet={onToggleBet}
               />
-            )}
+            </SpringExpand>
           </div>
         )
       })}
@@ -154,7 +155,7 @@ function CategoryBar({
       {/* Main clickable area */}
       <button
         onClick={onToggle}
-        className="flex-1 flex items-center gap-2 px-3 py-2.5 text-left"
+        className="flex-1 flex items-center gap-2 px-3 py-2.5 text-left fluid-press"
       >
         <span className={`text-micro transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''} ${
           isExpanded ? 'text-text-inverse' : 'text-text-muted'
@@ -181,14 +182,14 @@ function CategoryBar({
         <div className="flex items-center gap-1 pr-2">
           <button
             onClick={(e) => { e.stopPropagation(); onAllUp() }}
-            className="px-2 py-1 rounded text-micro font-bold bg-color-up/20 text-white hover:bg-color-up/40 transition-colors"
+            className="px-2 py-1 rounded text-micro font-bold bg-color-up/20 text-white hover:bg-color-up/40 transition-colors fluid-press"
             title={`All ${category.label} UP`}
           >
             {'\u25B2'}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onAllDown() }}
-            className="px-2 py-1 rounded text-micro font-bold bg-color-down/20 text-white hover:bg-color-down/40 transition-colors"
+            className="px-2 py-1 rounded text-micro font-bold bg-color-down/20 text-white hover:bg-color-down/40 transition-colors fluid-press"
             title={`All ${category.label} DOWN`}
           >
             {'\u25BC'}
@@ -243,13 +244,13 @@ function CategoryContent({
             return (
               <tr
                 key={marketId}
-                className="border-t border-border-light hover:bg-surface transition-colors"
+                className="border-t border-border-light hover:bg-surface transition-colors fluid-row"
               >
                 {/* Toggle */}
                 <td className="py-1 px-2">
                   <button
                     onClick={() => onToggleBet(marketId)}
-                    className={`w-7 h-7 rounded text-micro font-bold transition-colors ${
+                    className={`w-7 h-7 rounded text-micro font-bold transition-colors fluid-press ${
                       bet === undefined
                         ? 'bg-muted text-text-muted hover:bg-surface'
                         : isUp

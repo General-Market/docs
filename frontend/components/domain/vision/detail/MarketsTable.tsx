@@ -10,6 +10,7 @@ import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { DATA_NODE_URL } from '@/lib/config'
 import { ConsensusPopup } from './ConsensusPopup'
+import { SpringExpand, SpringRow, SpringPress } from '@/components/ui/spring'
 import {
   LineChart,
   Line,
@@ -24,6 +25,7 @@ import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 interface MarketsTableProps {
   sourceId: string
   bitmapEditor: BitmapEditor
+  isResolving?: boolean
 }
 
 interface PriceHistoryPoint {
@@ -269,7 +271,7 @@ function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSour
 
 // ── Markets Table ──
 
-export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
+export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTableProps) {
   // Source metadata from registry
   const { sources } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
@@ -347,7 +349,6 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
   const [search, setSearch] = useState('')
   const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
-  const [displayLimit, setDisplayLimit] = useState(100)
 
   // Markets come directly from per-source snapshot (already filtered server-side)
   const sourceMarkets: SnapshotPrice[] = data?.prices ?? []
@@ -363,12 +364,8 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
     )
   }, [sourceMarkets, search])
 
-  // Only render a limited number of rows for performance
-  const visibleMarkets = useMemo(
-    () => filteredMarkets.slice(0, displayLimit),
-    [filteredMarkets, displayLimit],
-  )
-  const hasMore = filteredMarkets.length > displayLimit
+  // All rows — content-visibility handles offscreen perf
+  const visibleMarkets = filteredMarkets
 
   const getBetState = (marketId: string): CellState => {
     return bitmapEditor.state[marketId] ?? 'empty'
@@ -402,7 +399,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             type="text"
             placeholder="Search markets..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setDisplayLimit(100) }}
+            onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-1.5 rounded text-caption bg-white/10 border border-white/20 text-white placeholder:text-white/40 outline-none focus:border-white/50 w-[180px]"
           />
         </div>
@@ -434,9 +431,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
           </div>
         )}
 
-        {/* Market rows */}
-        <div className="max-h-[600px] overflow-y-auto">
-          {visibleMarkets.map((market) => {
+        {/* Market rows — tall viewport, content-visibility for offscreen perf */}
+        <div className={`max-h-[calc(100vh-280px)] overflow-y-auto ${isResolving ? 'rows-resolving' : ''}`}>
+          {visibleMarkets.map((market, idx) => {
             const change1d = formatChangePct(market.changePct)
             const vol = formatVolume(market.volume24h)
             const betState = getBetState(market.assetId)
@@ -444,10 +441,19 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
             const resType = resolutionMap.get(market.assetId)
             const consensus = consensusMap.get(market.assetId) ?? []
 
+            // Momentum bar — 24h change as subtle colored background behind price
+            const changePctNum = parseFloat(market.changePct ?? '0')
+            const momentumStyle: React.CSSProperties | undefined = (() => {
+              if (isNaN(changePctNum) || Math.abs(changePctNum) < 0.1) return undefined
+              const w = Math.min(Math.abs(changePctNum), 30) / 30 * 100
+              const c = changePctNum >= 0 ? 'rgba(22,163,74,0.06)' : 'rgba(220,38,38,0.06)'
+              return { background: `linear-gradient(to ${changePctNum >= 0 ? 'right' : 'left'}, ${c} ${w}%, transparent ${w}%)` }
+            })()
+
             return (
-              <div key={market.assetId}>
-                <div
-                  className={`grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
+              <div key={market.assetId} data-row className={isExpanded ? '' : 'cv-row'} style={{ '--row-i': idx } as React.CSSProperties}>
+                <SpringRow
+                  className={`grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -476,8 +482,8 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     {resolutionBadge(resType)}
                   </div>
 
-                  {/* Value */}
-                  <div className="text-right font-mono tabular-nums text-black font-semibold">
+                  {/* Value — momentum bar behind price */}
+                  <div className="text-right font-mono tabular-nums text-black font-semibold" style={momentumStyle}>
                     {formatPrice(market.value, isPriceSource)}
                   </div>
 
@@ -525,46 +531,38 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
 
                   {/* Bet UP/DN */}
                   <div className="flex items-center justify-center gap-1.5">
-                    <button
+                    <SpringPress><button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'up') }}
-                      className={`px-2.5 py-1 rounded text-micro font-bold uppercase transition-all ${
+                      className={`px-2.5 py-1 rounded text-micro font-bold uppercase transition-colors ${
                         betState === 'up'
                           ? 'bg-green-600 text-white shadow-sm'
                           : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
                       }`}
                     >
                       UP
-                    </button>
-                    <button
+                    </button></SpringPress>
+                    <SpringPress><button
                       onClick={(e) => { e.stopPropagation(); handleBet(market.assetId, 'down') }}
-                      className={`px-2.5 py-1 rounded text-micro font-bold uppercase transition-all ${
+                      className={`px-2.5 py-1 rounded text-micro font-bold uppercase transition-colors ${
                         betState === 'down'
                           ? 'bg-red-600 text-white shadow-sm'
                           : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                       }`}
                     >
                       DN
-                    </button>
+                    </button></SpringPress>
                   </div>
-                </div>
+                </SpringRow>
 
                 {/* Expanded history chart */}
-                {isExpanded && (
+                <SpringExpand isOpen={isExpanded}>
                   <div className="border-b border-border-light">
                     <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} tickHistory={tickHistory ?? []} />
                   </div>
-                )}
+                </SpringExpand>
               </div>
             )
           })}
-          {hasMore && (
-            <button
-              onClick={() => setDisplayLimit((l) => l + 200)}
-              className="w-full py-3 text-caption font-bold text-text-muted hover:text-black hover:bg-surface/50 transition-colors border-t border-border-light cursor-pointer"
-            >
-              Show more ({filteredMarkets.length - displayLimit} remaining)
-            </button>
-          )}
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, SETTLEMENT_RPC_URL as SETTLEMENT_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 const L3_INDEX = INDEX_PROTOCOL.index
 
@@ -492,8 +493,8 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
   const isWorking = status === 'requesting' || status === 'confirming' || status === 'executing'
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal
         className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
@@ -670,7 +671,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
                 <WalletActionButton
                   onClick={handleRebalance}
                   disabled={!isValid || isWorking || status === 'success'}
-                  className="flex-1 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-zinc-900 text-white font-medium rounded-lg text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed fluid-press"
                 >
                   {status === 'requesting' ? t('rebalance.button.waiting_wallet')
                     : status === 'confirming' ? t('rebalance.button.confirming')
@@ -690,7 +691,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
             </>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

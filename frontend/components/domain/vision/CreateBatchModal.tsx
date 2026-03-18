@@ -9,6 +9,7 @@ import { useCreateBatch } from '@/hooks/vision/useCreateBatch'
 import { useSetBatchMetadata } from '@/hooks/vision/useSetBatchMetadata'
 import { useSetDeployerName } from '@/hooks/vision/useSetDeployerName'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 // Maps to IVision.ResolutionType enum (see resolver.rs for full logic)
 const RESOLUTION_TYPES = [
@@ -402,8 +403,8 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal
         className="bg-card border border-border-light rounded-xl shadow-modal max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -561,7 +562,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                     <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3 block">
                       Tick Duration
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 fluid-btn-group">
                       {TICK_DURATIONS.map((td) => (
                         <button
                           key={td.value}
@@ -721,7 +722,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                       <WalletActionButton
                         onClick={handleSubmit}
                         disabled={isPending || isConfirming}
-                        className="w-full py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full py-3 bg-terminal text-text-inverse font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed fluid-press"
                       >
                         {isPending
                           ? t('create_modal.step_confirm.button.waiting')
@@ -811,7 +812,7 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

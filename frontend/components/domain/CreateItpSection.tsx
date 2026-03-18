@@ -14,6 +14,7 @@ import { DATA_NODE_URL } from '@/lib/config'
 import { useDeployerName } from '@/hooks/useDeployerName'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { SpringCard, SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 interface CoinEntry { id: string; image: string }
 
@@ -428,15 +429,17 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
 
       {/* Collapsed toggle button */}
       {!expanded && (
-        <button
-          onClick={onToggle}
-          className="w-full bg-card rounded-xl shadow-card border border-border-light p-4 hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
-        >
-          <div>
-            <span className="text-sm text-text-secondary">{t('collapsed.description')}</span>
-          </div>
-          <span className="text-text-muted text-2xl">+</span>
-        </button>
+        <SpringCard className="w-full bg-card rounded-xl shadow-card border border-border-light p-4">
+          <button
+            onClick={onToggle}
+            className="w-full hover:shadow-card-hover cursor-pointer text-left flex justify-between items-center"
+          >
+            <div>
+              <span className="text-sm text-text-secondary">{t('collapsed.description')}</span>
+            </div>
+            <span className="text-text-muted text-2xl">+</span>
+          </button>
+        </SpringCard>
       )}
 
       {expanded && (
@@ -452,12 +455,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
             </button>
           </div>
 
-          {!isConnected ? (
-            <div className="border border-border-light p-5">
-              <CreateSkeleton coinMap={coinMap} />
-            </div>
-          ) : (
-            <div className="space-y-4">
+          <div className="space-y-4">
               {/* Two-column: Select Assets | Configure Weights */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
@@ -637,7 +635,6 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
                 </div>
               )}
             </div>
-          )}
         </div>
       )}
 
@@ -704,10 +701,10 @@ function FinalizeItpModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <SpringBackdrop className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-border-light">
           <div>
@@ -814,12 +811,12 @@ function FinalizeItpModal({
           <WalletActionButton
             onClick={onSubmit}
             disabled={!isValidForm || isPending || isConfirming || isFetchingPrices || hasNonceGap}
-            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="bg-zinc-900 text-white font-medium rounded-lg px-6 py-2.5 hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
           >
             {isFetchingPrices ? t('finalize.submit_fetching') : isPending ? t('finalize.submit_pending') : isConfirming ? t('finalize.submit_confirming') : t('finalize.submit_deploy')}
           </WalletActionButton>
         </div>
-      </div>
+      </SpringModal>
     </div>
   )
 }

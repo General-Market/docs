@@ -8,6 +8,7 @@ import { useDeposit } from '@/hooks/vision/useDeposit'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 interface DepositModalProps {
   batchId: number
@@ -70,8 +71,8 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -166,7 +167,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               <WalletActionButton
                 onClick={handleDeposit}
                 disabled={!amount || parsedAmount === 0n || insufficientBalance || isProcessing}
-                className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
               >
                 {buttonText}
               </WalletActionButton>
@@ -183,7 +184,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

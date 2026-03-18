@@ -23,8 +23,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         className={cn(
           'inline-flex items-center justify-center h-10 px-4',
-          'text-sm font-semibold transition-all duration-150',
-          'active:scale-[0.97]',
+          'text-sm font-semibold transition-colors duration-150',
+          'fluid-press',
           'focus:outline-none focus:ring-1 focus:ring-zinc-400',
           'disabled:pointer-events-none disabled:opacity-50',
           variantClasses[variant],

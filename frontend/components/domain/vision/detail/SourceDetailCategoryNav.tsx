@@ -44,7 +44,7 @@ export function SourceDetailCategoryNav({ sourceCategory }: SourceDetailCategory
               <Link
                 key={p.key}
                 href="/"
-                className={`shrink-0 px-4 py-2 text-caption font-medium rounded transition-all whitespace-nowrap ${
+                className={`shrink-0 px-4 py-2 text-caption font-medium rounded transition-all whitespace-nowrap fluid-press ${
                   isActive
                     ? 'text-black bg-surface font-semibold'
                     : 'text-text-secondary hover:text-black hover:bg-surface'

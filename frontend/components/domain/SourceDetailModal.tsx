@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
   Table,
@@ -700,11 +701,11 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
   const valueLabel = getValueLabel(sourceId)
 
   return (
-    <div
+    <SpringBackdrop
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-[5vh] overflow-y-auto"
       onClick={onClose}
     >
-      <div
+      <SpringModal
         className="bg-card border border-border-light rounded-xl shadow-modal max-w-5xl w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
@@ -928,7 +929,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

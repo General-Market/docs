@@ -15,6 +15,7 @@ import { useLendingQuote } from '@/hooks/useLendingQuote'
 import type { CrisisLevel } from '@/lib/types/lending-quote'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 interface ItpInfo {
   id: string
@@ -77,8 +78,8 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
   if (!isOpen || !market) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal
         className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
@@ -158,7 +159,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
             </ErrorBoundary>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

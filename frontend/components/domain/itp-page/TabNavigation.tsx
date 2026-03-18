@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { SpringTabs, SpringTab } from '@/components/ui/spring'
 import type { SectionId, ItpPageConfig } from '@/lib/itp-page-config'
 import type { SectionProps } from './SectionRenderer'
 import { KeyStatsBar } from './sections/KeyStatsBar'
@@ -58,7 +59,9 @@ interface Props {
 
 export function TabNavigation({ config, sectionProps }: Props) {
   const [activeAnchor, setActiveAnchor] = useState('overview')
+  const [scrollProg, setScrollProg] = useState(0)
   const navRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const allSections = getAllSections(config)
 
@@ -83,49 +86,95 @@ export function TabNavigation({ config, sectionProps }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  const scrollTo = (id: string) => {
+  // Scroll progress bar
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect()
+        const top = -rect.top
+        const total = rect.height - window.innerHeight
+        setScrollProg(total > 0 ? Math.max(0, Math.min(1, top / total)) : 0)
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Section reveal via IntersectionObserver on data-fade-in elements
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const targets = el.querySelectorAll('[data-fade-in]')
+    if (targets.length === 0) return
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible')
+          obs.unobserve(e.target)
+        }
+      })
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' })
+    targets.forEach(t => obs.observe(t))
+    return () => obs.disconnect()
+  }, [allSections.length])
+
+  const scrollTo = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  }, [])
 
   return (
     <>
-      {/* Sticky anchor nav */}
+      {/* Sticky anchor nav with progress bar */}
       <div ref={navRef} className="sticky top-16 z-10 bg-white border-b border-border-light mb-8">
-        <div role="navigation" aria-label="Page sections" className="flex gap-0 overflow-x-auto">
+        {/* Scroll progress */}
+        <div
+          className="absolute top-0 left-0 h-[2px] bg-black"
+          style={{
+            width: `${scrollProg * 100}%`,
+            transition: 'width 80ms linear',
+          }}
+        />
+        <SpringTabs className="flex gap-0 overflow-x-auto">
           {NAV_ITEMS.map(item => (
-            <button
+            <SpringTab
               key={item.id}
+              isActive={activeAnchor === item.id}
               onClick={() => scrollTo(item.id)}
-              className={`px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary ${
-                activeAnchor === item.id
-                  ? 'border-b-2 border-text-primary text-text-primary'
-                  : 'text-text-muted hover:text-text-secondary'
-              }`}
+              className="px-6 py-3 text-sm font-semibold whitespace-nowrap transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-text-primary"
+              layoutId="itp-tab-indicator"
             >
               {item.label}
-            </button>
+            </SpringTab>
           ))}
-        </div>
+        </SpringTabs>
       </div>
 
-      {/* All sections rendered in scroll order */}
-      {(() => {
-        let lastAnchor = ''
-        return allSections.map(({ sectionId, anchorId }, i) => {
-          const Section = REGISTRY[sectionId]
-          if (!Section) return null
-          // Place anchor id on first section of each group
-          const showAnchor = anchorId !== lastAnchor
-          lastAnchor = anchorId
-          return (
-            <div key={sectionId}>
-              {i > 0 && <hr className="border-border-light my-8" />}
-              {showAnchor && <div id={anchorId} className="scroll-mt-32" />}
-              <Section {...sectionProps} />
-            </div>
-          )
-        })
-      })()}
+      {/* All sections rendered in scroll order — each reveals on scroll */}
+      <div ref={contentRef}>
+        {(() => {
+          let lastAnchor = ''
+          return allSections.map(({ sectionId, anchorId }, i) => {
+            const Section = REGISTRY[sectionId]
+            if (!Section) return null
+            const showAnchor = anchorId !== lastAnchor
+            lastAnchor = anchorId
+            return (
+              <div key={sectionId} data-fade-in style={{ '--stagger-delay': 0 } as React.CSSProperties}>
+                {i > 0 && <hr className="border-border-light my-8" />}
+                {showAnchor && <div id={anchorId} className="scroll-mt-32" />}
+                <Section {...sectionProps} />
+              </div>
+            )
+          })
+        })()}
+      </div>
     </>
   )
 }

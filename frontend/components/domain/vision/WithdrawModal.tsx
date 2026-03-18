@@ -11,6 +11,7 @@ import { indexL3 } from '@/lib/wagmi'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 type Mode = 'choose' | 'withdraw' | 'claim'
 
@@ -152,8 +153,8 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -267,7 +268,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                   <WalletActionButton
                     onClick={handleWithdraw}
                     disabled={onChainBalance === 0n}
-                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
                   >
                     {t('withdraw_modal.withdraw_all')}
                   </WalletActionButton>
@@ -281,7 +282,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                   <WalletActionButton
                     onClick={handleClaim}
                     disabled={onChainBalance === 0n}
-                    className="w-full py-4 bg-muted text-text-primary font-medium rounded-lg border border-border-light hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="w-full py-4 bg-muted text-text-primary font-medium rounded-lg border border-border-light hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors fluid-press"
                   >
                     {t('withdraw_modal.claim_rewards')}
                   </WalletActionButton>
@@ -303,7 +304,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

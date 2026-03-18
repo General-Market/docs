@@ -913,7 +913,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       <div className="flex flex-wrap gap-4 items-center justify-between pt-2 border-t border-border-light">
         <div>
           <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
-          <div className="flex flex-wrap gap-y-1">
+          <div className="flex flex-wrap gap-y-1 fluid-btn-group">
             {SWEEP_OPTIONS.map(s => (
               <button
                 key={s}
@@ -930,7 +930,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           </div>
         </div>
         <button
-          className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed fluid-press ${
             isLoading
               ? 'bg-muted text-text-secondary hover:bg-border-light'
               : 'bg-zinc-900 text-white hover:bg-zinc-800'

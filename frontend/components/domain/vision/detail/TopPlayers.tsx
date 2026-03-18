@@ -1,6 +1,7 @@
 'use client'
 
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
+import { SpringRow } from '@/components/ui/spring'
 
 function truncateAddress(address: string): string {
   if (!address || address.length < 12) return address || '--'
@@ -61,7 +62,7 @@ export function TopPlayers({ batchId }: { batchId?: number }) {
         {top5.map((player, i) => {
           const pnl = formatPnl(player.pnl)
           return (
-            <div
+            <SpringRow
               key={player.walletAddress}
               className={`grid grid-cols-[36px_1fr_60px_70px_80px_90px] items-center px-4 py-2.5 border-b border-border-light text-[13px] ${
                 i % 2 === 1 ? 'bg-surface/40' : ''
@@ -85,7 +86,7 @@ export function TopPlayers({ batchId }: { batchId?: number }) {
               <div className={`text-right font-mono tabular-nums font-semibold ${pnl.color}`}>
                 {pnl.text}
               </div>
-            </div>
+            </SpringRow>
           )
         })}
       </div>

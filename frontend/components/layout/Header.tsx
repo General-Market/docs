@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Link, usePathname } from '@/i18n/routing'
+import { Link, usePathname, useRouter } from '@/i18n/routing'
+import { SpringTabs, SpringTab } from '@/components/ui/spring'
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useReadContract } from 'wagmi'
 import { truncateAddress } from '@/lib/utils/address'
 import { indexL3 } from '@/lib/wagmi'
@@ -13,6 +14,7 @@ import { VisionBalanceBar } from '@/components/domain/vision/VisionBalanceBar'
 
 export function Header() {
   const t = useTranslations('common')
+  const router = useRouter()
   const pathname = usePathname()
   const isVision = pathname === '/' || pathname.startsWith('/source/') || pathname === '/points'
   const isLearn = pathname.startsWith('/learn')
@@ -156,26 +158,28 @@ export function Header() {
 
             {/* Page Tabs */}
             <nav className="hidden sm:flex items-center gap-0">
-              <Link
-                href="/index"
-                className={`px-6 py-5 text-body font-semibold transition-all duration-200 border-b-[3px] ${
-                  !isVision
-                    ? 'text-black border-brand font-bold'
-                    : 'text-text-secondary border-transparent hover:text-black hover:border-border-medium'
-                }`}
-              >
-                {t('nav.investment')}
-              </Link>
-              <Link
-                href="/"
-                className={`px-6 py-5 text-body font-semibold transition-all duration-200 border-b-[3px] ${
-                  isVision
-                    ? 'text-black border-brand font-bold'
-                    : 'text-text-secondary border-transparent hover:text-black hover:border-border-medium'
-                }`}
-              >
-                {t('nav.vision')}
-              </Link>
+              <SpringTabs className="flex items-center gap-0">
+                <SpringTab
+                  isActive={!isVision}
+                  onClick={() => router.push('/index')}
+                  className="px-6 py-5 text-body font-semibold transition-all duration-200"
+                  activeClass="text-black font-bold"
+                  inactiveClass="text-text-secondary hover:text-black"
+                  layoutId="header-tab-indicator"
+                >
+                  {t('nav.investment')}
+                </SpringTab>
+                <SpringTab
+                  isActive={isVision}
+                  onClick={() => router.push('/')}
+                  className="px-6 py-5 text-body font-semibold transition-all duration-200"
+                  activeClass="text-black font-bold"
+                  inactiveClass="text-text-secondary hover:text-black"
+                  layoutId="header-tab-indicator"
+                >
+                  {t('nav.vision')}
+                </SpringTab>
+              </SpringTabs>
               <div className="ml-4 hidden lg:flex items-center gap-3">
                 <Link href="/explorer" className="text-caption text-text-secondary hover:text-black transition-all duration-200 hover:font-semibold">{t('nav.explorer')}</Link>
                 <Link href="/points" className="text-caption text-text-secondary hover:text-black transition-all duration-200 hover:font-semibold">{t('nav.points')}</Link>
@@ -212,7 +216,7 @@ export function Header() {
                   {/* Wallet address */}
                   <button
                     onClick={handleLogout}
-                    className="group px-2 sm:px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-md transition-all duration-200 hover:bg-surface-down hover:border-color-down/30 hover:text-color-down hover:shadow-sm"
+                    className="group px-2 sm:px-3 py-2 bg-muted border border-border-medium text-text-primary text-sm font-mono rounded-md transition-all duration-200 hover:bg-surface-down hover:border-color-down/30 hover:text-color-down hover:shadow-sm fluid-press"
                   >
                     <span className="group-hover:hidden">{truncateAddress(address)}</span>
                     <span className="hidden group-hover:inline">{t('actions.disconnect')}</span>
@@ -222,14 +226,14 @@ export function Header() {
                 <button
                   onClick={() => switchChain({ chainId: indexL3.id })}
                   disabled={isSwitching}
-                  className="px-3 sm:px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-md hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50"
+                  className="px-3 sm:px-4 py-2 bg-surface-warning border border-color-warning/30 text-color-warning text-sm font-medium rounded-md hover:bg-color-warning hover:text-white transition-colors disabled:opacity-50 fluid-press"
                 >
                   {isSwitching ? t('wallet.switching') : t('wallet.switch_network')}
                 </button>
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="inline-flex items-center px-3 sm:px-4 py-2 bg-brand text-white text-sm font-medium rounded-md hover:bg-brand-dark transition-colors"
+                  className="inline-flex items-center px-3 sm:px-4 py-2 bg-brand text-white text-sm font-medium rounded-md hover:bg-brand-dark transition-colors fluid-press"
                 >
                   {t('wallet.login')}
                 </button>

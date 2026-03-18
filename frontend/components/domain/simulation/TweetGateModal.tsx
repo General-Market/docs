@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 import { exportChartAsImage, downloadBlob } from '@/lib/chartExport'
 import { getTweetText, buildTweetIntentUrl } from '@/lib/tweetTemplates'
 import { useToast } from '@/lib/contexts/ToastContext'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 interface TweetGateModalProps {
   onClose: () => void
@@ -114,11 +115,11 @@ export default function TweetGateModal({
   const canConfirm = tweetOpened && countdown <= 0 && !unlocking
 
   return (
-    <div
+    <SpringBackdrop
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
-      <div
+      <SpringModal
         className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full"
         onClick={(e) => e.stopPropagation()}
       >
@@ -195,7 +196,7 @@ export default function TweetGateModal({
             </>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

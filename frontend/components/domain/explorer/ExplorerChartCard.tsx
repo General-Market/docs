@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { SpringCard } from '@/components/ui/spring'
 
 interface ExplorerChartCardProps {
   title: string
@@ -12,7 +13,7 @@ interface ExplorerChartCardProps {
 
 export function ExplorerChartCard({ title, subtitle, loading, children, className = '' }: ExplorerChartCardProps) {
   return (
-    <div className={`bg-white border border-border-light rounded-card p-5 ${className}`}>
+    <SpringCard className={`bg-white border border-border-light rounded-card p-5 ${className}`}>
       <div className="mb-4">
         <h3 className="text-body font-bold text-black leading-tight">{title}</h3>
         {subtitle && (
@@ -26,6 +27,6 @@ export function ExplorerChartCard({ title, subtitle, loading, children, classNam
       ) : (
         <div className="h-[200px]">{children}</div>
       )}
-    </div>
+    </SpringCard>
   )
 }

@@ -16,6 +16,7 @@ import { indexL3 } from '@/lib/wagmi'
 import type { BetDirection } from '@/lib/vision/bitmap'
 import { getBatchTickState } from '@/lib/vision/tick'
 import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
+import { SpringPress } from '@/components/ui/spring'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
 import { WithdrawModal } from '../WithdrawModal'
@@ -356,7 +357,7 @@ export default function BatchEntryPanel({
               USDC
             </span>
           </div>
-          <div className="flex gap-1 mt-1.5">
+          <div className="flex gap-1 mt-1.5 fluid-btn-group">
             {quickAmounts.map((amt) => (
               <button
                 key={amt}
@@ -421,13 +422,15 @@ export default function BatchEntryPanel({
         )}
 
         {/* Enter batch button — connects wallet when not connected */}
-        <WalletActionButton
-          onClick={handleEnterBatch}
-          disabled={!canSubmit || isProcessing}
-          className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
-        >
-          {buttonLabel}
-        </WalletActionButton>
+        <SpringPress disabled={!canSubmit || isProcessing}>
+          <WalletActionButton
+            onClick={handleEnterBatch}
+            disabled={!canSubmit || isProcessing}
+            className="w-full rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors"
+          >
+            {buttonLabel}
+          </WalletActionButton>
+        </SpringPress>
 
         {/* Batch info footer */}
         {activeBatch && (

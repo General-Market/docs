@@ -11,6 +11,7 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { indexL3, settlementChain } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 const ERC20_BALANCE_ABI = [{
   name: 'balanceOf', type: 'function', stateMutability: 'view',
@@ -154,8 +155,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   })()
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
@@ -396,7 +397,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <WalletActionButton
                   onClick={handleDeposit}
                   disabled={!amount || parsedAmount === 0n}
-                  className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                  className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
                 >
                   {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Settlement'}
                 </WalletActionButton>
@@ -414,7 +415,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

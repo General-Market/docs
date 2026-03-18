@@ -18,6 +18,7 @@ import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import { indexL3 } from '@/lib/wagmi'
 
 /**
@@ -463,8 +464,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
-      <div className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
+      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
@@ -611,7 +612,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   {showSlippage && (
                     <div className="bg-muted border border-border-light rounded-xl p-4">
                       <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 fluid-btn-group">
                         {SLIPPAGE_TIERS.map(tier => (
                           <button
                             key={tier.value}
@@ -669,7 +670,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   <WalletActionButton
                     onClick={handleSell}
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming}
-                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
                   >
                     {buttonText}
                   </WalletActionButton>
@@ -701,7 +702,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }

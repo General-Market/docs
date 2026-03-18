@@ -19,6 +19,7 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import itpIdNames from '@/lib/itp-id-names.json'
 import Link from 'next/link'
 
@@ -72,8 +73,8 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div
+    <SpringBackdrop className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <SpringModal
         className="bg-white border border-border-light rounded-md max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-modal relative"
         onClick={e => e.stopPropagation()}
       >
@@ -81,8 +82,8 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
           <button onClick={onClose} className="absolute top-4 right-4 text-text-muted hover:text-text-primary text-2xl">&times;</button>
           {lendContent}
         </div>
-      </div>
-    </div>
+      </SpringModal>
+    </SpringBackdrop>
   )
 }
 

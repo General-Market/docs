@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import type { SectionProps } from '../SectionRenderer'
 
@@ -36,6 +36,17 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [tableRevealed, setTableRevealed] = useState(false)
+  const tableRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = tableRef.current; if (!el) return
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setTableRevealed(true); obs.disconnect() }
+    }, { threshold: 0.05 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return holdings
@@ -102,7 +113,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
 
   const SortHeader = ({ k, children, align, className: cx }: { k: SortKey; children: React.ReactNode; align?: string; className?: string }) => (
     <th
-      className={`px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'} ${cx || ''}`}
+      className={`px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none fluid-press ${align || 'text-left'} ${cx || ''}`}
       onClick={() => toggleSort(k)}
     >
       <span className="inline-flex items-center gap-1">
@@ -128,7 +139,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div ref={tableRef} className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface border-b border-border-light">
             <tr>
@@ -145,8 +156,15 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
             </tr>
           </thead>
           <tbody>
-            {paged.map((h) => (
-              <tr key={h.symbol} className="border-b border-border-light hover:bg-surface transition-colors">
+            {paged.map((h, rowIdx) => (
+              <tr
+                key={h.symbol}
+                className="border-b border-border-light fluid-row animate-row-in"
+                style={{
+                  '--row-i': rowIdx,
+                  animationPlayState: tableRevealed ? 'running' : 'paused',
+                } as React.CSSProperties}
+              >
                 <td className="px-3 py-2.5 text-text-muted font-mono text-xs">{h.rank}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2.5">
@@ -226,7 +244,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
                 <button
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
-                  className={`w-7 h-7 text-xs font-semibold rounded transition-colors ${
+                  className={`w-7 h-7 text-xs font-semibold rounded transition-colors fluid-press ${
                     clampedPage === pageNum
                       ? 'bg-text-primary text-text-inverse'
                       : 'text-text-secondary hover:bg-muted'

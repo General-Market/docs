@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
+import { SpringModal } from '@/components/ui/spring'
 
 interface ConsensusPopupProps {
   marketId: string
@@ -36,7 +37,7 @@ export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
   }, [onClose])
 
   return (
-    <div
+    <SpringModal
       ref={ref}
       className="absolute z-50 top-full left-0 mt-1 bg-white border border-border-light rounded-lg shadow-lg p-3 w-[220px]"
     >
@@ -67,6 +68,6 @@ export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
           </div>
         ))}
       </div>
-    </div>
+    </SpringModal>
   )
 }

@@ -14,7 +14,7 @@ export function FilterPill({ label, active = false, onClick, className }: Filter
     <button
       onClick={onClick}
       className={cn(
-        'filter-pill',
+        'filter-pill fluid-press',
         active && 'active',
         className
       )}

@@ -18,6 +18,7 @@ import {
 import { Tooltip } from '@/components/ui/Tooltip'
 import { ConnectionStatusIndicator } from '@/components/ui/ConnectionStatusIndicator'
 import { AnimatedLeaderboardRow } from '@/components/domain/AnimatedLeaderboardRow'
+import { SpringHover } from '@/components/ui/spring'
 import { formatRelativeTime } from '@/lib/utils/time'
 import {
   formatWalletAddress,
@@ -40,44 +41,46 @@ function MobileAgentCard({ agent, onClick, isHighlighted }: {
     : `#${agent.rank}`
 
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3 border-b border-border-light hover:bg-surface transition-colors hover-lift ${
-        isHighlighted ? 'bg-muted shadow-[0_0_15px_rgba(196,0,0,0.5)]' : ''
-      } ${agent.rank <= 3 ? 'bg-muted/40 border-l-2 border-l-brand font-semibold' : ''}`}
-    >
-      {/* Row 1: Rank + Wallet + ROI */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-bold tabular-nums shrink-0 w-8">
-            {rankDisplay}
-          </span>
-          <span className="font-mono text-sm text-text-primary truncate">
-            {formatWalletAddress(agent.walletAddress)}
+    <SpringHover className={`border-b border-border-light ${
+      isHighlighted ? 'bg-muted shadow-[0_0_15px_rgba(196,0,0,0.5)]' : ''
+    } ${agent.rank <= 3 ? 'bg-muted/40 border-l-2 border-l-brand font-semibold' : ''}`}>
+      <button
+        onClick={onClick}
+        className="w-full text-left px-4 py-3 hover:bg-surface transition-colors"
+      >
+        {/* Row 1: Rank + Wallet + ROI */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-bold tabular-nums shrink-0 w-8">
+              {rankDisplay}
+            </span>
+            <span className="font-mono text-sm text-text-primary truncate">
+              {formatWalletAddress(agent.walletAddress)}
+            </span>
+          </div>
+          <span className={`font-mono text-sm font-bold tabular-nums shrink-0 ${roiColor}`}>
+            {formatROI(agent.roi)}
           </span>
         </div>
-        <span className={`font-mono text-sm font-bold tabular-nums shrink-0 ${roiColor}`}>
-          {formatROI(agent.roi)}
-        </span>
-      </div>
-      {/* Row 2: Secondary stats */}
-      <div className="flex items-center gap-4 mt-1.5 text-xs text-text-muted">
-        <span className="font-mono">
-          {formatPortfolioSize(agent.maxPortfolioSize)} max
-        </span>
-        <span className="font-mono">
-          {(agent.totalBets ?? 0).toLocaleString()} bets
-        </span>
-        <span className="font-mono">
-          {formatVolume(agent.volume)}
-        </span>
-        {agent.lastActiveAt && (
-          <span className="ml-auto">
-            {formatRelativeTime(agent.lastActiveAt)}
+        {/* Row 2: Secondary stats */}
+        <div className="flex items-center gap-4 mt-1.5 text-xs text-text-muted">
+          <span className="font-mono">
+            {formatPortfolioSize(agent.maxPortfolioSize)} max
           </span>
-        )}
-      </div>
-    </button>
+          <span className="font-mono">
+            {(agent.totalBets ?? 0).toLocaleString()} bets
+          </span>
+          <span className="font-mono">
+            {formatVolume(agent.volume)}
+          </span>
+          {agent.lastActiveAt && (
+            <span className="ml-auto">
+              {formatRelativeTime(agent.lastActiveAt)}
+            </span>
+          )}
+        </div>
+      </button>
+    </SpringHover>
   )
 }
 

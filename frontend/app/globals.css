@@ -396,12 +396,6 @@ input[type="number"] {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
 }
-.press {
-  transition: transform var(--dur-instant) var(--ease-out);
-}
-.press:active {
-  transform: scale(0.96);
-}
 
 /* ── SMOOTH COLLAPSE ── */
 .collapse-grid {
@@ -449,6 +443,61 @@ input[type="number"] {
   0% { transform: scale(0); opacity: 0.9; }
   70% { opacity: 0.3; }
   100% { transform: scale(1); opacity: 0; }
+}
+
+/* ── TICK PULSE SYSTEM — page breathes with the countdown ── */
+@keyframes tick-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--tick-glow-color, transparent); }
+  50% { box-shadow: 0 0 var(--tick-glow-size, 8px) 2px var(--tick-glow-color, transparent); }
+}
+@keyframes tick-throb {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes tick-resolve-bar {
+  0% { box-shadow: inset 0 0 40px -6px rgba(22, 163, 74, 0.18); }
+  100% { box-shadow: none; }
+}
+@keyframes row-resolve {
+  0% { background-color: rgba(22, 163, 74, 0.05); }
+  100% { background-color: transparent; }
+}
+.tick-progress { transition: background-color 0.8s var(--ease-out); }
+.tick-progress-urgent {
+  background-color: #ca8a04 !important;
+  --tick-glow-color: rgba(202, 138, 4, 0.35);
+  --tick-glow-size: 8px;
+  animation: tick-glow 2s ease-in-out infinite;
+}
+.tick-progress-critical {
+  background-color: #dc2626 !important;
+  --tick-glow-color: rgba(220, 38, 38, 0.45);
+  --tick-glow-size: 12px;
+  animation: tick-glow 0.8s ease-in-out infinite;
+}
+.tick-timer-urgent { color: #ca8a04 !important; }
+.tick-timer-critical { color: #dc2626 !important; animation: tick-throb 1s ease-in-out infinite; }
+.batch-bar-urgent { box-shadow: inset 0 -2px 24px -8px rgba(202, 138, 4, 0.1); }
+.batch-bar-critical { box-shadow: inset 0 -2px 30px -8px rgba(220, 38, 38, 0.12); }
+.tick-resolved { animation: tick-resolve-bar 1.5s var(--ease-out) both; }
+.rows-resolving > [data-row] {
+  animation: row-resolve 0.6s var(--ease-out) both;
+  animation-delay: calc(var(--row-i, 0) * 20ms);
+}
+
+/* ── VIEW TRANSITIONS — source card morphs into detail hero ── */
+@supports (view-transition-name: test) {
+  ::view-transition-old(source-brand),
+  ::view-transition-new(source-brand) {
+    animation-duration: 0.4s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ── CONTENT VISIBILITY — lazy render offscreen table rows ── */
+.cv-row {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 44px;
 }
 
 /* ── SOURCE CARD CASCADE — IO-triggered entrance with diagonal stagger ── */
@@ -518,6 +567,11 @@ input[type="number"] {
   .animate-done-ring { animation: none; }
   .animate-checkmark-draw { animation: none; stroke-dashoffset: 0; }
   .geo-pulse-container svg circle { animation: none !important; opacity: 0.15; transform: scale(0.5); }
+  .tick-progress-urgent, .tick-progress-critical { animation: none !important; box-shadow: none !important; }
+  .tick-timer-critical { animation: none !important; opacity: 1 !important; }
+  .tick-resolved { animation: none !important; box-shadow: none !important; }
+  .rows-resolving > [data-row] { animation: none !important; }
+  .cv-row { content-visibility: visible; }
 }
 
 /* ── INPUT FOCUS ── */
@@ -530,25 +584,6 @@ input[type="number"] {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 
-/* ── TAB INDICATOR ── */
-.tab-underline {
-  position: relative;
-}
-.tab-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #000;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--dur-normal) var(--ease-out-expo);
-}
-.tab-underline.active::after {
-  transform: scaleX(1);
-}
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -559,9 +594,16 @@ input[type="number"] {
   }
   [data-fade-in] { opacity: 1 !important; transform: none !important; }
   .hover-lift:hover { transform: none; box-shadow: none; }
-  .press:active { transform: none; }
   .collapse-grid { transition: none; }
   tr[data-wallet] { will-change: auto; }
+  .fluid-press:active, .fluid-lift:hover, .fluid-lift:active,
+  .fluid-row:hover, .fluid-card:hover, .fluid-card:active { transform: none !important; box-shadow: none !important; }
+  .fluid-tab::after { transition: none !important; }
+  .fluid-expand, .fluid-accordion { transition: none !important; }
+  .fluid-expand.is-open, .fluid-accordion.is-open { grid-template-rows: 1fr; opacity: 1; }
+  .fluid-number-changed { animation: none !important; }
+  .fluid-modal-in, .fluid-backdrop-in, .fluid-drawer-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .animate-fluid-page-in { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
 
 /* ── SOURCE CARDS — ITP-style with bitmap roll on hover ── */
@@ -619,6 +661,184 @@ input[type="number"] {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ── FLUID SPRING INTERACTIONS — physics-based micro-interactions ── */
+
+/* Spring curve tokens */
+:root {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-soft: cubic-bezier(0.25, 1, 0.5, 1);
+  --fluid-accent: var(--foreground, #000);
+  --fluid-shadow: rgba(0, 0, 0, 0.08);
+  --fluid-shadow-strong: rgba(0, 0, 0, 0.12);
+}
+
+/* Spring press — bouncy scale feedback on click */
+.fluid-press {
+  transition: transform 0.3s var(--spring);
+}
+.fluid-press:active {
+  transform: scale(0.94);
+}
+
+/* Spring hover lift — rises with shadow depth */
+.fluid-lift {
+  transition: transform 0.35s var(--spring),
+              box-shadow 0.35s var(--spring-soft);
+}
+.fluid-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px var(--fluid-shadow), 0 2px 6px var(--fluid-shadow);
+}
+.fluid-lift:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--fluid-shadow);
+}
+
+/* Fluid table row — inset left border + subtle background shift */
+/* Uses box-shadow instead of ::before to avoid grid/flex conflicts */
+.fluid-row {
+  transition: background-color 0.25s var(--spring-soft),
+              box-shadow 0.3s var(--spring);
+}
+.fluid-row:hover {
+  background-color: rgba(0, 0, 0, 0.015);
+  box-shadow: inset 3px 0 0 var(--fluid-accent);
+}
+.fluid-row:active {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Fluid expand — smooth height animation using grid trick */
+.fluid-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s var(--spring-soft);
+}
+.fluid-expand.is-open {
+  grid-template-rows: 1fr;
+}
+.fluid-expand > * {
+  overflow: hidden;
+}
+
+/* Spring tab indicator — underline with overshoot */
+.fluid-tab {
+  position: relative;
+}
+.fluid-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--fluid-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s var(--spring);
+}
+.fluid-tab.is-active::after {
+  transform: scaleX(1);
+}
+
+/* Fluid focus ring — expands from center */
+.fluid-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s var(--spring);
+}
+
+/* Fluid button group — children get spring press */
+.fluid-btn-group > button,
+.fluid-btn-group > a {
+  transition: transform 0.3s var(--spring),
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease;
+}
+.fluid-btn-group > button:active,
+.fluid-btn-group > a:active {
+  transform: scale(0.94);
+}
+
+/* Fluid card — combines lift + border darken */
+.fluid-card {
+  transition: transform 0.35s var(--spring),
+              box-shadow 0.35s var(--spring-soft),
+              border-color 0.25s ease;
+}
+.fluid-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--fluid-shadow);
+  border-color: var(--fluid-accent);
+}
+.fluid-card:active {
+  transform: translateY(0);
+}
+
+/* Fluid modal — entrance with spring overshoot */
+.fluid-modal-in {
+  animation: fluid-modal-entrance 0.4s var(--spring) both;
+}
+@keyframes fluid-modal-entrance {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Fluid backdrop */
+.fluid-backdrop-in {
+  animation: fluid-backdrop-entrance 0.3s var(--spring-soft) both;
+}
+@keyframes fluid-backdrop-entrance {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Fluid page entrance — CSS-based, no JS dependency */
+@keyframes fluid-page-entrance {
+  from { opacity: 0.6; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fluid-page-in {
+  animation: fluid-page-entrance 0.45s var(--spring-soft) both;
+}
+
+/* Fluid number — flash on value change */
+@keyframes fluid-number-flash {
+  0% { background-color: transparent; }
+  15% { background-color: rgba(0, 0, 0, 0.04); }
+  100% { background-color: transparent; }
+}
+.fluid-number-changed {
+  animation: fluid-number-flash 0.6s var(--spring-soft);
+  border-radius: 2px;
+}
+
+/* Fluid accordion — for expandable sections */
+.fluid-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s var(--spring-soft),
+              opacity 0.25s ease;
+  opacity: 0;
+}
+.fluid-accordion.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.fluid-accordion > * {
+  overflow: hidden;
+}
+
+/* Fluid drawer — slide from right */
+@keyframes fluid-drawer-entrance {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.fluid-drawer-in {
+  animation: fluid-drawer-entrance 0.4s var(--spring) both;
 }
 
 /* ── RESPONSIVE — mobile overrides ── */

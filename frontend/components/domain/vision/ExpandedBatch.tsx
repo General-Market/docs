@@ -236,35 +236,35 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
         <button
           onClick={handleAllUp}
           className="bg-color-up text-white px-3 py-2 rounded-card text-xs font-bold
-                     hover:brightness-110 transition-all"
+                     hover:brightness-110 transition-all fluid-press"
         >
           {t('expanded_batch.actions.all_up')}
         </button>
         <button
           onClick={handleAllDown}
           className="bg-color-down text-white px-3 py-2 rounded-card text-xs font-bold
-                     hover:brightness-110 transition-all"
+                     hover:brightness-110 transition-all fluid-press"
         >
           {t('expanded_batch.actions.all_down')}
         </button>
         <button
           onClick={() => setShowDepositModal(true)}
           className="bg-muted text-text-secondary px-3 py-2 rounded-card text-xs font-bold
-                     hover:bg-surface transition-colors border border-border-light"
+                     hover:bg-surface transition-colors border border-border-light fluid-press"
         >
           {t('expanded_batch.actions.deposit')}
         </button>
         <button
           onClick={() => setShowWithdrawModal(true)}
           className="bg-muted text-text-secondary px-3 py-2 rounded-card text-xs font-bold
-                     hover:bg-surface transition-colors border border-border-light"
+                     hover:bg-surface transition-colors border border-border-light fluid-press"
         >
           {t('expanded_batch.actions.withdraw')}
         </button>
         <button
           onClick={handleSubmit}
           className="bg-terminal text-text-inverse px-4 py-2 rounded-card text-xs font-bold
-                     hover:opacity-90 transition-opacity ml-auto"
+                     hover:opacity-90 transition-opacity ml-auto fluid-press"
           disabled={totalBets === 0}
         >
           {t('expanded_batch.actions.submit')}

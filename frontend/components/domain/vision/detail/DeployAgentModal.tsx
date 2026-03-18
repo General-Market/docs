@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 
 interface AgentConfig {
   id: string
@@ -138,10 +139,10 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <SpringBackdrop className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <SpringModal className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <div className="flex items-center gap-2">
@@ -186,7 +187,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
             Full docs &rarr;
           </a>
         </div>
-      </div>
+      </SpringModal>
     </div>
   )
 }

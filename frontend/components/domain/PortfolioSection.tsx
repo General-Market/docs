@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { SpringTabs, SpringTab, SpringCard } from '@/components/ui/spring'
 import { useAccount, useReadContract } from 'wagmi'
 import { useSSEOrders, useSSEBalances, useSSENav } from '@/hooks/useSSE'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
@@ -302,7 +303,7 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
   // Collapsed state
   if (!expanded) {
     return (
-      <div
+      <SpringCard
         id="portfolio"
         className="bg-card rounded-md border border-border-light p-4 hover:shadow-card-hover cursor-pointer transition-shadow"
         onClick={onToggle}
@@ -326,14 +327,14 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="px-3 py-1.5 bg-zinc-900 text-white font-semibold rounded-lg text-sm hover:bg-zinc-800 transition-colors"
+              className="px-3 py-1.5 bg-zinc-900 text-white font-semibold rounded-lg text-sm hover:bg-zinc-800 transition-colors fluid-press"
             >
               {tc('nav.support')}
             </a>
             <span className="text-text-muted text-2xl select-none">+</span>
           </div>
         </div>
-      </div>
+      </SpringCard>
     )
   }
 
@@ -404,21 +405,21 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             </div>
           </div>
           <div className="border-b border-border-light mb-0 mt-5">
-            <div className="flex gap-6">
+            <SpringTabs className="flex gap-6">
               {(['positions', 'trades', 'orders'] as Tab[]).map(tab => {
                 const label = t(`tabs.${tab}`)
                 const count = tab === 'positions' ? (mergedSummary?.positions.length || 0)
                   : tab === 'trades' ? filledTradeCount
                   : activeCount
                 return (
-                  <button
+                  <SpringTab
                     key={tab}
+                    isActive={activeTab === tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`pb-3 text-sm font-semibold border-b-[3px] transition-colors ${
-                      activeTab === tab
-                        ? 'border-black text-black'
-                        : 'border-transparent text-text-muted hover:text-text-secondary'
-                    }`}
+                    className="pb-3 text-sm font-semibold transition-colors"
+                    activeClass="text-black"
+                    inactiveClass="text-text-muted hover:text-text-secondary"
+                    layoutId="portfolio-tab-indicator"
                   >
                     {label}
                     {count > 0 && (
@@ -428,10 +429,10 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                         {count}
                       </span>
                     )}
-                  </button>
+                  </SpringTab>
                 )
               })}
-            </div>
+            </SpringTabs>
           </div>
 
           {/* Explorer links */}
@@ -578,7 +579,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
           </p>
           <a
             href="#markets"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors fluid-press"
           >
             {t('empty.explore_indexes')}
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -609,7 +610,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
             {summary.positions.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(pos => {
               const pnl = parseFloat(pos.pnl)
               return (
-                <tr key={pos.itp_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
+                <tr key={pos.itp_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
                   <td className="px-4 py-3 text-text-primary text-sm font-semibold">
                     {itpNameMap.get(pos.itp_id.toLowerCase())
                       || (() => { try { return itpNameMap.get(BigInt(pos.itp_id).toString()) } catch { return null } })()
@@ -692,7 +693,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
           </thead>
           <tbody>
             {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(trade => (
-              <tr key={trade.order_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
+              <tr key={trade.order_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
                 <td className="px-4 py-3 text-text-secondary text-xs">
                   {getTimeAgo(new Date(trade.timestamp))}
                 </td>
@@ -819,7 +820,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
           </thead>
           <tbody>
             {openOrders.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((order, i) => (
-              <tr key={`${order.orderId}-${order.timestamp}-${i}`} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors">
+              <tr key={`${order.orderId}-${order.timestamp}-${i}`} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
                 <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${order.side === 0 ? 'text-color-up' : 'text-color-down'}`}>
@@ -845,7 +846,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                     <button
                       onClick={() => handleCancel(order.orderId)}
                       disabled={cancellingId === order.orderId}
-                      className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="text-xs px-3 py-1 rounded-md font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors fluid-press"
                     >
                       {cancellingId === order.orderId ? t('orders_table.cancelling') : t('orders_table.cancel')}
                     </button>
@@ -873,7 +874,7 @@ function Pagination({ page, totalPages, onPrev, onNext }: { page: number; totalP
       <button
         onClick={onPrev}
         disabled={page === 1}
-        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors fluid-press"
       >
         Prev
       </button>
@@ -883,7 +884,7 @@ function Pagination({ page, totalPages, onPrev, onNext }: { page: number; totalP
       <button
         onClick={onNext}
         disabled={page === totalPages}
-        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="text-xs font-mono font-medium px-3 py-1 rounded-md text-text-secondary hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-colors fluid-press"
       >
         Next
       </button>

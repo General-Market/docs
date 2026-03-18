@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useItpNavSeries, type NavTimeframe } from '@/hooks/useItpNavSeries'
+import { NavCanvas, type ChartHoverInfo } from './NavCanvas'
 import type { SectionProps } from '../SectionRenderer'
 
 function asOfToday() {
@@ -18,32 +18,40 @@ const TIMEFRAMES: { label: string; value: NavTimeframe }[] = [
 export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const [tf, setTf] = useState<NavTimeframe>('1h')
   const { data, isLoading } = useItpNavSeries(itpId, tf)
+  const [hover, setHover] = useState<ChartHoverInfo | null>(null)
 
-  const chartData = data.map(d => ({
-    time: d.time,
-    nav: d.close,
-  }))
-
+  const chartData = data.map(d => ({ time: d.time, close: d.close }))
   const sinceInception = nav > 0 ? (nav - 1) * 100 : null
   const inceptionDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null
 
-  const formatTime = (ts: number) => {
-    const d = new Date(ts * 1000)
-    if (tf === '5m') return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    if (tf === '1h') return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-  }
-
   return (
     <section className="py-8">
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-text-primary">Performance</h2>
-          <p className="text-xs text-text-muted mt-1">as of {asOfToday()}</p>
+        <div className="min-h-[48px] flex flex-col justify-center">
+          {hover ? (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold tabular-nums text-text-primary font-mono">
+                  ${hover.value >= 1 ? hover.value.toFixed(4) : hover.value.toFixed(6)}
+                </span>
+                <span className={`text-sm font-bold tabular-nums ${hover.changePercent >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                  {hover.changePercent >= 0 ? '+' : ''}{hover.changePercent.toFixed(2)}%
+                </span>
+              </div>
+              <p className="text-xs text-text-muted">
+                {new Date(hover.time * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold text-text-primary">Performance</h2>
+              <p className="text-xs text-text-muted mt-1">as of {asOfToday()}</p>
+            </>
+          )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 fluid-btn-group">
           {TIMEFRAMES.map(t => (
             <button
               key={t.value}
@@ -61,70 +69,59 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
       </div>
 
       <div className="py-4">
-        {isLoading ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="animate-pulse bg-gray-200 h-full w-full rounded" />
-          </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center bg-surface rounded">
-            <p className="text-sm text-text-muted">Performance data not yet available</p>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="navGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#000" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="#000" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="time"
-                tickFormatter={formatTime}
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tickFormatter={(v: number) => `$${v.toFixed(2)}`}
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={false}
-                tickLine={false}
-                width={60}
-              />
-              <Tooltip
-                formatter={(value: number) => [`$${value.toFixed(4)}`, 'NAV']}
-                labelFormatter={(ts: number) => new Date(ts * 1000).toLocaleString()}
-                contentStyle={{
-                  fontSize: 12,
-                  border: '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  boxShadow: 'none',
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="nav"
-                stroke="#000"
-                strokeWidth={1.5}
-                fill="url(#navGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
+        <NavCanvas
+          data={chartData}
+          isLoading={isLoading}
+          height={300}
+          onHoverChange={setHover}
+        />
       </div>
 
-      {/* Since Inception Return */}
       {sinceInception != null && inceptionDate && (
         <div className="mt-4 pt-4 border-t border-border-light">
           <span className="text-xs text-text-secondary">Since Inception Return: </span>
           <span className={`text-lg font-bold ${sinceInception >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-            {sinceInception >= 0 ? '+' : ''}{sinceInception.toFixed(2)}%
+            <CountUp value={sinceInception} />
           </span>
           <span className="text-xs text-text-muted ml-2">(from {inceptionDate})</span>
         </div>
       )}
     </section>
   )
+}
+
+// ── Count-up — runs once on first viewport entry, then instant updates ──
+function CountUp({ value }: { value: number }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [display, setDisplay] = useState(0)
+  const animated = useRef(false)
+  const valRef = useRef(value); valRef.current = value
+
+  const doCount = useCallback(() => {
+    if (animated.current) return
+    animated.current = true
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const target = valRef.current
+    if (reduced) { setDisplay(target); return }
+    const t0 = performance.now()
+    const dur = 900
+    const frame = (now: number) => {
+      const p = Math.min((now - t0) / dur, 1)
+      setDisplay(target * (1 - Math.pow(1 - p, 3)))
+      if (p < 1) requestAnimationFrame(frame)
+    }
+    requestAnimationFrame(frame)
+  }, [])
+
+  useEffect(() => {
+    if (animated.current) { setDisplay(value); return }
+    const el = ref.current; if (!el) return
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { doCount(); obs.disconnect() }
+    }, { threshold: 0.5 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [value, doCount])
+
+  return <span ref={ref}>{display >= 0 ? '+' : ''}{display.toFixed(2)}%</span>
 }

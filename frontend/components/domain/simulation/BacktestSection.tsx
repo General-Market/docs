@@ -292,7 +292,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors"
+              className="text-text-muted hover:text-text-primary text-sm px-3 py-1 border border-border-light rounded-lg transition-colors fluid-press"
               title="Exit fullscreen"
             >
               {t('fullscreen.exit')}
@@ -330,7 +330,7 @@ export function BacktestSection({ expanded, onToggle, onDeployIndex, deployedItp
           <div className="flex justify-end">
             <button
               onClick={() => setIsFullscreen(true)}
-              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors"
+              className="text-xs text-text-muted hover:text-text-primary px-3 py-1.5 border border-border-light rounded-lg hover:border-border-medium transition-colors fluid-press"
             >
               {t('fullscreen.enter')}
             </button>

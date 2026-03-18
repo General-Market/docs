@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState, useMemo, useRef, ChangeEvent, memo } from 'react'
 import { useTranslations } from 'next-intl'
+import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
 import {
   parseMarketId,
   getMarketUrl,
@@ -397,13 +398,13 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
       aria-labelledby="portfolio-modal-title"
     >
       {/* Backdrop */}
-      <div
+      <SpringBackdrop
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal content */}
-      <div className="relative bg-card border border-border-medium rounded-xl shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
+      <SpringModal className="relative bg-card border border-border-medium rounded-xl shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
           <div>
@@ -516,7 +517,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
             {t('actions.close')}
           </button>
         </div>
-      </div>
+      </SpringModal>
     </div>
   )
 }

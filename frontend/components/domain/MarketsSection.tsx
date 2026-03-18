@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
+import { SpringCard } from '@/components/ui/spring'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 const STORAGE_KEY = 'gm-markets-collapsed'
@@ -134,7 +135,7 @@ export function MarketsSection() {
       {/* Header - toggle */}
       <button
         type="button"
-        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl"
+        className="w-full flex justify-between items-center p-4 text-left hover:bg-card-hover transition-colors rounded-t-xl fluid-press"
         onClick={toggleCollapsed}
         aria-expanded={!isCollapsed}
         aria-controls="markets-content"
@@ -164,7 +165,7 @@ export function MarketsSection() {
               )
 
               return (
-                <div
+                <SpringCard
                   key={typeId}
                   className="bg-card p-4"
                 >
@@ -242,7 +243,7 @@ export function MarketsSection() {
                       )}
                     </div>
                   )}
-                </div>
+                </SpringCard>
               )
             })}
           </div>

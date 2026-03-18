@@ -3,6 +3,7 @@
 import { useAccount } from 'wagmi'
 import { useTranslations } from 'next-intl'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { SpringCard } from '@/components/ui/spring'
 import { VaultStats } from '@/components/lending/VaultStats'
 import { VaultDeposit } from '@/components/lending/VaultDeposit'
 import { VaultPosition } from '@/components/lending/VaultPosition'
@@ -24,10 +25,10 @@ export function LendingSection({ expanded, onToggle }: LendingSectionProps) {
   )
 
   return (
-    <div id="lending" className="bg-card rounded-xl shadow-card border border-border-light">
+    <SpringCard id="lending" className="bg-card rounded-xl shadow-card border border-border-light">
       <button
         onClick={onToggle}
-        className="w-full p-4 flex justify-between items-center text-left"
+        className="w-full p-4 flex justify-between items-center text-left fluid-press"
       >
         <div>
           <h2 className="text-xl font-bold text-text-primary">{t('lending_section.title')}</h2>
@@ -53,6 +54,6 @@ export function LendingSection({ expanded, onToggle }: LendingSectionProps) {
           )}
         </div>
       )}
-    </div>
+    </SpringCard>
   )
 }

@@ -11,6 +11,7 @@ import { MyPositions } from './MyPositions'
 import { VisionLeaderboard } from './VisionLeaderboard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { SpringExpand } from '@/components/ui/spring'
 
 export function VisionPage() {
   const t = useTranslations('vision')
@@ -40,7 +41,7 @@ export function VisionPage() {
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold
-                                 hover:bg-brand-dark transition-colors shrink-0 self-start sm:self-auto"
+                                 hover:bg-brand-dark transition-colors shrink-0 self-start sm:self-auto fluid-press"
               >
                 {t('actions.create_batch')}
               </button>
@@ -72,16 +73,18 @@ export function VisionPage() {
                     </div>
                   ))}
                 </div>
-                {expandedBatchId !== null && batches.find(b => b.id === expandedBatchId) && (
+                <SpringExpand isOpen={expandedBatchId !== null && !!batches.find(b => b.id === expandedBatchId)}>
                   <div className="mt-4 p-4 bg-surface border border-border-medium rounded-card">
                     <ErrorBoundary fallback={<div className="py-6 text-center text-text-muted font-mono text-sm">Batch details unavailable.</div>}>
-                      <ExpandedBatch
-                        batchId={expandedBatchId}
-                        batch={batches.find(b => b.id === expandedBatchId)!}
-                      />
+                      {expandedBatchId !== null && batches.find(b => b.id === expandedBatchId) && (
+                        <ExpandedBatch
+                          batchId={expandedBatchId}
+                          batch={batches.find(b => b.id === expandedBatchId)!}
+                        />
+                      )}
                     </ErrorBoundary>
                   </div>
-                )}
+                </SpringExpand>
               </>
             ) : (
               <EmptyState
@@ -91,7 +94,7 @@ export function VisionPage() {
                 action={
                   <button
                     onClick={() => setShowCreateModal(true)}
-                    className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold hover:bg-brand-dark transition-colors"
+                    className="bg-brand text-white px-4 py-2 rounded-card text-sm font-bold hover:bg-brand-dark transition-colors fluid-press"
                   >
                     {t('actions.create_batch')}
                   </button>

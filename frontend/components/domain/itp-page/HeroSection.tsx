@@ -25,7 +25,7 @@ export function HeroSection({ label, symbol, name, onBuy }: HeroSectionProps) {
       </div>
       <button
         onClick={onBuy}
-        className="bg-text-primary text-text-inverse px-8 py-3 text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-text-primary focus:ring-offset-2"
+        className="bg-text-primary text-text-inverse px-8 py-3 text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-text-primary focus:ring-offset-2 fluid-press"
       >
         Buy This Index
       </button>

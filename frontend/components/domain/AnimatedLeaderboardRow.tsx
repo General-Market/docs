@@ -107,7 +107,7 @@ export function AnimatedLeaderboardRow({
       role="button"
       tabIndex={0}
       aria-label={`View details for agent ${formatWalletAddress(agent.walletAddress)}, ranked ${agent.rank}, ROI ${formatROI(agent.roi)}`}
-      className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-zinc-900/50 transition-colors duration-300 ${highlightClass} ${rankChangeClass}`}
+      className={`cursor-pointer hover:bg-surface focus:outline-none focus:ring-2 focus:ring-zinc-900/50 transition-colors duration-300 fluid-row ${highlightClass} ${rankChangeClass}`}
       style={{ willChange: shouldAnimate ? 'transform' : 'auto' }}
     >
       {/* Rank - AnimatedNumber for ranks > 3, emoji badges for top 3 */}

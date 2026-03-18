@@ -14,12 +14,12 @@ interface SortBarProps {
 
 export function SortBar({ activeSort, onSortChange }: SortBarProps) {
   return (
-    <div className="sort-row">
+    <div className="sort-row fluid-btn-group">
       {SORT_OPTIONS.map(opt => (
         <button
           key={opt.key}
           onClick={() => onSortChange(opt.key)}
-          className={`sort-btn ${activeSort === opt.key ? 'active' : ''}`}
+          className={`sort-btn fluid-press ${activeSort === opt.key ? 'active' : ''}`}
         >
           {opt.label}
         </button>

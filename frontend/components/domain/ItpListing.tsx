@@ -12,6 +12,7 @@ import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { ITP_PAGE_CONTENT } from '@/lib/itp-page-content'
+import { SpringCard } from '@/components/ui/spring'
 
 interface ItpRow {
   itpId: string
@@ -263,25 +264,29 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
               const count = categoryCounts[cat.id]
               const isActive = activeCategory === cat.id
               return (
-                <button
+                <SpringCard
                   key={cat.id}
-                  onClick={() => setActiveCategory(isActive ? null : cat.id)}
-                  className={`text-left py-7 px-6 border rounded-card transition-all ${
+                  className={`border rounded-card transition-all ${
                     isActive
                       ? 'bg-black text-white border-black shadow-card-hover'
                       : 'bg-white border-[#ddd] card-interactive'
                   }`}
                 >
-                  <div className={`text-heading font-black leading-tight ${isActive ? '' : 'text-text-primary'}`}>
-                    {cat.name}
-                  </div>
-                  <div className={`text-caption font-mono tabular-nums mt-1.5 ${isActive ? 'text-white/60' : 'text-text-muted'}`}>
-                    {count} {count === 1 ? 'fund' : 'funds'}
-                  </div>
-                  <div className={`text-caption leading-snug mt-3 ${isActive ? 'text-white/75' : 'text-text-secondary'}`}>
-                    {cat.description}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => setActiveCategory(isActive ? null : cat.id)}
+                    className="w-full text-left py-7 px-6"
+                  >
+                    <div className={`text-heading font-black leading-tight ${isActive ? '' : 'text-text-primary'}`}>
+                      {cat.name}
+                    </div>
+                    <div className={`text-caption font-mono tabular-nums mt-1.5 ${isActive ? 'text-white/60' : 'text-text-muted'}`}>
+                      {count} {count === 1 ? 'fund' : 'funds'}
+                    </div>
+                    <div className={`text-caption leading-snug mt-3 ${isActive ? 'text-white/75' : 'text-text-secondary'}`}>
+                      {cat.description}
+                    </div>
+                  </button>
+                </SpringCard>
               )
             })}
           </div>

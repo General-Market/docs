@@ -9,6 +9,7 @@ import { getCategoryLabel } from '@/lib/vision/source-categories'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { useSourceSnapshot } from '@/hooks/vision/useMarketSnapshot'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { SpringCard } from '@/components/ui/spring'
 
 /** Max entries shown in the hover overlay */
 const HOVER_LIST_CAP = 100
@@ -188,11 +189,12 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
   if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
 
   return (
+    <SpringCard className="bg-white border-r border-b border-border-light overflow-hidden">
     <Link
       href={`/source/${source.id}`}
       onClick={handleViewTransition}
       data-testid="source-card"
-      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer fluid-card"
+      className="block group cursor-pointer"
     >
       {/* Brand image area */}
       <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
@@ -324,5 +326,6 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
       </div>
 
     </Link>
+    </SpringCard>
   )
 }
