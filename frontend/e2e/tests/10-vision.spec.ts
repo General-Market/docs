@@ -1,34 +1,26 @@
 /**
- * Vision E2E tests.
+ * Vision E2E — Health + Round Join
  *
- * Tests the full Vision flow:
- * 1. Verify /vision page loads with at least one batch
- * 2. Two players join a batch with opposing bets
- * 3. Verify positions exist and USDC moved correctly
- *
- * Player 1 = TEST_USER (start.sh), Player 2 = VISION_BOT (start.sh)
- * Vision lives on L3 (port 8545), uses L3_WUSDC (18 decimals).
+ * 1. L3 reachable
+ * 2. Vision API responds
+ * 3. At least one active round exists
+ * 4. Frontend loads with vision content
+ * 5. Two players join a round with opposing bets, USDC moves correctly
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
 import { checkRpc } from '../helpers/backend-api'
 import {
   PLAYER1,
   PLAYER2,
-  getBatches,
-  getBatchState,
-  waitForBatches,
-  ensureBatchExists,
-  findAvailableE2eBatch,
-  getBatchesFromChain,
-  getBatchConfigHash,
-  fullJoinBatch,
+  getActiveRounds,
+  joinRoundDirect,
   getPosition,
   getL3UsdcBalance,
   getVisionUsdcBalance,
-  getVisionAddress,
   getVisionUsdcAddress,
   ensureUsdcBalance,
   impersonateAccount,
+  getBatchConfigHash,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
@@ -50,7 +42,6 @@ test.describe('Vision', () => {
         signal: AbortSignal.timeout(10_000),
       })
     } catch {
-      // Retry once — transient network issues
       res = await fetch(`${VISION_API}/vision/batches`, {
         signal: AbortSignal.timeout(15_000),
       })
@@ -58,79 +49,78 @@ test.describe('Vision', () => {
     expect(res.ok).toBe(true)
   })
 
-  test('at least one batch exists', async () => {
-    const batches = await ensureBatchExists()
-    expect(batches.length).toBeGreaterThan(0)
+  test('at least one active round exists', async () => {
+    const rounds = await getActiveRounds()
+    expect(rounds.length).toBeGreaterThan(0)
+    expect(rounds[0].status).toBe('betting')
+    expect(rounds[0].batchId).toBeGreaterThan(0)
   })
 
   // ── Frontend display ─────────────────────────────────────
 
   test('vision page loads and shows batch', async ({ walletPage: page }) => {
-    // Vision is now the root page
     await page.goto('/')
 
-    // Wait for page to hydrate — "Sources" text (CSS uppercase renders as "SOURCES")
+    // Wait for page to hydrate
     await page.getByText(/Sources/i).first().waitFor({ timeout: 30_000 })
 
-    // Wait for batch content (batch card or NEXT BATCHES label)
     const hasBatches = await page
       .getByText(/Next Batches|LIVE|Batch #/i)
       .first()
       .isVisible({ timeout: 15_000 })
       .catch(() => false)
 
-    // Also check for source cards
     const hasSources = await page
       .getByText(/CoinGecko|Pump\.fun|Finnhub/i)
       .first()
       .isVisible({ timeout: 5_000 })
       .catch(() => false)
 
-    // At least one indicator should be visible (page loaded with vision content)
     expect(hasBatches || hasSources).toBe(true)
   })
 
-  // ── Two-player join + settlement verification ────────────
+  // ── Two-player join via round-based flow ──────────────────
 
-  test('two players join batch and deposits settle correctly', async () => {
-    // Many sequential on-chain txs on testnet: fund, approve, deposit, join × 2 players
+  test('two players join round and deposits settle correctly', async () => {
     test.setTimeout(300_000)
-    // 1. Find a pre-created E2E test batch (deployed by DeployAllVisionBatches)
-    const { batchId, configHash } = await findAvailableE2eBatch()
-    const marketCount = 5 // E2E test batches use 5 markets by convention
 
-    // 2. Pre-fund players so ensureUsdcBalance inside fullJoinBatch is a no-op
-    //    (minting between "before" and "after" would break the balance diff assertion)
-    //    Use Vision's own USDC address (may differ from deployment L3_WUSDC)
-    const deposit = BigInt(10) * BigInt(10 ** 18) // 10 USDC (18 decimals, L3_WUSDC)
+    // 1. Find an active betting round
+    const rounds = await getActiveRounds()
+    expect(rounds.length).toBeGreaterThan(0)
+    const round = rounds[0]
+    const batchId = round.batchId
+    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
+
+    // 2. Pre-fund players so balance-diff assertions aren't polluted by minting
+    const deposit = 10n * 10n ** 18n // 10 USDC (18 dec, L3)
+    const stakePerTick = 1n * 10n ** 18n
     const visionUsdc = await getVisionUsdcAddress()
     await impersonateAccount(PLAYER1)
     await ensureUsdcBalance(PLAYER1, deposit, visionUsdc)
     await impersonateAccount(PLAYER2)
     await ensureUsdcBalance(PLAYER2, deposit, visionUsdc)
 
-    // Record initial balances (after pre-funding, before deposits)
+    // 3. Record balances before
     const [p1BalBefore, p2BalBefore, visionBalBefore] = await Promise.all([
       getL3UsdcBalance(PLAYER1, visionUsdc),
       getL3UsdcBalance(PLAYER2, visionUsdc),
       getVisionUsdcBalance(),
     ])
 
-    // 3. Generate bets — Player 1 random, Player 2 opposite
-    const stakePerTick = BigInt(10 ** 18)          // 1 USDC per tick
-
+    // 4. Generate opposite bets — guarantees divergent outcomes
+    const marketCount = 10
     const p1Bets = randomBets(marketCount)
     const p2Bets = oppositeBets(p1Bets)
 
-    // 4. Both players join in parallel
+    // 5. Both players join via joinRoundDirect
     const [p1Result, p2Result] = await Promise.all([
-      fullJoinBatch(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount),
-      fullJoinBatch(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount),
+      joinRoundDirect(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount),
+      joinRoundDirect(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount),
     ])
     expect(p1Result.bitmapHash).toBeTruthy()
     expect(p2Result.bitmapHash).toBeTruthy()
 
-    // 6. Verify positions exist on-chain
+    // 6. Verify positions on-chain
     const [pos1, pos2] = await Promise.all([
       getPosition(batchId, PLAYER1),
       getPosition(batchId, PLAYER2),
@@ -153,17 +143,16 @@ test.describe('Vision', () => {
       getVisionUsdcBalance(),
     ])
 
-    // Use >= because vision bots may be depositing concurrently with the same addresses
     expect(p1BalBefore - p1BalAfter).toBeGreaterThanOrEqual(deposit)
     expect(p2BalBefore - p2BalAfter).toBeGreaterThanOrEqual(deposit)
     expect(visionBalAfter - visionBalBefore).toBeGreaterThanOrEqual(deposit * 2n)
 
-    // 8. Verify bitmaps were submitted to oracles
-    if (p1Result.bitmapAccepted < 2 || p2Result.bitmapAccepted < 2) {
-      console.log(`Bitmap acceptance: P1=${p1Result.bitmapAccepted}/3, P2=${p2Result.bitmapAccepted}/3 (oracles may not be indexing vision events)`)
-    } else {
+    // 8. Bitmap acceptance (best-effort — issuers may lag)
+    if (p1Result.bitmapAccepted >= 2 && p2Result.bitmapAccepted >= 2) {
       expect(p1Result.bitmapAccepted).toBeGreaterThanOrEqual(2)
       expect(p2Result.bitmapAccepted).toBeGreaterThanOrEqual(2)
+    } else {
+      console.log(`Bitmap acceptance: P1=${p1Result.bitmapAccepted}/3, P2=${p2Result.bitmapAccepted}/3`)
     }
   })
 })

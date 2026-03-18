@@ -1,141 +1,107 @@
 /**
- * Vision E2E: Claim batch rewards (partial claim without full withdraw).
+ * Vision Round Results + Bitmap Transparency
  *
- * Tests:
- * 1. Player joins a batch
- * 2. Wait for at least one tick resolution
- * 3. Fetch BLS balance proof via proxied API (tests CORS fix)
- * 4. Verify claim proof data structure
- *
- * Uses the proxy path (/api/vision/balance/...) to verify the CORS fix works.
+ * 1. Join a round with two opposing players
+ * 2. Wait for auto-settlement
+ * 3. Fetch results — verify structure (players, deposited, payout, pnl, correctCount)
+ * 4. Fetch bitmaps — verify structure (markets, players with boolean[] predictions)
+ * 5. Verify parimutuel conservation: sum(payouts) ~ sum(deposits)
+ * 6. Verify player history via getPlayerRounds
  */
 import { test, expect } from '@playwright/test'
 import {
   PLAYER1,
   PLAYER2,
-  fullJoinBatch,
-  findAvailableE2eBatch,
-  getPosition,
-  getVisionPlayerBalance,
-  depositToVisionBalance,
+  getActiveRounds,
+  joinRoundDirect,
+  waitForRoundSettled,
+  getRoundResults,
+  getRoundBitmaps,
+  getPlayerRounds,
+  getBatchConfigHash,
   impersonateAccount,
   ensureUsdcBalance,
-  ensureBatchExists,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
+import { CONSENSUS_TIMEOUT } from '../env'
 
-import { VISION_API as ORACLE_API, FRONTEND_URL as ENV_FRONTEND_URL } from '../env'
+const DEPOSIT = 10n * 10n ** 18n
+const STAKE = 1n * 10n ** 18n
+const MARKET_COUNT = 10
 
-test.describe('Vision Claim Rewards', () => {
-  test('balance proof is fetchable via proxy after tick resolution', async () => {
+test.describe('Vision Round Results + Bitmap Transparency', () => {
+  test('round settles with correct results and transparent bitmaps', async () => {
     test.setTimeout(300_000)
 
-    // 1. Find available batch and join with two opposing players
-    const { batchId, configHash } = await findAvailableE2eBatch()
-    const marketCount = 5
-    const deposit = BigInt(10) * BigInt(10 ** 18)
-    const stakePerTick = BigInt(10 ** 18)
+    // 1. Find active round
+    const rounds = await getActiveRounds()
+    expect(rounds.length).toBeGreaterThan(0)
+    const round = rounds[0]
+    const batchId = round.batchId
+    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
 
-    // Pre-fund players
+    // 2. Fund and join with opposite bets
     await impersonateAccount(PLAYER1)
-    await ensureUsdcBalance(PLAYER1, deposit)
+    await ensureUsdcBalance(PLAYER1, DEPOSIT * 2n)
     await impersonateAccount(PLAYER2)
-    await ensureUsdcBalance(PLAYER2, deposit)
+    await ensureUsdcBalance(PLAYER2, DEPOSIT * 2n)
 
-    const p1Bets = randomBets(marketCount)
+    const p1Bets = randomBets(MARKET_COUNT)
     const p2Bets = oppositeBets(p1Bets)
 
-    // Join batch
-    await fullJoinBatch(PLAYER1, batchId, configHash, deposit, stakePerTick, p1Bets, marketCount)
-    await fullJoinBatch(PLAYER2, batchId, configHash, deposit, stakePerTick, p2Bets, marketCount)
+    await Promise.all([
+      joinRoundDirect(PLAYER1, batchId, configHash, DEPOSIT, STAKE, p1Bets, MARKET_COUNT),
+      joinRoundDirect(PLAYER2, batchId, configHash, DEPOSIT, STAKE, p2Bets, MARKET_COUNT),
+    ])
+    console.log(`Both players joined round ${batchId}`)
 
-    // Verify positions
-    const pos1 = await getPosition(batchId, PLAYER1)
-    expect(pos1.stakePerTick).toBeGreaterThan(0n)
+    // 3. Wait for auto-settlement
+    const settled = await waitForRoundSettled(batchId, CONSENSUS_TIMEOUT)
+    expect(settled).toBe(true)
 
-    // 2. Poll for tick resolution (tick durations vary: 60s to 86400s)
-    // Don't blind-wait — poll position for lastClaimedTick advance, cap at 4 min
-    const startTick = pos1.lastClaimedTick
-    console.log(`Waiting for tick resolution (startTick=${startTick}, max 4 min)...`)
-    const deadline = Date.now() + 240_000
-    let tickResolved = false
-    while (Date.now() < deadline) {
-      await new Promise(r => setTimeout(r, 10_000))
-      try {
-        const pos = await getPosition(batchId, PLAYER1)
-        if (pos.lastClaimedTick > startTick) {
-          tickResolved = true
-          console.log(`Tick resolved: ${startTick} → ${pos.lastClaimedTick}`)
-          break
-        }
-      } catch {}
+    // 4. Fetch and verify results structure
+    const results = await getRoundResults(batchId)
+    expect(results).not.toBeNull()
+    expect(results!.players.length).toBeGreaterThanOrEqual(2)
+
+    const p1Result = results!.players.find(p => p.player.toLowerCase() === PLAYER1.toLowerCase())
+    const p2Result = results!.players.find(p => p.player.toLowerCase() === PLAYER2.toLowerCase())
+    expect(p1Result).toBeDefined()
+    expect(p2Result).toBeDefined()
+
+    expect(Number(p1Result!.deposited)).toBeGreaterThan(0)
+    expect(Number(p2Result!.deposited)).toBeGreaterThan(0)
+    expect(p1Result!.correctCount).toBeGreaterThanOrEqual(0)
+    expect(p2Result!.correctCount).toBeGreaterThanOrEqual(0)
+    expect(p1Result!.totalMarkets).toBeGreaterThan(0)
+
+    // 5. Parimutuel conservation: sum(payouts) ~ sum(deposits)
+    const totalDeposited = results!.players.reduce((s, p) => s + Number(p.deposited), 0)
+    const totalPayout = results!.players.reduce((s, p) => s + Number(p.payout), 0)
+    // Allow 5% tolerance for protocol fees
+    expect(Math.abs(totalPayout - totalDeposited)).toBeLessThan(totalDeposited * 0.05)
+    console.log(`Conservation: deposited=${totalDeposited}, payout=${totalPayout}`)
+
+    // 6. Fetch and verify bitmaps
+    const bitmaps = await getRoundBitmaps(batchId)
+    expect(bitmaps).not.toBeNull()
+    expect(bitmaps!.markets.length).toBeGreaterThan(0)
+    expect(bitmaps!.players.length).toBeGreaterThanOrEqual(2)
+
+    for (const p of bitmaps!.players) {
+      expect(p.predictions.length).toBe(bitmaps!.markets.length)
     }
 
-    // 3. Fetch balance proof via direct oracle API
-    const proofUrl = `${ORACLE_API}/vision/balance/${batchId}/${PLAYER1}`
-    let proofRes: Response
-    try {
-      proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(10_000) })
-    } catch {
-      proofRes = await fetch(proofUrl, { signal: AbortSignal.timeout(15_000) })
+    // 7. Verify player history
+    const history = await getPlayerRounds(PLAYER1)
+    expect(history.length).toBeGreaterThan(0)
+    const thisRound = history.find(r => r.batchId === batchId)
+    if (thisRound) {
+      expect(Number(thisRound.deposited)).toBeGreaterThan(0)
+      expect(thisRound.totalMarkets).toBeGreaterThan(0)
     }
 
-    if (proofRes.ok) {
-      const proofData = await proofRes.json()
-      console.log(`Balance proof: balance=${proofData.balance}, has_sig=${!!proofData.bls_sig}`)
-      expect(proofData.balance).toBeDefined()
-      expect(typeof proofData.balance).toBe('string')
-      if (proofData.bls_sig) {
-        expect(proofData.bls_sig.length).toBeGreaterThan(0)
-      }
-    } else {
-      // Proof not yet available — tick duration may exceed our 4-min poll window
-      console.log(`Balance proof not yet available (tickResolved=${tickResolved}): ${proofRes.status}`)
-    }
-
-    // 4. Check position balance
-    const posAfter = await getPosition(batchId, PLAYER1)
-    console.log(`Position: balance before=${pos1.balance}, after=${posAfter.balance}`)
-  })
-
-  test('bitmap submission works via proxy fan-out', async () => {
-    test.setTimeout(120_000)
-
-    await ensureBatchExists()
-
-    // Test that the /api/vision/bitmap fan-out endpoint responds
-    // (This tests the new Next.js route handler we created)
-    const baseUrl = ENV_FRONTEND_URL
-    const frontendUrl = `${baseUrl}/api/vision/bitmap`
-    const testPayload = JSON.stringify({
-      player: PLAYER1,
-      batch_id: 0,
-      bitmap_hex: '0xff',
-      expected_hash: '0x' + '0'.repeat(64),
-    })
-
-    try {
-      const res = await fetch(frontendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: testPayload,
-        signal: AbortSignal.timeout(15_000),
-      })
-
-      // Route should respond (may reject the bitmap but should not 404/500)
-      expect(res.status).toBeLessThan(500)
-      if (res.ok) {
-        const data = await res.json()
-        expect(data.totalCount).toBe(3) // 3 oracles
-        console.log(`Bitmap fan-out: ${data.acceptedCount}/${data.totalCount} accepted`)
-      } else {
-        // Expected — bitmap hash won't match any on-chain commitment
-        console.log(`Bitmap fan-out responded: ${res.status}`)
-      }
-    } catch (e) {
-      // Frontend dev server may not be running — skip gracefully
-      console.log(`Bitmap proxy test skipped: ${(e as Error).message}`)
-    }
+    console.log(`Round ${batchId}: P1 correct=${p1Result!.correctCount}/${p1Result!.totalMarkets}, P2 correct=${p2Result!.correctCount}/${p2Result!.totalMarkets}`)
   })
 })
