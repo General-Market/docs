@@ -112,24 +112,6 @@ async function fetchCategories(): Promise<SimCategory[]> {
   return data.categories || []
 }
 
-// ── Standalone categories test — no sim cache dependency ──────────────
-test('categories endpoint returns data', async () => {
-  const res = await fetch(`${BACKEND_URL}/sim/categories`, {
-    signal: AbortSignal.timeout(30_000),
-  })
-  test.skip(!res.ok, `Data-node unreachable — HTTP ${res.status}`)
-  const data = await res.json()
-  const categories: SimCategory[] = data.categories || []
-  expect(categories.length).toBeGreaterThan(0)
-  const cg = categories.filter((c: SimCategory) => c.source !== 'defillama')
-  expect(cg.length).toBeGreaterThan(0)
-  for (const cat of categories.slice(0, 5)) {
-    expect(cat.id).toBeTruthy()
-    expect(cat.name).toBeTruthy()
-    expect(cat.coin_count).toBeGreaterThanOrEqual(0)
-  }
-})
-
 test.describe('Backtester Smoke Tests', () => {
   let allCategories: SimCategory[] = []
   let cgCategories: SimCategory[] = []
@@ -184,8 +166,26 @@ test.describe('Backtester Smoke Tests', () => {
     console.log(`Default CG category: ${defaultCgCategory}, defi category: ${defaultDefiCategory}`)
   })
 
-  test.beforeEach(async () => {
-    test.skip(!simCacheReady, 'Sim cache not loaded on data-node (CoinGecko historical data not yet fetched)')
+  test.beforeEach(async ({}, testInfo) => {
+    // The "categories endpoint" test only needs categories loaded, not sim engine.
+    // All other tests require the full sim cache to be ready.
+    if (testInfo.title.includes('categories endpoint')) {
+      test.skip(allCategories.length === 0, 'Data-node unreachable — no categories loaded in beforeAll')
+    } else {
+      test.skip(!simCacheReady, 'Sim cache not loaded on data-node (CoinGecko historical data not yet fetched)')
+    }
+  })
+
+  test('categories endpoint returns data', async () => {
+    // This test only checks that beforeAll loaded categories — does not need simCacheReady
+    expect(allCategories.length).toBeGreaterThan(0)
+    expect(cgCategories.length).toBeGreaterThan(0)
+    // Each category has required fields
+    for (const cat of allCategories.slice(0, 5)) {
+      expect(cat.id).toBeTruthy()
+      expect(cat.name).toBeTruthy()
+      expect(cat.coin_count).toBeGreaterThanOrEqual(0)
+    }
   })
 
   // --- CoinGecko Category Simulations ---

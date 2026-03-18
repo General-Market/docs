@@ -22,21 +22,21 @@ import {
 import { getItpCountL3 } from '../helpers/backend-api';
 
 /**
- * Navigate to the Lending section via direct URL hash and wait for the section
+ * Navigate to the Lending section via sidebar and wait for the section
  * to become fully visible (framer-motion transition from hidden to active).
- *
- * Uses page.goto('/index#lend') instead of sidebar click — the sidebar click
- * sometimes fails to activate the section due to framer-motion timing issues.
- * HomeClient reads the hash on mount and sets activeSection accordingly.
  */
 async function navigateToLendSection(page: import('@playwright/test').Page) {
-  await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-
-  // Allow hydration + framer-motion transition + wallet auto-connect
-  await page.waitForTimeout(3_000);
-
   await ensureWalletConnected(page, TEST_ADDRESS);
 
+  // The sidebar is hidden lg:flex — Playwright default viewport 1280x720 satisfies lg.
+  // Both desktop sidebar and mobile bottom bar have a "Lending" button — take the first visible.
+  const lendingNav = page.getByRole('button', { name: /Lending/i }).first();
+  await expect(lendingNav).toBeVisible({ timeout: 30_000 });
+  await lendingNav.click();
+
+  // Wait for the motion.div#lend to transition from hidden (opacity:0, invisible)
+  // to active (opacity:1, visible). The className switches immediately but the
+  // spring animation takes ~500ms for opacity.
   const lendSect = page.locator('#lend');
   await expect(lendSect).toBeVisible({ timeout: 30_000 });
 

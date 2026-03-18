@@ -190,13 +190,11 @@ test.describe('Vision Sources — Detail', () => {
     const heading = enterBatchHeading(page)
     await expect(heading).toBeVisible({ timeout: 30_000 })
 
-    // The main action button is always present — its label depends on wallet/balance state.
-    // Without wallet: "Connect Wallet". With wallet: "Enter Batch", "Deposit More", "Deposit X USDC".
-    // WalletActionButton also shows processing states: "Waiting for wallet...", "Confirming...", etc.
-    // The separate connect prompt button has child text "Connect Wallet" + subtext.
-    // Match broadly — any button whose label contains these fragments proves the panel rendered.
-    const btn = page.getByRole('button', { name: /Enter Batch|Connect Wallet|Deposit|Waiting|Confirming|Submitting/ })
-    await expect(btn.first()).toBeVisible({ timeout: 30_000 })
+    // The main action button is always present — its label depends on wallet state.
+    // Without wallet: "Connect Wallet" or "Enter Batch". With wallet: "Enter Batch" or "Deposit More".
+    // Match any of these labels to verify the button exists.
+    const btn = page.getByRole('button', { name: /Enter Batch|Connect Wallet|Deposit/ })
+    await expect(btn.first()).toBeVisible({ timeout: 15_000 })
   })
 
   test('stake input and quick amount buttons are visible', async ({ page }) => {
