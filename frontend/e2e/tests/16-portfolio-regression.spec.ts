@@ -47,29 +47,28 @@ test.describe('Order Settlement', () => {
   })
 })
 
-// ── 2. ITP card shows TVL (not "–" or user shares) ──────────
+// ── 2. ITP card shows Net Assets as a dollar amount (not "–") ──────────
 
 test.describe('ITP Card Display', () => {
-  test('ITP card shows TVL as a dollar amount (not "–")', async ({ walletPage: page }) => {
+  test('ITP card shows Net Assets as a dollar amount (not "–")', async ({ walletPage: page }) => {
     test.setTimeout(180_000)
     // walletPage fixture already navigates to /index — no need for second goto
 
     const cards = itpCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 60_000 })
 
-    // Find the TVL label on the first card
-    const tvlLabel = cards.first().getByText('TVL', { exact: true })
-    await expect(tvlLabel).toBeVisible({ timeout: 10_000 })
+    // Net Assets is column 5 (index 4) in the ITP table row:
+    // Ticker(0), Name(1), Chart(2), NAV(3), Net Assets(4), Shares Outstanding(5), Trade(6)
+    const netAssetsCell = cards.first().locator('td').nth(4)
+    await expect(netAssetsCell).toBeVisible({ timeout: 10_000 })
 
-    // The value next to TVL should NOT be "–" (dash)
-    const tvlContainer = tvlLabel.locator('..')
-    const tvlText = await tvlContainer.textContent() || ''
+    const cellText = await netAssetsCell.textContent() || ''
 
-    // Should contain a number (not just "–" or empty)
-    expect(tvlText).not.toMatch(/^TVL\s*[–—-]\s*$/)
+    // Should NOT be just a dash (–)
+    expect(cellText.trim()).not.toMatch(/^[–—-]$/)
 
-    // Should contain a formatted number (digits with optional commas and decimals)
-    expect(tvlText).toMatch(/\d/)
+    // Should contain a formatted dollar amount (digits with optional $, commas, decimals, K/M/B suffix)
+    expect(cellText).toMatch(/\d/)
   })
 })
 
