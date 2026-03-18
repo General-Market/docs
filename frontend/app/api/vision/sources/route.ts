@@ -5,7 +5,7 @@ function sanitizeSource(s: any) {
     ...s,
     name: String(s.name ?? '').replace(/[<>]/g, ''),
     description: String(s.description ?? '').replace(/[<>]/g, ''),
-    brandBg: /^#[0-9A-Fa-f]{3,8}$/.test(s.brandBg) ? s.brandBg : '#888',
+    brandBg: /^(#[0-9A-Fa-f]{3,8}|linear-gradient\(.+\))$/.test(s.brandBg) ? s.brandBg : '#888',
     logo: /^\/(source-imgs|logos)\/[\w.-]+\.(svg|png|webp)$/.test(s.logo) ? s.logo : '/source-imgs/default.png',
   }
 }

@@ -144,6 +144,19 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
     ? { background: source.brandBg }
     : { backgroundColor: source.brandBg }
 
+  // Detect light backgrounds — logos need a subtle vignette to stay visible
+  const isLightBg = (() => {
+    const hex = source.brandBg.replace('#', '')
+    if (hex.length !== 6) return false
+    const r = parseInt(hex.slice(0, 2), 16)
+    const g = parseInt(hex.slice(2, 4), 16)
+    const b = parseInt(hex.slice(4, 6), 16)
+    return (r * 0.299 + g * 0.587 + b * 0.114) > 200
+  })()
+
+  // Per-source logo size overrides
+  const logoSize = source.id === 'pumpfun' ? { w: 280, h: 80, maxH: '80px' } : { w: 240, h: 60, maxH: '60px' }
+
   // Hide card if source has no working data (covers meta-down scenario)
   if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
 
@@ -157,16 +170,17 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
       <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
           {/* Brand logo face */}
           <div
-            className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full"
+            className={`absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full ${isLightBg ? 'border-b border-border-light' : ''}`}
             style={brandStyle}
           >
             <Image
               src={source.logo}
               alt={source.name}
-              width={240}
-              height={60}
+              width={logoSize.w}
+              height={logoSize.h}
               loading="lazy"
-              className="max-h-[60px] max-w-[90%] object-contain"
+              className="max-w-[90%] object-contain"
+              style={{ maxHeight: logoSize.maxH }}
             />
             <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
               {getCategoryLabel(source.category).toUpperCase()}
