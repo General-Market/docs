@@ -3,10 +3,7 @@
 import { useReadContract } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { useDeployment } from '@/hooks/useDeployment'
 
 export interface BatchMetadata {
   name: string
@@ -17,8 +14,11 @@ export interface BatchMetadata {
 }
 
 export function useBatchMetadata(batchId: number | undefined) {
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+
   const { data, isLoading, error, refetch } = useReadContract({
-    address: VISION_ADDRESS,
+    address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getBatchMetadata',
     args: batchId !== undefined ? [BigInt(batchId)] : undefined,

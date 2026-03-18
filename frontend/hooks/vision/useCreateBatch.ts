@@ -7,14 +7,7 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { indexL3 } from '@/lib/wagmi'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-
-/**
- * Vision contract address — will be set once deployed.
- * Read from deployment.json once available; placeholder for now.
- */
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { useDeployment } from '@/hooks/useDeployment'
 
 export interface CreateBatchParams {
   /** Raw market ID strings (will be keccak256-hashed to bytes32) */
@@ -52,6 +45,9 @@ interface UseCreateBatchReturn {
  * and extracts the batchId from the BatchCreated event log.
  */
 export function useCreateBatch(): UseCreateBatchReturn {
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+
   const [batchId, setBatchId] = useState<bigint | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -119,7 +115,7 @@ export function useCreateBatch(): UseCreateBatchReturn {
     )
 
     writeContract({
-      address: VISION_ADDRESS,
+      address: visionAddress,
       abi: VISION_ABI,
       functionName: 'createBatch',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -3,10 +3,7 @@
 import { useReadContract, useAccount } from 'wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { useDeployment } from '@/hooks/useDeployment'
 
 export interface PlayerPosition {
   balance: bigint
@@ -21,15 +18,17 @@ export interface PlayerPosition {
 
 export function usePlayerPosition(batchId: number | undefined) {
   const { address } = useAccount()
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
 
   const { data, isLoading, refetch } = useReadContract({
-    address: VISION_ADDRESS,
+    address: visionAddress,
     abi: VISION_ABI,
     functionName: 'getPosition',
     args: batchId !== undefined && address ? [BigInt(batchId), address] : undefined,
     chainId: indexL3.id,
     query: {
-      enabled: batchId !== undefined && !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: batchId !== undefined && !!address && visionAddress !== '0x0000000000000000000000000000000000000000',
       refetchInterval: 10000,
     },
   })

@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
+import { useDeployment } from '@/hooks/useDeployment'
 
-// Use env vars with fallback to hardcoded values
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '0xE44c20fbac58Eb1ca4115AC7890F28271aD94364'
 const EXPLORER_BASE = process.env.NEXT_PUBLIC_EXPLORER_URL || process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
-const EXPLORER_URL = `${EXPLORER_BASE}/${CONTRACT_ADDRESS}`
 const STORAGE_KEY = 'gm-how-it-works-collapsed'
 
 /**
@@ -25,6 +23,10 @@ const STEP_KEYS = [1, 2, 3] as const
  */
 export function HowItWorks() {
   const t = useTranslations('common')
+  const { getAddress } = useDeployment()
+  const contractAddress = getAddress('Index')
+  const explorerUrl = `${EXPLORER_BASE}/${contractAddress}`
+
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isHydrated, setIsHydrated] = useState(false)
 
@@ -130,7 +132,7 @@ export function HowItWorks() {
               {t('how_it_works.trust_statement')}
             </p>
             <a
-              href={EXPLORER_URL}
+              href={explorerUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors"

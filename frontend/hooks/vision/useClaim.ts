@@ -7,15 +7,7 @@ import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { ISSUER_REGISTRY_ABI } from '@/lib/contracts/index-protocol-abi'
 import { indexL3 } from '@/lib/wagmi'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
-
-const ISSUER_REGISTRY_ADDRESS = (
-  process.env.NEXT_PUBLIC_ISSUER_REGISTRY_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
-
+import { useDeployment } from '@/hooks/useDeployment'
 import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type ClaimStep = 'idle' | 'fetching-proof' | 'claiming' | 'done' | 'error'
@@ -117,6 +109,9 @@ async function fetchClaimProof(
  */
 export function useClaim(): UseClaimReturn {
   const { address } = useAccount()
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+  const registryAddress = getAddress('OracleRegistry')
 
   const [step, setStep] = useState<ClaimStep>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -124,13 +119,13 @@ export function useClaim(): UseClaimReturn {
 
   const claimHandled = useRef(false)
 
-  // Read latest snapshot nonce from IssuerRegistry (for BLS verification)
+  // Read latest snapshot nonce from OracleRegistry (for BLS verification)
   const { data: lastSnapshotNonce } = useReadContract({
-    address: ISSUER_REGISTRY_ADDRESS,
+    address: registryAddress,
     abi: ISSUER_REGISTRY_ABI,
     functionName: 'lastSnapshotNonce',
     chainId: indexL3.id,
-    query: { enabled: ISSUER_REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000' },
+    query: { enabled: registryAddress !== '0x0000000000000000000000000000000000000000' },
   })
 
   // --- Claim tx ---
@@ -181,7 +176,7 @@ export function useClaim(): UseClaimReturn {
     const signersBitmask = BigInt(fetchedProof.signerBitmap || '0')
 
     writeClaim({
-      address: VISION_ADDRESS,
+      address: visionAddress,
       abi: VISION_ABI,
       functionName: 'claimRewards',
       args: [

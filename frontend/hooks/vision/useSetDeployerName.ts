@@ -6,12 +6,12 @@ import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { indexL3 } from '@/lib/wagmi'
 import { useTransactionNotification } from '@/hooks/useTransactionNotification'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { useDeployment } from '@/hooks/useDeployment'
 
 export function useSetDeployerName() {
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
+
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -50,7 +50,7 @@ export function useSetDeployerName() {
   const setDeployerName = useCallback((name: string) => {
     setError(null)
     writeContract({
-      address: VISION_ADDRESS,
+      address: visionAddress,
       abi: VISION_ABI,
       functionName: 'setDeployerName',
       args: [name],

@@ -5,10 +5,7 @@ import { useMemo } from 'react'
 import { useBatches, type BatchInfo } from './useBatches'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { indexL3 } from '@/lib/wagmi'
-
-const VISION_ADDRESS = (
-  process.env.NEXT_PUBLIC_VISION_ADDRESS || '0x0000000000000000000000000000000000000000'
-) as `0x${string}`
+import { useDeployment } from '@/hooks/useDeployment'
 
 export interface PlayerBatchPosition {
   batchId: number
@@ -30,24 +27,26 @@ export interface PlayerBatchPosition {
  */
 export function usePlayerBatches() {
   const { address } = useAccount()
+  const { getAddress } = useDeployment()
+  const visionAddress = getAddress('Vision')
   const { data: batches, isLoading: batchesLoading } = useBatches()
 
   // Build multicall contracts array for all batches
   const contracts = useMemo(() => {
     if (!address || !batches?.length) return []
     return batches.map(batch => ({
-      address: VISION_ADDRESS as `0x${string}`,
+      address: visionAddress as `0x${string}`,
       abi: VISION_ABI,
       functionName: 'getPosition' as const,
       args: [BigInt(batch.id), address] as const,
       chainId: indexL3.id,
     }))
-  }, [address, batches])
+  }, [address, batches, visionAddress])
 
   const { data: positionsData, isLoading: positionsLoading } = useReadContracts({
     contracts,
     query: {
-      enabled: contracts.length > 0 && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000',
+      enabled: contracts.length > 0 && visionAddress !== '0x0000000000000000000000000000000000000000',
       refetchInterval: 15000,
     },
   })

@@ -78,3 +78,35 @@ export function parseCollateralAmount(displayAmount: number | string): bigint {
   const value = typeof displayAmount === 'string' ? parseFloat(displayAmount) : displayAmount
   return BigInt(Math.floor(value * (10 ** COLLATERAL_DECIMALS)))
 }
+
+// ---------------------------------------------------------------------------
+// Runtime deployment address utility (non-React contexts: constants, E2E, etc.)
+// ---------------------------------------------------------------------------
+
+let _deploymentCache: Record<string, string> | null = null
+
+/**
+ * Fetch a contract address from the runtime deployment API.
+ * For use in module-level code, E2E helpers, server utilities — anywhere
+ * React hooks are illegal.
+ *
+ * Handles the IssuerRegistry → OracleRegistry rename automatically.
+ * Results are cached in-memory after the first fetch.
+ */
+export async function getDeploymentAddress(name: string): Promise<string | null> {
+  if (!_deploymentCache) {
+    try {
+      const res = await fetch('/api/deployment')
+      if (res.ok) {
+        const data = await res.json()
+        _deploymentCache = data.contracts ?? {}
+      } else {
+        return null
+      }
+    } catch {
+      return null
+    }
+  }
+  return _deploymentCache?.[name]
+    ?? (name === 'IssuerRegistry' ? _deploymentCache?.['OracleRegistry'] ?? null : null)
+}
