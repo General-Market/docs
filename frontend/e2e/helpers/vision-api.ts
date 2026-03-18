@@ -1005,7 +1005,8 @@ const VISION_REAL_BALANCE_ABI = [{
  */
 export async function depositToVisionBalance(player: string, amount: bigint): Promise<void> {
   await impersonateAccount(player)
-  await ensureUsdcBalance(player, amount)
+  const visionUsdc = await getVisionUsdcAddress()
+  await ensureUsdcBalance(player, amount, visionUsdc)
   await approveVision(player, amount)
   const data = encodeFunctionData({
     abi: VISION_DEPOSIT_BALANCE_ABI,
