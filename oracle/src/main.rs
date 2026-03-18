@@ -873,6 +873,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
         let rebalance_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_active = Arc::new(AtomicBool::new(false));
         let mirror_sync_first = Arc::new(AtomicBool::new(true)); // Trigger sync on first eligible cycle
+        let mirror_sync_needed = Arc::new(AtomicBool::new(false)); // Set by SnapshotTooOld errors to trigger immediate retry
         let vision_ops_active = Arc::new(AtomicBool::new(false));
 
         // Consecutive price failure counter (circuit breaker)
@@ -1036,12 +1037,13 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                             let cursor = settlement_buy_cursor.clone();
                             let bpr = Arc::new(AtomicBool::new(false)); // unused, kept for fn sig
                             let sbo = startup_buy_orders.clone();
+                            let msn = mirror_sync_needed.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(60),
                                     run_cross_chain_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, bpr, sbo, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -1072,12 +1074,13 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                             let cycle = current_cycle;
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_oracles;
+                            let msn = mirror_sync_needed.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(60),
                                     run_cross_chain_buy_post_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, None, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -1185,12 +1188,13 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                             let nu = consensus_config.num_oracles;
                             let cursor = settlement_sell_cursor.clone();
                             let sso = startup_sell_orders.clone();
+                            let msn = mirror_sync_needed.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(60),
                                     run_cross_chain_sell_processing(
-                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso,
+                                        p, ar, orch, aw, cr, cycle, ni, nu, dnu, iid, nav, qt, cursor, sso, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -1219,6 +1223,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                             let ni = node_index_for_task;
                             let nu = consensus_config.num_oracles;
                             let met = consensus_metrics.clone();
+                            let msn = mirror_sync_needed.clone();
                             tokio::spawn(async move {
                                 let _guard = FlagGuard(flag);
                                 // Timeout prevents l3_active flag from staying true forever
@@ -1226,7 +1231,7 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                                 match tokio::time::timeout(
                                     std::time::Duration::from_secs(30),
                                     run_l3_native_order_processing(
-                                        p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt, met,
+                                        p, orch, cr, cycle, ni, nu, fso, dnu, iid, nav, qt, met, msn,
                                     ),
                                 ).await {
                                     Ok(()) => {},
@@ -1273,11 +1278,13 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
                     // Always refreshes the snapshot to prevent BLSVerifier__SnapshotTooOld (86400 block limit).
                     let is_sync_leader = node_index_for_task == 0;
                     let first_sync = mirror_sync_first.load(Ordering::Acquire);
-                    if is_sync_leader && (first_sync || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
+                    let snapshot_stale = mirror_sync_needed.load(Ordering::Acquire);
+                    if is_sync_leader && (first_sync || snapshot_stale || current_cycle % 500 == 0) && !mirror_sync_active.load(Ordering::Acquire) {
                         if let Some(ref protocol) = consensus_protocol_for_task {
                             if let Some(ref settlement_writer) = settlement_writer_for_task {
                                 if let (Some(mirror_addr), Some(_oracle_reg_addr)) = (mirror_registry_for_task, oracle_registry_for_sync_task) {
                                     mirror_sync_first.store(false, Ordering::Release);
+                                    mirror_sync_needed.store(false, Ordering::Release);
                                     let settlement_cid = settlement_chain_id_for_task.unwrap_or(42161);
                                     mirror_sync_active.store(true, Ordering::Release);
                                     let flag = mirror_sync_active.clone();
@@ -1884,6 +1891,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
     _bridge_post_ready: Arc<AtomicBool>,
     startup_buy_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainOrder>>>,
+    mirror_sync_needed: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2073,6 +2081,7 @@ async fn run_cross_chain_processing<P, W, K, PF>(
                         local_nav_fallback,
                         quote_tokens.clone(),
                         Some(just_submitted_ids),
+                        mirror_sync_needed.clone(),
                     ).await;
                 }
             }
@@ -2113,6 +2122,7 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     target_orders: Option<Vec<ethers::types::U256>>,
+    mirror_sync_needed: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -2205,7 +2215,12 @@ async fn run_cross_chain_buy_post_processing<P, W, K, PF>(
                         info!(cycle = current_cycle, "Orders already batched (E021), proceeding to CBO/fills");
                         true
                     } else {
-                        warn!(cycle = current_cycle, error = %e, "Batch confirmation failed");
+                        if is_snapshot_too_old_error(&err_str) {
+                            warn!(cycle = current_cycle, "Buy batch hit SnapshotTooOld — requesting immediate mirror sync");
+                            mirror_sync_needed.store(true, Ordering::Release);
+                        } else {
+                            warn!(cycle = current_cycle, error = %e, "Batch confirmation failed");
+                        }
                         false
                     }
                 }
@@ -2543,6 +2558,7 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     block_cursor: Arc<std::sync::atomic::AtomicU64>,
     startup_sell_orders: Arc<tokio::sync::Mutex<Vec<common::types::CrossChainSellOrderEvent>>>,
+    mirror_sync_needed: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -3086,7 +3102,12 @@ async fn run_cross_chain_sell_processing<P, W, K, PF>(
                         }
                     }
                 } else {
-                    warn!(cycle = current_cycle, error = %e, "Sell batch confirmation failed");
+                    if is_snapshot_too_old_error(&err_str) {
+                        warn!(cycle = current_cycle, "Sell batch hit SnapshotTooOld — requesting immediate mirror sync");
+                        mirror_sync_needed.store(true, Ordering::Release);
+                    } else {
+                        warn!(cycle = current_cycle, error = %e, "Sell batch confirmation failed");
+                    }
                     let orch = orchestrator.write().await;
                     for oid in &submitted_sell_orders {
                         orch.set_sell_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
@@ -3613,6 +3634,12 @@ fn fill_price_respects_limit(
     }
 }
 
+/// Check if an error string contains the BLSVerifier__SnapshotTooOld selector (0x6724c448).
+/// When detected, signals that a mirror sync is urgently needed.
+fn is_snapshot_too_old_error(err_str: &str) -> bool {
+    err_str.contains("6724c448") || err_str.contains("SnapshotTooOld")
+}
+
 /// Auto-process L3-native pending orders (sell orders, direct L3 buys).
 ///
 /// These orders are NOT handled by the bridge pipeline (which only processes
@@ -3632,6 +3659,7 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
     local_nav_fallback: ethers::types::U256,
     quote_tokens: Option<std::collections::HashMap<ethers::types::Address, ethers::types::Address>>,
     metrics: Arc<OracleMetrics>,
+    mirror_sync_needed: Arc<AtomicBool>,
 ) where
     P: common::traits::P2PTransport + Send + Sync + 'static,
     W: common::traits::ChainWriter + Send + Sync + 'static,
@@ -3908,7 +3936,12 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
                     }
                 }
             } else {
-                warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native batch confirmation failed");
+                if is_snapshot_too_old_error(&err_str) {
+                    warn!(cycle = current_cycle, l3_cycle, "L3-native batch hit SnapshotTooOld — requesting immediate mirror sync");
+                    mirror_sync_needed.store(true, Ordering::Release);
+                } else {
+                    warn!(cycle = current_cycle, l3_cycle, error = %e, "L3-native batch confirmation failed");
+                }
                 let orch = orchestrator.write().await;
                 for oid in &order_ids {
                     orch.set_order_status(*oid, oracle::BridgeOrderStatus::Failed).await;
