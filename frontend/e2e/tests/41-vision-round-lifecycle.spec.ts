@@ -39,7 +39,7 @@ test.describe.serial('Vision Round Lifecycle', () => {
     expect(rounds[0].status).toBe('betting')
     expect(rounds[0].batchId).toBeGreaterThan(0)
     roundBatchId = rounds[0].batchId
-    roundConfigHash = rounds[0].configHash ?? await getBatchConfigHash(rounds[0].batchId)
+    roundConfigHash = await getBatchConfigHash(rounds[0].batchId)
   })
 
   test('41b: two players join round with opposite bets', async () => {
