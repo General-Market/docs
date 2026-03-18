@@ -473,8 +473,8 @@ input[type="number"] {
     transparent 65%
   );
   background-size: 300% 100%;
-  animation: brand-shimmer 20s ease-in-out infinite;
-  animation-delay: calc(var(--d, 0) * -1.8s);
+  animation: brand-shimmer 80s ease-in-out infinite;
+  animation-delay: calc(var(--d, 0) * -7s);
   pointer-events: none;
   z-index: 1;
   transition: opacity 300ms;
