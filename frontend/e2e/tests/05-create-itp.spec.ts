@@ -1,4 +1,4 @@
-import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
+import { test, expect, TEST_ADDRESS, FRONTEND_URL } from '../fixtures/wallet';
 import { ensureWalletConnected, itpCard } from '../helpers/selectors';
 import {
   getItpStateL3,
@@ -11,16 +11,31 @@ import {
 import { IS_ANVIL } from '../env';
 
 /**
- * Click the "Create Index" sidebar nav item.
- * Desktop and mobile navs both render <button> elements with this label.
- * Target the first visible one to avoid ambiguity.
+ * Navigate to the Create Index section via URL hash.
+ *
+ * The wallet fixture lands on /index (Markets section).
+ * HomeClient reads window.location.hash on mount and sets activeSection.
+ * Navigating to /index#create causes a reload that lands directly on the
+ * create section — no sidebar button click required, no animation race.
+ *
+ * context.addInitScript and wagmi localStorage persist across navigations.
  */
 async function navigateToCreateSection(page: import('@playwright/test').Page) {
-  const createBtn = page.getByRole('button', { name: 'Create Index' }).first();
-  await expect(createBtn).toBeVisible({ timeout: 15_000 });
-  await createBtn.click();
-  // Wait for section transition animation to settle
-  await page.waitForTimeout(1_000);
+  await page.goto(`${FRONTEND_URL}/index#create`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 45_000,
+  });
+  // Wait for React hydration after the reload
+  await page.waitForFunction(
+    () => {
+      const btn = document.querySelector('button');
+      if (!btn) return false;
+      return Object.keys(btn).some(k => k.startsWith('__reactFiber') || k.startsWith('__reactProps'));
+    },
+    { timeout: 30_000 }
+  ).catch(() => {});
+  // The #create motion.div should now be active (not invisible)
+  await expect(page.locator('#create')).not.toHaveClass(/invisible/, { timeout: 15_000 });
 }
 
 test.describe('Create ITP', () => {
@@ -58,14 +73,11 @@ test.describe('Create ITP', () => {
         console.log(`ITP2: ${state2.assets.length} assets, NAV=${state2.nav}`);
       }
 
-      // 4. Connect wallet and wait for page hydration
-      await ensureWalletConnected(page, TEST_ADDRESS);
-
-      // The page starts on Markets section — wait for it to be visible
-      await expect(page.getByRole('heading', { name: 'Markets' })).toBeVisible({ timeout: 30_000 });
-
-      // 5. Navigate to Create Index via sidebar
+      // 4. Navigate to Create Index section (reloads page with #create hash)
       await navigateToCreateSection(page);
+
+      // 5. Ensure wallet is connected after the reload
+      await ensureWalletConnected(page, TEST_ADDRESS);
 
       // The create section wrapper (motion.div id="create") is now active
       const createSection = page.locator('#create');
@@ -102,11 +114,11 @@ test.describe('Create ITP', () => {
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
-      // 1. Connect wallet
-      await ensureWalletConnected(page, TEST_ADDRESS);
-
-      // 2. Click "Create Index" in the sidebar to activate the section
+      // 1. Navigate to Create Index section (reloads page with #create hash)
       await navigateToCreateSection(page);
+
+      // 2. Ensure wallet is connected after the reload
+      await ensureWalletConnected(page, TEST_ADDRESS);
 
       // 3. Record current ITP count on L3 before creating
       const itpCountBefore = await getItpCountL3();
