@@ -176,7 +176,8 @@ test("Stage 4: tick resolution via BLS consensus", async () => {
 // ── Stage 5: Frontend ──
 
 test("Stage 5: frontend displays swarm data", async ({ page }) => {
-  await page.goto(`${FRONTEND_URL}/vision`, { waitUntil: "domcontentloaded" });
+  // Vision lives at / (not /vision)
+  await page.goto(`${FRONTEND_URL}/`, { waitUntil: "domcontentloaded" });
   await expect(page.locator('[data-testid="source-card"]').first()).toBeVisible({
     timeout: 30_000,
   });
@@ -185,15 +186,22 @@ test("Stage 5: frontend displays swarm data", async ({ page }) => {
   await page.locator('[data-testid="source-card"]').first().click();
   await expect(page.locator("h1").first()).toBeVisible({ timeout: 15_000 });
 
-  // Check leaderboard
-  await page.goto(`${FRONTEND_URL}/vision/leaderboard`, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(5_000);
-
-  const content = await page.textContent("body");
-  const visible = SWARM_ADDRESSES.filter((a) =>
-    content?.toLowerCase().includes(a.toLowerCase().slice(2, 10))
-  );
-  console.log(`  ${visible.length}/${SWARM_COUNT} bots on leaderboard`);
+  // Check leaderboard via API (no /vision/leaderboard page route exists)
+  const res = await fetch(`${FRONTEND_URL}/api/vision/leaderboard`, {
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (res.ok) {
+    const data = await res.json();
+    const leaderboard = data.leaderboard ?? [];
+    const visible = SWARM_ADDRESSES.filter((a) =>
+      leaderboard.some((p: any) =>
+        p.walletAddress?.toLowerCase() === a.toLowerCase()
+      )
+    );
+    console.log(`  ${visible.length}/${SWARM_COUNT} bots on leaderboard`);
+  } else {
+    console.log(`  Leaderboard API returned ${res.status}`);
+  }
 });
 
 // ── Stage 6: Economic invariants ──

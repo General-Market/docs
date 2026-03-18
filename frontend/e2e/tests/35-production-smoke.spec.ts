@@ -285,10 +285,10 @@ test.describe('Vision — Home Page (/)', () => {
     expect(hasPools || hasPlayers).toBe(true)
   })
 
-  test('header shows Sign Up button (not Connect Wallet)', async ({ page }) => {
+  test('header shows Connect Wallet button when not authenticated', async ({ page }) => {
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 30_000 })
-    const signUp = page.getByRole('button', { name: 'Sign Up' })
-    await expect(signUp.first()).toBeVisible({ timeout: 15_000 })
+    const connectBtn = page.getByRole('button', { name: /Connect Wallet/ })
+    await expect(connectBtn.first()).toBeVisible({ timeout: 15_000 })
   })
 
   test('footer renders with links', async ({ page }) => {
@@ -370,11 +370,11 @@ test.describe('Vision — Source Detail', () => {
     await expect(topPlayers).toBeVisible({ timeout: 15_000 })
   })
 
-  test('/source/finnhub shows multiplier and timer', async ({ page }) => {
+  test('/source/finnhub shows set count and timer', async ({ page }) => {
     await page.goto(BASE + '/source/finnhub', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(5_000)
 
-    await expect(page.locator('text=Multiplier').first()).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('text=Set').first()).toBeVisible({ timeout: 10_000 })
     await expect(page.locator('text=Timer').first()).toBeVisible({ timeout: 5_000 })
     // Timer should show a time value like "5:23"
     const timerValue = page.locator('text=/\\d+:\\d{2}/').first()
