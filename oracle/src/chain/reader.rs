@@ -237,6 +237,9 @@ where
         })?;
 
         let new_event_count = events.len();
+        if new_event_count > 0 {
+            info!(from_block, to_block = latest_block, new_event_count, "OrderSubmitted events found in scan range");
+        }
 
         // Add newly discovered order IDs — and clear stale settled entries
         // If an OrderSubmitted event appears for an ID in settled_order_ids,

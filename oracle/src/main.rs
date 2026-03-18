@@ -3647,9 +3647,14 @@ async fn run_l3_native_order_processing<P, W, K, PF>(
 
     // 1. Fetch all pending orders from L3
     let pending_orders = match chain_reader.get_pending_orders().await {
-        Ok(orders) => orders,
+        Ok(orders) => {
+            if !orders.is_empty() {
+                info!(cycle = current_cycle, count = orders.len(), "L3 chain reader returned orders");
+            }
+            orders
+        }
         Err(e) => {
-            debug!(cycle = current_cycle, error = %e, "Failed to fetch pending orders for L3-native processing");
+            warn!(cycle = current_cycle, error = %e, "Failed to fetch pending orders for L3-native processing");
             vec![]
         }
     };
