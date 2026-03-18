@@ -436,6 +436,8 @@ cmd_deploy() {
     # Clean forge cache first — stale cache causes 0-receipt broadcasts
     echo -e "${BLUE}[3/14] Deploying core contracts (Index, OracleRegistry, USDC, BridgeProxy)...${NC}"
     rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/ contracts/cache/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+    # Forge may exit non-zero even on partial success (nonce races on redeployment).
+    # We verify success via deployment JSON + receipt count below, not forge exit code.
     (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
     forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
         --rpc-url "$RPC_URL" \
@@ -443,7 +445,7 @@ cmd_deploy() {
         --broadcast --slow \
         --chain-id $CHAIN_ID \
         --legacy --with-gas-price 200000000) \
-        > logs/deploy-core.log 2>&1
+        > logs/deploy-core.log 2>&1 || true
 
     # Verify deployment succeeded: check both JSON file exists AND has receipts
     if [ ! -f "deployments/e2e-full-system.json" ]; then
