@@ -170,6 +170,98 @@ read_deployment_addr() {
     python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('$key', ''))" 2>/dev/null || echo ""
 }
 
+_rebuild_symbol_map_from_chain() {
+    local index_addr
+    index_addr=$(read_deployment_addr "Index")
+    [ -z "$index_addr" ] && { echo -e "  ${YELLOW}Symbol-map chain rebuild skipped (no Index address)${NC}"; return 0; }
+    echo -e "  Rebuilding symbol-map from on-chain ITP state..."
+    python3 -c "
+import json, urllib.request, sys
+
+RPC = '$RPC_URL'
+INDEX = '$index_addr'
+SMAP_PATH = 'data/symbol-map.json'
+
+def rpc(method, params):
+    payload = json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': method, 'params': params}).encode()
+    req = urllib.request.Request(RPC, data=payload, headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.load(r).get('result', '0x')
+
+def call(to, data):
+    return rpc('eth_call', [{'to': to, 'data': data}, 'latest'])
+
+def decode_uint(hex_str):
+    return int(hex_str, 16) if hex_str and hex_str != '0x' else 0
+
+# Load existing symbol-map (preserve all existing entries)
+import os
+smap = json.load(open(SMAP_PATH)) if os.path.exists(SMAP_PATH) else {}
+existing = len(smap)
+
+# getItpCount() -> uint256  selector: 0x6ce4074a
+itp_count_raw = call(INDEX, '0x6ce4074a')
+itp_count = decode_uint(itp_count_raw)
+if itp_count == 0:
+    print('No ITPs on-chain — symbol-map unchanged')
+    sys.exit(0)
+
+# For each ITP, call getITPState(bytes32) -> returns struct with assets array
+# selector for getITPState(bytes32): keccak256('getITPState(bytes32)') = 0x7bfb3953
+added = 0
+for i in range(1, itp_count + 1):
+    itp_id_hex = '%064x' % i
+    data = '0x7bfb3953' + itp_id_hex
+    raw = call(INDEX, data)
+    if not raw or raw == '0x':
+        continue
+    raw = raw[2:]
+    if len(raw) < 64:
+        continue
+    # ABI-decode dynamic struct: first words are offsets, find the assets array
+    # Layout: (address owner, uint256 nav, uint256 totalSupply, address[] assets, uint256[] weights, uint256[] quantities)
+    # Word 3 (index 3) = offset to assets array (in bytes from start of data)
+    words = [raw[i*64:(i+1)*64] for i in range(len(raw)//64)]
+    if len(words) < 5:
+        continue
+    try:
+        assets_offset = int(words[3], 16) // 32  # offset in words
+        if assets_offset >= len(words):
+            continue
+        asset_count = int(words[assets_offset], 16)
+        for j in range(asset_count):
+            word_idx = assets_offset + 1 + j
+            if word_idx >= len(words):
+                break
+            token_addr = '0x' + words[word_idx][24:].lower()
+            if token_addr in smap:
+                continue  # already mapped — don't overwrite
+            # Read symbol() from token contract — selector 0x95d89b41
+            sym_raw = call(token_addr, '0x95d89b41')
+            if not sym_raw or sym_raw == '0x':
+                continue
+            sym_raw = sym_raw[2:]
+            sym_words = [sym_raw[k*64:(k+1)*64] for k in range(len(sym_raw)//64)]
+            if len(sym_words) < 3:
+                continue
+            # ABI string: word 0 = offset (0x20), word 1 = length, word 2+ = utf8 bytes
+            sym_len = int(sym_words[1], 16)
+            if sym_len == 0 or sym_len > 64:
+                continue
+            sym_bytes = bytes.fromhex(sym_words[2])[:sym_len]
+            symbol = sym_bytes.decode('utf-8', errors='replace').strip('\x00')
+            if symbol:
+                smap[token_addr] = {'pair': symbol + 'USDT', 'source': 'bitget'}
+                added += 1
+    except Exception:
+        continue
+
+import json as _json
+_json.dump(smap, open(SMAP_PATH, 'w'), indent=2)
+print(f'Chain rebuild: {itp_count} ITPs scanned, {added} new entries added ({len(smap)} total in symbol-map)')
+" 2>/dev/null && echo -e "  ${GREEN}Symbol-map rebuilt from chain${NC}" || echo -e "  ${YELLOW}Symbol-map chain rebuild failed (non-critical)${NC}"
+}
+
 _merge_deployments() {
     local l3_json="$1"       # e.g., deployments/e2e-full-system-l3.json
     local sonic_json="$2"    # e.g., deployments/e2e-full-system-sonic.json
@@ -910,6 +1002,10 @@ json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
 print(f'Merged symbol-map: {len(smap)} entries')
 " 2>/dev/null || true
     echo -e "  ${GREEN}Broadcast merge complete${NC}"
+
+    # Chain-authoritative rebuild: read actual token symbols from on-chain ITP state
+    # Runs after broadcast merge so it only adds entries missing from the broadcast-derived map
+    _rebuild_symbol_map_from_chain
 
     # Sync symbol-map.json + deployment files to VPS immediately after regeneration
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
