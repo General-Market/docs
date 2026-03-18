@@ -164,23 +164,11 @@ export const sellModal = {
 
 // ── Lending Section (sidebar nav → section#lend → VaultModal inline) ──
 
-/** Navigate to Lending section via sidebar or mobile nav */
+/** Navigate to Lending section via URL hash — HomeClient reads hash on mount */
 export async function navigateToLending(page: Page): Promise<boolean> {
-  // Desktop sidebar
-  const sidebarBtn = page.locator('aside button', { hasText: 'Lending' });
-  if (await sidebarBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await sidebarBtn.click();
-    await page.waitForTimeout(1_000);
-    return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
-  }
-  // Mobile bottom nav
-  const mobileBtn = page.locator('nav button', { hasText: 'Lending' });
-  if (await mobileBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await mobileBtn.click();
-    await page.waitForTimeout(1_000);
-    return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
-  }
-  return false;
+  await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForTimeout(2_000);
+  return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
 }
 
 /** Scoped locator for the lending section */

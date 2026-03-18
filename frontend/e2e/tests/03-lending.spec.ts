@@ -46,38 +46,16 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
     await page.reload({ waitUntil: 'load', timeout: 60_000 });
     await page.waitForTimeout(3_000);
 
-    // Navigate to Lending section via sidebar
-    // The sidebar has a "Lending" button that switches to section id="lend"
-    let lendingSectionReached = false;
+    // Navigate to Lending section via URL hash — HomeClient reads hash on mount
+    // and sets activeSection. More reliable than clicking sidebar buttons which
+    // depend on React state propagation and viewport-dependent selectors.
+    await page.goto('/index#lend', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await page.waitForTimeout(2_000);
 
-    // Try desktop sidebar first (visible on lg+ screens)
-    const sidebarLendingBtn = page.locator('aside button', { hasText: 'Lending' });
-    const sidebarVisible = await sidebarLendingBtn.isVisible({ timeout: 5_000 }).catch(() => false);
-
-    if (sidebarVisible) {
-      await sidebarLendingBtn.click();
-      await page.waitForTimeout(1_500);
-      // Verify the lend section is now active — look for the "Lend" heading from VaultModal
-      const lendHeading = page.getByRole('heading', { name: 'Lend' });
-      lendingSectionReached = await lendHeading.isVisible({ timeout: 10_000 }).catch(() => false);
-      if (lendingSectionReached) {
-        console.log('Navigated to Lending section via sidebar');
-      }
-    }
-
-    if (!lendingSectionReached) {
-      // Try mobile bottom nav
-      const mobileLendingBtn = page.locator('nav button', { hasText: 'Lending' });
-      const mobileVisible = await mobileLendingBtn.isVisible({ timeout: 3_000 }).catch(() => false);
-      if (mobileVisible) {
-        await mobileLendingBtn.click();
-        await page.waitForTimeout(1_500);
-        const lendHeading = page.getByRole('heading', { name: 'Lend' });
-        lendingSectionReached = await lendHeading.isVisible({ timeout: 10_000 }).catch(() => false);
-        if (lendingSectionReached) {
-          console.log('Navigated to Lending section via mobile nav');
-        }
-      }
+    const lendHeading = page.getByRole('heading', { name: 'Lend' });
+    const lendingSectionReached = await lendHeading.isVisible({ timeout: 10_000 }).catch(() => false);
+    if (lendingSectionReached) {
+      console.log('Navigated to Lending section via hash navigation');
     }
 
     // Attempt the UI path if we reached the lending section
