@@ -260,6 +260,25 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(bridgeProxyAddr, true);
         OracleRegistry(oracleRegistry).setAuthorizedMissedCountCaller(settlementBridgeCustodyProxy, true);
         console.log("  OracleRegistry: authorized BLS-verifying contracts for incrementMissedCounts");
+
+        // Verify governance chain: OracleRegistry._governance must resolve to deployer.
+        // On Orbit L3, CREATE addresses diverge between forge simulation and broadcast.
+        // If _governance points to a stale address, setAggregatedPubkey (onlyAdmin) will
+        // permanently fail, and after 86400 blocks BLSVerifier__SnapshotTooOld kills all fills.
+        address registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
+        if (registryAdmin != admin) {
+            console.log("  WARNING: OracleRegistry governance admin mismatch!");
+            console.log("    Expected:", admin);
+            console.log("    Got:", registryAdmin);
+            console.log("  Fixing via setGovernance...");
+            OracleRegistry(oracleRegistry).setGovernance(governance);
+            // Re-verify
+            registryAdmin = OracleRegistry(oracleRegistry).governance().admin();
+            require(registryAdmin == admin, "OracleRegistry governance fix failed");
+            console.log("  OracleRegistry governance fixed");
+        } else {
+            console.log("  OracleRegistry governance verified (admin matches deployer)");
+        }
     }
 
     function _registerOracles() internal {

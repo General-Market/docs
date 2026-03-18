@@ -216,6 +216,12 @@ interface IOracleRegistry {
 
     // ============ CONSENSUS PAUSE ============
 
+    /// @notice Emergency: update the governance contract address
+    /// @dev Escape hatch for Orbit nonce divergence — if initialize() stored a stale
+    ///      Governance proxy address, this lets the current admin fix it.
+    /// @param newGovernance The correct Governance contract address
+    function setGovernance(address newGovernance) external;
+
     /// @notice Whether consensus is currently paused
     /// @return True if consensus is paused
     function consensusPaused() external view returns (bool);

@@ -382,6 +382,10 @@ contract MirrorOracleRegistry is IMirrorOracleRegistry, IOracleRegistry, Initial
         revert("MirrorOracleRegistry: not supported");
     }
 
+    function setGovernance(address) external pure {
+        revert("MirrorOracleRegistry: not supported");
+    }
+
     function getOracles() external pure returns (TypesLib.Oracle[] memory) {
         revert("MirrorOracleRegistry: not supported");
     }

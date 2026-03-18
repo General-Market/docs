@@ -878,6 +878,17 @@ contract OracleRegistry is IOracleRegistry, Initializable, UUPSUpgradeable {
         return _governance;
     }
 
+    /// @notice Emergency: update the governance contract address
+    /// @dev Escape hatch for Orbit nonce divergence — if initialize() stored a stale
+    ///      Governance proxy address (CREATE vs broadcast mismatch), this lets the current
+    ///      admin fix it without redeploying the entire registry + re-registering oracles.
+    ///      Only callable by the current admin (through the current _governance.admin()).
+    /// @param newGovernance The correct Governance contract address
+    function setGovernance(address newGovernance) external onlyAdmin {
+        if (newGovernance == address(0)) revert ZeroAddress();
+        _governance = IGovernance(newGovernance);
+    }
+
     // ============ SNAPSHOT & NON-SIGNER TRACKING (Phase 2+3) ============
 
     /// @inheritdoc IOracleRegistry

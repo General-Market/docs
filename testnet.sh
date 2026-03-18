@@ -549,6 +549,67 @@ cmd_deploy() {
     # Patch deployment JSON with the verified OracleRegistry address (chain-sourced, not broadcast-derived)
     python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['OracleRegistry']='$ORACLE_REGISTRY_ADDR'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
 
+    # 3b2: Verify OracleRegistry governance chain
+    # On Orbit, CREATE addresses diverge between forge simulation and broadcast.
+    # If OracleRegistry._governance points to a stale Governance proxy, ALL admin calls
+    # fail — including setAggregatedPubkey. After 86400 blocks, BLSVerifier__SnapshotTooOld
+    # permanently prevents order fills. Detect and fix this before it metastasizes.
+    #
+    # Trust chain: read Governance from the Index contract ON-CHAIN (not from the deployment
+    # JSON, which contains simulation addresses that may diverge on Orbit).
+    echo -e "${BLUE}[3b2/14] Verifying OracleRegistry governance chain...${NC}"
+    INDEX_GOV_ADDR=$(cast call --rpc-url "$RPC_URL" "$INDEX_ADDR_3B" "governance()(address)" 2>/dev/null | tr -d '[:space:]')
+    REGISTRY_GOV=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY_ADDR" "governance()(address)" 2>/dev/null | tr -d '[:space:]')
+    echo -e "  Index.governance (on-chain): $INDEX_GOV_ADDR"
+    echo -e "  OracleRegistry._governance:  $REGISTRY_GOV"
+
+    if [ -n "$REGISTRY_GOV" ] && [ -n "$INDEX_GOV_ADDR" ]; then
+        # Normalize to lowercase for comparison
+        REGISTRY_GOV_LOWER=$(echo "$REGISTRY_GOV" | tr '[:upper:]' '[:lower:]')
+        INDEX_GOV_LOWER=$(echo "$INDEX_GOV_ADDR" | tr '[:upper:]' '[:lower:]')
+
+        if [ "$REGISTRY_GOV_LOWER" != "$INDEX_GOV_LOWER" ]; then
+            echo -e "  ${YELLOW}MISMATCH — OracleRegistry._governance ($REGISTRY_GOV) != Index.governance ($INDEX_GOV_ADDR)${NC}"
+            echo -e "  ${YELLOW}Attempting setGovernance fix...${NC}"
+
+            # The deployer is admin on the current (possibly stale) governance.
+            # If the stale governance proxy is at a valid address where admin() resolves
+            # to the deployer, onlyAdmin passes and we can fix it.
+            if cast send "$ORACLE_REGISTRY_ADDR" "setGovernance(address)" "$INDEX_GOV_ADDR" \
+                --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                --legacy --gas-price 200000000 --gas-limit 200000 \
+                > /dev/null 2>&1; then
+                echo -e "  ${GREEN}setGovernance succeeded — governance chain repaired${NC}"
+            else
+                echo -e "  ${RED}setGovernance failed — governance chain is broken${NC}"
+                echo -e "  ${RED}The deployer cannot call onlyAdmin functions on OracleRegistry.${NC}"
+                echo -e "  ${RED}Full redeploy required.${NC}"
+                exit 1
+            fi
+
+            # Verify the fix
+            REGISTRY_GOV_AFTER=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY_ADDR" "governance()(address)" 2>/dev/null | tr -d '[:space:]')
+            echo -e "  Registry _governance after fix: $REGISTRY_GOV_AFTER"
+        else
+            echo -e "  ${GREEN}Governance chain valid (OracleRegistry and Index agree)${NC}"
+        fi
+
+        # Also verify that governance.admin() returns the deployer
+        GOV_ADMIN=$(cast call --rpc-url "$RPC_URL" "$INDEX_GOV_ADDR" "admin()(address)" 2>/dev/null | tr -d '[:space:]')
+        GOV_ADMIN_LOWER=$(echo "$GOV_ADMIN" | tr '[:upper:]' '[:lower:]')
+        DEPLOYER_ADDR_LOWER=$(echo "$DEPLOYER_ADDRESS" | tr '[:upper:]' '[:lower:]')
+        if [ "$GOV_ADMIN_LOWER" != "$DEPLOYER_ADDR_LOWER" ]; then
+            echo -e "  ${RED}WARNING: Governance.admin() = $GOV_ADMIN, expected deployer $DEPLOYER_ADDRESS${NC}"
+        else
+            echo -e "  ${GREEN}Governance.admin() = deployer${NC}"
+        fi
+
+        # Patch deployment JSON with the on-chain Governance address (may differ from simulation)
+        python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['Governance']='$INDEX_GOV_ADDR'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
+    else
+        echo -e "  ${YELLOW}Could not read governance addresses — skipping verification${NC}"
+    fi
+
     # 3c: Deploy settlement contracts to Sonic
     echo -e "${BLUE}[3c/14] Deploying settlement contracts to Sonic (chain $SETTLEMENT_CHAIN_ID)...${NC}"
 
@@ -1117,6 +1178,31 @@ cmd_start() {
     fi
     echo -e "  ${GREEN}Deployment consistent${NC}"
 
+    # Refresh BLS registry snapshot to prevent SnapshotTooOld (86400 block expiry).
+    # Every start must refresh — if the testnet was idle for hours, the old snapshot
+    # is dead and every BLS-verified tx will revert.
+    echo -e "${BLUE}[2c/8] Refreshing BLS registry snapshot...${NC}"
+    ORACLE_REGISTRY_START=$(read_deployment_addr "OracleRegistry")
+    if [ -n "$ORACLE_REGISTRY_START" ]; then
+        REG_NONCE_START=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY_START" "registryNonce()(uint256)" 2>/dev/null || echo "")
+        AGG_PUBKEY_START=$(cast call --rpc-url "$RPC_URL" "$ORACLE_REGISTRY_START" "getAggregatedPubkey()(bytes)" 2>/dev/null || echo "")
+        if [ -n "$AGG_PUBKEY_START" ] && [ "$AGG_PUBKEY_START" != "" ] && [ -n "$REG_NONCE_START" ]; then
+            if cast send --private-key "$DEPLOYER_KEY" --rpc-url "$RPC_URL" --chain $CHAIN_ID \
+                "$ORACLE_REGISTRY_START" "setAggregatedPubkey(bytes,uint256)" "$AGG_PUBKEY_START" "$REG_NONCE_START" \
+                --legacy --gas-price 200000000 --gas-limit 500000 \
+                > /dev/null 2>&1; then
+                echo -e "  ${GREEN}Registry snapshot refreshed (nonce $REG_NONCE_START)${NC}"
+            else
+                echo -e "  ${YELLOW}Snapshot refresh failed — governance chain may be broken${NC}"
+                echo -e "  ${YELLOW}BLS-verified txs will fail after 86400 blocks from last snapshot${NC}"
+            fi
+        else
+            echo -e "  ${YELLOW}No aggregated pubkey or nonce — skipping snapshot refresh${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}No OracleRegistry in deployment — skipping${NC}"
+    fi
+
     # Ensure logs dir + existing files are writable by container UID (app=999 != max=1002)
     vps_be_ssh "mkdir -p $VPS_BE_DIR/logs && chmod 777 $VPS_BE_DIR/logs && chmod a+rw $VPS_BE_DIR/logs/* 2>/dev/null; true"
 
@@ -1261,7 +1347,6 @@ services:
       - "/app/deployments/active-deployment.json"
       - "--morpho-deployment-file"
       - "/app/deployments/morpho-e2e.json"
-      - "--ecb-enabled"
       - "--openmeteo-sync-interval"
       - "300"
 $([ -n "$INDEX_FLAG" ] && echo '      - "--index-address"
