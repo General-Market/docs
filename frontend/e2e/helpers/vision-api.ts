@@ -14,7 +14,7 @@ const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 
 import {
   IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
-  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ISSUER_URLS,
+  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ORACLE_URLS,
   RPC_TIMEOUT, CONSENSUS_TIMEOUT,
 } from '../env'
 
@@ -654,7 +654,7 @@ async function submitBitmapToIssuers(
   bitmapHex: string,
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
-  const issuerUrls = ISSUER_URLS
+  const issuerUrls = ORACLE_URLS
   // Issuers poll L3 every 2s — on testnet with variable block times, events can take
   // 6-15s to index. Use longer delays and more attempts to avoid race conditions.
   const retryDelay = IS_ANVIL ? 1_000 : 3_000
