@@ -395,30 +395,6 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
             </div>
           </div>
 
-          {/* Active orders banner — always visible when there are incomplete orders */}
-          {activeCount > 0 && (
-            <div
-              className="mt-5 bg-yellow-50 border border-yellow-200 rounded-lg p-3 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors"
-              onClick={() => setActiveTab('orders')}
-            >
-              <div className="flex items-center gap-3">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500" />
-                </span>
-                <span className="text-sm font-medium text-yellow-800">
-                  {t('orders_banner.active_orders', { count: activeCount, plural: activeCount !== 1 ? 's' : '' })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {orders.filter(o => o.status < 2).map((o, i) => (
-                  <span key={`${o.orderId}-${o.timestamp}-${i}`} className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[o.status] || 'text-orange-600 bg-orange-100'}`}>
-                    {o.orderId > 0 ? `#${o.orderId}` : 'Settlement'} {o.side === 0 ? t('side.buy') : t('side.sell')} · {STATUS_LABELS[o.status] || 'Relaying'}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Section bar + tab navigation */}
           <div className="section-bar mt-5">
