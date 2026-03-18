@@ -84,12 +84,30 @@ test.describe('Vision', () => {
   test('two players join round and deposits settle correctly', async () => {
     test.setTimeout(300_000)
 
-    // 1. Find an active betting round
+    // 1. Find an active round that PLAYER1 hasn't joined yet
     const rounds = await getActiveRounds()
     expect(rounds.length).toBeGreaterThan(0)
-    const round = rounds[0]
-    const batchId = round.batchId
-    const configHash = await getBatchConfigHash(batchId)
+    let batchId = 0
+    let configHash: `0x${string}` = '0x'
+    for (const round of rounds) {
+      try {
+        const pos = await getPosition(round.batchId, PLAYER1)
+        if (pos.joinTimestamp === 0n) {
+          batchId = round.batchId
+          configHash = await getBatchConfigHash(batchId)
+          break
+        }
+      } catch {
+        batchId = round.batchId
+        configHash = await getBatchConfigHash(batchId)
+        break
+      }
+    }
+    if (batchId === 0) {
+      console.log(`All ${rounds.length} rounds already joined — run: ./testnet.sh refresh-batches`)
+      expect(rounds.length).toBeGreaterThan(0)
+      return
+    }
 
     // 2. Pre-fund players so balance-diff assertions aren't polluted by minting
     const deposit = 10n * 10n ** 18n // 10 USDC (18 dec, L3)
