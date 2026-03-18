@@ -433,33 +433,38 @@ cmd_deploy() {
     echo -e "  ${GREEN}bls-tool ready${NC}"
 
     # Deploy core system (must run from contracts/ for foundry.toml remappings)
-    # Only clean broadcast (not cache — recompilation takes 20+ min)
+    # Only clean broadcast if deployment JSON doesn't exist or has no receipts
     echo -e "${BLUE}[3/14] Deploying core contracts (Index, OracleRegistry, USDC, BridgeProxy)...${NC}"
-    rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
+    local EXISTING_RECEIPTS=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+    if [ "$EXISTING_RECEIPTS" != "0" ] && [ -f "deployments/e2e-full-system.json" ]; then
+        echo -e "  ${GREEN}Valid deployment exists ($EXISTING_RECEIPTS receipts) — skipping forge deploy${NC}"
+    else
+        rm -rf contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/
     # Forge may exit non-zero even on partial success (nonce races on redeployment).
     # We verify success via deployment JSON + receipt count below, not forge exit code.
-    (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
-    forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
-        --rpc-url "$RPC_URL" \
-        --private-key "$DEPLOYER_KEY" \
-        --broadcast --slow \
-        --chain-id $CHAIN_ID \
-        --legacy --with-gas-price 200000000) \
-        > logs/deploy-core.log 2>&1 || true
+        (cd contracts && PRIVATE_KEY="$DEPLOYER_KEY" \
+        forge script script/DeployFullSystemE2E.s.sol:DeployFullSystemE2E \
+            --rpc-url "$RPC_URL" \
+            --private-key "$DEPLOYER_KEY" \
+            --broadcast --slow \
+            --chain-id $CHAIN_ID \
+            --legacy --with-gas-price 200000000) \
+            > logs/deploy-core.log 2>&1 || true
 
-    # Verify deployment succeeded: check both JSON file exists AND has receipts
-    if [ ! -f "deployments/e2e-full-system.json" ]; then
-        echo -e "  ${RED}Core deployment failed — no deployment JSON${NC}"
-        echo -e "  ${YELLOW}Check: logs/deploy-core.log${NC}"
-        exit 1
+        # Verify deployment succeeded: check both JSON file exists AND has receipts
+        if [ ! -f "deployments/e2e-full-system.json" ]; then
+            echo -e "  ${RED}Core deployment failed — no deployment JSON${NC}"
+            echo -e "  ${YELLOW}Check: logs/deploy-core.log${NC}"
+            exit 1
+        fi
+        local RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
+        if [ "$RECEIPT_COUNT" = "0" ]; then
+            echo -e "  ${RED}Core deployment broadcast failed — 0 receipts (transactions not submitted)${NC}"
+            echo -e "  ${YELLOW}Stop all oracle/curator containers first, then try again.${NC}"
+            exit 1
+        fi
+        echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
     fi
-    local RECEIPT_COUNT=$(python3 -c "import json; d=json.load(open('contracts/broadcast/DeployFullSystemE2E.s.sol/$CHAIN_ID/run-latest.json')); print(len(d.get('receipts',[])))" 2>/dev/null || echo "0")
-    if [ "$RECEIPT_COUNT" = "0" ]; then
-        echo -e "  ${RED}Core deployment broadcast failed — 0 receipts (transactions not submitted)${NC}"
-        echo -e "  ${YELLOW}This usually means forge cache was corrupted. Cache was cleaned, try again.${NC}"
-        exit 1
-    fi
-    echo -e "  ${GREEN}Core contracts deployed ($RECEIPT_COUNT txs confirmed)${NC}"
 
     # Copy fresh deployment to active so subsequent steps read correct addresses
     cp deployments/e2e-full-system.json "$DEPLOYMENT_FILE"
