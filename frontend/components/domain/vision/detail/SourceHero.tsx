@@ -29,7 +29,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
   const categoryLabel = getCategoryLabel(source.category)
 
   return (
-    <div className="border border-border-light overflow-hidden bg-white flex flex-col sm:flex-row hover-lift" data-fade-in>
+    <div className="border border-border-light overflow-hidden bg-white flex flex-col sm:flex-row hover-lift">
       {/* Left half — info */}
       <div className="flex-1 px-4 sm:px-5 py-4 flex flex-col justify-center animate-fade-up">
         <div className="flex items-center gap-2 mb-1.5">
