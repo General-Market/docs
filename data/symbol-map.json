@@ -2482,5 +2482,61 @@
   "0x4852f6d55e15f6d90f0f01773100e21037a50e2e": {
     "pair": "ZTCUSDT",
     "source": "bitget"
+  },
+  "0x62f38e8e7a984832f5da600b427486339d2e3580": {
+    "pair": "LINKUSDT",
+    "source": "bitget"
+  },
+  "0xc00d098ff04368a8802f0fa42d771b61b16e838c": {
+    "pair": "COTIUSDT",
+    "source": "bitget"
+  },
+  "0x74502ac9da14fd5460532aa02536b70da7cfe7d5": {
+    "pair": "ROSEUSDT",
+    "source": "bitget"
+  },
+  "0xc905425de95edea0a345b10df91b955df70264c8": {
+    "pair": "ZENUSDT",
+    "source": "bitget"
+  },
+  "0x470fad3e304621231d28c5df0f61902a806981be": {
+    "pair": "ZKUSDT",
+    "source": "bitget"
+  },
+  "0xda205cb5fcb902fa3fd9c97cf1eaa1ab181f0a39": {
+    "pair": "ZROUSDT",
+    "source": "bitget"
+  },
+  "0xce3699ca465b9a5dda696fbe6e449028b1e0b0f5": {
+    "pair": "WUSDT",
+    "source": "bitget"
+  },
+  "0xae7dacd7a5192193f726e94e5bcf3bd37c251dbe": {
+    "pair": "DBRUSDT",
+    "source": "bitget"
+  },
+  "0x8f82922347aad6f8c1978db736f453451f9ea1d8": {
+    "pair": "TUSDT",
+    "source": "bitget"
+  },
+  "0xc4926edab448c7f6484498df4a3dbaf3710e20e2": {
+    "pair": "SOONUSDT",
+    "source": "bitget"
+  },
+  "0x7e1c1c02ad063d42fc1afce946dec74b192bd426": {
+    "pair": "ZETAUSDT",
+    "source": "bitget"
+  },
+  "0x09289f70f8209849fba3a8709bc0a44bebc33780": {
+    "pair": "AXLUSDT",
+    "source": "bitget"
+  },
+  "0x896b4f1dd414c55de8b5c63cd08c516653392074": {
+    "pair": "ZAMAUSDT",
+    "source": "bitget"
+  },
+  "0x1ace9082c5d4bf3007d0e47cd84f7108110f3276": {
+    "pair": "ICXUSDT",
+    "source": "bitget"
   }
 }
