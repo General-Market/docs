@@ -10,8 +10,10 @@ import { FRONTEND_URL } from '../env'
 const BASE = FRONTEND_URL
 
 test.describe('System Health', () => {
-  test('System Status section loads on /index', async ({ page }) => {
-    await page.goto('/index')
+  test('System Status section loads on /index#system', async ({ page }) => {
+    // System section is behind sidebar navigation — use #system hash to activate it
+    await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Active Oracles/i).first()).toBeVisible({ timeout: 30_000 })
   })
 
@@ -51,12 +53,16 @@ test.describe('System Health', () => {
   })
 
   test('consensus status resolves to Healthy, Offline, or checking', async ({ page }) => {
-    await page.goto('/index')
+    // System section is behind sidebar navigation — use #system hash to activate it
+    await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Healthy|Offline|checking/i).first()).toBeVisible({ timeout: 30_000 })
   })
 
   test('orders total label is visible', async ({ page }) => {
-    await page.goto('/index')
+    // System section is behind sidebar navigation — use #system hash to activate it
+    await page.goto('/index#system', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.waitForTimeout(3_000)
     await expect(page.getByText(/Orders.*total/i).first()).toBeVisible({ timeout: 30_000 })
   })
 

@@ -5,22 +5,19 @@
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet'
 import { ensureWalletConnected } from '../helpers/selectors'
 
+/** Navigate to Portfolio section via sidebar or hash */
+async function navigateToPortfolio(page: import('@playwright/test').Page) {
+  // Portfolio is behind sidebar navigation — use #portfolio hash to activate it
+  await page.goto('/index#portfolio', { waitUntil: 'domcontentloaded', timeout: 60_000 })
+  await page.waitForTimeout(3_000)
+}
+
 test.describe('Portfolio & Orders', () => {
   test('Portfolio section shows tabs', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
-    await page.goto('/index')
+    await navigateToPortfolio(page)
     await ensureWalletConnected(page, TEST_ADDRESS)
-
-    await page.evaluate(() => {
-      const headings = document.querySelectorAll('h2')
-      for (const h of headings) {
-        if (h.textContent?.includes('Portfolio')) {
-          h.scrollIntoView()
-          break
-        }
-      }
-    })
 
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
     await expect(positionsTab).toBeVisible({ timeout: 15_000 })
@@ -29,36 +26,15 @@ test.describe('Portfolio & Orders', () => {
   test('Positions tab shows formatted values', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
-    await page.goto('/index')
+    await navigateToPortfolio(page)
     await ensureWalletConnected(page, TEST_ADDRESS)
-
-    // Scroll to Portfolio section and wait for tabs
-    await page.evaluate(() => {
-      const headings = document.querySelectorAll('h2')
-      for (const h of headings) {
-        if (h.textContent?.includes('Portfolio')) {
-          h.scrollIntoView()
-          break
-        }
-      }
-    })
 
     const positionsTab = page.getByRole('button', { name: /Positions/i }).first()
     let hasTab = await positionsTab.isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTab) {
-      // Retry with fresh navigation — data-node may be slow on testnet
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
+      // Retry with fresh navigation
+      await navigateToPortfolio(page)
       await ensureWalletConnected(page, TEST_ADDRESS)
-      await page.evaluate(() => {
-        const headings = document.querySelectorAll('h2')
-        for (const h of headings) {
-          if (h.textContent?.includes('Portfolio')) {
-            h.scrollIntoView()
-            break
-          }
-        }
-      })
       hasTab = await positionsTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
     expect(hasTab).toBe(true)
@@ -74,36 +50,15 @@ test.describe('Portfolio & Orders', () => {
   test('Trades tab renders', async ({ walletPage: page }) => {
     test.setTimeout(120_000)
 
-    await page.goto('/index')
+    await navigateToPortfolio(page)
     await ensureWalletConnected(page, TEST_ADDRESS)
-
-    // Scroll to Portfolio section and wait for tabs
-    await page.evaluate(() => {
-      const headings = document.querySelectorAll('h2')
-      for (const h of headings) {
-        if (h.textContent?.includes('Portfolio')) {
-          h.scrollIntoView()
-          break
-        }
-      }
-    })
 
     const tradesTab = page.getByRole('button', { name: /Trades/i }).first()
     let hasTab = await tradesTab.isVisible({ timeout: 15_000 }).catch(() => false)
     if (!hasTab) {
-      // Retry with fresh navigation — data-node may be slow on testnet
-      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.waitForTimeout(3_000)
+      // Retry with fresh navigation
+      await navigateToPortfolio(page)
       await ensureWalletConnected(page, TEST_ADDRESS)
-      await page.evaluate(() => {
-        const headings = document.querySelectorAll('h2')
-        for (const h of headings) {
-          if (h.textContent?.includes('Portfolio')) {
-            h.scrollIntoView()
-            break
-          }
-        }
-      })
       hasTab = await tradesTab.isVisible({ timeout: 30_000 }).catch(() => false)
     }
     expect(hasTab).toBe(true)
