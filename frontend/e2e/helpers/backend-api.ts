@@ -4,7 +4,7 @@
  * rather than relying on the UI's polling which may be stale.
  */
 
-import { encodeFunctionData, decodeFunctionResult, createWalletClient, createPublicClient, http, defineChain } from 'viem';
+import { encodeFunctionData, decodeFunctionResult, createWalletClient, createPublicClient, http, defineChain, keccak256, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, SETTLEMENT_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 import {
@@ -1267,7 +1267,128 @@ export async function deployBridgedItpDirect(
 
 // ── Morpho collateral token (ITP Vault on L3) ──────────────
 
-export const MORPHO_COLLATERAL = MORPHO_MARKET_PARAMS.collateralToken ?? '';
+export let MORPHO_COLLATERAL = MORPHO_MARKET_PARAMS.collateralToken ?? '';
+
+/**
+ * Override the in-memory Morpho deployment config.
+ * Used when the on-chain market is stale and the test creates a fresh one.
+ * Mutates MORPHO_DEPLOYMENT in place so readMorphoDeployment() returns updated values.
+ */
+export function overrideMorphoConfig(newConfig: {
+  contracts: Record<string, string>;
+  marketParams: Record<string, string>;
+}) {
+  Object.assign(MORPHO_DEPLOYMENT.contracts, newConfig.contracts);
+  Object.assign(MORPHO_DEPLOYMENT.marketParams, newConfig.marketParams);
+  Object.assign(MORPHO_CONTRACTS, newConfig.contracts);
+  Object.assign(MORPHO_MARKET_PARAMS, newConfig.marketParams);
+  MORPHO_COLLATERAL = newConfig.marketParams.collateralToken ?? MORPHO_COLLATERAL;
+}
+
+/**
+ * Check if an address is a valid ERC20 by calling totalSupply().
+ * Returns false if the call reverts or the address has no code.
+ */
+export async function isValidErc20(address: string): Promise<boolean> {
+  try {
+    // totalSupply() selector = 0x18160ddd
+    const result = await l3RpcCall('eth_call', [{ to: address, data: '0x18160ddd' }, 'latest']);
+    // A valid response is a 32-byte hex string (0x + 64 chars)
+    return typeof result === 'string' && result.length >= 66;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Create a new Morpho market via signed L3 TX.
+ * The IRM and LLTV must already be enabled on the Morpho contract.
+ * Returns the market ID (bytes32).
+ */
+export async function createMorphoMarketDirect(
+  morphoAddr: string,
+  loanToken: string,
+  collateralToken: string,
+  oracle: string,
+  irm: string,
+  lltv: bigint,
+): Promise<string> {
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+
+  // Compute market ID first to check if it already exists
+  const marketId = keccak256(
+    encodeAbiParameters(
+      parseAbiParameters('address, address, address, address, uint256'),
+      [loanToken as `0x${string}`, collateralToken as `0x${string}`, oracle as `0x${string}`, irm as `0x${string}`, lltv],
+    ),
+  );
+
+  // Check if market already exists (idempotent — safe for repeated test runs)
+  const marketIdHex = marketId.replace('0x', '');
+  const checkResult = await l3RpcCall('eth_call', [
+    { to: morphoAddr, data: '0x5c60e39a' + marketIdHex },
+    'latest',
+  ]) as string;
+  const checkHex = (checkResult || '').slice(2);
+  const lastUpdate = checkHex.length >= 320 ? BigInt('0x' + (checkHex.slice(256, 320) || '0')) : 0n;
+
+  if (lastUpdate > 0n) {
+    console.log(`Market ${marketId} already exists (lastUpdate=${lastUpdate}) — reusing`);
+    return marketId;
+  }
+
+  // createMarket((address,address,address,address,uint256)) selector = 0x8c1358a2
+  const data = '0x8c1358a2'
+    + pad(loanToken)
+    + pad(collateralToken)
+    + pad(oracle)
+    + pad(irm)
+    + uint(lltv);
+
+  await l3SignedSend(morphoAddr, data);
+  return marketId;
+}
+
+/**
+ * Supply loan tokens directly to a Morpho market (makes them available for borrowing).
+ * Mints tokens, approves Morpho, then calls supply().
+ */
+export async function supplyToMorphoDirect(
+  morphoAddr: string,
+  loanToken: string,
+  amount: bigint,
+  marketParams: { loanToken: string; collateralToken: string; oracle: string; irm: string; lltv: string },
+): Promise<void> {
+  const pad = (addr: string) => addr.replace('0x', '').toLowerCase().padStart(64, '0');
+  const uint = (v: bigint) => v.toString(16).padStart(64, '0');
+  const deployer = DEPLOYER_ADDRESS;
+
+  // Mint loan tokens to deployer
+  const mintData = '0x40c10f19' + pad(deployer) + uint(amount);
+  await l3SignedSend(loanToken, mintData);
+
+  // Approve Morpho to spend loan tokens
+  const approveData = '0x095ea7b3' + pad(morphoAddr) + 'f'.repeat(64);
+  await l3SignedSend(loanToken, approveData);
+
+  // supply((address,address,address,address,uint256),uint256,uint256,address,bytes) selector = 0xa99aad89
+  // supply amount in assets, 0 shares, onBehalf = deployer
+  // bytes offset = 9 words * 32 = 0x120 (5 MarketParams + assets + shares + onBehalf + offset pointer)
+  const supplyData = '0xa99aad89'
+    + pad(marketParams.loanToken)
+    + pad(marketParams.collateralToken)
+    + pad(marketParams.oracle)
+    + pad(marketParams.irm)
+    + uint(BigInt(marketParams.lltv))
+    + uint(amount)
+    + uint(0n) // shares = 0
+    + pad(deployer)
+    + '120'.padStart(64, '0') // bytes offset
+    + '0'.padStart(64, '0'); // bytes length = 0
+
+  await l3SignedSend(morphoAddr, supplyData);
+}
 
 /**
  * Mint Morpho collateral tokens (ITP Vault MockERC20) on L3.

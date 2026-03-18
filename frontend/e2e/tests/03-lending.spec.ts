@@ -16,8 +16,13 @@ import {
   readMorphoDeployment,
   l3RpcCall,
   l3SignedSend,
+  isValidErc20,
+  createMorphoMarketDirect,
+  supplyToMorphoDirect,
+  overrideMorphoConfig,
+  mintMorphoCollateral,
 } from '../helpers/backend-api';
-import { IS_ANVIL } from '../env';
+import { IS_ANVIL, CONTRACTS } from '../env';
 
 test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
   test('full lending cycle', async ({ walletPage: page }) => {
@@ -151,89 +156,132 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
     }
 
     // -- BACKEND API PATH (fallback when UI is not reachable) --
-    console.log('Borrow button not visible — using backend API path for lending cycle');
+    console.log('Using backend API path for lending cycle');
 
-    // Pre-check: verify Morpho collateral token has code (stale deployment = no contract)
+    // Pre-check: verify Morpho core contract exists
     const morphoCheck = readMorphoDeployment();
-    if (morphoCheck) {
-      const code = await l3RpcCall('eth_getCode', [morphoCheck.marketParams.collateralToken, 'latest']);
-      if (!code || code === '0x') {
-        console.log(`Morpho collateralToken ${morphoCheck.marketParams.collateralToken} has no code — Morpho needs redeployment`);
-        console.log('Validating Morpho contract exists and oracle is readable instead');
+    expect(morphoCheck).toBeTruthy();
+    const morphoAddr = morphoCheck!.contracts?.MORPHO;
+    expect(morphoAddr).toBeTruthy();
 
-        // Verify MORPHO contract has code
-        const morphoCode = await l3RpcCall('eth_getCode', [morphoCheck.contracts.MORPHO, 'latest']);
-        expect(morphoCode).not.toBe('0x');
-        console.log(`MORPHO contract at ${morphoCheck.contracts.MORPHO}: has code`);
+    const morphoCode = await l3RpcCall('eth_getCode', [morphoAddr, 'latest']);
+    if (!morphoCode || morphoCode === '0x') {
+      throw new Error(`MORPHO at ${morphoAddr} has no code — deployment is entirely stale`);
+    }
+    console.log(`MORPHO contract at ${morphoAddr}: has code`);
 
-        // Verify oracle is readable (test 10-morpho covers this in detail)
-        const oracleCode = await l3RpcCall('eth_getCode', [morphoCheck.contracts.ITP_NAV_ORACLE, 'latest']);
-        expect(oracleCode).not.toBe('0x');
-        console.log(`Oracle at ${morphoCheck.contracts.ITP_NAV_ORACLE}: has code`);
+    // Validate collateral and loan tokens are real ERC20s
+    const collateralOk = await isValidErc20(morphoCheck!.marketParams.collateralToken);
+    const loanOk = await isValidErc20(morphoCheck!.marketParams.loanToken);
+    const currentUsdc = CONTRACTS.L3_WUSDC || CONTRACTS.USDC;
 
-        console.log('Morpho infrastructure verified — lending cycle requires redeployment of collateral token');
-        return;
-      }
+    let needFreshMarket = false;
+    if (!collateralOk) {
+      console.log(`Collateral token ${morphoCheck!.marketParams.collateralToken} is not a valid ERC20 — stale deployment`);
+      needFreshMarket = true;
+    }
+    if (!loanOk) {
+      console.log(`Loan token ${morphoCheck!.marketParams.loanToken} is not a valid ERC20 — stale deployment`);
+      needFreshMarket = true;
+    }
+    // Also check if loan token matches current USDC (deployment drift)
+    if (loanOk && morphoCheck!.marketParams.loanToken.toLowerCase() !== currentUsdc.toLowerCase()) {
+      console.log(`Loan token ${morphoCheck!.marketParams.loanToken} differs from current USDC ${currentUsdc}`);
+      needFreshMarket = true;
     }
 
-    // Verify MORPHO contract has code before attempting deposits
-    const morphoAddr = morphoCheck?.contracts?.MORPHO;
-    if (morphoAddr) {
-      const morphoCode = await l3RpcCall('eth_getCode', [morphoAddr, 'latest']);
-      if (!morphoCode || morphoCode === '0x') {
-        console.log(`MORPHO at ${morphoAddr} has no code — stale deployment, skipping lending cycle`);
-        return;
-      }
-    }
+    if (needFreshMarket) {
+      // Create a fresh Morpho market using MOCK_USDT as collateral and current L3_WUSDC as loan token.
+      // The existing MORPHO contract, IRM, and LLTV are reused — only the market params change.
+      const mockUsdt = CONTRACTS.MOCK_USDT;
+      expect(mockUsdt).toBeTruthy();
+      const mockUsdtValid = await isValidErc20(mockUsdt);
+      expect(mockUsdtValid).toBe(true);
+      console.log(`Using MOCK_USDT (${mockUsdt}) as collateral, L3_WUSDC (${currentUsdc}) as loan token`);
 
-    // Check if Morpho market actually exists (was createMarket called?)
-    if (morphoCheck) {
-      // market(bytes32) selector = 0x5c60e39a
-      const marketId = morphoCheck.contracts.MARKET_ID.replace('0x', '');
+      const irm = morphoCheck!.marketParams.irm || morphoCheck!.contracts.ADAPTIVE_IRM;
+      const lltv = morphoCheck!.marketParams.lltv || '770000000000000000';
+      const oracle = morphoCheck!.marketParams.oracle || morphoCheck!.contracts.ITP_NAV_ORACLE;
+
+      console.log('Creating fresh Morpho market...');
+      const newMarketId = await createMorphoMarketDirect(
+        morphoAddr, currentUsdc, mockUsdt, oracle, irm, BigInt(lltv),
+      );
+      console.log(`Fresh market created — ID: ${newMarketId}`);
+
+      // Supply USDC liquidity so borrowing works
+      const liquidityAmount = 100_000n * 10n ** 18n;
+      const newMarketParams = {
+        loanToken: currentUsdc,
+        collateralToken: mockUsdt,
+        oracle,
+        irm,
+        lltv: lltv.toString(),
+      };
+      console.log('Seeding market with USDC liquidity...');
+      await supplyToMorphoDirect(morphoAddr, currentUsdc, liquidityAmount, newMarketParams);
+      console.log(`Supplied ${liquidityAmount} USDC to market`);
+
+      // Override in-memory Morpho config so all helpers use the new market
+      overrideMorphoConfig({
+        contracts: { ...morphoCheck!.contracts, MARKET_ID: newMarketId },
+        marketParams: newMarketParams,
+      });
+      console.log('Morpho config overridden with fresh market params');
+    } else {
+      // Existing market — verify it was created on-chain
+      const marketId = morphoCheck!.contracts.MARKET_ID.replace('0x', '');
       const marketResult = await l3RpcCall('eth_call', [
-        { to: morphoCheck.contracts.MORPHO, data: '0x5c60e39a' + marketId },
+        { to: morphoAddr, data: '0x5c60e39a' + marketId },
         'latest',
       ]) as string;
-      // market() returns (..., lastUpdate, fee) — lastUpdate at offset 256-320
       const hex = (marketResult || '').slice(2);
       const lastUpdate = hex.length >= 320 ? BigInt('0x' + (hex.slice(256, 320) || '0')) : 0n;
       if (lastUpdate === 0n) {
-        console.log('Morpho market not created on-chain (lastUpdate=0) — lending cycle requires market creation');
-        return;
+        throw new Error('Morpho market not created on-chain (lastUpdate=0)');
       }
-      console.log(`Morpho market exists (lastUpdate=${lastUpdate})`);
+      console.log(`Existing Morpho market verified (lastUpdate=${lastUpdate})`);
     }
 
-    // Step 0: Deposit USDC into ITP vault to get vault tokens (collateral)
-    // The Morpho market uses ITP vault tokens (ERC4626) as collateral, not raw USDC
-    const vaultAddr = morphoCheck!.marketParams.collateralToken;
-    const vaultUsdcAmount = 20n * 10n ** 18n;
-    // Ensure user has USDC
-    await mintL3Usdc(TEST_ADDRESS, vaultUsdcAmount);
-    // Approve USDC to vault
-    const usdcAddr = morphoCheck!.marketParams.loanToken;
-    const approveData = '0x095ea7b3' +
-      vaultAddr.replace('0x', '').toLowerCase().padStart(64, '0') +
-      'f'.repeat(64);
-    await l3SignedSend(usdcAddr, approveData);
-    // Deposit USDC into vault: deposit(uint256 assets, address receiver)
-    const depositVaultData = '0x6e553f65' +
-      vaultUsdcAmount.toString(16).padStart(64, '0') +
-      TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
-    await l3SignedSend(vaultAddr, depositVaultData);
+    // Re-read config (may have been overridden above)
+    const morpho = readMorphoDeployment()!;
+    const collateralToken = morpho.marketParams.collateralToken;
+    const loanToken = morpho.marketParams.loanToken;
 
-    // Verify vault tokens were received
-    const vaultBalData = '0x70a08231' + TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
-    const vaultBal = BigInt(await l3RpcCall('eth_call', [{ to: vaultAddr, data: vaultBalData }, 'latest']) as string || '0x0');
-    if (vaultBal === 0n) {
-      console.log('Vault deposit did not produce tokens — vault may need initialization or different deposit flow');
-      console.log('Verifying Morpho infrastructure instead');
-      expect(morphoCheck!.contracts.MORPHO).toBeTruthy();
-      return;
+    // Step 0: Get collateral tokens
+    // If using a MockERC20 (fresh market), mint directly. If using a vault, deposit USDC first.
+    const isVault = await (async () => {
+      try {
+        // Check if collateral token has asset() — ERC4626 vault indicator
+        const r = await l3RpcCall('eth_call', [{ to: collateralToken, data: '0x38d52e0f' }, 'latest']);
+        return typeof r === 'string' && r.length >= 66;
+      } catch { return false; }
+    })();
+
+    if (isVault) {
+      // Vault path: deposit loan token into vault to get collateral tokens
+      console.log('Collateral is an ERC4626 vault — depositing USDC to get vault tokens');
+      const vaultUsdcAmount = 20n * 10n ** 18n;
+      await mintL3Usdc(TEST_ADDRESS, vaultUsdcAmount);
+      const pad = (a: string) => a.replace('0x', '').toLowerCase().padStart(64, '0');
+      const approveData = '0x095ea7b3' + pad(collateralToken) + 'f'.repeat(64);
+      await l3SignedSend(loanToken, approveData);
+      const depositVaultData = '0x6e553f65' +
+        vaultUsdcAmount.toString(16).padStart(64, '0') +
+        TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
+      await l3SignedSend(collateralToken, depositVaultData);
+      const vaultBalData = '0x70a08231' + TEST_ADDRESS.replace('0x', '').toLowerCase().padStart(64, '0');
+      const vaultBal = BigInt(await l3RpcCall('eth_call', [{ to: collateralToken, data: vaultBalData }, 'latest']) as string || '0x0');
+      expect(vaultBal).toBeGreaterThan(0n);
+      console.log(`Got ${vaultBal} vault tokens`);
+    } else {
+      // MockERC20 path: mint collateral directly
+      console.log('Collateral is a MockERC20 — minting directly');
+      await mintMorphoCollateral(TEST_ADDRESS, 50n * 10n ** 18n);
+      console.log('Minted 50 collateral tokens');
     }
-    console.log(`Deposited USDC into vault — got ${vaultBal} vault tokens`);
 
-    // Step 1: Deposit vault tokens as Morpho collateral
+    // Step 1: Deposit collateral into Morpho
     const posBefore = await getMorphoPositionDirect(TEST_ADDRESS);
     console.log(`Position before deposit: collateral=${posBefore.collateral}`);
 
@@ -267,7 +315,7 @@ test.describe('Lending (Deposit -> Borrow -> Repay -> Withdraw)', () => {
     console.log('Step 2: Borrow (backend API)');
 
     // Step 3: Repay (direct RPC) — repay the borrowed amount
-    // Need to mint USDC to cover accrued interest
+    // Mint extra USDC to cover accrued interest
     await mintL3Usdc(TEST_ADDRESS, 10n * 10n ** 18n);
     const repayTx = await repayDirect(TEST_ADDRESS, borrowAmount);
     console.log(`Repay TX sent: ${repayTx}`);
