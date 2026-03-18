@@ -162,7 +162,74 @@ export const sellModal = {
   },
 };
 
-// ── Lending Modal ───────────────────────────────────────────
+// ── Lending Section (sidebar nav → section#lend → VaultModal inline) ──
+
+/** Navigate to Lending section via sidebar or mobile nav */
+export async function navigateToLending(page: Page): Promise<boolean> {
+  // Desktop sidebar
+  const sidebarBtn = page.locator('aside button', { hasText: 'Lending' });
+  if (await sidebarBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await sidebarBtn.click();
+    await page.waitForTimeout(1_000);
+    return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
+  }
+  // Mobile bottom nav
+  const mobileBtn = page.locator('nav button', { hasText: 'Lending' });
+  if (await mobileBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await mobileBtn.click();
+    await page.waitForTimeout(1_000);
+    return await page.getByRole('heading', { name: 'Lend' }).isVisible({ timeout: 10_000 }).catch(() => false);
+  }
+  return false;
+}
+
+/** Scoped locator for the lending section */
+export function lendSection(page: Page): Locator {
+  return page.locator('#lend');
+}
+
+/**
+ * Lending section action helpers — targets the inline VaultModal.
+ * The VaultModal has two panels (Supply / Borrow) with action buttons
+ * that toggle inline forms (Deposit, Withdraw, Borrow USDC, Repay).
+ */
+export const lendingSection = {
+  depositButton(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Deposit', exact: true });
+  },
+  withdrawButton(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Withdraw', exact: true });
+  },
+  borrowUsdcButton(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Borrow USDC', exact: true });
+  },
+  repayButton(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Repay', exact: true });
+  },
+  amountInput(page: Page): Locator {
+    return lendSection(page).locator('input[type="number"]').first();
+  },
+  submitDeposit(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: /Approve & Deposit|Deposit USDC/ });
+  },
+  submitBorrow(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: /Borrow USDC/ }).last();
+  },
+  submitRepay(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: /Approve & Repay|Repay Debt/ });
+  },
+  successDeposit(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Deposited!' });
+  },
+  successBorrow(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Borrowed!' });
+  },
+  successRepay(page: Page): Locator {
+    return lendSection(page).getByRole('button', { name: 'Repaid!' });
+  },
+};
+
+// ── Lending Modal (deprecated — kept for backward compat) ────
 
 export const lendingModal = {
   borrowTab(page: Page): Locator {
@@ -173,95 +240,73 @@ export const lendingModal = {
     return modalContainer(page).getByRole('button', { name: 'Repay', exact: true });
   },
 
-  // Deposit Collateral section
-  // Each lending component has: <div class="bg-terminal-dark..."><h2>Section Title</h2>...
-  // We target the h2 then go up ONE level to the component root div.
   deposit: {
     container(page: Page): Locator {
       return page.locator('h2:has-text("Deposit Collateral")').locator('..');
     },
-
     amountInput(page: Page): Locator {
       return this.container(page).locator('input[type="number"]');
     },
-
     maxButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'MAX' });
     },
-
     submitButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: /Approve & Deposit|Deposit Collateral|Deposited!/ });
     },
-
     successText(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'Deposited!' });
     },
   },
 
-  // Borrow USDC section
   borrow: {
     container(page: Page): Locator {
       return page.locator('h2:has-text("Borrow USDC")').locator('..');
     },
-
     amountInput(page: Page): Locator {
       return this.container(page).locator('input[type="number"]');
     },
-
     maxButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'MAX' });
     },
-
     submitButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: /Borrow USDC|Borrowed!/ });
     },
-
     successText(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'Borrowed!' });
     },
   },
 
-  // Repay Debt section
   repay: {
     container(page: Page): Locator {
       return page.locator('h2:has-text("Repay Debt")').locator('..');
     },
-
     amountInput(page: Page): Locator {
       return this.container(page).locator('input[type="number"]');
     },
-
     maxButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'MAX' });
     },
-
     submitButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: /Approve & Repay|Repay Debt|Repaid!/ });
     },
-
     successText(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'Repaid!' });
     },
   },
 
-  // Withdraw Collateral section
   withdraw: {
     container(page: Page): Locator {
       return page.locator('h2:has-text("Withdraw Collateral")').locator('..');
     },
-
     amountInput(page: Page): Locator {
       return this.container(page).locator('input[type="number"]');
     },
-
     maxButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'MAX' });
     },
-
     submitButton(page: Page): Locator {
       return this.container(page).getByRole('button', { name: /Withdraw Collateral|Withdrawn!/ });
     },
-
     successText(page: Page): Locator {
       return this.container(page).getByRole('button', { name: 'Withdrawn!' });
     },
