@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useAccount, useReadContract, useConnect } from 'wagmi'
+import { useAccount, useReadContract, useConnect, usePublicClient } from 'wagmi'
 import { formatUnits } from 'viem'
 import type { BitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -180,8 +180,11 @@ export default function BatchEntryPanel({
     }
   }, [activeBatch?.currentTick, betsSubmittedTick])
 
+  // -- Get public client for direct reads --
+  const publicClient = usePublicClient({ chainId: indexL3.id })
+
   // -- Enter batch handler --
-  const handleEnterBatch = useCallback(() => {
+  const handleEnterBatch = useCallback(async () => {
     if (!activeBatch || !canSubmit) return
 
     // Convert USDC amount to 18-decimal bigint (L3 USDC = 18 decimals)
@@ -195,7 +198,24 @@ export default function BatchEntryPanel({
       depositMore(BigInt(activeBatch.id), depositAmount)
     } else {
       // First time joining — need configHash and bets
-      if (!configHash) return
+      // Re-read configHash from on-chain RIGHT BEFORE joinBatch to prevent promotion race
+      let liveConfigHash = configHash
+      if (!liveConfigHash) return
+
+      try {
+        if (publicClient) {
+          const batchData = await publicClient.readContract({
+            address: VISION_ADDRESS,
+            abi: VISION_ABI,
+            functionName: 'getBatch',
+            args: [BigInt(activeBatch.id)],
+          })
+          liveConfigHash = (batchData as any)?.configHash ?? configHash
+        }
+      } catch (e) {
+        console.warn('Failed to re-read configHash, using cached value', e)
+        // Fall through to use cached configHash
+      }
 
       // Build bets array from bitmap state in market order
       const bets: BetDirection[] = marketIds.map((id) => {
@@ -207,14 +227,14 @@ export default function BatchEntryPanel({
 
       join({
         batchId: BigInt(activeBatch.id),
-        configHash,
+        configHash: liveConfigHash,
         depositAmount,
         stakePerTick: depositAmount, // stake entire deposit per tick for now
         bets,
         marketCount: marketIds.length,
       })
     }
-  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, isJoined, depositMore])
+  }, [activeBatch, canSubmit, configHash, stakeValue, marketIds, bitmapEditor.state, join, isJoined, depositMore, publicClient])
 
   // -- Quick-stake buttons --
   const quickAmounts = [1, 5, 10, 50, 100]
