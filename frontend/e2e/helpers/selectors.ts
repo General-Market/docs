@@ -51,9 +51,13 @@ export async function ensureWalletConnected(page: Page, address: string): Promis
 
 // ── ITP Listing (table-based) ────────────────────────────────
 
-/** Each ITP is a <tr> row with id="itp-card-{itpId}" inside the product table */
+/**
+ * Each ITP is a <tr> row with id="itp-card-{itpId}" inside the product table.
+ * Important: the page also has a sr-only section with <article> elements (SEO).
+ * We scope to <tr> elements inside <table> to avoid matching sr-only content.
+ */
 export function itpCard(page: Page): Locator {
-  return page.locator('[id^="itp-card-"]');
+  return page.locator('table tr[id^="itp-card-"]');
 }
 
 /** Nth ITP row (0-indexed). Defaults to first. */

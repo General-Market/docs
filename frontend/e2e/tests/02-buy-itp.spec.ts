@@ -1,6 +1,6 @@
 import { test, expect, TEST_ADDRESS, ITP_ID } from '../fixtures/wallet';
-import { ensureWalletConnected, buyButton, buyModal, itpCard } from '../helpers/selectors';
-import { getL3UserShares, getL3UsdcBalance, getItpStateL3, getOrder, mintL3Usdc } from '../helpers/backend-api';
+import { ensureWalletConnected, buyModal } from '../helpers/selectors';
+import { getL3UserShares, getL3UsdcBalance, getOrder, mintL3Usdc } from '../helpers/backend-api';
 import { parseUnits } from 'viem';
 
 test.describe('Buy ITP', () => {
@@ -12,7 +12,6 @@ test.describe('Buy ITP', () => {
     if (usdcBalance < parseUnits('100', 18)) {
       console.log('Buy test: minting 10,000 L3 USDC via direct RPC');
       await mintL3Usdc(TEST_ADDRESS, parseUnits('10000', 18));
-      // Poll until balance reflects the mint (L3 block time is fast but RPC may lag)
       const mintDeadline = Date.now() + 15_000;
       while (Date.now() < mintDeadline) {
         const newBalance = await getL3UsdcBalance(TEST_ADDRESS);
@@ -24,35 +23,44 @@ test.describe('Buy ITP', () => {
     // 2. Connect wallet
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // 3. Wait for ITP table rows to load (SSE/REST delivers data async)
-    //    The ItpListing renders a <table> with <tr id="itp-card-{itpId}"> rows.
+    // 3. Wait for the ItpListing <table> to render with data rows.
+    //    The page has two layers:
+    //    - A sr-only SSR section with <article> elements (SEO, always present)
+    //    - A client-side <table> inside HomeClient > ItpListing (loads async via REST/SSE)
+    //    We must wait for the actual interactive table, not the sr-only content.
+    const productTable = page.locator('table');
     try {
-      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
     } catch {
-      // Data-node may be slow on testnet — retry once with fresh navigation
+      // Data-node may be slow on testnet — retry with fresh navigation
       await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
     }
 
-    // 4. Click Buy on first ITP table row
-    const buyBtn = buyButton(page);
+    // 4. Wait for at least one data row inside the table
+    const tableRow = page.locator('tr[id^="itp-card-"]');
+    await expect(tableRow.first()).toBeVisible({ timeout: 30_000 });
+
+    // 5. Click "Buy" button in the first table row.
+    //    WalletActionButton renders <button> with text "Buy" inside each <tr>.
+    //    When wallet is connected, it fires onClick (opens BuyItpModal).
+    //    When not connected, it shows "Connect Wallet" on hover — but we connected in step 2.
+    const buyBtn = tableRow.first().getByRole('button', { name: 'Buy', exact: true });
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
     await buyBtn.click();
 
-    // 5. Buy modal should appear — heading is "Buy {itpName}"
+    // 6. Buy modal should appear — heading "Buy {itpName}"
     await expect(buyModal.heading(page)).toBeVisible({ timeout: 10_000 });
 
-    // 6. Wait for USDC balance to appear in modal (wagmi reads via /rpc proxy)
-    //    Balance text: "Balance: 1,234.56 USDC" — must show a nonzero amount
+    // 7. Wait for USDC balance to appear in modal: "Balance: X.XX USDC"
     await expect(buyModal.balanceText(page)).toBeVisible({ timeout: 30_000 });
 
-    // 7. Enter buy amount (100 USDC)
+    // 8. Enter buy amount (100 USDC)
     const amountInput = buyModal.amountInput(page);
     await expect(amountInput).toBeVisible({ timeout: 5_000 });
     await amountInput.fill('100');
 
-    // 8. Limit price — set a high absolute limit ($20) to cover any realistic NAV drift
-    //    during oracle consensus (30-90s)
+    // 9. Limit price — set a high absolute limit ($20) to cover any realistic NAV drift
     const limitInput = buyModal.limitPriceInput(page);
     const limitPrice = '20.000000';
     await limitInput.clear();
@@ -63,21 +71,20 @@ test.describe('Buy ITP', () => {
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     console.log(`Buy test: sharesBefore=${sharesBefore}`);
 
-    // 9. Click Approve & Buy (or Buy ITP if already approved)
+    // 10. Click Approve & Buy (or Buy ITP if already approved)
     const submitBtn = buyModal.submitButton(page);
     await expect(submitBtn).toBeEnabled({ timeout: 15_000 });
     await submitBtn.click();
 
-    // 10. Wait for buy tx to be confirmed (stepper enters "Process" phase)
-    //     Micro-step labels: "Batching order..." then "Executing trades..."
+    // 11. Wait for buy tx to be confirmed (stepper enters "Process" phase)
     await expect(page.getByText(/Batching order|Executing trades/)).toBeVisible({ timeout: 60_000 });
 
-    // 11. Extract L3 order ID from the modal stepper txRefs ("L3 #N")
+    // 12. Extract L3 order ID from the modal stepper txRefs ("L3 #N")
     const l3OrderIdText = await page.getByText(/L3 #\d+/).textContent({ timeout: 30_000 }).catch(() => null);
     const orderId = l3OrderIdText ? parseInt(l3OrderIdText.match(/#(\d+)/)?.[1] || '0') || null : null;
     console.log(`Buy test: orderId=${orderId}`);
 
-    // 12. Wait for real oracle consensus pipeline to fill the order.
+    // 13. Wait for real oracle consensus pipeline to fill the order.
     //     Race: modal "Buy More" button OR backend order status change (whichever first).
     const fillDetected = await Promise.race([
       expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 210_000 })
@@ -101,12 +108,11 @@ test.describe('Buy ITP', () => {
       })(),
     ]);
 
-    // 13. Verify the buy was filled
+    // 14. Verify the buy was filled
     if (fillDetected === null) {
       await page.waitForTimeout(15_000);
     }
 
-    // Check multiple success criteria: UI detection, order status, or shares increase
     const sharesAfter = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     const sharesIncreased = sharesAfter > sharesBefore;
 
@@ -114,7 +120,7 @@ test.describe('Buy ITP', () => {
     if (orderId) {
       try {
         const order = await getOrder(orderId);
-        orderFilled = order.status >= 2; // Filled or higher
+        orderFilled = order.status >= 2;
         console.log(`Buy test: order ${orderId} status=${order.status} (${['Pending','Batched','Filled','Cancelled','Expired'][order.status]})`);
       } catch (e) {
         console.log(`Buy test: order check failed: ${e}`);
