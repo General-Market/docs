@@ -11,14 +11,12 @@ import {
 import { IS_ANVIL } from '../env';
 
 /**
- * Navigate to the Create Index section via URL hash.
+ * Navigate to the Create Index section.
  *
- * The wallet fixture lands on /index (Markets section).
- * HomeClient reads window.location.hash on mount and sets activeSection.
- * Navigating to /index#create causes a reload that lands directly on the
- * create section — no sidebar button click required, no animation race.
- *
- * context.addInitScript and wagmi localStorage persist across navigations.
+ * Strategy: goto /index#create → wait for React hydration → check if the
+ * hash-reading useEffect activated the create section. If not (race between
+ * hydration and the empty-deps useEffect, or Next.js client-side routing
+ * swallowing the hash), click the sidebar "Create Index" button as fallback.
  */
 async function navigateToCreateSection(page: import('@playwright/test').Page) {
   await page.goto(`${FRONTEND_URL}/index#create`, {
@@ -34,8 +32,24 @@ async function navigateToCreateSection(page: import('@playwright/test').Page) {
     },
     { timeout: 30_000 }
   ).catch(() => {});
-  // The #create motion.div should now be active (not invisible)
-  await expect(page.locator('#create')).not.toHaveClass(/invisible/, { timeout: 15_000 });
+
+  // Give the hash-reading useEffect time to fire and re-render
+  await page.waitForTimeout(2_000);
+
+  const createSection = page.locator('#create');
+  const stillInvisible = await createSection.evaluate(
+    el => el.classList.contains('invisible')
+  ).catch(() => true);
+
+  if (stillInvisible) {
+    // Hash navigation failed — click the sidebar button as fallback
+    const sidebarBtn = page.getByRole('button', { name: 'Create Index' });
+    await sidebarBtn.click({ timeout: 10_000 });
+    await page.waitForTimeout(1_000);
+  }
+
+  // Final assertion: the create section must be visible
+  await expect(createSection).not.toHaveClass(/invisible/, { timeout: 10_000 });
 }
 
 test.describe('Create ITP', () => {
