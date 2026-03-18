@@ -734,7 +734,7 @@ export interface JoinResult {
 /**
  * Complete join flow: deposit USDC to Vision balance → joinBatch on-chain → submit bitmap to issuers.
  * With the dual-balance architecture, joinBatch debits from Vision balance (not direct USDC transfer).
- * @param configHash  Active configHash for the batch (read from chain or vision-batches.json)
+ * @param configHash  Active configHash for the batch (read from chain via getBatchConfigHash)
  */
 export async function fullJoinBatch(
   player: string,
@@ -870,45 +870,13 @@ export async function getBatchConfigHash(batchId: number): Promise<`0x${string}`
 
 /**
  * Find a batch that the given player hasn't joined yet.
- * Scans vision-batches.json (deployed by testnet.sh refresh-batches) for unjoined batches.
- * Falls back to on-chain scan if JSON is unavailable.
+ * Scans on-chain via nextBatchId + getBatch — no stale JSON intermediaries.
  *
  * Run `./testnet.sh refresh-batches` to create fresh batches with a new version
  * when all existing batches have been joined by previous E2E runs.
  */
 export async function findAvailableE2eBatch(player: string = PLAYER1): Promise<{ batchId: number; configHash: `0x${string}` }> {
-  // Read vision-batches.json for batch mappings (refreshed by testnet.sh refresh-batches)
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const batches = require('../../../deployments/vision-batches.json')
-    const entries = Object.values(batches.batches || {}) as Array<{ batchId: number; configHash: string }>
-    // Sort by batchId descending (newest first = most likely unjoined)
-    entries.sort((a, b) => b.batchId - a.batchId)
-    for (const entry of entries) {
-      try {
-        const pos = await getPosition(entry.batchId, player)
-        // Use joinTimestamp to detect past joins — stakePerTick resets to 0 after withdraw
-        // but the contract still flags the player as AlreadyJoined
-        if (pos.joinTimestamp === 0n) {
-          return { batchId: entry.batchId, configHash: entry.configHash as `0x${string}` }
-        }
-      } catch {
-        // Position read failed — verify batch exists on-chain before returning
-        // (JSON may have stale batch IDs from a different contract deployment)
-        try {
-          const liveConfigHash = await getBatchConfigHash(entry.batchId)
-          return { batchId: entry.batchId, configHash: liveConfigHash }
-        } catch {
-          // Batch doesn't exist on-chain — skip it
-          continue
-        }
-      }
-    }
-  } catch {
-    // vision-batches.json not available, fall back to on-chain scan
-  }
-
-  // Fallback: scan batches from chain backwards
+  // Always scan on-chain — vision-batches.json goes stale after redeployments
   const allBatches = await getBatchesFromChain()
   if (allBatches.length === 0) throw new Error('No batches found on chain')
   for (let i = allBatches.length - 1; i >= 0; i--) {
