@@ -227,7 +227,7 @@ export default function BatchEntryPanel({
 
       join({
         batchId: BigInt(activeBatch.id),
-        configHash: liveConfigHash,
+        configHash: liveConfigHash!,
         depositAmount,
         stakePerTick: depositAmount, // stake entire deposit per tick for now
         bets,
