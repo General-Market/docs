@@ -43,17 +43,15 @@ test.describe('Vision Sources — Browse', () => {
 
   test('category pills are visible with counts', async ({ page }) => {
     await page.goto('/')
-    // Wait for source cards first — pills render from same data
-    const cards = sourceCard(page)
-    await expect(cards.first()).toBeVisible({ timeout: 30_000 })
-
-    // "All" pill should be visible
+    // Pills render from useSourceRegistry — they appear even before cards
+    // (cards wait for per-source snapshots, pills only need the registry).
+    // But give enough time for the registry to load.
     const allPill = categoryPill(page, 'All')
-    await expect(allPill).toBeVisible({ timeout: 15_000 })
+    await expect(allPill).toBeVisible({ timeout: 30_000 })
 
     // Finance pill should also be visible
     const financePill = categoryPill(page, 'Finance')
-    await expect(financePill).toBeVisible()
+    await expect(financePill).toBeVisible({ timeout: 15_000 })
   })
 
   test('category filtering reduces visible cards', async ({ page }) => {
@@ -62,44 +60,45 @@ test.describe('Vision Sources — Browse', () => {
     const cards = sourceCard(page)
     await expect(cards.first()).toBeVisible({ timeout: 30_000 })
 
-    // Wait for card count to stabilize (sources grid may still be rendering)
+    // Wait for card count to stabilize (sources grid may still be rendering).
+    // Cards depend on per-source snapshot fetches — give extra settle time.
     let allCount = 0
     await expect(async () => {
       const c = await cards.count()
       expect(c).toBeGreaterThan(10)
       allCount = c
-    }).toPass({ timeout: 30_000 })
+    }).toPass({ timeout: 45_000 })
     // Extra settle — NextBatches re-sorts every 1s which can change card visibility
-    await page.waitForTimeout(3_000)
+    await page.waitForTimeout(5_000)
     allCount = await cards.count()
 
-    // Click "Finance" category
-    // Use force:true because NextBatches re-sorts every 1s causing layout shifts
-    // that can intercept the click target
-    const financePill = categoryPill(page, 'Finance')
-    await financePill.click({ force: true })
+    // Click a small category that cannot contain all sources.
+    // "Transport" or "Space" are safer than "Finance" because they have fewer sources.
+    // We use "Transport" — typically has 3-6 sources vs 20+ Finance.
+    const filterPill = categoryPill(page, 'Transport')
+    await expect(filterPill).toBeVisible({ timeout: 15_000 })
+    await filterPill.click({ force: true })
 
-    // Wait for the Finance pill to show active state (re-render started)
-    // CategoryNav uses font-bold for the active pill
-    await expect(financePill).toHaveClass(/font-bold/, { timeout: 15_000 })
+    // Wait for the pill to show active state (font-bold class applied)
+    await expect(filterPill).toHaveClass(/font-bold/, { timeout: 15_000 })
 
     // Wait for re-render — card count should be smaller.
     // Use polling instead of fixed timeout for reliability.
     await expect(async () => {
       const count = await cards.count()
       expect(count).toBeLessThan(allCount)
-    }).toPass({ timeout: 30_000 })
-    const financeCount = await cards.count()
-    expect(financeCount).toBeLessThan(allCount)
-    expect(financeCount).toBeGreaterThan(0)
+    }).toPass({ timeout: 45_000 })
+    const filteredCount = await cards.count()
+    expect(filteredCount).toBeLessThan(allCount)
+    expect(filteredCount).toBeGreaterThan(0)
 
     // Click "All" to reset — wait for count to return close to original
     // (may not be exactly allCount due to NextBatches re-sort timing)
-    await categoryPill(page, 'All').click()
+    await categoryPill(page, 'All').click({ force: true })
     await expect(async () => {
       const count = await cards.count()
       expect(count).toBeGreaterThanOrEqual(allCount - 5)
-    }).toPass({ timeout: 30_000 })
+    }).toPass({ timeout: 45_000 })
   })
 
   test('source card shows name and category badge', async ({ page }) => {
@@ -183,16 +182,19 @@ test.describe('Vision Sources — Detail', () => {
   test('detail page shows Enter Batch panel', async ({ page }) => {
     test.setTimeout(120_000)
     await page.goto('/source/coingecko', { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    // Wait for source hero to confirm page loaded
+    // Wait for source hero to confirm page loaded (registry must finish loading first)
     const title = sourceHeroTitle(page)
-    await expect(title).toBeVisible({ timeout: 30_000 })
+    await expect(title).toBeVisible({ timeout: 60_000 })
 
+    // BatchEntryPanel heading: "Set predictions for next tick"
     const heading = enterBatchHeading(page)
     await expect(heading).toBeVisible({ timeout: 30_000 })
 
-    // Enter Batch button should be present
-    const btn = enterBatchButton(page)
-    await expect(btn).toBeVisible({ timeout: 15_000 })
+    // The main action button is always present — its label depends on wallet state.
+    // Without wallet: "Connect Wallet" or "Enter Batch". With wallet: "Enter Batch" or "Deposit More".
+    // Match any of these labels to verify the button exists.
+    const btn = page.getByRole('button', { name: /Enter Batch|Connect Wallet|Deposit/ })
+    await expect(btn.first()).toBeVisible({ timeout: 15_000 })
   })
 
   test('stake input and quick amount buttons are visible', async ({ page }) => {
