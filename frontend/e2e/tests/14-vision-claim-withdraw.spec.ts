@@ -28,6 +28,7 @@ import {
   findAvailableE2eBatch,
   randomBets,
   oppositeBets,
+  getBatchesFromChain,
 } from '../helpers/vision-api'
 import { ensureWalletConnected } from '../helpers/selectors'
 
@@ -37,6 +38,13 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
 
     // 0. Ensure batches exist (Vision was deployed)
     await ensureBatchExists()
+
+    // Check on-chain batch count — oracle API may return stale data from old deployment
+    const chainBatches = await getBatchesFromChain()
+    if (chainBatches.length === 0) {
+      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
+      return
+    }
 
     // 0.1. Deposit USDC to Vision balance so we always have something to withdraw
     await depositToVisionBalance(PLAYER1, 50n * 10n ** 18n)

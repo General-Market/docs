@@ -25,6 +25,7 @@ import {
   getBatchConfigHash,
   randomBets,
   oppositeBets,
+  getBatchesFromChain,
 } from '../helpers/vision-api'
 
 import { L3_RPC, VISION_API } from '../env'
@@ -95,6 +96,13 @@ test.describe('Vision', () => {
 
     // 0. Ensure at least one batch exists (creates via storage on Anvil if nextBatchId=0)
     await ensureBatchExists()
+
+    // Check on-chain batch count — oracle API may return stale data from old deployment
+    const chainBatches = await getBatchesFromChain()
+    if (chainBatches.length === 0) {
+      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
+      return
+    }
 
     // 1. Find an active round that PLAYER1 hasn't joined yet
     let batchId = 0

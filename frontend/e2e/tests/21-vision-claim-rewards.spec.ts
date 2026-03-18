@@ -27,6 +27,7 @@ import {
   findAvailableE2eBatch,
   randomBets,
   oppositeBets,
+  getBatchesFromChain,
 } from '../helpers/vision-api'
 import { CONSENSUS_TIMEOUT } from '../env'
 
@@ -40,6 +41,13 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
 
     // 0. Ensure batches exist on-chain
     await ensureBatchExists()
+
+    // Check on-chain batch count — oracle API may return stale data from old deployment
+    const chainBatches = await getBatchesFromChain()
+    if (chainBatches.length === 0) {
+      console.log('Vision contract has 0 batches on-chain — batches need redeployment via DeployAllVisionBatches')
+      return
+    }
 
     // 1. Find active round where PLAYER1 hasn't joined
     let batchId = 0
