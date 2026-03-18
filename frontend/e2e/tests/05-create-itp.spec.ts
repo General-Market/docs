@@ -1,5 +1,5 @@
 import { test, expect, TEST_ADDRESS, FRONTEND_URL } from '../fixtures/wallet';
-import { ensureWalletConnected, itpCard } from '../helpers/selectors';
+import { ensureWalletConnected } from '../helpers/selectors';
 import {
   getItpStateL3,
   getItpCountL3,
