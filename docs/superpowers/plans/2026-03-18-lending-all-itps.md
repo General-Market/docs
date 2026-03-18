@@ -59,3 +59,23 @@ The itp-bot crashes with "No such file or directory" for `itp-bot/manifest.json`
 ITP #1's tokens from old deploy aren't in the symbol-map. Either:
 - Add old token addresses to symbol-map (from ITP creation broadcast)
 - Or change ITP_ID to an ITP from the latest batch (89+) that has mapped tokens
+
+---
+
+## Finding: ITP Shares ≠ ITP Vault Tokens
+
+The Morpho market uses ITP vault tokens (ERC4626) as collateral, NOT raw ITP shares.
+
+**Flow needed:**
+1. `placeL3BuyOrderDirect` → user gets ITP shares (from Index contract)
+2. `ITPVault.deposit(shares, receiver)` → user gets vault tokens (BRDG)
+3. `Morpho.supplyCollateral(marketParams, amount, user, "")` → vault tokens become collateral
+
+**Current test does steps 1 and 3 but skips step 2.**
+
+Fix: add `depositToVault(TEST_ADDRESS, ITP_ID, shareAmount)` helper that:
+- Approves ITP shares to the vault
+- Calls `vault.deposit(amount, receiver)`
+- Returns the vault token balance
+
+The vault address comes from `Index.itpVaults(itpId)` or from `morpho-deployment.json.marketParams.collateralToken`.
