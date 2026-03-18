@@ -20,9 +20,20 @@ test.describe('Slippage Gear Icon', () => {
     // Ensure wallet is connected — WalletActionButton only calls onClick when connected
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Wait for ITP table rows with Buy button — retry if data-node is slow
+    // Wait for the ItpListing <table> to render (async client-side load).
+    // Without this, itpRow locator finds nothing and times out at default 5s.
+    const productTable = page.locator('table');
+    try {
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
+    } catch {
+      // Data-node may be slow — retry with fresh navigation
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
+    }
+
+    // Wait for ITP table rows with Buy button
     const firstRow = itpRow(page, 0);
-    await expect(firstRow).toBeVisible({ timeout: 45_000 });
+    await expect(firstRow).toBeVisible({ timeout: 30_000 });
     const buyBtn = buyButton(page, 0);
     await expect(buyBtn).toBeVisible({ timeout: 15_000 });
     await buyBtn.click();
@@ -50,9 +61,18 @@ test.describe('Slippage Gear Icon', () => {
     // Ensure wallet is connected
     await ensureWalletConnected(page, TEST_ADDRESS);
 
-    // Wait for ITP table rows with Sell button — retry if data-node is slow
+    // Wait for the ItpListing <table> to render (async client-side load)
+    const productTable = page.locator('table');
+    try {
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
+    } catch {
+      await page.goto('/index', { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await expect(productTable.first()).toBeVisible({ timeout: 45_000 });
+    }
+
+    // Wait for ITP table rows with Sell button
     const firstRow = itpRow(page, 0);
-    await expect(firstRow).toBeVisible({ timeout: 45_000 });
+    await expect(firstRow).toBeVisible({ timeout: 30_000 });
     const sellBtn = sellButton(page, 0);
     await expect(sellBtn).toBeVisible({ timeout: 15_000 });
     await sellBtn.click();
