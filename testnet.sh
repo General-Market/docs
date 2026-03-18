@@ -846,6 +846,26 @@ json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
 print(f'{len(deployed)} tokens in deployed-assets.json, {len(smap)} in symbol-map.json')
 " 2>/dev/null && echo -e "  ${GREEN}Token registries synced${NC}" || echo -e "  ${YELLOW}Token registry sync failed${NC}"
 
+    # Merge ALL token deploy broadcasts into symbol-map (covers partial deploys)
+    python3 -c "
+import json, os
+smap = json.load(open('data/symbol-map.json')) if os.path.exists('data/symbol-map.json') else {}
+bd = 'contracts/broadcast/DeployAllTokens.s.sol/$CHAIN_ID/'
+if os.path.isdir(bd):
+    for f in os.listdir(bd):
+        if not f.endswith('.json'): continue
+        data = json.load(open(os.path.join(bd, f)))
+        for tx in data.get('transactions', []):
+            if tx.get('transactionType') == 'CREATE' and tx.get('contractName') == 'MockERC20':
+                addr = tx.get('contractAddress', '').lower()
+                args = tx.get('arguments', [])
+                if len(args) >= 2 and addr and addr not in smap:
+                    smap[addr] = {'pair': args[1] + 'USDT', 'source': 'bitget'}
+json.dump(smap, open('data/symbol-map.json', 'w'), indent=2)
+print(f'Merged symbol-map: {len(smap)} entries')
+" 2>/dev/null || true
+    echo -e "  ${GREEN}Broadcast merge complete${NC}"
+
     # Sync symbol-map.json + deployment files to VPS immediately after regeneration
     rsync -az -e "$RSYNC_SSH_BE" "$SCRIPT_DIR/data/symbol-map.json" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/data/symbol-map.json" 2>/dev/null || true
     rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
