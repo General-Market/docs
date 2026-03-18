@@ -57,7 +57,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     function _nextSalt() internal returns (bytes32) {
         // MUST NOT use block.timestamp — it differs between simulation and broadcast on Orbit L3,
         // causing CREATE2 addresses to diverge. Use only deterministic values.
-        return keccak256(abi.encode("INDEX_DEPLOY_V2", block.chainid, ++_saltCounter));
+        return keccak256(abi.encode("INDEX_DEPLOY_V3", block.chainid, ++_saltCounter));
     }
 
     function _deployProxy(address impl, bytes memory initData) internal returns (address) {
@@ -149,11 +149,11 @@ contract DeployFullSystemE2E is DeployBLSHelper {
     function _deployTokens() internal {
         console.log("Phase 1: Deploy Tokens");
         // Story 7-6b: L3 USDC uses 18 decimals (internal protocol standard)
-        l3Wusdc = address(new MockERC20("L3 Wrapped USDC", "L3_WUSDC", 18));
+        l3Wusdc = address(new MockERC20{salt: _nextSalt()}("L3 Wrapped USDC", "L3_WUSDC", 18));
         // Story 7-6b: Settlement USDC uses 6 decimals (real USDC on Settlement/mainnet)
-        settlementUsdc = address(new MockERC20("Settlement USDC", "SETTLEMENT_USDC", 6));
+        settlementUsdc = address(new MockERC20{salt: _nextSalt()}("Settlement USDC", "SETTLEMENT_USDC", 6));
         // MockUSDT for USDT-pair settlement (18 decimals on L3, same as L3_WUSDC)
-        mockUsdt = address(new MockERC20("Mock USDT", "MOCK_USDT", 18));
+        mockUsdt = address(new MockERC20{salt: _nextSalt()}("Mock USDT", "MOCK_USDT", 18));
         console.log("  L3_WUSDC (18 dec):", l3Wusdc);
         console.log("  SETTLEMENT_USDC (6 dec):", settlementUsdc);
         console.log("  MOCK_USDT (18 dec):", mockUsdt);
@@ -161,10 +161,10 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployCore() internal {
         console.log("Phase 2: Deploy Core");
-        Governance govImpl = new Governance();
+        Governance govImpl = new Governance{salt: _nextSalt()}();
         governance = _deployProxy(address(govImpl), abi.encodeWithSelector(Governance.initialize.selector, admin));
 
-        address indexImpl = address(new Investment());
+        address indexImpl = address(new Investment{salt: _nextSalt()}());
         bytes memory initData = abi.encodeWithSelector(Investment.initialize.selector, governance, l3Wusdc);
         indexProxy = _deployProxy(indexImpl, initData);
 
@@ -174,9 +174,9 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployRegistries() internal {
         console.log("Phase 3: Deploy Registries");
-        OracleRegistry regImpl = new OracleRegistry();
+        OracleRegistry regImpl = new OracleRegistry{salt: _nextSalt()}();
         oracleRegistry = _deployProxy(address(regImpl), abi.encodeWithSelector(OracleRegistry.initialize.selector, governance));
-        collateralRegistry = address(new CollateralRegistry(admin, oracleRegistry));
+        collateralRegistry = address(new CollateralRegistry{salt: _nextSalt()}(admin, oracleRegistry));
         console.log("  OracleRegistry:", oracleRegistry);
         console.log("  CollateralRegistry:", collateralRegistry);
     }
@@ -185,18 +185,18 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("Phase 4: Deploy Custody");
 
         // L3BridgeCustody
-        address l3Impl = address(new L3BridgeCustody());
+        address l3Impl = address(new L3BridgeCustody{salt: _nextSalt()}());
         bytes memory l3Init = abi.encodeWithSelector(L3BridgeCustody.initialize.selector, oracleRegistry, l3Wusdc);
         l3BridgeCustodyProxy = _deployProxy(l3Impl, l3Init);
 
         // SettlementBridgeCustody (with indexContract for cross-chain buy)
         // bridgeProxyAddr set during initialize to avoid BLS-gated setBridgeProxy call
-        address settlementImpl = address(new SettlementBridgeCustody());
+        address settlementImpl = address(new SettlementBridgeCustody{salt: _nextSalt()}());
         bytes memory settlementInit = abi.encodeWithSelector(SettlementBridgeCustody.initialize.selector, oracleRegistry, settlementUsdc, indexProxy, bridgeProxyAddr);
         settlementBridgeCustodyProxy = _deployProxy(settlementImpl, settlementInit);
 
         // BLSCustody
-        address blsImpl = address(new BLSCustody());
+        address blsImpl = address(new BLSCustody{salt: _nextSalt()}());
         bytes memory blsInit = abi.encodeWithSelector(BLSCustody.initialize.selector, oracleRegistry);
         blsCustodyProxy = _deployProxy(blsImpl, blsInit);
 
@@ -207,7 +207,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
 
     function _deployExchange() internal {
         console.log("Phase 5: Deploy Exchange");
-        MockBitgetVault vault = new MockBitgetVault();
+        MockBitgetVault vault = new MockBitgetVault{salt: _nextSalt()}();
         vault.initialize(admin);
         mockBitgetVault = address(vault);
         console.log("  MockBitgetVault:", mockBitgetVault);
@@ -217,7 +217,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         console.log("Phase 5b: Deploy Bridge Contracts");
 
         // 1. Deploy BridgeProxy implementation
-        BridgeProxy bridgeImpl = new BridgeProxy();
+        BridgeProxy bridgeImpl = new BridgeProxy{salt: _nextSalt()}();
 
         // 2. Deploy ERC1967Proxy wrapping BridgeProxy (factory set to address(0) initially)
         bytes memory bridgeInit = abi.encodeWithSelector(
@@ -229,7 +229,7 @@ contract DeployFullSystemE2E is DeployBLSHelper {
         bridgeProxyAddr = _deployProxy(address(bridgeImpl), bridgeInit);
 
         // 3. Deploy BridgedItpFactory with the proxy address
-        bridgedItpFactory = address(new BridgedItpFactory(bridgeProxyAddr));
+        bridgedItpFactory = address(new BridgedItpFactory{salt: _nextSalt()}(bridgeProxyAddr));
 
         // 4. Wire factory into proxy
         BridgeProxy(bridgeProxyAddr).setBridgedItpFactory(bridgedItpFactory);
