@@ -66,12 +66,25 @@ test.describe('Buy ITP', () => {
 
     // 9. Limit price — wait for NAV auto-fill, then override with high limit
     //    The React effect auto-fills limit from NAV+5%. If we fill before it runs,
-    //    the effect overwrites our value. Wait for non-empty value first.
+    //    the effect overwrites our value. Wait for non-empty value first, then
+    //    read it and set a limit 10x higher to guarantee fillability.
     const limitInput = buyModal.limitPriceInput(page);
     await expect(limitInput).not.toHaveValue('', { timeout: 15_000 }).catch(() => {});
-    await page.waitForTimeout(500); // let React effect settle
+    await page.waitForTimeout(1500); // let React effect settle fully
+    const autoFilledValue = await limitInput.inputValue();
+    const navEstimate = parseFloat(autoFilledValue) || 1.0;
+    const safeLimit = (navEstimate * 10).toFixed(6); // 10x NAV — covers any drift
+    console.log(`Buy test: NAV auto-fill=${autoFilledValue}, using limit=${safeLimit}`);
     await limitInput.fill(''); // clear auto-filled value
-    await limitInput.fill('20.000000'); // set high limit to cover any NAV
+    await limitInput.fill(safeLimit);
+    // Guard against React re-filling: verify our value stuck
+    await page.waitForTimeout(500);
+    const verifyValue = await limitInput.inputValue();
+    if (verifyValue !== safeLimit) {
+      console.log(`Buy test: React overwrote limit (${verifyValue}), re-setting to ${safeLimit}`);
+      await limitInput.fill('');
+      await limitInput.fill(safeLimit);
+    }
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
     // to avoid race with parallel lending test's mintL3Shares

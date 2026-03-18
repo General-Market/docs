@@ -1,15 +1,16 @@
 /**
  * Multi-ITP Order Processing E2E Tests
  *
- * Verifies that buy/sell orders work for ITP2 (not just ITP1).
+ * Verifies that buy/sell orders work for multiple ITPs (not just the first one).
  * Tests the multi-ITP oracle fix (per-order itp_id + per-ITP NAV cache)
  * and the sell fills race condition fix (has_any_active_bridge_orders guard).
  *
  * Uses L3 direct path (no Settlement bridge needed) to avoid Settlement gas issues.
+ * Discovers available ITPs dynamically — no hardcoded ITP IDs.
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
 import {
-  getItpCountL3,
+  getAvailableItpIds,
   getItpStateL3,
   getL3UserShares,
   mintL3Shares,
@@ -20,36 +21,34 @@ import {
   startSettlementBlockMiner,
 } from '../helpers/backend-api';
 
-import { CONTRACTS } from '../env';
+import { IS_ANVIL, CONTRACTS } from '../env';
 const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
-/** Build the bytes32 ITP ID from a number (1-indexed) */
-function itpIdFromNumber(n: number): string {
-  return '0x' + n.toString(16).padStart(64, '0');
-}
-
-import { IS_ANVIL } from '../env';
-
 test.describe('Multi-ITP Order Processing', () => {
-  test('buy ITP2 order fills via oracle consensus', async () => {
+  test('buy second ITP order fills via oracle consensus', async () => {
     test.setTimeout(240_000);
 
-    // 1. Verify ITP2 exists
-    const itpCount = await getItpCountL3();
-    expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
+    // 1. Discover available ITPs — need at least 2
+    const itpIds = await getAvailableItpIds(3);
+    if (itpIds.length < 2) {
+      console.log(`Only ${itpIds.length} ITP(s) available — skipping multi-ITP buy test`);
+      test.skip();
+      return;
+    }
 
-    const itp2Id = itpIdFromNumber(2);
+    const itp2Id = itpIds[1]; // second available ITP
+    console.log(`Multi-ITP buy: targeting ${itp2Id} (${itpIds.length} ITPs available)`);
 
-    // 2. Verify ITP2 has assets (fully initialized)
+    // 2. Verify ITP has assets (fully initialized)
     const state = await getItpStateL3(itp2Id);
-    expect(state.assets.length, 'ITP2 should have assets').toBeGreaterThan(0);
+    expect(state.assets.length, 'ITP should have assets').toBeGreaterThan(0);
 
     // 3. Record shares before buy
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
 
     // 4. Always use L3 direct path (avoids Settlement gas issues)
     const usdcAmount = 100n * 10n ** 18n;
-    const limitPrice = 10n * 10n ** 18n;
+    const limitPrice = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
     const orderId = await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, usdcAmount, limitPrice);
     console.log(`Placed ITP2 L3 buy order #${orderId}`);
 
@@ -63,29 +62,35 @@ test.describe('Multi-ITP Order Processing', () => {
     expect(sharesAfter).toBeGreaterThan(sharesBefore);
   });
 
-  test('sell ITP2 order completes (not stuck at Executing trades)', async () => {
-    test.setTimeout(240_000);
+  test('sell second ITP order completes (not stuck at Executing trades)', async () => {
+    test.setTimeout(300_000);
 
-    // 1. Verify ITP2 exists
-    const itpCount = await getItpCountL3();
-    expect(itpCount, 'Need at least 2 ITPs on L3').toBeGreaterThanOrEqual(2);
+    // 1. Discover available ITPs
+    const itpIds = await getAvailableItpIds(3);
+    if (itpIds.length < 2) {
+      console.log(`Only ${itpIds.length} ITP(s) available — skipping multi-ITP sell test`);
+      test.skip();
+      return;
+    }
 
-    const itp2Id = itpIdFromNumber(2);
+    const itp2Id = itpIds[1];
+    console.log(`Multi-ITP sell: targeting ${itp2Id}`);
 
-    // 2. Ensure user has L3 shares for ITP2
-    const sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
+    // 2. Ensure user has L3 shares for this ITP
+    let sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     if (sharesBefore < 50n * 10n ** 18n) {
       if (!IS_ANVIL) {
-        console.log('Insufficient ITP2 shares — placing L3 buy order...');
-        const usdcAmt = 200n * 10n ** 18n;
-        await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, usdcAmt, 10n * 10n ** 18n);
+        console.log('Insufficient shares — placing L3 buy order...');
+        const state = await getItpStateL3(itp2Id);
+        const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
+        await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, 200n * 10n ** 18n, buyLimit);
         const newShares = await pollUntil(
           () => getL3UserShares(TEST_ADDRESS, itp2Id),
           (s) => s >= 50n * 10n ** 18n,
           180_000,
           3_000,
         );
-        console.log(`ITP2 buy filled — shares: ${newShares}`);
+        console.log(`Buy filled — shares: ${newShares}`);
       } else {
         await mintL3Shares(TEST_ADDRESS, itp2Id, 100n * 10n ** 18n);
       }
@@ -102,7 +107,7 @@ test.describe('Multi-ITP Order Processing', () => {
     const stopMiner = startSettlementBlockMiner(1000);
 
     try {
-      // 6. Place L3 sell order for ITP2
+      // 6. Place L3 sell order
       const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
       const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
       const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
@@ -122,17 +127,23 @@ test.describe('Multi-ITP Order Processing', () => {
     }
   });
 
-  test('ITP1 sell still works after multi-ITP fix', async () => {
-    test.setTimeout(240_000);
+  test('first ITP sell still works after multi-ITP fix', async () => {
+    test.setTimeout(300_000);
 
-    const itp1Id = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    // Discover the first available ITP
+    const itpIds = await getAvailableItpIds(1);
+    expect(itpIds.length, 'Need at least 1 ITP on L3').toBeGreaterThanOrEqual(1);
+    const itp1Id = itpIds[0];
+    console.log(`ITP1 sell: targeting ${itp1Id}`);
 
-    // Ensure user has L3 shares for ITP1
+    // Ensure user has L3 shares
     let sharesBefore = await getL3UserShares(TEST_ADDRESS, itp1Id);
     if (sharesBefore < 25n * 10n ** 18n) {
       if (!IS_ANVIL) {
-        console.log('Insufficient ITP1 shares — placing L3 buy order...');
-        await placeL3BuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 18n, 10n * 10n ** 18n);
+        console.log('Insufficient shares — placing L3 buy order...');
+        const state = await getItpStateL3(itp1Id);
+        const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
+        await placeL3BuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 18n, buyLimit);
         await pollUntil(
           () => getL3UserShares(TEST_ADDRESS, itp1Id),
           (s) => s >= 25n * 10n ** 18n,

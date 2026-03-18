@@ -18,6 +18,7 @@ import {
   getL3UserShares,
   getL3OrderStatus,
   getItpStateL3,
+  getFirstAvailableItpId,
   erc20BalanceOf,
   pollUntil,
   startSettlementBlockMiner,
@@ -29,12 +30,15 @@ import {
 import { IS_ANVIL, CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS } from '../env';
 
 const TEST_ADDRESS = DEPLOYER_ADDRESS;
-const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000001';
 const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Settlement Bridge', () => {
   test('buy ITP via Settlement bridge — oracles relay to L3, BridgedITP minted', async () => {
     test.setTimeout(480_000);
+
+    // Discover a valid ITP instead of hardcoding
+    const ITP_ID = await getFirstAvailableItpId();
+    console.log(`Bridge buy: using ITP ${ITP_ID}`);
 
     const hasGas = await hasSettlementGas();
     let oracleRelayAlive = false;
@@ -131,6 +135,10 @@ test.describe('Settlement Bridge', () => {
   test('sell ITP via Settlement bridge — oracles relay to L3, USDC returned on Settlement', async () => {
     test.setTimeout(360_000);
 
+    // Discover a valid ITP
+    const ITP_ID = await getFirstAvailableItpId();
+    console.log(`Bridge sell: using ITP ${ITP_ID}`);
+
     const hasGas = await hasSettlementGas();
     let oracleRelayAlive = false;
     if (hasGas && !IS_ANVIL) {
@@ -153,7 +161,7 @@ test.describe('Settlement Bridge', () => {
         // If BridgedITP not deployed, fall back to L3 direct
         if (!BRIDGED_ITP) {
           console.log('BridgedITP not deployed — falling back to L3 direct sell');
-          await doL3DirectSell();
+          await doL3DirectSell(ITP_ID);
           return;
         }
 
@@ -163,7 +171,7 @@ test.describe('Settlement Bridge', () => {
         // If no BridgedITP balance, fall back to L3 direct
         if (bridgedItpBalance === 0n) {
           console.log('No BridgedITP balance — falling back to L3 direct sell');
-          await doL3DirectSell();
+          await doL3DirectSell(ITP_ID);
           return;
         }
 
@@ -194,15 +202,28 @@ test.describe('Settlement Bridge', () => {
         const bridgedItpAfter = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
         expect(bridgedItpAfter).toBeLessThan(bridgedItpBefore);
       } else {
-        await doL3DirectSell();
+        await doL3DirectSell(ITP_ID);
       }
     } finally {
       stopMiner();
     }
 
-    async function doL3DirectSell() {
-      // L3 direct sell path
-      const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
+    async function doL3DirectSell(itpId: string) {
+      // L3 direct sell path — ensure shares exist first (fresh deployment)
+      let l3SharesBefore = await getL3UserShares(TEST_ADDRESS, itpId);
+      if (l3SharesBefore === 0n) {
+        console.log('No L3 shares for sell — placing buy order first');
+        const state = await getItpStateL3(itpId);
+        const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
+        await placeL3BuyOrderDirect(TEST_ADDRESS, itpId, 200n * 10n ** 18n, buyLimit);
+        l3SharesBefore = await pollUntil(
+          () => getL3UserShares(TEST_ADDRESS, itpId),
+          (shares) => shares > 0n,
+          180_000,
+          3_000,
+        );
+        console.log(`Buy filled — now have ${l3SharesBefore} shares`);
+      }
       console.log(`L3 shares before sell: ${l3SharesBefore}`);
       expect(l3SharesBefore, 'Need L3 shares to sell').toBeGreaterThan(0n);
 
@@ -210,7 +231,7 @@ test.describe('Settlement Bridge', () => {
       await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
       const sellAmount = l3SharesBefore > 25n * 10n ** 18n ? 25n * 10n ** 18n : l3SharesBefore;
-      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
+      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itpId, sellAmount, 10n ** 16n);
       console.log(`L3 direct sell order placed: orderId=${orderId}`);
 
       // Poll for order status = 2 (Filled) instead of shares change

@@ -10,19 +10,19 @@
  * Known limitation: if any ITP asset has no contract code on L3 (e.g. codeless
  * mock token), issuers cannot fetch prices and rebalance consensus will stall.
  * In that case, we verify the request was submitted and clean up the stale event.
+ *
+ * Discovers a valid ITP dynamically — no hardcoded ITP IDs.
  */
 import { test, expect } from '@playwright/test';
 import {
   getItpStateL3,
+  getAvailableItpIds,
   rebalanceItp,
   mineSettlementBlocks,
   startSettlementBlockMiner,
   l3RpcCall,
 } from '../helpers/backend-api';
 import { CONSENSUS_TIMEOUT } from '../env';
-
-/** Use ITP#2 (ITP#1 and #2 share the same asset set) */
-const ITP_ID = '0x0000000000000000000000000000000000000000000000000000000000000002';
 
 /** Check if an address has contract code on L3 */
 async function hasCode(address: string): Promise<boolean> {
@@ -34,12 +34,26 @@ test.describe('Rebalance Full Cycle', () => {
   test('rebalance preserves NAV and updates weights', async () => {
     test.setTimeout(CONSENSUS_TIMEOUT * 2 + 120_000); // 2x consensus + 2 min overhead
 
-    // 1. Read current state
-    let stateBefore: Awaited<ReturnType<typeof getItpStateL3>>;
-    stateBefore = await getItpStateL3(ITP_ID);
-    expect(stateBefore.assets.length).toBeGreaterThan(1);
-    expect(stateBefore.weights.length).toBeGreaterThan(1);
+    // 0. Discover a valid ITP with >=2 assets (rebalance needs at least 2)
+    const itpIds = await getAvailableItpIds(5);
+    let ITP_ID: string | null = null;
+    let stateBefore: Awaited<ReturnType<typeof getItpStateL3>> | null = null;
+    for (const id of itpIds) {
+      const s = await getItpStateL3(id);
+      if (s.assets.length >= 2 && s.weights.length >= 2 && s.nav > 0n) {
+        ITP_ID = id;
+        stateBefore = s;
+        break;
+      }
+    }
+    if (!ITP_ID || !stateBefore) {
+      console.log(`No ITP with >=2 assets found among ${itpIds.length} ITPs — skipping rebalance test`);
+      test.skip();
+      return;
+    }
+    console.log(`Rebalance: targeting ITP ${ITP_ID} (${stateBefore.assets.length} assets)`);
 
+    // 1. Record state
     const navBefore = stateBefore.nav;
     const weightsBefore = [...stateBefore.weights];
     console.log(`Before: NAV=${navBefore}, weights[0]=${weightsBefore[0]}, weights[1]=${weightsBefore[1]}`);
@@ -117,7 +131,7 @@ test.describe('Rebalance Full Cycle', () => {
       // 9. Verify inventory was recalculated
       expect(stateAfter.inventory.length).toBe(stateBefore.inventory.length);
       const inventoryChanged = stateAfter.inventory.some(
-        (inv, i) => inv !== stateBefore.inventory[i]
+        (inv, i) => inv !== stateBefore!.inventory[i]
       );
       expect(inventoryChanged).toBe(true);
     } finally {

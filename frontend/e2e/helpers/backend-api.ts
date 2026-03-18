@@ -470,7 +470,7 @@ export async function l3SignedSend(to: string, data: string, value?: bigint): Pr
           nonce,
         });
         const receipt = await _l3Pub.waitForTransactionReceipt({ hash, timeout: 30_000 });
-        if (receipt && receipt.status === '0x0') {
+        if (receipt && (receipt.status === 'reverted' || receipt.status === '0x0')) {
           throw new Error(`Transaction reverted on-chain: ${hash}`);
         }
         return hash;
@@ -572,6 +572,43 @@ export async function getItpCountL3(): Promise<number> {
     'latest',
   ]) as string;
   return Number(safeBigInt(result));
+}
+
+/**
+ * Discover the first available ITP ID on L3 that has assets.
+ * Scans ITP IDs 1..itpCount and returns the first with a non-empty asset list.
+ * Throws if no valid ITP is found.
+ */
+export async function getFirstAvailableItpId(): Promise<string> {
+  const count = await getItpCountL3();
+  for (let i = 1; i <= count; i++) {
+    const id = '0x' + i.toString(16).padStart(64, '0');
+    try {
+      const state = await getItpStateL3(id);
+      if (state.assets.length > 0) return id;
+    } catch {
+      // ITP may not exist at this ID — skip
+    }
+  }
+  throw new Error(`No valid ITP found on L3 (scanned 1..${count})`);
+}
+
+/**
+ * Discover ITP IDs on L3 that have assets. Returns up to `limit` IDs.
+ */
+export async function getAvailableItpIds(limit = 5): Promise<string[]> {
+  const count = await getItpCountL3();
+  const ids: string[] = [];
+  for (let i = 1; i <= count && ids.length < limit; i++) {
+    const id = '0x' + i.toString(16).padStart(64, '0');
+    try {
+      const state = await getItpStateL3(id);
+      if (state.assets.length > 0) ids.push(id);
+    } catch {
+      // skip
+    }
+  }
+  return ids;
 }
 
 /**
@@ -858,11 +895,12 @@ export async function placeL3BuyOrderDirect(
     await new Promise(r => setTimeout(r, 2000));
   }
 
-  // Approve USDC to Index
+  // Approve max USDC to Index (avoids stale-allowance issues on retries)
+  const MAX_UINT256 = 2n ** 256n - 1n;
   const approveData = encodeFunctionData({
     abi: ERC20_ABI,
     functionName: 'approve',
-    args: [L3_INDEX as `0x${string}`, usdcAmount],
+    args: [L3_INDEX as `0x${string}`, MAX_UINT256],
   });
 
   if (!IS_ANVIL) {
