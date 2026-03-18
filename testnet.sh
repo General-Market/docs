@@ -1027,6 +1027,13 @@ json.dump(d, open('$DEPLOYMENT_FILE', 'w'), indent=2)
         fi
     fi
 
+    # Final deployment.json sync before Vercel deploy
+    echo -e "${BLUE}[13.5/14] Final deployment sync...${NC}"
+    cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    cp "$DEPLOYMENT_FILE" envs/testnet/deployment.json
+    rsync -az -e "$RSYNC_SSH_BE" "$DEPLOYMENT_FILE" "$VPS_BE_USER@$VPS_BE_IP:$VPS_BE_DIR/deployments/active-deployment.json" 2>/dev/null || true
+    echo -e "  ${GREEN}Synced deployment.json to frontend, envs, and VPS${NC}"
+
     # Switch local env to testnet (copies deployment JSONs to frontend/lib/contracts/)
     ./switch-env.sh testnet 2>/dev/null || true
 
@@ -1086,6 +1093,24 @@ cmd_start() {
     fi
     _sync_docker_files
     _sync_config_files
+
+    # Verify deployment consistency before starting services
+    echo -e "${BLUE}[2b/8] Verifying deployment consistency...${NC}"
+    DEPLOYMENT_FILE="${SCRIPT_DIR}/deployments/active-deployment.json"
+    FRONT_INDEX=$(python3 -c "import json; print(json.load(open('frontend/lib/contracts/deployment.json'))['contracts']['Index'])" 2>/dev/null || echo "")
+    ACTIVE_INDEX=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts']['Index'])" 2>/dev/null || echo "")
+    if [ "$FRONT_INDEX" != "$ACTIVE_INDEX" ]; then
+        echo -e "  ${YELLOW}Frontend deployment out of sync — fixing...${NC}"
+        cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    fi
+    ACTIVE_VISION=$(python3 -c "import json; print(json.load(open('$DEPLOYMENT_FILE'))['contracts'].get('Vision',''))" 2>/dev/null || echo "")
+    BATCHES_VISION=$(python3 -c "import json; print(json.load(open('deployments/vision-batches.json'))['vision'])" 2>/dev/null || echo "")
+    if [ -n "$BATCHES_VISION" ] && [ "$ACTIVE_VISION" != "$BATCHES_VISION" ]; then
+        echo -e "  ${YELLOW}Vision address mismatch — fixing...${NC}"
+        python3 -c "import json; d=json.load(open('$DEPLOYMENT_FILE')); d['contracts']['Vision']='$BATCHES_VISION'; json.dump(d,open('$DEPLOYMENT_FILE','w'),indent=2)"
+        cp "$DEPLOYMENT_FILE" frontend/lib/contracts/deployment.json
+    fi
+    echo -e "  ${GREEN}Deployment consistent${NC}"
 
     # Ensure logs dir + existing files are writable by container UID (app=999 != max=1002)
     vps_be_ssh "mkdir -p $VPS_BE_DIR/logs && chmod 777 $VPS_BE_DIR/logs && chmod a+rw $VPS_BE_DIR/logs/* 2>/dev/null; true"
