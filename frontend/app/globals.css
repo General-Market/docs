@@ -451,8 +451,43 @@ input[type="number"] {
   100% { transform: scale(1); opacity: 0; }
 }
 
+/* ── SOURCE BRAND SHIMMER — ambient light sweep across card grid ── */
+@keyframes brand-shimmer {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -200% 0; }
+}
+
+.source-brand-shimmer {
+  position: relative;
+}
+.source-brand-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.06) 44%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.06) 56%,
+    transparent 70%
+  );
+  background-size: 300% 100%;
+  animation: brand-shimmer 8s ease-in-out infinite;
+  animation-delay: calc(var(--d, 0) * -0.7s);
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 300ms;
+}
+
+/* Hide shimmer when hover overlay (market list) is showing */
+.group:hover .source-brand-shimmer::after {
+  opacity: 0;
+}
+
 /* Respect reduced motion for all overdrive animations */
 @media (prefers-reduced-motion: reduce) {
+  .source-brand-shimmer::after { animation: none !important; opacity: 0 !important; }
   .live-ambient-pulse { animation: none; }
   .animate-status-breathe { animation: none; }
   .animate-batch-reveal { animation: none; opacity: 1; transform: none; }

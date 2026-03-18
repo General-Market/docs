@@ -154,7 +154,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
       className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer"
     >
       {/* Brand image area */}
-      <div className="relative aspect-video w-full overflow-hidden">
+      <div className="relative aspect-video w-full overflow-hidden source-brand-shimmer">
           {/* Brand logo face */}
           <div
             className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full"
