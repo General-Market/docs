@@ -48,25 +48,37 @@ function formatTvl(tvl: number): string {
   return `$${tvl.toFixed(2)}`
 }
 
+interface LeaderboardEntry {
+  rank: number
+  walletAddress: string
+  pnl: number
+  winRate: number
+  totalVolume: number
+  portfolioBets: number
+}
+
 export function VisionSection({ snapshots, latest, loading }: SectionProps) {
   const [batches, setBatches] = useState<BatchData[]>([])
   const [batchLoading, setBatchLoading] = useState(true)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
 
   useEffect(() => {
     let cancelled = false
-    async function fetchBatches() {
-      try {
-        const res = await fetch('/api/vision/batches')
-        if (!res.ok) throw new Error(`${res.status}`)
-        const data = await res.json()
-        if (!cancelled) setBatches(data.batches ?? [])
-      } catch {
-        if (!cancelled) setBatches([])
-      } finally {
-        if (!cancelled) setBatchLoading(false)
+    async function fetchData() {
+      const [batchRes, lbRes] = await Promise.allSettled([
+        fetch('/api/vision/batches').then(r => r.ok ? r.json() : null),
+        fetch('/api/dn/vision/leaderboard').then(r => r.ok ? r.json() : null),
+      ])
+      if (cancelled) return
+      if (batchRes.status === 'fulfilled' && batchRes.value) {
+        setBatches(batchRes.value.batches ?? [])
       }
+      if (lbRes.status === 'fulfilled' && lbRes.value) {
+        setLeaderboard(lbRes.value.leaderboard ?? [])
+      }
+      setBatchLoading(false)
     }
-    fetchBatches()
+    fetchData()
     return () => { cancelled = true }
   }, [])
 
@@ -285,6 +297,52 @@ export function VisionSection({ snapshots, latest, loading }: SectionProps) {
             />
           </AreaChart>
         </ResponsiveContainer>
+      </ExplorerChartCard>
+
+      {/* Top Players — from data-node leaderboard */}
+      <ExplorerChartCard
+        title="Top Players"
+        subtitle={`${leaderboard.length} ranked players`}
+        loading={batchLoading}
+      >
+        <div className="h-full overflow-y-auto">
+          {leaderboard.length > 0 ? (
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-border-light">
+                  <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2">#</th>
+                  <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2">Player</th>
+                  <th className="text-[10px] font-semibold text-text-muted pb-1.5 text-right pr-2">Volume</th>
+                  <th className="text-[10px] font-semibold text-text-muted pb-1.5 text-right pr-2">Win%</th>
+                  <th className="text-[10px] font-semibold text-text-muted pb-1.5 text-right">P&L</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboard.slice(0, 10).map((p) => (
+                  <tr key={p.walletAddress} className="border-b border-border-light last:border-0">
+                    <td className="py-1 pr-2 text-[11px] text-text-muted">{p.rank}</td>
+                    <td className="py-1 pr-2 text-[11px] font-mono text-black">
+                      {p.walletAddress.slice(0, 6)}...{p.walletAddress.slice(-4)}
+                    </td>
+                    <td className="py-1 pr-2 text-[11px] font-mono text-right text-text-muted">
+                      {p.totalVolume >= 1000 ? `$${(p.totalVolume / 1000).toFixed(1)}K` : `$${p.totalVolume.toFixed(0)}`}
+                    </td>
+                    <td className="py-1 pr-2 text-[11px] font-mono text-right text-black font-semibold">
+                      {p.winRate.toFixed(1)}%
+                    </td>
+                    <td className={`py-1 text-[11px] font-mono text-right font-semibold ${p.pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
+                      {p.pnl >= 0 ? '+' : ''}${p.pnl.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-[12px] text-text-muted">No player data</p>
+            </div>
+          )}
+        </div>
       </ExplorerChartCard>
     </div>
   )

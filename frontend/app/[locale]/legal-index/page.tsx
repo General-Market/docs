@@ -51,7 +51,7 @@ export default async function LegalIndexPage({ params }: { params: Promise<{ loc
                 <li>{t('nature_not_investment')}</li>
                 <li>{t('nature_not_fund')}</li>
                 <li>{t('nature_experimental')}</li>
-                <li>{t('nature_decentralized_issuers')}</li>
+                <li>{t('nature_decentralized_oracles')}</li>
               </ul>
             </section>
 

@@ -5,7 +5,7 @@ import { parseUnits } from 'viem';
 
 test.describe('Buy ITP', () => {
   test('full buy flow: mint USDC if needed, approve, buy, wait for fill', async ({ walletPage: page }) => {
-    test.setTimeout(300_000); // 5 min — issuer consensus can take 30-90s, parallel load slows it further
+    test.setTimeout(300_000); // 5 min — oracle consensus can take 30-90s, parallel load slows it further
 
     // 1. Ensure user has enough L3 USDC (mint directly via RPC, not browser button)
     const usdcBalance = await getL3UsdcBalance(TEST_ADDRESS);
@@ -33,7 +33,14 @@ test.describe('Buy ITP', () => {
       await expect(itpCard(page).first()).toBeVisible({ timeout: 45_000 });
     }
 
-    // 4. Click Buy on first ITP
+    // 4. Dismiss welcome dialog if present (blocks pointer events)
+    const skipBtn = page.getByRole('button', { name: 'Skip' });
+    if (await skipBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await skipBtn.click();
+      await page.waitForTimeout(500);
+    }
+
+    // 5. Click Buy on first ITP
     const buyBtn = buyButton(page);
     await expect(buyBtn).toBeVisible({ timeout: 10_000 });
     await buyBtn.click();
@@ -51,15 +58,11 @@ test.describe('Buy ITP', () => {
 
     // 8. Limit price should auto-fill from NAV — wait for it, fallback to manual fill
     const limitInput = buyModal.limitPriceInput(page);
-    const autoFilled = await expect(limitInput).not.toHaveValue('', { timeout: 15_000 })
-      .then(() => true).catch(() => false);
-    if (!autoFilled) {
-      // NAV didn't auto-fill (SSE/data-node timing) — set manually from chain state
-      const state = await getItpStateL3(ITP_ID);
-      const navWithBuffer = (state.nav * 105n) / 100n; // 5% buffer like the modal
-      const priceStr = (Number(navWithBuffer) / 1e18).toFixed(6);
-      await limitInput.fill(priceStr);
-    }
+    // Set a high absolute limit price — dynamic NAV calculation fails because NAV drifts
+    // during oracle consensus (30-90s). Test 03's placeL3BuyOrderDirect uses $10 and works.
+    const limitPrice = '20.000000'; // $20 — covers any realistic ITP NAV
+    await limitInput.clear();
+    await limitInput.fill(limitPrice);
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
     // to avoid race with parallel lending test's mintL3Shares
@@ -72,7 +75,7 @@ test.describe('Buy ITP', () => {
     await submitBtn.click();
 
     // 9. Wait for buy tx to be confirmed (stepper enters "Process" phase)
-    // Direct L3 path: order goes to Index.submitOrder, issuers batch + fill on L3
+    // Direct L3 path: order goes to Index.submitOrder, oracles batch + fill on L3
     // UI micro-step text: "Batching order..." then "Executing trades..."
     await expect(page.getByText(/Batching order|Executing trades/)).toBeVisible({ timeout: 60_000 });
 
@@ -81,7 +84,7 @@ test.describe('Buy ITP', () => {
     const orderId = l3OrderIdText ? parseInt(l3OrderIdText.match(/#(\d+)/)?.[1] || '0') || null : null;
     console.log(`Buy test: orderId=${orderId}`);
 
-    // 11. Wait for real issuer consensus pipeline to fill the order.
+    // 11. Wait for real oracle consensus pipeline to fill the order.
     // Race: modal "Buy More" button OR backend order status change (whichever first).
     const fillDetected = await Promise.race([
       expect(buyModal.orderSubmittedBanner(page)).toBeVisible({ timeout: 210_000 })

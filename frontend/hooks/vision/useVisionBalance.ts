@@ -1,9 +1,7 @@
 'use client'
 
-import { useAccount, useReadContract } from 'wagmi'
-import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { VISION_ADDRESS } from '@/lib/vision/constants'
-import { indexL3 } from '@/lib/wagmi'
+import { useQuery } from '@tanstack/react-query'
+import { useAccount } from 'wagmi'
 
 export interface UseVisionBalanceReturn {
   /** Real balance — backed by actual L3 USDC in Vision.sol */
@@ -19,53 +17,34 @@ export interface UseVisionBalanceReturn {
 }
 
 /**
- * Read the dual-balance for the connected wallet from Vision.sol on L3.
+ * Read the dual-balance for the connected wallet from the Vision oracle API.
  *
- * realBalance = backed by L3 USDC held in contract
- * virtualBalance = backed by SettlementUSDC locked in SettlementBridgeCustody
- * total = realBalance + virtualBalance (also available as balanceOf)
+ * Fetches from /api/vision/user/:address/balance (proxied to oracle)
+ * instead of direct on-chain reads, avoiding mixed-content issues on HTTPS.
  */
 export function useVisionBalance(): UseVisionBalanceReturn {
   const { address } = useAccount()
-  const enabled = !!address && VISION_ADDRESS !== '0x0000000000000000000000000000000000000000'
 
-  const {
-    data: realData,
-    isLoading: isRealLoading,
-    refetch: refetchReal,
-  } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'realBalance',
-    args: address ? [address] : undefined,
-    chainId: indexL3.id,
-    query: { enabled },
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['vision-balance', address],
+    queryFn: async () => {
+      if (!address) return null
+      const res = await fetch(`/api/vision/user/${address}/balance`)
+      if (!res.ok) return null
+      return res.json() as Promise<{ realBalance: string; virtualBalance: string; total: string }>
+    },
+    enabled: !!address,
+    refetchInterval: 10_000,
   })
 
-  const {
-    data: virtualData,
-    isLoading: isVirtualLoading,
-    refetch: refetchVirtual,
-  } = useReadContract({
-    address: VISION_ADDRESS,
-    abi: VISION_ABI,
-    functionName: 'virtualBalance',
-    args: address ? [address] : undefined,
-    chainId: indexL3.id,
-    query: { enabled },
-  })
-
-  const realBalance = (realData as bigint | undefined) ?? 0n
-  const virtualBalance = (virtualData as bigint | undefined) ?? 0n
+  const realBalance = data ? BigInt(data.realBalance) : 0n
+  const virtualBalance = data ? BigInt(data.virtualBalance) : 0n
 
   return {
     realBalance,
     virtualBalance,
     total: realBalance + virtualBalance,
-    isLoading: isRealLoading || isVirtualLoading,
-    refetch: () => {
-      refetchReal()
-      refetchVirtual()
-    },
+    isLoading,
+    refetch: () => { refetch() },
   }
 }

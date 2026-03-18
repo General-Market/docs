@@ -2,6 +2,16 @@
 
 Commit after each completed task/feature to enable rollback. Use descriptive commit messages. NEVER add "Co-Authored-By" trailers to commit messages.
 
+### Frontend Repo Sync
+
+`frontend/` has NO nested `.git` — it is tracked by the mono repo only. A post-commit hook (`scripts/sync-frontend.sh`) auto-pushes `frontend/` to `General-Market/frontend.git` (remote `gm-frontend`) whenever frontend files change. Vercel watches that repo for auto-deploys.
+
+**NEVER:**
+- Run `git init` inside `frontend/`
+- Run `git pull` or `git fetch` from inside `frontend/`
+- Push to `gm-frontend` manually — the hook handles it
+- Create a `.git` directory inside `frontend/`
+
 ## Parallelism
 
 Max 6 agents running at the same time.

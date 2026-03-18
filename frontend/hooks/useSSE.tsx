@@ -15,7 +15,7 @@ import { posthog } from '@/lib/posthog'
 
 // ── System status types (previously in useSystemStatusSSE.ts) ──
 
-export interface IssuerNodeSSE {
+export interface OracleNodeSSE {
   id: number
   addr: string
   ip: string
@@ -44,14 +44,14 @@ export interface VaultAssetSSE {
 
 export interface SystemSnapshot {
   is_healthy: boolean
-  active_issuers: number
-  total_issuers: number
+  active_oracles: number
+  total_oracles: number
   total_orders: number
   last_cycle_number: number
   pending_orders: number
   l3_block_number: number
   avg_fill_time_seconds: number
-  nodes: IssuerNodeSSE[]
+  nodes: OracleNodeSSE[]
   recent_orders: RecentOrderSSE[]
   vault_assets: VaultAssetSSE[]
   vault_usd_total: number
@@ -216,7 +216,8 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
 
   useEffect(() => {
     function backoffDelay(attempt: number): number {
-      return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_BACKOFF_MS)
+      const jitter = Math.random() * 1000
+      return Math.min(BASE_DELAY_MS * Math.pow(2, attempt), MAX_BACKOFF_MS) + jitter
     }
 
     function connect() {
@@ -247,6 +248,19 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
               sseFirstEvent = false
               posthog.capture('sse_connected', { topic: topicsKey })
             }
+          } catch { /* ignore malformed */ }
+        })
+
+        es.addEventListener('itp-nav-delta', (event: MessageEvent) => {
+          try {
+            const delta: NavSnapshot[] = JSON.parse(event.data)
+            setData(prev => {
+              const navMap = new Map(prev.itpNav.map(s => [s.itp_id, s]))
+              delta.forEach(s => navMap.set(s.itp_id, s))
+              return { ...prev, itpNav: Array.from(navMap.values()) }
+            })
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
           } catch { /* ignore malformed */ }
         })
 

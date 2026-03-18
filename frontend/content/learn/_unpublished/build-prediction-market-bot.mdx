@@ -267,9 +267,9 @@ await tx.wait();
 console.log("Committed:", tx.hash);
 ```
 
-### Step 5c: Reveal to Issuer Nodes
+### Step 5c: Reveal to Oracle Nodes
 
-After committing on-chain, POST the actual bitmap bytes to the issuer network. They verify it matches your hash.
+After committing on-chain, POST the actual bitmap bytes to the oracle network. They verify it matches your hash.
 
 ```typescript
 const response = await fetch("https://www.generalmarket.io/api/vision/bitmap", {
@@ -279,7 +279,7 @@ const response = await fetch("https://www.generalmarket.io/api/vision/bitmap", {
 });
 
 if (!response.ok) throw new Error(`Reveal failed: ${response.status}`);
-console.log("Revealed bitmap to issuer nodes");
+console.log("Revealed bitmap to oracle nodes");
 ```
 
 The sequence matters: commit first, then reveal. If you reveal before committing, your bets are visible and you lose the sealed-bet advantage. The scaffolded project handles this ordering automatically.
@@ -361,7 +361,7 @@ async function main() {
   const tx = await vision.joinBatch(batchId, deposit, stakePerTick, bitmapHash);
   await tx.wait();
 
-  // 5. Reveal to issuer nodes
+  // 5. Reveal to oracle nodes
   await fetch("https://www.generalmarket.io/api/vision/bitmap", {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },

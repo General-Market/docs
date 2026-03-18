@@ -76,7 +76,7 @@ export function useSourceHealth(): UseSourceHealthReturn {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch(`${DATA_NODE_URL}/admin/sources/health`, {
+      const response = await fetch(`${DATA_NODE_URL}/sources/health`, {
         signal: AbortSignal.timeout(15_000),
       })
 

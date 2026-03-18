@@ -70,11 +70,11 @@ This is the core tradeoff, and being honest about it matters more than any featu
 
 Kalshi's CFTC license provides genuine protections. Customer funds are segregated. The exchange is audited. If something goes wrong, there is a regulatory body to complain to and a legal framework for resolution. The cost of that protection is geographic restriction (US-only), mandatory identity verification, and a curated market selection that must pass regulatory approval.
 
-Vision's on-chain approach provides a different set of guarantees. Settlement is handled by a BLS 3-of-5 issuer consensus — five independent issuers validate data and co-sign resolutions. No single party can manipulate outcomes. Every transaction is public and auditable on-chain. The cost is that there is no regulatory backstop. If something goes wrong at the protocol level, there is no CFTC to call.
+Vision's on-chain approach provides a different set of guarantees. Settlement is handled by a BLS 3-of-5 oracle consensus — five independent oracles validate data and co-sign resolutions. No single party can manipulate outcomes. Every transaction is public and auditable on-chain. The cost is that there is no regulatory backstop. If something goes wrong at the protocol level, there is no CFTC to call.
 
 Neither approach is universally better. A US-based trader who values legal certainty should use Kalshi. A global trader who values permissionless access and transparency should use Vision. A bot builder who needs sealed bets and 25,000 markets to trade probably needs Vision regardless of jurisdiction.
 
-The risk profiles are different. Kalshi's risk is regulatory — rule changes, delistings, compliance overhead. Vision's risk is protocol — smart contract bugs, issuer collusion (mitigated by BLS consensus), chain reliability. Understanding your own risk tolerance determines which platform fits.
+The risk profiles are different. Kalshi's risk is regulatory — rule changes, delistings, compliance overhead. Vision's risk is protocol — smart contract bugs, oracle collusion (mitigated by BLS consensus), chain reliability. Understanding your own risk tolerance determines which platform fits.
 
 ## For Bot Builders
 

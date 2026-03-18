@@ -102,7 +102,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
 
   const SortHeader = ({ k, children, align, className: cx }: { k: SortKey; children: React.ReactNode; align?: string; className?: string }) => (
     <th
-      className={`px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'} ${cx || ''}`}
+      className={`px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary cursor-pointer hover:text-text-primary transition-colors select-none ${align || 'text-left'} ${cx || ''}`}
       onClick={() => toggleSort(k)}
     >
       <span className="inline-flex items-center gap-1">
@@ -129,12 +129,12 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[900px]">
+        <table className="w-full text-sm">
           <thead className="bg-surface border-b border-border-light">
             <tr>
               <SortHeader k="rank">#</SortHeader>
               <SortHeader k="name">Name</SortHeader>
-              <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-text-secondary text-left">Sector</th>
+              <th className="px-3 py-2.5 text-micro font-semibold uppercase tracking-[0.08em] text-text-secondary text-left hidden sm:table-cell">Sector</th>
               <SortHeader k="weight" align="text-right">Weight</SortHeader>
               <SortHeader k="price" align="text-right">Price</SortHeader>
               <SortHeader k="change_24h" align="text-right">24h</SortHeader>
@@ -160,7 +160,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
                         unoptimized
                       />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-text-muted">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-micro font-bold text-text-muted">
                         {h.symbol[0]}
                       </div>
                     )}
@@ -172,7 +172,7 @@ export function HoldingsTable({ enrichment, nav, aum }: SectionProps) {
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-text-secondary text-xs">Cryptocurrency</td>
+                <td className="px-3 py-2.5 text-text-secondary text-xs hidden sm:table-cell">Cryptocurrency</td>
                 <td className="px-3 py-2.5 text-right font-mono tabular-nums text-text-primary">
                   {(h.weight * 100).toFixed(2)}%
                 </td>

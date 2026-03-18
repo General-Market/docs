@@ -14,125 +14,123 @@ tldr:
   - "Everything is <strong>atomic</strong> — no gap between approve and execute, no front-running"
 ---
 
-You open your wallet. You want to swap tokens. Two steps: approve, then swap. Between those two transactions, someone can cut in line and extract value from you. Your wallet can only hold one key. Gas must be paid in ETH — even if you only hold stablecoins. If you want privacy, you need a middleman to broadcast your transaction for you.
+You open your wallet. You want to swap tokens. Two steps: approve, then swap. Between those two transactions, someone cuts in line and extracts value from you. Your wallet holds one key. Gas must be paid in ETH — even if you hold only stablecoins. If you want privacy, you need a middleman to broadcast your transaction.
 
-This is Ethereum's transaction model today. One call. One signer. Signature on the outside. Every workaround bolts on infrastructure — bundlers, relayers, intermediaries — that adds cost, complexity, and new trust assumptions.
+This is Ethereum's transaction model. One call. One signer. Signature on the outside. Every workaround bolts on infrastructure — bundlers, relayers, intermediaries — adding cost, complexity, and fresh trust assumptions. The building is sound; the plumbing is from another century.
 
-EIP-8141 redesigns the transaction itself. After this article, you will understand why one EIP replaces a decade of proposals, and why the padlock is about to move inside the envelope.
+EIP-8141 redesigns the transaction itself. The padlock moves inside the envelope. One EIP replaces a decade of proposals. After this, you will understand why.
 
 <PromiseScene3D />
 
 ## The Decade That Led Here
 
-Five proposals. Three failures. Two partial solutions. A decade of learning what the final answer must look like.
+Five proposals. Three failures. Two partial solutions. Ten years of learning what the answer must look like by exhaustively cataloguing what it must not.
 
 <HistoryTimeline3D />
 
-Each attempt solved part of the puzzle. None solved the whole thing. The missing insight: you cannot bolt smart wallets onto a transaction format that only supports one call and one signer. You have to replace the transaction format itself.
+Each attempt solved a fragment. None solved the whole. The missing insight was structural: you cannot bolt smart wallets onto a transaction format that supports one call and one signer. You have to replace the format itself. The disease was in the grammar, not the vocabulary.
 
 ## The Core Insight: The Padlock Moves Inside
 
-Today, every Ethereum transaction is a sealed letter. One message inside. One signature on the envelope. The network checks the signature, then delivers the message. Simple, but rigid — the letter format cannot express "check two signatures," "let someone else pay postage," or "deploy the mailbox first, then deliver."
+Every Ethereum transaction today is a sealed letter. One message inside. One signature on the envelope. The network checks the signature, delivers the message. Simple — and brittle. The letter format cannot express "check two signatures," "let someone else pay postage," or "deploy the mailbox first, then deliver."
 
-EIP-8141 replaces the letter with a package. Multiple compartments — called **frames** — sit inside one container. The signature is not on the outside of the package. Instead, one of the compartments contains the authentication logic. The package decides for itself whether to accept delivery.
+EIP-8141 replaces the letter with a package. Multiple compartments — called **frames** — sit inside one container. The signature is not on the outside. Instead, one compartment contains the authentication logic. The package decides for itself whether to accept delivery.
 
 <NormalVsFrame3D />
 
-The padlock moves from outside to inside. That is the entire idea. Everything else — paymasters, multisig, privacy, atomic operations — follows from this structural change.
+The padlock moves from outside to inside. That is the entire idea. Everything else — paymasters, multisig, privacy, atomic operations — follows from this single structural relocation. One displacement, and the architecture unfolds.
 
-Technically, the authentication boundary is a new opcode called `ACCEPT`. When a frame calls `ACCEPT`, it tells the protocol: "I have verified this transaction. Proceed." Before `ACCEPT`, all execution is tentative — the protocol can revert everything at zero cost. After `ACCEPT`, the transaction is committed and the remaining frames execute with the sender's full authority.
+Technically, the authentication boundary is a new opcode: `ACCEPT`. When a frame calls `ACCEPT`, it tells the protocol: "I have verified this transaction. Proceed." Before `ACCEPT`, all execution is tentative — the protocol can revert everything at zero cost. After `ACCEPT`, the transaction is committed and remaining frames execute with the sender's full authority. The border between suspicion and trust, made explicit in bytecode.
 
 ## How Frame Transactions Work
 
-Think of a Frame Transaction as walking through airport security. You enter the security zone (Frame 0) carrying your luggage. Everything you do here is tentative — the security officer can turn you back and it is as if you never entered. The officer inspects your boarding pass and checks which gate you are headed to. Only then does the officer wave you through the checkpoint.
+Think of a Frame Transaction as airport security. You enter the security zone (Frame 0) carrying your luggage. Everything here is tentative — the officer can turn you back as if you never entered. The officer inspects your boarding pass, checks your gate. Only then does she wave you through the checkpoint.
 
-That checkpoint is `ACCEPT`. Before it, you are in the tentative zone. After it, you are in the terminal with full access.
+That checkpoint is `ACCEPT`. Before it: the tentative zone. After it: the terminal, full access, no further questions.
 
 <FrameOverview3D />
 
-The security officer does something subtle before waving you through: she reads your boarding pass to see *where you are going*. In protocol terms, Frame 0 uses `CALLDATAREAD` to inspect Frame 1's calldata — the intended action — before deciding whether to authorize it. This is the look-ahead mechanism. The validator does not just check "who are you?" It checks "who are you, and what do you intend to do?"
+The officer does something subtle before waving you through: she reads your boarding pass to see where you are going. In protocol terms, Frame 0 uses `CALLDATAREAD` to inspect Frame 1's calldata — the intended action — before deciding whether to authorize it. The validator does not merely ask "who are you?" It asks "who are you, and what do you intend to do?" Authentication and authorization, fused into one act of scrutiny.
 
-`CALLDATAREAD` fires before `ACCEPT`. The order matters. Frame 0 inspects, then decides. This means a smart wallet can reject transactions that target the wrong contract, spend too much, or violate any policy the wallet owner defines.
+`CALLDATAREAD` fires before `ACCEPT`. The order matters. Frame 0 inspects, then decides. A smart wallet can reject transactions that target the wrong contract, spend too much, or violate any policy the owner defines. The gate agent can refuse your boarding pass if your destination is wrong.
 
 ## Multisig in One Transaction
 
-A multisig wallet requires multiple people to approve a transaction. Today, that means off-chain signature collection, a relayer to submit the bundle, and a separate smart contract to verify. Three layers of infrastructure for one operation.
+A multisig wallet requires multiple people to approve a transaction. Today, that means off-chain signature collection, a relayer to submit the bundle, a separate contract to verify. Three layers of infrastructure for one act of collective agreement. The overhead of consensus, imposed on every transfer.
 
-With Frame Transactions, a multisig is two frames. Frame 0 is the validator: it receives signatures from Alice and Bob, uses `CALLDATAREAD` to inspect what Frame 1 intends to do, checks both signatures against the intended action, then calls `ACCEPT`. Frame 1 is the execution: it transfers tokens, interacts with a protocol, or does whatever Alice and Bob authorized.
+With Frame Transactions, a multisig is two frames. Frame 0 is the validator: it receives signatures from Alice and Bob, uses `CALLDATAREAD` to inspect Frame 1's intention, checks both signatures against the intended action, calls `ACCEPT`. Frame 1 is the execution: it transfers tokens, interacts with a protocol, does whatever Alice and Bob authorized.
 
 <MultisigAuth3D />
 
-Two keys. One vault. One transaction. No bundler. No relayer. No off-chain infrastructure. The smart wallet validates natively because the transaction format supports it.
+Two keys. One vault. One transaction. No bundler. No relayer. No off-chain choreography. The smart wallet validates natively because the transaction format finally accommodates it. Infrastructure eliminated not by replacement, but by absorption.
 
 ## Gas in Any Token
 
-Here is a concrete problem. You hold RAI — a decentralized stablecoin — but no ETH. On Ethereum today, you cannot do anything. Every transaction requires ETH for gas. You are stuck until you acquire ETH through some other channel.
+You hold RAI — a decentralized stablecoin — but no ETH. On Ethereum today, you are stranded. Every transaction demands ETH for gas. You possess wealth and cannot spend it. A familiar human condition, now encoded in protocol.
 
-A **paymaster** solves this. Think of it as a currency exchange booth at the airport. You have yen but need euros. The booth takes your yen, gives you euros, and charges a small commission. The booth is the paymaster. Yen is RAI. Euros is ETH. The commission is the paymaster's fee.
+A **paymaster** resolves this. Think of it as a currency exchange booth at the airport. You have yen but need euros. The booth takes your yen, provides euros, charges a commission. The booth is the paymaster. Yen is RAI. Euros is ETH. The commission is the paymaster's fee.
 
-With Frame Transactions, the paymaster is an on-chain contract — not an off-chain service. Frame 0 belongs to the paymaster. It uses `CALLDATAREAD` to inspect what your wallet intends to do in Frame 1. If the paymaster approves the action, it calls `ACCEPT` and covers gas in ETH. Then the paymaster pulls a fee in RAI from your wallet.
+With Frame Transactions, the paymaster is an on-chain contract. Frame 0 belongs to the paymaster. It uses `CALLDATAREAD` to inspect what your wallet intends to do in Frame 1. If the paymaster approves, it calls `ACCEPT` and covers gas in ETH. Then it pulls a fee in RAI from your wallet.
 
 <PaymasterFlow3D />
 
-Two token flows cross in opposite directions: ETH for gas going one way, RAI for the fee going the other. No bundler sits between you and the paymaster. No intermediary takes a cut. The exchange happens inside the transaction because the transaction format can express it.
+Two token flows cross in opposite directions: ETH for gas one way, RAI for the fee the other. No bundler between you and the paymaster. No intermediary extracting margin. The exchange happens inside the transaction because the transaction format can finally express it.
 
-This means any token with a liquid market can become a gas token. The only requirement is a paymaster contract willing to make the exchange.
+Any token with a liquid market can become a gas token. The only requirement is a paymaster contract willing to make the exchange. The constraint was never economic. It was syntactic.
 
 ## Wallet Deployment Without Chicken-and-Egg
 
-New users face a paradox today. To use a smart wallet, you need to deploy its contract. To deploy a contract, you need a funded account. To fund an account, you need... a wallet. Something has to come first.
+New users face a paradox. To use a smart wallet, deploy its contract. To deploy a contract, fund an account. To fund an account, have a wallet. The ouroboros of onboarding.
 
-Frame Transactions break the cycle. The wallet address can be computed deterministically (via EIP-7997) before the wallet exists. Funds can arrive at that address before any contract is deployed. Then, in a single Frame Transaction: Frame 0 deploys the wallet contract at the predetermined address, Frame 1 validates the owner's key and calls `ACCEPT`, and Frame 2 executes the first action.
+Frame Transactions sever the loop. The wallet address is computed deterministically (via EIP-7997) before the wallet exists. Funds arrive at that address before any contract is deployed. Then, in a single Frame Transaction: Frame 0 deploys the wallet contract at the predetermined address, Frame 1 validates the owner's key and calls `ACCEPT`, Frame 2 executes the first action.
 
 <AccountDeploy3D />
 
-The lot has a street address before the house is built. Mail arrives at the address before construction begins. Then: build, install locks, move in — all in one atomic step. The pre-funded coins that were sitting on an empty plot are now inside a fully functional wallet.
-
-This eliminates the onboarding friction that plagues every smart wallet deployment today.
+The lot has a street address before the house is built. Mail arrives before construction begins. Then: build, install locks, move in — all in one atomic step. The pre-funded coins that sat on an empty plot are now inside a fully functional wallet. The paradox dissolves not through cleverness, but through a format that permits the sequence to be expressed at all.
 
 ## Privacy Without Relayers
 
-Today's privacy protocols — systems like Tornado Cash or Railgun — need centralized relayers. Here is why: when you withdraw from a privacy pool, your withdrawal transaction links your new address to the gas payment. A relayer broadcasts the withdrawal on your behalf so your new address never touches gas directly.
+Privacy protocols today — Tornado Cash, Railgun — require centralized relayers. The reason: when you withdraw from a privacy pool, your withdrawal transaction links your new address to the gas payment. A relayer broadcasts the withdrawal on your behalf so your fresh address never touches gas directly.
 
-Relayers work, but they are centralized infrastructure. They can censor, charge fees, or go offline.
+Relayers function. They also centralize. They can censor, charge fees, vanish. Your anonymity depends on someone else's uptime. A fragile arrangement for something as consequential as privacy.
 
-Frame Transactions remove the relayer entirely. A ZK-SNARK paymaster becomes Frame 0 inside the transaction. The paymaster verifies a zero-knowledge proof — a mathematical statement that says "I deposited into this pool" without revealing which deposit is yours. Once the proof checks out, the paymaster calls `ACCEPT` and covers gas. Frame 1 executes the withdrawal to a fresh address.
+Frame Transactions remove the relayer. A ZK-SNARK paymaster becomes Frame 0. It verifies a zero-knowledge proof — a mathematical statement that says "I deposited into this pool" without revealing which deposit is yours. Once the proof verifies, the paymaster calls `ACCEPT` and covers gas. Frame 1 executes the withdrawal to a fresh address.
 
 <ZKPrivacy3D />
 
-There is no link between the deposit address and the withdrawal address. The paymaster pays gas, so the fresh address never needs prior funding. And the paymaster is a frame inside the transaction — not a server you must trust. The ZK math provides the anonymity. The Frame Transaction provides the architecture that makes it work without middlemen.
+No link between deposit and withdrawal addresses. The paymaster pays gas, so the fresh address needs no prior funding. The paymaster is a frame inside the transaction — not a server you trust. The ZK math provides anonymity. The Frame Transaction provides the architecture that makes it work without intermediaries. Privacy as a property of the format, not a service you rent.
 
 ## Censorship Resistance: FOCIL
 
-Frame Transactions introduce a new concern. Block builders — the entities that assemble blocks on Ethereum — have discretion over which transactions to include. A builder could silently exclude all Frame Transactions. They are more complex to process, and a builder might prefer simpler (more profitable) regular transactions.
+Frame Transactions introduce a concern. Block builders — the entities assembling Ethereum blocks — choose which transactions to include. A builder could silently exclude all Frame Transactions. They are more complex to process. A builder might prefer simpler, more profitable alternatives.
 
-**FOCIL** (Fork-Choice Enforced Inclusion Lists) is the counterweight. A committee of validators publishes inclusion lists — transactions that the next block *must* contain. If a builder tries to censor a listed transaction, the block is invalid. Other validators reject it.
+**FOCIL** (Fork-Choice Enforced Inclusion Lists) is the counterweight. A committee of validators publishes inclusion lists — transactions the next block must contain. If a builder censors a listed transaction, the block is invalid. Other validators reject it.
 
 <FOCILGuard3D />
 
-Without FOCIL, a biased builder can turn away anyone they dislike. With FOCIL, a committee of validators stands behind the builder with a guest list. If the builder tries to reject someone on the list, the committee overrules them. Every transaction type gets through.
+Without FOCIL, a biased builder turns away anyone it dislikes. With FOCIL, a committee of validators stands behind the builder holding a guest list. The builder who refuses someone on the list loses the block entirely. Every transaction type gets through. Neutrality, enforced not by goodwill but by game theory.
 
-FOCIL is not part of EIP-8141 itself. It is a separate protocol upgrade (EIP-7547) that ensures the inclusion guarantees Frame Transactions need to be credibly neutral.
+FOCIL is not part of EIP-8141 itself. It is a separate protocol upgrade (EIP-7547) that provides the inclusion guarantees Frame Transactions need to remain credibly neutral.
 
 ## Atomic Operations: No Gap, No Attack
 
-Separate transactions create a gap. You send "approve" in one transaction and "swap" in the next. Between those two transactions — a window that might last seconds or minutes — an attacker can see your approval and front-run your swap. Sandwich attacks extract billions of dollars per year from Ethereum users through exactly this gap.
+Separate transactions create a gap. You send "approve" in one, "swap" in the next. Between them — seconds, minutes, an eternity in adversarial time — an attacker sees your approval and front-runs your swap. Sandwich attacks extract billions per year from Ethereum users through exactly this aperture.
 
-Frame Transactions eliminate the gap. Approve and swap are frames inside one transaction. They execute atomically — all or nothing. No external transaction can interleave between them. No attacker can see the approval without also seeing the swap that immediately follows.
+Frame Transactions eliminate the gap by eliminating the separation. Approve and swap are frames inside one transaction. They execute atomically. No external transaction can interleave. No attacker can observe the approval without also confronting the swap that immediately follows.
 
 <AtomicBatch3D />
 
-The wall has no gap. The attacker has no opening. This is not a clever mitigation — it is a structural impossibility. The vulnerability ceases to exist because the frames share a single atomic boundary.
+The wall has no gap. The attacker has no opening. This is not a mitigation. It is a structural impossibility. The vulnerability ceases to exist because the frames share a single atomic boundary. You cannot exploit a space that the architecture does not contain.
 
 ## Who Is Behind This
 
-Authored by Vitalik Buterin, targeting the Hegota hard fork. Wallet teams, L2 developers, and privacy researchers are already building on it.
+Authored by Vitalik Buterin. Targeting the Hegota hard fork. Wallet teams, L2 developers, and privacy researchers are already building on it.
 
 <SocialProof3D />
 
 <PayoffScene3D />
 
-That is Frame Transactions. The padlock moved inside. Authentication, gas payment, and execution are no longer bolted onto a rigid format. They are programmable steps inside a flexible container. One EIP. One transaction type. A decade of proposals, resolved.
+The padlock moved inside. Authentication, gas payment, and execution are no longer bolted onto a rigid format — they are programmable steps inside a flexible container. One EIP. One transaction type. A decade of proposals, dissolved into a single primitive. The simplicity on the other side of complexity, arrived at by exhaustion.
 
 ## Sources
 

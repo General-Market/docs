@@ -149,7 +149,8 @@
     },
     "loading": "加载市场中...",
     "no_markets": "暂无可用市场",
-    "market_pair": "{name} / USDC"
+    "market_pair": "{name} / USDC",
+    "coming_soon": "Coming Soon"
   },
   "common": {
     "something_went_wrong": "出现错误",

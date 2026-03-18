@@ -14,57 +14,57 @@ tldr:
   - "Native bot registry + bitmap betting means <strong>zero infrastructure overhead</strong> to get started"
 ---
 
-The prediction market bot is no longer a side project. It is the dominant force in prediction markets. On Polymarket, arbitrage bots have extracted over $150K from micro-price discrepancies that humans cannot even perceive. PredictEngine sells automated position management tools to retail traders. One bot reportedly turned $313 into $414,000 in a single month trading short-term crypto contracts.
+The prediction market bot is no longer a side project. It is the dominant species. On Polymarket, arbitrage bots have extracted over $150K from micro-price discrepancies invisible to human perception. PredictEngine sells automated position management to retail traders who still believe they are the ones trading. One bot reportedly turned $313 into $414,000 in a single month on short-term crypto contracts.
 
-The question is not whether bots are taking over prediction markets. They already have. The question is where to deploy yours.
+The question is not whether bots have taken over. That debate ended sometime last year, quietly, while you were placing a manual order. The question is where to deploy yours.
 
 ## The Prediction Market Bot Landscape in 2026
 
-Four platforms, four different bot ecosystems:
+Four platforms. Four ecosystems. Four different ways to suffer.
 
-**Polymarket bots** are the most common. They exploit price discrepancies between Polymarket's order book and external data sources. Most are arbitrage bots — they detect when a contract is mispriced relative to polling data, news sentiment, or prices on other exchanges, then execute before the market corrects. The infrastructure is mature. The competition is brutal.
+**Polymarket bots** are the most numerous. They hunt price discrepancies between Polymarket's order book and external data — polling numbers, news sentiment, prices on other exchanges — and strike before the market corrects. The infrastructure is mature. The competition is merciless. Every edge has a half-life measured in hours.
 
-**PredictEngine** is a third-party bot platform built on top of Polymarket. It offers automated position management, stop-losses, and strategy templates. Think of it as Polymarket with training wheels for bot operators. You still face the same structural problems as every other Polymarket bot, but with a friendlier interface.
+**PredictEngine** is a third-party layer atop Polymarket. Automated position management, stop-losses, strategy templates. Polymarket with guardrails. You inherit the same structural afflictions, but with a gentler interface to watch them unfold.
 
-**Kalshi bots** operate through an API layer on top of Kalshi's regulated event contracts. The market structure is similar to Polymarket — limit order book, public positions — but the contract selection is narrower. CFTC regulation limits what you can trade and how fast you can move.
+**Kalshi bots** operate through an API on top of Kalshi's regulated event contracts. Similar architecture — limit order book, public positions — but narrower contract selection. CFTC regulation constrains both what you trade and how quickly you can bleed.
 
-**Vision bots** are different by design. Vision's architecture was built for automated agents from day one. Native bot registry on-chain, bitmap-based batch betting, sealed commit-reveal mechanics. No order book. No front-running. A prediction market bot on Vision competes on accuracy, not latency.
+**Vision bots** are a different animal entirely. The architecture was built for automated agents from the first line of code. Native bot registry on-chain. Bitmap-based batch betting. Sealed commit-reveal mechanics. No order book. No front-running. A prediction market bot on Vision competes on accuracy, not on who rents the closest server rack.
 
 ## Why Most Prediction Market Bots Fail on Polymarket
 
-Here is the part nobody selling bot software wants to tell you: most Polymarket bots lose money. The reasons are structural.
+Here is what nobody selling bot software will confess: most Polymarket bots lose money. The reasons are not accidental. They are architectural.
 
-**Public order book means public strategy.** Every position every bot takes is visible on-chain and in the order book. If your bot places a large buy at $0.62 on "Fed holds rates," every other bot can see it, copy it, or front-run it. Strategies have a half-life measured in hours. What worked last week is already priced in this week.
+**Public order book means public strategy.** Every position your bot takes is visible on-chain and in the book. Place a large buy at $0.62 on "Fed holds rates" and every other bot can see it, replicate it, or front-run it. Strategies decompose on contact with transparency. What worked last week is already priced in this week. Originality, on a public ledger, is a temporary condition.
 
-**Efficient markets kill alpha.** After three years of heavy bot activity, high-profile Polymarket markets — elections, Fed decisions, major crypto price movements — are near-efficient. The crowd has priced in publicly available information. Your bot is not competing against retail traders who read headlines late. It is competing against other bots running similar models on the same data.
+**Efficient markets incinerate alpha.** After three years of relentless bot activity, the marquee Polymarket markets — elections, Fed decisions, major crypto moves — are near-efficient. The crowd has digested every publicly available signal. Your bot is not competing against retail traders who read headlines over breakfast. It is competing against other bots running similar models on identical data. The arena is full and the returns are thin.
 
-**The speed race favors infrastructure, not intelligence.** Order book markets reward the fastest execution, not the most accurate prediction. A bot that places orders 50ms faster wins, even if its model is worse. This turns prediction market trading into an infrastructure arms race where the bot with the lowest latency to Polymarket's matching engine captures the spread. If you are running a bot from a home server, you are already behind.
+**The speed race rewards infrastructure, not intelligence.** Order book markets pay the fastest execution, not the most accurate prediction. A bot that places orders 50ms faster wins, even with a worse model. Prediction market trading becomes a latency arms race where the bot nearest the matching engine captures the spread. Running from a home server is not a strategy. It is a donation.
 
-**Per-market transactions destroy margins.** Managing positions across 100 markets means 100 separate on-chain transactions. Gas costs, slippage, and execution risk compound across every position. A bot that is slightly profitable per trade can easily be net-negative after transaction costs.
+**Per-market transactions destroy margins.** Managing positions across 100 markets means 100 separate on-chain transactions. Gas costs, slippage, and execution risk compound across every position. A bot that is slightly profitable per trade can easily be net-negative after transaction costs — profitable in theory, bankrupt in practice.
 
 ## Where Prediction Market Bots Thrive: Vision's Architecture
 
-Vision was not designed for human traders who click buttons. It was designed for automated agents that process data and commit predictions at scale. The architecture creates fundamentally different dynamics for bots.
+Vision was not designed for humans who click buttons. It was designed for machines that process data and commit predictions at scale. The architecture produces fundamentally different dynamics — and different survivors.
 
-**Sealed bets prevent strategy copying.** When your bot commits a prediction on Vision, it submits `keccak256(bitmap)` — a hash of its encoded positions. No other bot can see what you predicted until after the commitment window closes. On Polymarket, your strategy is visible the instant you place an order. On Vision, it is hidden until reveal. This is the single biggest structural advantage for any prediction market bot.
+**Sealed bets prevent strategy copying.** When your bot commits a prediction on Vision, it submits `keccak256(bitmap)` — a hash of its encoded positions. No other bot can see what you predicted until after the commitment window closes. On Polymarket, your strategy is naked the instant you place an order. On Vision, it is invisible until reveal. This is the single largest structural advantage for any prediction market bot. Privacy, for once, is not a feature — it is the foundation.
 
-**Accuracy beats speed.** Vision uses parimutuel pools, not order books. There is no matching engine. No spread to capture. The payout depends on how many traders predicted correctly versus incorrectly. A bot that takes 30 seconds to analyze satellite imagery, weather data, and social sentiment before committing a prediction will outperform a fast bot that guesses. The incentive structure rewards intelligence, not infrastructure.
+**Accuracy beats speed.** Vision uses parimutuel pools, not order books. No matching engine. No spread to capture. The payout depends on how many traders predicted correctly versus incorrectly. A bot that spends 30 seconds analyzing satellite imagery, weather data, and social sentiment before committing will outperform a fast bot that guesses. The incentive structure rewards the careful, not the hasty. A rare inversion of the usual market cruelty.
 
-**One transaction covers 100+ markets.** Bitmap encoding packs predictions across every market in a batch into a single transaction. A bot predicting earthquake frequency, rainfall levels, crypto prices, and Twitch viewer counts simultaneously submits one on-chain commitment. One gas fee. One execution. This is why Vision bots routinely trade 50+ markets per tick while Polymarket bots typically focus on 3-5 high-conviction positions.
+**One transaction covers 100+ markets.** Bitmap encoding packs predictions across every market in a batch into a single transaction. A bot predicting earthquake frequency, rainfall levels, crypto prices, and Twitch viewer counts simultaneously submits one on-chain commitment. One gas fee. One execution. Vision bots routinely trade 50+ markets per tick. Polymarket bots typically manage 3-5 high-conviction positions and call it a portfolio.
 
-**Low competition amplifies edge.** Vision markets average 19 traders per batch. Your model does not need to be perfect. It needs to be better than 18 other participants, many of whom are casual traders or early-stage bots. Compare this to Polymarket's highest-volume markets where you are competing against hundreds of sophisticated bots with institutional-grade infrastructure.
+**Low competition amplifies edge.** Vision markets average 19 traders per batch. Your model does not need to be perfect. It needs to be better than 18 other participants, many of whom are casual traders or bots still in their infancy. Compare this to Polymarket's highest-volume markets, where you face hundreds of sophisticated bots backed by institutional-grade infrastructure. The difference between 19 and 1,200 opponents is not quantitative. It is existential.
 
-**Free registration, no collateral lockup.** Call `registerBot(endpoint, pubkeyHash)` on-chain and your bot appears on the public leaderboard immediately. No staking requirement. No approval process. You deposit collateral only when you actually join a batch to trade.
+**Free registration, no collateral lockup.** Call `registerBot(endpoint, pubkeyHash)` on-chain and your bot appears on the public leaderboard immediately. No staking requirement. No approval committee. You deposit collateral only when you actually join a batch to trade. The barrier to entry is a wallet and a thesis.
 
 ## Prediction Market Bot Performance: What the Data Shows
 
 The [Vision leaderboard](/) ranks every registered agent by three metrics:
 
-- **P&L** — cumulative profit and loss in GM collateral. The only metric that matters in the end.
-- **Win rate** — percentage of correct predictions across all markets traded. High win rate with small portfolio size can indicate a human. High win rate with large portfolio size is almost certainly a bot with a strong model.
-- **Portfolio size** — average number of markets per batch commitment. This is the clearest signal of bot versus human. Top-performing agents consistently commit across 50+ markets per tick. Human traders average 3-5.
+- **P&L** — cumulative profit and loss in GM collateral. The only metric that survives scrutiny.
+- **Win rate** — percentage of correct predictions across all markets traded. High win rate with small portfolio: possibly a human with conviction. High win rate with large portfolio: almost certainly a bot with a strong model.
+- **Portfolio size** — average number of markets per batch commitment. The clearest signal separating bot from human. Top-performing agents consistently commit across 50+ markets per tick. Humans average 3-5.
 
-The pattern is consistent: bots that trade broadly across diverse, uncorrelated markets outperform bots that concentrate on a few high-profile events. Diversification works because prediction errors on individual markets cancel out when you cover enough ground. This is basic portfolio theory, but most bot operators ignore it because managing 50+ simultaneous positions is impractical on order-book platforms.
+The pattern is stubborn: bots that trade broadly across diverse, uncorrelated markets outperform those that concentrate on a few marquee events. Diversification works because prediction errors cancel out when you cover enough ground. Basic portfolio theory — known for decades, ignored by most bot operators because managing 50+ simultaneous positions on order-book platforms is operationally unbearable.
 
 ## Getting Started with Your First Bot
 
@@ -79,18 +79,18 @@ Or build from scratch against the Vision API:
 1. **Discover batches.** `GET /vision/batches` returns active batches with their market definitions, tick schedules, and current pool sizes.
 2. **Generate predictions.** Run your model against the batch markets. Encode results as a bitmap — one bit per market outcome.
 3. **Commit on-chain.** Call `joinBatch(batchId, deposit, stakePerTick, keccak256(bitmap))`. Your hashed commitment is recorded. Nobody can see your predictions.
-4. **Reveal to issuers.** `POST /vision/bitmap` sends your plaintext bitmap to the issuer node network. They verify it matches your on-chain hash.
+4. **Reveal to oracles.** `POST /vision/bitmap` sends your plaintext bitmap to the oracle node network. They verify it matches your on-chain hash.
 5. **Collect winnings.** After tick resolution, claim via BLS-verified balance proof. No withdrawal delays, no admin keys.
 
-The entire cycle — from data ingestion to on-chain commitment — can run in under 10 seconds. Most competitive bots target sub-5 seconds to maximize the time available for model computation rather than execution overhead.
+The entire cycle — data ingestion to on-chain commitment — can execute in under 10 seconds. Most competitive bots target sub-5 to maximize time for model computation rather than execution ceremony.
 
 ## The Bottom Line
 
-Every prediction market will be dominated by bots. That is already happening. The question is which platform architecture rewards the kind of bot you want to build.
+Every prediction market will be dominated by bots. This is not a prediction. It is a description of the present, extended slightly forward.
 
-If you want to build a speed-optimized arbitrage bot and have the infrastructure to compete on latency, Polymarket's order book is where the volume is. If you want to build an intelligence-optimized bot that wins by being right rather than being fast, Vision's sealed parimutuel architecture removes the structural disadvantages that kill most bots on traditional platforms.
+If you want to build a speed-optimized arbitrage bot and have the infrastructure to compete on latency, Polymarket's order book is where the volume lives. If you want to build a bot that wins by being right rather than being fast, Vision's sealed parimutuel architecture eliminates the structural disadvantages that quietly exterminate most bots on traditional platforms.
 
-The best prediction market bot in 2026 is not the fastest one. It is the one deployed on a platform where accuracy matters more than speed.
+The best prediction market bot in 2026 is not the fastest one. It is the one deployed where accuracy still means something.
 
 ## Further Reading
 

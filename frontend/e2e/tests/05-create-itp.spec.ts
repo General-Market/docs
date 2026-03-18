@@ -122,7 +122,7 @@ test.describe('Create ITP', () => {
       // 10. Wait for success banner (frontend tx confirmed on Settlement BridgeProxy)
       await expect(page.getByText('ITP Request Created!').first()).toBeVisible({ timeout: 90_000 });
 
-      // 11. Wait for issuers to relay -> ITP count increases on L3
+      // 11. Wait for oracles to relay -> ITP count increases on L3
       await pollUntil(
         () => getItpCountL3(),
         (count) => count > itpCountBefore,

@@ -23,10 +23,10 @@ interface WithdrawModalProps {
  * Modal for withdrawing or claiming rewards from a Vision batch.
  *
  * Provides two options:
- * - "Withdraw All": fetches BLS proof from issuer, calls Vision.withdraw()
+ * - "Withdraw All": fetches BLS proof from oracle, calls Vision.withdraw()
  * - "Claim Rewards": fetches BLS proof with tick range, calls Vision.claimRewards()
  *
- * Both require a BLS-signed balance proof from the issuer nodes.
+ * Both require a BLS-signed balance proof from the oracle nodes.
  * Withdraw deducts a 0.3% fee on profit.
  */
 export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
@@ -113,7 +113,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   // Compute claimable tick range
   const fromTick = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
   // createdAtTick + elapsed is approximate; the real current tick comes from the batch state
-  // For now use a reasonable estimate — the issuer will validate
+  // For now use a reasonable estimate — the oracle will validate
   const hasClaimableTicks = lastClaimedTick < (batchInfo?.createdAtTick ?? 0n) + 100n // rough check
 
   const handleWithdraw = useCallback(() => {
@@ -124,10 +124,10 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
 
   const handleClaim = useCallback(() => {
     setMode('claim')
-    // fromTick = lastClaimedTick + 1, toTick = we pass 0 and let issuer determine current tick
+    // fromTick = lastClaimedTick + 1, toTick = we pass 0 and let oracle determine current tick
     // In practice the frontend should know the current resolved tick from batch state
     const from = lastClaimedTick > 0n ? lastClaimedTick + 1n : startTick
-    // toTick = 0 means "up to latest resolved tick" — issuer handles this
+    // toTick = 0 means "up to latest resolved tick" — oracle handles this
     claim(BigInt(batchId), from, 0n)
   }, [batchId, lastClaimedTick, startTick, claim])
 
@@ -144,7 +144,7 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const isProcessing = activePending || activeConfirming || activeStep === 'fetching-proof'
 
   const stepLabel = (() => {
-    if (activeStep === 'fetching-proof') return 'Fetching BLS balance proof from issuer...'
+    if (activeStep === 'fetching-proof') return 'Fetching BLS balance proof from oracle...'
     if (activeStep === 'withdrawing') return activePending ? 'Confirm withdrawal in wallet...' : 'Submitting withdrawal...'
     if (activeStep === 'claiming') return activePending ? 'Confirm claim in wallet...' : 'Submitting claim...'
     if (activeStep === 'done') return mode === 'withdraw' ? 'Withdrawal successful!' : 'Claim successful!'

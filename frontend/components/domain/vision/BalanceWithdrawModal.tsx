@@ -21,7 +21,7 @@ interface BalanceWithdrawModalProps {
  *
  * Two paths:
  * - "To L3 wallet": uses useWithdrawBalance (debits realBalance, sends L3 USDC)
- * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, issuers release on Settlement)
+ * - "To Settlement": uses useWithdrawToSettlement (debits virtualBalance, oracles release on Settlement)
  */
 export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   const { isConnected } = useAccount()
@@ -102,7 +102,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
     if (mode === 'settlement') {
       switch (settlementStep) {
         case 'withdrawing': return 'Submitting withdrawal request...'
-        case 'polling': return 'Waiting for issuers to release on Settlement...'
+        case 'polling': return 'Waiting for oracles to release on Settlement...'
         case 'done': return 'Withdrawal initiated! USDC will arrive on Settlement shortly.'
         default: return ''
       }
@@ -139,7 +139,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 )}
                 {mode === 'settlement' && (
                   <p className="text-xs text-text-muted mt-2">
-                    USDC will arrive on Settlement once issuers process the release.
+                    USDC will arrive on Settlement once oracles process the release.
                   </p>
                 )}
               </div>
@@ -196,7 +196,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   <div>
                     <p className="text-sm font-bold text-text-primary">To Settlement</p>
                     <p className="text-xs text-text-muted mt-1">
-                      Release virtual balance USDC on Settlement via issuers
+                      Release virtual balance USDC on Settlement via oracles
                     </p>
                   </div>
                   <span className="text-xs font-mono text-text-secondary">

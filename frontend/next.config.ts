@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   staticPageGenerationTimeout: 180,
   pageExtensions: ["ts", "tsx", "md", "mdx"],
+  // Include data files in serverless function bundles — fs.readFile paths
+  // aren't resolved by nft tracing, so Vercel omits them without this.
+  outputFileTracingIncludes: {
+    "/api/itp-enrichment": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
+    "/\\[locale\\]/itp/\\[itpId\\]": ["./data/founders-lookup.json", "./data/symbol-map.json", "./public/coin-map.json", "./public/deployed-assets.json"],
+  },
   // Webpack config to handle WalletConnect's pino-pretty optional dependency
   webpack: (config) => {
     config.resolve.fallback = {

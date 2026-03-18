@@ -148,13 +148,13 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
   if (!isLoading && totalMarkets === 0 && !metaAssetCount) return null
 
   return (
-    <div
+    <Link
+      href={`/source/${source.id}`}
       data-testid="source-card"
-      className="bg-white border-r border-b border-border-light overflow-hidden"
+      className="block bg-white border-r border-b border-border-light overflow-hidden group cursor-pointer"
     >
       {/* Brand image area */}
-      <Link href={`/source/${source.id}`} className="block">
-        <div className="relative aspect-video w-full group cursor-pointer overflow-hidden">
+      <div className="relative aspect-video w-full overflow-hidden">
           {/* Brand logo face */}
           <div
             className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:-translate-y-full"
@@ -239,7 +239,6 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
             )}
           </div>
         </div>
-      </Link>
 
       {/* Card content */}
       <div className="px-5 pt-4 pb-0">
@@ -274,9 +273,9 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
       </div>
 
       {/* Action button — full bleed outside padding */}
-      <Link href={`/source/${source.id}`} className="block py-2.5 text-center border-t border-border-light bg-[rgba(22,163,74,0.06)] hover:bg-[rgba(22,163,74,0.12)] transition-colors">
+      <div className="py-2.5 text-center border-t border-border-light bg-[rgba(22,163,74,0.06)] group-hover:bg-[rgba(22,163,74,0.12)] transition-colors">
         <span className="text-[12px] font-bold uppercase tracking-[0.04em] text-color-up">View Source &rarr;</span>
-      </Link>
-    </div>
+      </div>
+    </Link>
   )
 }

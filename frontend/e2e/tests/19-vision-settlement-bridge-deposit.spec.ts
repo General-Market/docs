@@ -60,13 +60,13 @@ test.describe('Vision Settlement Bridge Deposit', () => {
     // Deposit via SettlementBridgeCustody
     await depositToVisionViaSettlement(PLAYER1, settlementAmount)
 
-    // Mine Settlement blocks so issuers see the VisionDepositCreated event
+    // Mine Settlement blocks so oracles see the VisionDepositCreated event
     for (let i = 0; i < 3; i++) {
       await mineSettlementBlocks(5)
       await new Promise(r => setTimeout(r, 2_000))
     }
 
-    // Wait for issuers to credit virtual balance (poll L3)
+    // Wait for oracles to credit virtual balance (poll L3)
     const deadline = Date.now() + 150_000
     let virtualAfter = virtualBefore
     while (Date.now() < deadline) {
@@ -82,10 +82,10 @@ test.describe('Vision Settlement Bridge Deposit', () => {
         console.log(`Virtual balance unchanged but total balance increased: ${totalBefore} → ${totalAfter}`)
         return
       }
-      // Issuers may not have processed — verify deposit tx succeeded (USDC left deployer)
+      // Oracles may not have processed — verify deposit tx succeeded (USDC left deployer)
       const settlementBalAfter = await getSettlementUsdcBalance(PLAYER1)
       console.log(`Settlement USDC: ${settlementBalBefore} → ${settlementBalAfter}`)
-      // If USDC decreased, the deposit tx went through even if issuers haven't credited yet
+      // If USDC decreased, the deposit tx went through even if oracles haven't credited yet
       expect(settlementBalAfter).toBeLessThan(settlementBalBefore)
       return
     }

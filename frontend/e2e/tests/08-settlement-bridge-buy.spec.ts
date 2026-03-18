@@ -2,11 +2,11 @@
  * Settlement bridge buy + sell (backend-only, no browser).
  *
  * When Settlement gas is available: tests the full bridge flow
- *   Buy:  SettlementBridgeCustody -> issuers relay -> L3 fill -> BridgedITP mint
- *   Sell: SettlementBridgeCustody -> issuers relay -> L3 sell -> USDC on Settlement
+ *   Buy:  SettlementBridgeCustody -> oracles relay -> L3 fill -> BridgedITP mint
+ *   Sell: SettlementBridgeCustody -> oracles relay -> L3 sell -> USDC on Settlement
  *
  * When Settlement gas is insufficient (testnet): falls back to L3 direct orders
- *   to verify the issuer buy/sell pipeline still works end-to-end.
+ *   to verify the oracle buy/sell pipeline still works end-to-end.
  */
 
 import { test, expect } from '@playwright/test';
@@ -33,7 +33,7 @@ const ITP_ID = '0x00000000000000000000000000000000000000000000000000000000000000
 const INDEX_CONTRACT = CONTRACTS.Index ?? '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
 
 test.describe('Settlement Bridge', () => {
-  test('buy ITP via Settlement bridge — issuers relay to L3, BridgedITP minted', async () => {
+  test('buy ITP via Settlement bridge — oracles relay to L3, BridgedITP minted', async () => {
     test.setTimeout(480_000);
 
     const useSettlement = IS_ANVIL || await hasSettlementGas();
@@ -111,7 +111,7 @@ test.describe('Settlement Bridge', () => {
     }
   });
 
-  test('sell ITP via Settlement bridge — issuers relay to L3, USDC returned on Settlement', async () => {
+  test('sell ITP via Settlement bridge — oracles relay to L3, USDC returned on Settlement', async () => {
     test.setTimeout(360_000);
 
     const useSettlement = IS_ANVIL || await hasSettlementGas();
@@ -143,7 +143,7 @@ test.describe('Settlement Bridge', () => {
         const usdcBefore = BigInt(await erc20BalanceOf(SETTLEMENT_USDC, TEST_ADDRESS));
         const bridgedItpBefore = BigInt(await erc20BalanceOf(BRIDGED_ITP, TEST_ADDRESS));
 
-        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 0n);
+        const orderId = await placeSellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
         console.log(`Settlement bridge sell order placed: orderId=${orderId}`);
 
         const usdcAfter = await pollUntil(
@@ -175,7 +175,7 @@ test.describe('Settlement Bridge', () => {
       await mintL3Usdc(INDEX_CONTRACT, 200n * 10n ** 18n);
 
       const sellAmount = l3SharesBefore > 25n * 10n ** 18n ? 25n * 10n ** 18n : l3SharesBefore;
-      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 1n);
+      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, ITP_ID, sellAmount, 10n ** 16n);
       console.log(`L3 direct sell order placed: orderId=${orderId}`);
 
       // Poll for order status = 2 (Filled) instead of shares change

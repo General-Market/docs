@@ -74,14 +74,14 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [description, setDescription] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
-  const [issuerName, setIssuerName] = useState('')
+  const [oracleName, setOracleName] = useState('')
   const [selectedAssets, setSelectedAssets] = useState<AssetWeight[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txError, setTxError] = useState<string | null>(null)
   const [availableAssets, setAvailableAssets] = useState<{ address: string; symbol: string }[]>([])
   const [coinMap, setCoinMap] = useState<Record<string, CoinEntry>>({})
   const { name: existingDeployerName, refetch: refetchDeployerName } = useDeployerName(address as `0x${string}` | undefined)
-  const needsIssuerName = isConnected && !existingDeployerName
+  const needsOracleName = isConnected && !existingDeployerName
 
   const { switchChainAsync } = useSwitchChain()
   const { writeContract, writeContractAsync, data: hash, isPending, error: writeError, reset: resetWrite } = useWriteContract()
@@ -323,13 +323,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       }
 
       // If deployer hasn't set their name yet, set it first
-      if (needsIssuerName && issuerName.trim()) {
-        console.log('[CreateITP] Setting deployer name:', issuerName.trim())
+      if (needsOracleName && oracleName.trim()) {
+        console.log('[CreateITP] Setting deployer name:', oracleName.trim())
         await writeContractAsync({
           address: INDEX_PROTOCOL.bridgeProxy,
           abi: BRIDGE_PROXY_ABI,
           functionName: 'setDeployerName',
-          args: [issuerName.trim()],
+          args: [oracleName.trim()],
           chainId: settlementChainId,
         })
         refetchDeployerName()
@@ -393,7 +393,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
       setDescription('')
       setWebsiteUrl('')
       setVideoUrl('')
-      setIssuerName('')
+      setOracleName('')
       setSelectedAssets([])
       setStuckWarning(false)
       refetchDeployerName()
@@ -649,8 +649,8 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           description={description} setDescription={setDescription}
           websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
           videoUrl={videoUrl} setVideoUrl={setVideoUrl}
-          issuerName={issuerName} setIssuerName={setIssuerName}
-          needsIssuerName={needsIssuerName}
+          oracleName={oracleName} setOracleName={setOracleName}
+          needsOracleName={needsOracleName}
           selectedAssets={selectedAssets}
           onClose={() => setShowFinalizeModal(false)}
           onSubmit={handleSubmit}
@@ -675,8 +675,8 @@ interface FinalizeItpModalProps {
   description: string; setDescription: (v: string) => void
   websiteUrl: string; setWebsiteUrl: (v: string) => void
   videoUrl: string; setVideoUrl: (v: string) => void
-  issuerName: string; setIssuerName: (v: string) => void
-  needsIssuerName: boolean
+  oracleName: string; setOracleName: (v: string) => void
+  needsOracleName: boolean
   selectedAssets: AssetWeight[]
   onClose: () => void
   onSubmit: () => void
@@ -693,7 +693,7 @@ interface FinalizeItpModalProps {
 function FinalizeItpModal({
   name, setName, symbol, setSymbol, description, setDescription,
   websiteUrl, setWebsiteUrl, videoUrl, setVideoUrl,
-  issuerName, setIssuerName, needsIssuerName, selectedAssets,
+  oracleName, setOracleName, needsOracleName, selectedAssets,
   onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
   hasNonceGap, txError, isSuccess, stuckWarning, onCancel,
 }: FinalizeItpModalProps) {
@@ -741,14 +741,14 @@ function FinalizeItpModal({
             </div>
           </div>
 
-          {/* Issuer Name */}
-          {needsIssuerName && (
+          {/* Oracle Name */}
+          {needsOracleName && (
             <div>
-              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.issuer_name_label')}</label>
+              <label className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1.5 block">{t('finalize.oracle_name_label')}</label>
               <input
-                type="text" value={issuerName}
-                onChange={(e) => setIssuerName(e.target.value.slice(0, 64))}
-                placeholder={t('finalize.issuer_name_placeholder')}
+                type="text" value={oracleName}
+                onChange={(e) => setOracleName(e.target.value.slice(0, 64))}
+                placeholder={t('finalize.oracle_name_placeholder')}
                 className="w-full bg-muted border border-border-medium text-text-primary rounded-lg px-4 py-2 focus:border-zinc-400 focus:outline-none"
               />
             </div>

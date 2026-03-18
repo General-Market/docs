@@ -788,7 +788,7 @@ test.describe('Index Sub-Tabs (/index)', () => {
     }
   })
 
-  test('switching to System tab shows issuer nodes with status', async ({ page }) => {
+  test('switching to System tab shows oracle nodes with status', async ({ page }) => {
     await page.goto(BASE + '/index', { waitUntil: 'domcontentloaded', timeout: 30_000 })
     await page.waitForTimeout(3_000)
     await page.locator('text="System"').first().click()
