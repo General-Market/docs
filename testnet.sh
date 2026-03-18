@@ -1382,6 +1382,16 @@ CMD
     }
 
     # No env_file: (env_file values are baked into docker inspect, same as environment:).
+    # Read Bitget credentials from system.env on VPS (needed for real price fetching)
+    local BITGET_API_KEY BITGET_API_SECRET BITGET_PASSPHRASE
+    BITGET_API_KEY=$(vps_be_ssh "grep '^BITGET_READONLY_API_KEY=' $VPS_BE_DIR/system.env 2>/dev/null | cut -d= -f2-" || echo "")
+    BITGET_API_SECRET=$(vps_be_ssh "grep '^BITGET_READONLY_API_SECRET=' $VPS_BE_DIR/system.env 2>/dev/null | cut -d= -f2-" || echo "")
+    BITGET_PASSPHRASE=$(vps_be_ssh "grep '^BITGET_READONLY_PASSPHRASE=' $VPS_BE_DIR/system.env 2>/dev/null | cut -d= -f2-" || echo "")
+
+    if [ -z "$BITGET_API_KEY" ] || [ -z "$BITGET_API_SECRET" ] || [ -z "$BITGET_PASSPHRASE" ]; then
+        echo -e "  ${YELLOW}WARNING: Missing Bitget credentials in system.env — oracles will run in Mock mode (no real prices)${NC}"
+    fi
+
     # All secrets via mounted key files. Only non-secret config in environment:.
     local OVERRIDE="$SCRIPT_DIR/.oracle-override.yml"
     cat > "$OVERRIDE" <<YEOF
@@ -1395,6 +1405,10 @@ services:
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      BITGET_READONLY_API_KEY: "$BITGET_API_KEY"
+      BITGET_READONLY_API_SECRET: "$BITGET_API_SECRET"
+      BITGET_READONLY_PASSPHRASE: "$BITGET_PASSPHRASE"
+      EXCHANGE_MODE: "testnet"
     command:
 $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
     volumes:
@@ -1413,6 +1427,10 @@ $(_oracle_command_yaml 1 9001 0 "127.0.0.1:9002,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      BITGET_READONLY_API_KEY: "$BITGET_API_KEY"
+      BITGET_READONLY_API_SECRET: "$BITGET_API_SECRET"
+      BITGET_READONLY_PASSPHRASE: "$BITGET_PASSPHRASE"
+      EXCHANGE_MODE: "testnet"
     command:
 $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
     volumes:
@@ -1431,6 +1449,10 @@ $(_oracle_command_yaml 2 9002 1 "127.0.0.1:9001,127.0.0.1:9003")
       ORACLE_SETTLEMENT_RPC_URL: "$SETTLEMENT_RPC_VPS"
       ORACLE_SETTLEMENT_CHAIN_ID: "$SETTLEMENT_CHAIN_ID"
       ORACLE_MIRROR_REGISTRY_ADDRESS: "$MIRROR_REGISTRY"
+      BITGET_READONLY_API_KEY: "$BITGET_API_KEY"
+      BITGET_READONLY_API_SECRET: "$BITGET_API_SECRET"
+      BITGET_READONLY_PASSPHRASE: "$BITGET_PASSPHRASE"
+      EXCHANGE_MODE: "testnet"
     command:
 $(_oracle_command_yaml 3 9003 2 "127.0.0.1:9001,127.0.0.1:9002")
     volumes:
