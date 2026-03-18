@@ -141,15 +141,19 @@ test.describe('Vision Withdraw to Settlement', () => {
     const toL3Btn = page.getByRole('button', { name: /To L3 Wallet/ })
     const toSettlementBtn = page.getByRole('button', { name: /To Settlement/ })
 
+    const hasGas = await hasSettlementGas()
     const l3Enabled = await toL3Btn.isEnabled().catch(() => false)
     if (l3Enabled) {
       await toL3Btn.click()
       console.log('Withdrawal UI path: To L3 Wallet')
-    } else {
-      // Real balance is 0, all virtual — use Settlement path
+    } else if (hasGas) {
+      // Real balance is 0, all virtual — use Settlement path (only if gas available)
       await expect(toSettlementBtn).toBeEnabled({ timeout: 5_000 })
       await toSettlementBtn.click()
       console.log('Withdrawal UI path: To Settlement (virtual balance only)')
+    } else {
+      console.log('Settlement has no gas — skipping Settlement withdraw button click')
+      return
     }
 
     console.log('Withdrawal UI path verified')

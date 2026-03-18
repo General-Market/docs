@@ -164,13 +164,13 @@ export function BeforeAfterScene() {
               {/* Column labels */}
               <Html center position={[-1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-[11px] text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before 8141</p>
+                  <p className="text-label text-red-400 tracking-[0.15em] uppercase whitespace-nowrap font-bold">Before 8141</p>
                   <p className="text-[8px] text-red-300 whitespace-nowrap mt-0.5">6 intermediaries</p>
                 </div>
               </Html>
               <Html center position={[1.8, 1.0, 2.6]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
                 <div className="text-center">
-                  <p className="text-[11px] text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After 8141</p>
+                  <p className="text-label text-emerald-500 tracking-[0.15em] uppercase whitespace-nowrap font-bold">After 8141</p>
                   <p className="text-[8px] text-emerald-400 whitespace-nowrap mt-0.5">1 primitive</p>
                 </div>
               </Html>
@@ -211,14 +211,14 @@ export function BeforeAfterScene() {
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">Before (fragmented)</span>
+              <span className="text-micro text-text-muted tracking-wide">Before (fragmented)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-2 rounded-sm bg-green-100 border border-green-300" />
-              <span className="text-[10px] text-text-muted tracking-wide">After (unified)</span>
+              <span className="text-micro text-text-muted tracking-wide">After (unified)</span>
             </div>
           </div>
-          <span className="text-[10px] text-text-muted font-mono">drag to orbit</span>
+          <span className="text-micro text-text-muted font-mono">drag to orbit</span>
         </div>
       </div>
     </div>

@@ -71,18 +71,18 @@ export function VaultPosition() {
         {/* Position stats */}
         <div className="grid grid-cols-2 border-b border-border-light">
           <div className="px-5 py-4">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('vault_position.vault_shares')}</p>
-            <p className="text-[20px] font-extrabold font-mono tabular-nums text-black">
+            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vault_position.vault_shares')}</p>
+            <p className="text-heading font-extrabold font-mono tabular-nums text-black">
               {parseFloat(sharesFormatted).toFixed(4)}
             </p>
-            <p className="text-[11px] text-text-muted">{vaultInfo?.symbol ?? 'shares'}</p>
+            <p className="text-label text-text-muted">{vaultInfo?.symbol ?? 'shares'}</p>
           </div>
           <div className="px-5 py-4 border-l border-border-light">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('vault_position.current_value')}</p>
-            <p className="text-[20px] font-extrabold font-mono tabular-nums text-color-up">
+            <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('vault_position.current_value')}</p>
+            <p className="text-heading font-extrabold font-mono tabular-nums text-color-up">
               ${parseFloat(valueFormatted).toFixed(2)}
             </p>
-            <p className="text-[11px] text-text-muted">USDC</p>
+            <p className="text-label text-text-muted">USDC</p>
           </div>
         </div>
 
@@ -91,7 +91,7 @@ export function VaultPosition() {
           <button
             onClick={handleWithdraw}
             disabled={isProcessing || userPosition.shares === 0n}
-            className={`w-full py-2.5 font-bold text-[13px] uppercase tracking-[0.06em] transition-colors ${
+            className={`w-full py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
               isSuccess
                 ? 'bg-color-up text-white'
                 : 'bg-muted text-text-primary hover:bg-zinc-200 disabled:bg-muted disabled:text-text-muted disabled:cursor-not-allowed'
@@ -107,7 +107,7 @@ export function VaultPosition() {
           </button>
 
           {txError && (
-            <div className="mt-3 bg-color-down/10 border border-color-down/30 p-3 text-color-down text-[12px]">
+            <div className="mt-3 bg-color-down/10 border border-color-down/30 p-3 text-color-down text-caption">
               {txError.includes('User rejected') || txError.includes('denied')
                 ? t('common.transaction_rejected')
                 : txError.length > 100

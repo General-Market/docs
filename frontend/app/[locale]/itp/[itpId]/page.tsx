@@ -150,7 +150,7 @@ export default async function ItpPage({ params }: Props) {
             enrichment={enrichment}
           />
 
-          <p className="mt-12 text-[11px] text-text-muted leading-relaxed">
+          <p className="mt-12 text-label text-text-muted leading-relaxed">
             NAV is calculated from live price feeds. Data updates every 60 seconds. Past performance is not indicative of future results.
           </p>
         </div>

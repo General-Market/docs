@@ -43,7 +43,7 @@ function ChartTooltip({
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
-    <div className="bg-white border border-border-light p-2 text-[12px] shadow-sm">
+    <div className="bg-white border border-border-light p-2 text-caption shadow-sm">
       <div className="font-semibold text-black">{d.payload.cat}</div>
       <div className="text-text-secondary">
         {prefix}
@@ -59,7 +59,7 @@ function ChartTooltip({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[11px] text-text-muted mb-2 uppercase tracking-wider font-medium">
+    <div className="text-label text-text-muted mb-2 uppercase tracking-[0.08em] font-medium">
       {children}
     </div>
   );
@@ -70,7 +70,7 @@ export function PodcastDistribution() {
   const PIE_COLORS = ["#3cb44b", "#f58231", "#e6194b"];
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
         Founder Podcast Presence — 4,637 Founders Scanned
       </div>
       <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -97,7 +97,7 @@ export function PodcastDistribution() {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;
                   return (
-                    <div className="bg-white border border-border-light p-2 text-[12px] shadow-sm">
+                    <div className="bg-white border border-border-light p-2 text-caption shadow-sm">
                       <div className="font-semibold text-black">{d.cat}</div>
                       <div className="text-text-secondary">
                         {d.founders.toLocaleString()} founders ({d.pct}%)
@@ -109,7 +109,7 @@ export function PodcastDistribution() {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex flex-col gap-2 text-[12px]">
+        <div className="flex flex-col gap-2 text-caption">
           {PODCAST_DISTRIBUTION.map((d, i) => (
             <div key={d.cat} className="flex items-center gap-2">
               <div
@@ -124,7 +124,7 @@ export function PodcastDistribution() {
           ))}
         </div>
       </div>
-      <div className="text-[11px] text-text-muted mt-3">
+      <div className="text-label text-text-muted mt-3">
         Automated DuckDuckGo scan across known crypto podcasts, YouTube, and conferences.
       </div>
     </div>
@@ -135,7 +135,7 @@ export function PodcastDistribution() {
 export function PodcastATHPerformance() {
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
         Podcast Presence vs Peak Performance — Company Level
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -182,7 +182,7 @@ export function PodcastATHPerformance() {
           </div>
         </div>
       </div>
-      <div className="text-[11px] text-text-muted mt-2">
+      <div className="text-label text-text-muted mt-2">
         1,013 companies. ATH/ATL ratio capped at 500x. Company inherits highest founder podcast tag.
       </div>
     </div>
@@ -193,7 +193,7 @@ export function PodcastATHPerformance() {
 export function PodcastSurvival() {
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
         Token Listing Rate by Podcast Presence
       </div>
       <div className="h-[180px]">
@@ -224,7 +224,7 @@ export function PodcastSurvival() {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-white border border-border-light p-2 text-[12px] shadow-sm">
+                  <div className="bg-white border border-border-light p-2 text-caption shadow-sm">
                     <div className="font-semibold text-black">{d.cat}</div>
                     <div className="text-text-secondary">
                       {d.hasToken}/{d.companies} listed ({d.pctListed}%)
@@ -241,7 +241,7 @@ export function PodcastSurvival() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="text-[11px] text-text-muted mt-2">
+      <div className="text-label text-text-muted mt-2">
         2,702 companies. "Listed" = has a CoinGecko token listing.
       </div>
     </div>
@@ -252,7 +252,7 @@ export function PodcastSurvival() {
 export function PodcastMarketCap() {
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
         Current Median Market Cap by Podcast Presence
       </div>
       <div className="h-[200px]">
@@ -274,7 +274,7 @@ export function PodcastMarketCap() {
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-white border border-border-light p-2 text-[12px] shadow-sm">
+                  <div className="bg-white border border-border-light p-2 text-caption shadow-sm">
                     <div className="font-semibold text-black">{d.cat}</div>
                     <div className="text-text-secondary">
                       Median: ${d.median}M
@@ -294,7 +294,7 @@ export function PodcastMarketCap() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="text-[11px] text-text-muted mt-2">
+      <div className="text-label text-text-muted mt-2">
         1,210 companies. Mean heavily skewed by BTC/ETH ($5.1B for regulars).
       </div>
     </div>
@@ -305,7 +305,7 @@ export function PodcastMarketCap() {
 export function PodcastTop500() {
   return (
     <div className="my-8 border border-border-light bg-white p-4 sm:p-6">
-      <div className="text-[13px] font-semibold text-black mb-4 tracking-[-0.01em]">
+      <div className="text-caption font-semibold text-black mb-4 tracking-[-0.01em]">
         Top 500 — The Podcast Premium Inverts
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -352,7 +352,7 @@ export function PodcastTop500() {
           </div>
         </div>
       </div>
-      <div className="text-[11px] text-text-muted mt-2">
+      <div className="text-label text-text-muted mt-2">
         393 Top 500 companies. Silent companies outperform: 40x in 387 days vs 33.3x in 598 days.
       </div>
     </div>

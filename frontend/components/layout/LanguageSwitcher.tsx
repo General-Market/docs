@@ -1,36 +1,25 @@
 'use client'
 
 import { useLocale } from 'next-intl'
+import { usePathname } from '@/i18n/routing'
 import { locales, LOCALE_LABELS, defaultLocale } from '@/i18n/config'
 
 export function LanguageSwitcher() {
   const locale = useLocale()
+  const pathname = usePathname()
 
   function onSelectChange(newLocale: string) {
     if (newLocale === locale) return
 
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=${365 * 24 * 60 * 60};samesite=lax`
 
-    // Strip any existing locale prefix from the current path
-    const currentPath = window.location.pathname
-    const localeRegex = /^\/(en|ko|ja|zh)(\/|$)/
-    const match = currentPath.match(localeRegex)
-    const basePath = match
-      ? currentPath.slice(match[1].length + 1) || '/'
-      : currentPath
-
-    // Default locale has no prefix (localePrefix: 'as-needed')
+    // Hard navigation — locale switch changes every string on the page,
+    // and useLocale() doesn't update reliably on soft navigation.
     const targetPath = newLocale === defaultLocale
-      ? basePath
-      : `/${newLocale}${basePath === '/' ? '' : basePath}`
+      ? pathname || '/'
+      : `/${newLocale}${pathname === '/' ? '' : pathname}`
 
-    // Middleware uses rewrite (not redirect), so the browser URL may already
-    // equal targetPath even though the locale changed. Force reload in that case.
-    if (targetPath === currentPath) {
-      window.location.reload()
-    } else {
-      window.location.pathname = targetPath
-    }
+    window.location.href = targetPath
   }
 
   return (

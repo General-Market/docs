@@ -44,13 +44,13 @@ export function SourceDetailCategoryNav({ sourceCategory }: SourceDetailCategory
               <Link
                 key={p.key}
                 href="/"
-                className={`shrink-0 px-4 py-2 text-[13px] font-medium rounded transition-all whitespace-nowrap ${
+                className={`shrink-0 px-4 py-2 text-caption font-medium rounded transition-all whitespace-nowrap ${
                   isActive
                     ? 'text-black bg-surface font-semibold'
                     : 'text-text-secondary hover:text-black hover:bg-surface'
                 }`}
               >
-                {p.label} <span className="text-[11px] tabular-nums text-text-muted">{p.count}</span>
+                {p.label} <span className="text-label tabular-nums text-text-muted">{p.count}</span>
               </Link>
             )
           })}

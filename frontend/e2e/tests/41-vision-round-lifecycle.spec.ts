@@ -15,7 +15,7 @@ import {
   PLAYER1, PLAYER2,
   getActiveRounds, joinRoundDirect, waitForRoundSettled,
   getRoundResults, getRoundBitmaps, getPlayerRounds,
-  getVisionRealBalance, getBatchConfigHash, getPosition,
+  getVisionRealBalance, getBatchConfigHash,
   impersonateAccount, ensureUsdcBalance,
   randomBets, oppositeBets,
 } from '../helpers/vision-api'
@@ -25,11 +25,10 @@ const DEPOSIT = 10n * 10n ** 18n
 const STAKE = 1n * 10n ** 18n
 const MARKET_COUNT = 10
 
-let roundBatchId = 0
-let roundConfigHash: `0x${string}` = '0x'
+let roundBatchId: number
+let roundConfigHash: `0x${string}`
 let player1Bets: ReturnType<typeof randomBets>
 let player2Bets: ReturnType<typeof randomBets>
-let allRoundsJoined = false
 
 test.describe.serial('Vision Round Lifecycle', () => {
   test.setTimeout(360_000)
@@ -39,34 +38,11 @@ test.describe.serial('Vision Round Lifecycle', () => {
     expect(rounds.length).toBeGreaterThan(0)
     expect(rounds[0].status).toBe('betting')
     expect(rounds[0].batchId).toBeGreaterThan(0)
-
-    // Find a round neither player has joined yet
-    for (const round of rounds) {
-      try {
-        const pos1 = await getPosition(round.batchId, PLAYER1)
-        if (pos1.joinTimestamp !== 0n) continue
-        const pos2 = await getPosition(round.batchId, PLAYER2)
-        if (pos2.joinTimestamp !== 0n) continue
-        roundBatchId = round.batchId
-        roundConfigHash = await getBatchConfigHash(roundBatchId)
-        break
-      } catch {
-        roundBatchId = round.batchId
-        roundConfigHash = await getBatchConfigHash(roundBatchId)
-        break
-      }
-    }
-    if (roundBatchId === 0) {
-      console.log(`All ${rounds.length} rounds already joined — run: ./testnet.sh refresh-batches`)
-      allRoundsJoined = true
-    }
+    roundBatchId = rounds[0].batchId
+    roundConfigHash = rounds[0].configHash ?? await getBatchConfigHash(rounds[0].batchId)
   })
 
   test('41b: two players join round with opposite bets', async () => {
-    if (allRoundsJoined) {
-      console.log('Skipping — no unjoinable round found')
-      return
-    }
     expect(roundBatchId).toBeGreaterThan(0)
 
     await impersonateAccount(PLAYER1)
@@ -85,14 +61,12 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41c: round auto-settles after betting window', async () => {
-    if (allRoundsJoined) { console.log('Skipping — no round joined'); return }
     expect(roundBatchId).toBeGreaterThan(0)
     const settled = await waitForRoundSettled(roundBatchId, CONSENSUS_TIMEOUT)
     expect(settled).toBe(true)
   })
 
   test('41d: settlement results show correct predictions and PnL', async () => {
-    if (allRoundsJoined) { console.log('Skipping — no round joined'); return }
     const results = await getRoundResults(roundBatchId)
     expect(results).not.toBeNull()
     expect(results!.players.length).toBeGreaterThanOrEqual(2)
@@ -117,7 +91,6 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41e: bitmaps are transparent after settlement', async () => {
-    if (allRoundsJoined) { console.log('Skipping — no round joined'); return }
     const bitmaps = await getRoundBitmaps(roundBatchId)
     expect(bitmaps).not.toBeNull()
     expect(bitmaps!.markets.length).toBeGreaterThan(0)
@@ -129,7 +102,6 @@ test.describe.serial('Vision Round Lifecycle', () => {
   })
 
   test('41f: settled funds credited to Vision balance', async () => {
-    if (allRoundsJoined) { console.log('Skipping — no round joined'); return }
     const [p1Balance, p2Balance] = await Promise.all([
       getVisionRealBalance(PLAYER1),
       getVisionRealBalance(PLAYER2),

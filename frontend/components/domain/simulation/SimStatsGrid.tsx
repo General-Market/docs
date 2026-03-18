@@ -61,7 +61,7 @@ export function SimStatsGrid({ stats }: SimStatsGridProps) {
     <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
       {items.map(item => (
         <div key={item.label} className="bg-white rounded-xl shadow-card border border-border-light p-6 text-center">
-          <div className="text-xs font-medium uppercase tracking-widest text-text-muted">{item.label}</div>
+          <div className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{item.label}</div>
           <div className={`text-2xl font-bold tabular-nums font-mono mt-1 ${item.color}`}>{item.value}</div>
         </div>
       ))}

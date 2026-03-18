@@ -48,30 +48,13 @@ test.describe.serial('Vision Concurrent Rounds', () => {
       return
     }
 
-    // Find two distinct rounds that PLAYER1 hasn't joined yet
-    const unjoinable: number[] = []
-    for (const round of rounds) {
-      try {
-        const pos = await getPosition(round.batchId, PLAYER1)
-        if (pos.joinTimestamp === 0n) unjoinable.push(round.batchId)
-      } catch {
-        unjoinable.push(round.batchId)
-      }
-      if (unjoinable.length >= 2) break
-    }
-
-    if (unjoinable.length < 2) {
-      console.log(`Only ${unjoinable.length} unjoinable round(s) out of ${rounds.length} — run: ./testnet.sh refresh-batches`)
-      test.skip()
-      return
-    }
-
-    round1BatchId = unjoinable[0]
-    round2BatchId = unjoinable[1]
+    // Pick two distinct rounds (different batchIds)
+    round1BatchId = rounds[0].batchId
+    round2BatchId = rounds[1].batchId
     expect(round1BatchId).not.toBe(round2BatchId)
 
-    round1ConfigHash = await getBatchConfigHash(round1BatchId)
-    round2ConfigHash = await getBatchConfigHash(round2BatchId)
+    round1ConfigHash = rounds[0].configHash ?? await getBatchConfigHash(round1BatchId)
+    round2ConfigHash = rounds[1].configHash ?? await getBatchConfigHash(round2BatchId)
 
     console.log(`Round A: batchId=${round1BatchId}, Round B: batchId=${round2BatchId}`)
   })

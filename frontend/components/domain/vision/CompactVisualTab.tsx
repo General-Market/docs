@@ -79,7 +79,7 @@ export function CompactVisualTab({ batch, history, bets, onToggleBet }: CompactV
                 <td className="py-1 px-2">
                   <button
                     onClick={() => onToggleBet(marketId)}
-                    className={`w-7 h-7 rounded text-[10px] font-bold transition-colors ${
+                    className={`w-7 h-7 rounded text-micro font-bold transition-colors ${
                       betDirection === undefined
                         ? 'bg-muted text-text-muted hover:bg-surface'
                         : isUp

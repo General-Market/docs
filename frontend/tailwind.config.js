@@ -37,8 +37,20 @@ module.exports = {
         accent: '#C40000',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-jetbrains-mono)', 'JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        'micro':   ['0.625rem',  { lineHeight: '1.4' }],                           // 10px — mobile nav, tiny badges
+        'label':   ['0.6875rem', { lineHeight: '1.4' }],                           // 11px — uppercase labels, table headers
+        'caption': ['0.75rem',   { lineHeight: '1.5' }],                           // 12px — secondary info, timestamps
+        'body-sm': ['0.8125rem', { lineHeight: '1.55' }],                          // 13px — compact body, sidebar items
+        'body':    ['0.875rem',  { lineHeight: '1.6' }],                           // 14px — default body text
+        'base':    ['1rem',      { lineHeight: '1.6' }],                           // 16px — readable prose
+        'title':   ['1.25rem',   { lineHeight: '1.3', letterSpacing: '-0.02em' }], // 20px — card titles, stat values
+        'stat':    ['2rem',      { lineHeight: '1.15', letterSpacing: '-0.03em' }],// 32px — hero numbers, KPIs
+        'heading': ['1.75rem',   { lineHeight: '1.2', letterSpacing: '-0.025em' }],// 28px — section headings
+        'display': ['clamp(2.25rem, 5vw, 3.5rem)', { lineHeight: '1.05', letterSpacing: '-0.035em' }], // 36–56px fluid — hero
       },
       maxWidth: {
         site: 'none',

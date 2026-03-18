@@ -115,7 +115,7 @@ function MegaPortfolioBadge() {
     <Tooltip content="Mega Portfolio - Only AI can manage this scale">
       <span className="inline-flex items-center gap-1 text-zinc-900 animate-pulse cursor-help" role="img" aria-label="Mega Portfolio">
         <span>🔥</span>
-        <span className="text-[10px] font-bold uppercase tracking-wide">MEGA</span>
+        <span className="text-micro font-bold uppercase tracking-[0.08em]">MEGA</span>
       </span>
     </Tooltip>
   )
@@ -162,7 +162,7 @@ export function BetFeedItem({ event }: BetFeedItemProps) {
           <OddsBadge
             display={formatOdds(event.oddsBps)}
             favorability={getOddsFavorability(event.oddsBps)}
-            className="text-[10px] px-1.5 py-0.5"
+            className="text-micro px-1.5 py-0.5"
           />
         )}
       </div>

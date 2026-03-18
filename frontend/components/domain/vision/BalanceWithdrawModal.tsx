@@ -178,7 +178,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {realBalance === 0n && (
-                  <span className="inline-block mt-2 text-[10px] text-text-muted">No real balance</span>
+                  <span className="inline-block mt-2 text-micro text-text-muted">No real balance</span>
                 )}
               </button>
 
@@ -204,7 +204,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   </span>
                 </div>
                 {virtualBalance === 0n && (
-                  <span className="inline-block mt-2 text-[10px] text-text-muted">No virtual balance</span>
+                  <span className="inline-block mt-2 text-micro text-text-muted">No virtual balance</span>
                 )}
               </button>
             </div>
@@ -223,7 +223,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {/* Mode label */}
               <div className="bg-muted border border-border-light rounded-xl p-3">
                 <div className="flex justify-between items-center">
-                  <p className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                   </p>
                   <span className="text-xs font-mono text-text-secondary">
@@ -235,7 +235,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {/* Amount input */}
               <div className="bg-muted border border-border-light rounded-xl p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     Amount (USDC)
                   </label>
                   <button

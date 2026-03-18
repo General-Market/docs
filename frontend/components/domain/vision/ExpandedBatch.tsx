@@ -199,13 +199,13 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
       {/* Player stats footer */}
       <div className="flex flex-wrap gap-4 py-3 px-4 bg-muted rounded-card border border-border-light">
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.bets_set')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.bets_set')}</span>
           <span className="text-sm font-mono font-bold text-text-primary">
             {totalBets}/{marketCount}
           </span>
         </div>
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.win_rate')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.win_rate')}</span>
           <span className="text-sm font-mono font-bold text-text-primary">
             {stats.winRate}
             {hitRate && hitRate.ticksAnalyzed > 0 && (
@@ -214,19 +214,19 @@ export function ExpandedBatch({ batchId, batch }: ExpandedBatchProps) {
           </span>
         </div>
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.balance')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.balance')}</span>
           <span className="text-sm font-mono font-bold text-text-primary">{stats.balance}</span>
         </div>
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.pnl')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.pnl')}</span>
           <span className={`text-sm font-mono font-bold ${stats.pnlClass}`}>{stats.pnl}</span>
         </div>
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.stake_per_tick')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.stake_per_tick')}</span>
           <span className="text-sm font-mono font-bold text-text-primary">{stats.stake}</span>
         </div>
         <div>
-          <span className="text-[10px] text-text-muted font-mono block">{t('expanded_batch.player_stats.multiplier')}</span>
+          <span className="text-micro text-text-muted font-mono block">{t('expanded_batch.player_stats.multiplier')}</span>
           <span className="text-sm font-mono font-bold text-text-primary">{stats.multiplier}</span>
         </div>
       </div>

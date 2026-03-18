@@ -106,7 +106,7 @@ function NationalityChart({ data }: { data: { label: string; count: number }[] }
                   <div className="w-5 h-[15px] rounded-[2px] bg-gray-200" />
                 )}
               </div>
-              <span className="text-[11px] text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="text-label text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
@@ -116,7 +116,7 @@ function NationalityChart({ data }: { data: { label: string; count: number }[] }
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">
+                <span className="text-micro text-gray-400 w-5 text-right flex-shrink-0">
                   {count}
                 </span>
               </div>
@@ -157,7 +157,7 @@ function UniversityChart({ data }: { data: { label: string; count: number }[] })
                   <div className="w-4 h-4 rounded-sm bg-gray-200" />
                 )}
               </div>
-              <span className="text-[11px] text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
+              <span className="text-label text-gray-500 w-[90px] truncate flex-shrink-0" title={label}>
                 {label}
               </span>
               <div className="flex-1 flex items-center gap-1.5">
@@ -167,7 +167,7 @@ function UniversityChart({ data }: { data: { label: string; count: number }[] })
                     style={{ width: `${pct}%`, backgroundColor: BRAND_COLOR }}
                   />
                 </div>
-                <span className="text-[10px] text-gray-400 w-5 text-right flex-shrink-0">
+                <span className="text-micro text-gray-400 w-5 text-right flex-shrink-0">
                   {count}
                 </span>
               </div>

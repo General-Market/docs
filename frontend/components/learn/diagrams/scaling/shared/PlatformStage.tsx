@@ -65,7 +65,7 @@ export function PlatformStage({
           style={{ pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap' }}
         >
           <div className="text-center">
-            <p className="text-[10px] font-bold text-black tracking-tight">
+            <p className="text-micro font-bold text-black tracking-tight">
               {label}
             </p>
             {labelSub && (

@@ -36,7 +36,7 @@ function ThroughputCounter({
       style={{ pointerEvents: 'none', userSelect: 'none' }}
     >
       <p
-        className="text-[22px] font-bold font-mono whitespace-nowrap"
+        className="text-title font-bold font-mono whitespace-nowrap"
         style={{ color }}
       >
         {label}
@@ -58,7 +58,7 @@ function MultiplierLabel({
       position={position}
       style={{ pointerEvents: 'none', userSelect: 'none' }}
     >
-      <p className="text-[18px] font-bold font-mono whitespace-nowrap text-green-500">
+      <p className="text-heading font-bold font-mono whitespace-nowrap text-green-500">
         ×10
       </p>
     </Html>
@@ -286,7 +286,7 @@ function TimelineBar() {
               position={[0, -0.12, 0]}
               style={{ pointerEvents: 'none', userSelect: 'none' }}
             >
-              <p className="text-[10px] text-zinc-400 font-mono whitespace-nowrap">{year}</p>
+              <p className="text-micro text-zinc-400 font-mono whitespace-nowrap">{year}</p>
             </Html>
           </group>
         )
@@ -477,19 +477,19 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-blue-400 border border-blue-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">Execution</span>
+        <span className="text-micro text-text-muted tracking-wide">Execution</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-indigo-400 border border-indigo-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">Data</span>
+        <span className="text-micro text-text-muted tracking-wide">Data</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-violet-400 border border-violet-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">Proofs</span>
+        <span className="text-micro text-text-muted tracking-wide">Proofs</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-green-500 border border-green-600" />
-        <span className="text-[10px] text-text-muted tracking-wide">×10 multiplier</span>
+        <span className="text-micro text-text-muted tracking-wide">×10 multiplier</span>
       </div>
     </div>
   )

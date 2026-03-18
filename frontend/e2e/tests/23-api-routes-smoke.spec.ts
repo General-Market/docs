@@ -3,7 +3,7 @@
  * Verifies each route returns valid response shapes.
  */
 import { test, expect } from '../fixtures/wallet';
-import { IS_ANVIL, FRONTEND_URL } from '../env';
+import { IS_ANVIL, FRONTEND_URL, DEPLOYER_ADDRESS } from '../env';
 
 const BASE = FRONTEND_URL;
 
@@ -35,7 +35,7 @@ test.describe('API Routes Smoke Tests', () => {
 
   test('POST /api/faucet returns 200 with valid address', async () => {
     const res = await apiPost('/api/faucet', {
-      address: '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4',
+      address: DEPLOYER_ADDRESS,
     });
     expect(res.status).toBeLessThan(500);
   });

@@ -72,7 +72,7 @@ function SignerSphere({ position, label, reducedMotion }: {
         <meshStandardMaterial color={PURPLE} roughness={0.4} emissive={PURPLE} emissiveIntensity={0.15} />
       </mesh>
       <Html center position={[0, 0.65, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
-        <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: PURPLE }}>{label}</p>
+        <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: PURPLE }}>{label}</p>
       </Html>
     </group>
   )
@@ -238,7 +238,7 @@ function ValidatorVault({ reducedMotion }: { reducedMotion: boolean }) {
       {/* Label */}
       <Html center position={[0, 1.1, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="flex flex-col items-center gap-0">
-          <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>Frame 0</p>
+          <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>Frame 0</p>
           <p className="text-[8px] tracking-[0.05em] uppercase whitespace-nowrap" style={{ color: BLUE, opacity: 0.7 }}>Validate</p>
         </div>
       </Html>
@@ -424,7 +424,7 @@ function AcceptLabel({ reducedMotion }: { reducedMotion: boolean }) {
   return (
     <Html center position={[VAULT_POS.x, VAULT_POS.y + 1.35, VAULT_POS.z]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
       <div ref={ref} style={{ opacity: 0, transition: 'opacity 0.15s' }}>
-        <p className="text-[14px] font-bold font-mono whitespace-nowrap tracking-wide" style={{ color: GREEN }}>ACCEPT</p>
+        <p className="text-body font-bold font-mono whitespace-nowrap tracking-wide" style={{ color: GREEN }}>ACCEPT</p>
       </div>
     </Html>
   )
@@ -600,7 +600,7 @@ function UsdcTarget({ reducedMotion }: { reducedMotion: boolean }) {
       </RoundedBox>
       <Html center position={[0, 0.8, 0]} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="flex flex-col items-center gap-0">
-          <p className="text-[10px] tracking-[0.1em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>Frame 1</p>
+          <p className="text-micro tracking-[0.08em] uppercase font-bold whitespace-nowrap" style={{ color: BLUE }}>Frame 1</p>
           <p className="text-[8px] tracking-[0.05em] uppercase whitespace-nowrap" style={{ color: BLUE, opacity: 0.7 }}>Execute</p>
         </div>
       </Html>
@@ -724,15 +724,15 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: PURPLE }} />
-        <span className="text-[10px] text-text-muted tracking-wide">Signatures</span>
+        <span className="text-micro text-text-muted tracking-wide">Signatures</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: AMBER }} />
-        <span className="text-[10px] text-text-muted tracking-wide">CALLDATAREAD</span>
+        <span className="text-micro text-text-muted tracking-wide">CALLDATAREAD</span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm" style={{ backgroundColor: GREEN }} />
-        <span className="text-[10px] text-text-muted tracking-wide">ACCEPT + Execution</span>
+        <span className="text-micro text-text-muted tracking-wide">ACCEPT + Execution</span>
       </div>
     </div>
   )

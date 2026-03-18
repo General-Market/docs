@@ -28,7 +28,7 @@ export function VisionBalanceBar() {
 
   if (!isConnected) {
     return (
-      <Link href="/points" className="text-[11px] font-bold font-mono text-text-muted hover:text-black transition-colors">
+      <Link href="/points" className="text-label font-bold font-mono text-text-muted hover:text-black transition-colors">
         0 pts
       </Link>
     )
@@ -41,24 +41,24 @@ export function VisionBalanceBar() {
   return (
     <>
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <span className="text-[12px] sm:text-[13px] font-bold font-mono tabular-nums text-black">
+        <span className="text-caption sm:text-caption font-bold font-mono tabular-nums text-black">
           <span className="hidden sm:inline text-text-muted font-medium mr-1">Balance:</span>
           {fmtBal(total)}
           <span className="hidden sm:inline text-text-muted font-medium ml-1">USDC</span>
         </span>
-        <Link href="/points" className="hidden sm:inline text-[11px] font-bold font-mono text-color-up hover:opacity-80 transition-opacity">
+        <Link href="/points" className="hidden sm:inline text-label font-bold font-mono text-color-up hover:opacity-80 transition-opacity">
           {hasBalance && !ptsLoading && activeBatches > 0 ? formatPts(estimatedTotalPoints) : '0'} pts
         </Link>
         <button
           onClick={() => setShowDepositModal(true)}
-          className="px-2 sm:px-2.5 py-1 bg-color-up text-white text-[10px] sm:text-[11px] font-bold rounded hover:opacity-90 transition-opacity"
+          className="px-2 sm:px-2.5 py-1 bg-color-up text-white text-micro sm:text-label font-bold rounded hover:opacity-90 transition-opacity"
         >
           DEPOSIT
         </button>
         {hasBalance && (
           <button
             onClick={() => setShowWithdrawModal(true)}
-            className="hidden sm:inline-flex px-2.5 py-1 bg-muted text-text-secondary text-[11px] font-bold rounded border border-border-light hover:bg-surface transition-colors"
+            className="inline-flex px-2.5 py-1 bg-muted text-text-secondary text-label font-bold rounded border border-border-light hover:bg-surface transition-colors"
           >
             WITHDRAW
           </button>

@@ -53,7 +53,7 @@ export function DeployAgentCTA() {
 
         {/* How It Works */}
         <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
-          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.how_it_works_label')}</p>
+          <p className="text-text-muted text-xs uppercase tracking-[0.08em] mb-3">{t('deploy_agent.how_it_works_label')}</p>
           <div className="space-y-2 text-sm">
             <div className="flex items-start gap-3">
               <span className="text-zinc-900 font-bold">1.</span>
@@ -76,7 +76,7 @@ export function DeployAgentCTA() {
 
         {/* Example Trade */}
         <div className="border border-border-light bg-muted p-4 mb-6 rounded-xl">
-          <p className="text-text-muted text-xs uppercase tracking-wider mb-3">{t('deploy_agent.example_label')}</p>
+          <p className="text-text-muted text-xs uppercase tracking-[0.08em] mb-3">{t('deploy_agent.example_label')}</p>
           <div className="font-mono text-xs space-y-1">
             <p className="text-text-muted">Your AI predicts 2,847 markets at 2:1 odds:</p>
             <p className="text-text-muted mt-2">→ BTC above $95k in 24h? <span className="text-color-up">YES</span></p>

@@ -23,8 +23,8 @@ function FlowDiagram({ steps, caption }: { steps: Step[]; caption?: string }) {
                 whileHover={{ y: -3 }}
               >
                 <div className="absolute top-0 left-2 right-2 h-[2px] bg-black group-hover:bg-white transition-colors" />
-                <p className="text-[13px] font-bold text-black group-hover:text-white transition-colors tracking-[-0.01em]">{step.label}</p>
-                {step.sub && <p className="text-[10px] text-text-muted group-hover:text-zinc-400 transition-colors mt-1">{step.sub}</p>}
+                <p className="text-caption font-bold text-black group-hover:text-white transition-colors tracking-[-0.01em]">{step.label}</p>
+                {step.sub && <p className="text-micro text-text-muted group-hover:text-zinc-400 transition-colors mt-1">{step.sub}</p>}
                 <span className="absolute -top-2.5 left-3 text-[9px] font-mono text-text-muted bg-[#f5f5f5] px-1 group-hover:text-zinc-500">{String(i + 1).padStart(2, '0')}</span>
               </motion.div>
               {i < steps.length - 1 && (
@@ -36,7 +36,7 @@ function FlowDiagram({ steps, caption }: { steps: Step[]; caption?: string }) {
             </div>
           ))}
         </div>
-        {caption && <p className="text-[11px] text-text-muted tracking-[0.05em] text-center mt-2">{caption}</p>}
+        {caption && <p className="text-label text-text-muted tracking-[0.05em] text-center mt-2">{caption}</p>}
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ function HelpTip({ text }: { text: string }) {
   return (
     <span className="relative group inline-flex ml-1">
       <span className="w-3.5 h-3.5 rounded-full bg-border-light text-text-muted text-[9px] font-bold inline-flex items-center justify-center cursor-help leading-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-zinc-900 text-white text-[11px] leading-snug rounded-lg whitespace-normal w-52 text-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50 shadow-lg">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-zinc-900 text-white text-label leading-snug rounded-lg whitespace-normal w-52 text-center opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity z-50 shadow-lg">
         {text}
       </span>
     </span>
@@ -39,7 +39,7 @@ function Tip({ text, children }: { text: string; children: ReactNode }) {
       {show && typeof document !== 'undefined' && createPortal(
         <div
           style={{ position: 'fixed', top: pos.top, left: pos.left, transform: 'translate(-50%, -100%)', zIndex: 99999 }}
-          className="px-3 py-2.5 bg-zinc-900 text-white text-[11px] leading-relaxed rounded-xl shadow-2xl w-72 whitespace-pre-line pointer-events-none"
+          className="px-3 py-2.5 bg-zinc-900 text-white text-label leading-relaxed rounded-xl shadow-2xl w-72 whitespace-pre-line pointer-events-none"
         >
           {text}
         </div>,
@@ -330,7 +330,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 1: Category + Top N */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">
             {isCategorySweep ? 'Categories (select 2+)' : 'Category'}
             <HelpTip text="The asset universe to pick from. Each category groups coins by theme (e.g. DeFi, Layer 1, Memes)." />
           </label>
@@ -404,9 +404,10 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               className="w-full bg-muted border border-border-light rounded-lg px-3 py-2 text-sm text-text-primary cursor-pointer hover:border-border-medium transition-colors"
               value={filters.category_id}
               onChange={e => update({ category_id: e.target.value })}
-              disabled={catsLoading}
+              disabled={catsLoading || undefined}
+              suppressHydrationWarning
             >
-              <option value="">{catsLoading ? 'Loading categories...' : 'Select category...'}</option>
+              <option value="" suppressHydrationWarning>{catsLoading ? 'Loading categories...' : 'Select category...'}</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.coin_count} coins)
@@ -416,7 +417,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           )}
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Top N<HelpTip text="How many coins to hold. 'Top 10' means the 10 largest by market cap from your chosen category." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Top N<HelpTip text="How many coins to hold. 'Top 10' means the 10 largest by market cap from your chosen category." /></label>
           <div className="flex">
             {TOP_N_OPTIONS.map(n => (
               <button
@@ -440,7 +441,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 2: Strategy family buttons */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Weighting Strategy<HelpTip text="How to distribute money across your holdings. 'Equal' = same amount in each coin. 'MCap' = more money in bigger coins. Others use momentum, volatility, or DeFi metrics." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Weighting Strategy<HelpTip text="How to distribute money across your holdings. 'Equal' = same amount in each coin. 'MCap' = more money in bigger coins. Others use momentum, volatility, or DeFi metrics." /></label>
         <div className="flex flex-wrap gap-1 items-center">
           {STRATEGY_FAMILIES.filter(f => f.group === 'price').map(fam => (
             <button
@@ -460,7 +461,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
             </button>
           ))}
           <span className="text-xs text-text-muted px-1">|</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">DeFi</span>
+          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">DeFi</span>
           {STRATEGY_FAMILIES.filter(f => f.group === 'defi').map(fam => (
             <button
               key={fam.id}
@@ -511,7 +512,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
       {/* Row 3: Rebalance family */}
       <div>
-        <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Rebalance<HelpTip text="How often to re-adjust your portfolio back to target weights. 'Periodic' = fixed schedule. 'Drift Band' = only when a holding drifts too far from its target." /></label>
+        <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Rebalance<HelpTip text="How often to re-adjust your portfolio back to target weights. 'Periodic' = fixed schedule. 'Drift Band' = only when a holding drifts too far from its target." /></label>
         <div className="flex gap-1">
           <button
             title="Rebalance at fixed time intervals"
@@ -597,7 +598,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 4: Fees + Start Date */}
       <div className="flex flex-wrap gap-4 items-center">
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Base Fee %<HelpTip text="Annual management fee charged on the index (like an ETF expense ratio). 0.1% is typical for crypto index products." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Base Fee %<HelpTip text="Annual management fee charged on the index (like an ETF expense ratio). 0.1% is typical for crypto index products." /></label>
           <input
             type="number"
             step="0.01"
@@ -609,7 +610,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           />
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Spread Mult.<HelpTip text="Simulates trading slippage. 1x = realistic spread costs. Higher values model worse execution (e.g. illiquid markets)." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Spread Mult.<HelpTip text="Simulates trading slippage. 1x = realistic spread costs. Higher values model worse execution (e.g. illiquid markets)." /></label>
           <input
             type="number"
             step="0.1"
@@ -622,7 +623,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           <span className="text-xs text-text-muted ml-1">x</span>
         </div>
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Start From<HelpTip text="When to start the backtest. 'All' uses the maximum available history. Shorter periods show more recent performance." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Start From<HelpTip text="When to start the backtest. 'All' uses the maximum available history. Shorter periods show more recent performance." /></label>
           <div className="flex items-center gap-1">
             {[
               { label: 'All', value: '2020-01-01' },
@@ -664,7 +665,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           onClick={() => update({} as Partial<SimFilterState>)} // no-op, toggle via local state
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">Regime Overlays<HelpTip text="Optional rules that adjust your strategy based on market sentiment (Fear & Greed Index) or Bitcoin dominance trends." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">Regime Overlays<HelpTip text="Optional rules that adjust your strategy based on market sentiment (Fear & Greed Index) or Bitcoin dominance trends." /></span>
           <span className="text-xs text-text-muted">
             {filters.fng_mode || filters.dom_mode ? 'Active' : 'Off'}
           </span>
@@ -672,7 +673,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
         <div className="p-4 space-y-4">
           {/* FNG Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Fear & Greed<HelpTip text="Adjusts your strategy based on the Crypto Fear & Greed Index (0-100). Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Fear & Greed<HelpTip text="Adjusts your strategy based on the Crypto Fear & Greed Index (0-100). Hover each mode for a plain-English explanation and backtest results." /></label>
             <div className="flex flex-wrap gap-1">
               {FNG_MODES.map(m => (
                 <Tip key={m.value} text={m.title}>
@@ -693,11 +694,11 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <div className="mt-2 pl-3 border-l-2 border-border-light space-y-2">
                 {(FNG_PRESETS[filters.fng_mode]?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
                     {FNG_PRESETS[filters.fng_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
-                          className={`px-2 py-0.5 text-[10px] font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.fng_fear === p.fear && filters.fng_greed === p.greed
                               ? 'bg-emerald-600 text-white border-emerald-600'
                               : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
@@ -745,7 +746,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
 
           {/* BTC Dominance Regime */}
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">BTC Dominance<HelpTip text="Adjusts allocation based on Bitcoin's share of the total crypto market. Hover each mode for a plain-English explanation and backtest results." /></label>
+            <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">BTC Dominance<HelpTip text="Adjusts allocation based on Bitcoin's share of the total crypto market. Hover each mode for a plain-English explanation and backtest results." /></label>
             <div className="flex flex-wrap gap-1">
               {DOM_MODES.map(m => (
                 <Tip key={m.value} text={m.title}>
@@ -766,11 +767,11 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
               <div className="flex flex-wrap items-center gap-2 mt-2 pl-3 border-l-2 border-border-light">
                 {(DOM_PRESETS[filters.dom_mode]?.length ?? 0) > 0 && (
                   <>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Optimized</span>
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted">Optimized</span>
                     {DOM_PRESETS[filters.dom_mode]?.map((p, i) => (
                       <Tip key={i} text={p.title}>
                         <button
-                          className={`px-2 py-0.5 text-[10px] font-mono border rounded-md transition-colors ${
+                          className={`px-2 py-0.5 text-micro font-mono border rounded-md transition-colors ${
                             filters.dom_lookback === p.lookback
                               ? 'bg-emerald-600 text-white border-emerald-600'
                               : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50'
@@ -816,7 +817,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
           className="w-full flex items-center justify-between px-4 py-2.5 bg-muted hover:bg-border-light transition-colors"
           type="button"
         >
-          <span className="text-xs font-medium uppercase tracking-widest text-text-muted">VC Overlay<HelpTip text="Boost or filter coins based on venture capital funding data. Coins backed by top VCs with large recent rounds get higher weight." /></span>
+          <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">VC Overlay<HelpTip text="Boost or filter coins based on venture capital funding data. Coins backed by top VCs with large recent rounds get higher weight." /></span>
           <span className="text-xs text-text-muted">
             {filters.vc_mode ? 'Active' : 'Off'}
           </span>
@@ -858,7 +859,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     return (
                       <button
                         key={inv}
-                        className={`px-2 py-1 text-[11px] border rounded-md transition-colors ${
+                        className={`px-2 py-1 text-label border rounded-md transition-colors ${
                           isOn
                             ? 'bg-zinc-900 text-white border-zinc-900'
                             : 'bg-white text-text-secondary border-border-light hover:bg-muted'
@@ -885,7 +886,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
                     return (
                       <button
                         key={rt}
-                        className={`px-2 py-1 text-[11px] border rounded-md transition-colors ${
+                        className={`px-2 py-1 text-label border rounded-md transition-colors ${
                           isOn
                             ? 'bg-zinc-900 text-white border-zinc-900'
                             : 'bg-white text-text-secondary border-border-light hover:bg-muted'
@@ -911,7 +912,7 @@ export function SimFilterPanel({ filters, onChange, onRun, isLoading }: SimFilte
       {/* Row 7: Sweep + Run */}
       <div className="flex flex-wrap gap-4 items-center justify-between pt-2 border-t border-border-light">
         <div>
-          <label className="text-xs font-medium uppercase tracking-widest text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
+          <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted block mb-1.5">Sweep<HelpTip text="Run multiple simulations at once, varying one parameter. Compare how different top N sizes, strategies, or rebalance frequencies perform." /></label>
           <div className="flex flex-wrap gap-y-1">
             {SWEEP_OPTIONS.map(s => (
               <button

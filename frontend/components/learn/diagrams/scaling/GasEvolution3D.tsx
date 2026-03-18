@@ -288,7 +288,7 @@ function Stage1({ reducedMotion }: { reducedMotion: boolean }) {
         distanceFactor={8}
         style={{ pointerEvents: 'none' }}
       >
-        <span className="text-[16px] font-bold font-mono" style={{ color: '#a1a1aa' }}>
+        <span className="text-subhead font-bold font-mono" style={{ color: '#a1a1aa' }}>
           30M gas
         </span>
       </Html>
@@ -401,7 +401,7 @@ function Stage2({ reducedMotion }: { reducedMotion: boolean }) {
         distanceFactor={8}
         style={{ pointerEvents: 'none' }}
       >
-        <span className="text-[16px] font-bold font-mono" style={{ color: '#22c55e' }}>
+        <span className="text-subhead font-bold font-mono" style={{ color: '#22c55e' }}>
           60M gas
         </span>
       </Html>
@@ -552,7 +552,7 @@ function Stage3({ reducedMotion }: { reducedMotion: boolean }) {
         distanceFactor={8}
         style={{ pointerEvents: 'none' }}
       >
-        <span className="text-[16px] font-bold font-mono" style={{ color: '#3b82f6' }}>
+        <span className="text-subhead font-bold font-mono" style={{ color: '#3b82f6' }}>
           120M gas
         </span>
       </Html>
@@ -689,31 +689,31 @@ function Legend() {
     <div className="flex items-center gap-5">
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-zinc-300 border border-zinc-400" />
-        <span className="text-[10px] text-text-muted tracking-wide">
+        <span className="text-micro text-text-muted tracking-wide">
           Single pool
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-blue-400 border border-blue-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">
+        <span className="text-micro text-text-muted tracking-wide">
           Execution
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-amber-400 border border-amber-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">
+        <span className="text-micro text-text-muted tracking-wide">
           State
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-indigo-400 border border-indigo-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">
+        <span className="text-micro text-text-muted tracking-wide">
           Calldata
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <div className="w-3 h-2 rounded-sm bg-red-400 border border-red-500" />
-        <span className="text-[10px] text-text-muted tracking-wide">
+        <span className="text-micro text-text-muted tracking-wide">
           Spike block
         </span>
       </div>

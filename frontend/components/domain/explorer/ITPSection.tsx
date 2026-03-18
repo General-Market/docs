@@ -64,7 +64,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-[16px] font-black tracking-[-0.02em] text-black mb-4">ITP Metrics</h2>
+      <h2 className="text-subhead font-black tracking-tight text-black mb-4">ITP Metrics</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Pending Order Volume */}
@@ -89,16 +89,16 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
             {/* Summary row */}
             <div className="flex items-baseline gap-4 mb-2 px-1">
               <div>
-                <span className="text-[10px] text-text-muted block">Total Funds</span>
-                <span className="text-[20px] font-black text-black">{stats.total}</span>
+                <span className="text-micro text-text-muted block">Total Funds</span>
+                <span className="text-heading font-black text-black">{stats.total}</span>
               </div>
               <div>
-                <span className="text-[10px] text-text-muted block">Total AUM</span>
-                <span className="text-[20px] font-black text-black">{formatUsd(stats.totalAum)}</span>
+                <span className="text-micro text-text-muted block">Total AUM</span>
+                <span className="text-heading font-black text-black">{formatUsd(stats.totalAum)}</span>
               </div>
               <div>
-                <span className="text-[10px] text-text-muted block">With Shares</span>
-                <span className="text-[20px] font-black text-black">{stats.withSupply}</span>
+                <span className="text-micro text-text-muted block">With Shares</span>
+                <span className="text-heading font-black text-black">{stats.withSupply}</span>
               </div>
             </div>
             {/* Top ITPs table */}
@@ -106,32 +106,32 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border-light">
-                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2">Fund</th>
-                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2 text-right">NAV</th>
-                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 pr-2 text-right">AUM</th>
-                    <th className="text-[10px] font-semibold text-text-muted pb-1.5 text-right">Shares</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">Fund</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">NAV</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">AUM</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">Shares</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topItps.map((itp) => (
                     <tr key={itp.itp_id} className="border-b border-border-light last:border-0">
                       <td className="py-1.5 pr-2">
-                        <span className="text-[12px] font-bold text-black">
+                        <span className="text-caption font-bold text-black">
                           {itp.symbol || itp.name || 'ITP'}
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right">
-                        <span className="text-[12px] font-mono text-black">
+                        <span className="text-caption font-mono text-black">
                           ${itp.nav_per_share.toFixed(4)}
                         </span>
                       </td>
                       <td className="py-1.5 pr-2 text-right">
-                        <span className="text-[11px] font-mono text-black">
+                        <span className="text-label font-mono text-black">
                           {itp.aum_usd > 0 ? formatUsd(itp.aum_usd) : '--'}
                         </span>
                       </td>
                       <td className="py-1.5 text-right">
-                        <span className="text-[11px] font-mono text-text-muted">
+                        <span className="text-label font-mono text-text-muted">
                           {formatShares(itp.total_supply)}
                         </span>
                       </td>
@@ -139,7 +139,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                   ))}
                   {topItps.length === 0 && !itpLoading && (
                     <tr>
-                      <td colSpan={4} className="py-4 text-center text-[12px] text-text-muted">
+                      <td colSpan={4} className="py-4 text-center text-caption text-text-muted">
                         No ITP data available
                       </td>
                     </tr>

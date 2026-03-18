@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import type { SnapshotPrice } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
+import { useBatchHistory } from '@/hooks/vision/useBatchHistory'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import type { BitmapEditor, CellState } from '@/hooks/vision/useBitmapEditor'
 import { DATA_NODE_URL } from '@/lib/config'
@@ -16,7 +17,9 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  ReferenceLine,
 } from 'recharts'
+import type { BatchHistoryEntry } from '@/hooks/vision/useBatchHistory'
 
 interface MarketsTableProps {
   sourceId: string
@@ -66,10 +69,19 @@ function truncateMiddle(str: string, maxLen: number): string {
 }
 
 function resolutionBadge(resType: string | undefined) {
-  if (!resType) return null
+  if (!resType) {
+    return <span className="text-[9px] text-text-muted">&mdash;</span>
+  }
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
-  const bg = isUp ? 'bg-green-100 text-green-700 border-green-200' : isDown ? 'bg-red-100 text-red-700 border-red-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+  const isFlat = resType.startsWith('FLAT')
+  const bg = isUp
+    ? 'bg-green-100 text-green-700 border-green-200'
+    : isDown
+      ? 'bg-red-100 text-red-700 border-red-200'
+      : isFlat
+        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+        : 'bg-gray-100 text-gray-600 border-gray-200'
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
       {resType}
@@ -87,9 +99,18 @@ function formatVolume(vol: string | null): string {
   return num.toFixed(0)
 }
 
+// Resolution type enum → label (matches IVision.ResolutionType)
+const RESOLUTION_TYPE_LABELS: Record<number, string> = {
+  0: 'UP_0', 1: 'UP_30', 2: 'UP_X',
+  3: 'DOWN_0', 4: 'DOWN_30', 5: 'DOWN_X',
+  6: 'FLAT_0', 7: 'FLAT_X',
+  8: 'UP_300', 9: 'UP_3000',
+  10: 'DOWN_300', 11: 'DOWN_3000',
+}
+
 // ── Asset Price History Chart ──
 
-function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string; assetId: string }) {
+function AssetHistory({ dataNodeSourceId, assetId, tickHistory }: { dataNodeSourceId: string; assetId: string; tickHistory?: BatchHistoryEntry[] }) {
   const [points, setPoints] = useState<PriceHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -216,6 +237,22 @@ function AssetHistory({ dataNodeSourceId, assetId }: { dataNodeSourceId: string;
             }}
             formatter={(val: number) => [formatValue(val), 'Value']}
           />
+          {/* Resolution time markers */}
+          {(tickHistory ?? []).map((tick) => {
+            if (!tick.resolvedAt) return null
+            const ts = new Date(typeof tick.resolvedAt === 'number' ? tick.resolvedAt * 1000 : tick.resolvedAt).toISOString()
+            const outcome = tick.marketOutcomes?.find(mo => mo.marketId === assetId)
+            return (
+              <ReferenceLine
+                key={tick.tickId}
+                x={ts}
+                stroke={outcome?.wentUp ? '#16a34a' : '#dc2626'}
+                strokeDasharray="3 3"
+                strokeWidth={1}
+                opacity={0.6}
+              />
+            )
+          })}
           <Line
             type="monotone"
             dataKey="value"
@@ -251,29 +288,61 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
-    queryKey: ['batch-config-by-id', activeBatch?.id],
+  // Fetch batch config by hash from data-node (has per-market resolution types)
+  const configHash = activeBatch?.configHash
+  const { data: batchConfigData } = useQuery<{ markets: { asset_id: string; resolution_type: string }[] }>({
+    queryKey: ['batch-config-hash', configHash],
     queryFn: async () => {
-      // Fetch config by batch ID from data-node
-      const res = await fetch(`${DATA_NODE_URL}/batches/${activeBatch!.id}/config`)
-      if (!res.ok) throw new Error(`Config fetch ${res.status}`)
+      const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
+      if (!res.ok) return { markets: [] }
       return res.json()
     },
-    enabled: activeBatch !== null,
-    staleTime: 60_000,
+    enabled: !!configHash,
+    staleTime: 300_000,
+    retry: 1,
   })
 
-  // Build resolution type map: assetId -> display label (e.g. "UP_0", "FLAT_X")
+  // Build resolution type map from config (data-node) or from batch arrays (oracle)
   const resolutionMap = useMemo(() => {
     const map = new Map<string, string>()
-    if (!batchConfigData?.markets) return map
-    for (const m of batchConfigData.markets) {
-      if (m.assetId && m.resolutionType) {
-        map.set(m.assetId, m.resolutionType.toUpperCase())
+    // Prefer data-node config (has per-market resolution types)
+    if (batchConfigData?.markets?.length) {
+      for (const m of batchConfigData.markets) {
+        if (m.asset_id && m.resolution_type) {
+          map.set(m.asset_id, m.resolution_type.toUpperCase())
+        }
+      }
+      return map
+    }
+    // Fallback: oracle batch arrays (if populated)
+    if (activeBatch?.marketIds?.length && activeBatch?.resolutionTypes?.length) {
+      const { marketIds, resolutionTypes } = activeBatch
+      for (let i = 0; i < marketIds.length; i++) {
+        const label = RESOLUTION_TYPE_LABELS[resolutionTypes[i]] ?? `TYPE_${resolutionTypes[i]}`
+        map.set(marketIds[i], label)
       }
     }
     return map
-  }, [batchConfigData])
+  }, [batchConfigData, activeBatch])
+
+  // Fetch tick history for consensus arrows
+  const { data: tickHistory } = useBatchHistory(activeBatch?.id ?? null)
+
+  // Per-market consensus: last N tick outcomes (up/down per market)
+  const consensusMap = useMemo(() => {
+    const map = new Map<string, ('UP' | 'DN')[]>()
+    if (!tickHistory || tickHistory.length === 0) return map
+    // tickHistory is sorted DESC (newest first), take last 5
+    const recentTicks = tickHistory.slice(0, 5)
+    for (const tick of recentTicks) {
+      for (const mo of tick.marketOutcomes ?? []) {
+        const arr = map.get(mo.marketId) ?? []
+        arr.push(mo.wentUp ? 'UP' : 'DN')
+        map.set(mo.marketId, arr)
+      }
+    }
+    return map
+  }, [tickHistory])
 
   const [search, setSearch] = useState('')
   const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
@@ -342,12 +411,11 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
       {/* Table */}
       <div className="bg-white border border-t-0 border-border-light overflow-x-auto">
         {/* Column headers */}
-        <div className="grid grid-cols-[1fr_80px_100px_80px_80px_100px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
+        <div className="grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b-[3px] border-black text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
           <div>Name</div>
           <div className="text-center">Type</div>
           <div className="text-right">{valueLabel}{unit ? ` (${unit})` : ''}</div>
           <div className="text-right">1d</div>
-          <div className="text-right">7d</div>
           <div className="text-center">Consensus</div>
           <div className="text-center">Bet</div>
         </div>
@@ -370,16 +438,16 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
         <div className="max-h-[600px] overflow-y-auto">
           {visibleMarkets.map((market) => {
             const change1d = formatChangePct(market.changePct)
-            const change7d = formatChangePct(null)
             const vol = formatVolume(market.volume24h)
             const betState = getBetState(market.assetId)
             const isExpanded = expandedAssetId === market.assetId
             const resType = resolutionMap.get(market.assetId)
+            const consensus = consensusMap.get(market.assetId) ?? []
 
             return (
               <div key={market.assetId}>
                 <div
-                  className={`grid grid-cols-[1fr_80px_100px_80px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
+                  className={`grid grid-cols-[1fr_80px_100px_80px_100px_100px] items-center px-4 py-2.5 border-b border-border-light hover:bg-surface/50 transition-colors text-caption cursor-pointer ${
                     isExpanded ? 'bg-surface/50 border-b-0' : ''
                   }`}
                   onClick={() => handleRowClick(market.assetId)}
@@ -418,13 +486,9 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                     {change1d.text}
                   </div>
 
-                  {/* 7d change */}
-                  <div className={`text-right font-mono tabular-nums font-semibold ${change7d.color}`}>
-                    {change7d.text}
-                  </div>
 
-                  {/* Consensus */}
-                  <div className="text-center relative">
+                  {/* Consensus — last N tick outcomes as colored arrow squares */}
+                  <div className="relative">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -432,9 +496,24 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                           consensusOpen === market.assetId ? null : market.assetId
                         )
                       }}
-                      className="inline-flex items-center justify-center px-2 py-0.5 rounded text-label font-bold hover:bg-surface transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-0.5 w-full cursor-pointer rounded py-0.5 hover:bg-surface/50 transition-colors"
                     >
-                      &mdash;
+                      {consensus.length === 0 ? (
+                        <span className="text-[9px] text-text-muted">&mdash;</span>
+                      ) : (
+                        consensus.map((dir, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-flex items-center justify-center w-4 h-4 rounded-sm text-[8px] font-bold ${
+                              dir === 'UP'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {dir === 'UP' ? '↑' : '↓'}
+                          </span>
+                        ))
+                      )}
                     </button>
                     {consensusOpen === market.assetId && (
                       <ConsensusPopup
@@ -472,7 +551,7 @@ export function MarketsTable({ sourceId, bitmapEditor }: MarketsTableProps) {
                 {/* Expanded history chart */}
                 {isExpanded && (
                   <div className="border-b border-border-light">
-                    <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} />
+                    <AssetHistory dataNodeSourceId={sourceId} assetId={market.assetId} tickHistory={tickHistory ?? []} />
                   </div>
                 )}
               </div>

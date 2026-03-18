@@ -19,7 +19,6 @@ import {
   getRoundBitmaps,
   getPlayerRounds,
   getBatchConfigHash,
-  getPosition,
   impersonateAccount,
   ensureUsdcBalance,
   randomBets,
@@ -35,31 +34,12 @@ test.describe('Vision Round Results + Bitmap Transparency', () => {
   test('round settles with correct results and transparent bitmaps', async () => {
     test.setTimeout(300_000)
 
-    // 1. Find active round that neither player has joined
+    // 1. Find active round
     const rounds = await getActiveRounds()
     expect(rounds.length).toBeGreaterThan(0)
-    let batchId = 0
-    let configHash: `0x${string}` = '0x'
-    for (const round of rounds) {
-      try {
-        const pos1 = await getPosition(round.batchId, PLAYER1)
-        if (pos1.joinTimestamp !== 0n) continue
-        const pos2 = await getPosition(round.batchId, PLAYER2)
-        if (pos2.joinTimestamp !== 0n) continue
-        batchId = round.batchId
-        configHash = await getBatchConfigHash(batchId)
-        break
-      } catch {
-        batchId = round.batchId
-        configHash = await getBatchConfigHash(batchId)
-        break
-      }
-    }
-    if (batchId === 0) {
-      console.log(`All ${rounds.length} rounds already joined — run: ./testnet.sh refresh-batches`)
-      expect(rounds.length).toBeGreaterThan(0)
-      return
-    }
+    const round = rounds[0]
+    const batchId = round.batchId
+    const configHash = round.configHash ?? await getBatchConfigHash(batchId)
 
     // 2. Fund and join with opposite bets
     await impersonateAccount(PLAYER1)

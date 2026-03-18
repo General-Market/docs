@@ -26,7 +26,7 @@ export function SimSweepStatsTable({ variants }: SimSweepStatsTableProps) {
     <div className="overflow-x-auto mb-4">
       <table className="w-full">
         <thead>
-          <tr className="text-xs font-medium uppercase tracking-wider text-text-muted border-b border-border-light bg-muted">
+          <tr className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted border-b border-border-light bg-muted">
             <th className="text-left pb-2 pt-2 pr-3 px-3">Variant</th>
             <th className="text-right pb-2 pt-2 pr-3 px-3">Return</th>
             <th className="text-right pb-2 pt-2 pr-3 px-3">Annual.</th>
