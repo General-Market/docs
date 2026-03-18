@@ -26,6 +26,8 @@ pub struct Batch {
     pub next_lock_offset: u64,
     /// Pending tick duration (promoted with next_config_hash at tick boundary)
     pub next_tick_duration: Option<u64>,
+    /// Signed epoch offset for tick continuity across tickDuration changes
+    pub epoch_offset: i64,
     pub created_at_tick: u64,
     /// Last tick at which config was promoted (prevents mid-tick changes)
     pub last_promotion_tick: u64,

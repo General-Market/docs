@@ -114,6 +114,8 @@ struct FetchedBatchData {
     next_config_hash: H256,
     lock_offset: u64,
     next_lock_offset: u64,
+    next_tick_duration: Option<u64>,
+    epoch_offset: i64,
     created_at_tick: u64,
     last_promotion_tick: u64,
 }
@@ -311,14 +313,20 @@ impl ChainListener {
             }
         };
         // data = configHash (bytes32) + tickDuration (uint256) + lockOffset (uint256)
-        let tick_duration = if log.data.len() >= 64 {
-            // tickDuration is the second word in data (bytes 32..64)
+        let (config_hash_from_event, tick_duration) = if log.data.len() >= 64 {
             let tuple = ethers::abi::decode(
                 &[ethers::abi::ParamType::FixedBytes(32), ethers::abi::ParamType::Uint(256), ethers::abi::ParamType::Uint(256)],
                 &log.data,
             );
             match tuple {
-                Ok(tokens) => tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0),
+                Ok(tokens) => {
+                    let ch = match &tokens[0] {
+                        Token::FixedBytes(b) if b.len() == 32 => H256::from_slice(b),
+                        _ => H256::zero(),
+                    };
+                    let td = tokens[1].clone().into_uint().map(|v| v.as_u64()).unwrap_or(0);
+                    (ch, td)
+                }
                 Err(_) => {
                     warn!(batch_id, "BatchCreated: failed to decode data tuple");
                     return;
@@ -326,7 +334,7 @@ impl ChainListener {
             }
         } else {
             match decode_single_u256(&log.data) {
-                Some(v) => v.as_u64(),
+                Some(v) => (H256::zero(), v.as_u64()),
                 None => {
                     warn!(batch_id, "BatchCreated: failed to decode tickDuration from data");
                     return;
@@ -345,7 +353,8 @@ impl ChainListener {
                 tick_duration,
                 lock_offset: fetched.lock_offset,
                 next_lock_offset: fetched.next_lock_offset,
-                next_tick_duration: None,
+                next_tick_duration: fetched.next_tick_duration,
+                epoch_offset: fetched.epoch_offset,
                 created_at_tick: fetched.created_at_tick,
                 last_promotion_tick: fetched.last_promotion_tick,
                 paused: false,
@@ -370,12 +379,13 @@ impl ChainListener {
                     id: batch_id,
                     creator,
                     source_id: source_id_from_event,
-                    config_hash: H256::zero(),
+                    config_hash: config_hash_from_event,
                     next_config_hash: H256::zero(),
                     tick_duration,
                     lock_offset: 0,
                     next_lock_offset: 0,
                     next_tick_duration: None,
+                    epoch_offset: 0,
                     created_at_tick,
                     last_promotion_tick: 0,
                     paused: false,
@@ -1260,22 +1270,25 @@ impl ChainListener {
             }
         };
 
-        // Decode the new Batch struct tuple:
+        // Decode the 12-field Batch struct tuple (must match IVision.sol exactly):
         // (address creator, bytes32 sourceId, bytes32 configHash, bytes32 nextConfigHash,
         //  uint256 tickDuration, uint256 lockOffset, uint256 nextLockOffset,
+        //  uint256 nextTickDuration, int256 epochOffset,
         //  uint256 createdAtTick, uint256 lastPromotionTick, bool paused)
         let tokens = match abi::decode(
             &[abi::ParamType::Tuple(vec![
-                abi::ParamType::Address,           // creator
-                abi::ParamType::FixedBytes(32),     // sourceId
-                abi::ParamType::FixedBytes(32),     // configHash
-                abi::ParamType::FixedBytes(32),     // nextConfigHash
-                abi::ParamType::Uint(256),          // tickDuration
-                abi::ParamType::Uint(256),          // lockOffset
-                abi::ParamType::Uint(256),          // nextLockOffset
-                abi::ParamType::Uint(256),          // createdAtTick
-                abi::ParamType::Uint(256),          // lastPromotionTick
-                abi::ParamType::Bool,               // paused
+                abi::ParamType::Address,           // [0] creator
+                abi::ParamType::FixedBytes(32),     // [1] sourceId
+                abi::ParamType::FixedBytes(32),     // [2] configHash
+                abi::ParamType::FixedBytes(32),     // [3] nextConfigHash
+                abi::ParamType::Uint(256),          // [4] tickDuration
+                abi::ParamType::Uint(256),          // [5] lockOffset
+                abi::ParamType::Uint(256),          // [6] nextLockOffset
+                abi::ParamType::Uint(256),          // [7] nextTickDuration
+                abi::ParamType::Int(256),           // [8] epochOffset
+                abi::ParamType::Uint(256),          // [9] createdAtTick
+                abi::ParamType::Uint(256),          // [10] lastPromotionTick
+                abi::ParamType::Bool,               // [11] paused
             ])],
             &result,
         ) {
@@ -1323,14 +1336,38 @@ impl ChainListener {
             _ => 0,
         };
 
-        // tuple[7] = createdAtTick
-        let created_at_tick = match &tuple[7] {
+        // tuple[7] = nextTickDuration
+        let next_tick_duration = match &tuple[7] {
+            Token::Uint(v) => {
+                let val = v.as_u64();
+                if val > 0 { Some(val) } else { None }
+            }
+            _ => None,
+        };
+
+        // tuple[8] = epochOffset (int256 — interpret as signed)
+        let epoch_offset = match &tuple[8] {
+            Token::Int(v) => {
+                // ethers Int token stores as U256; interpret two's complement for negative
+                if v.bit(255) {
+                    // negative: -(2^256 - v)
+                    let neg = (!*v).overflowing_add(U256::one()).0;
+                    -(neg.as_u64() as i64)
+                } else {
+                    v.as_u64() as i64
+                }
+            }
+            _ => 0i64,
+        };
+
+        // tuple[9] = createdAtTick
+        let created_at_tick = match &tuple[9] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
 
-        // tuple[8] = lastPromotionTick
-        let last_promotion_tick = match &tuple[8] {
+        // tuple[10] = lastPromotionTick
+        let last_promotion_tick = match &tuple[10] {
             Token::Uint(v) => v.as_u64(),
             _ => 0,
         };
@@ -1341,6 +1378,8 @@ impl ChainListener {
             next_config_hash,
             lock_offset,
             next_lock_offset,
+            next_tick_duration,
+            epoch_offset,
             created_at_tick,
             last_promotion_tick,
         })

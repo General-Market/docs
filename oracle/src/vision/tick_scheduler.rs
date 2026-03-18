@@ -369,6 +369,7 @@ impl TickScheduler {
                     lock_offset: 0,
                     next_lock_offset: *next_lock_offset as u64,
                     next_tick_duration: next_tick_duration.map(|v| v as u64),
+                    epoch_offset: 0, // TODO: load from DB when column exists
                     created_at_tick: *created_at_tick as u64,
                     last_promotion_tick: *last_promotion_tick as u64,
                     paused: *paused,
@@ -577,6 +578,7 @@ mod tests {
             lock_offset: 0,
             next_lock_offset: 0,
             next_tick_duration: None,
+            epoch_offset: 0,
             created_at_tick,
             last_promotion_tick: 0,
             paused: false,
