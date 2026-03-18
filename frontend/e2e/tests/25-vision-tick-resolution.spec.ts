@@ -23,6 +23,7 @@ import {
   impersonateAccount,
   ensureUsdcBalance,
   ensureBatchExists,
+  findAvailableE2eBatch,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
@@ -40,13 +41,10 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
     await ensureBatchExists()
 
     // 1. Find active round where PLAYER1 hasn't joined
-    const rounds = await getActiveRounds()
-    if (rounds.length === 0) {
-      console.log('No active rounds from oracle — oracle may not have indexed batches yet on fresh deployment')
-      return
-    }
-
     let batchId = 0
+    let configHash: `0x${string}` = '0x' as `0x${string}`
+
+    const rounds = await getActiveRounds()
     for (const round of rounds) {
       try {
         const pos = await getPosition(round.batchId, PLAYER1)
@@ -60,12 +58,20 @@ test.describe('Vision Round Resolution -- Opposite Bets + Pool Conservation', ()
       }
     }
 
+    // Oracle API returned nothing — fall back to chain-based batch search
     if (batchId === 0) {
-      console.log('All active rounds already joined — graceful pass')
-      return
+      try {
+        const found = await findAvailableE2eBatch(PLAYER1)
+        batchId = found.batchId
+        configHash = found.configHash
+        console.log(`Oracle had no active rounds — found batch ${batchId} on-chain`)
+      } catch {
+        console.log('No joinable batches found on-chain — all joined or none exist')
+        return
+      }
     }
 
-    const configHash = await getBatchConfigHash(batchId)
+    if (configHash === ('0x' as `0x${string}`)) configHash = await getBatchConfigHash(batchId)
     const visionUsdc = await getVisionUsdcAddress()
     console.log(`Using round ${batchId}`)
 

@@ -20,6 +20,7 @@ import {
   getVisionUsdcAddress,
   ensureUsdcBalance,
   ensureBatchExists,
+  findAvailableE2eBatch,
   impersonateAccount,
   getBatchConfigHash,
   randomBets,
@@ -92,14 +93,14 @@ test.describe('Vision', () => {
   test('two players join round and deposits settle correctly', async () => {
     test.setTimeout(300_000)
 
+    // 0. Ensure at least one batch exists (creates via storage on Anvil if nextBatchId=0)
+    await ensureBatchExists()
+
     // 1. Find an active round that PLAYER1 hasn't joined yet
-    const rounds = await getActiveRounds()
-    if (rounds.length === 0) {
-      console.log('No active rounds from oracle — oracle may not have indexed batches yet on fresh deployment')
-      return
-    }
     let batchId = 0
     let configHash: `0x${string}` = '0x'
+
+    const rounds = await getActiveRounds()
     for (const round of rounds) {
       try {
         const pos = await getPosition(round.batchId, PLAYER1)
@@ -114,10 +115,18 @@ test.describe('Vision', () => {
         break
       }
     }
+
+    // Oracle API returned nothing — fall back to chain-based batch search
     if (batchId === 0) {
-      console.log(`All ${rounds.length} rounds already joined — run: ./testnet.sh refresh-batches`)
-      expect(rounds.length).toBeGreaterThan(0)
-      return
+      try {
+        const found = await findAvailableE2eBatch(PLAYER1)
+        batchId = found.batchId
+        configHash = found.configHash
+        console.log(`Oracle had no active rounds — found batch ${batchId} on-chain`)
+      } catch {
+        console.log('No joinable batches found on-chain — all joined or none exist')
+        return
+      }
     }
 
     // 2. Pre-fund players so balance-diff assertions aren't polluted by minting

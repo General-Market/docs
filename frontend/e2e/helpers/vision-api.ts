@@ -913,7 +913,141 @@ export async function ensureBatchExists(): Promise<BatchInfo[]> {
   const batches = await getBatchesFromChain()
   if (batches.length > 0) return batches
 
+  // No batches at all — create one via storage on Anvil
+  if (IS_ANVIL) {
+    console.log('[ensureBatchExists] nextBatchId=0 — creating batch via storage')
+    const batchId = await createBatchViaStorage()
+    console.log(`[ensureBatchExists] Created batch ${batchId}`)
+    return getBatchesFromChain()
+  }
+
   throw new Error('No batches found — run DeployAllVisionBatches.s.sol first')
+}
+
+/**
+ * Create a batch by writing directly to Vision contract storage.
+ * Bypasses BLS signature requirement — Anvil only.
+ *
+ * Storage layout (Vision inherits ReentrancyGuard[1 slot] + BLSVerifier[1 slot]):
+ *   slot 0: ReentrancyGuard._status
+ *   slot 1: BLSVerifier._blsOracleRegistry
+ *   slot 2: nextBatchId
+ *   slot 3: _batches mapping
+ *   slot 4: _positions mapping
+ *   ...
+ *
+ * Batch struct (12 fields, 12 storage slots):
+ *   +0  address creator
+ *   +1  bytes32 sourceId
+ *   +2  bytes32 configHash
+ *   +3  bytes32 nextConfigHash
+ *   +4  uint256 tickDuration
+ *   +5  uint256 lockOffset
+ *   +6  uint256 nextLockOffset
+ *   +7  uint256 nextTickDuration
+ *   +8  int256  epochOffset
+ *   +9  uint256 createdAtTick
+ *   +10 uint256 lastPromotionTick
+ *   +11 bool    paused
+ */
+export async function createBatchViaStorage(opts?: {
+  sourceId?: string
+  configHash?: string
+  tickDuration?: number
+  lockOffset?: number
+  creator?: string
+}): Promise<number> {
+  if (!IS_ANVIL) throw new Error('createBatchViaStorage: Anvil only')
+
+  const visionAddr = getVisionAddress()
+  const NEXT_BATCH_ID_SLOT = 2n
+  const BATCHES_MAPPING_SLOT = 3n
+
+  // Read current nextBatchId
+  const nextBatchIdData = encodeFunctionData({
+    abi: VISION_NEXT_BATCH_ID_ABI,
+    functionName: 'nextBatchId',
+    args: [],
+  })
+  const rawNextId = await l3EthCall(visionAddr, nextBatchIdData)
+  const batchId = Number(safeBigInt(rawNextId))
+
+  // Defaults
+  const tickDuration = opts?.tickDuration ?? 120
+  const lockOffset = opts?.lockOffset ?? 10
+  const creator = opts?.creator ?? ANVIL_DEPLOYER
+  const sourceId = opts?.sourceId ?? keccak256(toHex('e2e-test-source'))
+  const configHash = opts?.configHash ?? keccak256(toHex('e2e-test-config'))
+  const now = Math.floor(Date.now() / 1000)
+  const createdAtTick = Math.floor(now / tickDuration)
+
+  // Compute base storage slot for _batches[batchId]
+  // mapping(uint256 => Batch): keccak256(abi.encode(key, slot))
+  const baseSlot = BigInt(keccak256(
+    ('0x' +
+      BigInt(batchId).toString(16).padStart(64, '0') +
+      BATCHES_MAPPING_SLOT.toString(16).padStart(64, '0')
+    ) as `0x${string}`
+  ))
+
+  const pad = (v: string) => v.padStart(64, '0')
+  const toSlot = (offset: bigint) => '0x' + (baseSlot + offset).toString(16).padStart(64, '0')
+  const toVal = (hex: string) => '0x' + pad(hex)
+
+  // Write batch struct fields
+  // +0: creator (address, right-padded to 32 bytes — Solidity stores address in low 20 bytes)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(0n), toVal(creator.replace('0x', '').toLowerCase())])
+
+  // +1: sourceId
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(1n), sourceId])
+
+  // +2: configHash
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(2n), configHash])
+
+  // +3: nextConfigHash (0)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(3n), toVal('0')])
+
+  // +4: tickDuration
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(4n), toVal(tickDuration.toString(16))])
+
+  // +5: lockOffset
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(5n), toVal(lockOffset.toString(16))])
+
+  // +6: nextLockOffset (0)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(6n), toVal('0')])
+
+  // +7: nextTickDuration (0)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(7n), toVal('0')])
+
+  // +8: epochOffset (int256, 0)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(8n), toVal('0')])
+
+  // +9: createdAtTick
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(9n), toVal(createdAtTick.toString(16))])
+
+  // +10: lastPromotionTick
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(10n), toVal(createdAtTick.toString(16))])
+
+  // +11: paused (false = 0)
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(11n), toVal('0')])
+
+  // Increment nextBatchId (slot 2)
+  const newNextBatchId = batchId + 1
+  const nextIdSlot = '0x' + NEXT_BATCH_ID_SLOT.toString(16).padStart(64, '0')
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, nextIdSlot, toVal(newNextBatchId.toString(16))])
+
+  // Write latestBatchForSource mapping (slot 8): mapping(bytes32 => uint256)
+  // Storage: keccak256(abi.encode(sourceId, 8))
+  const LATEST_BATCH_SLOT = 8n
+  const latestSlot = keccak256(
+    ('0x' +
+      sourceId.replace('0x', '') +
+      LATEST_BATCH_SLOT.toString(16).padStart(64, '0')
+    ) as `0x${string}`
+  )
+  await l3RpcCall('anvil_setStorageAt', [visionAddr, latestSlot, toVal(batchId.toString(16))])
+
+  return batchId
 }
 
 /**

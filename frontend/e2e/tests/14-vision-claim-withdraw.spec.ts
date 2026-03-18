@@ -25,6 +25,7 @@ import {
   impersonateAccount,
   ensureUsdcBalance,
   ensureBatchExists,
+  findAvailableE2eBatch,
   randomBets,
   oppositeBets,
 } from '../helpers/vision-api'
@@ -44,24 +45,40 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
     const rounds = await getActiveRounds()
     let batchId: number | null = null
 
-    if (rounds.length > 0) {
-      // Find a round PLAYER1 hasn't joined yet
-      for (const round of rounds) {
-        try {
-          const pos = await getPosition(round.batchId, PLAYER1)
-          if (pos.joinTimestamp === 0n) {
-            batchId = round.batchId
-            break
-          }
-        } catch {
+    // Try oracle API first
+    for (const round of rounds) {
+      try {
+        const pos = await getPosition(round.batchId, PLAYER1)
+        if (pos.joinTimestamp === 0n) {
           batchId = round.batchId
           break
         }
+      } catch {
+        batchId = round.batchId
+        break
       }
+    }
 
-      if (batchId === null) {
-        console.log('All active rounds already joined — skipping join, proceeding with withdraw')
-      } else {
+    // Oracle API returned nothing — fall back to chain-based batch search
+    if (batchId === null) {
+      try {
+        const found = await findAvailableE2eBatch(PLAYER1)
+        batchId = found.batchId
+        console.log(`Oracle had no active rounds — found batch ${batchId} on-chain`)
+      } catch {
+        console.log('No joinable batches found — skipping join, proceeding with withdraw')
+      }
+    }
+
+    if (batchId !== null) {
+      const alreadyJoined = await getPosition(batchId, PLAYER1).then(p => p.joinTimestamp > 0n).catch(() => false)
+      if (alreadyJoined) {
+        console.log(`PLAYER1 already joined batch ${batchId} — skipping join, proceeding with withdraw`)
+        batchId = null
+      }
+    }
+
+    if (batchId !== null) {
         const configHash = await getBatchConfigHash(batchId)
         const deposit = 10n * 10n ** 18n
         const stake = 1n * 10n ** 18n
@@ -81,7 +98,6 @@ test.describe('Vision Auto-Settlement + Balance Withdraw', () => {
           joinRoundDirect(PLAYER2, batchId, configHash, deposit, stake, p2Bets, marketCount),
         ])
         console.log(`Joined round ${batchId}, waiting for auto-settlement...`)
-      }
     }
 
     // 2. Wait for settlement (credits realBalance)
