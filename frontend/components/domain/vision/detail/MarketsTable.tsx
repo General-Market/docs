@@ -313,28 +313,31 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     retry: 1,
   })
 
-  // Build resolution type map from config (data-node) or from batch arrays (oracle)
+  // Compute resolution type per market from 24h change (same logic as data-node batch_engine)
   const resolutionMap = useMemo(() => {
     const map = new Map<string, string>()
-    // Prefer data-node config (has per-market resolution types)
+    // If data-node config has matching assetIds, use them
     if (batchConfigData?.markets?.length) {
       for (const m of batchConfigData.markets) {
         if (m.assetId && m.resolutionType) {
           map.set(m.assetId, m.resolutionType.toUpperCase())
         }
       }
-      return map
+      if (map.size > 0) return map
     }
-    // Fallback: oracle batch arrays (if populated)
-    if (activeBatch?.marketIds?.length && activeBatch?.resolutionTypes?.length) {
-      const { marketIds, resolutionTypes } = activeBatch
-      for (let i = 0; i < marketIds.length; i++) {
-        const label = RESOLUTION_TYPE_LABELS[resolutionTypes[i]] ?? `TYPE_${resolutionTypes[i]}`
-        map.set(marketIds[i], label)
-      }
+    // Compute from snapshot 24h change (mirrors resolution_for_volatility in batch_engine)
+    for (const market of sourceMarkets) {
+      const pct = parseFloat(market.changePct ?? '0')
+      const abs = Math.abs(pct)
+      let resType: string
+      if (abs < 0.3) resType = 'FLAT_X'
+      else if (abs < 3) resType = pct < 0 ? 'DOWN_0' : 'UP_X'
+      else if (abs < 30) resType = pct < 0 ? 'DOWN_300' : 'UP_300'
+      else resType = pct < 0 ? 'DOWN_3000' : 'UP_3000'
+      map.set(market.assetId, resType)
     }
     return map
-  }, [batchConfigData, activeBatch])
+  }, [batchConfigData, sourceMarkets])
 
   // Fetch tick history for consensus arrows
   const { data: tickHistory } = useBatchHistory(activeBatch?.id ?? null)
@@ -486,9 +489,9 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                     </div>
                   </div>
 
-                  {/* Resolution type — default to UP/DN (type 0) when config unavailable */}
+                  {/* Resolution type — computed from 24h change */}
                   <div className="text-center">
-                    {resolutionBadge(resType ?? 'UP_0')}
+                    {resolutionBadge(resType)}
                   </div>
 
                   {/* Value — momentum bar behind price */}
