@@ -168,12 +168,13 @@ const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(3
 const CONFIG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(55);
 
 /// Cache of fetched configs to avoid re-fetching within same tick.
-/// Maps config_hash (H256) -> (source_id, Vec<MarketConfig>, fetched_at).
+/// Keyed by (config_hash, source_id) to prevent cross-batch poisoning when
+/// multiple batches share the same config_hash but have different sources.
 struct ConfigCache {
-    configs: RwLock<HashMap<H256, (String, Vec<MarketConfig>, std::time::Instant)>>,
+    configs: RwLock<HashMap<(H256, H256), (String, Vec<MarketConfig>, std::time::Instant)>>,
     /// Config hashes that returned 404 — downgrade to debug after first WARN.
     /// Entries expire after MISSING_CONFIG_TTL so configs generated later can be retried.
-    known_missing: RwLock<HashMap<H256, std::time::Instant>>,
+    known_missing: RwLock<HashMap<(H256, H256), std::time::Instant>>,
 }
 
 impl ConfigCache {
@@ -190,10 +191,13 @@ impl ConfigCache {
         config_hash: &H256,
         source_id_h256: Option<&H256>,
     ) -> Result<(String, Vec<MarketConfig>), Box<dyn std::error::Error + Send + Sync>> {
+        let sid = source_id_h256.copied().unwrap_or_default();
+        let cache_key = (*config_hash, sid);
+
         // Check cache first (with TTL — configs regenerate each tick)
         {
             let cache = self.configs.read().await;
-            if let Some((source_id, configs, fetched_at)) = cache.get(config_hash) {
+            if let Some((source_id, configs, fetched_at)) = cache.get(&cache_key) {
                 if fetched_at.elapsed() < CONFIG_CACHE_TTL {
                     return Ok((source_id.clone(), configs.clone()));
                 }
@@ -201,16 +205,46 @@ impl ConfigCache {
             }
         }
 
+
         // Try fetching by config hash first (unless hash is zero)
         if !config_hash.is_zero() {
             let hash_hex = format!("0x{}", hex::encode(config_hash));
             match batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex).await {
                 Ok(batch) => {
                     let source_id = batch.source_id.clone();
-                    let market_configs = Self::parse_market_configs(&batch);
-                    self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
-                    self.known_missing.write().await.remove(config_hash);
-                    return Ok((source_id, market_configs));
+                    // Validate: if we have an on-chain source_id, the fetched config must match
+                    if !sid.is_zero() {
+                        let fetched_sid_hash = H256::from(keccak256(source_id.as_bytes()));
+                        let mut matched = fetched_sid_hash == sid;
+                        if !matched {
+                            for v in 1..=5u8 {
+                                let versioned = format!("{}_v{}", source_id, v);
+                                if H256::from(keccak256(versioned.as_bytes())) == sid {
+                                    matched = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if !matched {
+                            tracing::warn!(
+                                config_hash = %hash_hex,
+                                fetched_source = %source_id,
+                                on_chain_source_id = ?sid,
+                                "Config hash resolved to wrong source — rejecting, falling back to source_id lookup"
+                            );
+                            // Don't cache — fall through to source_id fallback
+                        } else {
+                            let market_configs = Self::parse_market_configs(&batch);
+                            self.configs.write().await.insert(cache_key, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
+                            self.known_missing.write().await.remove(&cache_key);
+                            return Ok((source_id, market_configs));
+                        }
+                    } else {
+                        let market_configs = Self::parse_market_configs(&batch);
+                        self.configs.write().await.insert(cache_key, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
+                        self.known_missing.write().await.remove(&cache_key);
+                        return Ok((source_id, market_configs));
+                    }
                 }
                 Err(e) => {
                     // Hash not found — configs regenerated since batch creation.
@@ -236,7 +270,8 @@ impl ConfigCache {
             if !sid_h256.is_zero() {
                 let recommended = batch_config_orchestrator::fetch_recommended(data_node_url).await?;
                 if let Some(batch) = recommended.into_iter().find(|b| {
-                    // Try bare name first, then versioned suffixes
+                    // Try bare name first, then versioned suffixes.
+                    // First match wins — ordering of recommended list matters.
                     if H256::from(keccak256(b.source_id.as_bytes())) == *sid_h256 {
                         return true;
                     }
@@ -249,9 +284,15 @@ impl ConfigCache {
                     false
                 }) {
                     let source_id = batch.source_id.clone();
+                    tracing::info!(
+                        on_chain_source_id = ?sid_h256,
+                        matched_source = %source_id,
+                        config_hash = ?config_hash,
+                        "keccak256 fallback matched recommended source"
+                    );
                     let market_configs = Self::parse_market_configs(&batch);
-                    self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
-                    self.known_missing.write().await.remove(config_hash);
+                    self.configs.write().await.insert(cache_key, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
+                    self.known_missing.write().await.remove(&cache_key);
                     return Ok((source_id, market_configs));
                 }
                 return Err(format!("No recommended config matching source_id {:?}", sid_h256).into());
@@ -270,16 +311,16 @@ impl ConfigCache {
         }).collect()
     }
 
-    async fn is_known_missing(&self, config_hash: &H256) -> bool {
+    async fn is_known_missing(&self, config_hash: &H256, source_id: &H256) -> bool {
         let map = self.known_missing.read().await;
-        match map.get(config_hash) {
+        match map.get(&(*config_hash, *source_id)) {
             Some(ts) if ts.elapsed() < MISSING_CONFIG_TTL => true,
             _ => false,
         }
     }
 
-    async fn mark_missing(&self, config_hash: &H256) {
-        self.known_missing.write().await.insert(*config_hash, std::time::Instant::now());
+    async fn mark_missing(&self, config_hash: &H256, source_id: &H256) {
+        self.known_missing.write().await.insert((*config_hash, *source_id), std::time::Instant::now());
     }
 }
 
@@ -1696,7 +1737,7 @@ pub async fn run(
                             {
                                 Ok(entry) => entry,
                                 Err(e) => {
-                                    if config_cache.is_known_missing(&batch.config_hash).await {
+                                    if config_cache.is_known_missing(&batch.config_hash, &batch.source_id).await {
                                         tracing::debug!(batch_id, tick_id, "Config still missing, skipping tick");
                                     } else {
                                         tracing::warn!(
@@ -1705,7 +1746,7 @@ pub async fn run(
                                             error = %e,
                                             "Failed to fetch market config, skipping tick"
                                         );
-                                        config_cache.mark_missing(&batch.config_hash).await;
+                                        config_cache.mark_missing(&batch.config_hash, &batch.source_id).await;
                                     }
                                     continue;
                                 }
@@ -1735,6 +1776,15 @@ pub async fn run(
                         "All due batches skipped (empty players / missing config / no batch state)"
                     );
                     continue;
+                }
+
+                // Sanity check: if many batches collapsed to few sources, cache poisoning may be at play
+                if work_items.len() > 1 && sources_needed.len() * 4 < work_items.len() {
+                    tracing::warn!(
+                        unique_sources = sources_needed.len(),
+                        due_batches = work_items.len(),
+                        "Source deduplication suspicious — far fewer sources than batches. Possible config cache poisoning."
+                    );
                 }
 
                 // === Phase 2: Parallel pre-fetch all unique sources ===
@@ -1857,12 +1907,15 @@ pub async fn run(
 
                     // First-tick skip: establish reference prices without resolving bets.
                     // tick_id == 0 means no tick has been resolved yet for this batch.
+                    // We still flip pending → active so bitmaps submitted during the
+                    // join window are available for tick 1's resolution.
                     if tick_id == 0 {
                         tracing::info!(
                             batch_id,
                             tick_id,
                             "First tick — establishing reference prices, skipping resolution"
                         );
+                        resolver.bitmap_store.flip(batch_id).await;
                         if let Some(ref pool) = db_pool {
                             if let Err(e) = scheduler
                                 .mark_resolved_with_db(pool, batch_id, tick_id)
