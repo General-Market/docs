@@ -584,12 +584,81 @@ impl BatchEngineState {
     }
 }
 
+/// Load static fallback configs from vision-recommended-configs.json.
+/// Returns source_id → (config_hash, tick_duration, lock_offset, market_count).
+fn load_static_fallback_configs() -> HashMap<String, (String, u64, u64, usize)> {
+    let paths = [
+        "deployments/vision-recommended-configs.json",
+        "/app/deployments/vision-recommended-configs.json",
+    ];
+    for path in &paths {
+        if let Ok(contents) = std::fs::read_to_string(path) {
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&contents) {
+                if let Some(configs) = val.get("configs").and_then(|c| c.as_object()) {
+                    let mut map = HashMap::new();
+                    for (name, info) in configs {
+                        let hash = info.get("configHash").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let tick = info.get("tickDurationSecs").and_then(|v| v.as_u64()).unwrap_or(600);
+                        let lock = info.get("lockOffsetSecs").and_then(|v| v.as_u64()).unwrap_or(0);
+                        let count = info.get("marketCount").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                        if !hash.is_empty() {
+                            map.insert(name.clone(), (hash, tick, lock, count));
+                        }
+                    }
+                    info!(count = map.len(), path, "Loaded static fallback configs");
+                    return map;
+                }
+            }
+        }
+    }
+    warn!("No static fallback configs found (vision-recommended-configs.json)");
+    HashMap::new()
+}
+
+/// Try to recover the last known config for a source from the DB (any age).
+async fn recover_last_config_from_db(
+    pool: &PgPool,
+    source_id: &str,
+    display_name: &str,
+) -> Option<BatchConfig> {
+    let row: Option<(Vec<u8>, serde_json::Value, i32, i32, i32, DateTime<Utc>)> = sqlx::query_as(
+        r#"
+        SELECT config_hash, markets, tick_duration_secs, lock_offset_secs, asset_count, created_at
+        FROM batch_configs
+        WHERE source_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(source_id)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    row.map(|(hash_bytes, markets_json, tick_dur, lock_off, _count, created_at)| {
+        let markets: Vec<BatchMarket> = serde_json::from_value(markets_json).unwrap_or_default();
+        BatchConfig {
+            source_id: source_id.to_string(),
+            display_name: display_name.to_string(),
+            config_hash: format!("0x{}", hex::encode(&hash_bytes)),
+            tick_duration_secs: tick_dur as u64,
+            lock_offset_secs: lock_off as u64,
+            markets,
+            created_at,
+        }
+    })
+}
+
 /// Run the batch engine. Recomputes all source configs every 60s.
 pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMeta]) {
     info!("BatchEngine started with {} sources", sources.len());
 
     // Load signed configs from DB (crash recovery)
     state.load_signed_from_db(&pool).await;
+
+    // Load static fallback configs for sources with no live data
+    let static_fallbacks = load_static_fallback_configs();
 
     // Initial delay — let sources complete first sync (5s on restart, uses DB data)
     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
@@ -606,6 +675,57 @@ pub async fn run(pool: PgPool, state: Arc<BatchEngineState>, sources: &[SourceMe
                 }
                 configs.push(config);
             }
+        }
+
+        // Fallback: for sources with no live config, try DB history then static file.
+        // This ensures all on-chain sources always appear in /batches/recommended.
+        let live_source_ids: std::collections::HashSet<String> =
+            configs.iter().map(|c| c.source_id.clone()).collect();
+
+        for &(source_id, display_name, sync_interval) in sources {
+            if live_source_ids.contains(source_id) {
+                continue;
+            }
+
+            // Try last known config from DB (any age)
+            if let Some(recovered) =
+                recover_last_config_from_db(&pool, source_id, display_name).await
+            {
+                info!(
+                    source = source_id,
+                    age_secs = (Utc::now() - recovered.created_at).num_seconds(),
+                    markets = recovered.markets.len(),
+                    "Recovered stale config from DB for missing source"
+                );
+                configs.push(recovered);
+                continue;
+            }
+
+            // Last resort: static fallback from vision-recommended-configs.json
+            if let Some((config_hash, tick_dur, lock_off, _count)) =
+                static_fallbacks.get(source_id)
+            {
+                info!(
+                    source = source_id,
+                    "Using static fallback config (no live or DB data)"
+                );
+                configs.push(BatchConfig {
+                    source_id: source_id.to_string(),
+                    display_name: display_name.to_string(),
+                    config_hash: config_hash.clone(),
+                    tick_duration_secs: *tick_dur,
+                    lock_offset_secs: *lock_off,
+                    markets: Vec::new(), // no market data available
+                    created_at: Utc::now(),
+                });
+                continue;
+            }
+
+            warn!(
+                source = source_id,
+                tick_secs = sync_interval,
+                "Source has no live data, no DB history, and no static fallback"
+            );
         }
 
         info!(

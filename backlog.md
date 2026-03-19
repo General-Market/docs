@@ -1,5 +1,12 @@
 # Design Decision Backlog
 
+## Session: 20260319-q8m1 (On-chain sources missing from recommended configs)
+
+- [DECISION] BatchEngine now falls back to DB history then static file for sources with no live data. Three-tier: live → last DB config → vision-recommended-configs.json. All on-chain sources always appear in /batches/recommended.
+- [DECISION] Dead code in `data-node/src/market_data/sources/weather/` (source_id="weather_stations") left untouched — it is never registered in mod.rs, never started. The actual weather source is `openmeteo/` (source_id="weather").
+- [DECISION] `backpacktf` is gated on `--backpacktf-api-key` CLI arg. If the key is absent, no data flows. Fallback config from DB or static file covers this gap.
+- [DECISION] `defi`, `spaceweather` need no API keys — if they're missing from recommended, it's runtime data freshness. Fallback covers the gap until fetchers recover.
+
 ## Session: 20260319-v7k3 (Vision leaderboard PnL dead + bot overhaul)
 
 - [FAILED] Old vision-bots.ts had hardcoded Vision contract `0x8Abd...` and WUSDC `0xcb6C...` — these are from a stale deployment. Active deployment uses `0xd5ec...` and `0x4c78...`. Bots were transacting with dead contracts.
