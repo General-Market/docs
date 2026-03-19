@@ -3,10 +3,10 @@
 //! Each batch has two slots: *pending* and *active*.
 //!
 //! - Players submit bitmaps into the **pending** slot.
-//! - At a tick boundary the engine calls `flip(batch_id)`, which promotes
-//!   every pending entry to active (clearing the previous active set for that
-//!   batch first).  Players who did not submit a new bitmap simply sit out the
-//!   next tick — their old active entry is gone after the flip.
+//! - At a tick boundary the engine calls `flip(batch_id)`, which merges
+//!   pending entries into active.  Players who submitted a new bitmap get
+//!   their active entry overwritten; players who did not submit keep their
+//!   existing active entry — their prediction persists across ticks.
 //! - Both maps live inside a single `RwLock<BitmapSlots>` to prevent
 //!   deadlock and to make flip() atomic.
 
@@ -133,19 +133,20 @@ impl BitmapStore {
             .unwrap_or_default()
     }
 
-    /// Promote all pending bitmaps for `batch_id` to active.
+    /// Merge pending bitmaps for `batch_id` into active.
     ///
-    /// 1. Remove every existing active entry for this batch.
-    /// 2. Move every pending entry for this batch into active.
-    ///
-    /// Players who submitted no pending bitmap sit out the tick — they have no
-    /// active entry after the flip.
+    /// Players who submitted a new bitmap get their active entry overwritten.
+    /// Players who did NOT submit keep their existing active entry — their
+    /// prediction persists across ticks until they explicitly change it.
     pub async fn flip(&self, batch_id: u64) {
         let mut guard = self.slots.write().await;
-        guard.active.remove(&batch_id);
         if let Some(pending_batch) = guard.pending.remove(&batch_id) {
-            guard.active.insert(batch_id, pending_batch);
+            let active = guard.active.entry(batch_id).or_default();
+            for (player, bitmap) in pending_batch {
+                active.insert(player, bitmap);
+            }
         }
+        // Active bitmaps persist for players who didn't re-submit.
     }
 
     /// Remove pending bitmaps for `batch_id` whose `target_tick_id` is older
@@ -213,10 +214,12 @@ impl BitmapStore {
         Ok(())
     }
 
-    /// Atomically promote all pending bitmaps for `batch_id` to active in the
-    /// DB and record the resolved tick id in `vision_batch_state`.
+    /// Merge pending bitmaps into active rows in the DB and record the
+    /// resolved tick id in `vision_batch_state`.
     ///
-    /// Mirrors the in-memory `flip()` logic but durable: survives a restart.
+    /// Mirrors the in-memory `flip()` merge logic: pending entries overwrite
+    /// their matching active rows (by player), but active rows without a
+    /// pending replacement are kept intact.
     pub async fn persist_flip_and_mark_resolved(
         &self,
         pool: &PgPool,
@@ -225,21 +228,31 @@ impl BitmapStore {
     ) -> Result<(), BitmapStoreError> {
         let mut tx = pool.begin().await.map_err(BitmapStoreError::Db)?;
 
-        // 1. Delete old active rows for this batch.
-        sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'active'")
-            .bind(batch_id as i64)
-            .execute(&mut *tx)
-            .await
-            .map_err(BitmapStoreError::Db)?;
-
-        // 2. Rename pending → active.
+        // 1. For each pending row, upsert into active (overwrite if exists,
+        //    insert if the player had no active entry). Existing active rows
+        //    for players without a pending replacement remain untouched.
         sqlx::query(
-            "UPDATE vision_bitmaps SET slot = 'active' WHERE batch_id = $1 AND slot = 'pending'",
+            "INSERT INTO vision_bitmaps (batch_id, player, bitmap, bitmap_hash, slot, target_tick_id, config_hash)
+             SELECT batch_id, player, bitmap, bitmap_hash, 'active', target_tick_id, config_hash
+             FROM vision_bitmaps
+             WHERE batch_id = $1 AND slot = 'pending'
+             ON CONFLICT (batch_id, player, slot) DO UPDATE SET
+                 bitmap         = EXCLUDED.bitmap,
+                 bitmap_hash    = EXCLUDED.bitmap_hash,
+                 target_tick_id = EXCLUDED.target_tick_id,
+                 config_hash    = EXCLUDED.config_hash",
         )
         .bind(batch_id as i64)
         .execute(&mut *tx)
         .await
         .map_err(BitmapStoreError::Db)?;
+
+        // 2. Remove pending rows now that they've been merged.
+        sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1 AND slot = 'pending'")
+            .bind(batch_id as i64)
+            .execute(&mut *tx)
+            .await
+            .map_err(BitmapStoreError::Db)?;
 
         // 3. Record the resolved tick id.
         sqlx::query(
@@ -442,10 +455,10 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
-    // A player who submits no pending bitmap sits out after flip
+    // A player who submits no pending bitmap persists in active
     // ------------------------------------------------------------------
     #[tokio::test]
-    async fn test_no_pending_means_sit_out() {
+    async fn test_no_pending_means_persist() {
         let store = BitmapStore::new();
         let player_a = Address::random();
         let player_b = Address::random();
@@ -467,19 +480,25 @@ mod tests {
 
         assert_eq!(store.get_all_active_for_batch(batch_id).await.len(), 2);
 
-        // Tick N+1: only player_a submits.
+        // Tick N+1: only player_a submits a new bitmap.
+        let bm_a2 = vec![0u8, 0, 1];
         store
-            .store_pending(player_a, batch_id, bm_a.clone(), make_hash(&bm_a), zero_config(), 6)
+            .store_pending(player_a, batch_id, bm_a2.clone(), make_hash(&bm_a2), zero_config(), 6)
             .await
             .unwrap();
         store.flip(batch_id).await;
 
+        // Both players remain active — player_b's old bitmap persists.
         let active = store.get_all_active_for_batch(batch_id).await;
-        assert_eq!(active.len(), 1, "player_b sat out — should not appear in active");
-        assert_eq!(active[0].player, player_a);
+        assert_eq!(active.len(), 2, "player_b persists — prediction carries across ticks");
 
-        // player_b is gone from active.
-        assert!(store.get_active(batch_id, player_b).await.is_none());
+        // player_a got the updated bitmap.
+        let a_active = store.get_active(batch_id, player_a).await.unwrap();
+        assert_eq!(a_active.bitmap, bm_a2);
+
+        // player_b kept the original bitmap.
+        let b_active = store.get_active(batch_id, player_b).await.unwrap();
+        assert_eq!(b_active.bitmap, bm_b);
     }
 
     // ------------------------------------------------------------------
