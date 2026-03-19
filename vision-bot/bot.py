@@ -166,10 +166,19 @@ def main():
         sys.exit(1)
 
     # Load deployment addresses
-    # Vision.sol now lives on L3, uses L3_WUSDC (18 decimals)
+    # Vision.sol now lives on L3, uses its own immutable USDC (may differ from L3_WUSDC)
     deploy = load_deployment()
     vision_addr = deploy["contracts"]["Vision"]
-    usdc_addr = deploy["contracts"]["L3_WUSDC"]
+    # Read USDC from the Vision contract (not deployment JSON — may differ after redeploy)
+    from web3 import Web3
+    _w3 = Web3(Web3.HTTPProvider(cfg["rpc_url"]))
+    _vision = _w3.eth.contract(address=Web3.to_checksum_address(vision_addr), abi=[{"name":"USDC","type":"function","stateMutability":"view","inputs":[],"outputs":[{"type":"address"}]}])
+    try:
+        usdc_addr = _vision.functions.USDC().call()
+        log.info("USDC from Vision contract: %s", usdc_addr)
+    except Exception:
+        usdc_addr = deploy["contracts"]["L3_WUSDC"]
+        log.warning("Falling back to L3_WUSDC from deployment: %s", usdc_addr)
     oracle_registry_addr = deploy["contracts"].get("OracleRegistry", "")
 
     executor = Executor(cfg["rpc_url"], private_key, vision_addr, usdc_addr, oracle_registry_addr)
