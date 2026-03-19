@@ -3,11 +3,14 @@
 import {
   motion,
   useReducedMotion,
+  useMotionValue,
+  useSpring,
+  useTransform,
   AnimatePresence,
   type Transition,
   type HTMLMotionProps,
 } from 'framer-motion'
-import { useRef, type ReactNode } from 'react'
+import { useRef, useEffect, type ReactNode } from 'react'
 
 // ── Spring Configs ──────────────────────────────────────────
 // Named presets. Every animation in the app pulls from here.
@@ -28,6 +31,9 @@ export const springs = {
 
   /** Tab indicators — fast, precise, slight bounce */
   indicator: { type: 'spring', stiffness: 500, damping: 30, mass: 0.6 } as const,
+
+  /** Financial values — smooth, no overshoot, institutional */
+  number: { type: 'spring', stiffness: 80, damping: 20, mass: 0.6 } as const,
 
   /** Page transitions — gentle, wide entrance */
   page: { type: 'spring', stiffness: 220, damping: 26, mass: 1.0 } as const,
@@ -184,13 +190,62 @@ export function SpringExpand({ children, isOpen, className }: SpringExpandProps)
 }
 
 
+// ── Glass Modal Tokens ──────────────────────────────────────
+// Shared class strings for the glass overlay modal system.
+// Import these in any modal file for consistent styling.
+
+export const glass = {
+  /** Modal backdrop — Apple-style frosted overlay */
+  backdrop: 'fixed inset-0 glass-overlay flex items-center justify-center z-50 p-4',
+  /** Modal panel — heavy blur + saturation, 78% opacity */
+  modal: 'glass-panel rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto',
+  /** Subtle section surface */
+  section: 'glass-surface rounded-xl',
+  input: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/5 focus:outline-none transition-colors disabled:opacity-50',
+  inputSm: 'w-full bg-white/80 border border-black/10 rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums placeholder:text-text-muted/60 focus:border-black/25 focus:ring-2 focus:ring-black/5 focus:outline-none transition-colors',
+  success: 'bg-emerald-50/80 border border-emerald-200/60 rounded-xl',
+  error: 'bg-red-50/80 border border-red-200/60 rounded-xl',
+  warning: 'bg-amber-50/80 border border-amber-200/60 rounded-xl',
+  ctaUp: 'w-full py-4 bg-color-up text-white font-medium rounded-xl hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all fluid-press',
+  ctaDown: 'w-full py-4 bg-color-down text-white font-medium rounded-xl hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all fluid-press',
+  ctaSecondary: 'w-full py-3 bg-black/[0.04] text-text-primary font-medium rounded-xl border border-black/[0.06] hover:bg-black/[0.07] transition-colors',
+  cancel: 'w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors',
+  label: 'text-xs font-medium uppercase tracking-[0.08em] text-text-muted',
+  spinner: 'w-5 h-5 border-2 border-black/10 border-t-black/60 rounded-full animate-spin',
+} as const
+
+
+// ── ModalClose ──────────────────────────────────────────────
+// Proper close button — round, subtle, accessible.
+
+interface ModalCloseProps {
+  onClick: () => void
+  className?: string
+}
+
+export function ModalClose({ onClick, className }: ModalCloseProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-8 h-8 flex items-center justify-center rounded-full bg-black/5 hover:bg-black/10 text-text-muted hover:text-text-primary transition-colors ${className ?? ''}`}
+      aria-label="Close"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  )
+}
+
+
 // ── SpringModal ─────────────────────────────────────────────
 // Modal entrance with scale + translateY spring.
 // Pairs with SpringBackdrop for the overlay.
 //
 // Usage:
-//   <SpringBackdrop onClick={onClose} />
-//   <SpringModal className="modal-box">...</SpringModal>
+//   <SpringBackdrop className={glass.backdrop} onClick={onClose}>
+//     <SpringModal className={`${glass.modal} max-w-md w-full`}>...</SpringModal>
+//   </SpringBackdrop>
 
 type SpringModalProps = Omit<HTMLMotionProps<'div'>, 'initial' | 'animate' | 'exit' | 'transition'> & {
   children: ReactNode
@@ -407,4 +462,37 @@ export function SpringCard({ children, className, ...rest }: SpringCardProps) {
       {children}
     </motion.div>
   )
+}
+
+
+// ── SpringNumber ────────────────────────────────────────────
+// Animated numerical display with spring interpolation.
+// When the value changes, the displayed number glides to the
+// new value. Financial data that breathes — not jumps.
+//
+// Usage:
+//   <SpringNumber value={1234.56} format={n => `$${n.toFixed(2)}`} />
+//   <SpringNumber value={nav} format={n => `$${n.toFixed(4)}`} className="font-mono" />
+
+interface SpringNumberProps {
+  value: number
+  format?: (n: number) => string
+  className?: string
+}
+
+export function SpringNumber({ value, format, className }: SpringNumberProps) {
+  const reduced = useReducedMotion()
+  const mv = useMotionValue(value)
+  const spring = useSpring(mv, springs.number)
+  const display = useTransform(spring, (v: number) => format ? format(v) : v.toFixed(2))
+
+  useEffect(() => {
+    mv.set(value)
+  }, [value, mv])
+
+  if (reduced) {
+    return <span className={className}>{format ? format(value) : value.toFixed(2)}</span>
+  }
+
+  return <motion.span className={className}>{display}</motion.span>
 }

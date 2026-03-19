@@ -12,7 +12,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="explorer-glass-card bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-3">
+          <div key={i} className="explorer-glass-card glass-surface-dark rounded-xl p-3">
             <div className="h-3 bg-white/[0.06] rounded w-20 mb-2 animate-pulse" />
             <div className="h-5 bg-white/[0.06] rounded w-12 animate-pulse" />
           </div>
@@ -23,7 +23,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
 
   if (!latest) {
     return (
-      <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-4 text-center">
+      <div className="glass-surface-dark rounded-xl p-4 text-center">
         <p className="text-caption text-white/40">No data available yet</p>
       </div>
     )
@@ -74,7 +74,7 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
       {items.map((item) => (
         <div
           key={item.label}
-          className="explorer-glass-card bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-3 hover:border-white/[0.15] transition-[border-color] duration-300"
+          className="explorer-glass-card glass-surface-dark rounded-xl p-3 hover:border-white/[0.15] transition-[border-color] duration-300"
         >
           <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">
             {item.label}

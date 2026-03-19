@@ -12,7 +12,8 @@ import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { ITP_PAGE_CONTENT } from '@/lib/itp-page-content'
-import { SpringCard } from '@/components/ui/spring'
+import { SpringCard, SpringNumber } from '@/components/ui/spring'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface ItpRow {
   itpId: string
@@ -164,6 +165,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null)
 
   const rows = useMemo(() => navSnapshotsToRows(navList), [navList])
+  const totalAum = useMemo(() => rows.reduce((sum, r) => sum + r.aum, 0), [rows])
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, Set<CategoryId>>()
@@ -227,6 +229,9 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
   // Reset to page 0 when search/sort changes
   useEffect(() => { setPage(0) }, [deferredSearch, sortKey, sortDir, activeCategory])
 
+  const reduced = useReducedMotion()
+  const staggerKey = `${activeCategory}-${sortKey}-${sortDir}-${page}-${deferredSearch}`
+
   const SortArrow = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return null
     return (
@@ -253,6 +258,22 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
           <p className="text-subhead text-text-secondary max-w-[600px]">
             {t('hero.description')}
           </p>
+          {rows.length > 0 && (
+            <div className="flex gap-10 mt-5 pt-5 border-t border-border-light">
+              <div>
+                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Total Net Assets</div>
+                <SpringNumber
+                  value={totalAum}
+                  format={formatNetAssets}
+                  className="text-heading font-black font-mono tabular-nums text-black"
+                />
+              </div>
+              <div>
+                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">Funds</div>
+                <div className="text-heading font-black font-mono tabular-nums text-black">{rows.length}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -346,48 +367,51 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
             <div className="overflow-x-auto -mx-6 px-6 lg:-mx-0 lg:px-0">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-[#f5f5f5] border-y border-[#ddd]">
+                  <tr className="border-b-[3px] border-black">
                     <th
                       onClick={() => handleSort('ticker')}
-                      className="py-2.5 px-4 text-left text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
+                      className="py-3 px-4 text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
                       Ticker<SortArrow col="ticker" />
                     </th>
                     <th
                       onClick={() => handleSort('name')}
-                      className="py-2.5 px-4 text-left text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
+                      className="py-3 px-4 text-left text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
                       Name<SortArrow col="name" />
                     </th>
-                    <th className="py-2.5 px-2 w-8"></th>
+                    <th className="py-3 px-2 w-8"></th>
                     <th
                       onClick={() => handleSort('nav')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
+                      className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
                       NAV<SortArrow col="nav" />
                     </th>
                     <th
                       onClick={() => handleSort('aum')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
+                      className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
                       Net Assets<SortArrow col="aum" />
                     </th>
                     <th
                       onClick={() => handleSort('shares')}
-                      className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] cursor-pointer select-none whitespace-nowrap hover:text-[#222]"
+                      className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary cursor-pointer select-none whitespace-nowrap hover:text-text-primary transition-colors"
                     >
                       Shares Outstanding<SortArrow col="shares" />
                     </th>
-                    <th className="py-2.5 px-4 text-right text-label font-semibold uppercase tracking-[0.05em] text-[#555] whitespace-nowrap">
+                    <th className="py-3 px-4 text-right text-label font-bold uppercase tracking-[0.08em] text-text-secondary whitespace-nowrap">
                       Trade
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody key={staggerKey}>
                   {paginated.map((row, idx) => (
-                    <tr
+                    <motion.tr
                       key={row.itpId}
                       id={`itp-card-${row.itpId}`}
+                      initial={reduced ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={reduced ? { duration: 0 } : { duration: 0.4, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
                       className={`border-b border-[#eee] hover:bg-[#f0f7f4] transition-colors ${
                         idx % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'
                       }`}
@@ -422,15 +446,19 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       </td>
                       {/* NAV */}
                       <td className="py-3 px-4 text-right">
-                        <span className="text-caption font-mono tabular-nums text-text-primary">
-                          ${row.navPerShare.toFixed(4)}
-                        </span>
+                        <SpringNumber
+                          value={row.navPerShare}
+                          format={n => `$${n.toFixed(4)}`}
+                          className="text-caption font-mono tabular-nums text-text-primary"
+                        />
                       </td>
                       {/* Net Assets */}
                       <td className="py-3 px-4 text-right">
-                        <span className="text-caption font-mono tabular-nums text-text-primary">
-                          {formatNetAssets(row.aum)}
-                        </span>
+                        <SpringNumber
+                          value={row.aum}
+                          format={formatNetAssets}
+                          className="text-caption font-mono tabular-nums text-text-primary"
+                        />
                       </td>
                       {/* Shares Outstanding */}
                       <td className="py-3 px-4 text-right">
@@ -454,7 +482,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                           Sell
                         </WalletActionButton>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>

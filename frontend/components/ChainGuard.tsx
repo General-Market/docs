@@ -103,7 +103,7 @@ export function ChainGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center glass-overlay">
         <div className="border border-border-light bg-card rounded-xl shadow-modal p-8 max-w-md text-center">
           <div className="text-color-warning text-xl font-semibold mb-4">Wrong Network</div>
           <p className="text-text-secondary text-sm mb-2">

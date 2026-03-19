@@ -6,7 +6,7 @@ import { useAccount } from 'wagmi'
 import { exportChartAsImage, downloadBlob } from '@/lib/chartExport'
 import { getTweetText, buildTweetIntentUrl } from '@/lib/tweetTemplates'
 import { useToast } from '@/lib/contexts/ToastContext'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 interface TweetGateModalProps {
   onClose: () => void
@@ -115,16 +115,13 @@ export default function TweetGateModal({
   const canConfirm = tweetOpened && countdown <= 0 && !unlocking
 
   return (
-    <SpringBackdrop
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full"
+        className={`${glass.modal} max-w-md w-full`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border-light">
+        <div className="flex items-center justify-between p-5 border-b border-black/[0.06]">
           <div>
             <h3 className="text-lg font-semibold text-text-primary">
               {t('gate.title')}
@@ -133,12 +130,7 @@ export default function TweetGateModal({
               {t('gate.subtitle')}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-text-muted hover:text-text-primary text-2xl leading-none"
-          >
-            &times;
-          </button>
+          <ModalClose onClick={onClose} />
         </div>
 
         {/* Tweet preview */}
@@ -149,7 +141,7 @@ export default function TweetGateModal({
             </p>
           ) : (
             <>
-              <div className="bg-surface rounded-lg p-4 text-sm text-text-primary whitespace-pre-line border border-border-light">
+              <div className={`${glass.section} p-4 text-sm text-text-primary whitespace-pre-line`}>
                 {tweetText}
               </div>
 
@@ -158,7 +150,7 @@ export default function TweetGateModal({
                 <img
                   src={imagePreviewUrl}
                   alt={t('gate.chart_alt')}
-                  className="w-full rounded-lg border border-border-light"
+                  className="w-full rounded-xl border border-black/[0.06]"
                 />
               )}
 
@@ -167,13 +159,13 @@ export default function TweetGateModal({
                 <button
                   onClick={handleDownloadImage}
                   disabled={!imageReady}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border border-border-light text-text-primary hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl border border-black/[0.06] text-text-primary bg-black/[0.03] hover:bg-black/[0.06] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('gate.download_image')}
                 </button>
                 <button
                   onClick={handleOpenTweet}
-                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl bg-black/80 text-white hover:bg-black/70 transition-colors"
                 >
                   {t('gate.open_x')}
                 </button>
@@ -184,7 +176,7 @@ export default function TweetGateModal({
                 <button
                   onClick={handleConfirm}
                   disabled={!canConfirm}
-                  className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-semibold rounded-xl bg-black/80 text-white hover:bg-black/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {unlocking
                     ? 'Sign with wallet...'

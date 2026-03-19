@@ -371,29 +371,50 @@ export default function BatchEntryPanel({
           </div>
         </div>
 
-        {/* Active position indicator + claim/withdraw */}
-        {isJoined && position && (
-          <div className="mb-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-emerald-700">Active position</span>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-emerald-700">
-                  {parseFloat(formatUnits(position.balance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+        {/* Active position — balance, PnL, withdraw */}
+        {isJoined && position && (() => {
+          const balance = position.balance
+          const deposited = position.totalDeposited
+          const claimed = position.totalClaimed
+          const pnl = balance - deposited + claimed
+          const pnlPercent = deposited > 0n
+            ? Number((pnl * 10000n) / deposited) / 100
+            : 0
+          const balanceNum = parseFloat(formatUnits(balance, VISION_USDC_DECIMALS))
+          const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
+          const isUp = pnl > 0n
+          const isDown = pnl < 0n
+          const canWithdraw = activeBatch && BigInt(activeBatch.currentTick) > position.startTick
+
+          return (
+            <div className="mb-3 border border-neutral-200 bg-neutral-50 px-3 py-2.5">
+              {/* Balance row */}
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">Position</span>
+                <span className="text-[15px] font-bold font-mono text-neutral-900 tabular-nums">
+                  {balanceNum.toFixed(2)} <span className="text-[10px] font-medium text-neutral-400">USDC</span>
                 </span>
-                {/* Only show withdraw after at least one tick has resolved since joining */}
-                {activeBatch && BigInt(activeBatch.currentTick) > position.startTick && (
-                  <button
-                    type="button"
-                    onClick={() => setShowClaimModal(true)}
-                    className="px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-100 transition-colors"
-                  >
-                    Withdraw
-                  </button>
-                )}
               </div>
+              {/* PnL row */}
+              <div className="flex items-baseline justify-between mt-1">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400">PnL</span>
+                <span className={`text-[13px] font-bold font-mono tabular-nums ${isUp ? 'text-color-up' : isDown ? 'text-color-down' : 'text-neutral-500'}`}>
+                  {isUp ? '+' : ''}{pnlNum.toFixed(2)} <span className="text-[10px]">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
+                </span>
+              </div>
+              {/* Withdraw button */}
+              {canWithdraw && (
+                <button
+                  type="button"
+                  onClick={() => setShowClaimModal(true)}
+                  className="mt-2.5 w-full rounded border border-neutral-300 bg-white py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:border-neutral-400 transition-colors"
+                >
+                  Withdraw
+                </button>
+              )}
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {/* Error display — with dismiss to reset state for retry */}
         {displayError && (

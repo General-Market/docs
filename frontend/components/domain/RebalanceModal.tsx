@@ -12,7 +12,7 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, SETTLEMENT_RPC_URL as SETTLEMENT_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 const L3_INDEX = INDEX_PROTOCOL.index
 
@@ -493,29 +493,29 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
   const isWorking = status === 'requesting' || status === 'confirming' || status === 'executing'
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className={`${glass.modal} max-w-lg w-full`}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('rebalance.title', { name: itpName })}</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
           <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('rebalance.itp_id_label')} {itpId}</p>
 
           {loading ? (
             <div className="text-center py-8 text-text-muted">{t('rebalance.loading')}</div>
           ) : status === 'error' && assets.length === 0 ? (
-            <div className="bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm">
+            <div className={`${glass.error} p-3 text-color-down text-sm`}>
               {errorMsg}
             </div>
           ) : (
             <>
               {/* Add asset search bar */}
-              <div className="bg-muted border border-border-light rounded-lg p-3 mb-4">
+              <div className={`${glass.section} p-3 mb-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-text-secondary">{t('rebalance.add_asset_label', { count: assets.length, available: availableAssets.length })}</span>
                 </div>
@@ -524,7 +524,7 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={t('rebalance.search_placeholder')}
-                  className="w-full bg-card border border-border-medium rounded-lg px-3 py-1.5 text-sm text-text-primary focus:border-zinc-600 focus:outline-none mb-2"
+                  className={`${glass.inputSm} text-sm mb-2`}
                   disabled={isWorking || status === 'success'}
                 />
                 {filteredSearch.length > 0 && (
@@ -565,10 +565,10 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
               </div>
 
               {/* Weight sum indicator */}
-              <div className={`flex justify-between items-center mb-3 p-2 rounded text-sm font-mono ${
+              <div className={`flex justify-between items-center mb-3 p-2 text-sm font-mono ${
                 isValid
-                  ? 'bg-surface-up border border-color-up/30 text-color-up'
-                  : 'bg-surface-down border border-color-down/30 text-color-down'
+                  ? `${glass.success} text-color-up`
+                  : `${glass.error} text-color-down`
               }`}>
                 <span>{t('rebalance.weight_sum')}</span>
                 <span>{weightSum.toFixed(2)}%</span>
@@ -654,13 +654,13 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
               )}
 
               {status === 'error' && errorMsg && (
-                <div className="mt-4 bg-surface-down border border-color-down/30 rounded-lg p-3 text-color-down text-sm break-all">
+                <div className={`mt-4 ${glass.error} p-3 text-color-down text-sm break-all`}>
                   {errorMsg}
                 </div>
               )}
 
               {status === 'success' && (
-                <div className="mt-4 bg-surface-up border border-color-up/30 rounded-lg p-3 text-color-up text-sm">
+                <div className={`mt-4 ${glass.success} p-3 text-color-up text-sm`}>
                   <p className="font-medium mb-1">{t('rebalance.success.title')}</p>
                   <p className="text-xs font-mono break-all text-color-up/70">{t('rebalance.success.l3_tx')} {txHash}</p>
                 </div>

@@ -16,8 +16,7 @@ export function ExplorerChartCard({ title, subtitle, loading, children, classNam
       className={`
         explorer-glass-card
         relative overflow-hidden rounded-xl p-5
-        bg-white/[0.04] backdrop-blur-xl
-        border border-white/[0.08]
+        glass-surface-dark
         transition-[border-color,box-shadow] duration-300
         hover:border-white/[0.15]
         hover:shadow-[0_0_40px_-8px_rgba(255,255,255,0.05)]

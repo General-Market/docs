@@ -29,7 +29,7 @@ const PREFIX_CATEGORIES: [RegExp, string, string][] = [
   [/^(btc|eth|sol|bnb|ada|xrp|dot|avax|matic|link|uni|aave|comp|mkr|crv|snx|sushi|yfi|1inch|bal|ren|lrc|enj|mana|sand|axs|gala|ilv|chr|alice|tlm|gmt|ape|imx|ldo|rpl|frax|spell|cvx|fxs|ohm|joe|time|wmemo|mim|crv|spell)/i, 'crypto', 'Crypto'],
   [/^(stocks?_|equity_|share_|nasdaq_|nyse_|sp500_|dowjones_|finnhub_)/i, 'stocks', 'Stocks'],
   [/^(defi_|tvl_|protocol_|chain_tvl|dex_)/i, 'defi', 'DeFi'],
-  [/^(rates?_|fred_|treasury_|bond_|yield_|fed_|ecb_|bls_|cpi_|pce_|gdp_|unemployment_)/i, 'economic', 'Economic'],
+  [/^(rates?_|fred_|treasury_|bond_|yield_|fed_|ecb_|boe_|bls_|cpi_|pce_|gdp_|unemployment_)/i, 'economic', 'Economic'],
   [/^(congress_|sec_|finra_|court_|legal_|law_)/i, 'regulatory', 'Regulatory'],
   [/^(github_|npm_|pypi_|crates_|package_|repo_|commit_)/i, 'tech', 'Tech'],
   [/^(twitch_|steam_|anilist_|tmdb_|lastfm_|backpacktf_|fourchan_)/i, 'entertainment', 'Entertainment'],

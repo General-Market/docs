@@ -61,6 +61,8 @@ export default function PointsPageClient() {
 
   const totalBatches = allBatches?.length ?? 0
   const coveragePercent = totalBatches > 0 ? Math.round((activeBatches / totalBatches) * 100) : 0
+  const totalMarkets = allBatches?.reduce((s, b) => s + b.marketCount, 0) ?? 0
+  const dailyEmission = allBatches?.reduce((s, b) => s + (b.tickDuration > 0 ? 100 * 86400 / b.tickDuration : 0), 0) ?? 0
 
   const ROWS_PER_PAGE = 10
 
@@ -171,7 +173,7 @@ export default function PointsPageClient() {
                   {
                     step: '01',
                     title: 'Join batches',
-                    desc: 'Each of the 100 prediction batches emits 100 points every tick (~10 min). That\'s 1.44M points distributed daily across all batches.',
+                    desc: `Each of the ${totalBatches} prediction sources emits 100 points every tick. Tick durations vary by source — from 1 minute to 24 hours. That\u2019s ~${formatPoints(dailyEmission)} points distributed daily.`,
                   },
                   {
                     step: '02',
@@ -217,23 +219,23 @@ export default function PointsPageClient() {
                   <div className="text-[22px] font-black text-black font-mono">100</div>
                 </div>
                 <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Ticks / Day</div>
-                  <div className="text-[22px] font-black text-black font-mono">144</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Sources</div>
+                  <div className="text-[22px] font-black text-black font-mono">{totalBatches}</div>
                 </div>
                 <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Batches</div>
-                  <div className="text-[22px] font-black text-black font-mono">{totalBatches}</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Markets</div>
+                  <div className="text-[22px] font-black text-black font-mono">{totalMarkets.toLocaleString()}</div>
                 </div>
                 <div className="p-4">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total / Day</div>
-                  <div className="text-[22px] font-black text-black font-mono">1.44M</div>
+                  <div className="text-[22px] font-black text-black font-mono">~{formatPoints(dailyEmission)}</div>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border border-border-light p-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vision (Prediction Markets)</div>
                   <p className="text-[13px] text-text-secondary leading-relaxed">
-                    100 batches across 25,000+ markets. Each batch emits 100 pts every 10 minutes. Earn by depositing USDC into any batch — your share of the pool determines your points.
+                    {totalBatches} sources across {totalMarkets.toLocaleString()} markets. Each source emits 100 pts per tick. Earn by depositing USDC into any batch — your share of the pool determines your points.
                   </p>
                 </div>
                 <div className="border border-border-light p-4">

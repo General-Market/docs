@@ -19,7 +19,7 @@ import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import itpIdNames from '@/lib/itp-id-names.json'
 import Link from 'next/link'
 
@@ -73,13 +73,13 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
   }
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-white border border-border-light rounded-md max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-modal relative"
+        className={`${glass.modal} max-w-4xl w-full relative`}
         onClick={e => e.stopPropagation()}
       >
         <div className="px-4 sm:px-6 pb-6">
-          <button onClick={onClose} className="absolute top-4 right-4 text-text-muted hover:text-text-primary text-2xl">&times;</button>
+          <ModalClose onClick={onClose} className="absolute top-4 right-4" />
           {lendContent}
         </div>
       </SpringModal>
@@ -145,7 +145,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-border-light">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-black/[0.06] rounded-xl overflow-hidden">
         <StatCell label={t('stats.vault_tvl')} value={vaultTvl} />
         <StatCell label={t('stats.supply_apy')} value={`${supplyApy.toFixed(2)}%`} color="text-color-up" />
         <StatCell label={t('stats.borrow_apy')} value={`${borrowApy.toFixed(2)}%`} />
@@ -155,8 +155,8 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       {/* Two-column: Supply | Borrow */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* LEFT — Supply / USDC Vault */}
-        <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
+        <div className="border border-black/[0.06] rounded-xl overflow-hidden">
+          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
             {t('supply_panel.title')}
           </div>
           <div className="p-5 space-y-4">
@@ -170,7 +170,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
                 onClick={() => toggleAction('deposit')}
                 className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
                   activeAction === 'deposit'
-                    ? 'bg-terminal text-white'
+                    ? 'bg-black/80 text-white'
                     : 'bg-brand text-white hover:bg-brand-dark'
                 }`}
               >
@@ -180,8 +180,8 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
                 onClick={() => toggleAction('withdraw')}
                 className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
                   activeAction === 'withdraw'
-                    ? 'bg-muted border-black text-text-primary'
-                    : 'border-border-medium text-text-primary hover:bg-muted'
+                    ? 'bg-black/[0.05] border-black/20 text-text-primary'
+                    : 'border-black/10 text-text-primary hover:bg-black/[0.04]'
                 }`}
               >
                 {t('actions.withdraw')}
@@ -203,8 +203,8 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
         </div>
 
         {/* RIGHT — Borrow / Against ITP */}
-        <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
+        <div className="border border-black/[0.06] rounded-xl overflow-hidden">
+          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
             {t('borrow_panel.title')}
           </div>
           <div className="p-5 space-y-4">
@@ -218,7 +218,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
                 onClick={() => toggleAction('borrow')}
                 className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] transition-colors ${
                   activeAction === 'borrow'
-                    ? 'bg-terminal text-white'
+                    ? 'bg-black/80 text-white'
                     : 'bg-brand text-white hover:bg-brand-dark'
                 }`}
               >
@@ -228,8 +228,8 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
                 onClick={() => toggleAction('repay')}
                 className={`py-2.5 font-bold text-caption uppercase tracking-[0.08em] border transition-colors ${
                   activeAction === 'repay'
-                    ? 'bg-muted border-black text-text-primary'
-                    : 'border-border-medium text-text-primary hover:bg-muted'
+                    ? 'bg-black/[0.05] border-black/20 text-text-primary'
+                    : 'border-black/10 text-text-primary hover:bg-black/[0.04]'
                 }`}
               >
                 {t('actions.repay')}
@@ -502,15 +502,15 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
 
   return (
     <div>
-      <div className="bg-black text-white px-5 py-3">
+      <div className="bg-black/90 text-white px-5 py-3 rounded-t-xl">
         <p className="text-micro font-semibold uppercase tracking-[0.08em] mb-0.5">{t('markets_table.section_label')}</p>
         <p className="text-body font-bold">{t('markets_table.section_title')}</p>
       </div>
 
-      <div className="border border-border-light border-t-0 overflow-x-auto">
+      <div className="border border-black/[0.06] border-t-0 rounded-b-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted border-b border-border-light">
+            <tr className="text-label font-semibold uppercase tracking-[0.08em] text-text-muted border-b border-black/[0.06]">
               <th className="text-left px-3 sm:px-4 py-3">{t('markets_table.header.market')}</th>
               <th className="text-right px-3 sm:px-4 py-3 hidden sm:table-cell">{t('markets_table.header.my_balance')}</th>
               <th className="text-right px-3 sm:px-4 py-3">{t('markets_table.header.borrow_apy')}</th>
@@ -530,7 +530,7 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.collateralToken} className="border-b border-border-light last:border-0 hover:bg-muted/30 transition-colors">
+                <tr key={row.collateralToken} className="border-b border-black/[0.04] last:border-0 hover:bg-black/[0.02] transition-colors">
                   <td className="px-3 sm:px-4 py-3">
                     {row.itpId ? (
                       <Link href={`/itp/${row.itpId}`} className="flex items-center gap-2 group">
@@ -580,14 +580,14 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
 
 /* ── Skeleton ── */
 function Bone({ w = 'w-20', h = 'h-4' }: { w?: string; h?: string }) {
-  return <div className={`${w} ${h} bg-border-light rounded animate-pulse`} />
+  return <div className={`${w} ${h} bg-black/[0.06] rounded animate-pulse`} />
 }
 
 function LendSkeleton() {
   return (
     <div className="space-y-6">
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-border-light">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-black/[0.06] rounded-xl overflow-hidden">
         {['Vault TVL', 'Supply APY', 'Borrow APY', 'Utilization'].map((label, idx) => (
           <div key={label} className="px-5 py-4 border-b lg:border-b-0 border-r border-border-light last:border-r-0">
             <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-2">{label}</p>
@@ -599,8 +599,8 @@ function LendSkeleton() {
       {/* Two-column panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {/* Supply */}
-        <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
+        <div className="border border-black/[0.06] rounded-xl overflow-hidden">
+          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
             Supply — USDC Vault
           </div>
           <div className="p-5 space-y-4">
@@ -617,8 +617,8 @@ function LendSkeleton() {
           </div>
         </div>
         {/* Borrow */}
-        <div className="border border-border-light">
-          <div className="bg-black text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em]">
+        <div className="border border-black/[0.06] rounded-xl overflow-hidden">
+          <div className="bg-black/90 text-white px-5 py-3 text-caption font-bold uppercase tracking-[0.08em] rounded-t-xl">
             Borrow — Against ITP
           </div>
           <div className="p-5 space-y-4">
@@ -638,11 +638,11 @@ function LendSkeleton() {
 
       {/* Markets table skeleton */}
       <div>
-        <div className="bg-black text-white px-5 py-3">
+        <div className="bg-black/90 text-white px-5 py-3 rounded-t-xl">
           <Bone w="w-28" h="h-3" />
           <div className="mt-1"><Bone w="w-44" h="h-5" /></div>
         </div>
-        <div className="border border-border-light border-t-0 p-5 space-y-3">
+        <div className="border border-black/[0.06] border-t-0 rounded-b-xl p-5 space-y-3">
           {[0, 1, 2].map(i => (
             <div key={i} className="flex justify-between">
               <Bone w="w-24" h="h-4" />

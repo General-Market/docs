@@ -212,7 +212,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
               className="max-w-[90%] object-contain"
               style={{ maxHeight: logoSize.maxH }}
             />
-            <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded bg-black/55 text-white/90 backdrop-blur-sm">
+            <span className="absolute top-2.5 right-2.5 text-micro font-bold tracking-[0.08em] uppercase px-2 py-0.5 rounded glass-badge text-white/90">
               {getCategoryLabel(source.category).toUpperCase()}
             </span>
           </div>

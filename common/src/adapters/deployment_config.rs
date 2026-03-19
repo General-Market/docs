@@ -7,12 +7,12 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use ethers::types::Address;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
 
 /// Deployment configuration matching the `deployments/*.json` format
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeploymentConfig {
     pub chain_id: u64,
@@ -57,7 +57,7 @@ impl DeploymentConfig {
     }
 
     /// Get a contract address by name
-    fn get_contract_address(&self, name: &str) -> Result<Address, Error> {
+    pub fn get_contract_address(&self, name: &str) -> Result<Address, Error> {
         let addr_str = self.contracts.get(name).ok_or_else(|| {
             Error::NotFound(format!("Contract '{}' not found in deployment config", name))
         })?;

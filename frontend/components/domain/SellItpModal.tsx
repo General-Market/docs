@@ -18,7 +18,7 @@ import { useToast } from '@/lib/contexts/ToastContext'
 import { YouTubeLite, extractYouTubeId } from '@/components/ui/YouTubeLite'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { indexL3 } from '@/lib/wagmi'
 
 /**
@@ -430,7 +430,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
     const proceeds = usdcProceeds ?? ((fillAmount * fillPrice) / BigInt(1e18))
 
     return (
-      <div className="bg-muted border border-border-light rounded-xl p-4 space-y-2">
+      <div className={`${glass.section} p-4 space-y-2`}>
         <p className="text-sm font-semibold text-text-primary">{t('fill_details.title')}</p>
         <div className="text-xs font-mono space-y-1">
           <div className="flex justify-between">
@@ -464,12 +464,12 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
   }
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
-      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className={glass.backdrop} onClick={handleClose}>
+      <SpringModal className={`${glass.modal} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('title', { name: itpName })}</h2>
-            <button onClick={handleClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={handleClose} />
           </div>
           {itpSymbol && <p className="text-text-secondary mb-1 font-mono">${itpSymbol}</p>}
           <p className="text-xs text-text-muted font-mono mb-4 break-all">{t('itp_id_label')} {itpId}</p>
@@ -485,7 +485,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
           })()}
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">{tc('wallet.connect_to_sell')}</p>
             </div>
           ) : micro >= 0 ? (
@@ -502,7 +502,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {renderFillDetails()}
 
               {isDone && l3UsdcBalance > 0n && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className={`${glass.section} p-4`}>
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-1">{t('usdc_balance_label')}</p>
                   <p className="text-2xl font-bold text-text-primary tabular-nums font-mono">{formatUnits(l3UsdcBalance, COLLATERAL_DECIMALS)} USDC</p>
                 </div>
@@ -511,28 +511,28 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
               {isDone ? (
                 <button
                   onClick={handleReset}
-                  className="w-full py-3 bg-color-down text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  className={glass.ctaDown}
                 >
                   {t('sell_more')}
                 </button>
               ) : micro <= SellMicro.SUBMIT ? (
                 <button
                   onClick={handleCancel}
-                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                  className={glass.cancel}
                 >
                   {tc('actions.cancel')}
                 </button>
               ) : null}
 
               {stuckWarning && (
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
                   <p className="font-medium">{tc('warnings.tx_stuck_title')}</p>
                   <p className="text-xs mt-1">{tc('warnings.tx_stuck_description')}</p>
                 </div>
               )}
 
               {txError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">{t('error.title')}</p>
                   <p className="text-sm mt-1 break-all">{txError}</p>
                 </div>
@@ -540,23 +540,23 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
+              <div className={`${glass.section} p-4 flex justify-between items-center`}>
                 <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('your_shares_label')}</span>
                 <span className="text-2xl font-bold text-text-primary tabular-nums font-mono">{parseFloat(formatUnits(userShares, 18)).toFixed(4)}</span>
               </div>
 
               {userShares === 0n ? (
-                <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+                <div className={`${glass.section} p-8 text-center`}>
                   <p className="text-text-secondary">{t('no_shares')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
+                  <div className={`${glass.section} p-4`}>
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('shares_to_sell_label')}</label>
                       <button
                         onClick={() => setAmount(formatUnits(userShares, 18))}
-                        className="text-xs text-zinc-700 hover:text-zinc-900"
+                        className="text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors"
                       >
                         {tc('actions.max')}
                       </button>
@@ -568,14 +568,14 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder="e.g., 10"
                       min="0"
                       step="0.01"
-                      className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                      className={glass.input}
                     />
                     {insufficientShares && (
                       <p className="text-color-down text-xs mt-1">{t('insufficient_shares')}</p>
                     )}
                   </div>
 
-                  <div className="bg-muted border border-border-light rounded-xl p-4">
+                  <div className={`${glass.section} p-4`}>
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('min_price_label')}</label>
                       {navPerShare > 0 && (
@@ -591,7 +591,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                       placeholder={isNavLoading ? t('computing_price') : navPerShare === 0 ? t('set_min_price') : t('no_limit')}
                       min="0"
                       step="0.01"
-                      className="w-full bg-card border border-border-medium rounded-lg px-4 py-2 text-text-primary font-mono tabular-nums focus:border-zinc-600 focus:outline-none"
+                      className={glass.inputSm}
                     />
                   </div>
 
@@ -610,7 +610,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                     </button>
                   </div>
                   {showSlippage && (
-                    <div className="bg-muted border border-border-light rounded-xl p-4">
+                    <div className={`${glass.section} p-4`}>
                       <label className="block text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-3">{t('slippage_label')}</label>
                       <div className="flex gap-2 fluid-btn-group">
                         {SLIPPAGE_TIERS.map(tier => (
@@ -619,8 +619,8 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                             onClick={() => setSlippageTier(tier.value)}
                             className={`flex-1 py-2 rounded-lg border text-sm font-mono transition-colors ${
                               slippageTier === tier.value
-                                ? 'border-zinc-900 text-white bg-zinc-900'
-                                : 'border-border-medium text-text-muted hover:border-zinc-500'
+                                ? 'border-black/80 text-white bg-black/80'
+                                : 'border-black/10 text-text-muted bg-white/60 hover:border-black/20'
                             }`}
                           >
                             {tier.label}
@@ -632,7 +632,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
 
                   {/* P&L Preview */}
                   {parsedAmount > 0n && costBasis && costBasis.avgCostPerShare > 0n && (
-                    <div className="bg-muted border border-border-light rounded-xl p-4 space-y-1">
+                    <div className={`${glass.section} p-4 space-y-1`}>
                       <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted mb-2">{t('estimated_pnl.title')}</p>
                       <div className="text-xs font-mono space-y-1">
                         <div className="flex justify-between">
@@ -670,7 +670,7 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   <WalletActionButton
                     onClick={handleSell}
                     disabled={!amount || parsedAmount === 0n || insufficientShares || isPending || isConfirming}
-                    className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
+                    className={glass.ctaDown}
                   >
                     {buttonText}
                   </WalletActionButton>
@@ -678,21 +678,21 @@ export function SellItpModal({ itpId, videoUrl, onClose }: SellItpModalProps) {
                   {(isPending || isConfirming) && (
                     <button
                       onClick={handleCancel}
-                      className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                      className={glass.cancel}
                     >
                       Cancel
                     </button>
                   )}
 
                   {stuckWarning && (
-                    <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 text-orange-500 text-sm">
+                    <div className={`${glass.warning} p-3 text-amber-600 text-sm`}>
                       <p className="font-medium">Transaction may be stuck</p>
                       <p className="text-xs mt-1">Not confirmed after 30s. You can cancel and try again.</p>
                     </div>
                   )}
 
                   {txError && (
-                    <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                    <div className={`${glass.error} p-4 text-color-down`}>
                       <p className="font-medium">{t('error.title')}</p>
                       <p className="text-sm mt-1 break-all">{txError}</p>
                     </div>

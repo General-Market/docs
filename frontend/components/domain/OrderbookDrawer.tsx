@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { SpringDrawer } from '@/components/ui/spring'
+import { SpringDrawer, glass } from '@/components/ui/spring'
 import type { OrderbookData, OrderbookLevel, AssetOrderbookSummary } from '@/hooks/useItpOrderbook'
 
 // ── Aggregation options ──
@@ -91,7 +91,7 @@ export function OrderbookDrawer({
   }, [data])
 
   return (
-    <SpringDrawer from="right" className="w-[280px] h-full bg-white border border-border-light flex flex-col text-micro font-mono select-none">
+    <SpringDrawer from="right" className="w-[280px] h-full glass-panel border-l flex flex-col text-micro font-mono select-none">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-2.5 py-2 border-b border-border-light">
         <span className="text-label font-bold text-black tracking-[0.08em] uppercase">Depth</span>

@@ -11,7 +11,7 @@ import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { indexL3, settlementChain } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 const ERC20_BALANCE_ABI = [{
   name: 'balanceOf', type: 'function', stateMutability: 'view',
@@ -155,22 +155,22 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
   })()
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
+      <SpringModal className={`${glass.modal} max-w-md w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">Deposit to Vision</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">Connect your wallet to deposit</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
+              <div className={`${glass.success} p-6 text-center`}>
                 <p className="text-color-up font-semibold text-lg mb-1">Deposit Successful</p>
                 <p className="text-text-secondary text-sm">
                   {amount} USDC deposited to your Vision balance
@@ -184,7 +184,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               </div>
               <button
                 onClick={handleDone}
-                className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                className={glass.ctaUp}
               >
                 Done
               </button>
@@ -222,15 +222,15 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   }
                 }}
                 disabled={minting || !address}
-                className="w-full text-left p-4 rounded-xl border border-dashed border-yellow-400 bg-yellow-50/50 hover:bg-yellow-50 transition-colors disabled:opacity-50"
+                className="w-full text-left p-4 rounded-xl border border-dashed border-amber-300/50 bg-amber-50/40 hover:bg-amber-50/60 transition-colors disabled:opacity-50"
               >
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-bold text-yellow-700">
+                  <p className="text-sm font-bold text-amber-700">
                     {minting ? 'Minting...' : 'Mint Test USDC'}
                   </p>
-                  <span className="text-xs font-mono text-yellow-600">Testnet faucet</span>
+                  <span className="text-xs font-mono text-amber-600">Testnet faucet</span>
                 </div>
-                <p className="text-xs text-yellow-600/80 mt-1">
+                <p className="text-xs text-amber-600/80 mt-1">
                   Get 1,000 USDC on L3 for testing (free)
                 </p>
                 {mintResult && (
@@ -245,8 +245,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 onClick={() => setMode('l3')}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
                   isOnL3
-                    ? 'border-color-up bg-surface-up/20 hover:bg-surface-up/30'
-                    : 'border-border-light bg-muted hover:bg-surface'
+                    ? 'border-emerald-300/60 bg-emerald-50/40 hover:bg-emerald-50/60'
+                    : 'border-black/[0.06] bg-black/[0.02] hover:bg-black/[0.04]'
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -268,8 +268,8 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 onClick={() => setMode('settlement')}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
                   isOnSettlement
-                    ? 'border-color-up bg-surface-up/20 hover:bg-surface-up/30'
-                    : 'border-border-light bg-muted hover:bg-surface'
+                    ? 'border-emerald-300/60 bg-emerald-50/40 hover:bg-emerald-50/60'
+                    : 'border-black/[0.06] bg-black/[0.02] hover:bg-black/[0.04]'
                 }`}
               >
                 <div className="flex justify-between items-center">
@@ -299,7 +299,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               )}
 
               {/* Mode label + wallet balance */}
-              <div className="bg-muted border border-border-light rounded-xl p-3">
+              <div className={`${glass.section} p-3`}>
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     {mode === 'l3' ? 'Deposit from L3 Wallet' : 'Deposit from Settlement'}
@@ -324,7 +324,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               </div>
 
               {/* Amount input */}
-              <div className="bg-muted border border-border-light rounded-xl p-4">
+              <div className={`${glass.section} p-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     Amount
@@ -354,15 +354,15 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                   min="0"
                   step="1"
                   disabled={isProcessing}
-                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none disabled:opacity-50"
+                  className={glass.input}
                 />
               </div>
 
               {/* Step indicator */}
               {isProcessing && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className={`${glass.section} p-4`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
+                    <div className={glass.spinner} />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
                   </div>
                   {l3ApproveHash && (
@@ -380,7 +380,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
 
               {/* Error */}
               {activeError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">Error</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
@@ -397,7 +397,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                 <WalletActionButton
                   onClick={handleDeposit}
                   disabled={!amount || parsedAmount === 0n}
-                  className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
+                  className={glass.ctaUp}
                 >
                   {mode === 'l3' ? 'Deposit from L3' : 'Deposit from Settlement'}
                 </WalletActionButton>
@@ -407,7 +407,7 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
               {isProcessing && (
                 <button
                   onClick={handleReset}
-                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                  className={glass.cancel}
                 >
                   Cancel
                 </button>

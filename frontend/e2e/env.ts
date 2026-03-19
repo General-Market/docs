@@ -97,5 +97,6 @@ export const VISION_BATCHES = (() => {
 
 // ── Testnet-aware timeouts ──────────────────────────────────
 export const POLL_TIMEOUT = IS_ANVIL ? 60_000 : 180_000
-export const CONSENSUS_TIMEOUT = IS_ANVIL ? 90_000 : 240_000
+// Settlement needs full tick cycle (120s) + consensus + propagation. 6 min on testnet.
+export const CONSENSUS_TIMEOUT = IS_ANVIL ? 90_000 : 360_000
 export const RPC_TIMEOUT = IS_ANVIL ? 10_000 : 30_000

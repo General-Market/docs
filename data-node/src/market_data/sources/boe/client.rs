@@ -101,10 +101,14 @@ impl BoeMarketSource {
     }
 
     /// Parse BoE CSV response.
-    /// Format with CSVF=TT:
+    /// The response has a metadata block first (SERIES,DESCRIPTION rows),
+    /// then a blank line, then the data:
+    ///   SERIES,DESCRIPTION
+    ///   XUDLUSS,Spot exchange rate - US $ into Sterling
+    ///   ...
+    ///
     ///   DATE,XUDLUSS,XUDLERS,...
-    ///   17 Mar 2026, 1.2345, 0.8765,...
-    ///   14 Mar 2026, 1.2340, 0.8760,...
+    ///   10 Mar 2026, 1.2345, 0.8765,...
     ///
     /// Takes the most recent row (last non-empty row).
     fn parse_csv(
@@ -115,12 +119,21 @@ impl BoeMarketSource {
         let mut results = HashMap::new();
         let lines: Vec<&str> = body.lines().collect();
 
-        if lines.len() < 2 {
-            anyhow::bail!("BoE CSV too short ({} lines)", lines.len());
+        // Find the data header line (starts with "DATE")
+        let header_idx = lines
+            .iter()
+            .position(|line| {
+                let trimmed = line.trim();
+                trimmed.starts_with("DATE,") || trimmed == "DATE"
+            })
+            .unwrap_or(0); // Fall back to first line if no DATE header found
+
+        if lines.len() <= header_idx + 1 {
+            anyhow::bail!("BoE CSV has no data rows after header (line {})", header_idx);
         }
 
         // Parse header row to find column indices
-        let headers: Vec<&str> = lines[0].split(',').map(|s| s.trim()).collect();
+        let headers: Vec<&str> = lines[header_idx].split(',').map(|s| s.trim()).collect();
 
         // Build column index -> series code mapping (skip column 0 = DATE)
         let mut col_to_code: HashMap<usize, &str> = HashMap::new();
@@ -138,7 +151,7 @@ impl BoeMarketSource {
         }
 
         // Find the most recent data row (last non-empty row with actual values)
-        for line in lines[1..].iter().rev() {
+        for line in lines[header_idx + 1..].iter().rev() {
             let cols: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
             if cols.len() < 2 || cols[0].is_empty() {
                 continue;
@@ -388,7 +401,12 @@ mod tests {
             ),
         };
 
-        let csv = "DATE,XUDLUSS,XUDLERS\n\
+        // Real BoE format: metadata block, then blank line, then data
+        let csv = "SERIES,DESCRIPTION\n\
+                   XUDLUSS,Spot exchange rate - US $ into Sterling\n\
+                   XUDLERS,Spot exchange rate - Euro into Sterling\n\
+                   \n\
+                   DATE,XUDLUSS,XUDLERS\n\
                    14 Mar 2026, 1.2340, 0.8760\n\
                    17 Mar 2026, 1.2345, 0.8765\n";
 
@@ -420,8 +438,12 @@ mod tests {
             ),
         };
 
-        // Most recent row has missing XUDLERS — should still return XUDLUSS
-        let csv = "DATE,XUDLUSS,XUDLERS\n\
+        // Real format with metadata block; most recent row has missing XUDLERS
+        let csv = "SERIES,DESCRIPTION\n\
+                   XUDLUSS,Spot exchange rate\n\
+                   XUDLERS,Spot exchange rate\n\
+                   \n\
+                   DATE,XUDLUSS,XUDLERS\n\
                    14 Mar 2026, 1.2340, 0.8760\n\
                    17 Mar 2026, 1.2345, ..\n";
 

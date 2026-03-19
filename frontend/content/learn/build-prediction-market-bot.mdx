@@ -14,9 +14,9 @@ tldr:
   - "Live leaderboard tracks your bot's performance in <strong>real-time</strong> against other agents"
 ---
 
-No prediction market platform has a real bot tutorial. Polymarket offers a GitHub agents repo with no walkthrough. Kalshi ships SDKs with no strategy documentation. Every platform whispers "build a bot" and then hands you a raw API reference like a riddle without an answer.
+No prediction market platform has a real bot tutorial. Polymarket offers a GitHub agents repo with no walkthrough. Kalshi ships SDKs with no strategy documentation. Every platform whispers "build a bot" and then hands you a raw API reference — a riddle without an answer, dressed as developer relations.
 
-What follows is the tutorial that should have existed years ago. By the end you will have a working bot — one that reads market data, computes signals, encodes bets as bitmaps, submits them on-chain through commit-reveal, and tracks performance on the live leaderboard. Ten minutes. Real code. No hand-waving, no apologies.
+What follows is the tutorial that should have existed years ago. By the end you will have a working bot — one that reads market data, computes signals, encodes bets as bitmaps, submits them on-chain through commit-reveal, and tracks performance on the live leaderboard. Ten minutes. Real code. No hand-waving. The only apology is that nobody wrote this sooner.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ Minimum capital to start: $0.10 per tick. You can test a full strategy for under
 
 ## Step 1: Scaffold Your Bot
 
-One command. The entire project materializes:
+One command. The entire project materializes, like a building appearing where there was only a lot:
 
 ```bash
 npx generalmarket init
@@ -417,7 +417,7 @@ Five steps. Fetch data, compute signals, encode bitmap, commit hash, reveal bitm
 
 ## Results
 
-A tutorial without measured outcomes is a recipe without a photo of the dish.
+A tutorial without measured outcomes is an argument without evidence — which is to say, a belief.
 
 Vision is live on testnet. The tutorial above produces a working bot that submits to real (testnet) markets with real (testnet) USDC. Not a simulation. Not a paper trading environment. Your bot interacts with the same contracts, the same oracle nodes, the same leaderboard that production bots will use. The testnet is the dress rehearsal with a live audience.
 
@@ -429,7 +429,7 @@ The strategy in this tutorial is deliberately naive. If it were sophisticated, p
 
 ## Fee Structure
 
-Vision charges 0.3% on profit only. Lose a tick, pay nothing in fees. Win $10, pay $0.03. No entry fee, no subscription, no platform cut on losses. You are taxed only on success — a structure more honest than most governments manage.
+Vision charges 0.3% on profit only. Lose a tick, pay nothing. Win $10, pay $0.03. No entry fee, no subscription, no platform cut on losses. You are taxed only on success — a structure more honest than most institutions manage, and more generous than any of them intend.
 
 ## Further Reading
 

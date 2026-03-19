@@ -454,39 +454,46 @@ This registers the source for on-chain Vision batch creation. Without this, the 
 
 **File:** `frontend/lib/vision/market-categories.ts`
 
-Add to `PREFIX_MAP`:
+Add your source prefix to the appropriate regex in the `PREFIX_CATEGORIES` array. This controls how markets are grouped in the accordion UI.
+
 ```typescript
-['mysource_', 'my_source', 'My Source'],
+// Example: adding boe_ to the economic category regex
+[/^(rates?_|fred_|treasury_|bond_|yield_|fed_|ecb_|boe_|bls_|cpi_|pce_|gdp_|unemployment_)/i, 'economic', 'Economic'],
 ```
 
-Add to `CATEGORY_ORDER`:
+If none of the existing categories fit, add a new tuple:
 ```typescript
-const CATEGORY_ORDER = [
-  'crypto', 'stocks', /* ... */, 'my_source', 'other',
-]
+[/^(mysource_)/i, 'my_category', 'My Category'],
 ```
 
-#### 8. Source registry entry
+**Without this, your source's markets fall into "Other".** This is the one frontend wire that's easy to forget — the source card renders from the API, the logo loads, everything looks fine, but markets are miscategorized.
 
-**File:** `frontend/lib/vision/sources.ts`
+#### 8. Source display metadata
 
-Add to the `VISION_SOURCES` array using the `S()` helper. The interface requires `valueLabel`, `valueUnit`, and optionally `isPrice`:
-```typescript
-S('my_source', 'My Source', 'Description here.', 'transport', '/source-imgs/new-mysource.svg', '#f5f5f5', ['mysource_'], 'Avg Delay', 'min'),
-```
+**File:** `data-node/config/sources-display.json`
 
-The `S()` helper signature:
-```typescript
-S(id, name, description, category, logo, brandBg, prefixes, valueLabel, valueUnit, isPrice?)
+This is the **single source of truth** for frontend card metadata. The data-node API serves it directly. Add an entry:
+
+```json
+{
+  "sourceId": "my_source",
+  "name": "My Source Display Name",
+  "description": "What this source tracks and where the data comes from.",
+  "category": "economic",
+  "logo": "/source-imgs/new-mysource.svg",
+  "brandBg": "#f5f5f5",
+  "prefixes": ["mysource_"],
+  "valueLabel": "Rate",
+  "valueUnit": "USD",
+  "isPrice": false
+}
 ```
 
 - `valueLabel` — column header in markets table (e.g. `'Price'`, `'Avg Delay'`, `'Viewers'`, `'Magnitude'`)
 - `valueUnit` — unit shown in parentheses (e.g. `'USD'`, `'min'`, `'%'`, `'0-9'`)
 - `isPrice` — if `true`, values are formatted with `$` prefix (set for USD-denominated sources)
 
-Also add a logo to `frontend/public/source-imgs/`. See the **Logo Requirements** section below.
-
-> **Note:** `formatMarketName()` is centralized in `market-categories.ts` and auto-strips the prefix using `PREFIX_MAP`. No per-source formatting code needed.
+> **Note:** `frontend/lib/vision/sources.ts` is a deprecated stub — all source metadata comes from the API via `useSourceRegistry()`. Do NOT add entries there.
 
 #### 8b. Source logo
 
@@ -634,8 +641,8 @@ CONTRACTS:
 
 FRONTEND:
 [ ] frontend/public/source-imgs/new-{source}.svg          — REAL company logo (NOT hand-drawn, check contrast vs brandBg)
-[ ] frontend/lib/vision/market-categories.ts              — PREFIX_MAP + CATEGORY_ORDER
-[ ] frontend/lib/vision/sources.ts                        — S() entry with valueLabel, valueUnit, isPrice
+[ ] data-node/config/sources-display.json                 — source card metadata (name, logo, prefixes, valueLabel, etc.)
+[ ] frontend/lib/vision/market-categories.ts              — add prefix to PREFIX_CATEGORIES regex (or markets land in "Other")
 [ ] frontend/components/domain/vision/VisionMarketsGrid.tsx — CATEGORY_GROUPS + COUNT_SOURCES
 [ ] frontend/components/domain/SourceDetailModal.tsx       — SOURCE_META (valueLabel + unit + optional assetUnit)
 [ ] frontend/components/domain/SourceHealthTable.tsx       — API_KEY_LINKS (if API-key-gated)

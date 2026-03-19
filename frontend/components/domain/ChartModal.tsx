@@ -5,7 +5,7 @@ import type { IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-c
 import { useItpNavSeries, useBtcPriceSeries, NavTimeframe } from '@/hooks/useItpNavSeries'
 import { DATA_NODE_URL } from '@/lib/config'
 import { useTranslations } from 'next-intl'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 const TIMEFRAME_SECONDS: Record<NavTimeframe, number> = {
   '5m': 300,
@@ -260,9 +260,9 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
   }, [chartReady, data, timeframe, itpId])
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-2xl w-full"
+        className={`${glass.modal} max-w-2xl w-full`}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-border-light flex justify-between items-center">
@@ -296,7 +296,7 @@ export function ChartModal({ itpId, itpName, createdAt, onClose }: ChartModalPro
             >
               BTC
             </button>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
         </div>
 

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { VISION_API_URL } from '@/lib/config'
 
 // Catch-all proxy for Vision API paths not handled by specific route handlers.
 // In App Router, specific routes (batches/, bitmap/, leaderboard/, etc.) take
 // precedence — this only fires for paths with no dedicated handler.
-const VISION_API_URL = process.env.VISION_API_URL || 'http://localhost:10001'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

@@ -277,7 +277,7 @@ if [ -n "$INDEX_ADDRESS" ] && [ -n "$DEPLOYER_KEY" ]; then
             --private-key "$DEPLOYER_KEY" \
             --legacy || { echo -e "${RED}FATAL: nonce bump failed${NC}"; exit 1; }
 
-        NEW_NONCE=$(cast call "$INDEX_ADDRESS" "deploymentNonce()" --rpc-url "$L3_RPC_URL")
+        NEW_NONCE=$(cast call "$INDEX_ADDRESS" "deploymentNonce()" --rpc-url "$L3_RPC_URL" | xargs cast --to-dec 2>/dev/null || echo "0")
         echo -e "  ${GREEN}Deployment nonce now: $NEW_NONCE${NC}"
         echo -e "  Services will auto-detect and flush."
 

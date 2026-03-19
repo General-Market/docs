@@ -343,10 +343,10 @@ export function Header() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -4 }}
                         transition={reduced ? { duration: 0 } : springs.entrance}
-                        className={`absolute right-0 top-full mt-2 w-64 backdrop-blur-2xl rounded-2xl shadow-2xl py-2 z-50 origin-top-right ${
+                        className={`absolute right-0 top-full mt-2 w-64 rounded-2xl py-2 z-50 origin-top-right ${
                           isDark
-                            ? 'bg-zinc-900/85 border border-white/10'
-                            : 'bg-white/85 border border-white/40'
+                            ? 'glass-panel-dark'
+                            : 'glass-panel'
                         }`}
                       >
                         {/* Section scroll-to links (contextual) */}

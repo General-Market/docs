@@ -701,7 +701,7 @@ function FinalizeItpModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <SpringBackdrop className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <SpringBackdrop className="absolute inset-0 glass-overlay" onClick={onClose} />
 
       {/* Modal */}
       <SpringModal className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">

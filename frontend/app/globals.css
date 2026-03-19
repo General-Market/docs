@@ -118,6 +118,71 @@ h1, h2, h3, .type-display, .type-stat-value,
   margin: 0 auto;
 }
 
+/* ── GLASS — Apple-style frosted glass system ──
+   saturate(180%) is the key: it boosts color vibrancy behind the blur
+   instead of washing it out. Combined with heavy blur (40px for panels,
+   20px for surfaces) and controlled opacity, this produces the
+   macOS/iOS frosted glass effect. */
+
+/* Panels — modals, popovers, dropdowns */
+.glass-panel {
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(255, 255, 255, 0.78);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
+}
+.glass-panel-dark {
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(28, 28, 30, 0.78);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(255, 255, 255, 0.04);
+}
+
+/* Overlays — behind modals and drawers */
+.glass-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Surfaces — cards, inline panels, lighter glass */
+.glass-surface {
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  background: rgba(255, 255, 255, 0.6);
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
+}
+.glass-surface-dark {
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Badges — small floating labels */
+.glass-badge {
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(0, 0, 0, 0.5);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Nav — heavier glass for navigation bars */
+.glass-nav {
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+}
+.glass-nav-dark {
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(200%);
+  background: rgba(28, 28, 30, 0.72);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
 /* ── SECTION DIVIDER — 3px solid black with breathing room ── */
 .section-divider {
   border-top: 3px solid #000000;
@@ -925,9 +990,9 @@ input[type="number"] {
 
 /* Tooltip glass */
 .explorer-dark .recharts-default-tooltip {
-  background: rgba(12, 12, 18, 0.92) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(12, 12, 18, 0.78) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 10px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;

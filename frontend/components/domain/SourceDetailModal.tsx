@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import { DATA_NODE_URL } from '@/lib/config'
 import {
   Table,
@@ -702,11 +702,11 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
 
   return (
     <SpringBackdrop
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-[5vh] overflow-y-auto"
+      className="fixed inset-0 glass-overlay flex items-start justify-center z-50 p-4 pt-[5vh] overflow-y-auto"
       onClick={onClose}
     >
       <SpringModal
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+        className={`${glass.modal} max-w-5xl w-full`}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
@@ -716,12 +716,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
               <h2 className="text-lg font-bold text-black">Source Detail</h2>
               <p className="text-caption font-mono text-text-muted mt-0.5">{sourceId}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-text-muted hover:text-black text-2xl leading-none transition-colors"
-            >
-              &times;
-            </button>
+            <ModalClose onClick={onClose} />
           </div>
 
           {/* Loading state */}
@@ -733,7 +728,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
 
           {/* Error state */}
           {error && !loading && (
-            <div className="border border-color-down/50 bg-surface-down rounded-lg px-4 py-3 mb-4">
+            <div className={`${glass.error} px-4 py-3 mb-4`}>
               <p className="text-color-down text-caption font-semibold">Failed to load</p>
               <p className="text-text-secondary text-caption mt-0.5">{error}</p>
               <button
@@ -749,7 +744,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
             <div className="space-y-6">
               {/* Summary stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-muted border border-border-light rounded-lg p-3">
+                <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     Total Assets
                   </p>
@@ -757,7 +752,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                     {totalAssets}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-lg p-3">
+                <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     Active
                   </p>
@@ -765,7 +760,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                     {activeAssets}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-lg p-3">
+                <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     Zero Values
                   </p>
@@ -773,7 +768,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                     {zeroCount}
                   </p>
                 </div>
-                <div className="bg-muted border border-border-light rounded-lg p-3">
+                <div className={`${glass.section} p-3`}>
                   <p className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">
                     Stale
                   </p>
@@ -788,7 +783,7 @@ export function SourceDetailModal({ sourceId, onClose }: SourceDetailModalProps)
                 <h3 className="text-label font-bold uppercase tracking-[0.08em] text-text-secondary mb-3">
                   Data Regularity (Last 24h)
                 </h3>
-                <div className="bg-muted border border-border-light rounded-lg p-4">
+                <div className={`${glass.section} p-4`}>
                   <SourceHistoryChart buckets={buckets} />
                 </div>
               </div>

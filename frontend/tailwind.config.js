@@ -67,5 +67,16 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Hide scrollbar but keep scroll functionality
+    function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-hide': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        },
+      })
+    },
+  ],
 }

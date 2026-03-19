@@ -73,7 +73,7 @@ export default async function SourcePage({ params }: Props) {
       ))}
       {source && <SourceDetailCategoryNav sourceCategory={source.category} />}
       <div className="flex-1 overflow-x-clip">
-        <SourceDetail sourceId={sourceId} />
+        <SourceDetail sourceId={sourceId} initialSource={source} />
       </div>
       <Footer />
     </main>

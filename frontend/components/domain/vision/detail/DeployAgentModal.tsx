@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 interface AgentConfig {
   id: string
@@ -137,25 +137,16 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <SpringBackdrop className="absolute inset-0 bg-black/50" onClick={onClose} />
-
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       {/* Modal */}
-      <SpringModal className="relative w-full max-w-md mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <SpringModal className={`${glass.modal} max-w-md w-full overflow-hidden`} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-black/[0.06]">
           <div className="flex items-center gap-2">
             {agent.icon}
             <h2 className="text-sm font-bold text-neutral-900">Deploy with {agent.name}</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-neutral-400 hover:text-neutral-600 transition-colors text-lg leading-none"
-          >
-            &times;
-          </button>
+          <ModalClose onClick={onClose} />
         </div>
 
         {/* Steps */}
@@ -176,7 +167,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-neutral-100 flex items-center justify-between text-label text-neutral-400">
+        <div className="px-5 py-3 border-t border-black/[0.06] flex items-center justify-between text-label text-neutral-400">
           <span>Python 3.10+ &middot; funded wallet</span>
           <a
             href="https://docs.generalmarket.io/guides/vision-bots"
@@ -188,7 +179,7 @@ export default function DeployAgentModal({ agentId, onClose }: DeployAgentModalP
           </a>
         </div>
       </SpringModal>
-    </div>
+    </SpringBackdrop>
   )
 }
 

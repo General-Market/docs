@@ -388,7 +388,7 @@ if [ "$DB_READY" = true ]; then
     [ -n "${FINRA_CLIENT_SECRET:-}" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --finra-client-secret $FINRA_CLIENT_SECRET"
     [ -n "${ADZUNA_APP_ID:-}" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --adzuna-app-id $ADZUNA_APP_ID"
     [ -n "${ADZUNA_APP_KEY:-}" ] && DATA_NODE_ARGS="$DATA_NODE_ARGS --adzuna-app-key $ADZUNA_APP_KEY"
-    DATA_NODE_ARGS="$DATA_NODE_ARGS --ecb-enabled --openmeteo-sync-interval 300"
+    DATA_NODE_ARGS="$DATA_NODE_ARGS --openmeteo-sync-interval 300"
 
     nohup ./data-node $DATA_NODE_ARGS > logs/data-node.log 2>&1 &
     DN_PID=$!

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
@@ -12,28 +12,38 @@ import { SourceHero } from './SourceHero'
 import { MarketsTable } from './MarketsTable'
 import { TopPlayers } from './TopPlayers'
 import BatchEntryPanel from './BatchEntryPanel'
+import type { SourceDisplayServer } from '@/lib/vision/sources-server'
 
 interface SourceDetailProps {
   sourceId: string
+  initialSource?: SourceDisplayServer
+}
+
+type TickUrgency = 'normal' | 'urgent' | 'critical'
+
+function getTickUrgency(remaining: number): TickUrgency {
+  if (remaining <= 15) return 'critical'
+  if (remaining <= 60) return 'urgent'
+  return 'normal'
 }
 
 function formatTvl(tvl: string): string {
   const raw = parseFloat(tvl)
   if (isNaN(raw) || raw === 0) return '$0'
-  // Raw value is in L3 USDC smallest units (18 decimals)
   const num = raw / 1e18
   if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`
   if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}K`
   return `$${num.toFixed(2)}`
 }
 
-export function SourceDetail({ sourceId }: SourceDetailProps) {
+export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const router = useRouter()
 
   // Source registry — all metadata comes from data-node API
   const { sources, isLoading: isRegistryLoading } = useSourceRegistry()
   const sourceEntry = findSource(sources, sourceId)
-  // Adapt to VisionSource shape for SourceHero
+
+  // Adapt to VisionSource shape — use initialSource for instant render before SWR loads
   const source = sourceEntry
     ? {
         id: sourceEntry.sourceId,
@@ -47,7 +57,20 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         valueUnit: sourceEntry.valueUnit,
         isPrice: sourceEntry.isPrice,
       }
-    : null
+    : initialSource
+      ? {
+          id: initialSource.sourceId,
+          name: initialSource.name,
+          description: initialSource.description,
+          category: initialSource.category,
+          logo: initialSource.logo,
+          brandBg: initialSource.brandBg,
+          prefixes: initialSource.prefixes,
+          valueLabel: initialSource.valueLabel,
+          valueUnit: initialSource.valueUnit,
+          isPrice: initialSource.isPrice,
+        }
+      : null
 
   // Per-source snapshot for market list
   const { data: snapshotData } = useSourceSnapshot(sourceId)
@@ -86,8 +109,26 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
     return () => clearInterval(interval)
   }, [activeBatch?.tickDuration])
 
-  // Show loading state while registry loads
-  if (isRegistryLoading) {
+  // ── Tick Pulse System ──
+  const urgency = getTickUrgency(tickState.remaining)
+
+  // Resolution detection — when tick counter resets, flash the page
+  const prevRemainingRef = useRef(tickState.remaining)
+  const [justResolved, setJustResolved] = useState(false)
+  useEffect(() => {
+    const prev = prevRemainingRef.current
+    const curr = tickState.remaining
+    prevRemainingRef.current = curr
+    // Detect reset: previous was low (<30s), current jumped past halfway
+    if (prev <= 30 && curr > tickDuration * 0.5) {
+      setJustResolved(true)
+      const t = setTimeout(() => setJustResolved(false), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [tickState.remaining, tickDuration])
+
+  // Show loading state while registry loads (skip if we have initialSource)
+  if (isRegistryLoading && !initialSource) {
     return (
       <div className="px-6 lg:px-12 py-12">
         <div className="max-w-5xl mx-auto text-center">
@@ -127,14 +168,26 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
   const totalMarkets = marketIds.length
   const totalSet = counts.up + counts.down
 
+  const urgencyBarCls =
+    urgency === 'critical' ? 'batch-bar-critical' :
+    urgency === 'urgent' ? 'batch-bar-urgent' : ''
+
+  const urgencyProgressCls =
+    urgency === 'critical' ? 'tick-progress-critical' :
+    urgency === 'urgent' ? 'tick-progress-urgent' : 'bg-black'
+
+  const urgencyTimerCls =
+    urgency === 'critical' ? 'tick-timer-critical' :
+    urgency === 'urgent' ? 'tick-timer-urgent' : 'text-black'
+
   return (
     <div className="px-6 lg:px-12 py-6">
       <div className="max-w-site mx-auto">
         {/* Source Hero */}
-        <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={tickState.remaining} tickDuration={tickDuration} />
+        <SourceHero source={source} sourceSchedule={sourceSchedule} marketCount={marketCount} tickRemaining={tickState.remaining} tickDuration={tickDuration} sourceId={sourceId} urgency={urgency} />
 
-        {/* Batch bar */}
-        <div className="mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6">
+        {/* Batch bar — breathes with tick urgency */}
+        <div className={`mt-4 bg-[var(--surface)] border border-border-light px-5 py-3 flex items-center gap-6 transition-shadow duration-700 ${urgencyBarCls} ${justResolved ? 'tick-resolved' : ''}`}>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Tick
@@ -159,11 +212,11 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               {activeBatch ? formatTvl(activeBatch.tvl) : '$0'}
             </div>
           </div>
-          {/* Progress bar */}
+          {/* Progress bar — glows as tick approaches */}
           <div className="flex-1">
-            <div className="h-1.5 bg-border-light overflow-hidden">
+            <div className="h-1.5 bg-border-light overflow-hidden rounded-full">
               <div
-                className="h-full transition-all duration-1000 bg-black"
+                className={`h-full tick-progress ${urgencyProgressCls}`}
                 style={{ width: `${(tickState.elapsed / tickState.tickDuration) * 100}%` }}
               />
             </div>
@@ -177,12 +230,12 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
               {totalSet}/{totalMarkets}
             </div>
           </div>
-          {/* Timer */}
+          {/* Timer — pulses on critical */}
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
               Timer
             </div>
-            <div className="text-[16px] font-bold font-mono tabular-nums text-black">
+            <div className={`text-[16px] font-bold font-mono tabular-nums ${urgencyTimerCls}`}>
               {formatTime(tickState.remaining)}
             </div>
           </div>
@@ -192,7 +245,7 @@ export function SourceDetail({ sourceId }: SourceDetailProps) {
         <div className="flex flex-col lg:flex-row gap-6 mt-6">
           {/* Left: Markets + Leaderboard */}
           <div className="flex-1 min-w-0">
-            <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} />
+            <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} isResolving={justResolved} />
             <TopPlayers batchId={activeBatch?.id} />
           </div>
 

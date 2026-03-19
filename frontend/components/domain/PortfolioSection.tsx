@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { SpringTabs, SpringTab, SpringCard } from '@/components/ui/spring'
+import { SpringTabs, SpringTab, SpringCard, SpringNumber } from '@/components/ui/spring'
+import { motion } from 'framer-motion'
 import { useAccount, useReadContract } from 'wagmi'
 import { useSSEOrders, useSSEBalances, useSSENav } from '@/hooks/useSSE'
 import { USDC_ADDRESS, USDC_DECIMALS } from '@/lib/contracts/addresses'
@@ -343,8 +344,28 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
     <div id="portfolio" className="pb-10">
       {/* Section header */}
       <div className="pt-10">
-        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">{t('heading.label')}</p>
-        <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+        <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">{t('heading.label')}</p>
+        {address && mergedSummary ? (
+          <div>
+            <SpringNumber
+              value={totalValue}
+              format={n => `$${n.toFixed(2)}`}
+              className="text-[42px] md:text-[52px] font-black font-mono tabular-nums text-black tracking-tight leading-[1.1]"
+            />
+            <div className="flex items-baseline gap-3 mt-1">
+              <SpringNumber
+                value={totalPnl}
+                format={n => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`}
+                className={`text-lg font-bold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}
+              />
+              <span className={`text-sm font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up/70' : 'text-color-down/70'}`}>
+                {totalPnl >= 0 ? '+' : ''}{mergedSummary?.total_pnl_pct || '0.0'}%
+              </span>
+            </div>
+          </div>
+        ) : (
+          <h2 className="text-display font-black tracking-tight text-black leading-[1.1]">{t('heading.title')}</h2>
+        )}
       </div>
 
       {!address ? (
@@ -363,35 +384,28 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
         <PortfolioSkeleton />
       ) : (
         <>
-          {/* Stats row */}
-          <div className="py-5 border-b border-border-light">
-            <div className="grid grid-cols-2 md:grid-cols-5">
-              <div className="py-3 pr-6">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_value')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${totalValue.toFixed(2)}</div>
-              </div>
-              <div className="py-3 px-4 md:px-6 md:border-l border-border-light">
+          {/* Stats strip */}
+          <div className="py-4 border-b border-border-light">
+            <div className="grid grid-cols-3 gap-0">
+              <div className="py-2 pr-6">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.total_invested')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">
-                  ${((mergedSummary ? parseFloat(mergedSummary.total_invested) : 0) + pendingOrderValue).toFixed(2)}
-                </div>
+                <SpringNumber
+                  value={(mergedSummary ? parseFloat(mergedSummary.total_invested) : 0) + pendingOrderValue}
+                  format={n => `$${n.toFixed(2)}`}
+                  className="text-title font-extrabold font-mono tabular-nums text-black"
+                />
               </div>
-              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
+              <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.positions')}</div>
                 <div className="text-title font-extrabold font-mono tabular-nums text-black">{mergedSummary?.positions.length || 0}</div>
               </div>
-              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
-                <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.pnl')}</div>
-                <div className={`text-title font-extrabold font-mono tabular-nums ${totalPnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
-                  {totalPnl >= 0 ? '+' : ''}${mergedSummary?.total_pnl || '0.00'}
-                </div>
-                <div className="text-label text-text-muted mt-0.5">
-                  {totalPnl >= 0 ? '+' : ''}{mergedSummary?.total_pnl_pct || '0.0'}%
-                </div>
-              </div>
-              <div className="py-3 px-4 md:px-6 md:border-l border-t md:border-t-0 border-border-light">
+              <div className="py-2 px-6 border-l border-border-light">
                 <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-1">{t('stats.usdc_available')}</div>
-                <div className="text-title font-extrabold font-mono tabular-nums text-black">${usdcFormatted}</div>
+                <SpringNumber
+                  value={usdcNum}
+                  format={n => `$${n.toFixed(2)}`}
+                  className="text-title font-extrabold font-mono tabular-nums text-black"
+                />
               </div>
             </div>
           </div>
@@ -607,10 +621,16 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
             </tr>
           </thead>
           <tbody>
-            {summary.positions.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(pos => {
+            {summary.positions.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((pos, idx) => {
               const pnl = parseFloat(pos.pnl)
               return (
-                <tr key={pos.itp_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
+                <motion.tr
+                  key={pos.itp_id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.35, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
+                  className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
+                >
                   <td className="px-4 py-3 text-text-primary text-sm font-semibold">
                     {itpNameMap.get(pos.itp_id.toLowerCase())
                       || (() => { try { return itpNameMap.get(BigInt(pos.itp_id).toString()) } catch { return null } })()
@@ -634,7 +654,7 @@ function PositionsTab({ summary, itpNameMap }: { summary: ReturnType<typeof useP
                   <td className={`px-4 py-3 text-right font-mono text-sm tabular-nums ${pnl >= 0 ? 'text-color-up' : 'text-color-down'}`}>
                     {pnl >= 0 ? '+' : ''}{pos.pnl_pct}%
                   </td>
-                </tr>
+                </motion.tr>
               )
             })}
           </tbody>
@@ -692,8 +712,14 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
             </tr>
           </thead>
           <tbody>
-            {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map(trade => (
-              <tr key={trade.order_id} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
+            {filledTrades.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((trade, idx) => (
+              <motion.tr
+                key={trade.order_id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.35, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
+                className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
+              >
                 <td className="px-4 py-3 text-text-secondary text-xs">
                   {getTimeAgo(new Date(trade.timestamp))}
                 </td>
@@ -725,7 +751,7 @@ function TradesTab({ trades, itpNameMap }: { trades: ReturnType<typeof usePortfo
                     {trade.status}
                   </span>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
@@ -820,7 +846,13 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
           </thead>
           <tbody>
             {openOrders.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE).map((order, i) => (
-              <tr key={`${order.orderId}-${order.timestamp}-${i}`} className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row">
+              <motion.tr
+                key={`${order.orderId}-${order.timestamp}-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.35, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
+                className="border-b border-border-light last:border-0 hover:bg-surface transition-colors fluid-row"
+              >
                 <td className="px-4 py-3 text-text-primary font-mono text-sm tabular-nums">{order.orderId > 0 ? `#${order.orderId}` : '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-sm font-semibold ${order.side === 0 ? 'text-color-up' : 'text-color-down'}`}>
@@ -852,7 +884,7 @@ function OrdersTab({ orders, isLoading, error }: { orders: ActiveOrder[]; isLoad
                     </button>
                   )}
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>

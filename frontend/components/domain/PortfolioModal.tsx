@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useState, useMemo, useRef, ChangeEvent, memo } from 'react'
 import { useTranslations } from 'next-intl'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 import {
   parseMarketId,
   getMarketUrl,
@@ -399,12 +399,12 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
     >
       {/* Backdrop */}
       <SpringBackdrop
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 glass-overlay"
         onClick={onClose}
       />
 
       {/* Modal content */}
-      <SpringModal className="relative bg-card border border-border-medium rounded-xl shadow-card w-full max-w-3xl max-h-[80vh] mx-4 flex flex-col">
+      <SpringModal className={`relative ${glass.modal} max-w-3xl w-full max-h-[80vh] mx-4 flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-medium">
           <div>
@@ -417,26 +417,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
                 : t('portfolio_modal.positions_filtered', { filtered: filteredPositions.length.toLocaleString(), total: portfolioSize.toLocaleString() })}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors p-2"
-            aria-label={t('aria.close_modal')}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <ModalClose onClick={onClose} />
         </div>
 
         {/* Search and Actions Bar */}
@@ -448,7 +429,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
               value={searchInput}
               onChange={handleSearchChange}
               placeholder={t('portfolio_modal.search_placeholder')}
-              className="w-full px-4 py-2 bg-card border border-border-medium text-text-primary font-mono text-sm focus:outline-none focus:border-zinc-900 placeholder-text-muted rounded-lg"
+              className={glass.inputSm}
             />
             {searchInput && (
               <button
@@ -486,7 +467,7 @@ export function PortfolioModal({ isOpen, onClose, positions, portfolioSize }: Po
         </div>
 
         {/* Column headers */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border-medium bg-muted text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
+        <div className={`flex items-center justify-between px-4 py-2 border-b border-black/[0.06] ${glass.section} rounded-none text-xs font-medium uppercase tracking-[0.08em] text-text-muted`}>
           <span className="flex-1">{t('portfolio_modal.market')}</span>
           <div className="flex items-center gap-3">
             <span className="w-12">{t('portfolio_modal.position')}</span>

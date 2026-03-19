@@ -15,7 +15,7 @@ import { useLendingQuote } from '@/hooks/useLendingQuote'
 import type { CrisisLevel } from '@/lib/types/lending-quote'
 import { useTranslations } from 'next-intl'
 import { usePostHogTracker } from '@/hooks/usePostHog'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 interface ItpInfo {
   id: string
@@ -40,7 +40,7 @@ interface LendItpModalProps {
 type Tab = 'borrow' | 'repay'
 
 const LendingErrorFallback = (
-  <div className="bg-surface-down border border-color-down/30 rounded-xl p-6 text-center">
+  <div className={`${glass.error} p-6 text-center`}>
     <h3 className="text-color-down font-semibold mb-2">Something went wrong</h3>
     <p className="text-text-muted text-sm">Please close and reopen the modal.</p>
   </div>
@@ -78,16 +78,16 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
   if (!isOpen || !market) return null
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
       <SpringModal
-        className="bg-card border border-border-light rounded-xl shadow-modal max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className={`${glass.modal} max-w-lg w-full`}
         onClick={e => e.stopPropagation()}
       >
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('lend_modal.title', { name: itpInfo.name || 'ITP' })}</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
           {itpInfo.symbol && <p className="text-text-secondary mb-1 font-mono">${itpInfo.symbol}</p>}
           <p className="text-xs text-text-muted mb-6">
@@ -95,7 +95,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
           </p>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">{t('lend_modal.connect_wallet')}</p>
             </div>
           ) : (
@@ -145,7 +145,7 @@ export function LendItpModal({ itpInfo, isOpen, onClose }: LendItpModalProps) {
                       <WithdrawCollateral market={market} onSuccess={refetchPosition} />
                     )}
                     {(!position || (position.debtAmount === 0n && position.collateralAmount === 0n)) && (
-                      <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+                      <div className={`${glass.section} p-8 text-center`}>
                         <p className="text-text-muted">{t('lend_modal.no_position')}</p>
                         <p className="text-text-muted text-sm mt-2">{t('lend_modal.open_position_hint')}</p>
                       </div>

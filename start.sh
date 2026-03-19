@@ -904,7 +904,7 @@ if [ "$SKIP_DEPLOY" = false ]; then
                 --rpc-url "$RPC_URL" \
                 --private-key "$DEPLOYER_KEY" \
                 --legacy > /dev/null 2>&1 || echo -e "  ${YELLOW}Nonce bump failed — services will flush on restart${NC}"
-            DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
+            DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null | xargs cast --to-dec 2>/dev/null || echo "?")
             echo -e "  ${GREEN}Deployment nonce: $DEPLOY_NONCE — services will auto-flush${NC}"
         else
             echo -e "  ${YELLOW}Contract lacks deploymentNonce — services will use legacy flush${NC}"

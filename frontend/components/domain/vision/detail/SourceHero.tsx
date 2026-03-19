@@ -11,6 +11,8 @@ interface SourceHeroProps {
   marketCount?: number
   tickRemaining?: number
   tickDuration?: number
+  sourceId?: string
+  urgency?: 'normal' | 'urgent' | 'critical'
 }
 
 function formatLastSync(lastSync: string | null): string {
@@ -24,7 +26,7 @@ function formatLastSync(lastSync: string | null): string {
   return date.toLocaleDateString()
 }
 
-export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration }: SourceHeroProps) {
+export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining, tickDuration, sourceId, urgency }: SourceHeroProps) {
   const isLive = sourceSchedule?.status === 'healthy'
   const categoryLabel = getCategoryLabel(source.category)
 
@@ -68,7 +70,7 @@ export function SourceHero({ source, sourceSchedule, marketCount, tickRemaining,
       {/* Right half — brand logo with geometric pulse */}
       <div
         className="relative w-1/2 min-h-[100px] flex items-center justify-center"
-        style={{ background: source.brandBg }}
+        style={{ background: source.brandBg, viewTransitionName: sourceId ? `source-brand-${sourceId}` : undefined } as React.CSSProperties}
       >
         <GeometricPulse
           brandBg={source.brandBg}

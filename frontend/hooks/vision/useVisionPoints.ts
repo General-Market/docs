@@ -116,7 +116,7 @@ export function useVisionPoints(): VisionPointsResult {
 
       breakdowns.push({
         batchId: pos.batchId,
-        sourceId: batch.marketIds[0] ?? `batch-${pos.batchId}`,
+        sourceId: batch.sourceId || `batch-${pos.batchId}`,
         myBalanceUsd,
         batchTvlUsd,
         myShare,

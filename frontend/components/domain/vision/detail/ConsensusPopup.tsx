@@ -39,7 +39,7 @@ export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
   return (
     <SpringModal
       ref={ref}
-      className="absolute z-50 top-full left-0 mt-1 bg-white border border-border-light rounded-lg shadow-lg p-3 w-[220px]"
+      className="absolute z-50 top-full left-0 mt-1 glass-panel rounded-xl shadow-2xl p-3 w-[220px]"
     >
       <div className="text-micro font-bold uppercase tracking-[0.08em] text-text-muted mb-0.5">
         Consensus History
@@ -54,7 +54,7 @@ export function ConsensusPopup({ marketId, onClose }: ConsensusPopupProps) {
         {MOCK_ENTRIES.map((entry) => (
           <div
             key={entry.batchId}
-            className="flex items-center justify-between py-1 px-1.5 rounded text-label bg-surface"
+            className="flex items-center justify-between py-1 px-1.5 rounded-lg text-label bg-black/[0.03]"
           >
             <span className="font-mono text-text-muted">#{entry.batchId}</span>
             <span

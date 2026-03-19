@@ -8,7 +8,7 @@ import { useDeposit } from '@/hooks/vision/useDeposit'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 interface DepositModalProps {
   batchId: number
@@ -71,22 +71,22 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
   })()
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
+      <SpringModal className={`${glass.modal} max-w-md w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">{t('deposit_modal.title', { id: batchId })}</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">{t('deposit_modal.connect_wallet')}</p>
             </div>
           ) : step === 'done' ? (
             <div className="space-y-4">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
+              <div className={`${glass.success} p-6 text-center`}>
                 <p className="text-color-up font-semibold text-lg mb-1">{t('deposit_modal.success_title')}</p>
                 <p className="text-text-secondary text-sm">
                   {t('deposit_modal.success_description', { amount, id: batchId })}
@@ -99,13 +99,13 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               </div>
               <button
                 onClick={handleReset}
-                className="w-full py-3 bg-color-up text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                className={glass.ctaUp}
               >
                 {t('deposit_modal.deposit_more')}
               </button>
               <button
                 onClick={onClose}
-                className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                className={glass.cancel}
               >
                 {t('deposit_modal.close')}
               </button>
@@ -114,7 +114,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
             <div className="space-y-4">
               {/* Current batch balance */}
               {currentBalance && (
-                <div className="bg-muted border border-border-light rounded-xl p-4 flex justify-between items-center">
+                <div className={`${glass.section} p-4 flex justify-between items-center`}>
                   <span className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('deposit_modal.batch_balance')}</span>
                   <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
                     {parseFloat(formatUnits(BigInt(currentBalance), VISION_USDC_DECIMALS)).toFixed(2)} USDC
@@ -123,7 +123,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               )}
 
               {/* Amount input */}
-              <div className="bg-muted border border-border-light rounded-xl p-4">
+              <div className={`${glass.section} p-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">{t('deposit_modal.amount_label')}</label>
                   <span className="text-xs text-text-muted font-mono">
@@ -138,7 +138,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                   min="0"
                   step="1"
                   disabled={isProcessing}
-                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none disabled:opacity-50"
+                  className={glass.input}
                 />
                 {insufficientBalance && (
                   <p className="text-color-down text-xs mt-1">{t('deposit_modal.insufficient_balance')}</p>
@@ -147,9 +147,9 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
 
               {/* Step indicator */}
               {step !== 'idle' && step !== 'error' && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className={`${glass.section} p-4`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
+                    <div className={glass.spinner} />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
 
               {/* Error */}
               {error && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">{t('deposit_modal.error_title')}</p>
                   <p className="text-sm mt-1 break-all">{error}</p>
                 </div>
@@ -167,7 +167,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               <WalletActionButton
                 onClick={handleDeposit}
                 disabled={!amount || parsedAmount === 0n || insufficientBalance || isProcessing}
-                className="w-full py-4 bg-color-up text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
+                className={glass.ctaUp}
               >
                 {buttonText}
               </WalletActionButton>
@@ -176,7 +176,7 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
               {isProcessing && (
                 <button
                   onClick={() => { reset(); }}
-                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                  className={glass.cancel}
                 >
                   {t('deposit_modal.cancel')}
                 </button>

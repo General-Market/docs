@@ -683,7 +683,7 @@ cmd_deploy() {
             --private-key "$DEPLOYER_KEY" \
             --legacy || echo -e "  ${YELLOW}Nonce bump failed — services will flush on restart${NC}"
         local DEPLOY_NONCE
-        DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null || echo "?")
+        DEPLOY_NONCE=$(cast call "$INDEX_ADDR_NONCE" "deploymentNonce()" --rpc-url "$RPC_URL" 2>/dev/null | xargs cast --to-dec 2>/dev/null || echo "?")
         echo -e "  ${GREEN}Deployment nonce now: $DEPLOY_NONCE — services will auto-flush${NC}"
     else
         # Fallback: manual TRUNCATE for contracts without deploymentNonce

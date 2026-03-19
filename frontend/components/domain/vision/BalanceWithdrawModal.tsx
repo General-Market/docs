@@ -9,7 +9,7 @@ import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
-import { SpringModal, SpringBackdrop } from '@/components/ui/spring'
+import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 type Mode = 'choose' | 'l3' | 'settlement'
 
@@ -112,22 +112,22 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
   })()
 
   return (
-    <SpringBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <SpringModal className="bg-card border border-border-light rounded-xl shadow-modal max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <SpringBackdrop className={glass.backdrop} onClick={onClose}>
+      <SpringModal className={`${glass.modal} max-w-md w-full`} onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-text-primary">Withdraw from Vision</h2>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">&times;</button>
+            <ModalClose onClick={onClose} />
           </div>
 
           {!isConnected ? (
-            <div className="bg-muted border border-border-light rounded-xl p-8 text-center">
+            <div className={`${glass.section} p-8 text-center`}>
               <p className="text-text-secondary">Connect your wallet to withdraw</p>
             </div>
           ) : activeStep === 'done' ? (
             <div className="space-y-4">
-              <div className="bg-surface-up border border-color-up/30 rounded-xl p-6 text-center">
+              <div className={`${glass.success} p-6 text-center`}>
                 <p className="text-color-up font-semibold text-lg mb-1">Withdrawal Successful</p>
                 <p className="text-text-secondary text-sm">
                   {amount} USDC withdrawn
@@ -146,7 +146,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               </div>
               <button
                 onClick={handleDone}
-                className="w-full py-3 bg-muted text-text-primary font-medium rounded-lg border border-border-light hover:bg-surface transition-colors"
+                className={glass.ctaSecondary}
               >
                 Done
               </button>
@@ -163,8 +163,8 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 disabled={realBalance === 0n}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
                   realBalance > 0n
-                    ? 'border-border-light bg-muted hover:bg-surface'
-                    : 'border-border-light bg-muted opacity-50 cursor-not-allowed'
+                    ? 'border-black/[0.06] bg-black/[0.02] hover:bg-black/[0.04]'
+                    : 'border-black/[0.06] bg-black/[0.02] opacity-50 cursor-not-allowed'
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -189,8 +189,8 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 disabled={virtualBalance === 0n}
                 className={`w-full text-left p-4 rounded-xl border transition-colors ${
                   virtualBalance > 0n
-                    ? 'border-border-light bg-muted hover:bg-surface'
-                    : 'border-border-light bg-muted opacity-50 cursor-not-allowed'
+                    ? 'border-black/[0.06] bg-black/[0.02] hover:bg-black/[0.04]'
+                    : 'border-black/[0.06] bg-black/[0.02] opacity-50 cursor-not-allowed'
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -222,7 +222,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               )}
 
               {/* Mode label */}
-              <div className="bg-muted border border-border-light rounded-xl p-3">
+              <div className={`${glass.section} p-3`}>
                 <div className="flex justify-between items-center">
                   <p className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
@@ -234,7 +234,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               </div>
 
               {/* Amount input */}
-              <div className="bg-muted border border-border-light rounded-xl p-4">
+              <div className={`${glass.section} p-4`}>
                 <div className="flex justify-between items-center mb-2">
                   <label className="text-xs font-medium uppercase tracking-[0.08em] text-text-muted">
                     Amount (USDC)
@@ -254,7 +254,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   min="0"
                   step="1"
                   disabled={isProcessing}
-                  className="w-full bg-card border border-border-medium rounded-lg px-4 py-3 text-text-primary text-lg font-mono tabular-nums focus:border-zinc-600 focus:outline-none disabled:opacity-50"
+                  className={glass.input}
                 />
                 {insufficientBalance && (
                   <p className="text-color-down text-xs mt-1">
@@ -265,9 +265,9 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
 
               {/* Step indicator */}
               {isProcessing && (
-                <div className="bg-muted border border-border-light rounded-xl p-4">
+                <div className={`${glass.section} p-4`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-border-medium border-t-terminal rounded-full animate-spin" />
+                    <div className={glass.spinner} />
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
                   </div>
                 </div>
@@ -275,7 +275,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
 
               {/* Error */}
               {activeError && (
-                <div className="bg-surface-down border border-color-down/30 rounded-lg p-4 text-color-down">
+                <div className={`${glass.error} p-4 text-color-down`}>
                   <p className="font-medium">Error</p>
                   <p className="text-sm mt-1 break-all">{activeError}</p>
                   <button
@@ -292,7 +292,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                 <WalletActionButton
                   onClick={handleWithdraw}
                   disabled={!amount || parsedAmount === 0n || insufficientBalance}
-                  className="w-full py-4 bg-color-down text-white font-medium rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity fluid-press"
+                  className={glass.ctaDown}
                 >
                   {mode === 'l3' ? 'Withdraw to L3 Wallet' : 'Withdraw to Settlement'}
                 </WalletActionButton>
@@ -302,7 +302,7 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
               {isProcessing && (
                 <button
                   onClick={handleReset}
-                  className="w-full text-center text-sm text-text-muted hover:text-text-primary py-2 transition-colors"
+                  className={glass.cancel}
                 >
                   Cancel
                 </button>
