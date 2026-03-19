@@ -489,9 +489,16 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                     </div>
                   </div>
 
-                  {/* Resolution type — computed from 24h change */}
+                  {/* Resolution type — from config or computed from 24h change */}
                   <div className="text-center">
-                    {resolutionBadge(resType)}
+                    {resolutionBadge(resType ?? (() => {
+                      const pct = parseFloat(market.changePct ?? '0')
+                      const abs = Math.abs(pct)
+                      if (abs < 0.3) return 'FLAT_X'
+                      if (abs < 3) return pct < 0 ? 'DOWN_0' : 'UP_X'
+                      if (abs < 30) return pct < 0 ? 'DOWN_300' : 'UP_300'
+                      return pct < 0 ? 'DOWN_3000' : 'UP_3000'
+                    })())}
                   </div>
 
                   {/* Value — momentum bar behind price */}

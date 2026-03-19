@@ -158,11 +158,10 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // Betting is always open — no lock window in continuous betting.
-  // Unset markets default to DOWN — no need to require explicit predictions to submit.
-  // New joins require: stake + configHash + markets loaded.
+  // New joins require: stake + at least one bet set + configHash + markets loaded.
+  // Already-joined players can deposit more without setting new bets.
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (!!configHash && marketIds.length > 0))
+    && (isJoined || (hasPredictions && !!configHash && marketIds.length > 0))
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
