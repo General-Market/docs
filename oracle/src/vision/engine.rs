@@ -577,26 +577,69 @@ async fn fetch_snapshot_with_retry(
     Err(last_err.unwrap_or_else(|| "All data-node fetch retries exhausted".into()))
 }
 
+/// Per-source staleness ceiling (seconds).
+///
+/// Sources that publish daily, weekly, or monthly have legitimate data gaps that
+/// far exceed any tick duration. Using `tick_duration * 2` as the universal cap
+/// causes every market from these sources to be cancelled — the data is not
+/// stale, the threshold is just wrong.
+///
+/// Rules:
+/// - If the source is in this table, use its value as the hard cap.
+/// - Otherwise, fall back to `tick_duration * 2` (fine for real-time sources).
+/// - The cap is intentionally generous: we'd rather resolve with slightly old
+///   data than cancel 100% of markets because a government API published
+///   yesterday's numbers.
+const SOURCE_MAX_AGE_SECS: &[(&str, u64)] = &[
+    ("rates",     3 * 86400),   // FRED: monthly/quarterly series
+    ("bls",       3 * 86400),   // Bureau of Labor Statistics: monthly
+    ("worldbank", 7 * 86400),   // World Bank: annual/quarterly
+    ("eia",       3 * 86400),   // US Energy: weekly/monthly
+    ("ecb",       3 * 86400),   // ECB FX rates: business days only
+    ("boe",       3 * 86400),   // Bank of England: business days only
+    ("bonds",     3 * 86400),   // US Treasury yields: business days only
+    ("imf",       7 * 86400),   // IMF: monthly/quarterly
+    ("cftc",      3 * 86400),   // CFTC: weekly (often delayed)
+    ("sec_efts",  3 * 86400),   // SEC ETF data: daily filings
+    ("finra",     3 * 86400),   // FINRA short vol: daily
+    ("finra_short_vol", 3 * 86400),
+    ("fred",      3 * 86400),   // FRED (alternative id)
+    ("congress",  3 * 86400),   // Congressional trades: disclosure lag
+    ("yahoo_drinks", 3 * 86400), // Drink commodity: stable on weekends
+];
+
+fn source_max_age_secs(source_id: &str, tick_duration_secs: u64) -> u64 {
+    if let Some(&(_, cap)) = SOURCE_MAX_AGE_SECS.iter().find(|(id, _)| *id == source_id) {
+        cap
+    } else {
+        tick_duration_secs.saturating_mul(2)
+    }
+}
+
 /// Build MarketPrices from cached snapshot data for a specific batch's markets.
 ///
 /// Uses `fetched_at` timestamps from the data-node to populate the `last_update`
 /// field in MarketPrices, enabling proper staleness detection downstream.
-/// Markets with stale price data (older than 2x tick duration) are logged and
-/// skipped — they will resolve as Cancelled since they have no price entry.
+/// Markets with stale price data (older than the per-source max age) are logged
+/// and skipped — they will resolve as Cancelled since they have no price entry.
+/// Real-time sources use 2x tick duration; slow sources (daily/weekly government
+/// data) use a fixed multi-day window so they are never incorrectly cancelled.
 async fn build_market_prices(
     snapshot_data: &SnapshotData,
     batch_market_ids: &[H256],
     reference_prices: &ReferencePrices,
     now: u64,
     tick_duration_secs: u64,
+    source_id: &str,
 ) -> MarketPrices {
     let mut prices = MarketPrices::new();
     let (current_values, change_pcts, fetched_at_map) = snapshot_data;
     let ref_prices = reference_prices.read().await;
 
-    // Staleness threshold: 2x the tick duration.
-    // If price data is older than this, the snapshot is too stale to use for resolution.
-    let max_age_secs = tick_duration_secs.saturating_mul(2);
+    // Staleness threshold: per-source.
+    // Real-time sources: 2x tick duration.
+    // Slow sources (government/macro data): multi-day fixed cap.
+    let max_age_secs = source_max_age_secs(source_id, tick_duration_secs);
     let now_i64 = now as i64;
 
     let mut matched = 0;
@@ -2027,6 +2070,7 @@ pub async fn run(
                             &reference_prices,
                             now,
                             batch.tick_duration,
+                            &item.source_id,
                         )
                         .await;
                         pinned_prices.insert(pin_key, (built.clone(), 0));

@@ -14,7 +14,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
     is_ecb_day, is_eu_weekend, load_all_asset_entries, load_assets_from_json, next_eu_trading_day,
-    today_at_cet, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    today_at_cet, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
@@ -229,6 +229,10 @@ impl MarketDataSource for EcbMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

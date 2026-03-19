@@ -15,7 +15,7 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::traits::{
-    is_us_weekend, next_us_trading_day, today_at_eastern, AssetUpdate, MarketDataSource,
+    is_us_weekend, next_us_trading_day, today_at_eastern, AssetUpdate, BatchStrategy, MarketDataSource,
     PriceUpdate, ScheduledMarketDataSource,
 };
 
@@ -296,6 +296,10 @@ impl MarketDataSource for SecEftsMarketSource {
 
         info!("Fetched {} SEC EFTS filing counts", results.len());
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

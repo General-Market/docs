@@ -23,7 +23,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 /// NDBC latest observations bulk file URL
 const DATA_URL: &str = "https://www.ndbc.noaa.gov/data/latest_obs/latest_obs.txt";
@@ -377,6 +377,10 @@ impl MarketDataSource for NdbcMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENVIRONMENTAL
     }
 }
 

@@ -93,8 +93,22 @@ test.describe('Vision Leaderboard', () => {
   })
 
   test('all sources have leaderboard data', async () => {
-    // Every source should return >0 players — even $0 all-around means the query works.
-    // 0 players means a broken source_id mapping.
+    // Sources with no deployed batch are expected to return 0 players — that is not a bug.
+    // Only sources that map to a deployed batch should have leaderboard data.
+    // A "broken" source is one that maps to a deployed batch but returns 0 players.
+
+    // Deployed batch names from vision-batches.json
+    const deployedBatches = new Set([
+      'defi', 'rates', 'bls', 'worldbank', 'eia', 'ecb', 'weather', 'sec_13f',
+      'finra_short_vol', 'congress', 'bchain', 'bonds', 'anilist', 'backpacktf',
+      'cloudflare', 'fourchan', 'hackernews', 'polymarket', 'steam', 'twitch',
+      'zillow', 'earthquake', 'spaceweather', 'wildfire', 'mil_aircraft', 'sports',
+      'iss', 'weather_alerts', 'animals', 'gtfs_transit', 'usa_spending', 'pumpfun',
+      'usgs_water', 'chaturbate', 'noaa_tides', 'citybikes', 'ndbc', 'noaa_met',
+      'nwps', 'airnow', 'crossref', 'pubmed', 'parking', 'bestbuy', 'adzuna',
+      'queue_times', 'mta_subway',
+    ])
+
     const sourcesRes = await fetch(`${FRONTEND_URL}/api/vision/sources`, {
       signal: AbortSignal.timeout(10_000),
     })
@@ -103,12 +117,31 @@ test.describe('Vision Leaderboard', () => {
     const allSources: Array<{ sourceId: string; internalIds?: string[] }> = sourcesData.sources ?? []
     expect(allSources.length).toBeGreaterThan(0)
 
-    const broken: string[] = []    // 0 players returned — bad source_id mapping
-    const dead: string[] = []      // >0 players, all $0 — valid query, no activity
-    const active: string[] = []    // >0 players, at least 1 non-zero PnL
+    // Determine which display sources map to at least one deployed batch
+    const expectedSources = allSources.filter(src => {
+      const ids = [src.sourceId, ...(src.internalIds ?? [])]
+      return ids.some(id => deployedBatches.has(id))
+    })
+
+    const broken: string[] = []    // maps to a batch, but returns 0 players — bad mapping
+    const dead: string[] = []      // maps to a batch, >0 players but all $0 — valid, no activity
+    const active: string[] = []    // maps to a batch, >0 players with non-zero PnL
+    const unmapped: string[] = []  // no batch deployed — expected, not a failure
 
     for (const src of allSources) {
-      const queryId = src.internalIds?.[0] ?? src.sourceId
+      const ids = [src.sourceId, ...(src.internalIds ?? [])]
+      const hasBatch = ids.some(id => deployedBatches.has(id))
+
+      if (!hasBatch) {
+        unmapped.push(src.sourceId)
+        continue
+      }
+
+      // Query using the first internalId that matches a deployed batch, else sourceId
+      const queryId =
+        (src.internalIds ?? []).find(id => deployedBatches.has(id)) ??
+        (deployedBatches.has(src.sourceId) ? src.sourceId : (src.internalIds?.[0] ?? src.sourceId))
+
       const res = await fetch(`${VISION_API}/vision/leaderboard?source_id=${queryId}`, {
         signal: AbortSignal.timeout(10_000),
       })
@@ -119,7 +152,7 @@ test.describe('Vision Leaderboard', () => {
       const data = await res.json()
       const lb: any[] = data.leaderboard ?? []
       if (lb.length === 0) {
-        broken.push(src.sourceId)
+        broken.push(`${src.sourceId} [batch:${queryId}]`)
       } else if (lb.every(p => Math.abs(p.pnl) <= 0.001)) {
         dead.push(src.sourceId)
       } else {
@@ -127,12 +160,15 @@ test.describe('Vision Leaderboard', () => {
       }
     }
 
-    console.log(`\nActive sources (non-zero PnL):  [${active.join(', ')}]`)
-    console.log(`Dead sources   (all $0, query OK): [${dead.join(', ')}]`)
-    console.log(`Broken sources (0 players returned): [${broken.join(', ')}]`)
+    console.log(`\nExpected sources (have a deployed batch): ${expectedSources.length}`)
+    console.log(`Active  (non-zero PnL):         [${active.join(', ')}]`)
+    console.log(`Dead    (all $0, query OK):      [${dead.join(', ')}]`)
+    console.log(`Broken  (0 players, has batch):  [${broken.join(', ')}]`)
+    console.log(`Unmapped (no batch — expected):  [${unmapped.join(', ')}]`)
 
-    // No source should return 0 players — that indicates a broken source_id mapping
-    expect(broken, `Broken source_id mappings: ${broken.join(', ')}`).toHaveLength(0)
+    // Only sources with a deployed batch should return players.
+    // Zero players from a mapped source = broken source_id query.
+    expect(broken, `Sources with deployed batch but 0 players: ${broken.join(', ')}`).toHaveLength(0)
   })
 
   test('leaderboard source_id mapping works (coingecko → crypto)', async () => {

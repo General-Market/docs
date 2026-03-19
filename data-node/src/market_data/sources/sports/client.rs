@@ -20,7 +20,7 @@ use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration (empty — all assets are dynamic)
@@ -194,6 +194,10 @@ impl MarketDataSource for SportsMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::PROBABILITY
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

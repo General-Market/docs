@@ -15,7 +15,7 @@ use tracing::{debug, info};
 
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
@@ -189,6 +189,10 @@ impl MarketDataSource for ImfMarketSource {
 
         info!("Fetched {} IMF WEO indicators", results.len());
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

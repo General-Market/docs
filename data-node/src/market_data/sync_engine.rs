@@ -56,6 +56,9 @@ impl SyncEngine {
         broadcast_hub: Arc<PriceBroadcastHub>,
         write_channel: PriceWriteChannel,
     ) -> Self {
+        // Register batch strategy for the batch engine to read
+        crate::batch_engine::register_strategy(source.source_id(), source.batch_strategy());
+
         let retention_days = std::env::var("MARKET_DATA_RETENTION_DAYS")
             .ok()
             .and_then(|v| v.parse().ok())

@@ -21,7 +21,7 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration loaded from JSON at compile time
@@ -471,6 +471,10 @@ impl MarketDataSource for ChaturbateMarketSource {
             MIN_VIEWER_COUNT
         );
         Ok(entries)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::FAST_VOLATILE
     }
 }
 

@@ -24,7 +24,7 @@ use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration
@@ -149,6 +149,10 @@ impl MarketDataSource for TomtomTrafficMarketSource {
                 duration: Duration::from_secs(86400),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

@@ -19,7 +19,7 @@ use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
     is_eu_weekend, load_all_asset_entries, load_assets_from_json, next_eu_trading_day,
-    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 
 /// BoE statistical database base URL
@@ -298,6 +298,10 @@ impl MarketDataSource for BoeMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

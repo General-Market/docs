@@ -22,7 +22,7 @@ use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration
@@ -428,6 +428,10 @@ impl MarketDataSource for EarthquakeMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENVIRONMENTAL
     }
 }
 

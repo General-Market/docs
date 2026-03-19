@@ -20,7 +20,7 @@ use tracing::{info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 /// BGG XML API2 base URL
 const API_BASE: &str = "https://boardgamegeek.com/xmlapi2";
@@ -273,6 +273,10 @@ impl MarketDataSource for BggMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENGAGEMENT
     }
 }
 

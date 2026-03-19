@@ -6,7 +6,7 @@
 //! Hash uses ABI encoding (ethers) to match Solidity's abi.encode.
 
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock, RwLock as StdRwLock};
 
 use chrono::{DateTime, Utc};
 use ethers::abi::{encode, Token};
@@ -17,6 +17,30 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
+
+use crate::market_data::traits::BatchStrategy;
+
+// ── Global strategy registry ──────────────────────────────────────────────
+// Sources register their BatchStrategy at sync engine startup.
+// The batch engine reads strategies from here.
+
+static STRATEGY_REGISTRY: OnceLock<StdRwLock<HashMap<String, BatchStrategy>>> = OnceLock::new();
+
+fn strategy_registry() -> &'static StdRwLock<HashMap<String, BatchStrategy>> {
+    STRATEGY_REGISTRY.get_or_init(|| StdRwLock::new(HashMap::new()))
+}
+
+/// Register a source's batch strategy. Called by SyncEngine on startup.
+pub fn register_strategy(source_id: &str, strategy: BatchStrategy) {
+    let mut map = strategy_registry().write().unwrap();
+    map.insert(source_id.to_string(), strategy);
+}
+
+/// Get a source's batch strategy. Returns DEFAULT if not registered.
+pub fn get_strategy(source_id: &str) -> BatchStrategy {
+    let map = strategy_registry().read().unwrap();
+    map.get(source_id).copied().unwrap_or(BatchStrategy::DEFAULT)
+}
 
 /// Lock window as % of tick duration, by source speed class.
 const LOCK_PCT_FAST: f64 = 0.25;    // 30-120s sync → lock last 25%
@@ -329,25 +353,8 @@ async fn get_all_24h_changes(
         .collect())
 }
 
-/// Per-source lookback ticks for median threshold calibration.
-/// Sources with wildly different volatility profiles need different windows.
-fn median_lookback_ticks(source_id: &str) -> usize {
-    match source_id {
-        // Fast, extreme volatility — short lookback tracks regime changes
-        "pumpfun" => 10,
-        "twitch" => 10,
-        "chaturbate" => 10,
-        // Moderate volatility — standard window
-        "crypto" | "defi" | "stocks" | "polymarket" => 20,
-        // Slow-changing — need larger lookback for meaningful median
-        "weather" | "airnow" | "noaa_met" | "noaa_tides" | "nwps" | "ndbc"
-        | "usgs_water" | "spaceweather" => 48,
-        "rates" | "bls" | "worldbank" | "eia" | "ecb" | "bonds"
-        | "futures" | "bchain" | "opec" | "imf" | "cftc" => 30,
-        // Default: 20 ticks
-        _ => 20,
-    }
-}
+// median_lookback_ticks removed — strategies now live in each source's
+// `batch_strategy()` method and are read via get_strategy().
 
 /// Get the median signed change % over the last N settlements per asset.
 /// Returns HashMap<asset_id, median_change_pct>.
@@ -466,27 +473,30 @@ fn resolution_from_median(median_change_pct: f64) -> (&'static str, u32) {
     }
 }
 
+/// Clamp threshold_bps to the source's strategy bounds.
+fn clamp_threshold(bps: u32, strategy: &BatchStrategy) -> u32 {
+    bps.max(strategy.min_threshold_bps).min(strategy.max_threshold_bps)
+}
+
 /// Compute thresholds for all assets of a source in batch.
 ///
 /// Strategy: **median-first calibration** for 50/50 outcomes.
+/// Each source defines its own `BatchStrategy` via the `MarketDataSource` trait.
 ///
 /// Priority:
 /// 1. Median of last N settlement changes (50/50 by construction)
 /// 2. Last batch settlement (fallback to volatility bands)
 /// 3. 24h price history (fallback to volatility bands)
-/// 4. No data → up_0 (any positive = up)
-///
-/// The lookback window is per-source: fast sources (pumpfun) use 10 ticks,
-/// slow sources (weather) use 48 ticks. See `median_lookback_ticks()`.
+/// 4. No data → source's `zero_trend_type`
 async fn compute_asset_thresholds(
     pool: &PgPool,
     source_id: &str,
     asset_ids: &[String],
 ) -> Vec<BatchMarket> {
-    let lookback = median_lookback_ticks(source_id);
+    let strategy = get_strategy(source_id);
 
     // Primary: median calibration from settlement history
-    let median_changes = get_median_settlement_changes(pool, source_id, lookback)
+    let median_changes = get_median_settlement_changes(pool, source_id, strategy.lookback_ticks)
         .await
         .unwrap_or_default();
 
@@ -512,7 +522,8 @@ async fn compute_asset_thresholds(
             // 1. Median calibration — 50/50 by construction
             if let Some(&median_pct) = median_changes.get(asset_id) {
                 if !median_pct.is_nan() && !median_pct.is_infinite() {
-                    let (res_type, threshold_bps) = resolution_from_median(median_pct);
+                    let (res_type, raw_bps) = resolution_from_median(median_pct);
+                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
@@ -525,7 +536,8 @@ async fn compute_asset_thresholds(
             // 2. Last settlement (fallback — volatility bands)
             if let Some(&change_pct) = settlement_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
+                    let (res_type, raw_bps) = resolution_for_volatility(change_pct);
+                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
@@ -538,7 +550,8 @@ async fn compute_asset_thresholds(
             // 3. 24h history (fallback — volatility bands)
             if let Some(&change_pct) = history_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
-                    let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
+                    let (res_type, raw_bps) = resolution_for_volatility(change_pct);
+                    let threshold_bps = clamp_threshold(raw_bps, &strategy);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
@@ -548,11 +561,11 @@ async fn compute_asset_thresholds(
                 }
             }
 
-            // 4. No data — binary up/down on any movement
+            // 4. No data — use source's zero_trend_type
             BatchMarket {
                 asset_id: asset_id.clone(),
-                resolution_type: "up_0".to_string(),
-                threshold_bps: 0,
+                resolution_type: strategy.zero_trend_type.to_string(),
+                threshold_bps: strategy.min_threshold_bps,
                 threshold_source: "no_data".to_string(),
             }
         })
@@ -1063,10 +1076,15 @@ mod tests {
     }
 
     #[test]
-    fn test_median_lookback_ticks() {
-        assert_eq!(median_lookback_ticks("pumpfun"), 10);
-        assert_eq!(median_lookback_ticks("crypto"), 20);
-        assert_eq!(median_lookback_ticks("weather"), 48);
-        assert_eq!(median_lookback_ticks("some_new_source"), 20); // default
+    fn test_strategy_registry() {
+        // Unregistered source returns DEFAULT
+        let s = get_strategy("unknown_source_xyz");
+        assert_eq!(s.lookback_ticks, BatchStrategy::DEFAULT.lookback_ticks);
+
+        // Register a custom strategy
+        register_strategy("test_src", BatchStrategy::FAST_VOLATILE);
+        let s = get_strategy("test_src");
+        assert_eq!(s.lookback_ticks, BatchStrategy::FAST_VOLATILE.lookback_ticks);
+        assert_eq!(s.min_threshold_bps, BatchStrategy::FAST_VOLATILE.min_threshold_bps);
     }
 }

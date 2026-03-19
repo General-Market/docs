@@ -27,7 +27,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
-use crate::market_data::traits::{load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 use super::proto::FeedMessage;
 
@@ -410,6 +410,10 @@ impl MarketDataSource for GtfsRtMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

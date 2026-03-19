@@ -22,7 +22,7 @@ use tracing::{debug, info};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 /// NRC Power Reactor Status Report URL (last 365 days)
 const DATA_URL: &str = "https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/PowerReactorStatusForLast365Days.txt";
@@ -139,6 +139,10 @@ impl MarketDataSource for NrcNuclearMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

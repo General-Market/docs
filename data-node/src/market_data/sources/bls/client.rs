@@ -21,7 +21,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::traits::{
     is_us_market_closed, load_all_asset_entries, load_assets_from_json, AssetUpdate,
-    MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    BatchStrategy, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
@@ -421,6 +421,10 @@ impl MarketDataSource for BlsMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

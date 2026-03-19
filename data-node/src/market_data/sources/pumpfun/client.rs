@@ -25,7 +25,7 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration (empty — all assets are dynamic)
@@ -414,6 +414,10 @@ impl MarketDataSource for PumpfunMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::FAST_VOLATILE
     }
 }
 

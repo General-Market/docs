@@ -17,7 +17,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 /// Open-Meteo forecast API base URL
 const OPENMETEO_API: &str = "https://api.open-meteo.com/v1/forecast";
@@ -367,6 +367,10 @@ impl MarketDataSource for WeatherSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENVIRONMENTAL
     }
 }
 

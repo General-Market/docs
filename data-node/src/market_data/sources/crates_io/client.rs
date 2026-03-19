@@ -19,8 +19,8 @@ use tracing::{debug, info, warn};
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource,
-    PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy,
+    MarketDataSource, PriceUpdate,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -301,6 +301,10 @@ impl MarketDataSource for CratesIoMarketSource {
 
         info!("Discovered {} crates", entries.len());
         Ok(entries)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENGAGEMENT
     }
 }
 

@@ -18,7 +18,7 @@ use tracing::{debug, info, warn};
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
     is_us_market_closed, load_all_asset_entries, load_assets_from_json, next_us_trading_day,
-    today_at_eastern, AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    today_at_eastern, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -221,6 +221,10 @@ impl MarketDataSource for ChrisMarketSource {
 
         info!("Fetched {} CHRIS futures prices", results.len());
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

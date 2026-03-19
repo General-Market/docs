@@ -20,7 +20,7 @@ use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 const API_URL: &str = "https://bwt.cbp.gov/api/waittimes";
 
@@ -157,6 +157,10 @@ impl MarketDataSource for CbpBorderMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

@@ -19,7 +19,7 @@ use tracing::{info, warn};
 use crate::market_data::sources::error::SourceError;
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -205,6 +205,10 @@ impl MarketDataSource for WeatherAlertsMarketSource {
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {
         load_assets_from_json(ASSET_JSON)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_prices(&self, asset_ids: &[String]) -> Result<Vec<PriceUpdate>> {

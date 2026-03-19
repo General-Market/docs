@@ -23,7 +23,7 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 // ============================================================================
@@ -111,6 +111,10 @@ impl MarketDataSource for FaaDelaysMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::STATUS
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

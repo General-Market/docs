@@ -1,4 +1,8 @@
 import { DATA_NODE_SERVER } from '@/lib/config'
+import visionBatches from '@/lib/contracts/vision-batches.json'
+
+// Names of all deployed batches — the only sources worth showing users.
+const DEPLOYED_BATCH_NAMES = new Set(Object.keys(visionBatches.batches))
 
 function sanitizeSource(s: any) {
   return {
@@ -10,13 +14,24 @@ function sanitizeSource(s: any) {
   }
 }
 
+function hasDeployedBatch(source: any): boolean {
+  if (DEPLOYED_BATCH_NAMES.has(source.sourceId)) return true
+  if (Array.isArray(source.internalIds)) {
+    return source.internalIds.some((id: string) => DEPLOYED_BATCH_NAMES.has(id))
+  }
+  return false
+}
+
 export async function GET() {
   try {
     const res = await fetch(`${DATA_NODE_SERVER}/sources/registry`, { next: { revalidate: 300 } })
     if (!res.ok) return Response.json({ sources: [], categories: [] }, { status: 502 })
     const data = await res.json()
+    const sources = (data.sources ?? [])
+      .filter(hasDeployedBatch)
+      .map(sanitizeSource)
     return Response.json({
-      sources: (data.sources ?? []).map(sanitizeSource),
+      sources,
       categories: data.categories ?? [],
     })
   } catch {

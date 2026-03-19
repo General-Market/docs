@@ -32,7 +32,7 @@ use tracing::{debug, info, warn};
 
 use super::api_client::OpenMeteoClient;
 use super::models::{CityForecast, HourlyDataPoint, WeatherCity, WeatherMetric};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// Default sync interval: 5 minutes (checks metadata, only fetches on update)
@@ -484,6 +484,10 @@ impl MarketDataSource for OpenMeteoMarketSource {
         self.mark_fetched(current_ts).await;
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENVIRONMENTAL
     }
 }
 

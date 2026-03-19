@@ -21,7 +21,8 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource,
+    PriceUpdate,
 };
 
 const ASSET_JSON: &str = include_str!("../../../config/openalex.json");
@@ -169,6 +170,10 @@ impl MarketDataSource for OpenAlexMarketSource {
 
         info!("Fetched {}/{} prices from OpenAlex (total works today: {})", results.len(), asset_ids.len(), total_count);
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENGAGEMENT
     }
 }
 

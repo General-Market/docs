@@ -22,8 +22,8 @@ use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
 use crate::market_data::sources::oauth::OAuthTokenCache;
 
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource,
-    PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy,
+    MarketDataSource, PriceUpdate,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -825,6 +825,10 @@ impl MarketDataSource for TwitchMarketSource {
         );
 
         Ok(entries)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::FAST_VOLATILE
     }
 }
 

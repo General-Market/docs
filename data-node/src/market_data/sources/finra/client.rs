@@ -28,7 +28,7 @@ use crate::market_data::sources::oauth::OAuthTokenCache;
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration loaded from JSON at compile time
@@ -422,6 +422,10 @@ impl MarketDataSource for FinraMarketSource {
             latest_by_symbol.len()
         );
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

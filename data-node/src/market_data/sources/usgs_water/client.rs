@@ -26,7 +26,7 @@ use tracing::{debug, info, warn};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::sources::http_client::{RetryConfig, SourceHttpClient};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration (starts empty — dynamic discovery)
@@ -606,6 +606,10 @@ impl MarketDataSource for UsgsWaterMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENVIRONMENTAL
     }
 
     async fn discover_upstream_assets(&self) -> Result<Vec<AssetEntry>> {

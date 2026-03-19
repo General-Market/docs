@@ -15,7 +15,7 @@ use tracing::{debug, info, warn};
 use super::client::NasdaqClient;
 use crate::market_data::traits::{
     load_all_asset_entries, load_assets_from_json, next_us_trading_day, today_at_eastern,
-    AssetUpdate, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
+    AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate, ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
@@ -159,6 +159,10 @@ impl MarketDataSource for OpecMarketSource {
         }
 
         Ok(vec![])
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

@@ -20,7 +20,7 @@ use std::time::Duration;
 use tracing::{debug, info, warn};
 
 use crate::market_data::sources::http_client::{SourceHttpClient, RetryConfig};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 
 /// Polymarket Gamma API base URL
@@ -223,6 +223,10 @@ impl MarketDataSource for PolymarketMarketSource {
                 duration: Duration::from_secs(60),
             }],
         }
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::PROBABILITY
     }
 
     async fn fetch_assets(&self) -> Result<Vec<AssetUpdate>> {

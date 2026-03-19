@@ -11,7 +11,7 @@ use std::time::Duration;
 use tracing::{debug, info};
 
 use crate::market_data::traits::{
-    load_all_asset_entries, load_assets_from_json, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_all_asset_entries, load_assets_from_json, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
     ScheduledMarketDataSource,
 };
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
@@ -202,6 +202,10 @@ impl MarketDataSource for WorldBankMarketSource {
 
         info!("Fetched {}/{} World Bank indicators", results.len(), asset_ids.len());
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::MACRO_DAILY
     }
 }
 

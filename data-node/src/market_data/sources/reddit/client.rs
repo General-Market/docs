@@ -24,7 +24,7 @@ use crate::market_data::sources::oauth::OAuthTokenCache;
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
 use crate::market_data::traits::{
-    load_assets_from_json, AssetEntry, AssetUpdate, MarketDataSource, PriceUpdate,
+    load_assets_from_json, AssetEntry, AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate,
 };
 
 /// Asset configuration loaded from JSON at compile time
@@ -610,6 +610,10 @@ impl MarketDataSource for RedditMarketSource {
 
         info!("Discovered {} Reddit assets", entries.len());
         Ok(entries)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::ENGAGEMENT
     }
 }
 

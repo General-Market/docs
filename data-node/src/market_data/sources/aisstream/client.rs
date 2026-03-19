@@ -22,7 +22,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::market_data::rate_limiter::{RateLimitConfig, RateWindow};
-use crate::market_data::traits::{AssetUpdate, MarketDataSource, PriceUpdate};
+use crate::market_data::traits::{AssetUpdate, BatchStrategy, MarketDataSource, PriceUpdate};
 
 /// AISstream WebSocket endpoint
 const WS_URL: &str = "wss://stream.aisstream.io/v0/stream";
@@ -294,6 +294,10 @@ impl MarketDataSource for AisStreamMarketSource {
         );
 
         Ok(results)
+    }
+
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::FAST_VOLATILE
     }
 }
 
