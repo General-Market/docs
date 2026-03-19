@@ -46,8 +46,8 @@ MARKET_COUNT=$(python3 -c "import json; d=json.load(open('$BATCH_MARKETS')); pri
 # RPC
 L3_RPC="${L3_RPC_URL:-http://142.132.164.24/}"
 
-# Deployer key (default Anvil key 0)
-DEPLOYER_KEY="${DEPLOYER_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}"
+# Deployer key (default testnet deployer)
+DEPLOYER_KEY="${DEPLOYER_KEY:-0x107e200b197dc889feba0a1e0538bf51b97b2fc87f27f82783d5d59789dc3537}"
 DEPLOYER=$(cast wallet address "$DEPLOYER_KEY" 2>/dev/null)
 
 echo "=== Seed Lending ==="

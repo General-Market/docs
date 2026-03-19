@@ -12,6 +12,10 @@ import { VISION_API_URL, VISION_ISSUER_URLS } from '@/lib/config'
 
 export type WithdrawStep = 'idle' | 'fetching-proof' | 'withdrawing' | 'done' | 'error'
 
+const popcount = (n: number) => n.toString(2).split('').filter(b => b === '1').length
+
+const WITHDRAW_TIMEOUT_MS = 30_000
+
 export interface BalanceProof {
   balance: string
   blsSig: string
@@ -110,6 +114,7 @@ export function useWithdraw(): UseWithdrawReturn {
   const [proof, setProof] = useState<BalanceProof | null>(null)
 
   const withdrawHandled = useRef(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Read latest snapshot nonce from OracleRegistry (for BLS verification)
   const { data: lastSnapshotNonce } = useReadContract({
@@ -122,7 +127,7 @@ export function useWithdraw(): UseWithdrawReturn {
 
   // --- Withdraw tx ---
   const {
-    writeContract: writeWithdraw,
+    writeContractAsync: writeWithdrawAsync,
     data: withdrawHash,
     isPending: isWithdrawPending,
     error: withdrawError,
@@ -171,29 +176,60 @@ export function useWithdraw(): UseWithdrawReturn {
       return
     }
 
+    // Require at least 2 signers (popcount >= 2) before submitting — a single-signer proof will revert on-chain
+    const bitmapNum = parseInt(fetchedProof.signerBitmap || '0', 10)
+    if (popcount(bitmapNum) < 2) {
+      setErrorMsg('Insufficient oracle signatures for withdrawal. Try again in a few minutes.')
+      setStep('error')
+      return
+    }
+
     // Step 2: Submit withdraw tx with BLS proof + referenceNonce + signersBitmask
     setStep('withdrawing')
     const refNonce = lastSnapshotNonce ? BigInt(lastSnapshotNonce.toString()) : 0n
     const signersBitmask = BigInt(fetchedProof.signerBitmap || '0')
 
-    writeWithdraw({
-      address: visionAddress,
-      abi: VISION_ABI,
-      functionName: 'withdraw',
-      args: [
-        batchId,
-        BigInt(fetchedProof.balance),
-        `0x${fetchedProof.blsSig}` as `0x${string}`,
-        refNonce,
-        signersBitmask,
-      ],
-    })
-  }, [address, writeWithdraw, lastSnapshotNonce])
+    // Start a 30s timeout — if neither success nor error fires, surface a failure
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      setErrorMsg('Withdrawal timed out after 30 seconds. The transaction may still be pending — check your wallet.')
+      setStep('error')
+      resetWithdraw()
+    }, WITHDRAW_TIMEOUT_MS)
+
+    try {
+      await writeWithdrawAsync({
+        address: visionAddress,
+        abi: VISION_ABI,
+        functionName: 'withdraw',
+        args: [
+          batchId,
+          BigInt(fetchedProof.balance),
+          `0x${fetchedProof.blsSig}` as `0x${string}`,
+          refNonce,
+          signersBitmask,
+        ],
+      })
+    } catch (e) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      const msg = (e as Error).message || 'Withdraw transaction failed'
+      setErrorMsg(msg.slice(0, 300))
+      setStep('error')
+      resetWithdraw()
+    }
+  }, [address, writeWithdrawAsync, lastSnapshotNonce, visionAddress, resetWithdraw])
 
   // Withdraw success -> done
   useEffect(() => {
     if (!isWithdrawSuccess || withdrawHandled.current) return
     withdrawHandled.current = true
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setStep('done')
     resetWithdraw()
   }, [isWithdrawSuccess, resetWithdraw])
@@ -201,6 +237,10 @@ export function useWithdraw(): UseWithdrawReturn {
   // Error handling — writeContract simulation/submission error
   useEffect(() => {
     if (withdrawError) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       const msg = withdrawError.message || 'Withdraw failed'
       setErrorMsg(msg.slice(0, 300))
       setStep('error')
@@ -211,6 +251,10 @@ export function useWithdraw(): UseWithdrawReturn {
   // Error handling — on-chain revert (TX submitted but reverted)
   useEffect(() => {
     if (isWithdrawReceiptError && withdrawReceiptError) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       const msg = withdrawReceiptError.message || 'Transaction reverted on-chain'
       setErrorMsg(msg.slice(0, 300))
       setStep('error')
@@ -219,6 +263,10 @@ export function useWithdraw(): UseWithdrawReturn {
   }, [isWithdrawReceiptError, withdrawReceiptError, resetWithdraw])
 
   const reset = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setStep('idle')
     setErrorMsg(null)
     setProof(null)

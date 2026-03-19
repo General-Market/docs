@@ -246,7 +246,7 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
           {/* Left: Markets + Leaderboard */}
           <div className="flex-1 min-w-0">
             <MarketsTable sourceId={sourceId} bitmapEditor={bitmapEditor} isResolving={justResolved} />
-            <TopPlayers />
+            <TopPlayers sourceId={sourceId} />
           </div>
 
           {/* Right: Batch entry panel (300px, sticky) */}

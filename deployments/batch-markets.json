@@ -1,7 +1,7 @@
 {
   "chainId": 111222333,
   "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
-  "timestamp": 1773946786,
+  "timestamp": 1773946863,
   "infrastructure": {
     "MORPHO": "0xecf30fA79bb8aB854932E3De0a7D75Cf19cFd867",
     "CURATOR_RATE_IRM": "0x9AFC81B6182F63dc10FECC42256248eE84593B27",
@@ -12,40 +12,8 @@
   "markets": [
     {
       "collateralToken": "0x10294668a12c8CDA6e3E2F5d9c4908C4F0BdAe54",
-      "oracle": "0x82BD8014E3943CF9a00dd64FE57c8E6662a7373e",
-      "marketId": "0x8a118cb0e5a24cbb16adbb108310e38df5f9e84bb10f8b3f28df63462cdb5ba5",
-      "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
-    },
-    {
-      "collateralToken": "0x042FC66219D1D66651D1Ae5392B8E79A2d79aDE6",
-      "oracle": "0x3531481CFd370f5acf5ce4F2450E64933D01fB96",
-      "marketId": "0x4d02325ac18f058a22bbb41bd698ddbd685209efb271458c81ae803eec373ccf",
-      "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
-    },
-    {
-      "collateralToken": "0x404DBa36a879523CAf0815E6B5e6Ed1E5F836Ddc",
-      "oracle": "0x44FC4156013D73F2e0c740675a2A762cb5d932Bb",
-      "marketId": "0x260c3af3ccfc8708e63fc79f420f293518c0f5120e70d9ab8eb8c187808a8a6a",
-      "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
-    },
-    {
-      "collateralToken": "0xbaDA5FeD44b59976d141195d0e601794E3B844C9",
-      "oracle": "0xdB426c5A6F01eD8D72E02F149D12d5f52c05264c",
-      "marketId": "0x236930417a7dde5cbfbe154d28ec8e11e4e89b8bd9760469f59b6e54f149939c",
-      "lltv": "770000000000000000",
-      "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
-      "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"
-    },
-    {
-      "collateralToken": "0x330940e1F6bDfe966fF0cB3e6945038647437b3E",
-      "oracle": "0x4421aacEcF17E959CE9B3D4EdE3588bfD295C8d5",
-      "marketId": "0xdfac8a6a20c9ad3bbf5ba1bb62b782652eaa97a32a3d1d4618eaf24b13a80e3b",
+      "oracle": "0x2Dd4b3254552317E8f7E1C6Db36453c5b103afb4",
+      "marketId": "0xa2129600ec725ed4d9b769d04c75b91a1a3f9af596b051ae599d3479330c8ec3",
       "lltv": "770000000000000000",
       "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
       "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"

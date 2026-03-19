@@ -876,6 +876,18 @@ fn sign_balance_proofs(
 }
 
 /// Upsert a single balance proof to the `vision_balance_proofs` table.
+///
+/// When multiple oracles share the same Postgres database (testnet topology),
+/// a naive overwrite destroys prior oracles' signatures.  This function instead:
+///
+/// 1. Reads the existing row (with `FOR UPDATE` to prevent races).
+/// 2. If same `tick_id` AND same `balance`, it aggregates the BLS signature
+///    and bitwise-ORs the signer bitmap — producing a multi-oracle proof.
+/// 3. If the tick_id is newer (or no row exists), it overwrites entirely.
+///
+/// Net effect: the last oracle to store its proof for a given tick ends up
+/// writing an aggregated signature covering all oracles that resolved before
+/// the row lock was released.
 async fn store_balance_proof(
     pool: &sqlx::PgPool,
     batch_id: u64,
@@ -887,30 +899,141 @@ async fn store_balance_proof(
 ) {
     let player_str = format!("{:?}", player);
     let balance_str = balance.to_string();
-    if let Err(e) = sqlx::query(
-        "INSERT INTO vision_balance_proofs (batch_id, player, tick_id, balance, bls_sig, signer_bitmap)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (batch_id, player) DO UPDATE SET
-            tick_id = EXCLUDED.tick_id,
-            balance = EXCLUDED.balance,
-            bls_sig = EXCLUDED.bls_sig,
-            signer_bitmap = EXCLUDED.signer_bitmap,
-            updated_at = NOW()"
-    )
-    .bind(batch_id as i64)
-    .bind(&player_str)
-    .bind(tick_id as i64)
-    .bind(&balance_str)
-    .bind(sig_bytes)
-    .bind(signer_bitmap_str)
-    .execute(pool)
-    .await
-    {
+
+    // Try to merge with existing row inside a transaction (FOR UPDATE lock).
+    let merge_result: Result<bool, sqlx::Error> = async {
+        let mut tx = pool.begin().await?;
+
+        let existing: Option<(i64, String, Vec<u8>, String)> = sqlx::query_as(
+            "SELECT tick_id, balance, bls_sig, signer_bitmap
+             FROM vision_balance_proofs
+             WHERE batch_id = $1 AND player = $2
+             FOR UPDATE"
+        )
+        .bind(batch_id as i64)
+        .bind(&player_str)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        match existing {
+            Some((existing_tick, existing_bal, existing_sig, existing_bitmap))
+                if existing_tick == tick_id as i64 && existing_bal == balance_str =>
+            {
+                // Same tick and balance — aggregate signatures.
+                let existing_bm: U256 = existing_bitmap.parse().unwrap_or(U256::zero());
+                let new_bm: U256 = signer_bitmap_str.parse().unwrap_or(U256::zero());
+
+                // Skip if our bit is already set (idempotent).
+                if (existing_bm & new_bm) == new_bm {
+                    tx.commit().await?;
+                    return Ok(true);
+                }
+
+                let merged_bm = existing_bm | new_bm;
+
+                // Aggregate BLS signatures.
+                let signer = Bn254BLSSigner::new();
+                let merged_sig = match signer.aggregate_signatures(vec![
+                    BLSSignature(existing_sig),
+                    BLSSignature(sig_bytes.to_vec()),
+                ]) {
+                    Ok(agg) => agg.0,
+                    Err(e) => {
+                        tracing::warn!(
+                            batch_id, tick_id, player = %player,
+                            error = %e,
+                            "BLS aggregation failed during DB merge — overwriting with new proof"
+                        );
+                        // Fall through to overwrite.
+                        sig_bytes.to_vec()
+                    }
+                };
+
+                // Use the aggregated result only when aggregation succeeded (merged_sig != sig_bytes).
+                let final_bitmap = if merged_sig != sig_bytes { merged_bm } else { new_bm };
+
+                sqlx::query(
+                    "UPDATE vision_balance_proofs
+                     SET bls_sig = $1, signer_bitmap = $2, updated_at = NOW()
+                     WHERE batch_id = $3 AND player = $4"
+                )
+                .bind(&merged_sig[..])
+                .bind(final_bitmap.to_string())
+                .bind(batch_id as i64)
+                .bind(&player_str)
+                .execute(&mut *tx)
+                .await?;
+
+                let bits_before = count_bits(existing_bm);
+                let bits_after = count_bits(final_bitmap);
+                if bits_after > bits_before {
+                    tracing::info!(
+                        batch_id, tick_id, player = %player,
+                        bitmap_before = %existing_bitmap,
+                        bitmap_after = %final_bitmap,
+                        signers_before = bits_before,
+                        signers_after = bits_after,
+                        "Merged BLS balance proof (shared-DB aggregation)"
+                    );
+                }
+
+                tx.commit().await?;
+                Ok(true)
+            }
+            Some((existing_tick, _, _, _)) if existing_tick > tick_id as i64 => {
+                // Existing row is from a newer tick — don't overwrite.
+                tracing::debug!(
+                    batch_id, tick_id, player = %player,
+                    existing_tick,
+                    "Existing balance proof is from a newer tick — skipping"
+                );
+                tx.commit().await?;
+                Ok(true)
+            }
+            _ => {
+                // No existing row, or different tick_id, or different balance — upsert.
+                sqlx::query(
+                    "INSERT INTO vision_balance_proofs (batch_id, player, tick_id, balance, bls_sig, signer_bitmap)
+                     VALUES ($1, $2, $3, $4, $5, $6)
+                     ON CONFLICT (batch_id, player) DO UPDATE SET
+                        tick_id = EXCLUDED.tick_id,
+                        balance = EXCLUDED.balance,
+                        bls_sig = EXCLUDED.bls_sig,
+                        signer_bitmap = EXCLUDED.signer_bitmap,
+                        updated_at = NOW()"
+                )
+                .bind(batch_id as i64)
+                .bind(&player_str)
+                .bind(tick_id as i64)
+                .bind(&balance_str)
+                .bind(sig_bytes)
+                .bind(signer_bitmap_str)
+                .execute(&mut *tx)
+                .await?;
+
+                tx.commit().await?;
+                Ok(true)
+            }
+        }
+    }.await;
+
+    if let Err(e) = merge_result {
         tracing::warn!(
             batch_id, tick_id, player = %player,
-            error = %e, "Failed to store balance proof in DB"
+            error = %e, "Failed to store/merge balance proof in DB"
         );
     }
+}
+
+/// Count set bits in a U256.
+fn count_bits(v: U256) -> u32 {
+    let mut n = v;
+    let mut count = 0u32;
+    while !n.is_zero() {
+        count += (n.low_u64() & 1) as u32;
+        n = n >> 1;
+    }
+    count
 }
 
 /// Generate BLS-signed WITHDRAW balance proofs for all players after tick resolution.
