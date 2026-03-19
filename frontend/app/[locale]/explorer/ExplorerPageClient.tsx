@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, LayoutGroup } from 'framer-motion'
+import { useTranslations } from 'next-intl'
 import { useExplorerHealth, type TimeRange } from '@/hooks/useExplorerHealth'
 import { ExplorerSummaryBar } from '@/components/domain/explorer/ExplorerSummaryBar'
 import { ConsensusSection } from '@/components/domain/explorer/ConsensusSection'
@@ -18,29 +19,18 @@ import { SystemExplorerSection } from '@/components/domain/explorer/SystemExplor
 import { springs } from '@/components/ui/spring'
 import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
-const TABS = [
-  { id: 'consensus', label: 'Consensus' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'prices', label: 'Price Feeds' },
-  { id: 'p2p', label: 'P2P Network' },
-  { id: 'cycles', label: 'Cycles' },
-  { id: 'itp', label: 'ITP & NAV' },
-  { id: 'vision', label: 'Vision' },
-  { id: 'sources', label: 'Sources' },
-  { id: 'system', label: 'System' },
-  { id: 'health', label: 'System Health' },
-  { id: 'chain', label: 'Chain & Gas' },
-] as const
-
-type TabId = (typeof TABS)[number]['id']
+const TAB_IDS = ['consensus', 'orders', 'prices', 'p2p', 'cycles', 'itp', 'vision', 'sources', 'system', 'health', 'chain'] as const
+type TabId = (typeof TAB_IDS)[number]
 
 const STANDALONE_TABS = new Set<TabId>(['sources', 'system'])
 const RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '30d']
 
 export default function ExplorerPageClient() {
+  const t = useTranslations('pages')
   const { snapshots, latest, loading, error, range, setRange, refresh } = useExplorerHealth()
   const [activeTab, setActiveTab] = useState<TabId>('consensus')
   const reduced = usePrefersReducedMotion()
+  const tabs = TAB_IDS.map(id => ({ id, label: t(`explorer.tabs.${id}`) }))
 
   const isStandalone = STANDALONE_TABS.has(activeTab)
 
@@ -50,10 +40,10 @@ export default function ExplorerPageClient() {
         {/* Header */}
         <div className="pt-10 pb-4">
           <p className="text-label font-semibold tracking-[0.08em] uppercase text-white/40 mb-1.5">
-            Network
+            {t('explorer.network')}
           </p>
           <h1 className="text-display font-black tracking-tight text-white leading-[1.1]">
-            Explorer
+            {t('explorer.title')}
           </h1>
         </div>
 
@@ -63,7 +53,7 @@ export default function ExplorerPageClient() {
         <div className="flex items-center justify-between border-b border-white/[0.08] mt-4">
           <LayoutGroup id="explorer-tabs">
             <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-              {TABS.map((tab) => {
+              {tabs.map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
                   <button

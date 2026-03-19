@@ -292,7 +292,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
 
   // Fetch batch config by hash from data-node (has per-market resolution types)
   const configHash = activeBatch?.configHash
-  const { data: batchConfigData } = useQuery<{ markets: { asset_id: string; resolution_type: string }[] }>({
+  const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
     queryKey: ['batch-config-hash', configHash],
     queryFn: async () => {
       const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
@@ -310,8 +310,8 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     // Prefer data-node config (has per-market resolution types)
     if (batchConfigData?.markets?.length) {
       for (const m of batchConfigData.markets) {
-        if (m.asset_id && m.resolution_type) {
-          map.set(m.asset_id, m.resolution_type.toUpperCase())
+        if (m.assetId && m.resolutionType) {
+          map.set(m.assetId, m.resolutionType.toUpperCase())
         }
       }
       return map

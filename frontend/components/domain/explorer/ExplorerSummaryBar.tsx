@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { AggregatedSnapshot } from '@/hooks/useExplorerHealth'
 
 interface ExplorerSummaryBarProps {
@@ -8,6 +9,7 @@ interface ExplorerSummaryBarProps {
 }
 
 export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps) {
+  const t = useTranslations('pages')
   if (loading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger">
@@ -24,15 +26,15 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
   if (!latest) {
     return (
       <div className="glass-surface-dark rounded-xl p-4 text-center">
-        <p className="text-caption text-white/40">No data available yet</p>
+        <p className="text-caption text-white/40">{t('explorer.summary.na')}</p>
       </div>
     )
   }
 
   const items: { label: string; value: string; color: string; glow?: string }[] = [
     {
-      label: 'Network',
-      value: latest.worst_status === 'healthy' ? 'Healthy' : latest.worst_status === 'degraded' ? 'Degraded' : 'Unhealthy',
+      label: t('explorer.consensus_section.network_health'),
+      value: latest.worst_status === 'healthy' ? t('explorer.consensus_section.healthy') : latest.worst_status === 'degraded' ? t('explorer.consensus_section.degraded') : t('explorer.consensus_section.unhealthy'),
       color: latest.worst_status === 'healthy' ? 'text-emerald-400' : latest.worst_status === 'degraded' ? 'text-amber-400' : 'text-red-400',
       glow: latest.worst_status === 'healthy'
         ? '0 0 14px rgba(52,211,153,0.35)'
@@ -41,29 +43,29 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
           : '0 0 14px rgba(248,113,113,0.35)',
     },
     {
-      label: 'Quorum',
-      value: latest.quorum_met ? 'Met' : 'Lost',
+      label: t('explorer.consensus_section.quorum_status'),
+      value: latest.quorum_met ? t('explorer.consensus_section.met') : t('explorer.consensus_section.not_met'),
       color: latest.quorum_met ? 'text-emerald-400' : 'text-red-400',
       glow: latest.quorum_met ? '0 0 14px rgba(52,211,153,0.35)' : '0 0 14px rgba(248,113,113,0.35)',
     },
     {
-      label: 'Consensus Rounds',
+      label: t('explorer.summary.consensus'),
       value: latest.consensus_rounds_total > 0 ? latest.consensus_rounds_total.toLocaleString() : '\u2014',
       color: 'text-white',
     },
     {
-      label: 'Avg Consensus',
+      label: t('explorer.consensus_section.avg_duration'),
       value: `${latest.avg_consensus_time_ms}ms`,
       color: latest.avg_consensus_time_ms > 2000 ? 'text-red-400' : 'text-white',
       glow: latest.avg_consensus_time_ms > 2000 ? '0 0 14px rgba(248,113,113,0.35)' : undefined,
     },
     {
-      label: 'Pending Orders',
+      label: t('explorer.orders_section.pending'),
       value: latest.pending_order_count.toString(),
       color: 'text-white',
     },
     {
-      label: 'Connected Peers',
+      label: t('explorer.summary.oracles'),
       value: latest.total_peers.toString(),
       color: 'text-white',
     },

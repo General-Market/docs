@@ -236,5 +236,32 @@
   },
   "my_positions": {
     "title": "My Positions"
+  },
+  "sources_grid": {
+    "sources": "Sources",
+    "assets": "Assets",
+    "categories": "Categories",
+    "live": "Live",
+    "dismiss": "Dismiss"
+  },
+  "source_card": {
+    "status_live": "Live",
+    "status_stale": "Stale",
+    "status_dead": "Dead",
+    "status_pending": "Pending",
+    "markets": "Markets",
+    "type": "Type",
+    "updated": "Updated",
+    "loading": "Loading...",
+    "no_markets": "No markets yet",
+    "assets_count": "{count} assets",
+    "more_count": "+{count} more",
+    "up": "UP",
+    "down": "DN"
+  },
+  "next_batches": {
+    "live_batches": "Live Batches",
+    "batches_count": "{count} batches",
+    "locked_count": "{count} locked"
   }
 }

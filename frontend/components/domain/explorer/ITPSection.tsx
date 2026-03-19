@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer, AreaChart, Area,
   XAxis, YAxis, Tooltip, CartesianGrid,
@@ -35,6 +36,7 @@ function formatShares(supply: string): string {
 }
 
 export function ITPSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
   const navList = useSSENav()
 
   // Top 10 by AUM
@@ -64,11 +66,11 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-subhead font-black tracking-tight text-black mb-4">ITP Metrics</h2>
+      <h2 className="text-subhead font-black tracking-tight text-black mb-4">{t('explorer.itp_section.title')}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Pending Order Volume */}
-        <ExplorerChartCard title="Pending Order Volume" subtitle="Pipeline activity proxy" loading={loading}>
+        <ExplorerChartCard title={t('explorer.itp_section.pending_volume')} subtitle={t('explorer.itp_section.pipeline_proxy')} loading={loading}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={pendingOrderData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -78,26 +80,26 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                 labelFormatter={(v) => new Date(v as string).toLocaleString()}
                 contentStyle={{ fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="pending" stroke="#000" fill="#000" fillOpacity={0.08} name="Pending Orders" />
+              <Area type="monotone" dataKey="pending" stroke="#000" fill="#000" fillOpacity={0.08} name={t('explorer.orders_section.pending')} />
             </AreaChart>
           </ResponsiveContainer>
         </ExplorerChartCard>
 
         {/* Live ITP Overview */}
-        <ExplorerChartCard title="ITP Overview" subtitle={`${stats.total} funds, ${stats.withSupply} with shares`} loading={itpLoading}>
+        <ExplorerChartCard title={t('explorer.itp_section.overview')} subtitle={`${stats.total} ${t('explorer.itp_section.total_funds')}, ${stats.withSupply} ${t('explorer.itp_section.with_shares')}`} loading={itpLoading}>
           <div className="h-full flex flex-col">
             {/* Summary row */}
             <div className="flex items-baseline gap-4 mb-2 px-1">
               <div>
-                <span className="text-micro text-text-muted block">Total Funds</span>
+                <span className="text-micro text-text-muted block">{t('explorer.itp_section.total_funds')}</span>
                 <span className="text-heading font-black text-black">{stats.total}</span>
               </div>
               <div>
-                <span className="text-micro text-text-muted block">Total AUM</span>
+                <span className="text-micro text-text-muted block">{t('explorer.itp_section.total_aum')}</span>
                 <span className="text-heading font-black text-black">{formatUsd(stats.totalAum)}</span>
               </div>
               <div>
-                <span className="text-micro text-text-muted block">With Shares</span>
+                <span className="text-micro text-text-muted block">{t('explorer.itp_section.with_shares')}</span>
                 <span className="text-heading font-black text-black">{stats.withSupply}</span>
               </div>
             </div>
@@ -106,10 +108,10 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border-light">
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">Fund</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">NAV</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">AUM</th>
-                    <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">Shares</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2">{t('explorer.itp_section.fund')}</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">{t('explorer.itp_section.nav')}</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 pr-2 text-right">{t('explorer.itp_section.aum')}</th>
+                    <th className="text-micro font-semibold text-text-muted pb-1.5 text-right">{t('explorer.itp_section.shares')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,7 +142,7 @@ export function ITPSection({ snapshots, latest, loading }: SectionProps) {
                   {topItps.length === 0 && !itpLoading && (
                     <tr>
                       <td colSpan={4} className="py-4 text-center text-caption text-text-muted">
-                        No ITP data available
+                        {t('explorer.itp_section.no_data')}
                       </td>
                     </tr>
                   )}

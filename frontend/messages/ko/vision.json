@@ -236,5 +236,32 @@
   },
   "my_positions": {
     "title": "My Positions"
+  },
+  "sources_grid": {
+    "sources": "소스",
+    "assets": "자산",
+    "categories": "카테고리",
+    "live": "라이브",
+    "dismiss": "닫기"
+  },
+  "source_card": {
+    "status_live": "라이브",
+    "status_stale": "지연",
+    "status_dead": "중단",
+    "status_pending": "대기 중",
+    "markets": "마켓",
+    "type": "유형",
+    "updated": "업데이트",
+    "loading": "로딩 중...",
+    "no_markets": "마켓 없음",
+    "assets_count": "{count}개 자산",
+    "more_count": "+{count}개",
+    "up": "UP",
+    "down": "DN"
+  },
+  "next_batches": {
+    "live_batches": "라이브 배치",
+    "batches_count": "{count}개 배치",
+    "locked_count": "{count}개 잠금"
   }
 }

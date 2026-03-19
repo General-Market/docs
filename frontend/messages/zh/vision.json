@@ -236,5 +236,32 @@
   },
   "my_positions": {
     "title": "My Positions"
+  },
+  "sources_grid": {
+    "sources": "数据源",
+    "assets": "资产",
+    "categories": "分类",
+    "live": "在线",
+    "dismiss": "关闭"
+  },
+  "source_card": {
+    "status_live": "在线",
+    "status_stale": "延迟",
+    "status_dead": "离线",
+    "status_pending": "等待中",
+    "markets": "市场",
+    "type": "类型",
+    "updated": "更新",
+    "loading": "加载中...",
+    "no_markets": "暂无市场",
+    "assets_count": "{count}个资产",
+    "more_count": "+{count}个",
+    "up": "UP",
+    "down": "DN"
+  },
+  "next_batches": {
+    "live_batches": "实时批次",
+    "batches_count": "{count}个批次",
+    "locked_count": "{count}个锁定"
   }
 }

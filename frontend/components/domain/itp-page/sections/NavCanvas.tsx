@@ -17,15 +17,28 @@ interface Props {
   onHoverChange?: (info: ChartHoverInfo | null) => void
 }
 
-const PAD = { top: 12, right: 16, bottom: 32, left: 56 }
-const GRID_N = 4
-const LINE_W = 1.5
-const DOT_R = 3.5
-const DRAW_MS = 1200
-const LERP_K = 0.18
+const PAD = { top: 24, right: 64, bottom: 36, left: 64 }
+const GRID_N = 5
+const LINE_W = 2
+const DOT_R = 4
+const DRAW_MS = 1400
+const LERP_K = 0.22
+
+// Colors
+const LINE_COLOR = '#18181b'
+const LINE_GLOW = 'rgba(24, 24, 27, 0.12)'
+const GRID_COLOR = '#f4f4f5'
+const LABEL_COLOR = '#a1a1aa'
+const HOVER_LINE_COLOR = 'rgba(24, 24, 27, 0.20)'
+const HOVER_PILL_BG = '#18181b'
+const HOVER_PILL_TEXT = '#ffffff'
+const HOVER_DOT_OUTER = 'rgba(24, 24, 27, 0.08)'
+const AREA_TOP = 'rgba(24, 24, 27, 0.06)'
+const AREA_BOTTOM = 'rgba(24, 24, 27, 0.0)'
 
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t }
 function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
+function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3) }
 
 export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
@@ -66,7 +79,7 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
     const xR = m.xMax - m.xMin || 1
     const vals = data.map(d => d.close)
     const lo = Math.min(...vals), hi = Math.max(...vals)
-    const yP = (hi - lo) * 0.1 || 0.01
+    const yP = (hi - lo) * 0.12 || 0.01
     m.yMin = lo - yP; m.yMax = hi + yP
     const yR = m.yMax - m.yMin
     m.pts = data.map(d => ({
@@ -92,69 +105,168 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
     if (m.pts.length < 2) { ctx.restore(); return }
 
     const yR = m.yMax - m.yMin
-    ctx.font = '10px -apple-system, system-ui, sans-serif'
+    const font = '10px ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace'
+    ctx.font = font
 
-    // Grid + Y labels
+    // ── Grid lines ──
     for (let i = 0; i <= GRID_N; i++) {
       const f = i / GRID_N
       const y = Math.round(m.pT + f * m.pH) + 0.5
-      ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 1; ctx.setLineDash([])
-      ctx.beginPath(); ctx.moveTo(m.pL, y); ctx.lineTo(m.pL + m.pW, y); ctx.stroke()
+      ctx.strokeStyle = GRID_COLOR
+      ctx.lineWidth = 1
+      ctx.setLineDash([])
+      ctx.beginPath()
+      ctx.moveTo(m.pL, y)
+      ctx.lineTo(m.pL + m.pW, y)
+      ctx.stroke()
+
+      // Y labels — right side
       const v = m.yMax - f * yR
-      ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
-      ctx.fillText(fmtY(v), m.pL - 8, y)
+      ctx.fillStyle = LABEL_COLOR
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(fmtY(v), m.pL + m.pW + 10, y)
     }
 
-    // X labels
-    const nX = Math.min(6, m.pts.length)
-    ctx.fillStyle = '#9ca3af'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+    // ── X labels ──
+    const nX = Math.min(5, m.pts.length)
+    ctx.fillStyle = LABEL_COLOR
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
     for (let i = 0; i < nX; i++) {
       const idx = Math.round((i / (nX - 1)) * (m.pts.length - 1))
       const p = m.pts[idx]
       const d = new Date(p.t * 1000)
-      ctx.fillText(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), p.px, m.pT + m.pH + 10)
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      ctx.fillText(label, p.px, m.pT + m.pH + 12)
     }
 
-    // Clip for draw animation
+    // ── Clip for draw-in animation ──
     ctx.save()
     ctx.beginPath()
-    ctx.rect(m.pL - 1, 0, m.prog * m.pW + 2, m.h)
+    ctx.rect(m.pL - 2, 0, m.prog * m.pW + 4, m.h)
     ctx.clip()
 
-    // Area gradient
-    const g = ctx.createLinearGradient(0, m.pT, 0, m.pT + m.pH)
-    g.addColorStop(0, 'rgba(0,0,0,0.05)'); g.addColorStop(1, 'rgba(0,0,0,0)')
-    ctx.fillStyle = g; ctx.beginPath()
+    // ── Area gradient fill ──
+    const grad = ctx.createLinearGradient(0, m.pT, 0, m.pT + m.pH)
+    grad.addColorStop(0, AREA_TOP)
+    grad.addColorStop(1, AREA_BOTTOM)
+    ctx.fillStyle = grad
+    ctx.beginPath()
     ctx.moveTo(m.pts[0].px, m.pts[0].py)
     for (let i = 1; i < m.pts.length; i++) ctx.lineTo(m.pts[i].px, m.pts[i].py)
     ctx.lineTo(m.pts[m.pts.length - 1].px, m.pT + m.pH)
     ctx.lineTo(m.pts[0].px, m.pT + m.pH)
-    ctx.closePath(); ctx.fill()
+    ctx.closePath()
+    ctx.fill()
 
-    // Line
-    ctx.strokeStyle = '#000'; ctx.lineWidth = LINE_W
-    ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([])
+    // ── Line shadow (subtle glow) ──
+    ctx.strokeStyle = LINE_GLOW
+    ctx.lineWidth = LINE_W + 4
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.setLineDash([])
     ctx.beginPath()
     ctx.moveTo(m.pts[0].px, m.pts[0].py)
     for (let i = 1; i < m.pts.length; i++) ctx.lineTo(m.pts[i].px, m.pts[i].py)
     ctx.stroke()
+
+    // ── Main line ──
+    ctx.strokeStyle = LINE_COLOR
+    ctx.lineWidth = LINE_W
+    ctx.beginPath()
+    ctx.moveTo(m.pts[0].px, m.pts[0].py)
+    for (let i = 1; i < m.pts.length; i++) ctx.lineTo(m.pts[i].px, m.pts[i].py)
+    ctx.stroke()
+
     ctx.restore() // clip
 
-    // Crosshair
+    // ── Latest price marker (small dot at end of line) ──
+    if (m.prog >= 0.99 && !m.hover) {
+      const last = m.pts[m.pts.length - 1]
+      ctx.fillStyle = LINE_COLOR
+      ctx.beginPath()
+      ctx.arc(last.px, last.py, 3, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // ── Crosshair + hover interaction ──
     if (m.hover && m.cx >= m.pL && m.cx <= m.pL + m.pW) {
       const p = nearest(m.cx)
       if (p) {
-        ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = 1
-        ctx.beginPath(); ctx.moveTo(p.px, m.pT); ctx.lineTo(p.px, m.pT + m.pH); ctx.stroke()
-        ctx.beginPath(); ctx.moveTo(m.pL, p.py); ctx.lineTo(m.pL + m.pW, p.py); ctx.stroke()
+        // Vertical line
         ctx.setLineDash([])
-        // Dot
-        ctx.fillStyle = '#000'
-        ctx.beginPath(); ctx.arc(p.px, p.py, DOT_R, 0, Math.PI * 2); ctx.fill()
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2
-        ctx.beginPath(); ctx.arc(p.px, p.py, DOT_R, 0, Math.PI * 2); ctx.stroke()
+        ctx.strokeStyle = HOVER_LINE_COLOR
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(p.px, m.pT)
+        ctx.lineTo(p.px, m.pT + m.pH)
+        ctx.stroke()
+
+        // Horizontal line (subtle, to dot only)
+        ctx.strokeStyle = HOVER_LINE_COLOR
+        ctx.beginPath()
+        ctx.moveTo(m.pL, p.py)
+        ctx.lineTo(m.pL + m.pW, p.py)
+        ctx.stroke()
+
+        // Outer glow ring
+        ctx.fillStyle = HOVER_DOT_OUTER
+        ctx.beginPath()
+        ctx.arc(p.px, p.py, DOT_R + 6, 0, Math.PI * 2)
+        ctx.fill()
+
+        // White ring
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(p.px, p.py, DOT_R + 2, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Inner dot
+        ctx.fillStyle = LINE_COLOR
+        ctx.beginPath()
+        ctx.arc(p.px, p.py, DOT_R, 0, Math.PI * 2)
+        ctx.fill()
+
+        // ── Price pill (right edge) ──
+        const priceText = fmtY(p.v)
+        ctx.font = 'bold 10px ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace'
+        const pillW = ctx.measureText(priceText).width + 12
+        const pillH = 20
+        const pillX = m.pL + m.pW + 4
+        const pillY = p.py - pillH / 2
+
+        // Pill background
+        roundRect(ctx, pillX, pillY, pillW, pillH, 4)
+        ctx.fillStyle = HOVER_PILL_BG
+        ctx.fill()
+
+        // Pill text
+        ctx.fillStyle = HOVER_PILL_TEXT
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(priceText, pillX + 6, p.py + 0.5)
+
+        // ── Date pill (bottom edge) ──
+        const d = new Date(p.t * 1000)
+        const dateText = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        ctx.font = '10px ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace'
+        const datePillW = ctx.measureText(dateText).width + 12
+        const datePillH = 18
+        const datePillX = p.px - datePillW / 2
+        const datePillY = m.pT + m.pH + 2
+
+        roundRect(ctx, datePillX, datePillY, datePillW, datePillH, 4)
+        ctx.fillStyle = HOVER_PILL_BG
+        ctx.fill()
+
+        ctx.fillStyle = HOVER_PILL_TEXT
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(dateText, p.px, datePillY + datePillH / 2 + 0.5)
       }
     }
+
     ctx.restore()
   }, [nearest])
 
@@ -163,7 +275,7 @@ export function NavCanvas({ data, isLoading, height = 300, onHoverChange }: Prop
     let go = false
     if (m.prog < 1) {
       if (reducedRef.current) { m.prog = 1 }
-      else { m.prog = 1 - Math.pow(1 - clamp((performance.now() - m.t0) / DRAW_MS, 0, 1), 3) }
+      else { m.prog = easeOutCubic(clamp((performance.now() - m.t0) / DRAW_MS, 0, 1)) }
       go = true
     }
     if (m.hover) {
@@ -266,4 +378,18 @@ function fmtY(v: number): string {
   if (v >= 100) return `$${v.toFixed(0)}`
   if (v >= 1) return `$${v.toFixed(2)}`
   return `$${v.toFixed(4)}`
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  ctx.lineTo(x + r, y + h)
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
 }

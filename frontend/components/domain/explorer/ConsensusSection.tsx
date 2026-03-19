@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   LineChart,
@@ -45,6 +46,7 @@ const STATUS_MAP: Record<string, number> = {
 }
 
 export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
   const quorumData = useMemo(
     () =>
       snapshots.map((s) => ({
@@ -102,14 +104,14 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">Consensus</h2>
+      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.consensus_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Quorum Status */}
         <ExplorerChartCard
-          title="Quorum Status"
+          title={t('explorer.consensus_section.quorum_status')}
           subtitle={
             latest
-              ? `Currently: ${latest.quorum_met ? 'Met' : 'Not met'}`
+              ? t('explorer.consensus_section.currently', { state: latest.quorum_met ? t('explorer.consensus_section.met') : t('explorer.consensus_section.not_met') })
               : undefined
           }
           loading={loading}
@@ -143,9 +145,9 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 2. Network Health */}
         <ExplorerChartCard
-          title="Network Health"
+          title={t('explorer.consensus_section.network_health')}
           subtitle={
-            latest ? `Worst status: ${latest.worst_status}` : undefined
+            latest ? `${t('explorer.consensus_section.worst_status')} ${latest.worst_status}` : undefined
           }
           loading={loading}
         >
@@ -157,7 +159,7 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
                 domain={[1, 3]}
                 ticks={[1, 2, 3]}
                 tickFormatter={(v) =>
-                  v === 1 ? 'OK' : v === 2 ? 'Deg' : 'Bad'
+                  v === 1 ? t('explorer.consensus_section.ok') : v === 2 ? t('explorer.consensus_section.deg') : t('explorer.consensus_section.bad')
                 }
                 tick={{ fontSize: 10 }}
                 stroke="#ccc"
@@ -169,10 +171,10 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
                 formatter={(v: number) => {
                   const label =
                     v === 1
-                      ? 'Healthy'
+                      ? t('explorer.consensus_section.healthy')
                       : v === 2
-                        ? 'Degraded'
-                        : 'Unhealthy'
+                        ? t('explorer.consensus_section.degraded')
+                        : t('explorer.consensus_section.unhealthy')
                   return [label, 'Status']
                 }}
               />
@@ -189,8 +191,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 3. Consensus Rounds/min */}
         <ExplorerChartCard
-          title="Consensus Rounds/min"
-          subtitle="Delta between consecutive snapshots"
+          title={t('explorer.consensus_section.rounds_per_min')}
+          subtitle={t('explorer.consensus_section.rounds_desc')}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -215,8 +217,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 4. Consensus Success Rate */}
         <ExplorerChartCard
-          title="Consensus Success Rate"
-          subtitle="Per-interval success rate (%)"
+          title={t('explorer.consensus_section.success_rate')}
+          subtitle={t('explorer.consensus_section.success_desc')}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -247,10 +249,10 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 5. Avg Consensus Duration */}
         <ExplorerChartCard
-          title="Avg Consensus Duration"
+          title={t('explorer.consensus_section.avg_duration')}
           subtitle={
             latest
-              ? `Current: ${(latest.avg_consensus_time_ms ?? 0).toFixed(0)}ms`
+              ? t('explorer.consensus_section.current_time', { time: (latest.avg_consensus_time_ms ?? 0).toFixed(0) })
               : undefined
           }
           loading={loading}
@@ -282,8 +284,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 6. Signatures Collected */}
         <ExplorerChartCard
-          title="Signatures Collected"
-          subtitle={latest ? `Current: ${latest.signatures_collected}` : undefined}
+          title={t('explorer.consensus_section.sigs_collected')}
+          subtitle={latest ? t('explorer.consensus_section.current_count', { count: latest.signatures_collected }) : undefined}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -308,8 +310,8 @@ export function ConsensusSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 7. Failed Rounds */}
         <ExplorerChartCard
-          title="Failed Rounds"
-          subtitle="Delta between consecutive snapshots"
+          title={t('explorer.consensus_section.failed_rounds')}
+          subtitle={t('explorer.consensus_section.rounds_desc')}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">

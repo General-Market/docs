@@ -10,9 +10,9 @@ import itpIdNames from '@/lib/itp-id-names.json'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { useSSENav, type NavSnapshot } from '@/hooks/useSSE'
 import { useTranslations } from 'next-intl'
-import { Link } from '@/i18n/routing'
+import { useRouter } from '@/i18n/routing'
 import { ITP_PAGE_CONTENT } from '@/lib/itp-page-content'
-import { SpringCard, SpringNumber } from '@/components/ui/spring'
+import { SpringNumber } from '@/components/ui/spring'
 import { motion, useReducedMotion } from 'framer-motion'
 
 interface ItpRow {
@@ -123,6 +123,7 @@ type SortDir = 'asc' | 'desc'
 
 export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpListingProps) {
   const t = useTranslations('markets')
+  const router = useRouter()
 
   const sseNavList = useSSENav()
   const [restNavList, setRestNavList] = useState<NavSnapshot[]>([])
@@ -277,77 +278,52 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
         </div>
       </div>
 
-      {/* Category tiles — iShares-style asset class grid */}
-      <div className="px-6 lg:px-12 pt-8 pb-2">
+      {/* Category tabs + search — single bar */}
+      <div className="px-6 lg:px-12 pt-8 pb-3">
         <div className="max-w-site mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {FUND_CATEGORIES.map(cat => {
-              const count = categoryCounts[cat.id]
-              const isActive = activeCategory === cat.id
-              return (
-                <SpringCard
-                  key={cat.id}
-                  className={`border rounded-card transition-all ${
-                    isActive
-                      ? 'bg-black text-white border-black shadow-card-hover'
-                      : 'bg-white border-[#ddd] card-interactive'
-                  }`}
-                >
-                  <button
-                    onClick={() => setActiveCategory(isActive ? null : cat.id)}
-                    className="w-full text-left py-7 px-6"
-                  >
-                    <div className={`text-heading font-black leading-tight ${isActive ? '' : 'text-text-primary'}`}>
-                      {cat.name}
-                    </div>
-                    <div className={`text-caption font-mono tabular-nums mt-1.5 ${isActive ? 'text-white/60' : 'text-text-muted'}`}>
-                      {count} {count === 1 ? 'fund' : 'funds'}
-                    </div>
-                    <div className={`text-caption leading-snug mt-3 ${isActive ? 'text-white/75' : 'text-text-secondary'}`}>
-                      {cat.description}
-                    </div>
-                  </button>
-                </SpringCard>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Filter pills + search — iShares-style bar */}
-      <div className="px-6 lg:px-12 pt-5 pb-1">
-        <div className="max-w-site mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`filter-pill ${!activeCategory ? 'active' : ''}`}
-            >
-              All funds
-            </button>
-            {FUND_CATEGORIES.map(cat => (
+          <div className="flex items-end justify-between gap-4 flex-wrap border-b border-[#e0e0e0]">
+            <div className="flex items-stretch gap-0 -mb-px">
               <button
-                key={cat.id}
-                onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-                className={`filter-pill ${activeCategory === cat.id ? 'active' : ''}`}
+                onClick={() => setActiveCategory(null)}
+                className={`px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                  !activeCategory
+                    ? 'border-black text-black'
+                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-[#ccc]'
+                }`}
               >
-                {cat.name}
+                All
+                <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{rows.length}</span>
               </button>
-            ))}
+              {FUND_CATEGORIES.map(cat => {
+                const count = categoryCounts[cat.id]
+                const isActive = activeCategory === cat.id
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(isActive ? null : cat.id)}
+                    className={`px-5 py-3 text-[14px] font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                      isActive
+                        ? 'border-black text-black'
+                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-[#ccc]'
+                    }`}
+                  >
+                    {cat.name}
+                    <span className="ml-1.5 text-[12px] font-mono tabular-nums text-text-muted">{count}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="pb-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by fund name or ticker..."
+                className="w-full max-w-[300px] border border-[#ccc] rounded px-3 py-[7px] text-caption text-text-primary placeholder-[#aaa] focus:outline-none focus:border-[#666] transition-colors"
+              />
+            </div>
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by fund name or ticker..."
-            className="w-full max-w-[300px] border border-[#ccc] rounded px-3 py-[7px] text-caption text-text-primary placeholder-[#aaa] focus:outline-none focus:border-[#666] transition-colors"
-          />
-        </div>
-      </div>
-
-      {/* Result count */}
-      <div className="px-6 lg:px-12 pt-2 pb-3">
-        <div className="max-w-site mx-auto">
-          <div className="text-caption text-text-secondary">
+          <div className="text-caption text-text-secondary mt-2">
             Showing <strong className="text-text-primary">{sorted.length}</strong> of {rows.length} funds
           </div>
         </div>
@@ -412,30 +388,27 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                       initial={reduced ? false : { opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={reduced ? { duration: 0 } : { duration: 0.4, delay: idx * 0.03, ease: [0.22, 1, 0.36, 1] }}
-                      className={`border-b border-[#eee] hover:bg-[#f0f7f4] transition-colors ${
+                      onClick={() => router.push(`/itp/${row.itpId}`)}
+                      className={`border-b border-[#eee] hover:bg-[#f0f7f4] transition-colors cursor-pointer ${
                         idx % 2 === 1 ? 'bg-[#fafafa]' : 'bg-white'
                       }`}
                     >
                       {/* Ticker — bold, standalone */}
                       <td className="py-3 px-4">
-                        <Link href={`/itp/${row.itpId}`}>
-                          <span className="text-caption font-bold text-text-primary hover:text-brand transition-colors">
-                            {row.symbol}
-                          </span>
-                        </Link>
+                        <span className="text-caption font-bold text-text-primary">
+                          {row.symbol}
+                        </span>
                       </td>
-                      {/* Name — brand-colored link like iShares */}
+                      {/* Name — brand-colored like iShares */}
                       <td className="py-3 px-4">
-                        <Link href={`/itp/${row.itpId}`}>
-                          <span className="text-caption text-brand-dark hover:text-brand hover:underline transition-colors">
-                            {row.name}
-                          </span>
-                        </Link>
+                        <span className="text-caption text-brand-dark">
+                          {row.name}
+                        </span>
                       </td>
                       {/* Chart button */}
                       <td className="py-3 px-2 w-8">
                         <button
-                          onClick={() => setChartModal({ itpId: row.itpId, name: row.name })}
+                          onClick={(e) => { e.stopPropagation(); setChartModal({ itpId: row.itpId, name: row.name }) }}
                           className="text-[#999] hover:text-black transition-colors"
                           title="NAV chart"
                         >
@@ -467,7 +440,7 @@ export function ItpListing({ onCreateClick, onLendingClick, onItpsLoaded }: ItpL
                         </span>
                       </td>
                       {/* Trade actions */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <WalletActionButton
                           onClick={() => setBuyModal(row.itpId)}
                           className="text-label font-semibold text-brand-dark hover:text-brand transition-colors"

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useItpNavSeries, type NavTimeframe } from '@/hooks/useItpNavSeries'
 import { NavCanvas, type ChartHoverInfo } from './NavCanvas'
 import type { SectionProps } from '../SectionRenderer'
@@ -20,7 +20,7 @@ export function PerformanceChart({ itpId, nav, createdAt }: SectionProps) {
   const { data, isLoading } = useItpNavSeries(itpId, tf)
   const [hover, setHover] = useState<ChartHoverInfo | null>(null)
 
-  const chartData = data.map(d => ({ time: d.time, close: d.close }))
+  const chartData = useMemo(() => data.map(d => ({ time: d.time, close: d.close })), [data])
   const sinceInception = nav > 0 ? (nav - 1) * 100 : null
   const inceptionDate = createdAt
     ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

@@ -59,9 +59,9 @@ interface Props {
 
 export function TabNavigation({ config, sectionProps }: Props) {
   const [activeAnchor, setActiveAnchor] = useState('overview')
-  const [scrollProg, setScrollProg] = useState(0)
   const navRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const progBarRef = useRef<HTMLDivElement>(null)
 
   const allSections = getAllSections(config)
 
@@ -86,7 +86,7 @@ export function TabNavigation({ config, sectionProps }: Props) {
     return () => observer.disconnect()
   }, [])
 
-  // Scroll progress bar
+  // Scroll progress bar — direct DOM update, no state re-render
   useEffect(() => {
     const el = contentRef.current
     if (!el) return
@@ -98,7 +98,10 @@ export function TabNavigation({ config, sectionProps }: Props) {
         const rect = el.getBoundingClientRect()
         const top = -rect.top
         const total = rect.height - window.innerHeight
-        setScrollProg(total > 0 ? Math.max(0, Math.min(1, top / total)) : 0)
+        const prog = total > 0 ? Math.max(0, Math.min(1, top / total)) : 0
+        if (progBarRef.current) {
+          progBarRef.current.style.width = `${prog * 100}%`
+        }
         ticking = false
       })
     }
@@ -135,9 +138,10 @@ export function TabNavigation({ config, sectionProps }: Props) {
       <div ref={navRef} className="sticky top-16 z-10 bg-white border-b border-border-light mb-8">
         {/* Scroll progress */}
         <div
+          ref={progBarRef}
           className="absolute top-0 left-0 h-[2px] bg-black"
           style={{
-            width: `${scrollProg * 100}%`,
+            width: '0%',
             transition: 'width 80ms linear',
           }}
         />

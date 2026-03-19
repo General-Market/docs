@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSourceRegistry } from '@/hooks/vision/useSourceRegistry'
 import { getAssetCountForSource, getSourceStatusFromMeta } from '@/lib/vision/sources'
 import { useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
@@ -11,6 +12,7 @@ import { NextBatches } from './NextBatches'
 import { SourceCard } from './SourceCard'
 
 export function SourcesGrid() {
+  const t = useTranslations('vision')
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [showSectionBar, setShowSectionBar] = useState(true)
 
@@ -41,6 +43,13 @@ export function SourcesGrid() {
   const sourceCount = liveSourceCount > 0 ? liveSourceCount : registrySources.length
   const categoryCount = liveCategoryCount > 0 ? liveCategoryCount : 10
   const statsLoading = (metaLoading || registryLoading) && liveAssetCount === 0
+
+  // Compute uptime from source health statuses
+  const uptimePercent = useMemo(() => {
+    if (!meta?.sources || meta.sources.length === 0) return null
+    const healthy = meta.sources.filter(s => s.status === 'healthy').length
+    return ((healthy / meta.sources.length) * 100).toFixed(1)
+  }, [meta?.sources])
 
   // ── Cascade entrance ──
   const gridRef = useRef<HTMLDivElement>(null)
@@ -124,11 +133,11 @@ export function SourcesGrid() {
           <div className="max-w-site mx-auto px-6 lg:px-12 py-5 flex items-end">
             <div className="flex items-end gap-10">
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Sources</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.sources')}</span>
                 <AnimatedNumber value={sourceCount} decimals={0} duration={1200} className="text-stat font-black font-mono tabular-nums" />
               </div>
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Assets</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.assets')}</span>
                 {statsLoading ? (
                   <span className="inline-block w-20 h-8 bg-white/10 rounded animate-pulse" />
                 ) : (
@@ -142,7 +151,7 @@ export function SourcesGrid() {
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">Categories</span>
+                <span className="text-micro font-medium uppercase tracking-[0.08em] text-white/35 mb-1">{t('sources_grid.categories')}</span>
                 <AnimatedNumber value={categoryCount} decimals={0} duration={1000} className="text-stat font-black font-mono tabular-nums" />
               </div>
             </div>
@@ -154,13 +163,15 @@ export function SourcesGrid() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                 </span>
-                <span className="text-label font-semibold text-green-400 uppercase">Live</span>
+                <span className="text-label font-semibold text-green-400 uppercase">{t('sources_grid.live')}</span>
               </div>
-              <span className="text-label font-mono font-bold text-white/50 tabular-nums">99.99%</span>
+              <span className="text-label font-mono font-bold text-white/50 tabular-nums">
+                {uptimePercent !== null ? `${uptimePercent}%` : '—'}
+              </span>
               <button
                 onClick={() => setShowSectionBar(false)}
                 className="text-white/30 hover:text-white transition-colors text-title leading-none ml-1"
-                aria-label="Dismiss"
+                aria-label={t('sources_grid.dismiss')}
               >
                 &times;
               </button>

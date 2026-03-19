@@ -57,6 +57,15 @@ export const UNIVERSITY_LOGOS: Record<string, string> = {
   'University of Hong Kong': favicon('hku.hk'),
   'Technion': favicon('technion.ac.il'),
   'Hebrew University': favicon('huji.ac.il'),
+  'University of Southern California': favicon('usc.edu'),
+  'UC Santa Barbara': favicon('ucsb.edu'),
+  'University of California': favicon('universityofcalifornia.edu'),
+  'UC San Diego': favicon('ucsd.edu'),
+  'UC Irvine': favicon('uci.edu'),
+  'UC Santa Cruz': favicon('ucsc.edu'),
+  'University of New Hampshire': favicon('unh.edu'),
+  'University of Maryland': favicon('umd.edu'),
+  'Wharton': favicon('wharton.upenn.edu'),
 }
 
 /**
@@ -113,6 +122,16 @@ const FUZZY_PATTERNS: [RegExp, string][] = [
   [/\bUniversity of Hong Kong\b|\bHKU\b/i, 'University of Hong Kong'],
   [/\bTechnion\b/i, 'Technion'],
   [/\bHebrew University\b/i, 'Hebrew University'],
+  [/\bUSC\b|\bUniversity of Southern California\b/i, 'University of Southern California'],
+  [/\bUC Santa Barbara\b|\bUCSB\b/i, 'UC Santa Barbara'],
+  [/\bUniversity of California, San Diego\b|\bUCSD\b|\bUC San Diego\b/i, 'UC San Diego'],
+  [/\bUniversity of California, Irvine\b|\bUC Irvine\b/i, 'UC Irvine'],
+  [/\bUniversity of California, Santa Barbara\b/i, 'UC Santa Barbara'],
+  [/\bUniversity of California, Santa Cruz\b/i, 'UC Santa Cruz'],
+  [/\bUniversity of California\b/i, 'University of California'],
+  [/\bUniversity of New Hampshire\b/i, 'University of New Hampshire'],
+  [/\bUniversity of Maryland\b/i, 'University of Maryland'],
+  [/\bWharton\b/i, 'Wharton'],
 ]
 
 /**

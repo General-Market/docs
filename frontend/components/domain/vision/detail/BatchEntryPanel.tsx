@@ -9,6 +9,7 @@ import { useJoinBatch } from '@/hooks/vision/useJoinBatch'
 import { useDeposit } from '@/hooks/vision/useDeposit'
 import { useVisionBalance } from '@/hooks/vision/useVisionBalance'
 import { usePlayerPosition } from '@/hooks/vision/usePlayerPosition'
+import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import { useBalanceChangeNotification } from '@/hooks/vision/useBalanceChangeNotification'
 import { useSubmitBitmap } from '@/hooks/vision/useSubmitBitmap'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
@@ -73,6 +74,18 @@ export default function BatchEntryPanel({
   // -- Player position: detect if user already joined this batch --
   const { isJoined, position, refetch: refetchPosition } = usePlayerPosition(activeBatch?.id)
 
+  // -- Player profile for per-tick history --
+  const { address, isConnected } = useAccount()
+  const { profile } = usePlayerProfile(address ?? '0x0000000000000000000000000000000000000000')
+  const batchTicks = useMemo(() => {
+    if (!profile || !activeBatch) return []
+    const batch = profile.batches.find(b => b.batchId === activeBatch.id)
+    return batch?.ticks ?? []
+  }, [profile, activeBatch])
+
+  // -- Tick history expand/collapse --
+  const [showTickHistory, setShowTickHistory] = useState(false)
+
   // -- Toast notification on tick resolution (balance change) --
   const { suppress: suppressBalanceToast } = useBalanceChangeNotification(position?.balance, isJoined)
 
@@ -105,7 +118,6 @@ export default function BatchEntryPanel({
   } = useSubmitBitmap()
 
   // -- Wallet connection --
-  const { isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   const handleConnectWallet = useCallback(async () => {
     const injectedConnector = connectors.find(c => c.id === 'injected')
@@ -402,6 +414,55 @@ export default function BatchEntryPanel({
                   {isUp ? '+' : ''}{pnlNum.toFixed(2)} <span className="text-[10px]">({isUp ? '+' : ''}{pnlPercent.toFixed(1)}%)</span>
                 </span>
               </div>
+              {/* Tick history */}
+              {batchTicks.length > 0 && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTickHistory(!showTickHistory)}
+                    className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-400 hover:text-neutral-600 transition-colors"
+                  >
+                    <span className={`inline-block transition-transform ${showTickHistory ? 'rotate-90' : ''}`}>&#9654;</span>
+                    {batchTicks.length} ticks
+                  </button>
+                  {showTickHistory && (() => {
+                    const stakePerTickNum = parseFloat(formatUnits(position.stakePerTick, VISION_USDC_DECIMALS))
+                    const lastClaimed = Number(position.lastClaimedTick)
+                    // Show most recent first
+                    const sorted = [...batchTicks].sort((a, b) => b.tickId - a.tickId)
+                    return (
+                      <div className="mt-1.5 max-h-[200px] overflow-y-auto">
+                        {/* Header */}
+                        <div className="flex items-center text-[9px] font-semibold uppercase tracking-[0.06em] text-neutral-300 mb-0.5 px-1">
+                          <span className="w-[40px]">Tick</span>
+                          <span className="w-[60px] text-right">Staked</span>
+                          <span className="flex-1 text-right">PnL</span>
+                          <span className="w-[52px] text-right">Status</span>
+                        </div>
+                        {sorted.map((tick) => {
+                          const isClaimed = tick.tickId <= lastClaimed
+                          const pnlSign = tick.pnl >= 0 ? '+' : ''
+                          return (
+                            <div
+                              key={tick.tickId}
+                              className="flex items-center text-[10px] font-mono tabular-nums px-1 py-[2px] border-b border-neutral-100 last:border-b-0"
+                            >
+                              <span className="w-[40px] text-neutral-500">#{tick.tickId}</span>
+                              <span className="w-[60px] text-right text-neutral-500">{stakePerTickNum.toFixed(2)}</span>
+                              <span className={`flex-1 text-right font-semibold ${tick.won ? 'text-color-up' : 'text-color-down'}`}>
+                                {pnlSign}{tick.pnl.toFixed(2)}
+                              </span>
+                              <span className={`w-[52px] text-right text-[9px] font-semibold ${isClaimed ? 'text-neutral-300' : 'text-amber-500'}`}>
+                                {isClaimed ? 'Claimed' : 'Pending'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
               {/* Withdraw button */}
               {canWithdraw && (
                 <button

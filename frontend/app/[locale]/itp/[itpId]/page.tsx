@@ -8,6 +8,9 @@ import { Footer } from '@/components/layout/Footer'
 import { Link } from '@/i18n/routing'
 import { computeEnrichment } from '@/lib/api/itp-enrichment'
 import type { ItpEnrichment } from '@/lib/itp-enrichment-types'
+import itpIdNames from '@/lib/itp-id-names.json'
+
+const ITP_NAMES = itpIdNames as Record<string, { name: string; ticker: string }>
 
 export const revalidate = 300
 
@@ -27,8 +30,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   ])
 
   const num = parseItpNum(itpId)
-  const name = itp?.name || `ITP #${num}`
-  const symbol = itp?.symbol || `ITP${num}`
+  const override = ITP_NAMES[itpId.toLowerCase()]
+  const name = itp?.name || override?.name || `ITP #${num}`
+  const symbol = itp?.symbol || override?.ticker || `ITP${num}`
   const assetCount = itp?.assetCount || 0
   const nav = itp?.nav || 0
 
@@ -85,10 +89,11 @@ export default async function ItpPage({ params }: Props) {
 
   // Fallback when data-node is unreachable — render shell, client hooks fill real data
   const itpNum = parseItpNum(itpId)
+  const pageOverride = ITP_NAMES[itpId.toLowerCase()]
   const data = itp ?? {
     itpId,
-    name: `ITP #${itpNum}`,
-    symbol: `ITP${itpNum}`,
+    name: pageOverride?.name || `ITP #${itpNum}`,
+    symbol: pageOverride?.ticker || `ITP${itpNum}`,
     nav: 0,
     aum: 0,
     assetCount: 0,

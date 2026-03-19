@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAccount, useConnect } from 'wagmi'
+import { useTranslations } from 'next-intl'
 import { indexL3 } from '@/lib/wagmi'
 import { useVisionPoints } from '@/hooks/vision/useVisionPoints'
 import { useVisionLeaderboard } from '@/hooks/vision/useVisionLeaderboard'
@@ -55,6 +56,7 @@ export default function PointsPageClient() {
     connect({ connector: injectedConnector, chainId: indexL3.id })
   }
 
+  const t = useTranslations('pages')
   const { batches, totalPointsPerTick, totalPointsPerHour, estimatedTotalPoints, activeBatches, roundPoints, roundsCompleted, isLoading } = useVisionPoints()
   const { leaderboard, isLoading: lbLoading } = useVisionLeaderboard()
   const { data: allBatches } = useBatches()
@@ -87,11 +89,11 @@ export default function PointsPageClient() {
                 {/* Left: Season + Points */}
                 <div>
                   <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-white/40 mb-3">
-                    Season 1
+                    {t('points.season')}
                   </div>
                   <h1 className="text-[52px] md:text-[64px] font-black tracking-[-0.03em] leading-[1] mb-3">
                     {!isConnected ? (
-                      'Points'
+                      t('points.title')
                     ) : isLoading ? (
                       <span className="inline-block w-48 h-16 bg-white/10 rounded animate-pulse" />
                     ) : (
@@ -100,12 +102,12 @@ export default function PointsPageClient() {
                   </h1>
                   {isConnected && !isLoading && (
                     <p className="text-[15px] text-white/50 font-medium">
-                      Total points earned
+                      {t('points.total_earned')}
                     </p>
                   )}
                   {!isConnected && (
                     <p className="text-[15px] text-white/50 max-w-md">
-                      Earn points by providing liquidity across Vision prediction batches. Points will convert to tokens at the end of the season.
+                      {t('points.earn_description')}
                     </p>
                   )}
                 </div>
@@ -116,22 +118,22 @@ export default function PointsPageClient() {
                     onClick={handleConnect}
                     className="px-8 py-3.5 bg-white text-black text-[14px] font-bold tracking-[-0.01em] hover:bg-white/90 transition-colors self-start md:self-end"
                   >
-                    Connect Wallet
+                    {t('points.connect_wallet')}
                   </button>
                 ) : !isLoading && (
                   <div className="flex gap-8 md:gap-12 flex-wrap">
                     <div>
                       <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                        Rate
+                        {t('points.rate')}
                       </div>
                       <div className="text-[28px] font-black font-mono tabular-nums text-green-400">
                         +{formatPoints(totalPointsPerHour)}
-                        <span className="text-[13px] font-semibold text-white/30 ml-1">/hr</span>
+                        <span className="text-[13px] font-semibold text-white/30 ml-1">{t('points.per_hour')}</span>
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                        Batches
+                        {t('points.batches')}
                       </div>
                       <div className="text-[28px] font-black font-mono tabular-nums">
                         {activeBatches}
@@ -140,7 +142,7 @@ export default function PointsPageClient() {
                     </div>
                     <div>
                       <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                        Coverage
+                        {t('points.coverage')}
                       </div>
                       <div className="text-[28px] font-black font-mono tabular-nums">
                         {coveragePercent}%
@@ -149,11 +151,11 @@ export default function PointsPageClient() {
                     {roundsCompleted > 0 && (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/30 mb-1">
-                          Rounds
+                          {t('points.rounds')}
                         </div>
                         <div className="text-[28px] font-black font-mono tabular-nums">
                           {roundsCompleted}
-                          <span className="text-[13px] font-semibold text-white/30 ml-1">({formatPoints(roundPoints)} pts)</span>
+                          <span className="text-[13px] font-semibold text-white/30 ml-1">({formatPoints(roundPoints)} {t('points.pts')})</span>
                         </div>
                       </div>
                     )}
@@ -172,18 +174,18 @@ export default function PointsPageClient() {
                 {[
                   {
                     step: '01',
-                    title: 'Join batches',
-                    desc: `Each of the ${totalBatches} prediction sources emits 100 points every tick. Tick durations vary by source — from 1 minute to 24 hours. That\u2019s ~${formatPoints(dailyEmission)} points distributed daily.`,
+                    title: t('points.how_step_01_title'),
+                    desc: t('points.how_step_01_desc', { totalBatches, dailyEmission: formatPoints(dailyEmission) }),
                   },
                   {
                     step: '02',
-                    title: 'Earn by share',
-                    desc: 'Points are split proportionally by your USDC share of each batch. More capital = more points. Empty batches = 100% to you.',
+                    title: t('points.how_step_02_title'),
+                    desc: t('points.how_step_02_desc'),
                   },
                   {
                     step: '03',
-                    title: 'Collect airdrop',
-                    desc: 'At the end of Season 1, points convert to tokens. Spread across more batches and deposit early to maximize earnings.',
+                    title: t('points.how_step_03_title'),
+                    desc: t('points.how_step_03_desc'),
                   },
                 ].map((item, i) => (
                   <div
@@ -211,37 +213,37 @@ export default function PointsPageClient() {
           <div className="px-6 lg:px-12">
             <div className="max-w-site mx-auto py-8">
               <h2 className="text-[20px] font-black tracking-[-0.01em] text-black mb-4">
-                Daily Points Distribution
+                {t('points.daily_title')}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 border border-border-light">
                 <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Per Tick / Batch</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.daily_per_tick')}</div>
                   <div className="text-[22px] font-black text-black font-mono">100</div>
                 </div>
                 <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Sources</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.daily_sources')}</div>
                   <div className="text-[22px] font-black text-black font-mono">{totalBatches}</div>
                 </div>
                 <div className="p-4 border-r border-border-light">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Markets</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.daily_markets')}</div>
                   <div className="text-[22px] font-black text-black font-mono">{totalMarkets.toLocaleString()}</div>
                 </div>
                 <div className="p-4">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Total / Day</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.daily_total')}</div>
                   <div className="text-[22px] font-black text-black font-mono">~{formatPoints(dailyEmission)}</div>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border border-border-light p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Vision (Prediction Markets)</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{t('points.daily_vision_label')}</div>
                   <p className="text-[13px] text-text-secondary leading-relaxed">
-                    {totalBatches} sources across {totalMarkets.toLocaleString()} markets. Each source emits 100 pts per tick. Earn by depositing USDC into any batch — your share of the pool determines your points.
+                    {t('points.daily_vision_desc', { totalBatches, totalMarkets: totalMarkets.toLocaleString() })}
                   </p>
                 </div>
                 <div className="border border-border-light p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">Index (ITPs)</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-2">{t('points.daily_index_label')}</div>
                   <p className="text-[13px] text-text-secondary leading-relaxed">
-                    Index product points coming in Season 2. Hold ITP shares to earn points from the index protocol. Stay tuned for details on ITP-based point emissions.
+                    {t('points.daily_index_desc')}
                   </p>
                 </div>
               </div>
@@ -258,11 +260,11 @@ export default function PointsPageClient() {
                 <div className="flex items-baseline justify-between mb-4">
                   <div>
                     <h2 className="text-[20px] font-black tracking-[-0.01em] text-black">
-                      Your Positions
+                      {t('points.positions_title')}
                     </h2>
                     {batches.length > 0 && (
                       <p className="text-[12px] text-text-muted mt-0.5">
-                        Earning across {activeBatches} batch{activeBatches !== 1 ? 'es' : ''} — {formatPoints(totalPointsPerTick)} pts/tick
+                        {t('points.positions_earning', { count: activeBatches, plural: activeBatches !== 1 ? 'es' : '', points: formatPoints(totalPointsPerTick) })}
                       </p>
                     )}
                   </div>
@@ -271,7 +273,7 @@ export default function PointsPageClient() {
                       href="/"
                       className="text-[12px] font-bold text-black border border-black px-3 py-1.5 hover:bg-black hover:text-white transition-colors"
                     >
-                      Join {totalBatches - activeBatches} more
+                      {t('points.positions_join_more', { count: totalBatches - activeBatches })}
                     </Link>
                   )}
                 </div>
@@ -279,15 +281,15 @@ export default function PointsPageClient() {
                 {/* Empty state */}
                 {!isLoading && batches.length === 0 && (
                   <div className="border border-border-light bg-surface/50 px-6 py-10 text-center">
-                    <p className="text-[15px] font-bold text-black mb-1">No active positions</p>
+                    <p className="text-[15px] font-bold text-black mb-1">{t('points.positions_empty_title')}</p>
                     <p className="text-[13px] text-text-secondary mb-4">
-                      Join a Vision batch to start earning points. Empty batches give you 100% of the points.
+                      {t('points.positions_empty_desc')}
                     </p>
                     <Link
                       href="/"
                       className="inline-block px-5 py-2.5 bg-black text-white text-[13px] font-bold hover:bg-zinc-800 transition-colors"
                     >
-                      Browse Batches
+                      {t('points.positions_browse')}
                     </Link>
                   </div>
                 )}
@@ -308,13 +310,13 @@ export default function PointsPageClient() {
                       <table className="w-full">
                         <thead>
                           <tr className="border-b border-border-light text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                            <th className="text-left py-2.5 px-4">Batch</th>
-                            <th className="text-right py-2.5 px-4">Your Stake</th>
-                            <th className="text-right py-2.5 px-4">Pool TVL</th>
-                            <th className="text-right py-2.5 px-4">Your Share</th>
-                            <th className="text-right py-2.5 px-4">Pts / Tick</th>
-                            <th className="text-right py-2.5 px-4">Pts / Hour</th>
-                            <th className="text-right py-2.5 px-4">Est. Total</th>
+                            <th className="text-left py-2.5 px-4">{t('points.table_batch')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_your_stake')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_pool_tvl')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_your_share')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_pts_tick')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_pts_hour')}</th>
+                            <th className="text-right py-2.5 px-4">{t('points.table_est_total')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -355,7 +357,7 @@ export default function PointsPageClient() {
                         <tfoot>
                           <tr className="bg-black text-white text-[13px] font-bold">
                             <td className="py-3 px-4 text-[11px] uppercase tracking-[0.06em] font-extrabold">
-                              Total
+                              {t('points.table_total')}
                             </td>
                             <td className="py-3 px-4 text-right font-mono tabular-nums">
                               {formatUsd(batches.reduce((s, b) => s + b.myBalanceUsd, 0))}
@@ -382,17 +384,17 @@ export default function PointsPageClient() {
                           disabled={positionsPage === 1}
                           className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          &larr; Previous
+                          {t('points.previous')}
                         </button>
                         <span className="text-[11px] text-text-muted">
-                          Page {positionsPage} of {positionsTotalPages}
+                          {t('points.page_of', { page: positionsPage, total: positionsTotalPages })}
                         </span>
                         <button
                           onClick={() => setPositionsPage(p => Math.min(positionsTotalPages, p + 1))}
                           disabled={positionsPage === positionsTotalPages}
                           className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
-                          Next &rarr;
+                          {t('points.next')}
                         </button>
                       </div>
                     )}
@@ -409,24 +411,24 @@ export default function PointsPageClient() {
             <div className="px-6 lg:px-12">
               <div className="max-w-site mx-auto py-8">
                 <h2 className="text-[20px] font-black tracking-[-0.01em] text-black mb-4">
-                  Round Points
+                  {t('points.round_points_title')}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 border border-border-light">
                   <div className="p-4 border-r border-border-light">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Rounds Completed</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.rounds_completed')}</div>
                     <div className="text-[22px] font-black text-black font-mono">{roundsCompleted}</div>
                   </div>
                   <div className="p-4 border-r border-border-light md:border-r">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Points from Rounds</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.points_from_rounds')}</div>
                     <div className="text-[22px] font-black text-green-600 font-mono">{formatPoints(roundPoints)}</div>
                   </div>
                   <div className="p-4 col-span-2 md:col-span-1 border-t md:border-t-0 border-border-light">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">Points per Round</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-muted mb-1">{t('points.points_per_round')}</div>
                     <div className="text-[22px] font-black text-black font-mono">100</div>
                   </div>
                 </div>
                 <p className="text-[12px] text-text-muted mt-3">
-                  Each round you complete earns 100 points, regardless of outcome. Play more rounds to accumulate faster.
+                  {t('points.round_explain')}
                 </p>
               </div>
             </div>
@@ -440,10 +442,10 @@ export default function PointsPageClient() {
               <div className="flex items-baseline justify-between mb-4">
                 <div>
                   <h2 className="text-[20px] font-black tracking-[-0.01em] text-black">
-                    Leaderboard
+                    {t('points.leaderboard_title')}
                   </h2>
                   <p className="text-[12px] text-text-muted mt-0.5">
-                    {lbLoading ? 'Loading...' : `${leaderboard.length} players ranked by volume`}
+                    {lbLoading ? t('points.leaderboard_loading') : t('points.leaderboard_players', { count: leaderboard.length })}
                   </p>
                 </div>
               </div>
@@ -452,20 +454,20 @@ export default function PointsPageClient() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border-medium bg-surface/50 text-[10px] font-bold uppercase tracking-[0.1em] text-text-muted">
-                      <th className="text-left py-2.5 px-4 w-12">Rank</th>
-                      <th className="text-left py-2.5 px-4">Player</th>
-                      <th className="text-right py-2.5 px-4">Volume</th>
-                      <th className="text-right py-2.5 px-4">Rounds</th>
-                      <th className="text-right py-2.5 px-4">Win%</th>
-                      <th className="text-right py-2.5 px-4">Correct%</th>
-                      <th className="text-right py-2.5 px-4">ROI</th>
+                      <th className="text-left py-2.5 px-4 w-12">{t('points.rank')}</th>
+                      <th className="text-left py-2.5 px-4">{t('points.player')}</th>
+                      <th className="text-right py-2.5 px-4">{t('points.volume')}</th>
+                      <th className="text-right py-2.5 px-4">{t('points.rounds')}</th>
+                      <th className="text-right py-2.5 px-4">{t('points.win_pct')}</th>
+                      <th className="text-right py-2.5 px-4">{t('points.correct_pct')}</th>
+                      <th className="text-right py-2.5 px-4">{t('points.roi')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lbLoading && (
                       <tr>
                         <td colSpan={7} className="px-4 py-12 text-center text-[13px] text-text-muted">
-                          Loading leaderboard...
+                          {t('points.leaderboard_loading_table')}
                         </td>
                       </tr>
                     )}
@@ -473,7 +475,7 @@ export default function PointsPageClient() {
                     {!lbLoading && leaderboard.length === 0 && (
                       <tr>
                         <td colSpan={7} className="px-4 py-12 text-center text-[13px] text-text-muted">
-                          No players yet — join a batch to compete
+                          {t('points.leaderboard_empty')}
                         </td>
                       </tr>
                     )}
@@ -505,7 +507,7 @@ export default function PointsPageClient() {
                               </span>
                               {isYou && (
                                 <span className="text-[10px] font-extrabold uppercase tracking-[0.06em] text-green-600 bg-green-100 px-1.5 py-0.5">
-                                  You
+                                  {t('points.you')}
                                 </span>
                               )}
                             </div>
@@ -538,17 +540,17 @@ export default function PointsPageClient() {
                     disabled={leaderboardPage === 1}
                     className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    &larr; Previous
+                    {t('points.previous')}
                   </button>
                   <span className="text-[11px] text-text-muted">
-                    Page {leaderboardPage} of {leaderboardTotalPages}
+                    {t('points.page_of', { page: leaderboardPage, total: leaderboardTotalPages })}
                   </span>
                   <button
                     onClick={() => setLeaderboardPage(p => Math.min(leaderboardTotalPages, p + 1))}
                     disabled={leaderboardPage === leaderboardTotalPages}
                     className="text-[11px] font-semibold text-text-muted hover:text-black disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
-                    Next &rarr;
+                    {t('points.next')}
                   </button>
                 </div>
               )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { getBatchTickState, formatTickDuration } from '@/lib/vision/tick'
 import { useBatches, type BatchInfo } from '@/hooks/vision/useBatches'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
@@ -108,6 +109,7 @@ function BatchCard({ item }: { item: BatchWithTick }) {
 }
 
 export function NextBatches() {
+  const t = useTranslations('vision')
   const { data: apiBatches } = useBatches()
   const { sources: registrySources } = useSourceRegistry()
 
@@ -161,12 +163,12 @@ export function NextBatches() {
       <div className="max-w-site mx-auto">
         <div className="flex items-center justify-between pt-4 pb-2">
           <div className="text-micro font-bold uppercase tracking-[0.08em] text-text-muted">
-            Live Batches
+            {t('next_batches.live_batches')}
           </div>
           <div className="flex items-center gap-3 text-micro font-semibold text-text-muted">
-            <span>{sortedBatches.length} batches</span>
+            <span>{t('next_batches.batches_count', { count: sortedBatches.length })}</span>
             {lockedCount > 0 && (
-              <span className="text-red-500">{lockedCount} locked</span>
+              <span className="text-red-500">{t('next_batches.locked_count', { count: lockedCount })}</span>
             )}
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Link, useRouter } from '@/i18n/routing'
 import type { VisionSource } from '@/lib/vision/sources'
@@ -88,6 +89,7 @@ function formatValue(v: string, isPrice?: boolean, unit?: string): string {
 }
 
 export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }: SourceCardProps) {
+  const t = useTranslations('vision')
   const router = useRouter()
 
   // Fetch per-source data immediately on mount
@@ -106,7 +108,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
   const displayMarketCount = metaAssetCount ?? totalMarkets
 
   // Status from admin health, fall back to meta-based check
-  const statusLabel = metaStatus === 'healthy' ? 'Live' : metaStatus === 'stale' ? 'Stale' : metaStatus === 'dead' ? 'Dead' : displayMarketCount > 0 ? 'Live' : 'Pending'
+  const statusLabel = metaStatus === 'healthy' ? t('source_card.status_live') : metaStatus === 'stale' ? t('source_card.status_stale') : metaStatus === 'dead' ? t('source_card.status_dead') : displayMarketCount > 0 ? t('source_card.status_live') : t('source_card.status_pending')
   const statusColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'bg-color-up' : metaStatus === 'stale' ? 'bg-yellow-500' : 'bg-text-muted'
   const statusTextColor = metaStatus === 'healthy' || (!metaStatus && displayMarketCount > 0) ? 'text-color-up' : metaStatus === 'stale' ? 'text-yellow-600' : 'text-text-muted'
 
@@ -255,7 +257,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
                   {totalMarkets > HOVER_LIST_CAP && (
                     <div className="px-2.5 py-1.5 text-center">
                       <span className="text-micro font-semibold text-[var(--foreground)]/60">
-                        +{totalMarkets - HOVER_LIST_CAP} more
+                        {t('source_card.more_count', { count: totalMarkets - HOVER_LIST_CAP })}
                       </span>
                     </div>
                   )}
@@ -263,19 +265,19 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
 
                 {/* Footer */}
                 <div className="px-3 py-1 border-t border-[var(--border)] flex items-center gap-3 text-micro font-semibold shrink-0">
-                  <span className="text-[var(--up)]">{upCount} UP</span>
-                  <span className="text-[var(--down)]">{downCount} DN</span>
+                  <span className="text-[var(--up)]">{upCount} {t('source_card.up')}</span>
+                  <span className="text-[var(--down)]">{downCount} {t('source_card.down')}</span>
                   <span className="text-[#999]">{sortedMarkets.length - totalSet} —</span>
                 </div>
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center">
                 {isLoading ? (
-                  <div className="text-label font-semibold text-text-muted animate-pulse">Loading...</div>
+                  <div className="text-label font-semibold text-text-muted animate-pulse">{t('source_card.loading')}</div>
                 ) : (
                   <div className="text-center px-4">
                     <div className="text-label font-semibold text-text-muted">
-                      {displayMarketCount > 0 ? `${displayMarketCount} assets` : 'No markets yet'}
+                      {displayMarketCount > 0 ? t('source_card.assets_count', { count: displayMarketCount }) : t('source_card.no_markets')}
                     </div>
                   </div>
                 )}
@@ -302,7 +304,7 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
         {/* Metrics row */}
         <div ref={metricsRef} className="grid grid-cols-3 border-t border-b border-border-light -mx-5 px-5 mt-3">
           <div className="py-2.5 pr-3">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Markets</div>
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.markets')}</div>
             <span className="text-body font-bold text-black font-mono tabular-nums">
               {displayMarketCount ? (
                 <AnimatedNumber
@@ -315,11 +317,11 @@ export function SourceCard({ source, bitmapEditor, metaAssetCount, metaStatus }:
             </span>
           </div>
           <div className="py-2.5 px-3 border-l border-border-light">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Type</div>
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.type')}</div>
             <span className="text-caption font-bold text-black truncate">{shortTypeLabel(source.valueLabel)}</span>
           </div>
           <div className="py-2.5 pl-3 border-l border-border-light">
-            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">Updated</div>
+            <div className="text-micro font-semibold uppercase tracking-[0.08em] text-text-muted mb-0.5">{t('source_card.updated')}</div>
             <span className="text-caption font-bold text-black">{sourceSnapshot?.generatedAt ? formatAge(sourceSnapshot.generatedAt) : '—'}</span>
           </div>
         </div>

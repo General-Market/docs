@@ -236,5 +236,32 @@
   },
   "my_positions": {
     "title": "My Positions"
+  },
+  "sources_grid": {
+    "sources": "ソース",
+    "assets": "アセット",
+    "categories": "カテゴリ",
+    "live": "ライブ",
+    "dismiss": "閉じる"
+  },
+  "source_card": {
+    "status_live": "ライブ",
+    "status_stale": "遅延",
+    "status_dead": "停止",
+    "status_pending": "待機中",
+    "markets": "マーケット",
+    "type": "タイプ",
+    "updated": "更新",
+    "loading": "読み込み中...",
+    "no_markets": "マーケットなし",
+    "assets_count": "{count}アセット",
+    "more_count": "+{count}件",
+    "up": "UP",
+    "down": "DN"
+  },
+  "next_batches": {
+    "live_batches": "ライブバッチ",
+    "batches_count": "{count}バッチ",
+    "locked_count": "{count}ロック"
   }
 }

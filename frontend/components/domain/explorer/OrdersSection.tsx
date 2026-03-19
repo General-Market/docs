@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   ResponsiveContainer,
   LineChart,
@@ -39,6 +40,7 @@ const deltaXAxisProps = {
 }
 
 export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
+  const t = useTranslations('pages')
   const ordersProcessedDeltas = useMemo(
     () => computeDeltas(snapshots, 'orders_processed_last_60s'),
     [snapshots]
@@ -46,14 +48,14 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
   return (
     <section>
-      <h2 className="text-heading font-bold text-black mb-4">Orders</h2>
+      <h2 className="text-heading font-bold text-black mb-4">{t('explorer.orders_section.title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 1. Pending Orders */}
         <ExplorerChartCard
-          title="Pending Orders"
+          title={t('explorer.orders_section.pending')}
           subtitle={
             latest
-              ? `Current: ${latest.pending_order_count}`
+              ? t('explorer.orders_section.current_count', { count: latest.pending_order_count })
               : undefined
           }
           loading={loading}
@@ -80,8 +82,8 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 2. Orders Processed/min */}
         <ExplorerChartCard
-          title="Orders Processed/min"
-          subtitle="Delta between consecutive snapshots"
+          title={t('explorer.orders_section.processed_per_min')}
+          subtitle={t('explorer.orders_section.processed_desc')}
           loading={loading}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -106,10 +108,10 @@ export function OrdersSection({ snapshots, latest, loading }: SectionProps) {
 
         {/* 3. Avg Cycle Duration */}
         <ExplorerChartCard
-          title="Avg Cycle Duration"
+          title={t('explorer.orders_section.avg_cycle')}
           subtitle={
             latest
-              ? `Current: ${(latest.avg_cycle_duration_ms ?? 0).toFixed(0)}ms`
+              ? t('explorer.orders_section.current_time', { time: (latest.avg_cycle_duration_ms ?? 0).toFixed(0) })
               : undefined
           }
           loading={loading}

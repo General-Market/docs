@@ -1,5 +1,15 @@
 # Design Decision Backlog
 
+## Session: 20260319-v7k3 (Vision leaderboard PnL dead + bot overhaul)
+
+- [FAILED] Old vision-bots.ts had hardcoded Vision contract `0x8Abd...` and WUSDC `0xcb6C...` — these are from a stale deployment. Active deployment uses `0xd5ec...` and `0x4c78...`. Bots were transacting with dead contracts.
+- [DECISION] Bot keys now derived deterministically via `keccak256("vision-bot-N")` for N=0..9. Stable across runs, no Anvil dependency.
+- [DECISION] Bot script now loads addresses from `deployments/active-deployment.json` + `vision-batches.json` at runtime — no more hardcoding.
+- [FAILED] Vision tick engine never resolved any ticks. Root cause: config hash mismatch. On-chain batches were created with hash X, data-node regenerates configs each tick producing hash Y. Engine fetches `/batches/config/X` → 404 → skips tick → nothing ever resolves → PnL frozen at $0.
+- [DECISION] Engine's `ConfigCache::get_or_fetch` now falls back to `/batches/recommended` lookup by `keccak256(source_name) == on-chain source_id` when hash lookup fails. This is the correct behavior since configs regenerate each tick.
+- [DECISION] Added 55s TTL to config cache so regenerated configs are picked up each tick instead of cached forever.
+- [DECISION] Bot script adds `claimRewards()` flow — fetches BLS balance proofs from oracle API, calls on-chain claim with BLS sig + referenceNonce from OracleRegistry.
+
 ## Session: 20260317-m4b1 (Mobile adaptation — full frontend)
 
 - [DECISION] Sign Up button was `hidden sm:inline-flex` — invisible on mobile. Users literally could not sign up on phones. Fixed to always-visible with responsive padding `px-3 sm:px-4`.

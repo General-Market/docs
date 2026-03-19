@@ -1,4 +1,17 @@
 import { AA_DATA_NODE_URL, DATA_NODE_SERVER } from '@/lib/config'
+import itpIdNames from '@/lib/itp-id-names.json'
+
+const ITP_NAMES = itpIdNames as Record<string, { name: string; ticker: string }>
+
+function getItpName(itpId: string, fallbackNum: number): string {
+  const override = ITP_NAMES[itpId.toLowerCase()]
+  return override?.name || `ITP #${fallbackNum}`
+}
+
+function getItpSymbol(itpId: string, fallbackNum: number): string {
+  const override = ITP_NAMES[itpId.toLowerCase()]
+  return override?.ticker || `ITP${fallbackNum}`
+}
 
 export interface ItpSummary {
   itpId: string
@@ -27,8 +40,8 @@ export async function getItpSummaries(): Promise<ItpSummary[]> {
 
     return data.map((item: any) => ({
       itpId: item.itp_id || '',
-      name: item.name || `ITP #${parseItpNumber(item.itp_id)}`,
-      symbol: item.symbol || `ITP${parseItpNumber(item.itp_id)}`,
+      name: item.name || getItpName(item.itp_id, parseItpNumber(item.itp_id)),
+      symbol: item.symbol || getItpSymbol(item.itp_id, parseItpNumber(item.itp_id)),
       nav: item.nav_per_share || 0,
       aum: item.aum_usd || 0,
       assetCount: item.asset_count || 0,
@@ -86,8 +99,8 @@ export async function getItpDetail(itpId: string): Promise<{
 
     return {
       itpId,
-      name: priceData.name || `ITP #${parseItpNumber(itpId)}`,
-      symbol: priceData.symbol || `ITP${parseItpNumber(itpId)}`,
+      name: priceData.name || getItpName(itpId, parseItpNumber(itpId)),
+      symbol: priceData.symbol || getItpSymbol(itpId, parseItpNumber(itpId)),
       nav: parseFloat(priceData.nav_display) || priceData.nav_per_share || 0,
       aum: priceData.aum_usd || 0,
       assetCount: priceData.assets_total || holdings.length,
