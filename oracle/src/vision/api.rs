@@ -1194,7 +1194,8 @@ async fn leaderboard_from_postgres(
              deltas AS (
                 SELECT td.player, SUM(td.delta::numeric) as pnl,
                        SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
-                FROM vision_player_tick_deltas td WHERE td.batch_id IN (SELECT id FROM source_batches)
+                FROM vision_player_tick_deltas td
+                WHERE td.batch_id IN (SELECT id FROM source_batches) AND td.delta::numeric <> 0
                 GROUP BY td.player
              )
              SELECT COALESCE(p.player, d.player) as player,
@@ -1216,7 +1217,8 @@ async fn leaderboard_from_postgres(
              deltas AS (
                 SELECT td.player, SUM(td.delta::numeric) as pnl,
                        SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
-                FROM vision_player_tick_deltas td WHERE td.batch_id = {bid}
+                FROM vision_player_tick_deltas td
+                WHERE td.batch_id = {bid} AND td.delta::numeric <> 0
                 GROUP BY td.player
              )
              SELECT COALESCE(p.player, d.player) as player,
