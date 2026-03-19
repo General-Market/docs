@@ -5,7 +5,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { SpringCard } from '@/components/ui/spring'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
+const API_URL = typeof window !== 'undefined'
+  ? '/api/backend'
+  : (process.env.BACKEND_URL || 'http://localhost:3001')
 const STORAGE_KEY = 'gm-markets-collapsed'
 
 /**

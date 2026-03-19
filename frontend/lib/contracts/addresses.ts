@@ -35,10 +35,9 @@ export const COLLATERAL_TOKEN_ADDRESS = c.L3_WUSDC as `0x${string}`
 export const COLLATERAL_SYMBOL: string = 'USDC'
 export const COLLATERAL_DECIMALS = 18
 export const MIN_BET_AMOUNT = BigInt(10 ** (COLLATERAL_DECIMALS - 2))
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || ''
-if (typeof window !== 'undefined' && !BACKEND_URL) {
-  console.warn('[addresses] NEXT_PUBLIC_BACKEND_URL is empty — SSE and backend API calls will fail')
-}
+export const BACKEND_URL = typeof window !== 'undefined'
+  ? '/api/backend'                                          // Client: through catch-all proxy
+  : (process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001')  // Server: direct
 
 // Legacy exports
 export const BASE_CHAIN_ID = CHAIN_ID
@@ -47,7 +46,10 @@ export const USDC_DECIMALS = COLLATERAL_DECIMALS
 
 export function getContractAddress(): `0x${string}` { return CONTRACT_ADDRESS }
 export function getResolutionContractAddress(): `0x${string}` { return RESOLUTION_CONTRACT_ADDRESS }
-export function getBackendUrl(): string { return BACKEND_URL }
+export function getBackendUrl(): string {
+  if (typeof window !== 'undefined') return '/api/backend'
+  return process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+}
 
 interface NetworkConfig {
   chainId: number

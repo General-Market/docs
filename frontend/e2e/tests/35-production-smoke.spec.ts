@@ -181,7 +181,7 @@ test.describe('SSE Data Stream', () => {
     const timeout = setTimeout(() => controller.abort(), 15_000)
 
     try {
-      const res = await fetch(apiUrl('/dn/sse/stream?topics=nav'), {
+      const res = await fetch(apiUrl('/api/dn/sse/stream?topics=nav'), {
         signal: controller.signal,
         headers: { Accept: 'text/event-stream' },
       })
@@ -229,7 +229,7 @@ test.describe('SSE Data Stream', () => {
     const timeout = setTimeout(() => controller.abort(), 15_000)
 
     try {
-      const res = await fetch(apiUrl('/dn/sse/stream?topics=system'), {
+      const res = await fetch(apiUrl('/api/dn/sse/stream?topics=system'), {
         signal: controller.signal,
         headers: { Accept: 'text/event-stream' },
       })
