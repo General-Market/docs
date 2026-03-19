@@ -330,26 +330,32 @@ async fn get_all_24h_changes(
 }
 
 /// Get all healthy assets for a source.
-/// "Healthy" = has a price record within 2× sync_interval and value > 0.
+/// "Healthy" = has a price in `market_prices_latest` within 2× sync_interval and value > 0.
+///
+/// Uses `market_prices_latest` (the live snapshot table) as the single source of truth.
+/// Some sources write different asset_id formats to `market_assets` vs `market_prices`
+/// (e.g. defi writes protocol_* to assets but dex_24h_* to prices), so we query the
+/// price table directly rather than joining through the asset registry.
 /// Returns max MAX_MARKETS_PER_BATCH assets, sorted by asset_id.
 async fn get_healthy_assets(
     pool: &PgPool,
     source_id: &str,
     sync_interval_secs: u64,
 ) -> Result<Vec<String>, sqlx::Error> {
+    // 10× sync interval: generous window because we're building a config
+    // (which markets to include), not trading on live prices. Sources may
+    // have intermittent fetch gaps from rate limits, API outages, etc.
     let staleness_cutoff =
-        Utc::now() - chrono::Duration::seconds((sync_interval_secs * 2) as i64);
+        Utc::now() - chrono::Duration::seconds((sync_interval_secs * 10).max(7200) as i64);
 
     let rows: Vec<(String,)> = sqlx::query_as(
         r#"
-        SELECT DISTINCT a.asset_id
-        FROM market_assets a
-        JOIN market_prices p ON a.source = p.source AND a.asset_id = p.asset_id
-        WHERE a.source = $1
-          AND a.is_active = true
-          AND p.fetched_at >= $2
-          AND p.value > 0
-        ORDER BY a.asset_id
+        SELECT asset_id
+        FROM market_prices_latest
+        WHERE source = $1
+          AND fetched_at >= $2
+          AND value > 0
+        ORDER BY asset_id
         LIMIT $3
         "#,
     )
