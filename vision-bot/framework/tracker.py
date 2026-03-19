@@ -276,6 +276,9 @@ class Tracker:
                     if "bitmap_hex" in pos:
                         pos["bitmap"] = bytes.fromhex(pos["bitmap_hex"])
                         del pos["bitmap_hex"]
+                    if "bitmap_hash_hex" in pos:
+                        pos["bitmap_hash"] = bytes.fromhex(pos["bitmap_hash_hex"])
+                        del pos["bitmap_hash_hex"]
                     batch_id = pos["batch_id"]
                     # Validate against chain: joinTimestamp == 0 means this
                     # position doesn't exist on the current contract
@@ -308,6 +311,8 @@ class Tracker:
                 p = dict(pos)
                 if isinstance(p.get("bitmap"), bytes):
                     p["bitmap_hex"] = p.pop("bitmap").hex()
+                if isinstance(p.get("bitmap_hash"), bytes):
+                    p["bitmap_hash_hex"] = p.pop("bitmap_hash").hex()
                 active.append(p)
             with open(path, "w") as f:
                 json.dump({"active": active, "history": self._history}, f, indent=2)
