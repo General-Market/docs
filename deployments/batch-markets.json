@@ -1,7 +1,7 @@
 {
   "chainId": 111222333,
   "deployer": "0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4",
-  "timestamp": 1773946863,
+  "timestamp": 1773950319,
   "infrastructure": {
     "MORPHO": "0xecf30fA79bb8aB854932E3De0a7D75Cf19cFd867",
     "CURATOR_RATE_IRM": "0x9AFC81B6182F63dc10FECC42256248eE84593B27",
@@ -11,9 +11,9 @@
   },
   "markets": [
     {
-      "collateralToken": "0x10294668a12c8CDA6e3E2F5d9c4908C4F0BdAe54",
-      "oracle": "0x2Dd4b3254552317E8f7E1C6Db36453c5b103afb4",
-      "marketId": "0xa2129600ec725ed4d9b769d04c75b91a1a3f9af596b051ae599d3479330c8ec3",
+      "collateralToken": "0x03959A1C675CB1dAd9F00C406b263bce5544368C",
+      "oracle": "0xf05EbdA901EBc0b3E0a1B4dCfb5bEAD35256A993",
+      "marketId": "0x71b0a6960b29f614e37f3988393e90a5f178917b1adc2da049c9e5076628336c",
       "lltv": "770000000000000000",
       "loanToken": "0xB9f33D949224CEbb2c0eA649688FCf7cE57D8cD9",
       "irm": "0x9AFC81B6182F63dc10FECC42256248eE84593B27"

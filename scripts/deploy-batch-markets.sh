@@ -148,7 +148,7 @@ for i in "${!VAULTS[@]}"; do
 done
 
 rm -rf broadcast/DeployBatchMarkets.s.sol/ cache/DeployBatchMarkets.s.sol/
-forge script script/DeployBatchMarkets.s.sol --rpc-url "$L3_RPC" --broadcast --slow --force
+forge script script/DeployBatchMarkets.s.sol --rpc-url "$L3_RPC" --broadcast --legacy --with-gas-price 200000000 --force
 
 rm "$ENV_FILE"
 
