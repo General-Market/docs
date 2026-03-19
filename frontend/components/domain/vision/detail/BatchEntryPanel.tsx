@@ -158,10 +158,11 @@ export default function BatchEntryPanel({
   const hasStake = stakeValue > 0
   const hasPredictions = counts.up + counts.down > 0
   const activeStep = isJoined ? depositStep : joinStep
-  // New joins require: stake + at least one bet set + configHash + markets loaded.
+  // New joins require: stake + ALL markets set (up or down) + configHash.
   // Already-joined players can deposit more without setting new bets.
+  const allMarketsSet = counts.empty === 0 && marketIds.length > 0
   const canSubmit = isConnected && hasStake && activeStep === 'idle'
-    && (isJoined || (hasPredictions && !!configHash && marketIds.length > 0))
+    && (isJoined || (allMarketsSet && !!configHash))
 
   // -- After on-chain join succeeds, submit bitmap to issuers --
   useEffect(() => {
