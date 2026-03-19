@@ -6,15 +6,15 @@
 
 import { keccak256, encodeFunctionData, toHex, createWalletClient, createPublicClient, http, defineChain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { mkdirSync, rmdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs'
+import { mkdirSync, rmdirSync, writeFileSync, readFileSync, unlinkSync } from 'fs'
 
 /** Wrap viem http transport to include Accept header (nginx requires it) */
 const rpcHttp = (url: string) => http(url, { fetchOptions: { headers: { Accept: 'application/json' } } })
 
 import {
-  IS_ANVIL, L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
+  L3_RPC as ENV_L3_RPC, VISION_API as ENV_VISION_API,
   CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
-  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER, ORACLE_URLS,
+  DEPLOYER_KEY, PLAYER2_KEY, CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS,
   RPC_TIMEOUT, CONSENSUS_TIMEOUT,
 } from '../env'
 
@@ -44,14 +44,6 @@ const LOCK_BASE = '/tmp/e2e-l3-nonce'
 const LOCK_STALE_MS = 30_000
 
 async function withL3NonceLock<T>(fn: () => Promise<T>, address?: string): Promise<T> {
-  // On Anvil, use simple in-process lock (no cross-worker issue with single-process)
-  if (IS_ANVIL) {
-    const prev = _l3InProcLock
-    let resolve: () => void
-    _l3InProcLock = new Promise(r => { resolve = r })
-    return prev.then(fn).finally(() => resolve!())
-  }
-
   const lockDir = address
     ? `${LOCK_BASE}-${address.toLowerCase().slice(2, 10)}`
     : `${LOCK_BASE}-global`
@@ -99,9 +91,6 @@ async function withL3NonceLock<T>(fn: () => Promise<T>, address?: string): Promi
   }
 }
 
-/** In-process fallback for Anvil mode */
-let _l3InProcLock: Promise<void> = Promise.resolve()
-
 // Cleanup stale locks on process exit
 process.on('exit', () => {
   const { readdirSync } = require('fs')
@@ -134,10 +123,8 @@ import { VISION_PLAYER_KEY, VISION_PLAYER_ADDRESS } from '../env'
 /** Vision test user — uses VISION_PLAYER_KEY, separate from ITP deployer */
 export const PLAYER1 = VISION_PLAYER_ADDRESS
 
-/** Vision bot 1 — on testnet uses Anvil #9 key (funded by deployer) */
-export const PLAYER2 = IS_ANVIL
-  ? '0x71bE63f3384f5fb98995898A86B02Fb2426c5788'
-  : '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720' // Anvil #9
+/** Vision bot 1 — uses PLAYER2_KEY (funded by deployer) */
+export const PLAYER2 = '0xa0Ee7A142d267C1f36714E4a8F75612F20a79720'
 
 /** Map of address → private key for testnet signing */
 const TEST_KEYS: Record<string, `0x${string}`> = {
@@ -178,10 +165,6 @@ function getL3UsdcAddress(): string {
 let _visionUsdcAddress: string | null = null
 export async function getVisionUsdcAddress(): Promise<string> {
   if (_visionUsdcAddress) return _visionUsdcAddress
-  if (IS_ANVIL) {
-    _visionUsdcAddress = getL3UsdcAddress()
-    return _visionUsdcAddress
-  }
   // Read from Vision contract's USDC() immutable
   const data = encodeFunctionData({
     abi: [{ name: 'USDC', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'address' }] }] as const,
@@ -305,51 +288,41 @@ async function l3EthCall(to: string, data: string): Promise<string> {
 }
 
 async function l3SendTx(from: string, to: string, data: string): Promise<string> {
-  // On testnet, serialize signed transactions per-address to prevent nonce conflicts
-  if (!IS_ANVIL) {
-    return withL3NonceLock(async () => {
-      const key = getKeyForAddress(from)
-      const account = privateKeyToAccount(key)
-      const chain = defineChain({
-        id: ENV_CHAIN_ID,
-        name: 'Index L3',
-        nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-        rpcUrls: { default: { http: [L3_RPC] } },
-      })
-      const publicClient = createPublicClient({ chain, transport: rpcHttp(L3_RPC) })
-      const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
-      // Retry with fresh nonce on "nonce too low" — the browser wallet's __e2eSignAndSend
-      // may have sent transactions outside this lock, racing the nonce.
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const nonce = await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' })
-        try {
-          const txHash = await client.sendTransaction({
-            to: to as `0x${string}`,
-            data: data as `0x${string}`,
-            gas: 2_000_000n,
-            nonce,
-          })
-          return waitForReceipt(txHash, from, to, data)
-        } catch (err) {
-          const msg = (err as Error).message ?? ''
-          if (msg.includes('nonce too low') && attempt < 2) {
-            console.warn(`[l3SendTx] nonce ${nonce} too low, retrying (attempt ${attempt + 1})...`)
-            await new Promise(r => setTimeout(r, 1_000))
-            continue
-          }
-          throw err
-        }
-      }
-      throw new Error('l3SendTx: unreachable')
-    }, from)
-  }
-
-  // On Anvil, use in-process lock
+  // Serialize signed transactions per-address to prevent nonce conflicts
   return withL3NonceLock(async () => {
-    const txHash = await l3RpcCall('eth_sendTransaction', [{
-      from, to, data, gas: '0x200000',
-    }]) as string
-    return waitForReceipt(txHash, from, to, data)
+    const key = getKeyForAddress(from)
+    const account = privateKeyToAccount(key)
+    const chain = defineChain({
+      id: ENV_CHAIN_ID,
+      name: 'Index L3',
+      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+      rpcUrls: { default: { http: [L3_RPC] } },
+    })
+    const publicClient = createPublicClient({ chain, transport: rpcHttp(L3_RPC) })
+    const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
+    // Retry with fresh nonce on "nonce too low" — the browser wallet's __e2eSignAndSend
+    // may have sent transactions outside this lock, racing the nonce.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const nonce = await publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' })
+      try {
+        const txHash = await client.sendTransaction({
+          to: to as `0x${string}`,
+          data: data as `0x${string}`,
+          gas: 2_000_000n,
+          nonce,
+        })
+        return waitForReceipt(txHash, from, to, data)
+      } catch (err) {
+        const msg = (err as Error).message ?? ''
+        if (msg.includes('nonce too low') && attempt < 2) {
+          console.warn(`[l3SendTx] nonce ${nonce} too low, retrying (attempt ${attempt + 1})...`)
+          await new Promise(r => setTimeout(r, 1_000))
+          continue
+        }
+        throw err
+      }
+    }
+    throw new Error('l3SendTx: unreachable')
   }, from)
 }
 
@@ -369,54 +342,50 @@ async function waitForReceipt(txHash: string, from: string, to: string, data: st
       }
       return txHash
     }
-    await new Promise(r => setTimeout(r, IS_ANVIL ? 200 : 1000))
+    await new Promise(r => setTimeout(r, 1000))
   }
   return txHash
 }
 
-// ── Anvil impersonation / testnet account setup ──────────────
+// ── Testnet account setup ────────────────────────────────────
 
 export async function impersonateAccount(address: string): Promise<void> {
-  if (!IS_ANVIL) {
-    // On testnet, ensure the account has ETH for gas (funded by deployer)
-    const balance = await l3RpcCall('eth_getBalance', [address, 'latest']) as string
-    if (BigInt(balance) < 10n ** 18n) {
-      // Send 10 ETH from deployer — lock deployer's nonce across processes
-      await withL3NonceLock(async () => {
-        const account = privateKeyToAccount(DEPLOYER_KEY)
-        const chain = defineChain({
-          id: ENV_CHAIN_ID,
-          name: 'Index L3',
-          nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-          rpcUrls: { default: { http: [L3_RPC] } },
-        })
-        const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
-        const txHash = await client.sendTransaction({
-          to: address as `0x${string}`,
-          value: 10n * 10n ** 18n,
-        })
-        // Wait for confirmation
-        for (let i = 0; i < 10; i++) {
-          const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
-          if (receipt) return
-          await new Promise(r => setTimeout(r, 1000))
-        }
-      }, DEPLOYER_ADDRESS)
-    }
-    return
+  // Ensure the account has ETH for gas (funded by deployer)
+  const balance = await l3RpcCall('eth_getBalance', [address, 'latest']) as string
+  if (BigInt(balance) < 10n ** 18n) {
+    // Send 10 ETH from deployer — lock deployer's nonce across processes
+    await withL3NonceLock(async () => {
+      const account = privateKeyToAccount(DEPLOYER_KEY)
+      const chain = defineChain({
+        id: ENV_CHAIN_ID,
+        name: 'Index L3',
+        nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+        rpcUrls: { default: { http: [L3_RPC] } },
+      })
+      const client = createWalletClient({ account, chain, transport: rpcHttp(L3_RPC) })
+      const txHash = await client.sendTransaction({
+        to: address as `0x${string}`,
+        value: 10n * 10n ** 18n,
+      })
+      // Wait for confirmation
+      for (let i = 0; i < 10; i++) {
+        const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string } | null
+        if (receipt) return
+        await new Promise(r => setTimeout(r, 1000))
+      }
+    }, DEPLOYER_ADDRESS)
   }
-  await l3RpcCall('anvil_impersonateAccount', [address])
 }
 
 // ── USDC minting (via deployer) ─────────────────────────────
 
 /** Deployer — can call mint() on test ERC20 contracts */
-const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS
+const DEPLOYER = DEPLOYER_ADDRESS
 
 /**
  * Wait until the batch's tick lock window passes.
  * Vision batches lock the last `lockOffset` seconds of each `tickDuration` tick.
- * On Anvil (auto-mine), block.timestamp = wall clock, so just sleep past the lock.
+ * block.timestamp ~ wall clock, so just sleep past the lock window.
  */
 async function waitForUnlock(batchId: number): Promise<void> {
   const data = encodeFunctionData({
@@ -441,32 +410,6 @@ async function waitForUnlock(batchId: number): Promise<void> {
   if (posInTick >= lockStart - SAFETY_MARGIN) {
     const waitSecs = tickDuration - posInTick + 2 // wait until next tick + 2s safety
     await new Promise(r => setTimeout(r, waitSecs * 1000))
-  }
-}
-
-/**
- * Clear a player's position on-chain via Anvil storage manipulation.
- * On testnet: no-op (fresh deployment, positions should be clean).
- */
-async function clearPosition(batchId: number, player: string): Promise<void> {
-  if (!IS_ANVIL) return // Cannot manipulate storage on real chain
-
-  const visionAddr = getVisionAddress()
-  const innerSlot = keccak256(
-    ('0x' +
-      BigInt(batchId).toString(16).padStart(64, '0') +
-      BigInt(4).toString(16).padStart(64, '0')) as `0x${string}`,
-  )
-  const baseSlot = keccak256(
-    ('0x' +
-      player.replace('0x', '').toLowerCase().padStart(64, '0') +
-      innerSlot.replace('0x', '')) as `0x${string}`,
-  )
-  const base = BigInt(baseSlot)
-  const zero = '0x' + '0'.repeat(64)
-  for (let i = 0; i < 9; i++) {
-    const slot = '0x' + (base + BigInt(i)).toString(16).padStart(64, '0')
-    await l3RpcCall('anvil_setStorageAt', [visionAddr, slot, zero])
   }
 }
 
@@ -655,38 +598,36 @@ async function submitBitmapToIssuers(
   expectedHash: string,
 ): Promise<{ accepted: number; total: number }> {
   const issuerUrls = ORACLE_URLS
-  // Issuers poll L3 every 2s — on testnet with variable block times, events can take
+  // Issuers poll L3 every 2s — with variable block times, events can take
   // 6-15s to index. Use longer delays and more attempts to avoid race conditions.
-  const retryDelay = IS_ANVIL ? 1_000 : 3_000
-  const maxAttempts = IS_ANVIL ? 5 : 10
+  const retryDelay = 3_000
+  const maxAttempts = 10
 
   // Pre-check: wait until at least one issuer sees this player in the batch.
   // This avoids wasting bitmap submission attempts while issuers haven't indexed yet.
-  if (!IS_ANVIL) {
-    const readyDeadline = Date.now() + 15_000
-    let issuerReady = false
-    while (Date.now() < readyDeadline) {
-      for (const url of issuerUrls) {
-        try {
-          const res = await fetch(`${url}/vision/batch/${batchId}/state`, {
-            signal: AbortSignal.timeout(5_000),
-          })
-          if (res.ok) {
-            const state = await res.json() as { players?: Array<{ address: string }> }
-            if (state.players?.some(p => p.address.toLowerCase() === player.toLowerCase())) {
-              issuerReady = true
-              break
-            }
+  const readyDeadline = Date.now() + 15_000
+  let issuerReady = false
+  while (Date.now() < readyDeadline) {
+    for (const url of issuerUrls) {
+      try {
+        const res = await fetch(`${url}/vision/batch/${batchId}/state`, {
+          signal: AbortSignal.timeout(5_000),
+        })
+        if (res.ok) {
+          const state = await res.json() as { players?: Array<{ address: string }> }
+          if (state.players?.some(p => p.address.toLowerCase() === player.toLowerCase())) {
+            issuerReady = true
+            break
           }
-        } catch { /* issuer unavailable, try next */ }
-      }
-      if (issuerReady) break
-      console.log(`[bitmap] Waiting for issuers to index player ${player.slice(0, 10)}... in batch ${batchId}`)
-      await new Promise(r => setTimeout(r, 3_000))
+        }
+      } catch { /* issuer unavailable, try next */ }
     }
-    if (!issuerReady) {
-      console.warn(`[bitmap] No issuer indexed player after 15s — submitting anyway`)
-    }
+    if (issuerReady) break
+    console.log(`[bitmap] Waiting for issuers to index player ${player.slice(0, 10)}... in batch ${batchId}`)
+    await new Promise(r => setTimeout(r, 3_000))
+  }
+  if (!issuerReady) {
+    console.warn(`[bitmap] No issuer indexed player after 15s — submitting anyway`)
   }
 
   // Retry loop: submit bitmap to all issuers
@@ -745,11 +686,8 @@ export async function fullJoinBatch(
   bets: BetDirection[],
   marketCount: number,
 ): Promise<JoinResult> {
-  // 0. Ensure player account is ready (impersonate on Anvil, fund on testnet)
+  // 0. Ensure player account is funded
   await impersonateAccount(player)
-
-  // 0.1. Clear any existing position (Anvil only — cannot clear on testnet)
-  await clearPosition(batchId, player)
 
   // 0.5. Ensure player has enough of Vision's USDC (may differ from deployment L3_WUSDC)
   const visionUsdc = await getVisionUsdcAddress()
@@ -913,141 +851,7 @@ export async function ensureBatchExists(): Promise<BatchInfo[]> {
   const batches = await getBatchesFromChain()
   if (batches.length > 0) return batches
 
-  // No batches at all — create one via storage on Anvil
-  if (IS_ANVIL) {
-    console.log('[ensureBatchExists] nextBatchId=0 — creating batch via storage')
-    const batchId = await createBatchViaStorage()
-    console.log(`[ensureBatchExists] Created batch ${batchId}`)
-    return getBatchesFromChain()
-  }
-
   throw new Error('No batches found — run DeployAllVisionBatches.s.sol first')
-}
-
-/**
- * Create a batch by writing directly to Vision contract storage.
- * Bypasses BLS signature requirement — Anvil only.
- *
- * Storage layout (Vision inherits ReentrancyGuard[1 slot] + BLSVerifier[1 slot]):
- *   slot 0: ReentrancyGuard._status
- *   slot 1: BLSVerifier._blsOracleRegistry
- *   slot 2: nextBatchId
- *   slot 3: _batches mapping
- *   slot 4: _positions mapping
- *   ...
- *
- * Batch struct (12 fields, 12 storage slots):
- *   +0  address creator
- *   +1  bytes32 sourceId
- *   +2  bytes32 configHash
- *   +3  bytes32 nextConfigHash
- *   +4  uint256 tickDuration
- *   +5  uint256 lockOffset
- *   +6  uint256 nextLockOffset
- *   +7  uint256 nextTickDuration
- *   +8  int256  epochOffset
- *   +9  uint256 createdAtTick
- *   +10 uint256 lastPromotionTick
- *   +11 bool    paused
- */
-export async function createBatchViaStorage(opts?: {
-  sourceId?: string
-  configHash?: string
-  tickDuration?: number
-  lockOffset?: number
-  creator?: string
-}): Promise<number> {
-  if (!IS_ANVIL) throw new Error('createBatchViaStorage: Anvil only')
-
-  const visionAddr = getVisionAddress()
-  const NEXT_BATCH_ID_SLOT = 2n
-  const BATCHES_MAPPING_SLOT = 3n
-
-  // Read current nextBatchId
-  const nextBatchIdData = encodeFunctionData({
-    abi: VISION_NEXT_BATCH_ID_ABI,
-    functionName: 'nextBatchId',
-    args: [],
-  })
-  const rawNextId = await l3EthCall(visionAddr, nextBatchIdData)
-  const batchId = Number(safeBigInt(rawNextId))
-
-  // Defaults
-  const tickDuration = opts?.tickDuration ?? 120
-  const lockOffset = opts?.lockOffset ?? 10
-  const creator = opts?.creator ?? ANVIL_DEPLOYER
-  const sourceId = opts?.sourceId ?? keccak256(toHex('e2e-test-source'))
-  const configHash = opts?.configHash ?? keccak256(toHex('e2e-test-config'))
-  const now = Math.floor(Date.now() / 1000)
-  const createdAtTick = Math.floor(now / tickDuration)
-
-  // Compute base storage slot for _batches[batchId]
-  // mapping(uint256 => Batch): keccak256(abi.encode(key, slot))
-  const baseSlot = BigInt(keccak256(
-    ('0x' +
-      BigInt(batchId).toString(16).padStart(64, '0') +
-      BATCHES_MAPPING_SLOT.toString(16).padStart(64, '0')
-    ) as `0x${string}`
-  ))
-
-  const pad = (v: string) => v.padStart(64, '0')
-  const toSlot = (offset: bigint) => '0x' + (baseSlot + offset).toString(16).padStart(64, '0')
-  const toVal = (hex: string) => '0x' + pad(hex)
-
-  // Write batch struct fields
-  // +0: creator (address, right-padded to 32 bytes — Solidity stores address in low 20 bytes)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(0n), toVal(creator.replace('0x', '').toLowerCase())])
-
-  // +1: sourceId
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(1n), sourceId])
-
-  // +2: configHash
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(2n), configHash])
-
-  // +3: nextConfigHash (0)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(3n), toVal('0')])
-
-  // +4: tickDuration
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(4n), toVal(tickDuration.toString(16))])
-
-  // +5: lockOffset
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(5n), toVal(lockOffset.toString(16))])
-
-  // +6: nextLockOffset (0)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(6n), toVal('0')])
-
-  // +7: nextTickDuration (0)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(7n), toVal('0')])
-
-  // +8: epochOffset (int256, 0)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(8n), toVal('0')])
-
-  // +9: createdAtTick
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(9n), toVal(createdAtTick.toString(16))])
-
-  // +10: lastPromotionTick
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(10n), toVal(createdAtTick.toString(16))])
-
-  // +11: paused (false = 0)
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, toSlot(11n), toVal('0')])
-
-  // Increment nextBatchId (slot 2)
-  const newNextBatchId = batchId + 1
-  const nextIdSlot = '0x' + NEXT_BATCH_ID_SLOT.toString(16).padStart(64, '0')
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, nextIdSlot, toVal(newNextBatchId.toString(16))])
-
-  // Write latestBatchForSource mapping (slot 8): mapping(bytes32 => uint256)
-  // Storage: keccak256(abi.encode(sourceId, 8))
-  const LATEST_BATCH_SLOT = 8n
-  const latestSlot = keccak256(
-    ('0x' +
-      sourceId.replace('0x', '') +
-      LATEST_BATCH_SLOT.toString(16).padStart(64, '0')
-    ) as `0x${string}`
-  )
-  await l3RpcCall('anvil_setStorageAt', [visionAddr, latestSlot, toVal(batchId.toString(16))])
-
-  return batchId
 }
 
 /**
@@ -1193,11 +997,10 @@ function getSettlementUsdcAddress(): string {
 
 /**
  * Check if the deployer has enough native gas on Settlement to send transactions.
- * On testnet (Sonic), the deployer needs S tokens. Returns true on Anvil.
+ * On testnet (Sonic), the deployer needs S tokens.
  * minBalance default = 0.005 S (enough for ~3-4 contract calls at 1M gas each).
  */
 export async function hasSettlementGas(minBalance = 5n * 10n ** 15n): Promise<boolean> {
-  if (IS_ANVIL) return true
   try {
     const result = await settlementRpcCall('eth_getBalance', [DEPLOYER_ADDRESS, 'latest']) as string
     const balance = BigInt(result || '0x0')
@@ -1215,33 +1018,23 @@ export async function hasSettlementGas(minBalance = 5n * 10n ** 15n): Promise<bo
  * On testnet: L3 and Settlement are the same chain, uses signed tx.
  */
 export async function mintSettlementUsdc(player: string, amount: bigint): Promise<void> {
-  const deployer = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS
   const userPadded = player.replace('0x', '').toLowerCase().padStart(64, '0')
   const amountHex = amount.toString(16).padStart(64, '0')
   const data = `0x40c10f19${userPadded}${amountHex}`
 
-  if (!IS_ANVIL) {
-    const account = privateKeyToAccount(DEPLOYER_KEY)
-    const chain = defineChain({
-      id: ENV_SETTLEMENT_CHAIN_ID,
-      name: 'Index Settlement',
-      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
-    })
-    const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
-    await client.sendTransaction({
-      to: getSettlementUsdcAddress() as `0x${string}`,
-      data: data as `0x${string}`,
-      gas: 1_000_000n,
-    })
-  } else {
-    await settlementRpcCall('eth_sendTransaction', [{
-      from: deployer,
-      to: getSettlementUsdcAddress(),
-      data,
-      gas: '0x100000',
-    }])
-  }
+  const account = privateKeyToAccount(DEPLOYER_KEY)
+  const chain = defineChain({
+    id: ENV_SETTLEMENT_CHAIN_ID,
+    name: 'Index Settlement',
+    nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+    rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
+  })
+  const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
+  await client.sendTransaction({
+    to: getSettlementUsdcAddress() as `0x${string}`,
+    data: data as `0x${string}`,
+    gas: 1_000_000n,
+  })
 }
 
 /**
@@ -1277,25 +1070,17 @@ export async function depositToVisionViaSettlement(player: string, settlementUsd
     args: [settlementUsdcAmount],
   })
 
-  if (!IS_ANVIL) {
-    const key = getKeyForAddress(player)
-    const account = privateKeyToAccount(key)
-    const chain = defineChain({
-      id: ENV_SETTLEMENT_CHAIN_ID,
-      name: 'Index Settlement',
-      nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
-      rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
-    })
-    const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
-    await client.sendTransaction({ to: usdcAddr as `0x${string}`, data: approveData as `0x${string}`, gas: 1_000_000n })
-    await client.sendTransaction({ to: custody as `0x${string}`, data: depositData as `0x${string}`, gas: 2_000_000n })
-  } else {
-    await settlementRpcCall('anvil_setBalance', [player, '0x56BC75E2D63100000'])
-    await settlementRpcCall('anvil_impersonateAccount', [player])
-    await settlementRpcCall('eth_sendTransaction', [{ from: player, to: usdcAddr, data: approveData, gas: '0x100000' }])
-    await settlementRpcCall('eth_sendTransaction', [{ from: player, to: custody, data: depositData, gas: '0x200000' }])
-    await settlementRpcCall('anvil_mine', ['0x5'])
-  }
+  const key = getKeyForAddress(player)
+  const account = privateKeyToAccount(key)
+  const chain = defineChain({
+    id: ENV_SETTLEMENT_CHAIN_ID,
+    name: 'Index Settlement',
+    nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
+    rpcUrls: { default: { http: [SETTLEMENT_RPC] } },
+  })
+  const client = createWalletClient({ account, chain, transport: rpcHttp(SETTLEMENT_RPC) })
+  await client.sendTransaction({ to: usdcAddr as `0x${string}`, data: approveData as `0x${string}`, gas: 1_000_000n })
+  await client.sendTransaction({ to: custody as `0x${string}`, data: depositData as `0x${string}`, gas: 2_000_000n })
 }
 
 // ── Round-based types ──────────────────────────────────────────

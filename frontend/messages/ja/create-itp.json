@@ -50,8 +50,10 @@
     "symbol": "シンボル（最大10文字）"
   },
   "success": {
-    "title": "ITPリクエストが作成されました！",
-    "description": "発行者のコンセンサスを待っています..."
+    "title": "ITPリクエスト送信済み",
+    "description": "オラクルのコンセンサスを待っています — 数分かかる場合があります...",
+    "consensus_title": "ITP作成完了",
+    "consensus_description": "オラクルのコンセンサスが完了しました。ITPはL3で稼働中です。"
   },
   "errors": {
     "fill_all_fields": "すべてのフィールドを入力し、ウェイトの合計が100%であることを確認してください",

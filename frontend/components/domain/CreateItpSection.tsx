@@ -102,6 +102,10 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
   const [stuckWarning, setStuckWarning] = useState(false)
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
 
+  // Oracle consensus polling — track L3 ITP count before/after submission
+  const [itpCountBefore, setItpCountBefore] = useState<number | null>(null)
+  const [consensusReached, setConsensusReached] = useState(false)
+
   // Load full asset list from deployed-assets.json on mount
   useEffect(() => {
     fetch('/deployed-assets.json')
@@ -273,6 +277,24 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     // Reset any stale state from previous attempts
     resetWrite()
     setTxError(null)
+    setConsensusReached(false)
+
+    // Snapshot L3 ITP count before submitting so we can detect when oracles finalize
+    try {
+      const res = await fetch(`/rpc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0', id: 1, method: 'eth_call',
+          params: [{ to: INDEX_PROTOCOL.index, data: '0x2fa9f978' }, 'latest'],
+        }),
+      })
+      if (res.ok) {
+        const { result } = await res.json()
+        setItpCountBefore(Number(BigInt(result)))
+      }
+    } catch { /* non-critical — consensus polling just won't work */ }
+
     const weights = selectedAssets.map(a => BigInt(a.weight) * BigInt(1e16))
     const assets = selectedAssets.map(a => a.address as `0x${string}`)
 
@@ -411,10 +433,53 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
     return () => clearTimeout(timer)
   }, [isConfirming])
 
+  // Poll L3 ITP count after Settlement tx succeeds — detect oracle consensus
+  useEffect(() => {
+    if (!isSuccess || itpCountBefore === null || consensusReached) return
+
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await fetch(`/rpc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0', id: 1, method: 'eth_call',
+            params: [{
+              to: INDEX_PROTOCOL.index,
+              // getItpCount() selector
+              data: '0x2fa9f978',
+            }, 'latest'],
+          }),
+        })
+        if (!res.ok) return
+        const { result } = await res.json()
+        const count = Number(BigInt(result))
+        if (count > itpCountBefore && !cancelled) {
+          setConsensusReached(true)
+          capture('create_itp_consensus_reached', { itp_count: count })
+        }
+      } catch { /* poll continues */ }
+    }
+
+    const interval = setInterval(poll, 3_000)
+    poll() // check immediately
+    // Give up after 5 minutes
+    const timeout = setTimeout(() => { clearInterval(interval) }, 300_000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      clearTimeout(timeout)
+    }
+  }, [isSuccess, itpCountBefore, consensusReached])
+
   const handleCancel = useCallback(() => {
     resetWrite()
     setTxError(null)
     setStuckWarning(false)
+    setItpCountBefore(null)
+    setConsensusReached(false)
     refreshNonce()
   }, [resetWrite, refreshNonce])
 
@@ -629,9 +694,13 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
               )}
 
               {isSuccess && (
-                <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
-                  <p className="font-medium">{t('success.title')}</p>
-                  <p className="mt-1">{t('success.description')}</p>
+                <div className={`${consensusReached ? 'bg-color-up/10 border-color-up/30' : 'bg-amber-500/10 border-amber-500/30'} border rounded-lg p-3 text-xs`}>
+                  <p className={`font-medium ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
+                    {consensusReached ? t('success.consensus_title') : t('success.title')}
+                  </p>
+                  <p className={`mt-1 ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
+                    {consensusReached ? t('success.consensus_description') : t('success.description')}
+                  </p>
                 </div>
               )}
             </div>
@@ -657,6 +726,7 @@ export function CreateItpSection({ expanded, onToggle, initialHoldings }: Create
           hasNonceGap={hasNonceGap}
           txError={txError}
           isSuccess={isSuccess}
+          consensusReached={consensusReached}
           stuckWarning={stuckWarning}
           onCancel={handleCancel}
         />
@@ -683,6 +753,7 @@ interface FinalizeItpModalProps {
   hasNonceGap: boolean
   txError: string | null
   isSuccess: boolean
+  consensusReached: boolean
   stuckWarning: boolean
   onCancel: () => void
 }
@@ -692,7 +763,7 @@ function FinalizeItpModal({
   websiteUrl, setWebsiteUrl, videoUrl, setVideoUrl,
   oracleName, setOracleName, needsOracleName, selectedAssets,
   onClose, onSubmit, isPending, isConfirming, isFetchingPrices,
-  hasNonceGap, txError, isSuccess, stuckWarning, onCancel,
+  hasNonceGap, txError, isSuccess, consensusReached, stuckWarning, onCancel,
 }: FinalizeItpModalProps) {
   const t = useTranslations('create-itp')
   const tc = useTranslations('common')
@@ -796,9 +867,13 @@ function FinalizeItpModal({
             </div>
           )}
           {isSuccess && (
-            <div className="bg-color-up/10 border border-color-up/30 rounded-lg p-3 text-color-up text-xs">
-              <p className="font-medium">{t('success.title')}</p>
-              <p className="mt-1">{t('success.description')}</p>
+            <div className={`${consensusReached ? 'bg-color-up/10 border-color-up/30' : 'bg-amber-500/10 border-amber-500/30'} border rounded-lg p-3 text-xs`}>
+              <p className={`font-medium ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
+                {consensusReached ? t('success.consensus_title') : t('success.title')}
+              </p>
+              <p className={`mt-1 ${consensusReached ? 'text-color-up' : 'text-amber-600'}`}>
+                {consensusReached ? t('success.consensus_description') : t('success.description')}
+              </p>
             </div>
           )}
         </div>

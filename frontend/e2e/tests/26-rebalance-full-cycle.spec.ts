@@ -18,8 +18,6 @@ import {
   getItpStateL3,
   getAvailableItpIds,
   rebalanceItp,
-  mineSettlementBlocks,
-  startSettlementBlockMiner,
   l3RpcCall,
 } from '../helpers/backend-api';
 import { CONSENSUS_TIMEOUT } from '../env';
@@ -91,51 +89,41 @@ test.describe('Rebalance Full Cycle', () => {
       return;
     }
 
-    // 3. Start block miner (issuers need Settlement blocks for event confirmation)
-    const stopMiner = startSettlementBlockMiner(1000);
+    // 3. Execute rebalance (shifts 0.5% weight between asset[0] and asset[1])
+    console.log('Requesting rebalance...');
+    await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT * 2);
+    console.log('Rebalance completed');
 
-    try {
-      // 4. Execute rebalance (shifts 0.5% weight between asset[0] and asset[1])
-      console.log('Requesting rebalance...');
-      await rebalanceItp(ITP_ID, CONSENSUS_TIMEOUT * 2);
-      console.log('Rebalance completed');
+    // 4. Read state after rebalance
+    const stateAfter = await getItpStateL3(ITP_ID);
+    const navAfter = stateAfter.nav;
+    const weightsAfter = stateAfter.weights;
 
-      // Mine a few more blocks for finality
-      await mineSettlementBlocks(3);
+    console.log(`After: NAV=${navAfter}, weights[0]=${weightsAfter[0]}, weights[1]=${weightsAfter[1]}`);
 
-      // 5. Read state after rebalance
-      const stateAfter = await getItpStateL3(ITP_ID);
-      const navAfter = stateAfter.nav;
-      const weightsAfter = stateAfter.weights;
+    // 5. Verify weights changed
+    expect(weightsAfter[0]).not.toBe(weightsBefore[0]);
+    expect(weightsAfter[1]).not.toBe(weightsBefore[1]);
 
-      console.log(`After: NAV=${navAfter}, weights[0]=${weightsAfter[0]}, weights[1]=${weightsAfter[1]}`);
+    // 6. Verify total weight sum is preserved (should sum to 1e18)
+    const totalWeightBefore = weightsBefore.reduce((a, b) => a + b, 0n);
+    const totalWeightAfter = weightsAfter.reduce((a, b) => a + b, 0n);
+    expect(totalWeightAfter).toBe(totalWeightBefore);
 
-      // 6. Verify weights changed
-      expect(weightsAfter[0]).not.toBe(weightsBefore[0]);
-      expect(weightsAfter[1]).not.toBe(weightsBefore[1]);
-
-      // 7. Verify total weight sum is preserved (should sum to 1e18)
-      const totalWeightBefore = weightsBefore.reduce((a, b) => a + b, 0n);
-      const totalWeightAfter = weightsAfter.reduce((a, b) => a + b, 0n);
-      expect(totalWeightAfter).toBe(totalWeightBefore);
-
-      // 8. Verify NAV preserved within 2%
-      if (navBefore > 0n && navAfter > 0n) {
-        const navDiffBps = (navAfter > navBefore
-          ? (navAfter - navBefore) * 10000n / navBefore
-          : (navBefore - navAfter) * 10000n / navBefore);
-        console.log(`NAV drift: ${navDiffBps} bps`);
-        expect(navDiffBps).toBeLessThanOrEqual(200n);
-      }
-
-      // 9. Verify inventory was recalculated
-      expect(stateAfter.inventory.length).toBe(stateBefore.inventory.length);
-      const inventoryChanged = stateAfter.inventory.some(
-        (inv, i) => inv !== stateBefore!.inventory[i]
-      );
-      expect(inventoryChanged).toBe(true);
-    } finally {
-      stopMiner();
+    // 7. Verify NAV preserved within 2%
+    if (navBefore > 0n && navAfter > 0n) {
+      const navDiffBps = (navAfter > navBefore
+        ? (navAfter - navBefore) * 10000n / navBefore
+        : (navBefore - navAfter) * 10000n / navBefore);
+      console.log(`NAV drift: ${navDiffBps} bps`);
+      expect(navDiffBps).toBeLessThanOrEqual(200n);
     }
+
+    // 8. Verify inventory was recalculated
+    expect(stateAfter.inventory.length).toBe(stateBefore.inventory.length);
+    const inventoryChanged = stateAfter.inventory.some(
+      (inv, i) => inv !== stateBefore!.inventory[i]
+    );
+    expect(inventoryChanged).toBe(true);
   });
 });

@@ -8,7 +8,7 @@
  */
 import { test as plainTest, expect as plainExpect } from '@playwright/test'
 import { visionTest as test, expect } from '../fixtures/wallet'
-import { FRONTEND_URL, IS_ANVIL, VISION_PLAYER_ADDRESS } from '../env'
+import { FRONTEND_URL, VISION_PLAYER_ADDRESS } from '../env'
 import { ensureWalletConnected } from '../helpers/selectors'
 
 const BASE = FRONTEND_URL
@@ -31,9 +31,7 @@ plainTest.describe('Faucet API', () => {
   })
 
   plainTest('POST /api/faucet caps at 10,000 USDC', async () => {
-    const testAddr = IS_ANVIL
-      ? '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-      : VISION_PLAYER_ADDRESS
+    const testAddr = VISION_PLAYER_ADDRESS
     const res = await apiPost('/api/faucet', {
       address: testAddr,
       amount: '999999',

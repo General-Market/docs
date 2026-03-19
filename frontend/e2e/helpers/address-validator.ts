@@ -9,7 +9,7 @@
  */
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { L3_RPC, SETTLEMENT_RPC, CONTRACTS, DEPLOYMENT, IS_ANVIL } from '../env'
+import { L3_RPC, SETTLEMENT_RPC, CONTRACTS, DEPLOYMENT } from '../env'
 
 // ── Types ──
 

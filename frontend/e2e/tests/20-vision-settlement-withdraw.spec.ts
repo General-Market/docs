@@ -19,7 +19,7 @@ import {
   hasSettlementGas,
   ensureBatchExists,
 } from '../helpers/vision-api'
-import { mineSettlementBlocks, pollUntil } from '../helpers/backend-api'
+import { pollUntil } from '../helpers/backend-api'
 import { POLL_TIMEOUT } from '../env'
 import { ensureWalletConnected } from '../helpers/selectors'
 
@@ -83,7 +83,6 @@ test.describe('Vision Withdraw to Settlement', () => {
       const settlementAmount = BigInt(25) * BigInt(10 ** 6) // 25 USDC (6 dec)
       await mintSettlementUsdc(PLAYER1, settlementAmount)
       await depositToVisionViaSettlement(PLAYER1, settlementAmount)
-      await mineSettlementBlocks(5)
 
       // Wait for oracles to credit virtual balance
       const deadline = Date.now() + 120_000

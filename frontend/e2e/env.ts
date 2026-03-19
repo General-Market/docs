@@ -23,10 +23,6 @@ if (existsSync(envLocalPath)) {
   }
 }
 
-// ── Behavioral flag ─────────────────────────────────────────
-/** true when running against local Anvil (not a real testnet) */
-export const IS_ANVIL = process.env.E2E_TESTNET !== '1'
-
 // ── URLs ────────────────────────────────────────────────────
 export const L3_RPC = process.env.E2E_L3_RPC_URL || 'http://localhost:8545'
 export const SETTLEMENT_RPC = process.env.E2E_SETTLEMENT_RPC_URL || 'http://localhost:8546'
@@ -50,9 +46,7 @@ export const PLAYER2_KEY = (
   process.env.E2E_PLAYER2_KEY || '0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6'
 ) as `0x${string}`
 
-// Anvil account #7 — used exclusively for vision-data E2E tests.
 // Separate nonce space from DEPLOYER_KEY so vision-data and itp-data can run in parallel.
-// Safe: default ORACLE_COUNT=3, only accounts #1-#3 used as oracles.
 export const VISION_PLAYER_KEY = (
   process.env.E2E_VISION_PLAYER_KEY || '0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356'
 ) as `0x${string}`
@@ -68,9 +62,6 @@ export const DEPLOYMENT = (() => {
 
 export const CONTRACTS = DEPLOYMENT.contracts ?? {}
 export const DEPLOYER_ADDRESS = DEPLOYMENT.accounts?.admin ?? '0xC0d3ca67da45613e7C5b2d55F09b00B3c99721f4'
-
-/** Anvil deployer (account #0) — used for impersonated txs on local Anvil */
-export const ANVIL_DEPLOYER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
 // ── Morpho deployment — single load, empty if missing ───────
 export const MORPHO_DEPLOYMENT = (() => {
@@ -95,8 +86,8 @@ export const VISION_BATCHES = (() => {
   }
 })()
 
-// ── Testnet-aware timeouts ──────────────────────────────────
-export const POLL_TIMEOUT = IS_ANVIL ? 60_000 : 180_000
+// ── Timeouts ────────────────────────────────────────────────
+export const POLL_TIMEOUT = 180_000
 // Settlement needs full tick cycle (120s) + consensus + propagation. 6 min on testnet.
-export const CONSENSUS_TIMEOUT = IS_ANVIL ? 90_000 : 360_000
-export const RPC_TIMEOUT = IS_ANVIL ? 10_000 : 30_000
+export const CONSENSUS_TIMEOUT = 360_000
+export const RPC_TIMEOUT = 30_000

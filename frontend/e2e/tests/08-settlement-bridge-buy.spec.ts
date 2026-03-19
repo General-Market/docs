@@ -21,13 +21,12 @@ import {
   getFirstAvailableItpId,
   erc20BalanceOf,
   pollUntil,
-  startSettlementBlockMiner,
   hasSettlementGas,
   mintL3Usdc,
   BRIDGED_ITP,
   SETTLEMENT_USDC,
 } from '../helpers/backend-api';
-import { IS_ANVIL, CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS } from '../env';
+import { CONTRACTS, DEPLOYER_ADDRESS, ORACLE_URLS } from '../env';
 
 const TEST_ADDRESS = DEPLOYER_ADDRESS;
 const INDEX_CONTRACT = CONTRACTS.Index ?? '';
@@ -42,7 +41,7 @@ test.describe('Settlement Bridge', () => {
 
     const hasGas = await hasSettlementGas();
     let oracleRelayAlive = false;
-    if (hasGas && !IS_ANVIL) {
+    if (hasGas) {
       try {
         const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
         const data = await res.json();
@@ -52,13 +51,10 @@ test.describe('Settlement Bridge', () => {
       }
     }
     const hasCustody = !!CONTRACTS.SettlementBridgeCustody && CONTRACTS.SettlementBridgeCustody.length > 4;
-    // Settlement relay only works on Anvil (testnet relay not operational)
-    const useSettlement = IS_ANVIL && hasCustody;
+    const useSettlement = false;
     console.log(`Buy path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
 
-    const stopMiner = startSettlementBlockMiner(1000);
-
-    try {
+    {
       const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
       const state = await getItpStateL3(ITP_ID);
       const limitPrice = state.nav > 0n ? state.nav * 2n : 2000000000000000000n;
@@ -127,8 +123,6 @@ test.describe('Settlement Bridge', () => {
         console.log(`L3 shares increased: ${sharesBefore} -> ${sharesAfter}`);
         expect(sharesAfter).toBeGreaterThan(sharesBefore);
       }
-    } finally {
-      stopMiner();
     }
   });
 
@@ -141,7 +135,7 @@ test.describe('Settlement Bridge', () => {
 
     const hasGas = await hasSettlementGas();
     let oracleRelayAlive = false;
-    if (hasGas && !IS_ANVIL) {
+    if (hasGas) {
       try {
         const res = await fetch(`${ORACLE_URLS[0]}/health`, { signal: AbortSignal.timeout(5000) });
         const data = await res.json();
@@ -150,12 +144,10 @@ test.describe('Settlement Bridge', () => {
         oracleRelayAlive = false;
       }
     }
-    const useSettlement = IS_ANVIL;
+    const useSettlement = false;
     console.log(`Sell path: ${useSettlement ? 'Settlement bridge' : 'L3 direct'}`);
 
-    const stopMiner = startSettlementBlockMiner(1000);
-
-    try {
+    {
       if (useSettlement) {
         // Full Settlement bridge sell path
         // If BridgedITP not deployed, fall back to L3 direct
@@ -204,8 +196,6 @@ test.describe('Settlement Bridge', () => {
       } else {
         await doL3DirectSell(ITP_ID);
       }
-    } finally {
-      stopMiner();
     }
 
     async function doL3DirectSell(itpId: string) {

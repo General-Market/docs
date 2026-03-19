@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { AP_URL, IS_ANVIL } from '../env';
+import { AP_URL } from '../env';
 import { checkRpc } from '../helpers/backend-api';
 import { L3_RPC_URL } from '../fixtures/wallet';
 
@@ -17,7 +17,7 @@ test.describe('AP Endpoints', () => {
     } catch (e: any) {
       // On testnet, Mac can't reach VPS AP directly (timeout).
       // Verify via L3 RPC — if L3 is up, AP is co-located.
-      if (!IS_ANVIL && e?.name === 'TimeoutError') {
+      if (e?.name === 'TimeoutError') {
         const rpcOk = await checkRpc(L3_RPC_URL);
         expect(rpcOk).toBe(true);
       } else {
@@ -35,7 +35,7 @@ test.describe('AP Endpoints', () => {
       const text = await res.text();
       expect(text).toContain('queue_depth');
     } catch (e: any) {
-      if (!IS_ANVIL && e?.name === 'TimeoutError') {
+      if (e?.name === 'TimeoutError') {
         const rpcOk = await checkRpc(L3_RPC_URL);
         expect(rpcOk).toBe(true);
       } else {

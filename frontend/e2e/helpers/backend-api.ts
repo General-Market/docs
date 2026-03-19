@@ -8,9 +8,9 @@ import { encodeFunctionData, decodeFunctionResult, createWalletClient, createPub
 import { privateKeyToAccount } from 'viem/accounts';
 import { INDEX_ABI, BRIDGE_PROXY_ABI, SETTLEMENT_CUSTODY_ABI, ERC20_ABI } from '../../lib/contracts/index-protocol-abi';
 import {
-  IS_ANVIL, L3_RPC as ENV_L3_RPC, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
+  L3_RPC as ENV_L3_RPC, SETTLEMENT_RPC as ENV_SETTLEMENT_RPC,
   BACKEND_URL as ENV_BACKEND_URL, CHAIN_ID as ENV_CHAIN_ID, SETTLEMENT_CHAIN_ID as ENV_SETTLEMENT_CHAIN_ID,
-  DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS, ANVIL_DEPLOYER,
+  DEPLOYER_KEY, CONTRACTS, DEPLOYER_ADDRESS,
   RPC_TIMEOUT, MORPHO_DEPLOYMENT, MORPHO_CONTRACTS, MORPHO_MARKET_PARAMS,
 } from '../env';
 
@@ -92,29 +92,17 @@ export async function checkHealth(): Promise<boolean> {
     });
     return res.ok;
   } catch {
-    // On testnet, Node.js may not reach the data-node directly (firewall).
+    // Node.js may not reach the data-node directly (firewall).
     // Fall back to checking the L3 RPC as a proxy for backend health.
-    if (!IS_ANVIL) {
-      try {
-        const res = await fetch(ENV_L3_RPC, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
-          signal: AbortSignal.timeout(5_000),
-        });
-        const json = await res.json();
-        return !!json.result;
-      } catch {
-        return false;
-      }
-    }
-    // Some backends don't have /health — try user-state as fallback
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/user-state?user=0x0000000000000000000000000000000000000000&itp_id=0x0000000000000000000000000000000000000000000000000000000000000001`,
-        { signal: AbortSignal.timeout(5_000) },
-      );
-      return res.status < 500;
+      const res = await fetch(ENV_L3_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_blockNumber', params: [] }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      const json = await res.json();
+      return !!json.result;
     } catch {
       return false;
     }
@@ -188,9 +176,8 @@ const BRIDGED_ITP = CONTRACTS.BridgedITP ?? '';
 const SETTLEMENT_USDC = CONTRACTS.SETTLEMENT_USDC ?? '';
 const BRIDGE_PROXY = CONTRACTS.BridgeProxy ?? '';
 const SETTLEMENT_CUSTODY = CONTRACTS.SettlementBridgeCustody ?? '';
-const BRIDGED_ITP_FACTORY = CONTRACTS.BridgedItpFactory ?? '';
-/** Deployer account — Anvil #0 locally, real deployer on testnet */
-const DEPLOYER = IS_ANVIL ? ANVIL_DEPLOYER : DEPLOYER_ADDRESS;
+/** Deployer account */
+const DEPLOYER = DEPLOYER_ADDRESS;
 
 /** Inline ABI for sellITPFromSettlement */
 const SELL_ABI = [
@@ -233,120 +220,6 @@ async function erc20BalanceOf(token: string, account: string): Promise<string> {
 }
 
 /**
- * Mint BridgedITP tokens to a user.
- * - Anvil: impersonate BridgeProxy to call BridgedITP.mint() directly
- * - Testnet: not available (BridgedITP.mint is onlyBridgeProxy, requires actual bridge flow)
- */
-export async function mintBridgedItp(
-  user: string,
-  itpId: string,
-  amount: bigint,
-): Promise<void> {
-  if (!IS_ANVIL) {
-    throw new Error('mintBridgedItp not available on testnet — use actual bridge buy flow instead');
-  }
-
-  let bridgedToken = BRIDGED_ITP;
-  if (itpId !== '0x0000000000000000000000000000000000000000000000000000000000000001') {
-    const addr = await getBridgedItpAddress(itpId);
-    if (addr === '0x' + '0'.repeat(40)) {
-      throw new Error(`No BridgedITP deployed for itpId ${itpId}`);
-    }
-    bridgedToken = addr;
-  }
-
-  await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']);
-  await rpcCall('anvil_impersonateAccount', [BRIDGE_PROXY]);
-  try {
-    const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
-    const amountHex = amount.toString(16).padStart(64, '0');
-    const data = `0x40c10f19${userPadded}${amountHex}`;
-    await rpcCall('eth_sendTransaction', [{
-      from: BRIDGE_PROXY, to: bridgedToken, data, gas: '0x100000',
-    }]);
-  } finally {
-    await rpcCall('anvil_stopImpersonatingAccount', [BRIDGE_PROXY]);
-  }
-}
-
-/**
- * Mint L3 ITP shares for a user via anvil_setStorageAt.
- * Sets _userShares[itpId][user] and increases _itps[itpId].totalSupply
- * on the L3 Index contract. Also mints ITP vault ERC20 tokens so that
- * confirmFills can burn them during SELL processing.
- *
- * Storage layout (InvestmentStorage.sol):
- *   _userShares at slot 18: mapping(bytes32 itpId => mapping(address user => uint256))
- *   _itps at slot 5: mapping(bytes32 itpId => ITPCore)
- *     ITPCore.totalSupply is at struct offset 6
- */
-export async function mintL3Shares(
-  user: string,
-  itpId: string,
-  amount: bigint,
-): Promise<void> {
-  if (!IS_ANVIL) {
-    throw new Error('mintL3Shares not available on testnet — use actual buy flow instead (requires anvil_setStorageAt)');
-  }
-  // Compute _userShares[itpId][user] storage slot
-  // inner = keccak256(abi.encode(itpId, 18))
-  const slot18 = '0x' + BigInt(18).toString(16).padStart(64, '0');
-  const itpIdPadded = itpId.replace('0x', '').padStart(64, '0');
-  const innerInput = '0x' + itpIdPadded + slot18.replace('0x', '');
-  const innerSlot = await keccak256Hex(innerInput);
-  // final = keccak256(abi.encode(user, innerSlot))
-  const userPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
-  const finalInput = '0x' + userPadded + innerSlot.replace('0x', '');
-  const shareSlot = await keccak256Hex(finalInput);
-
-  const amountHex = '0x' + amount.toString(16).padStart(64, '0');
-  await l3RpcCall('anvil_setStorageAt', [L3_INDEX, shareSlot, amountHex]);
-
-  // Compute _itps[itpId].totalSupply storage slot
-  // base = keccak256(abi.encode(itpId, 5))
-  const slot5 = '0x' + BigInt(5).toString(16).padStart(64, '0');
-  const baseInput = '0x' + itpIdPadded + slot5.replace('0x', '');
-  const baseSlot = await keccak256Hex(baseInput);
-  const totalSupplySlot = '0x' + (BigInt(baseSlot) + 6n).toString(16).padStart(64, '0');
-
-  // Read current totalSupply and add the new shares
-  const currentHex = await l3RpcCall('eth_getStorageAt', [L3_INDEX, totalSupplySlot, 'latest']) as string;
-  const current = BigInt(currentHex);
-  const newSupply = current + amount;
-  const newSupplyHex = '0x' + newSupply.toString(16).padStart(64, '0');
-  await l3RpcCall('anvil_setStorageAt', [L3_INDEX, totalSupplySlot, newSupplyHex]);
-
-  // Mint ITP vault ERC20 tokens (required for confirmFills SELL burn)
-  // Read vault address via itpVaults(bytes32) on L3 Index
-  // itpVaults is at slot 14 in InvestmentStorage
-  const slot14 = '0x' + BigInt(14).toString(16).padStart(64, '0');
-  const vaultSlotInput = '0x' + itpIdPadded + slot14.replace('0x', '');
-  const vaultSlot = await keccak256Hex(vaultSlotInput);
-  const vaultHex = await l3RpcCall('eth_getStorageAt', [L3_INDEX, vaultSlot, 'latest']) as string;
-  const vaultAddr = '0x' + BigInt(vaultHex).toString(16).padStart(40, '0');
-
-  if (BigInt(vaultHex) !== 0n) {
-    // ITP vault has onlyIndex modifier, so impersonate Index contract
-    await l3RpcCall('anvil_setBalance', [L3_INDEX, '0x56BC75E2D63100000']); // 100 ETH
-    await l3RpcCall('anvil_impersonateAccount', [L3_INDEX]);
-    try {
-      // mint(address,uint256) selector = 0x40c10f19
-      const mintUserPadded = user.replace('0x', '').toLowerCase().padStart(64, '0');
-      const mintAmountHex = amount.toString(16).padStart(64, '0');
-      const mintData = `0x40c10f19${mintUserPadded}${mintAmountHex}`;
-      await l3RpcCall('eth_sendTransaction', [{
-        from: L3_INDEX,
-        to: vaultAddr,
-        data: mintData,
-        gas: '0x100000',
-      }]);
-    } finally {
-      await l3RpcCall('anvil_stopImpersonatingAccount', [L3_INDEX]);
-    }
-  }
-}
-
-/**
  * Mint L3_WUSDC (18 decimals) to a user.
  * Test L3_WUSDC allows the deployer to call mint(address,uint256) directly.
  */
@@ -358,16 +231,7 @@ export async function mintL3Usdc(
   const amountHex = amount.toString(16).padStart(64, '0');
   const data = `0x40c10f19${userPadded}${amountHex}`;
 
-  if (!IS_ANVIL) {
-    await l3SignedSend(L3_WUSDC, data);
-  } else {
-    await l3RpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: L3_WUSDC,
-      data,
-      gas: '0x100000',
-    }]);
-  }
+  await l3SignedSend(L3_WUSDC, data);
 }
 
 /**
@@ -397,12 +261,6 @@ export async function getL3UsdcBalance(user: string): Promise<bigint> {
     'latest',
   ]) as string;
   return safeBigInt(result);
-}
-
-/** Compute keccak256 of hex data using eth RPC (avoids JS crypto dependency) */
-async function keccak256Hex(data: string): Promise<string> {
-  // Use L3 Anvil's web3_sha3 method
-  return await l3RpcCall('web3_sha3', [data]) as string;
 }
 
 // ── L3 RPC helpers (rebalance operates on L3 directly) ──────────────────
@@ -443,13 +301,13 @@ const _l3Chain = defineChain({
   nativeCurrency: { name: 'GM', symbol: 'GM', decimals: 18 },
   rpcUrls: { default: { http: [L3_RPC] } },
 });
-const _l3Account = IS_ANVIL ? undefined : privateKeyToAccount(TEST_PRIVATE_KEY);
+const _l3Account = privateKeyToAccount(TEST_PRIVATE_KEY);
 const _l3Pub = createPublicClient({ chain: _l3Chain, transport: rpcHttp(L3_RPC) });
 
 
 /**
  * Send a signed transaction on L3 using the deployer private key.
- * Used on testnet where anvil_impersonateAccount is not available.
+ * Used on testnet with signed transactions.
  * Uses a mutex + nonce retry to handle nonce conflicts with the browser wallet
  * (which sends txs from the same key via a separate code path).
  */
@@ -639,8 +497,7 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
   }
 
   // Send requestRebalance to L3 Index (emits RebalanceRequested event).
-  // On Anvil: oracles read events directly from L3 RPC.
-  // On testnet: oracles use DataNodeChainReader which may not forward RebalanceRequested events.
+  // Oracles use DataNodeChainReader which may not forward RebalanceRequested events.
   const calldata = encodeFunctionData({
     abi: INDEX_ABI,
     functionName: 'requestRebalance',
@@ -653,23 +510,14 @@ export async function rebalanceItp(itpId: string, timeoutMs = 180_000): Promise<
     ],
   });
 
-  if (!IS_ANVIL) {
-    const txHash = await l3SignedSend(L3_INDEX, calldata);
-    console.log(`[rebalance] L3 requestRebalance tx: ${txHash}`);
-    await new Promise(r => setTimeout(r, 2000));
-    const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string; logs: unknown[] } | null;
-    if (!receipt || receipt.status !== '0x1') {
-      throw new Error(`requestRebalance tx reverted: ${txHash} status=${receipt?.status}`);
-    }
-    console.log(`[rebalance] TX confirmed with ${receipt.logs.length} events`);
-  } else {
-    await l3RpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: L3_INDEX,
-      data: calldata,
-      gas: '0x200000',
-    }]);
+  const txHash = await l3SignedSend(L3_INDEX, calldata);
+  console.log(`[rebalance] L3 requestRebalance tx: ${txHash}`);
+  await new Promise(r => setTimeout(r, 2000));
+  const receipt = await l3RpcCall('eth_getTransactionReceipt', [txHash]) as { status: string; logs: unknown[] } | null;
+  if (!receipt || receipt.status !== '0x1') {
+    throw new Error(`requestRebalance tx reverted: ${txHash} status=${receipt?.status}`);
   }
+  console.log(`[rebalance] TX confirmed with ${receipt.logs.length} events`);
 
   // Wait for oracles to execute the rebalance on L3 (weights change)
   // Rebalance consensus can take 2+ cycles
@@ -707,7 +555,7 @@ export async function pollUntil<T>(
   throw new Error(`pollUntil timed out after ${timeoutMs}ms`);
 }
 
-// ── Direct order placement (via Anvil impersonation) ────────────────────
+// ── Direct order placement (via signed transactions) ────────────────────
 
 /**
  * Place a buy order directly on SettlementBridgeCustody by impersonating the user.
@@ -761,18 +609,10 @@ export async function placeBuyOrderDirect(
     ],
   });
 
-  if (!IS_ANVIL) {
-    // On testnet: user = deployer, sign all txs
-    await settlementSignedSend(SETTLEMENT_USDC, mintData);
-    await settlementSignedSend(SETTLEMENT_USDC, approveData);
-    await settlementSignedSend(SETTLEMENT_CUSTODY, buyData);
-  } else {
-    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await rpcCall('eth_sendTransaction', [{ from: DEPLOYER, to: SETTLEMENT_USDC, data: mintData, gas: '0x100000' }]);
-    await rpcCall('anvil_impersonateAccount', [user]);
-    await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_USDC, data: approveData, gas: '0x100000' }]);
-    await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_CUSTODY, data: buyData, gas: '0x200000' }]);
-  }
+  // Sign all txs with deployer key
+  await settlementSignedSend(SETTLEMENT_USDC, mintData);
+  await settlementSignedSend(SETTLEMENT_USDC, approveData);
+  await settlementSignedSend(SETTLEMENT_CUSTODY, buyData);
 
   return orderId;
 }
@@ -829,34 +669,8 @@ export async function placeSellOrderDirect(
     ],
   });
 
-  if (!IS_ANVIL) {
-    await settlementSignedSend(bridgedToken, approveData);
-    await settlementSignedSend(SETTLEMENT_CUSTODY, sellData);
-  } else {
-    await rpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await rpcCall('anvil_impersonateAccount', [user]);
-    const approveTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: bridgedToken, data: approveData, gas: '0x100000' }]) as string;
-    let approveReceipt: { status: string } | null = null;
-    for (let i = 0; i < 5; i++) {
-      approveReceipt = await rpcCall('eth_getTransactionReceipt', [approveTxHash]) as { status: string } | null;
-      if (approveReceipt) break;
-      await new Promise(r => setTimeout(r, 500));
-    }
-    if (!approveReceipt || approveReceipt.status !== '0x1') {
-      throw new Error(`BridgedITP approve tx reverted (status=${approveReceipt?.status}): ${approveTxHash}`);
-    }
-    await rpcCall('anvil_impersonateAccount', [user]);
-    const sellTxHash = await rpcCall('eth_sendTransaction', [{ from: user, to: SETTLEMENT_CUSTODY, data: sellData, gas: '0x200000' }]) as string;
-    let sellReceipt: { status: string } | null = null;
-    for (let i = 0; i < 5; i++) {
-      sellReceipt = await rpcCall('eth_getTransactionReceipt', [sellTxHash]) as { status: string } | null;
-      if (sellReceipt) break;
-      await new Promise(r => setTimeout(r, 500));
-    }
-    if (!sellReceipt || sellReceipt.status !== '0x1') {
-      throw new Error(`sellITPFromSettlement tx reverted (status=${sellReceipt?.status}): ${sellTxHash}`);
-    }
-  }
+  await settlementSignedSend(bridgedToken, approveData);
+  await settlementSignedSend(SETTLEMENT_CUSTODY, sellData);
 
   return orderId;
 }
@@ -867,7 +681,6 @@ export async function placeSellOrderDirect(
  * Returns true if balance >= minBalance (default 0.01 S).
  */
 export async function hasSettlementGas(minBalance = 10n ** 16n): Promise<boolean> {
-  if (IS_ANVIL) return true;
   try {
     const result = await rpcCall('eth_getBalance', [DEPLOYER, 'latest']) as string;
     return safeBigInt(result) >= minBalance;
@@ -903,14 +716,7 @@ export async function placeL3BuyOrderDirect(
     args: [L3_INDEX as `0x${string}`, MAX_UINT256],
   });
 
-  if (!IS_ANVIL) {
-    await l3SignedSend(L3_WUSDC, approveData);
-  } else {
-    await l3RpcCall('anvil_impersonateAccount', [user]);
-    await l3RpcCall('eth_sendTransaction', [{
-      from: user, to: L3_WUSDC, data: approveData, gas: '0x100000',
-    }]);
-  }
+  await l3SignedSend(L3_WUSDC, approveData);
 
   // Read current L3 nextOrderId
   const nextIdData = encodeFunctionData({
@@ -942,18 +748,7 @@ export async function placeL3BuyOrderDirect(
     ],
   });
 
-  if (!IS_ANVIL) {
-    await l3SignedSend(L3_INDEX, buyData);
-  } else {
-    await l3RpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await l3RpcCall('anvil_impersonateAccount', [user]);
-    await l3RpcCall('eth_sendTransaction', [{
-      from: user,
-      to: L3_INDEX,
-      data: buyData,
-      gas: '0x200000',
-    }]);
-  }
+  await l3SignedSend(L3_INDEX, buyData);
 
   return orderId;
 }
@@ -1000,19 +795,7 @@ export async function placeL3SellOrderDirect(
     ],
   });
 
-  if (!IS_ANVIL) {
-    // On testnet: sign with deployer key (deployer = test user)
-    await l3SignedSend(L3_INDEX, sellData);
-  } else {
-    await l3RpcCall('anvil_setBalance', [user, '0x56BC75E2D63100000']);
-    await l3RpcCall('anvil_impersonateAccount', [user]);
-    await l3RpcCall('eth_sendTransaction', [{
-      from: user,
-      to: L3_INDEX,
-      data: sellData,
-      gas: '0x200000',
-    }]);
-  }
+  await l3SignedSend(L3_INDEX, sellData);
 
   return orderId;
 }
@@ -1086,42 +869,9 @@ export async function requestRebalanceDirect(
     ],
   });
 
-  if (!IS_ANVIL) {
-    await settlementSignedSend(BRIDGE_PROXY, requestCalldata);
-  } else {
-    await rpcCall('eth_sendTransaction', [{
-      from: DEPLOYER,
-      to: BRIDGE_PROXY,
-      data: requestCalldata,
-      gas: '0x200000',
-    }]);
-  }
+  await settlementSignedSend(BRIDGE_PROXY, requestCalldata);
 
   return nonce;
-}
-
-/**
- * Mine empty blocks on Settlement Anvil.
- * Oracles require `confirmations` (default: 2) blocks after an event
- * before they consider it confirmed. On Anvil with auto-mine, blocks
- * only advance when txs are submitted, so events may never become
- * "confirmed" without this helper.
- */
-export async function mineSettlementBlocks(count: number): Promise<void> {
-  if (!IS_ANVIL) return; // Blocks mine naturally on testnet
-  await rpcCall('anvil_mine', [`0x${count.toString(16)}`]);
-}
-
-/**
- * Start a periodic block miner.
- * On testnet: no-op (blocks mine naturally).
- */
-export function startSettlementBlockMiner(intervalMs = 1000): () => void {
-  if (!IS_ANVIL) return () => {};
-  const timer = setInterval(() => {
-    rpcCall('anvil_mine', ['0x1']).catch(() => {});
-  }, intervalMs);
-  return () => clearInterval(timer);
 }
 
 /**
@@ -1142,18 +892,8 @@ export async function getBridgedItpAddress(itpId: string): Promise<string> {
 }
 
 /**
- * Deploy a BridgedITP for an ITP on Settlement Anvil (when test 05 didn't create it).
- * Impersonates BridgeProxy to call BridgedItpFactory.deployBridgedItp(),
- * then sets BridgeProxy storage mappings via anvil_setStorageAt.
- *
- * BridgeProxy storage layout (OZ v5 ERC-7201 + BLSVerifier):
- *   slot 0: BLSVerifier._blsOracleRegistry
- *   slot 1: oracleRegistry
- *   slot 2: bridgedItpFactory
- *   slot 3: nextCreationNonce
- *   slot 4: _pendingCreations (mapping)
- *   slot 5: orbitToSettlement (mapping(bytes32 => address))
- *   slot 6: settlementToOrbit (mapping(address => bytes32))
+ * Deploy a BridgedITP for an ITP on Settlement (when test 05 didn't create it).
+ * Calls BridgeProxy.registerExistingItp() via signed tx (onlyOwner).
  */
 export async function deployBridgedItpDirect(
   itpId: string,
@@ -1166,103 +906,30 @@ export async function deployBridgedItpDirect(
     return existing;
   }
 
-  if (!IS_ANVIL) {
-    // On testnet: call BridgeProxy.registerExistingItp() via signed tx (onlyOwner)
-    const registerData = encodeFunctionData({
-      abi: [{
-        name: 'registerExistingItp',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-          { name: 'orbitItpId', type: 'bytes32' },
-          { name: 'name', type: 'string' },
-          { name: 'symbol', type: 'string' },
-          { name: 'deployer', type: 'address' },
-        ],
-        outputs: [{ name: 'bridgedItpAddress', type: 'address' }],
-      }],
-      functionName: 'registerExistingItp',
-      args: [itpId as `0x${string}`, name, symbol, DEPLOYER as `0x${string}`],
-    });
-    await settlementSignedSend(BRIDGE_PROXY, registerData);
-    // Read back the deployed address
-    const deployed = await getBridgedItpAddress(itpId);
-    if (deployed === '0x' + '0'.repeat(40)) {
-      throw new Error('registerExistingItp succeeded but BridgedITP address is still zero');
-    }
-    return deployed;
+  // Call BridgeProxy.registerExistingItp() via signed tx (onlyOwner)
+  const registerData = encodeFunctionData({
+    abi: [{
+      name: 'registerExistingItp',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [
+        { name: 'orbitItpId', type: 'bytes32' },
+        { name: 'name', type: 'string' },
+        { name: 'symbol', type: 'string' },
+        { name: 'deployer', type: 'address' },
+      ],
+      outputs: [{ name: 'bridgedItpAddress', type: 'address' }],
+    }],
+    functionName: 'registerExistingItp',
+    args: [itpId as `0x${string}`, name, symbol, DEPLOYER as `0x${string}`],
+  });
+  await settlementSignedSend(BRIDGE_PROXY, registerData);
+  // Read back the deployed address
+  const deployed = await getBridgedItpAddress(itpId);
+  if (deployed === '0x' + '0'.repeat(40)) {
+    throw new Error('registerExistingItp succeeded but BridgedITP address is still zero');
   }
-
-  // Fund BridgeProxy with ETH for gas
-  await rpcCall('anvil_setBalance', [BRIDGE_PROXY, '0x56BC75E2D63100000']); // 100 ETH
-
-  // Impersonate BridgeProxy to call factory
-  await rpcCall('anvil_impersonateAccount', [BRIDGE_PROXY]);
-  try {
-    const deployData = encodeFunctionData({
-      abi: [{
-        name: 'deployBridgedItp',
-        type: 'function',
-        stateMutability: 'nonpayable',
-        inputs: [
-          { name: 'name', type: 'string' },
-          { name: 'symbol', type: 'string' },
-          { name: 'orbitItpId', type: 'bytes32' },
-        ],
-        outputs: [{ name: 'bridgedItp', type: 'address' }],
-      }],
-      functionName: 'deployBridgedItp',
-      args: [name, symbol, itpId as `0x${string}`],
-    });
-
-    await rpcCall('eth_sendTransaction', [{
-      from: BRIDGE_PROXY,
-      to: BRIDGED_ITP_FACTORY,
-      data: deployData,
-      gas: '0x500000',
-    }]);
-    await rpcCall('anvil_mine', ['0x1']);
-  } finally {
-    await rpcCall('anvil_stopImpersonatingAccount', [BRIDGE_PROXY]);
-  }
-
-  // Read deployed address from factory.deployedItps(itpId)
-  const itpIdPadded = itpId.replace('0x', '').padStart(64, '0');
-  const factoryCalldata = '0x8f57752e' + itpIdPadded; // deployedItps(bytes32)
-  const factoryResult = await rpcCall('eth_call', [
-    { to: BRIDGED_ITP_FACTORY, data: factoryCalldata },
-    'latest',
-  ]) as string;
-  const deployedAddr = '0x' + factoryResult.slice(26);
-
-  if (deployedAddr === '0x' + '0'.repeat(40)) {
-    throw new Error('BridgedITP deployment failed — factory returned zero address');
-  }
-
-  // Helper: compute keccak256 via Settlement Anvil's web3_sha3
-  const sha3 = async (data: string) => await rpcCall('web3_sha3', [data]) as string;
-
-  // Set BridgeProxy.orbitToSettlement[itpId] = deployedAddr (slot 5)
-  const slot5Hex = '0x' + BigInt(5).toString(16).padStart(64, '0');
-  const mappingInput = '0x' + itpIdPadded + slot5Hex.replace('0x', '');
-  const storageSlot = await sha3(mappingInput);
-  const addrPadded = '0x' + deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
-  await rpcCall('anvil_setStorageAt', [BRIDGE_PROXY, storageSlot, addrPadded]);
-
-  // Set BridgeProxy.settlementToOrbit[deployedAddr] = itpId (slot 6)
-  const slot6Hex = '0x' + BigInt(6).toString(16).padStart(64, '0');
-  const addrForMapping = deployedAddr.replace('0x', '').toLowerCase().padStart(64, '0');
-  const reverseInput = '0x' + addrForMapping + slot6Hex.replace('0x', '');
-  const reverseSlot = await sha3(reverseInput);
-  await rpcCall('anvil_setStorageAt', [BRIDGE_PROXY, reverseSlot, itpId]);
-
-  // Verify by reading back
-  const verifyAddr = await getBridgedItpAddress(itpId);
-  if (verifyAddr.toLowerCase() !== deployedAddr.toLowerCase()) {
-    throw new Error(`BridgeProxy.orbitToSettlement verification failed: expected ${deployedAddr}, got ${verifyAddr} — storage slot may be wrong`);
-  }
-
-  return deployedAddr;
+  return deployed;
 }
 
 // ── Morpho collateral token (ITP Vault on L3) ──────────────
@@ -1393,7 +1060,7 @@ export async function supplyToMorphoDirect(
 /**
  * Mint Morpho collateral tokens (ITP Vault MockERC20) on L3.
  * The MockERC20 has a public mint(address,uint256) function.
- * Works on both Anvil and testnet (signed tx via deployer key).
+ * Works via signed tx with deployer key.
  */
 export async function mintMorphoCollateral(
   user: string,

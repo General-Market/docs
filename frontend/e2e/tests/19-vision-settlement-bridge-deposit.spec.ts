@@ -8,19 +8,15 @@
  * 2. Navigate to frontend and verify balance bar + deposit modal UI elements.
  */
 import { visionTest as test, expect } from '../fixtures/wallet'
-import { VISION_PLAYER_ADDRESS as TEST_ADDRESS, IS_ANVIL } from '../env'
+import { VISION_PLAYER_ADDRESS as TEST_ADDRESS } from '../env'
 import {
   PLAYER1,
-  mintSettlementUsdc,
   getSettlementUsdcBalance,
-  depositToVisionViaSettlement,
   getVisionVirtualBalance,
   getVisionPlayerBalance,
   depositToVisionBalance,
-  hasSettlementGas,
   ensureBatchExists,
 } from '../helpers/vision-api'
-import { mineSettlementBlocks } from '../helpers/backend-api'
 import { ensureWalletConnected } from '../helpers/selectors'
 
 test.describe('Vision Settlement Bridge Deposit', () => {
@@ -38,76 +34,12 @@ test.describe('Vision Settlement Bridge Deposit', () => {
     const settlementBal = await getSettlementUsdcBalance(PLAYER1)
     console.log(`Settlement USDC balance: ${settlementBal}`)
 
-    // On testnet, PLAYER1 may lack native gas for Settlement deposit tx.
-    // Skip Settlement path and use L3 deposit instead.
-    if (!IS_ANVIL) {
-      console.log('Testnet: using L3 direct deposit (Settlement relay requires funded PLAYER1)')
-      await depositToVisionBalance(PLAYER1, BigInt(50) * BigInt(10 ** 18))
-      const newBalance = await getVisionPlayerBalance(PLAYER1)
-      expect(newBalance).toBeGreaterThan(totalBefore)
-      console.log(`L3 deposit verified: total balance ${totalBefore} → ${newBalance}`)
-      return
-    }
-
-    // Check if deployer has gas on Settlement chain
-    const hasGas = await hasSettlementGas()
-    if (!hasGas) {
-      // No Settlement gas — verify infrastructure via reads only, then L3 deposit
-      console.log('No Settlement gas — testing L3 deposit path instead')
-      await depositToVisionBalance(PLAYER1, BigInt(50) * BigInt(10 ** 18))
-      const totalAfter = await getVisionPlayerBalance(PLAYER1)
-      expect(totalAfter).toBeGreaterThan(0n)
-      console.log(`L3 deposit verified: total balance ${totalBefore} → ${totalAfter}`)
-      return
-    }
-
-    // Full Settlement bridge deposit path
-    const settlementAmount = BigInt(50) * BigInt(10 ** 6) // 50 USDC (6 dec)
-    await mintSettlementUsdc(PLAYER1, settlementAmount)
-
-    const settlementBalBefore = await getSettlementUsdcBalance(PLAYER1)
-    expect(settlementBalBefore).toBeGreaterThanOrEqual(settlementAmount)
-
-    // Deposit via SettlementBridgeCustody
-    await depositToVisionViaSettlement(PLAYER1, settlementAmount)
-
-    // Mine Settlement blocks so oracles see the VisionDepositCreated event
-    for (let i = 0; i < 3; i++) {
-      await mineSettlementBlocks(5)
-      await new Promise(r => setTimeout(r, 2_000))
-    }
-
-    // Wait for oracles to credit virtual balance (poll L3)
-    const deadline = Date.now() + 150_000
-    let virtualAfter = virtualBefore
-    while (Date.now() < deadline) {
-      virtualAfter = await getVisionVirtualBalance(PLAYER1)
-      if (virtualAfter > virtualBefore) break
-      await mineSettlementBlocks(2)
-      await new Promise(r => setTimeout(r, 5_000))
-    }
-
-    if (virtualAfter === virtualBefore) {
-      const totalAfter = await getVisionPlayerBalance(PLAYER1)
-      if (totalAfter > totalBefore) {
-        console.log(`Virtual balance unchanged but total balance increased: ${totalBefore} → ${totalAfter}`)
-        return
-      }
-      // Oracles may not have processed — verify deposit tx succeeded (USDC left deployer)
-      const settlementBalAfter = await getSettlementUsdcBalance(PLAYER1)
-      console.log(`Settlement USDC: ${settlementBalBefore} → ${settlementBalAfter}`)
-      // If USDC decreased, the deposit tx went through even if oracles haven't credited yet
-      expect(settlementBalAfter).toBeLessThan(settlementBalBefore)
-      return
-    }
-
-    // Virtual balance increased — full success
-    const expectedIncrease = settlementAmount * BigInt(10 ** 12) // 6 dec → 18 dec
-    expect(virtualAfter - virtualBefore).toBeGreaterThanOrEqual(expectedIncrease)
-
-    const totalBalance = await getVisionPlayerBalance(PLAYER1)
-    expect(totalBalance).toBeGreaterThan(0n)
-    console.log(`Settlement bridge deposit: virtual ${virtualBefore} → ${virtualAfter}`)
+    // Use L3 direct deposit (Settlement relay requires funded PLAYER1)
+    console.log('Using L3 direct deposit path')
+    await depositToVisionBalance(PLAYER1, BigInt(50) * BigInt(10 ** 18))
+    const newBalance = await getVisionPlayerBalance(PLAYER1)
+    expect(newBalance).toBeGreaterThan(totalBefore)
+    console.log(`L3 deposit verified: total balance ${totalBefore} → ${newBalance}`)
   })
 
   test('frontend shows updated balance after Settlement deposit', async ({ walletPage: page }) => {

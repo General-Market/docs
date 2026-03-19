@@ -3,10 +3,8 @@
  *
  * 1. Validates all deployment addresses (catches stale deployments early)
  * 2. Warms up Next.js dev server (compiles pages on first request)
- * 3. Pre-funds VISION_PLAYER with L3 USDC (so ensureUsdcBalance is a no-op
- *    during parallel execution — critical for nonce safety with 2 workers)
  */
-import { IS_ANVIL, FRONTEND_URL, VISION_PLAYER_ADDRESS } from './env'
+import { FRONTEND_URL } from './env'
 import { validateDeployment, printDeploymentReport } from './helpers/address-validator'
 
 async function globalSetup() {
@@ -49,17 +47,6 @@ async function globalSetup() {
     }
   }
 
-  // Pre-fund VISION_PLAYER with L3 USDC.
-  if (IS_ANVIL) {
-    try {
-      const { ensureUsdcBalance } = await import('./helpers/vision-api')
-      const amount = 100000n * 10n ** 18n
-      await ensureUsdcBalance(VISION_PLAYER_ADDRESS, amount)
-      console.log(`[global-setup] Pre-funded VISION_PLAYER ${VISION_PLAYER_ADDRESS} with 100k L3 USDC`)
-    } catch (err) {
-      console.warn(`[global-setup] Failed to pre-fund VISION_PLAYER: ${(err as Error).message}`)
-    }
-  }
 }
 
 export default globalSetup;

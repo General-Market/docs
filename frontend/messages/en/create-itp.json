@@ -50,8 +50,10 @@
     "symbol": "Symbol (max 10)"
   },
   "success": {
-    "title": "ITP Request Created!",
-    "description": "Waiting for oracle consensus..."
+    "title": "ITP Request Submitted",
+    "description": "Waiting for oracle consensus — this may take a few minutes...",
+    "consensus_title": "ITP Created",
+    "consensus_description": "Oracle consensus reached. Your ITP is live on L3."
   },
   "errors": {
     "fill_all_fields": "Please fill in all fields and ensure weights sum to 100%",

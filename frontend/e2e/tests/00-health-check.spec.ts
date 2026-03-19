@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { checkHealth, checkRpc } from '../helpers/backend-api';
 import { RPC_URL, L3_RPC_URL } from '../fixtures/wallet';
-import { AP_URL, IS_ANVIL } from '../env';
+import { AP_URL } from '../env';
 
 test.describe('Health Check', () => {
   test('frontend loads — Vision on root', async ({ page }) => {
@@ -42,7 +42,7 @@ test.describe('Health Check', () => {
     } catch (e: any) {
       // On testnet, Node.js on Mac can't reach VPS 2 directly (timeout).
       // Verify via L3 RPC instead — if L3 is up, AP is co-located.
-      if (!IS_ANVIL && e?.name === 'TimeoutError') {
+      if (e?.name === 'TimeoutError') {
         const rpcOk = await checkRpc(L3_RPC_URL);
         expect(rpcOk).toBe(true); // L3 RPC lives on same VPS as AP
       } else {

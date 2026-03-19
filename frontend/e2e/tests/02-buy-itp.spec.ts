@@ -87,7 +87,6 @@ test.describe('Buy ITP', () => {
     }
 
     // Record L3 shares RIGHT BEFORE submitting (not at test start)
-    // to avoid race with parallel lending test's mintL3Shares
     const sharesBefore = await getL3UserShares(TEST_ADDRESS, ITP_ID);
     console.log(`Buy test: sharesBefore=${sharesBefore}`);
 

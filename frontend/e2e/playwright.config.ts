@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
-import { IS_ANVIL, FRONTEND_URL } from './env';
+import { FRONTEND_URL } from './env';
 
 /**
  * 3-phase test execution with separate wallet keys per chain:
  *
- * Phase 1 — DATA (2 projects, parallel on Anvil, serial on testnet):
+ * Phase 1 — DATA (2 projects):
  *   itp-data (DEPLOYER_KEY):    01 → 02 → 03 → 04 → 05 → 07 → 08 → 10-morpho → 18 → 26
  *   vision-data (VISION_PLAYER_KEY): 10-vision → 12 → 13 → 15 → 25 → 14 → 19 → 20 → 21
  *
@@ -15,18 +15,17 @@ import { IS_ANVIL, FRONTEND_URL } from './env';
  * Phase 3 — LATE WRITES (depends on Phase 1 AND Phase 2 — no concurrent DEPLOYER usage):
  *   write-after: 30, 31
  *
- * NONCE SAFETY: On testnet, workers=1 because `backend-api.ts`'s `l3SignedSend` has no
- * cross-process nonce lock. On Anvil, `ensureUsdcBalance` is a no-op (pre-funded in
- * globalSetup) and Anvil auto-manages nonces for unsigned txs, so parallel is safe.
+ * NONCE SAFETY: workers=1 because `backend-api.ts`'s `l3SignedSend` has no
+ * cross-process nonce lock.
  */
 export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   testDir: './tests',
   fullyParallel: false,
-  workers: IS_ANVIL ? 2 : 1, // Parallel on Anvil only — testnet lacks cross-process nonce lock
-  timeout: IS_ANVIL ? 120_000 : 180_000,
+  workers: 1,
+  timeout: 180_000,
   expect: {
-    timeout: IS_ANVIL ? 15_000 : 30_000,
+    timeout: 30_000,
   },
   retries: 0,
   reporter: [['list']],
@@ -35,14 +34,12 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
-    actionTimeout: IS_ANVIL ? 30_000 : 60_000,
+    actionTimeout: 60_000,
     navigationTimeout: 90_000,
     browserName: 'chromium',
-    ...(!IS_ANVIL ? {
-      launchOptions: {
-        args: ['--allow-running-insecure-content'],
-      },
-    } : {}),
+    launchOptions: {
+      args: ['--allow-running-insecure-content'],
+    },
   },
   projects: [
     // Phase 1: produce on-chain state (separate keys, parallel on Anvil)
@@ -53,7 +50,7 @@ export default defineConfig({
     },
     {
       name: 'vision-data',
-      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)47-.*\.spec\.ts$/,
+      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$/,
     },
     // Phase 2: UI verification (depends on respective Phase 1 only — limited blast radius)
     {
@@ -72,15 +69,15 @@ export default defineConfig({
       dependencies: ['itp-data', 'vision-data', 'ui-verify-itp', 'ui-verify-vision'],
       testMatch: /(^|\/)30-.*\.spec\.ts$|(^|\/)31-.*\.spec\.ts$/,
     },
-    // Phase 4: Swarm test (testnet only — full-stack with real bots on VPS)
-    ...(IS_ANVIL ? [] : [{
+    // Phase 4: Swarm test (full-stack with real bots on VPS)
+    {
       name: 'swarm',
       testMatch: /40-/,
       dependencies: ['vision-data'],
       use: {
         browserName: 'chromium' as const,
       },
-    }]),
+    },
   ],
   ...(!process.env.E2E_FRONTEND_URL ? {
     webServer: {

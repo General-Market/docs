@@ -10,7 +10,7 @@
  * - Any 18+ digit numbers visible in document body (raw bigint leak)
  */
 import { test, expect, TEST_ADDRESS } from '../fixtures/wallet';
-import { IS_ANVIL, FRONTEND_URL } from '../env';
+import { FRONTEND_URL } from '../env';
 import { ensureWalletConnected } from '../helpers/selectors';
 
 test.describe('Decimal Regression Tests', () => {

@@ -50,8 +50,10 @@
     "symbol": "심볼 (최대 10자)"
   },
   "success": {
-    "title": "ITP 요청이 생성되었습니다!",
-    "description": "발행자 합의를 기다리는 중..."
+    "title": "ITP 요청 제출됨",
+    "description": "오라클 합의를 기다리는 중 — 몇 분 정도 소요될 수 있습니다...",
+    "consensus_title": "ITP 생성 완료",
+    "consensus_description": "오라클 합의가 완료되었습니다. ITP가 L3에서 운영 중입니다."
   },
   "errors": {
     "fill_all_fields": "모든 필드를 입력하고 비중 합계가 100%인지 확인해 주세요",

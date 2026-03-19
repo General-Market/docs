@@ -50,8 +50,10 @@
     "symbol": "代码 (最多 10 字符)"
   },
   "success": {
-    "title": "ITP 请求已创建!",
-    "description": "等待发行人共识..."
+    "title": "ITP 请求已提交",
+    "description": "等待预言机共识 — 可能需要几分钟...",
+    "consensus_title": "ITP 创建完成",
+    "consensus_description": "预言机共识已达成。ITP 已在 L3 上线。"
   },
   "errors": {
     "fill_all_fields": "请填写所有字段并确保权重合计为 100%",

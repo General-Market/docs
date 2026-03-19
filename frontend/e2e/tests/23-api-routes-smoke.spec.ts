@@ -3,7 +3,7 @@
  * Verifies each route returns valid response shapes.
  */
 import { test, expect } from '../fixtures/wallet';
-import { IS_ANVIL, FRONTEND_URL, DEPLOYER_ADDRESS } from '../env';
+import { FRONTEND_URL, DEPLOYER_ADDRESS } from '../env';
 
 const BASE = FRONTEND_URL;
 

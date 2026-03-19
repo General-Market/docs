@@ -13,15 +13,13 @@ import {
   getAvailableItpIds,
   getItpStateL3,
   getL3UserShares,
-  mintL3Shares,
   mintL3Usdc,
   placeL3BuyOrderDirect,
   placeL3SellOrderDirect,
   pollUntil,
-  startSettlementBlockMiner,
 } from '../helpers/backend-api';
 
-import { IS_ANVIL, CONTRACTS } from '../env';
+import { CONTRACTS } from '../env';
 const INDEX_CONTRACT = CONTRACTS.Index ?? '';
 
 test.describe('Multi-ITP Order Processing', () => {
@@ -79,21 +77,17 @@ test.describe('Multi-ITP Order Processing', () => {
     // 2. Ensure user has L3 shares for this ITP
     let sharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     if (sharesBefore < 50n * 10n ** 18n) {
-      if (!IS_ANVIL) {
-        console.log('Insufficient shares — placing L3 buy order...');
-        const state = await getItpStateL3(itp2Id);
-        const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
-        await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, 200n * 10n ** 18n, buyLimit);
-        const newShares = await pollUntil(
-          () => getL3UserShares(TEST_ADDRESS, itp2Id),
-          (s) => s >= 50n * 10n ** 18n,
-          180_000,
-          3_000,
-        );
-        console.log(`Buy filled — shares: ${newShares}`);
-      } else {
-        await mintL3Shares(TEST_ADDRESS, itp2Id, 100n * 10n ** 18n);
-      }
+      console.log('Insufficient shares — placing L3 buy order...');
+      const state = await getItpStateL3(itp2Id);
+      const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
+      await placeL3BuyOrderDirect(TEST_ADDRESS, itp2Id, 200n * 10n ** 18n, buyLimit);
+      const newShares = await pollUntil(
+        () => getL3UserShares(TEST_ADDRESS, itp2Id),
+        (s) => s >= 50n * 10n ** 18n,
+        180_000,
+        3_000,
+      );
+      console.log(`Buy filled — shares: ${newShares}`);
     }
 
     // 3. Fund L3 Index with USDC so sell payouts don't fail
@@ -103,28 +97,21 @@ test.describe('Multi-ITP Order Processing', () => {
     const l3SharesBefore = await getL3UserShares(TEST_ADDRESS, itp2Id);
     console.log(`ITP2 L3 shares before sell: ${l3SharesBefore}`);
 
-    // 5. Start Settlement block miner (oracles need blocks for confirmation)
-    const stopMiner = startSettlementBlockMiner(1000);
+    // 5. Place L3 sell order
+    const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
+    const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
+    const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
+    console.log(`Placed ITP2 L3 sell order #${orderId}`);
 
-    try {
-      // 6. Place L3 sell order
-      const sellAmount = l3SharesBefore > 50n * 10n ** 18n ? 50n * 10n ** 18n : l3SharesBefore;
-      const limitPrice = 10n ** 16n; // $0.01 — low enough to accept any NAV
-      const orderId = await placeL3SellOrderDirect(TEST_ADDRESS, itp2Id, sellAmount, limitPrice);
-      console.log(`Placed ITP2 L3 sell order #${orderId}`);
-
-      // 7. Wait for L3 shares to decrease
-      const sharesAfter = await pollUntil(
-        () => getL3UserShares(TEST_ADDRESS, itp2Id),
-        (shares) => shares < l3SharesBefore,
-        180_000,
-        3_000,
-      );
-      console.log(`ITP2 sell order #${orderId} filled — L3 shares: ${l3SharesBefore} -> ${sharesAfter}`);
-      expect(sharesAfter).toBeLessThan(l3SharesBefore);
-    } finally {
-      stopMiner();
-    }
+    // 6. Wait for L3 shares to decrease
+    const sharesAfter = await pollUntil(
+      () => getL3UserShares(TEST_ADDRESS, itp2Id),
+      (shares) => shares < l3SharesBefore,
+      180_000,
+      3_000,
+    );
+    console.log(`ITP2 sell order #${orderId} filled — L3 shares: ${l3SharesBefore} -> ${sharesAfter}`);
+    expect(sharesAfter).toBeLessThan(l3SharesBefore);
   });
 
   test('first ITP sell still works after multi-ITP fix', async () => {
@@ -139,20 +126,16 @@ test.describe('Multi-ITP Order Processing', () => {
     // Ensure user has L3 shares
     let sharesBefore = await getL3UserShares(TEST_ADDRESS, itp1Id);
     if (sharesBefore < 25n * 10n ** 18n) {
-      if (!IS_ANVIL) {
-        console.log('Insufficient shares — placing L3 buy order...');
-        const state = await getItpStateL3(itp1Id);
-        const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
-        await placeL3BuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 18n, buyLimit);
-        await pollUntil(
-          () => getL3UserShares(TEST_ADDRESS, itp1Id),
-          (s) => s >= 25n * 10n ** 18n,
-          180_000,
-          3_000,
-        );
-      } else {
-        await mintL3Shares(TEST_ADDRESS, itp1Id, 100n * 10n ** 18n);
-      }
+      console.log('Insufficient shares — placing L3 buy order...');
+      const state = await getItpStateL3(itp1Id);
+      const buyLimit = state.nav > 0n ? state.nav * 3n : 10n * 10n ** 18n;
+      await placeL3BuyOrderDirect(TEST_ADDRESS, itp1Id, 200n * 10n ** 18n, buyLimit);
+      await pollUntil(
+        () => getL3UserShares(TEST_ADDRESS, itp1Id),
+        (s) => s >= 25n * 10n ** 18n,
+        180_000,
+        3_000,
+      );
     }
 
     // Fund L3 Index with USDC so sell payouts don't fail
