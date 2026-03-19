@@ -880,9 +880,12 @@ async fn generate_and_store_balance_proofs(
     player_balances: &[super::types::PlayerBalance],
     broadcast_tx: Option<&tokio::sync::mpsc::Sender<P2PMessage>>,
 ) {
-    let Some(pool) = db_pool else { return };
+    let Some(pool) = db_pool else {
+        tracing::error!(batch_id, tick_id, "No DB pool — cannot store balance proofs. Withdrawals will serve unsigned fallbacks.");
+        return;
+    };
     let Some(keypair) = bls_keypair else {
-        tracing::debug!(batch_id, tick_id, "No BLS keypair — skipping proof generation");
+        tracing::error!(batch_id, tick_id, "No BLS keypair — cannot sign balance proofs. Withdrawals will fail verification.");
         return;
     };
     if player_balances.is_empty() {
@@ -892,7 +895,12 @@ async fn generate_and_store_balance_proofs(
     let vision_address: Address = match config.vision_address.parse() {
         Ok(addr) => addr,
         Err(_) => {
-            tracing::warn!("Invalid vision_address for proof generation — skipping");
+            tracing::error!(
+                vision_address = %config.vision_address,
+                batch_id, tick_id,
+                "Invalid or empty vision_address — cannot compute withdraw hash for balance proofs. \
+                 Set ORACLE_VISION_ADDRESS to the Vision contract address."
+            );
             return;
         }
     };
@@ -1188,6 +1196,38 @@ pub async fn run(
         Err(e) => {
             tracing::warn!(error = %e, "Vision engine failed to connect to Postgres — balance updates will be in-memory only");
             None
+        }
+    };
+
+    // Ensure BLS keypair is available for balance proof signing.
+    // In single-oracle mode the caller may omit the keypair because tick consensus
+    // doesn't need it — but balance proofs ALWAYS need a BLS signature for on-chain
+    // withdrawal verification.  Generate a deterministic fallback from node_index
+    // when no keypair is provided, matching the bls_tool seed convention.
+    let bls_keypair: Option<Arc<BLSKeyPair>> = match bls_keypair {
+        Some(kp) => Some(kp),
+        None => {
+            let seed_idx = config.node_index + 1; // seed indices are 1-based
+            let seed = vec![seed_idx; 32];
+            match BLSKeyPair::from_seed(&seed) {
+                Ok(kp) => {
+                    tracing::warn!(
+                        node_index = config.node_index,
+                        seed_index = seed_idx,
+                        "No BLS keypair provided — generated deterministic fallback for balance proof signing. \
+                         Ensure this key is registered on-chain or withdrawals will fail verification."
+                    );
+                    Some(Arc::new(kp))
+                }
+                Err(e) => {
+                    tracing::error!(
+                        error = %e,
+                        "No BLS keypair provided AND failed to generate fallback — balance proofs will be UNSIGNED. \
+                         Withdrawals will fail."
+                    );
+                    None
+                }
+            }
         }
     };
 
