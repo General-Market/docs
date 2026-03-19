@@ -1214,10 +1214,14 @@ impl ChainListener {
     // =========================================================================
 
     /// Repair batches with zero config_hash by re-fetching from the contract.
-    async fn repair_zero_config_hashes(&self) {
+    ///
+    /// Public so it can be called synchronously from main before the HTTP server starts,
+    /// ensuring the in-memory scheduler never serves stale zero hashes on first request.
+    pub async fn repair_zero_config_hashes(&self) {
         let zero_hash = "0x0000000000000000000000000000000000000000000000000000000000000000";
+        // Catch both the canonical zero-hash string AND empty string (written by older code paths).
         let zero_batches: Vec<(i64,)> = match sqlx::query_as(
-            "SELECT id FROM vision_batches WHERE config_hash = $1"
+            "SELECT id FROM vision_batches WHERE config_hash = '' OR config_hash = $1"
         ).bind(zero_hash).fetch_all(&self.pool).await {
             Ok(rows) => rows,
             Err(e) => { warn!(error = %e, "repair_zero_config_hashes query failed"); return; }

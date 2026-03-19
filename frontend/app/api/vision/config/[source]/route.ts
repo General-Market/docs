@@ -1,16 +1,6 @@
 import { NextResponse } from 'next/server'
 import { DATA_NODE_SERVER } from '@/lib/config'
-
-// Frontend display sourceId → data-node batch_configs source_id
-const SOURCE_ALIASES: Record<string, string[]> = {
-  coingecko: ['crypto'],
-  defillama: ['defi'],
-  finnhub: ['stocks'],
-  fred: ['rates'],
-  nasdaq: ['stocks'],
-  futures: ['stocks'],
-  finra: ['finra_short_vol'],
-}
+import { toInternalId } from '@/lib/vision/source-ids'
 
 async function tryFetch(source: string): Promise<Response | null> {
   try {
@@ -31,8 +21,9 @@ export async function GET(
   if (!source || source.length > 64) {
     return NextResponse.json({ markets: [] }, { status: 400 })
   }
-  // Try exact name first, then aliases
-  const candidates = [source, ...(SOURCE_ALIASES[source] ?? [])]
+  // Try internal ID first (translated from display ID), then raw source name as fallback
+  const internalId = toInternalId(source)
+  const candidates = internalId !== source ? [internalId, source] : [source]
   for (const name of candidates) {
     const res = await tryFetch(name)
     if (res) {

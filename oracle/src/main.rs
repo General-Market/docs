@@ -15,6 +15,7 @@ use oracle::{
 use oracle::arbitration::{self, ArbitrationSubsystem};
 use oracle::arbitration::types::ArbitrationConfig;
 use common::types::P2PMessage;
+use common::P2PTransport;
 use common::runtime::config::{SharedConfig, RuntimeConfig, shared};
 use common::runtime::admin::admin_router;
 use common::runtime::watcher::DeploymentWatcher;
@@ -5004,12 +5005,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 vision_cfg.clone(),
             ));
 
+            // --- P2P channels for Vision engine ---
+            // broadcast_tx: engine sends P2PMessage here; relay task calls transport.broadcast()
+            let (vision_broadcast_tx, mut vision_broadcast_rx) =
+                tokio::sync::mpsc::channel::<common::types::P2PMessage>(256);
+            // incoming_proofs_rx: consensus protocol forwards VisionBalanceProofsBatch messages here
+            let (vision_balance_proofs_tx, vision_balance_proofs_rx) =
+                tokio::sync::mpsc::channel::<oracle::vision::engine::IncomingBalanceProofsBatch>(256);
+            // incoming_gossip_rx: consensus protocol forwards BitmapGossip messages here
+            let (vision_gossip_tx, vision_gossip_rx) =
+                tokio::sync::mpsc::channel::<oracle::vision::engine::IncomingBitmapGossip>(256);
+
+            // Relay task: drain broadcast_rx and call transport.broadcast() for each message
+            if let Some(ref transport) = components.p2p.transport {
+                let relay_transport = transport.clone();
+                let relay_shutdown = components.shutdown.clone();
+                tokio::spawn(async move {
+                    while !relay_shutdown.load(std::sync::atomic::Ordering::Relaxed) {
+                        match tokio::time::timeout(
+                            std::time::Duration::from_millis(100),
+                            vision_broadcast_rx.recv(),
+                        ).await {
+                            Ok(Some(msg)) => {
+                                if let Err(e) = relay_transport.broadcast(msg).await {
+                                    warn!(error = %e, "Vision P2P broadcast relay failed");
+                                }
+                            }
+                            Ok(None) => break, // sender dropped
+                            Err(_) => continue, // timeout — check shutdown
+                        }
+                    }
+                    debug!("Vision P2P broadcast relay task exited");
+                });
+            }
+
             // Spawn tick engine
             let engine_scheduler = scheduler.clone();
             let engine_resolver = resolver.clone();
             let engine_config = vision_cfg.clone();
             let engine_shutdown = components.shutdown.clone();
             let engine_bls_keypair = components.consensus.keys.bls_keypair.clone().map(Arc::new);
+            let engine_broadcast_tx = if components.p2p.transport.is_some() {
+                Some(vision_broadcast_tx.clone())
+            } else {
+                None
+            };
             tokio::spawn(async move {
                 oracle::vision::engine::run(
                     engine_scheduler,
@@ -5017,9 +5057,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     engine_config,
                     engine_shutdown,
                     engine_bls_keypair,
-                    None, // broadcast_tx: P2P broadcast channel (not yet wired)
-                    None, // incoming_proofs_rx: incoming balance proofs channel (not yet wired)
-                    None, // incoming_gossip_rx: bitmap gossip channel (not yet wired)
+                    engine_broadcast_tx,
+                    Some(vision_balance_proofs_rx),
+                    Some(vision_gossip_rx),
                     None, // key_registry: BLS verification for incoming balance proofs (HIGH-4, wire when P2P is active)
                 ).await;
             });
@@ -5055,6 +5095,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         pool.clone(),
                         vision_cfg.start_block,
                     );
+                    // Repair zero/empty config_hashes synchronously BEFORE the HTTP server
+                    // starts serving requests. The async repair inside chain_listener.run()
+                    // fires too late — the API may already be returning stale hashes.
+                    chain_listener.repair_zero_config_hashes().await;
                     let cl_shutdown = components.shutdown.clone();
                     tokio::spawn(async move {
                         chain_listener.run(cl_shutdown).await;
@@ -5124,6 +5168,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 settlement_chain_id: vision_cfg.settlement_chain_id,
                             }).await;
                             info!(node_id, "VisionConsensusConfig set on protocol");
+
+                            // Wire balance-proof and bitmap-gossip forwarding channels into protocol
+                            if let Ok(mut guard) = protocol.vision_balance_proofs_tx.lock() {
+                                *guard = Some(vision_balance_proofs_tx);
+                                info!(node_id, "vision_balance_proofs_tx installed on consensus protocol");
+                            }
+                            if let Ok(mut guard) = protocol.vision_bitmap_gossip_tx.lock() {
+                                *guard = Some(vision_gossip_tx);
+                                info!(node_id, "vision_bitmap_gossip_tx installed on consensus protocol");
+                            }
                         }
                     }
 
@@ -5143,7 +5197,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         scheduler: scheduler.clone(),
                         bitmap_store: bitmap_store.clone(),
                         config: vision_cfg.clone(),
-                        broadcast_tx: None, // bitmap gossip broadcast (not yet wired)
+                        broadcast_tx: if components.p2p.transport.is_some() {
+                            Some(vision_broadcast_tx)
+                        } else {
+                            None
+                        },
                     });
 
                     // Build the Vision router (merged into health port in run_main_loop)

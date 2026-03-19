@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AA_DATA_NODE_URL } from '@/lib/config'
+import { toInternalId } from '@/lib/vision/source-ids'
 
 const AA_DATA_NODE = AA_DATA_NODE_URL
 const DETAIL_LIMIT = 10_000   // Per-source detail page (crypto=10K, defi=6K)
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
     // If requesting a specific source, fetch just that source from data-node
     if (sourceFilter) {
       const res = await fetch(
-        `${AA_DATA_NODE}/vision/snapshot?source=${encodeURIComponent(sourceFilter)}&limit=${DETAIL_LIMIT}`,
+        `${AA_DATA_NODE}/vision/snapshot?source=${encodeURIComponent(toInternalId(sourceFilter))}&limit=${DETAIL_LIMIT}`,
         { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
       )
       if (!res.ok) throw new Error(`AA data-node ${res.status}`)

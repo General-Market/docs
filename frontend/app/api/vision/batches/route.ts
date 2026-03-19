@@ -13,7 +13,7 @@ for (const [key, val] of Object.entries(visionBatchesJson.batches)) {
 export async function GET() {
   try {
     const res = await fetch(`${ISSUER_VISION_URL}/vision/batches`, {
-      next: { revalidate: 5 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)

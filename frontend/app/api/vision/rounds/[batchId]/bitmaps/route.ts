@@ -7,7 +7,7 @@ export async function GET(
   try {
     const { batchId } = await params
     const res = await fetch(`${ORACLE_VISION_URL}/vision/rounds/${batchId}/bitmaps`, {
-      next: { revalidate: 5 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`Oracle API ${res.status}`)

@@ -125,10 +125,10 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
   const userDeposits = userPosition?.value
     ? `$${parseFloat(formatUnits(userPosition.value, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : '$0.00'
-  // Accrued interest estimate (value - original deposit, simplified)
-  const accruedInterest = userPosition?.value && userPosition.value > 0n
-    ? `+$${(parseFloat(formatUnits(userPosition.value, 18)) * (supplyApy / 100)).toFixed(2)}`
-    : '$0.00'
+  // Projected annual yield (not actual accrued — vault doesn't track original deposit)
+  const annualYield = userPosition?.value && userPosition.value > 0n && supplyApy > 0
+    ? `+$${(parseFloat(formatUnits(userPosition.value, 18)) * (supplyApy / 100)).toFixed(2)}/yr`
+    : utilization === 0 ? 'No borrows yet' : '$0.00'
 
   // User borrow data
   const collateralValue = position?.collateralAmount
@@ -147,8 +147,8 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-black/[0.06] rounded-xl overflow-hidden">
         <StatCell label={t('stats.vault_tvl')} value={vaultTvl} />
-        <StatCell label={t('stats.supply_apy')} value={`${supplyApy.toFixed(2)}%`} color="text-color-up" />
-        <StatCell label={t('stats.borrow_apy')} value={`${borrowApy.toFixed(2)}%`} />
+        <StatCell label={t('stats.supply_apy')} value={supplyApy > 0 ? `${supplyApy.toFixed(2)}%` : '—'} color={supplyApy > 0 ? 'text-color-up' : 'text-text-muted'} />
+        <StatCell label={t('stats.borrow_apy')} value={borrowApy > 0 ? `${borrowApy.toFixed(2)}%` : '—'} />
         <StatCell label={t('stats.utilization')} value={`${utilization.toFixed(1)}%`} />
       </div>
 
@@ -161,8 +161,17 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
           </div>
           <div className="p-5 space-y-4">
             <InfoRow label={t('supply_panel.your_deposits')} value={userDeposits} />
-            <InfoRow label={t('supply_panel.accrued_interest')} value={accruedInterest} valueColor="text-color-up" />
+            <InfoRow
+              label={supplyApy > 0 ? 'Est. Annual Yield' : 'Yield Status'}
+              value={annualYield}
+              valueColor={supplyApy > 0 ? 'text-color-up' : 'text-text-muted'}
+            />
             <InfoRow label={t('supply_panel.current_apy')} value={`${supplyApy.toFixed(2)}%`} mono />
+            {utilization === 0 && userPosition?.value && userPosition.value > 0n && (
+              <p className="text-[11px] text-text-muted leading-snug">
+                Vault earns yield when users borrow USDC against ITP collateral. No active borrows at the moment.
+              </p>
+            )}
 
             {/* Action buttons */}
             <div className="grid grid-cols-2 gap-3 pt-2">

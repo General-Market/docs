@@ -794,6 +794,11 @@ pub async fn apply_balances(
             .collect();
 
             for (pb, player_str) in balances.iter().zip(player_strs.iter()) {
+                // Skip voided/refunded players — delta=0 means no PnL change to record
+                if pb.delta == 0 {
+                    continue;
+                }
+
                 let deposited = deposit_map.get(player_str).map(|s| s.as_str());
 
                 if let Err(e) = sqlx::query(
@@ -806,7 +811,7 @@ pub async fn apply_balances(
                 .bind(tick_id as i64)
                 .bind(player_str)
                 .bind(pb.delta.to_string())
-                .bind(pb.delta >= 0)
+                .bind(pb.delta > 0)
                 .bind(deposited)
                 .execute(&pool)
                 .await {
@@ -2090,6 +2095,33 @@ pub async fn run(
                                             &result.player_balances,
                                         )
                                         .await;
+                                    }
+
+                                    // Persist tick result summary for /vision/batch/:id/history
+                                    if let Some(ref pool) = db_pool {
+                                        let total_matched: u128 = result.player_balances.iter()
+                                            .map(|pb| pb.delta.unsigned_abs())
+                                            .sum::<u128>() / 2;
+                                        let results_json = serde_json::to_value(&result.market_results).ok();
+                                        let pool = pool.clone();
+                                        let player_count = result.player_balances.len() as i32;
+                                        tokio::spawn(async move {
+                                            if let Err(e) = sqlx::query(
+                                                "INSERT INTO vision_tick_results (batch_id, tick_id, resolved_at, player_count, total_matched, results_json)
+                                                 VALUES ($1, $2, NOW(), $3, $4, $5)
+                                                 ON CONFLICT (batch_id, tick_id) DO NOTHING"
+                                            )
+                                            .bind(batch_id as i64)
+                                            .bind(tick_id as i64)
+                                            .bind(player_count)
+                                            .bind(total_matched.to_string())
+                                            .bind(results_json)
+                                            .execute(&pool)
+                                            .await
+                                            {
+                                                tracing::warn!(batch_id, tick_id, error = %e, "Failed to persist tick result summary");
+                                            }
+                                        });
                                     }
 
                                     // HIGH-5: Tick resolved successfully — clear the pinned price entry.

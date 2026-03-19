@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   // Try data-node first (has live API prices → more accurate NAV)
   try {
     const res = await fetch(`${DATA_NODE_URL}/itp-price?itp_id=${encodeURIComponent(itpId)}`, {
-      next: { revalidate: 2 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(3_000),
     })
     if (res.ok) {

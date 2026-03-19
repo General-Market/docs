@@ -5,7 +5,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const params = new URLSearchParams(searchParams)
     const res = await fetch(`${ORACLE_VISION_URL}/vision/rounds?${params}`, {
-      next: { revalidate: 5 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(10_000),
     })
     if (!res.ok) throw new Error(`Oracle API ${res.status}`)
