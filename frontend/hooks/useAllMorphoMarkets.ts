@@ -83,10 +83,17 @@ export function useAllMorphoMarkets() {
         ? Number((totalBorrowAssets * 10000n) / totalSupplyAssets) / 100
         : 0
 
+      // Try IRM stored rate first, fall back to utilization-based model
       let borrowApy = 0
       if (rateRes && rateRes.status === 'success' && rateRes.result) {
         const ratePerSec = Number(rateRes.result as bigint) / 1e18
-        borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
+        if (ratePerSec > 0) {
+          borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
+        }
+      }
+      // Fallback: utilization-based rate curve (base 2% + utilization * 15%)
+      if (borrowApy === 0 && utilization > 0) {
+        borrowApy = 2 + utilization * 0.15
       }
 
       const supplyApy = utilization > 0 ? (borrowApy * utilization) / 100 : 0
