@@ -300,16 +300,15 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Fetch batch config by hash from data-node (has per-market resolution types)
-  const configHash = activeBatch?.configHash
+  // Fetch latest batch config for this source from data-node (has per-market resolution types)
   const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
-    queryKey: ['batch-config-hash', configHash],
+    queryKey: ['batch-config-source', sourceId],
     queryFn: async () => {
-      const res = await fetch(`${DATA_NODE_URL}/batches/config/${configHash}`)
+      const res = await fetch(`/api/vision/config/${sourceId}`)
       if (!res.ok) return { markets: [] }
       return res.json()
     },
-    enabled: !!configHash,
+    enabled: !!sourceId,
     staleTime: 300_000,
     retry: 1,
   })

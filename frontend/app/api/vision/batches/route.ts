@@ -1,10 +1,13 @@
 import { ISSUER_VISION_URL } from '@/lib/config'
 import visionBatchesJson from '@/lib/contracts/vision-batches.json'
 
-// Reverse map: batchId → human-readable source key (e.g. 215 → "defi", 232 → "polymarket")
+// Reverse map: batchId → human-readable source key + deploy configHash
 const BATCH_ID_TO_SOURCE: Record<number, string> = {}
+const BATCH_ID_TO_CONFIG_HASH: Record<number, string> = {}
 for (const [key, val] of Object.entries(visionBatchesJson.batches)) {
-  BATCH_ID_TO_SOURCE[(val as any).batchId] = key
+  const v = val as any
+  BATCH_ID_TO_SOURCE[v.batchId] = key
+  if (v.configHash) BATCH_ID_TO_CONFIG_HASH[v.batchId] = v.configHash
 }
 
 export async function GET() {
@@ -16,10 +19,15 @@ export async function GET() {
     if (!res.ok) throw new Error(`Issuer API ${res.status}`)
     const data = await res.json()
 
-    // Enrich: replace keccak256 hex source_id with human-readable name from vision-batches.json
+    // Enrich: replace keccak256 hex source_id with human-readable name + inject deploy configHash
     for (const batch of (data.batches ?? [])) {
       const name = BATCH_ID_TO_SOURCE[batch.id]
       if (name) batch.source_id = name
+      // Inject configHash from deploy output when oracle returns zero hash
+      const isZeroHash = !batch.config_hash || batch.config_hash === '0x' + '0'.repeat(64)
+      if (isZeroHash && BATCH_ID_TO_CONFIG_HASH[batch.id]) {
+        batch.config_hash = BATCH_ID_TO_CONFIG_HASH[batch.id]
+      }
     }
 
     // Deduplicate: keep latest batch per source

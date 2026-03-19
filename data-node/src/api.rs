@@ -465,6 +465,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         // Batch config endpoints
         .route("/batches/recommended", get(batches_recommended))
         .route("/batches/config/:hash", get(batch_config_by_hash))
+        .route("/batches/source/:source_id/config", get(batch_config_by_source))
         .route("/batches/signed", get(batches_signed))
         .route("/batches/signed", axum::routing::post(store_signed_batch))
         .route("/batches/replicate", axum::routing::post(replicate_signed_batch))
@@ -5244,6 +5245,42 @@ async fn batch_config_by_hash(
     }
 
     Err(StatusCode::NOT_FOUND)
+}
+
+/// GET /batches/source/:source_id/config — latest batch config for a source.
+/// Returns the most recently generated config with per-market resolution types.
+async fn batch_config_by_source(
+    State(state): State<Arc<AppState>>,
+    axum::extract::Path(source_id): axum::extract::Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Check in-memory recommended configs first
+    let configs = state.batch_engine.configs.read().await;
+    if let Some(c) = configs.iter().find(|c| c.source_id == source_id) {
+        return Ok(Json(serde_json::json!(c)));
+    }
+    drop(configs);
+
+    // Fall back to DB — latest config for this source
+    let row: Option<(serde_json::Value, i32, i32, DateTime<Utc>)> = sqlx::query_as(
+        "SELECT markets, tick_duration_secs, lock_offset_secs, created_at \
+         FROM batch_configs WHERE source_id = $1 ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(&source_id)
+    .fetch_optional(&state.pool)
+    .await
+    .ok()
+    .flatten();
+
+    match row {
+        Some((markets, tick_dur, lock_off, created_at)) => Ok(Json(serde_json::json!({
+            "sourceId": source_id,
+            "tickDurationSecs": tick_dur,
+            "lockOffsetSecs": lock_off,
+            "markets": markets,
+            "createdAt": created_at,
+        }))),
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 /// GET /batches/signed — frontend reads this to build user transactions.
