@@ -20,8 +20,6 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
-import itpIdNames from '@/lib/itp-id-names.json'
-import Link from 'next/link'
 
 // Note: Error fallback uses static English because it renders outside i18n context
 const LendingErrorFallback = (
@@ -379,7 +377,6 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
   useEffect(() => { fetchInfo() }, [fetchInfo])
 
   // Build rows: one per registry entry, with market data from allMarketData map
-  const namesMap = itpIdNames as Record<string, { name: string; ticker: string }>
   const rows = allCollateralTokens.map(addr => {
     const registry = getMorphoMarketForItp(addr)
     const mktData = allMarketData?.get(addr.toLowerCase())
@@ -392,7 +389,6 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
     return {
       collateralToken: addr,
       name,
-      ticker: '',
       userBalance: userBal,
       borrowApy: mktData ? mktData.borrowApy.toFixed(2) : '--',
       tvl: mktData && mktData.totalSupplyAssets > 0n

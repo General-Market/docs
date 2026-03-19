@@ -54,8 +54,9 @@ export function useAllMorphoMarkets() {
     return calls
   }, [])
 
-  const { data, isLoading } = useReadContracts({
-    contracts,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawData, isLoading } = useReadContracts({
+    contracts: contracts as any,
     query: {
       enabled: allMarkets.length > 0,
       refetchInterval: 30_000,
@@ -64,6 +65,7 @@ export function useAllMorphoMarkets() {
 
   const marketsMap = useMemo(() => {
     const map = new Map<string, AllMarketData>()
+    const data = rawData as { status: string; result?: unknown }[] | undefined
     if (!data) return map
 
     for (let i = 0; i < allMarkets.length; i++) {
@@ -71,16 +73,18 @@ export function useAllMorphoMarkets() {
       const rateRes = data[i * 2 + 1]
       const entry = allMarkets[i]
 
-      if (marketRes?.status !== 'success' || !marketRes.result) continue
+      if (!marketRes || marketRes.status !== 'success' || !marketRes.result) continue
 
-      const [totalSupplyAssets, , totalBorrowAssets] = marketRes.result as [bigint, bigint, bigint, bigint, bigint, bigint]
+      const marketResult = marketRes.result as [bigint, bigint, bigint, bigint, bigint, bigint]
+      const totalSupplyAssets = marketResult[0]
+      const totalBorrowAssets = marketResult[2]
 
       const utilization = totalSupplyAssets > 0n
         ? Number((totalBorrowAssets * 10000n) / totalSupplyAssets) / 100
         : 0
 
       let borrowApy = 0
-      if (rateRes?.status === 'success' && rateRes.result) {
+      if (rateRes && rateRes.status === 'success' && rateRes.result) {
         const ratePerSec = Number(rateRes.result as bigint) / 1e18
         borrowApy = ratePerSec * SECONDS_PER_YEAR * 100
       }
@@ -99,7 +103,7 @@ export function useAllMorphoMarkets() {
     }
 
     return map
-  }, [data])
+  }, [rawData])
 
   return { data: marketsMap, isLoading }
 }
