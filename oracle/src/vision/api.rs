@@ -156,13 +156,14 @@ pub struct PlayerInfo {
 
 /// A tick result entry for the history endpoint.
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TickHistoryEntry {
     pub batch_id: i64,
     pub tick_id: i64,
-    pub resolved_at: Option<chrono::NaiveDateTime>,
+    pub resolved_at: Option<chrono::DateTime<chrono::Utc>>,
     pub player_count: Option<i32>,
     pub total_matched: Option<String>,
-    pub results_json: Option<serde_json::Value>,
+    pub market_outcomes: Option<serde_json::Value>,
 }
 
 /// Request body for bitmap submission.
@@ -429,10 +430,10 @@ async fn batch_history(
                     resolved_at: r.resolved_at,
                     player_count: r.player_count,
                     total_matched: r.total_matched,
-                    results_json: r.results_json,
+                    market_outcomes: r.results_json,
                 })
                 .collect();
-            (StatusCode::OK, Json(serde_json::json!({ "history": entries }))).into_response()
+            (StatusCode::OK, Json(entries)).into_response()
         }
         Err(e) => {
             warn!("Failed to query tick history for batch {id}: {e}");
@@ -450,7 +451,7 @@ async fn batch_history(
 struct TickResultRow {
     batch_id: i64,
     tick_id: i64,
-    resolved_at: Option<chrono::NaiveDateTime>,
+    resolved_at: Option<chrono::DateTime<chrono::Utc>>,
     player_count: Option<i32>,
     total_matched: Option<String>,
     results_json: Option<serde_json::Value>,
@@ -1015,18 +1016,68 @@ async fn vision_leaderboard(
     State(state): State<Arc<VisionState>>,
     Query(query): Query<LeaderboardQuery>,
 ) -> impl IntoResponse {
-    // When source_id is provided, use Postgres for full historical data
-    // (includes completed/paused batches that are no longer in memory).
-    if let Some(ref source_id) = query.source_id {
-        return leaderboard_from_postgres(&state.pool, Some(source_id), None).await;
-    }
     if let Some(bid) = query.batch_id {
         return leaderboard_from_postgres(&state.pool, None, Some(bid)).await;
     }
 
+    // When source_id is provided, try Postgres first — it covers completed/paused batches
+    // that have been evicted from in-memory state. Fall back to the in-memory scheduler
+    // only when Postgres has no tick-delta rows for this source (table not yet populated).
+    if let Some(ref source_id) = query.source_id {
+        let mut pg_candidates: Vec<String> = Vec::new();
+        pg_candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(source_id.as_bytes()))));
+        for v in 1..=5u8 {
+            let versioned = format!("{}_v{}", source_id, v);
+            pg_candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
+        }
+        pg_candidates.push(string_to_bytes32_hex(source_id));
+
+        let in_clause = pg_candidates.iter()
+            .map(|c| format!("'{}'", c.replace('\'', "")))
+            .collect::<Vec<_>>()
+            .join(",");
+
+        let delta_count: i64 = sqlx::query_scalar(&format!(
+            "SELECT COUNT(*) FROM vision_player_tick_deltas td
+             JOIN vision_batches vb ON td.batch_id = vb.id
+             WHERE vb.source_id IN ({in_clause}) AND td.delta::numeric <> 0",
+            in_clause = in_clause
+        ))
+        .fetch_one(&state.pool)
+        .await
+        .unwrap_or(0);
+
+        if delta_count > 0 {
+            // Postgres has real data — use it (includes historical completed batches).
+            return leaderboard_from_postgres(&state.pool, Some(source_id), None).await;
+        }
+        // delta_count == 0: fall through to in-memory path below (source_filter will restrict it).
+    }
+
     let include_rounds = query.include_rounds.unwrap_or(true);
 
-    // No filter — aggregate from in-memory scheduler (active batches only)
+    // Build the set of source_id H256 candidates to match against (when filter provided).
+    let source_filter: Option<Vec<H256>> = query.source_id.as_deref().map(|sid| {
+        let mut candidates = Vec::new();
+        candidates.push(H256::from(ethers::utils::keccak256(sid.as_bytes())));
+        for v in 1..=5u8 {
+            let versioned = format!("{}_v{}", sid, v);
+            candidates.push(H256::from(ethers::utils::keccak256(versioned.as_bytes())));
+        }
+        // Bytes32 ASCII fallback (legacy)
+        let legacy_hex = string_to_bytes32_hex(sid);
+        if let Ok(bytes) = hex::decode(legacy_hex.trim_start_matches("0x")) {
+            if bytes.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(&bytes);
+                candidates.push(H256::from(arr));
+            }
+        }
+        candidates
+    });
+
+    // Aggregate from in-memory scheduler (active batches only).
+    // When source_filter is Some, restrict to batches whose source_id matches.
     let all_ids = state.scheduler.get_all_batch_ids().await;
 
     // player -> (total_balance, total_deposited, batches_joined, largest_batch_markets, batch_wins,
@@ -1040,6 +1091,12 @@ async fn vision_leaderboard(
         if let Some((batch, players)) = state.scheduler.get_batch_state(*batch_id).await {
             if batch.paused {
                 continue;
+            }
+            // Skip batches that don't belong to the requested source.
+            if let Some(ref candidates) = source_filter {
+                if !candidates.contains(&batch.source_id) {
+                    continue;
+                }
             }
             for p in &players {
                 let entry = player_data
@@ -1057,7 +1114,9 @@ async fn vision_leaderboard(
         }
     }
 
-    // Supplement with Postgres deposits for active batches
+    // Supplement with Postgres deposits for active batches.
+    // Skip when source_filter is active — in-memory state already covers those batches.
+    if source_filter.is_none() {
     if let Ok(rows) = sqlx::query_as::<_, DepositRow>(
         "SELECT vp.player, SUM(vp.total_deposited::numeric)::text as total_deposited
          FROM vision_positions vp
@@ -1082,9 +1141,11 @@ async fn vision_leaderboard(
             }
         }
     }
+    } // end source_filter.is_none() guard for deposit supplement
 
-    // Merge settled round results from Postgres (vision_round_players)
-    if include_rounds {
+    // Merge settled round results from Postgres (vision_round_players).
+    // Skip when source_filter is active — round data is cross-source and would pollute results.
+    if include_rounds && source_filter.is_none() {
         if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(
             "SELECT player,
                     SUM(payout::numeric)::text as total_payout,

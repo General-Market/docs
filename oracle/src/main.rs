@@ -5050,6 +5050,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 None
             };
+            // Wire key registry so balance proof aggregation can verify BLS signatures
+            // from peer oracles before accepting them into the aggregation set (HIGH-4).
+            let engine_key_registry: Option<Arc<dyn oracle::KeyRegistry>> =
+                components.consensus.keys.key_registry.clone()
+                    .map(|kr| kr as Arc<dyn oracle::KeyRegistry>);
             tokio::spawn(async move {
                 oracle::vision::engine::run(
                     engine_scheduler,
@@ -5060,7 +5065,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     engine_broadcast_tx,
                     Some(vision_balance_proofs_rx),
                     Some(vision_gossip_rx),
-                    None, // key_registry: BLS verification for incoming balance proofs (HIGH-4, wire when P2P is active)
+                    engine_key_registry,
                 ).await;
             });
 

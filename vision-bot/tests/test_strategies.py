@@ -21,6 +21,34 @@ class TestRandomStrategy:
         assert len(result) == 100
         assert set(result).issubset({"UP", "DOWN"})
 
+    def test_different_keys_produce_different_bitmaps(self, monkeypatch):
+        """Two bots with different keys must not produce the same predictions."""
+        import os
+        markets = [
+            {"id": f"m{i}", "price": 1, "change": None, "volume": None, "market_cap": None}
+            for i in range(20)
+        ]
+        monkeypatch.setenv("BOT_PRIVATE_KEY", "0xAAAA")
+        s1 = load_strategy("random")
+        r1 = s1.predict(markets)
+
+        monkeypatch.setenv("BOT_PRIVATE_KEY", "0xBBBB")
+        s2 = load_strategy("random")
+        r2 = s2.predict(markets)
+
+        assert r1 != r2, "Different private keys must produce different bitmaps"
+
+    def test_same_key_is_deterministic(self, monkeypatch):
+        """Same key always produces the same predictions."""
+        markets = [
+            {"id": f"m{i}", "price": 1, "change": None, "volume": None, "market_cap": None}
+            for i in range(10)
+        ]
+        monkeypatch.setenv("BOT_PRIVATE_KEY", "0xDEAD")
+        s1 = load_strategy("random")
+        s2 = load_strategy("random")
+        assert s1.predict(markets) == s2.predict(markets)
+
 
 class TestMomentumStrategy:
     def test_positive_change_is_up(self):

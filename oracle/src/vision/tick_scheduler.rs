@@ -101,6 +101,24 @@ impl TickScheduler {
         Ok(())
     }
 
+    /// Update a player's bitmap hash after an on-chain updateBitmap() call.
+    pub async fn on_bitmap_updated(
+        &self,
+        batch_id: u64,
+        player: Address,
+        new_bitmap_hash: H256,
+    ) -> Result<(), TickSchedulerError> {
+        let mut players = self.players.write().await;
+        let batch_players = players
+            .get_mut(&batch_id)
+            .ok_or(TickSchedulerError::BatchNotFound(batch_id))?;
+        let pos = batch_players
+            .get_mut(&player)
+            .ok_or(TickSchedulerError::PlayerNotFound { batch_id, player })?;
+        pos.bitmap_hash = new_bitmap_hash;
+        Ok(())
+    }
+
     /// Remove a player who has withdrawn from a batch.
     pub async fn on_player_withdrawn(
         &self,

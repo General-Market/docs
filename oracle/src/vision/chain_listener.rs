@@ -42,6 +42,7 @@ struct EventTopics {
     batch_config_updated: H256,
     batch_config_promoted: H256,
     player_joined: H256,
+    bitmap_updated: H256,
     player_deposited: H256,
     rewards_claimed: H256,
     player_withdrawn: H256,
@@ -74,6 +75,9 @@ impl EventTopics {
             )),
             player_joined: H256::from(ethers::utils::keccak256(
                 b"PlayerJoined(uint256,address,uint256,bytes32,bytes32)",
+            )),
+            bitmap_updated: H256::from(ethers::utils::keccak256(
+                b"BitmapUpdated(uint256,address,bytes32,bytes32)",
             )),
             player_deposited: H256::from(ethers::utils::keccak256(
                 b"PlayerDeposited(uint256,address,uint256)",
@@ -256,6 +260,8 @@ impl ChainListener {
                     self.handle_batch_config_promoted(&log).await;
                 } else if *topic0 == topics.player_joined {
                     self.handle_player_joined(&log).await;
+                } else if *topic0 == topics.bitmap_updated {
+                    self.handle_bitmap_updated(&log).await;
                 } else if *topic0 == topics.player_deposited {
                     self.handle_player_deposited(&log).await;
                 } else if *topic0 == topics.rewards_claimed {
@@ -682,6 +688,56 @@ impl ChainListener {
             player = %player,
             stake_per_tick = %stake_per_tick,
             "PlayerJoined"
+        );
+    }
+
+    /// Handle `BitmapUpdated(uint256 indexed batchId, address indexed player, bytes32 newBitmapHash, bytes32 configHash)`
+    async fn handle_bitmap_updated(&self, log: &Log) {
+        let batch_id = match extract_indexed_u64(log, 1) {
+            Some(v) => v,
+            None => {
+                warn!("BitmapUpdated: missing batchId topic");
+                return;
+            }
+        };
+        let player = match extract_indexed_address(log, 2) {
+            Some(v) => v,
+            None => {
+                warn!(batch_id, "BitmapUpdated: missing player topic");
+                return;
+            }
+        };
+
+        // Data: newBitmapHash (bytes32) + configHash (bytes32) = 64 bytes
+        if log.data.len() < 64 {
+            warn!(batch_id, player = %player, "BitmapUpdated: data too short");
+            return;
+        }
+        let new_bitmap_hash = H256::from_slice(&log.data[0..32]);
+
+        // 1. Update in-memory scheduler
+        if let Err(e) = self.scheduler.on_bitmap_updated(batch_id, player, new_bitmap_hash).await {
+            warn!(batch_id, player = %player, error = %e, "BitmapUpdated: scheduler update failed");
+        }
+
+        // 2. Update Postgres
+        if let Err(e) = sqlx::query(
+            "UPDATE vision_positions SET bitmap_hash = $1 WHERE batch_id = $2 AND player = $3"
+        )
+        .bind(format!("{:?}", new_bitmap_hash))
+        .bind(batch_id as i64)
+        .bind(format!("{:?}", player))
+        .execute(&self.pool)
+        .await
+        {
+            warn!(batch_id, player = %player, error = %e, "BitmapUpdated: Postgres update failed");
+        }
+
+        info!(
+            batch_id,
+            player = %player,
+            new_bitmap_hash = %new_bitmap_hash,
+            "BitmapUpdated"
         );
     }
 

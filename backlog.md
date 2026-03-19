@@ -1,5 +1,14 @@
 # Design Decision Backlog
 
+## Session: 20260319-p3x9 (Vision poisoned positions + P2P balance proof aggregation)
+
+- [DECISION] Root cause of signer_bitmap=4 (single oracle): `key_registry: None` was passed to `oracle::vision::engine::run()` in main.rs. The aggregation task received peer proofs but discarded them because it had no registry to verify BLS keys. One-line fix: pass `components.consensus.keys.key_registry` as `Arc<dyn KeyRegistry>`.
+- [DECISION] `forceWithdraw` in Vision.sol requires BLS aggregation (same threshold as `withdraw`) — not a governance bypass. No admin path without BLS proof exists in the contract.
+- [DECISION] Poisoned positions (bitmapHash=bytes32(0)) ARE recoverable via `updateBitmap(batchId, bytes32(0), newRealHash)` — the contract allows replacing null hash. Tracker was wrong to mark them unrecoverable.
+- [DECISION] Chain listener lacked `BitmapUpdated` event handler. Added `on_bitmap_updated` to TickScheduler, handler to ChainListener. Without this, `submit_bitmap` oracle API rejects bitmaps after updateBitmap because cached hash is stale.
+- [DECISION] Recovery flow order: (1) deploy oracle fix, restart oracles (enables BLS aggregation); (2) run `scripts/recover-poisoned-positions.py` per-bot to updateBitmap on-chain + submit to oracle; (3) after next tick resolves, balances appear, bots can withdraw.
+
+
 ## Session: 20260319-q8m1 (On-chain sources missing from recommended configs)
 
 - [DECISION] BatchEngine now falls back to DB history then static file for sources with no live data. Three-tier: live → last DB config → vision-recommended-configs.json. All on-chain sources always appear in /batches/recommended.
