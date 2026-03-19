@@ -118,6 +118,23 @@ export function HomeClient() {
     itpId: string; name: string; holdings: { symbol: string; weight: number }[]
   } | null>(null)
 
+  const sidebarLightRef = useRef<HTMLDivElement>(null)
+
+  const handleSidebarMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    if (reduced || !sidebarLightRef.current) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    sidebarLightRef.current.style.background =
+      `radial-gradient(300px circle at ${x}px ${y}px, rgba(255,255,255,0.06), transparent 70%)`
+    sidebarLightRef.current.style.opacity = '1'
+  }, [reduced])
+
+  const handleSidebarMouseLeave = useCallback(() => {
+    if (!sidebarLightRef.current) return
+    sidebarLightRef.current.style.opacity = '0'
+  }, [])
+
   useSectionTimeTracker(ALL_SECTION_IDS)
 
   useEffect(() => {
@@ -175,12 +192,22 @@ export function HomeClient() {
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* ── Sidebar — desktop ── */}
         <LayoutGroup id="nav-desktop">
-          <aside className="hidden lg:flex flex-col w-[240px] shrink-0 bg-zinc-950 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-64px)] select-none">
-            <nav className="flex-1 pt-6 pb-4 flex flex-col">
+          <aside
+            onMouseMove={handleSidebarMouseMove}
+            onMouseLeave={handleSidebarMouseLeave}
+            className="hidden lg:flex flex-col w-[240px] shrink-0 bg-zinc-950 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-64px)] select-none overflow-hidden"
+          >
+            {/* ── Cursor-tracked ambient light ── */}
+            <div
+              ref={sidebarLightRef}
+              className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none z-0"
+            />
+
+            <nav className="relative z-10 flex-1 pt-6 pb-4 flex flex-col">
               {NAV_GROUPS.map((group, gi) => (
                 <div key={group.label} className={gi > 0 ? 'mt-2' : ''}>
-                  {/* Group label */}
-                  <div className="px-6 mb-2">
+                  {/* Group label — aligned with icon column */}
+                  <div className="pl-7 pr-6 mb-2">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/20">
                       {group.label}
                     </span>
@@ -205,7 +232,7 @@ export function HomeClient() {
                           {isActive && (
                             <motion.div
                               layoutId="nav-blob"
-                              className="absolute inset-0 rounded bg-white/[0.07]"
+                              className="absolute inset-0 rounded bg-white/[0.07] shadow-[0_0_24px_-6px_rgba(0,163,108,0.2)]"
                               transition={reduced ? INSTANT : SPRING_BLOB}
                               style={{ originX: 0.5, originY: 0.5 }}
                             />
@@ -215,12 +242,12 @@ export function HomeClient() {
                           {isActive && (
                             <motion.span
                               layoutId="nav-accent"
-                              className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-full bg-[#00A36C]"
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-full bg-[#00A36C] shadow-[0_0_12px_2px_rgba(0,163,108,0.35)]"
                               transition={reduced ? INSTANT : SPRING_ACCENT}
                             />
                           )}
 
-                          <span className={`relative z-10 shrink-0 transition-colors duration-200 ${
+                          <span className={`relative z-10 shrink-0 w-4 h-4 flex items-center justify-center transition-colors duration-200 ${
                             isActive ? 'text-white' : 'text-white/25 group-hover:text-white/50'
                           }`}>
                             {Icon && <Icon active={isActive} />}
@@ -240,7 +267,7 @@ export function HomeClient() {
             </nav>
 
             {/* Bottom */}
-            <div className="px-6 py-4 border-t border-white/[0.06]">
+            <div className="relative z-10 px-6 py-4 border-t border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00A36C]" />
                 <span className="text-[10px] font-mono text-white/30 tracking-wide">Index L3</span>
@@ -249,10 +276,10 @@ export function HomeClient() {
           </aside>
         </LayoutGroup>
 
-        {/* ── Mobile bottom bar ── */}
+        {/* ── Mobile bottom bar — glass slider ── */}
         <LayoutGroup id="nav-mobile">
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-sm border-t border-white/[0.06] safe-area-bottom">
-            <div className="flex items-center justify-around h-[56px] px-1">
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-2xl border-t border-white/30 shadow-[0_-4px_30px_rgba(0,0,0,0.08)] safe-area-bottom">
+            <div className="flex items-center overflow-x-auto scrollbar-hide h-[60px] px-2 gap-1 snap-x snap-mandatory">
               {NAV_GROUPS.flatMap(g => g.items).map((item) => {
                 const isActive = activeSection === item.id
                 const Icon = ICON_MAP[item.id]
@@ -260,20 +287,26 @@ export function HomeClient() {
                   <button
                     key={item.id}
                     onClick={() => switchTo(item.id)}
-                    className={`relative flex flex-col items-center justify-center gap-[3px] px-1 py-1 min-w-0 transition-colors duration-200 ${
-                      isActive ? 'text-white' : 'text-white/25'
+                    className={`relative flex flex-col items-center justify-center gap-[3px] min-w-[64px] px-3 py-1.5 rounded-xl snap-center transition-all duration-200 ${
+                      isActive
+                        ? 'text-black'
+                        : 'text-black/30 active:scale-95'
                     }`}
                   >
-                    {/* ── Sliding indicator ── */}
+                    {/* ── Glass pill behind active tab ── */}
                     {isActive && (
                       <motion.div
-                        layoutId="mobile-dot"
-                        className="absolute -top-px left-2 right-2 h-[2px] rounded-full bg-[#00A36C]"
+                        layoutId="mobile-pill"
+                        className="absolute inset-0 rounded-xl bg-black/[0.06] border border-black/[0.08]"
                         transition={reduced ? INSTANT : SPRING_ACCENT}
                       />
                     )}
-                    {Icon && <Icon active={isActive} />}
-                    <span className={`text-[8px] font-semibold truncate ${isActive ? 'text-white' : 'text-white/30'}`}>
+                    <span className="relative z-10">
+                      {Icon && <Icon active={isActive} />}
+                    </span>
+                    <span className={`relative z-10 text-[9px] font-semibold truncate max-w-[60px] ${
+                      isActive ? 'text-black' : 'text-black/35'
+                    }`}>
                       {item.label}
                     </span>
                   </button>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, LayoutGroup } from 'framer-motion'
 import { useExplorerHealth, type TimeRange } from '@/hooks/useExplorerHealth'
 import { ExplorerSummaryBar } from '@/components/domain/explorer/ExplorerSummaryBar'
 import { ConsensusSection } from '@/components/domain/explorer/ConsensusSection'
@@ -14,6 +15,8 @@ import { SystemHealthSection } from '@/components/domain/explorer/SystemHealthSe
 import { ChainGasSection } from '@/components/domain/explorer/ChainGasSection'
 import { SourcesExplorerSection } from '@/components/domain/explorer/SourcesExplorerSection'
 import { SystemExplorerSection } from '@/components/domain/explorer/SystemExplorerSection'
+import { springs } from '@/components/ui/spring'
+import { usePrefersReducedMotion } from '@/hooks/useMediaQueries'
 
 const TABS = [
   { id: 'consensus', label: 'Consensus' },
@@ -31,26 +34,25 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id']
 
-// Tabs that use their own data sources (not explorer health snapshots)
 const STANDALONE_TABS = new Set<TabId>(['sources', 'system'])
-
 const RANGES: TimeRange[] = ['1h', '6h', '24h', '7d', '30d']
 
 export default function ExplorerPageClient() {
   const { snapshots, latest, loading, error, range, setRange, refresh } = useExplorerHealth()
   const [activeTab, setActiveTab] = useState<TabId>('consensus')
+  const reduced = usePrefersReducedMotion()
 
   const isStandalone = STANDALONE_TABS.has(activeTab)
 
   return (
-    <main className="min-h-screen bg-page">
-      <div className="max-w-site-wide mx-auto px-4 md:px-8">
+    <main className="min-h-screen explorer-dark-bg explorer-dark">
+      <div className="relative max-w-site-wide mx-auto px-4 md:px-8">
         {/* Header */}
         <div className="pt-10 pb-4">
-          <p className="text-label font-semibold tracking-[0.08em] uppercase text-text-muted mb-1.5">
+          <p className="text-label font-semibold tracking-[0.08em] uppercase text-white/40 mb-1.5">
             Network
           </p>
-          <h1 className="text-display font-black tracking-tight text-black leading-[1.1]">
+          <h1 className="text-display font-black tracking-tight text-white leading-[1.1]">
             Explorer
           </h1>
         </div>
@@ -58,22 +60,32 @@ export default function ExplorerPageClient() {
         <ExplorerSummaryBar latest={latest} loading={loading} />
 
         {/* Tab bar + time range */}
-        <div className="flex items-center justify-between border-b border-border-light mt-4">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3.5 py-3 text-caption font-semibold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-black text-black'
-                    : 'border-transparent text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center justify-between border-b border-white/[0.08] mt-4">
+          <LayoutGroup id="explorer-tabs">
+            <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative px-3.5 py-3 text-caption font-semibold transition-colors whitespace-nowrap ${
+                      isActive ? 'text-white' : 'text-white/30 hover:text-white/60'
+                    }`}
+                  >
+                    {tab.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="explorer-tab-indicator"
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-white"
+                        transition={reduced ? { duration: 0 } : springs.indicator}
+                      />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </LayoutGroup>
           {!isStandalone && (
             <div className="flex items-center gap-1.5 shrink-0 ml-4">
               {RANGES.map((r) => (
@@ -82,8 +94,8 @@ export default function ExplorerPageClient() {
                   onClick={() => setRange(r)}
                   className={`px-2.5 py-1 text-label font-bold rounded transition-colors ${
                     range === r
-                      ? 'bg-black text-white'
-                      : 'text-text-muted hover:text-black hover:bg-gray-50'
+                      ? 'bg-white/[0.12] text-white'
+                      : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
                   }`}
                 >
                   {r}
@@ -92,7 +104,7 @@ export default function ExplorerPageClient() {
               <button
                 onClick={refresh}
                 disabled={loading}
-                className="ml-2 px-3 py-1 text-label font-bold text-text-muted hover:text-black disabled:opacity-50 transition-colors"
+                className="ml-2 px-3 py-1 text-label font-bold text-white/30 hover:text-white/60 disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Loading...' : 'Refresh'}
               </button>
@@ -102,9 +114,9 @@ export default function ExplorerPageClient() {
 
         {/* Error */}
         {error && !isStandalone && (
-          <div className="mt-4 border border-color-down/50 bg-surface-down rounded-card px-4 py-3">
-            <p className="text-color-down text-caption font-semibold">{error}</p>
-            <button onClick={refresh} className="mt-2 text-caption font-bold text-color-info underline">
+          <div className="mt-4 border border-red-500/30 bg-red-500/10 backdrop-blur-sm rounded-xl px-4 py-3">
+            <p className="text-red-400 text-caption font-semibold">{error}</p>
+            <button onClick={refresh} className="mt-2 text-caption font-bold text-blue-400 underline hover:no-underline">
               Retry
             </button>
           </div>

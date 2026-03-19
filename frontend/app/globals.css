@@ -841,6 +841,116 @@ input[type="number"] {
   animation: fluid-drawer-entrance 0.4s var(--spring) both;
 }
 
+/* ── EXPLORER DARK GLASS ── */
+
+/* Dark gradient background with subtle radial accents */
+.explorer-dark-bg {
+  background: linear-gradient(145deg, #09090f 0%, #111118 50%, #0c0c14 100%);
+  position: relative;
+}
+.explorer-dark-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 30%, rgba(34, 197, 94, 0.03) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 70%, rgba(59, 130, 246, 0.025) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Glass card cascade entrance — stagger via --i */
+@keyframes explorer-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    filter: blur(6px);
+  }
+}
+.explorer-glass-card {
+  animation: explorer-card-in 0.6s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ── Dark theme color inversions ── */
+.explorer-dark .text-black { color: rgba(255, 255, 255, 0.92); }
+.explorer-dark .text-text-muted { color: rgba(255, 255, 255, 0.4); }
+.explorer-dark .text-text-secondary { color: rgba(255, 255, 255, 0.55); }
+.explorer-dark .text-text-primary { color: rgba(255, 255, 255, 0.9); }
+
+/* Background & border inversions */
+.explorer-dark .bg-white { background-color: rgba(255, 255, 255, 0.04); }
+.explorer-dark [class*="bg-black/"] { background-color: rgba(255, 255, 255, 0.06); }
+.explorer-dark .bg-surface { background-color: rgba(255, 255, 255, 0.03); }
+.explorer-dark .bg-gray-100 { background-color: rgba(255, 255, 255, 0.06); }
+.explorer-dark .border-border-light { border-color: rgba(255, 255, 255, 0.08); }
+.explorer-dark .border-black { border-color: rgba(255, 255, 255, 0.2); }
+.explorer-dark .hover\:bg-surface:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+
+/* ── Recharts dark theme — universal SVG overrides ── */
+
+/* Fills: black → luminous white */
+.explorer-dark [fill="#000"]:not(text) { fill: rgba(255, 255, 255, 0.6); }
+.explorer-dark [fill="#888"]:not(text) { fill: rgba(255, 255, 255, 0.35); }
+.explorer-dark [fill="#888888"]:not(text) { fill: rgba(255, 255, 255, 0.35); }
+
+/* Area fills need opacity reset since original opacity was tuned for black-on-white */
+.explorer-dark .recharts-area-area[fill="#000"],
+.explorer-dark .recharts-area-area[fill="#000000"] {
+  fill: rgba(255, 255, 255, 0.25) !important;
+  fill-opacity: 1 !important;
+}
+
+/* SVG fills — also handle without class name, using path[fill] */
+.explorer-dark path[fill="#000"][fill-opacity] {
+  fill: rgba(255, 255, 255, 0.25) !important;
+  fill-opacity: 1 !important;
+}
+
+/* Strokes */
+.explorer-dark [stroke="#000"]:not(text) { stroke: rgba(255, 255, 255, 0.55); }
+.explorer-dark [stroke="#ccc"]:not(text) { stroke: rgba(255, 255, 255, 0.08); }
+.explorer-dark [stroke="#6b7280"]:not(text) { stroke: rgba(255, 255, 255, 0.4); }
+
+/* Grid lines */
+.explorer-dark .recharts-cartesian-grid line { stroke: rgba(255, 255, 255, 0.05); }
+
+/* Axis tick text */
+.explorer-dark .recharts-text { fill: rgba(255, 255, 255, 0.4); }
+.explorer-dark text[fill="#999"],
+.explorer-dark text[fill="#888"],
+.explorer-dark text[fill="#666"],
+.explorer-dark text[fill="#ccc"] {
+  fill: rgba(255, 255, 255, 0.4);
+}
+
+/* Tooltip glass */
+.explorer-dark .recharts-default-tooltip {
+  background: rgba(12, 12, 18, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+.explorer-dark .recharts-tooltip-label { color: rgba(255, 255, 255, 0.45) !important; }
+.explorer-dark .recharts-tooltip-item { color: rgba(255, 255, 255, 0.8) !important; }
+
+/* Table dark */
+.explorer-dark table { color: rgba(255, 255, 255, 0.8); }
+.explorer-dark th { color: rgba(255, 255, 255, 0.45); }
+.explorer-dark td { color: rgba(255, 255, 255, 0.7); }
+
+/* Section bar dark */
+.explorer-dark .section-bar {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorer-glass-card { animation: none; opacity: 1; transform: none; filter: none; }
+}
+
 /* ── RESPONSIVE — mobile overrides ── */
 @media (max-width: 767px) {
   tr[data-wallet] { will-change: auto; }

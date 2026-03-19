@@ -10,11 +10,11 @@ interface ExplorerSummaryBarProps {
 export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="bg-white border border-border-light rounded-card p-3 animate-pulse">
-            <div className="h-3 bg-gray-100 rounded w-20 mb-2" />
-            <div className="h-5 bg-gray-100 rounded w-12" />
+          <div key={i} className="explorer-glass-card bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-3">
+            <div className="h-3 bg-white/[0.06] rounded w-20 mb-2 animate-pulse" />
+            <div className="h-5 bg-white/[0.06] rounded w-12 animate-pulse" />
           </div>
         ))}
       </div>
@@ -23,55 +23,66 @@ export function ExplorerSummaryBar({ latest, loading }: ExplorerSummaryBarProps)
 
   if (!latest) {
     return (
-      <div className="bg-white border border-border-light rounded-card p-4 text-center">
-        <p className="text-caption text-text-muted">No data available yet</p>
+      <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-4 text-center">
+        <p className="text-caption text-white/40">No data available yet</p>
       </div>
     )
   }
 
-  const items = [
+  const items: { label: string; value: string; color: string; glow?: string }[] = [
     {
       label: 'Network',
       value: latest.worst_status === 'healthy' ? 'Healthy' : latest.worst_status === 'degraded' ? 'Degraded' : 'Unhealthy',
-      color: latest.worst_status === 'healthy' ? 'text-color-up' : latest.worst_status === 'degraded' ? 'text-yellow-600' : 'text-color-down',
+      color: latest.worst_status === 'healthy' ? 'text-emerald-400' : latest.worst_status === 'degraded' ? 'text-amber-400' : 'text-red-400',
+      glow: latest.worst_status === 'healthy'
+        ? '0 0 14px rgba(52,211,153,0.35)'
+        : latest.worst_status === 'degraded'
+          ? '0 0 14px rgba(251,191,36,0.35)'
+          : '0 0 14px rgba(248,113,113,0.35)',
     },
     {
       label: 'Quorum',
       value: latest.quorum_met ? 'Met' : 'Lost',
-      color: latest.quorum_met ? 'text-color-up' : 'text-color-down',
+      color: latest.quorum_met ? 'text-emerald-400' : 'text-red-400',
+      glow: latest.quorum_met ? '0 0 14px rgba(52,211,153,0.35)' : '0 0 14px rgba(248,113,113,0.35)',
     },
     {
       label: 'Consensus Rounds',
-      value: latest.consensus_rounds_total > 0
-        ? latest.consensus_rounds_total.toLocaleString()
-        : '\u2014',
-      color: 'text-black',
+      value: latest.consensus_rounds_total > 0 ? latest.consensus_rounds_total.toLocaleString() : '\u2014',
+      color: 'text-white',
     },
     {
       label: 'Avg Consensus',
       value: `${latest.avg_consensus_time_ms}ms`,
-      color: latest.avg_consensus_time_ms > 2000 ? 'text-color-down' : 'text-black',
+      color: latest.avg_consensus_time_ms > 2000 ? 'text-red-400' : 'text-white',
+      glow: latest.avg_consensus_time_ms > 2000 ? '0 0 14px rgba(248,113,113,0.35)' : undefined,
     },
     {
       label: 'Pending Orders',
       value: latest.pending_order_count.toString(),
-      color: 'text-black',
+      color: 'text-white',
     },
     {
       label: 'Connected Peers',
       value: latest.total_peers.toString(),
-      color: 'text-black',
+      color: 'text-white',
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 stagger">
       {items.map((item) => (
-        <div key={item.label} className="bg-white border border-border-light rounded-card p-3">
-          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-text-muted mb-1">
+        <div
+          key={item.label}
+          className="explorer-glass-card bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-xl p-3 hover:border-white/[0.15] transition-[border-color] duration-300"
+        >
+          <p className="text-micro font-semibold tracking-[0.08em] uppercase text-white/40 mb-1">
             {item.label}
           </p>
-          <p className={`text-heading font-black tracking-tight ${item.color}`}>
+          <p
+            className={`text-heading font-black tracking-tight ${item.color}`}
+            style={item.glow ? { textShadow: item.glow } : undefined}
+          >
             {item.value}
           </p>
         </div>
