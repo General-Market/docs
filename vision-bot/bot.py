@@ -143,10 +143,13 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
     # Re-submit bitmaps for all active positions (survives oracle restarts)
     for bid in list(tracker.active_ids):
         pos = tracker.positions.get(bid)
-        if pos and pos.get("bitmap") and pos.get("bitmap_hash"):
+        if pos and pos.get("bitmap"):
+            bm = pos["bitmap"]
+            bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
+            pos["bitmap_hash"] = bm_hash
             submit_bitmap(
                 oracle_urls, executor.bot_addr, bid,
-                pos["bitmap"], pos["bitmap_hash"], retries=1,
+                bm, bm_hash, retries=1,
             )
 
     # Round-based mode: poll oracle for active rounds, join new ones
