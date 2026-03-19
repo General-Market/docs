@@ -228,14 +228,25 @@ impl ConfigCache {
         // This handles both zero config hashes and stale hashes (configs
         // regenerated each tick, so on-chain hash may not match data-node).
         //
-        // On-chain source_id is keccak256(source_name), so we hash each
-        // recommended batch's source_id string and compare.
+        // On-chain source_id is keccak256(name + "_" + version) where version
+        // is typically "v1" or "v2" (set by BATCH_VERSION in the deploy script).
+        // The data-node's recommended config has the raw source name (e.g. "crypto").
+        // We try keccak256(name), keccak256(name + "_v1"), keccak256(name + "_v2"), etc.
         if let Some(sid_h256) = source_id_h256 {
             if !sid_h256.is_zero() {
                 let recommended = batch_config_orchestrator::fetch_recommended(data_node_url).await?;
-                // Match by keccak256(source_name) == on-chain source_id hash
                 if let Some(batch) = recommended.into_iter().find(|b| {
-                    H256::from(keccak256(b.source_id.as_bytes())) == *sid_h256
+                    // Try bare name first, then versioned suffixes
+                    if H256::from(keccak256(b.source_id.as_bytes())) == *sid_h256 {
+                        return true;
+                    }
+                    for v in 1..=5u8 {
+                        let versioned = format!("{}_v{}", b.source_id, v);
+                        if H256::from(keccak256(versioned.as_bytes())) == *sid_h256 {
+                            return true;
+                        }
+                    }
+                    false
                 }) {
                     let source_id = batch.source_id.clone();
                     let market_configs = Self::parse_market_configs(&batch);

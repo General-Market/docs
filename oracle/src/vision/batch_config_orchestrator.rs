@@ -47,6 +47,7 @@ pub struct RecommendedBatch {
     pub tick_duration_secs: u64,
     pub lock_offset_secs: u64,
     pub markets: Vec<RecommendedMarket>,
+    #[serde(default)]
     pub created_at: String,
 }
 
