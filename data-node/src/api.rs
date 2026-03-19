@@ -19,6 +19,7 @@ use tower_http::compression::CompressionLayer;
 use tower_http::cors::{Any, CorsLayer};
 
 use common::BitgetReadOnlyClient;
+use common::runtime::config::SharedConfig;
 
 use crate::collector::CollectorState;
 use crate::db;
@@ -291,6 +292,8 @@ pub struct AppState {
     pub settlement_provider: Arc<Provider<Http>>,
     pub deployment: serde_json::Value,
     pub morpho_deployment: serde_json::Value,
+    /// Hot-reloadable config — readers call `.load()` for lock-free access.
+    pub runtime_config: SharedConfig,
     pub logos_dir: std::path::PathBuf,
     /// Global simulation data cache — loaded at startup, can be reloaded via /sim/reload-cache.
     pub sim_cache: Arc<RwLock<Arc<simulation::SimDataCache>>>,

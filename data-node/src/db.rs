@@ -12,63 +12,91 @@ pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
         .await
 }
 
-pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let m001 = include_str!("../migrations/001_create_prices.sql");
-    sqlx::raw_sql(m001).execute(pool).await?;
-    let m002 = include_str!("../migrations/002_create_itp_snapshots.sql");
-    sqlx::raw_sql(m002).execute(pool).await?;
-    let m003 = include_str!("../migrations/003_add_supply_weights.sql");
-    sqlx::raw_sql(m003).execute(pool).await?;
-    let m004 = include_str!("../migrations/004_create_trades.sql");
-    sqlx::raw_sql(m004).execute(pool).await?;
-    let m005 = include_str!("../migrations/005_create_klines.sql");
-    sqlx::raw_sql(m005).execute(pool).await?;
-    let m006 = include_str!("../migrations/006_create_liquidity.sql");
-    sqlx::raw_sql(m006).execute(pool).await?;
-    let m007 = include_str!("../migrations/007_create_coingecko_market_caps.sql");
-    sqlx::raw_sql(m007).execute(pool).await?;
-    let m008 = include_str!("../migrations/008_create_coingecko_categories.sql");
-    sqlx::raw_sql(m008).execute(pool).await?;
-    let m009 = include_str!("../migrations/009_create_bitget_listings.sql");
-    sqlx::raw_sql(m009).execute(pool).await?;
-    let m010 = include_str!("../migrations/010_create_simulations.sql");
-    sqlx::raw_sql(m010).execute(pool).await?;
-    let m011 = include_str!("../migrations/011_add_price_history_index.sql");
-    sqlx::raw_sql(m011).execute(pool).await?;
-    let m012 = include_str!("../migrations/012_add_covering_index.sql");
-    sqlx::raw_sql(m012).execute(pool).await?;
-    let m013 = include_str!("../migrations/013_add_sim_fk_indexes.sql");
-    sqlx::raw_sql(m013).execute(pool).await?;
-    let m014 = include_str!("../migrations/014_add_symbol_lookup_index.sql");
-    sqlx::raw_sql(m014).execute(pool).await?;
-    let m015 = include_str!("../migrations/015_create_defillama_protocols.sql");
-    sqlx::raw_sql(m015).execute(pool).await?;
-    let m016 = include_str!("../migrations/016_create_defillama_metrics.sql");
-    sqlx::raw_sql(m016).execute(pool).await?;
-    let m017 = include_str!("../migrations/017_create_defillama_raises.sql");
-    sqlx::raw_sql(m017).execute(pool).await?;
-    let m018 = include_str!("../migrations/018_add_defi_history_covering.sql");
-    sqlx::raw_sql(m018).execute(pool).await?;
-    let m019 = include_str!("../migrations/019_create_fng_index.sql");
-    sqlx::raw_sql(m019).execute(pool).await?;
-    let m020 = include_str!("../migrations/020_create_github_metrics.sql");
-    sqlx::raw_sql(m020).execute(pool).await?;
-    let m021 = include_str!("../migrations/021_create_market_sources.sql");
-    sqlx::raw_sql(m021).execute(pool).await?;
-    let m022 = include_str!("../migrations/022_widen_market_symbol.sql");
-    sqlx::raw_sql(m022).execute(pool).await?;
-    let m023 = include_str!("../migrations/023_create_collector_cursors.sql");
-    sqlx::raw_sql(m023).execute(pool).await?;
-    let m024 = include_str!("../migrations/024_create_batch_tables.sql");
-    sqlx::raw_sql(m024).execute(pool).await?;
-    let m025 = include_str!("../migrations/025_create_market_prices_latest.sql");
-    sqlx::raw_sql(m025).execute(pool).await?;
-    let m026 = include_str!("../migrations/026_create_oracle_health_snapshots.sql");
-    sqlx::raw_sql(m026).execute(pool).await?;
-    let m027 = include_str!("../migrations/027_scaling_indexes.sql");
-    sqlx::raw_sql(m027).execute(pool).await?;
-    info!("Database migrations applied");
+/// Existing migration names that were applied by the old include_str! runner.
+/// Seeded into `_applied_migrations` so the common file-based runner skips them.
+const LEGACY_MIGRATIONS: &[&str] = &[
+    "001_create_prices.sql",
+    "002_create_itp_snapshots.sql",
+    "003_add_supply_weights.sql",
+    "004_create_trades.sql",
+    "005_create_klines.sql",
+    "006_create_liquidity.sql",
+    "007_create_coingecko_market_caps.sql",
+    "008_create_coingecko_categories.sql",
+    "009_create_bitget_listings.sql",
+    "010_create_simulations.sql",
+    "011_add_price_history_index.sql",
+    "012_add_covering_index.sql",
+    "013_add_sim_fk_indexes.sql",
+    "014_add_symbol_lookup_index.sql",
+    "015_create_defillama_protocols.sql",
+    "016_create_defillama_metrics.sql",
+    "017_create_defillama_raises.sql",
+    "018_add_defi_history_covering.sql",
+    "019_create_fng_index.sql",
+    "020_create_github_metrics.sql",
+    "021_create_market_sources.sql",
+    "022_widen_market_symbol.sql",
+    "023_create_collector_cursors.sql",
+    "024_create_batch_tables.sql",
+    "025_create_market_prices_latest.sql",
+    "026_create_oracle_health_snapshots.sql",
+    "027_scaling_indexes.sql",
+];
+
+/// Run migrations using the common file-based runner. On first run, seeds the
+/// `_applied_migrations` table with legacy migration names so they don't re-apply.
+pub async fn run_migrations_with_seed(
+    pool: &PgPool,
+    migrations_dir: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::path::Path;
+
+    // Ensure tracking table exists before seeding
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS _applied_migrations (
+            name TEXT PRIMARY KEY,
+            applied_at TIMESTAMPTZ DEFAULT NOW()
+        )"
+    ).execute(pool).await?;
+
+    // Seed legacy migration names (idempotent via ON CONFLICT)
+    for name in LEGACY_MIGRATIONS {
+        sqlx::query("INSERT INTO _applied_migrations (name) VALUES ($1) ON CONFLICT DO NOTHING")
+            .bind(name)
+            .execute(pool)
+            .await?;
+    }
+
+    // Resolve migrations directory — try CWD-relative, then data-node/ prefix
+    let dir = Path::new(migrations_dir);
+    let resolved = if dir.exists() {
+        dir.to_path_buf()
+    } else {
+        // When running from project root, try without the crate prefix
+        let fallback = Path::new("migrations");
+        if fallback.exists() {
+            fallback.to_path_buf()
+        } else {
+            info!("No migrations directory found at {migrations_dir} or ./migrations — skipping");
+            return Ok(());
+        }
+    };
+
+    let count = common::runtime::migrate::run_migrations(pool, &resolved).await
+        .map_err(|e| format!("Migration runner failed: {e}"))?;
+    if count > 0 {
+        info!("Applied {count} new migration(s) via common runner");
+    }
     Ok(())
+}
+
+/// Backward-compatible entry point for subcommands (backfill, cg_backfill, etc.).
+/// Delegates to the seeded file-based runner.
+pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
+    run_migrations_with_seed(pool, "data-node/migrations")
+        .await
+        .map_err(|e| sqlx::Error::Configuration(e.to_string().into()))
 }
 
 /// Read the last processed block for a collector. Returns 0 if no row exists.

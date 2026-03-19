@@ -40,12 +40,18 @@ mod sse_limiter;
 
 use std::collections::HashSet;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use clap::Parser;
 use ethers::prelude::*;
 use tracing::info;
+
+use common::runtime::config::{RuntimeConfig, SharedConfig, shared};
+use common::runtime::admin::admin_router;
+use common::runtime::watcher::DeploymentWatcher;
 
 use crate::api::AppState;
 use crate::collector::CollectorState;
@@ -80,9 +86,31 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
 
     info!("data-node starting (serve mode)");
 
+    // ── Load RuntimeConfig ──────────────────────────────────────────────
+    let deployment_path = PathBuf::from(&args.deployment_file);
+    let index_address = args.index_address.as_ref().and_then(|s| s.parse().ok());
+    let runtime_config = RuntimeConfig::load(
+        &deployment_path,
+        &args.rpc_url,
+        index_address,
+    ).await.map_err(|e| format!("Failed to load RuntimeConfig: {e}"))?;
+    info!(
+        nonce = runtime_config.deployment_nonce,
+        contracts = runtime_config.deployment.contracts.len(),
+        "RuntimeConfig loaded"
+    );
+
+    // Startup validation (warnings only — don't block boot)
+    let errors = common::runtime::validate::StartupValidator::validate(&runtime_config).await;
+    for e in &errors {
+        tracing::warn!("Startup validation: {e}");
+    }
+
+    let shared_config: SharedConfig = shared(runtime_config);
+
     // Database
     let pool = db::create_pool(&args.database_url).await?;
-    db::run_migrations(&pool).await?;
+    db::run_migrations_with_seed(&pool, "data-node/migrations").await?;
     info!("Database connected and migrated");
 
     // Backfill market_prices_latest from market_prices if cache table is empty
@@ -119,6 +147,57 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         db::reset_collector_cursors(&pool)
             .await
             .expect("cursor reset failed");
+    }
+
+    // ── Spawn DeploymentWatcher (hot-reload on file change or nonce bump) ──
+    {
+        let watcher_config = shared_config.clone();
+        let flush_pool = pool.clone();
+        let flushing = Arc::new(AtomicBool::new(false));
+        let flush_flag = flushing.clone();
+
+        DeploymentWatcher::new(watcher_config, deployment_path.clone())
+            .on_nonce_change(move |old, new| {
+                tracing::warn!("Deployment nonce {old} -> {new}. Flushing data-node state.");
+                let pool = flush_pool.clone();
+                let flushing_flag = flush_flag.clone();
+
+                // Set flushing BEFORE spawn to close the race window
+                flushing_flag.store(true, Ordering::SeqCst);
+
+                tokio::spawn(async move {
+                    // Panic guard — clears flushing flag even on panic
+                    struct FlushGuard(Arc<AtomicBool>);
+                    impl Drop for FlushGuard {
+                        fn drop(&mut self) {
+                            self.0.store(false, Ordering::SeqCst);
+                        }
+                    }
+                    let _guard = FlushGuard(flushing_flag);
+
+                    let start = std::time::Instant::now();
+
+                    // Truncate contract-dependent tables
+                    let tables = ["itp_snapshots", "trades", "user_shares", "market_prices_latest"];
+                    for table in &tables {
+                        let sql = format!("TRUNCATE TABLE {table} CASCADE");
+                        if let Err(e) = sqlx::query(&sql).execute(&pool).await {
+                            tracing::error!("Flush: failed to truncate {table}: {e}");
+                        }
+                    }
+
+                    // Reset chain collector cursors so pollers restart from genesis
+                    if let Err(e) = crate::db::reset_collector_cursors(&pool).await {
+                        tracing::error!("Flush: failed to reset collector cursors: {e}");
+                    }
+
+                    let elapsed = start.elapsed();
+                    tracing::info!("Data-node flush complete (took {elapsed:?})");
+                });
+            })
+            .spawn();
+
+        info!("DeploymentWatcher spawned");
     }
 
     // Load global simulation data cache FIRST (before collectors steal pool connections).
@@ -485,8 +564,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("Treasury yield provider started");
     }
 
-    // 5. ECB (euro rates) — gated on ecb_enabled flag, schedule-aware
-    if args.ecb_enabled {
+    // 5. ECB (euro rates) — no API key, always on
+    {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
         let pw = price_writer.clone();
@@ -510,8 +589,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         info!("ECB euro rates provider started");
     }
 
-    // 5b. BoE (FX rates) — gated on boe_enabled flag, schedule-aware
-    if args.boe_enabled {
+    // 5b. BoE (FX rates) — no API key, always on
+    {
         let pool_c = pool.clone();
         let bh = broadcast_hub.clone();
         let pw = price_writer.clone();
@@ -2247,14 +2326,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         if args.treasury_api_key.as_ref().filter(|k| !k.trim().is_empty()).is_none() {
             tracker.record_not_started("bonds", "Missing --treasury-api-key");
         }
-        // ECB
-        if !args.ecb_enabled {
-            tracker.record_not_started("ecb", "ECB disabled (--ecb-enabled not set)");
-        }
-        // BoE
-        if !args.boe_enabled {
-            tracker.record_not_started("boe", "BoE disabled (--boe-enabled not set)");
-        }
+        // ECB and BoE are always-on (no API key needed)
         // EIA
         if args.eia_api_key.is_none() {
             tracker.record_not_started("eia", "Missing --eia-api-key");
@@ -2468,7 +2540,12 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         crate::chain_event_scanner::CHAIN_EVENT_CHANNEL_SIZE,
     );
 
-    // HTTP server
+    // HTTP server — read tuning params from SharedConfig
+    let cfg_snap = shared_config.load();
+    let sse_max = cfg_snap.sse_max_connections;
+    let sse_per_ip = cfg_snap.sse_per_ip_limit;
+    drop(cfg_snap);
+
     let oracle_url = std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string());
     let app_state = Arc::new(AppState {
         pool,
@@ -2483,6 +2560,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         logos_dir,
         sim_cache,
         chain_cache,
+        runtime_config: shared_config.clone(),
         admin_token: args.admin_token.clone().filter(|t| !t.is_empty()),
         sim_auth_token: args.sim_auth_token.clone().filter(|t| !t.is_empty()),
         cors_origins: args.cors_origin.clone(),
@@ -2500,7 +2578,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         snapshot_hmac_secret: args.snapshot_hmac_secret.clone().filter(|s| !s.is_empty()),
         chain_event_tx: chain_event_tx.clone(),
         source_registry,
-        sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(500, 10)),
+        sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(sse_max, sse_per_ip)),
     });
 
     // Spawn leaderboard precomputation (every 30s from shared Postgres)
@@ -2564,6 +2642,10 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     // Clone pool for explorer API before app_state is moved into the main router
     let explorer_pool = app_state.pool.clone();
     let mut app = api::router(app_state);
+
+    // Merge admin routes (hot-reload, config inspection, health, log-level)
+    let admin = admin_router(shared_config.clone(), args.admin_token.clone());
+    app = app.merge(admin);
 
     // Explorer API — only registered if token is configured (fail-closed)
     if let Some(ref token) = args.explorer_token {
