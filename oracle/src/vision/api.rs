@@ -1032,26 +1032,9 @@ async fn vision_leaderboard(
         }
         pg_candidates.push(string_to_bytes32_hex(source_id));
 
-        let in_clause = pg_candidates.iter()
-            .map(|c| format!("'{}'", c.replace('\'', "")))
-            .collect::<Vec<_>>()
-            .join(",");
-
-        let delta_count: i64 = sqlx::query_scalar(&format!(
-            "SELECT COUNT(*) FROM vision_player_tick_deltas td
-             JOIN vision_batches vb ON td.batch_id = vb.id
-             WHERE vb.source_id IN ({in_clause}) AND td.delta::numeric <> 0",
-            in_clause = in_clause
-        ))
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or(0);
-
-        if delta_count > 0 {
-            // Postgres has real data — use it (includes historical completed batches).
-            return leaderboard_from_postgres(&state.pool, Some(source_id), None).await;
-        }
-        // delta_count == 0: fall through to in-memory path below (source_filter will restrict it).
+        // Always use in-memory path for per-source — live balances are more accurate
+        // than Postgres tick deltas (which miss voided/refunded players).
+        // Fall through to the in-memory aggregation below; source_filter restricts it.
     }
 
     let include_rounds = query.include_rounds.unwrap_or(true);
