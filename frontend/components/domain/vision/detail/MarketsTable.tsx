@@ -70,10 +70,20 @@ function truncateMiddle(str: string, maxLen: number): string {
   return `${str.slice(0, half + 1)}...${str.slice(-half)}`
 }
 
+// Human-readable resolution type labels
+const RES_TYPE_DISPLAY: Record<string, string> = {
+  UP_0: 'Up/Dn', UP_30: 'Up 30bp', UP_X: 'Up X',
+  DOWN_0: 'Dn/Up', DOWN_30: 'Dn 30bp', DOWN_X: 'Dn X',
+  FLAT_0: 'Flat', FLAT_X: 'Flat X',
+  UP_300: 'Up 3%', UP_3000: 'Up 30%',
+  DOWN_300: 'Dn 3%', DOWN_3000: 'Dn 30%',
+}
+
 function resolutionBadge(resType: string | undefined) {
   if (!resType) {
     return <span className="text-[9px] text-text-muted">&mdash;</span>
   }
+  const label = RES_TYPE_DISPLAY[resType] ?? resType
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
   const isFlat = resType.startsWith('FLAT')
@@ -86,7 +96,7 @@ function resolutionBadge(resType: string | undefined) {
         : 'bg-gray-100 text-gray-600 border-gray-200'
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-[0.08em] border ${bg}`}>
-      {resType}
+      {label}
     </span>
   )
 }
@@ -477,9 +487,9 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
                     </div>
                   </div>
 
-                  {/* Resolution type */}
+                  {/* Resolution type — default to UP/DN (type 0) when config unavailable */}
                   <div className="text-center">
-                    {resolutionBadge(resType)}
+                    {resolutionBadge(resType ?? 'UP_0')}
                   </div>
 
                   {/* Value — momentum bar behind price */}
