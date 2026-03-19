@@ -124,27 +124,43 @@ h1, h2, h3, .type-display, .type-stat-value,
    20px for surfaces) and controlled opacity, this produces the
    macOS/iOS frosted glass effect. */
 
-/* Panels — modals, popovers, dropdowns */
+/* Panels — modals (nearly opaque, glass is a hint not a feature) */
 .glass-panel {
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   backdrop-filter: blur(40px) saturate(180%);
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.95);
   border: 0.5px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
 }
 .glass-panel-dark {
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   backdrop-filter: blur(40px) saturate(180%);
-  background: rgba(28, 28, 30, 0.78);
+  background: rgba(28, 28, 30, 0.95);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.04);
 }
 
-/* Overlays — behind modals and drawers */
+/* Popovers, dropdowns — lighter glass, more translucent than modals */
+.glass-popover {
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(255, 255, 255, 0.85);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.03);
+}
+.glass-popover-dark {
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(28, 28, 30, 0.85);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(255, 255, 255, 0.04);
+}
+
+/* Overlays — behind modals, dim + subtle blur */
 .glass-overlay {
-  background: rgba(0, 0, 0, 0.4);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
 }
 
 /* Surfaces — cards, inline panels, lighter glass */

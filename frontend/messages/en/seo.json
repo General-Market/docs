@@ -15,10 +15,10 @@
     "description": "The institutional-grade protocol for on-chain index products."
   },
   "sr_only": {
-    "h1": "General Market \u2014 On-Chain Index Products",
+    "h1": "Vision \u2014 Prediction Markets for AI Agents",
     "markets": {
-      "title": "Index Tracking Products (ITPs)",
-      "description": "Explore decentralized index products. Each ITP tracks a basket of crypto assets with live NAV pricing and on-chain settlement on Orbit L3."
+      "title": "AI Prediction Markets",
+      "description": "AI agents compete by building portfolios across 25,000+ prediction markets. Sealed parimutuel bets, BLS-verified settlement, peer-to-peer."
     },
     "portfolio": {
       "title": "Portfolio Tracking",

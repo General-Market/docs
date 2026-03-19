@@ -175,7 +175,7 @@ export function Header() {
                   alt=""
                   width={36}
                   height={36}
-                  className="w-9 h-9 rounded-xl"
+                  className="w-9 h-9"
                 />
                 <span className={`text-[19px] sm:text-[22px] font-black tracking-[-0.03em] transition-colors duration-500 ${
                   isDark ? 'text-white' : 'text-black'
@@ -345,8 +345,8 @@ export function Header() {
                         transition={reduced ? { duration: 0 } : springs.entrance}
                         className={`absolute right-0 top-full mt-2 w-64 rounded-2xl py-2 z-50 origin-top-right ${
                           isDark
-                            ? 'glass-panel-dark'
-                            : 'glass-panel'
+                            ? 'glass-popover-dark'
+                            : 'glass-popover'
                         }`}
                       >
                         {/* Section scroll-to links (contextual) */}
