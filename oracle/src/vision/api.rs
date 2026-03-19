@@ -1254,7 +1254,8 @@ async fn leaderboard_from_postgres(
              ),
              deltas AS (
                 SELECT td.player, SUM(td.delta::numeric) as pnl,
-                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
+                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins,
+                       COUNT(*) as tick_count
                 FROM vision_player_tick_deltas td
                 WHERE td.batch_id IN (SELECT id FROM source_batches) AND td.delta::numeric <> 0
                 GROUP BY td.player
@@ -1262,7 +1263,7 @@ async fn leaderboard_from_postgres(
              SELECT COALESCE(p.player, d.player) as player,
                     (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
                     COALESCE(p.deposited, 0)::text as total_deposited,
-                    COALESCE(p.batches, 0)::bigint as batches_joined,
+                    COALESCE(d.tick_count, COALESCE(p.batches, 0))::bigint as batches_joined,
                     COALESCE(d.wins, 0)::bigint as wins
              FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
             in_clause = in_clause
@@ -1277,7 +1278,8 @@ async fn leaderboard_from_postgres(
              ),
              deltas AS (
                 SELECT td.player, SUM(td.delta::numeric) as pnl,
-                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
+                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins,
+                       COUNT(*) as tick_count
                 FROM vision_player_tick_deltas td
                 WHERE td.batch_id = {bid} AND td.delta::numeric <> 0
                 GROUP BY td.player
@@ -1285,7 +1287,7 @@ async fn leaderboard_from_postgres(
              SELECT COALESCE(p.player, d.player) as player,
                     (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
                     COALESCE(p.deposited, 0)::text as total_deposited,
-                    COALESCE(p.batches, 0)::bigint as batches_joined,
+                    COALESCE(d.tick_count, COALESCE(p.batches, 0))::bigint as batches_joined,
                     COALESCE(d.wins, 0)::bigint as wins
              FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
             bid = bid
