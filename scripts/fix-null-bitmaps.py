@@ -37,8 +37,11 @@ VISION_ABI = [
          {"name": "totalClaimed", "type": "uint256"},
      ]},
     {"name": "updateBitmap", "type": "function", "stateMutability": "nonpayable",
-     "inputs": [{"name": "batchId", "type": "uint256"}, {"name": "newBitmapHash", "type": "bytes32"}],
+     "inputs": [{"name": "batchId", "type": "uint256"}, {"name": "configHash", "type": "bytes32"}, {"name": "newBitmapHash", "type": "bytes32"}],
      "outputs": []},
+    {"name": "getBatch", "type": "function", "stateMutability": "view",
+     "inputs": [{"name": "batchId", "type": "uint256"}],
+     "outputs": [{"name": "creator", "type": "address"}, {"name": "sourceId", "type": "bytes32"}, {"name": "configHash", "type": "bytes32"}, {"name": "nextConfigHash", "type": "bytes32"}, {"name": "tickDuration", "type": "uint256"}, {"name": "lockOffset", "type": "uint256"}, {"name": "nextLockOffset", "type": "uint256"}, {"name": "createdAtTick", "type": "uint256"}, {"name": "lastPromotionTick", "type": "uint256"}, {"name": "paused", "type": "bool"}]},
 ]
 
 vision = w3.eth.contract(address=Web3.to_checksum_address(VISION_ADDR), abi=VISION_ABI)
@@ -68,10 +71,14 @@ for batch_id in range(batch_count):
             bitmap_bytes = bytes([rng.randint(0, 255) for _ in range((market_count + 7) // 8)])
             new_hash = Web3.keccak(bitmap_bytes)
 
-            print(f"Batch {batch_id}: null hash → updating to {new_hash.hex()[:16]}...")
+            # Read the batch's active configHash from chain
+            batch_info = vision.functions.getBatch(batch_id).call()
+            config_hash = batch_info[2]  # configHash is 3rd field
+
+            print(f"Batch {batch_id}: null hash → updating (configHash={config_hash.hex()[:16]}...)...")
 
             nonce = w3.eth.get_transaction_count(acct.address)
-            tx = vision.functions.updateBitmap(batch_id, new_hash).build_transaction({
+            tx = vision.functions.updateBitmap(batch_id, config_hash, new_hash).build_transaction({
                 'from': acct.address,
                 'nonce': nonce,
                 'gas': 200000,
