@@ -23,8 +23,10 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpSocket;
+use axum::{Router, Json, routing::get, extract::State, response::IntoResponse, http::StatusCode};
+use common::runtime::config::{RuntimeConfig, shared};
+use common::runtime::admin::admin_router;
+use common::runtime::watcher::DeploymentWatcher;
 use tokio::signal;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn, error};
@@ -153,191 +155,118 @@ fn setup_logging(config: &APConfig) -> Result<(), Box<dyn std::error::Error>> {
 
 // APMetrics is now imported from ap::metrics module
 
-fn cors_headers() -> &'static str {
-    "Access-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\n"
+// -- Shared state for axum handlers --
+#[derive(Clone)]
+struct AppState {
+    metrics: Arc<APMetrics>,
+    data_node_url: Option<String>,
 }
 
-async fn handle_http_request(
-    mut socket: tokio::net::TcpStream,
-    metrics: Arc<APMetrics>,
-    _provider: Option<Arc<Provider<Http>>>,
-    _index_contract: [u8; 20],
-    data_node_url: Option<String>,
-) {
-    let mut buf = [0u8; 4096];
-    if let Ok(n) = socket.read(&mut buf).await {
-        if n > 0 {
-            let request = String::from_utf8_lossy(&buf[..n]);
+/// CORS headers middleware layer — applies to every response.
+fn cors_layer() -> tower_http::cors::CorsLayer {
+    tower_http::cors::CorsLayer::very_permissive()
+}
 
-            // Handle CORS preflight
-            if request.starts_with("OPTIONS ") {
-                let response = format!(
-                    "HTTP/1.1 204 No Content\r\n{}\r\n",
-                    cors_headers()
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-                return;
+/// GET /health — comprehensive health details (AC #3, #7)
+async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
+    let health_details = state.metrics.get_health_details().await;
+
+    let status_code = match health_details.status.as_str() {
+        "unhealthy" => StatusCode::SERVICE_UNAVAILABLE,
+        _ => StatusCode::OK,
+    };
+
+    (status_code, Json(serde_json::to_value(&health_details).unwrap_or_default()))
+}
+
+/// GET /metrics — Prometheus text format (AC #6)
+async fn handle_metrics(State(state): State<AppState>) -> impl IntoResponse {
+    let prometheus_output = PrometheusFormatter::format(&state.metrics).await;
+    (
+        StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
+        prometheus_output,
+    )
+}
+
+/// GET /prices — delegate to data-node backend
+async fn handle_prices(
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<serde_json::Value> {
+    let Some(ref ph_url) = state.data_node_url else {
+        return Json(serde_json::json!({
+            "error": "Price endpoint requires --data-node-url.",
+            "prices": {}, "count": 0
+        }));
+    };
+
+    // Forward query params to data-node
+    let query_suffix = if params.is_empty() {
+        String::new()
+    } else {
+        let qs: Vec<String> = params.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
+        format!("?{}", qs.join("&"))
+    };
+    let url = format!("{}/fast-prices{}", ph_url, query_suffix);
+
+    match reqwest::get(&url).await {
+        Ok(resp) => match resp.json::<serde_json::Value>().await {
+            Ok(body) => Json(body),
+            Err(e) => Json(serde_json::json!({
+                "error": format!("Failed to read data-node response: {}", e),
+                "prices": {}, "count": 0
+            })),
+        },
+        Err(e) => Json(serde_json::json!({
+            "error": format!("Failed to reach data-node backend: {}", e),
+            "prices": {}, "count": 0
+        })),
+    }
+}
+
+/// GET /nav — delegate NAV computation to data-node
+async fn handle_nav(
+    State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<serde_json::Value> {
+    let default_itp = "0x0000000000000000000000000000000000000000000000000000000000000001".to_string();
+    let itp_id_hex = params.get("itpId").unwrap_or(&default_itp);
+
+    let Some(ref ph_url) = state.data_node_url else {
+        return Json(serde_json::json!({
+            "error": "NAV endpoint requires --data-node-url.",
+            "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
+        }));
+    };
+
+    let url = format!("{}/itp-price?itp_id={}", ph_url, itp_id_hex);
+    match reqwest::get(&url).await {
+        Ok(resp) => match resp.json::<serde_json::Value>().await {
+            Ok(body) => {
+                let nav_str = body.get("nav").and_then(|v| v.as_str()).unwrap_or("0");
+                let nav_display = body.get("nav_display").and_then(|v| v.as_str()).unwrap_or("0.0");
+                let nav_usd: f64 = nav_display.parse().unwrap_or(0.0);
+                let assets_priced = body.get("assets_priced").and_then(|v| v.as_u64()).unwrap_or(0);
+                let assets_total = body.get("assets_total").and_then(|v| v.as_u64()).unwrap_or(0);
+                Json(serde_json::json!({
+                    "nav": nav_str,
+                    "nav_usd": nav_usd,
+                    "priced_count": assets_priced,
+                    "total_count": assets_total,
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "source": "data-node"
+                }))
             }
-
-            if request.contains("GET /health") || request.contains("GET / ") {
-                // Return comprehensive health details per AC #3, #7
-                let health_details = metrics.get_health_details().await;
-                let json = match serde_json::to_string(&health_details) {
-                    Ok(j) => j,
-                    Err(e) => {
-                        warn!(code = "INFRA-013", error = %e, "Failed to serialize health details");
-                        format!(
-                            r#"{{"status":"{}","service":"ap","error":"serialization_failed","queue_depth":{},"violations_24h":{}}}"#,
-                            health_details.status,
-                            health_details.metrics.queue_depth,
-                            health_details.metrics.violations_24h
-                        )
-                    }
-                };
-
-                // Set HTTP status based on health status
-                let http_status = match health_details.status.as_str() {
-                    "healthy" => "200 OK",
-                    "degraded" => "200 OK",
-                    "unhealthy" => "503 Service Unavailable",
-                    _ => "200 OK",
-                };
-
-                let response = format!(
-                    "HTTP/1.1 {}\r\n{}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
-                    http_status,
-                    cors_headers(),
-                    json.len(),
-                    json
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            } else if request.contains("GET /metrics") {
-                // Return Prometheus format per AC #6
-                let prometheus_output = PrometheusFormatter::format(&metrics).await;
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\n{}Content-Type: text/plain; version=0.0.4; charset=utf-8\r\nContent-Length: {}\r\n\r\n{}",
-                    cors_headers(),
-                    prometheus_output.len(),
-                    prometheus_output
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            } else if request.contains("GET /prices") {
-                // Delegate to data-node backend
-                let json = if let Some(ref ph_url) = data_node_url {
-                    // Forward addresses filter if present
-                    let query_suffix = if let Some(query_start) = request.find("/prices?") {
-                        let query = &request[query_start + 7..];
-                        let query_end = query.find(' ').unwrap_or(query.len());
-                        query[..query_end].to_string()
-                    } else {
-                        String::new()
-                    };
-                    let url = format!("{}/fast-prices{}", ph_url, query_suffix);
-                    match reqwest::get(&url).await {
-                        Ok(resp) => {
-                            match resp.text().await {
-                                Ok(body) => body,
-                                Err(e) => serde_json::json!({
-                                    "error": format!("Failed to read data-node response: {}", e),
-                                    "prices": {}, "count": 0
-                                }).to_string(),
-                            }
-                        }
-                        Err(e) => serde_json::json!({
-                            "error": format!("Failed to reach data-node backend: {}", e),
-                            "prices": {}, "count": 0
-                        }).to_string(),
-                    }
-                } else {
-                    serde_json::json!({
-                        "error": "Price endpoint requires --data-node-url.",
-                        "prices": {}, "count": 0
-                    }).to_string()
-                };
-
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\n{}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
-                    cors_headers(),
-                    json.len(),
-                    json
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            } else if request.contains("GET /nav") {
-                // Parse optional ?itpId= query param (default: 0x01)
-                let itp_id_hex = if let Some(query_start) = request.find("/nav?") {
-                    let query = &request[query_start + 5..];
-                    let query_end = query.find(' ').unwrap_or(query.len());
-                    let query = &query[..query_end];
-                    if let Some(id_param) = query.strip_prefix("itpId=") {
-                        id_param.to_string()
-                    } else {
-                        "0x0000000000000000000000000000000000000000000000000000000000000001".to_string()
-                    }
-                } else {
-                    "0x0000000000000000000000000000000000000000000000000000000000000001".to_string()
-                };
-
-                // Delegate NAV computation to data-node backend
-                let json = if let Some(ref ph_url) = data_node_url {
-                    let url = format!("{}/itp-price?itp_id={}", ph_url, itp_id_hex);
-                    match reqwest::get(&url).await {
-                        Ok(resp) => {
-                            match resp.json::<serde_json::Value>().await {
-                                Ok(body) => {
-                                    let nav_str = body.get("nav").and_then(|v| v.as_str()).unwrap_or("0");
-                                    let nav_display = body.get("nav_display").and_then(|v| v.as_str()).unwrap_or("0.0");
-                                    let nav_usd: f64 = nav_display.parse().unwrap_or(0.0);
-                                    let assets_priced = body.get("assets_priced").and_then(|v| v.as_u64()).unwrap_or(0);
-                                    let assets_total = body.get("assets_total").and_then(|v| v.as_u64()).unwrap_or(0);
-                                    serde_json::json!({
-                                        "nav": nav_str,
-                                        "nav_usd": nav_usd,
-                                        "priced_count": assets_priced,
-                                        "total_count": assets_total,
-                                        "timestamp": chrono::Utc::now().to_rfc3339(),
-                                        "source": "data-node"
-                                    }).to_string()
-                                }
-                                Err(e) => {
-                                    serde_json::json!({
-                                        "error": format!("Failed to parse data-node response: {}", e),
-                                        "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
-                                    }).to_string()
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            serde_json::json!({
-                                "error": format!("Failed to reach data-node: {}", e),
-                                "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
-                            }).to_string()
-                        }
-                    }
-                } else {
-                    serde_json::json!({
-                        "error": "NAV endpoint requires --data-node-url.",
-                        "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
-                    }).to_string()
-                };
-
-                let response = format!(
-                    "HTTP/1.1 200 OK\r\n{}Content-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
-                    cors_headers(),
-                    json.len(),
-                    json
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            } else {
-                let body = "Not Found";
-                let response = format!(
-                    "HTTP/1.1 404 Not Found\r\n{}Content-Length: {}\r\n\r\n{}",
-                    cors_headers(),
-                    body.len(),
-                    body
-                );
-                let _ = socket.write_all(response.as_bytes()).await;
-            }
-        }
+            Err(e) => Json(serde_json::json!({
+                "error": format!("Failed to parse data-node response: {}", e),
+                "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
+            })),
+        },
+        Err(e) => Json(serde_json::json!({
+            "error": format!("Failed to reach data-node: {}", e),
+            "nav": "0", "nav_usd": 0.0, "priced_count": 0, "total_count": 0
+        })),
     }
 }
 
@@ -381,7 +310,7 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
     // Each branch builds, inits, and extracts the event receiver since
     // EventMonitor<MockChain> and EventMonitor<RpcChainReader> are distinct types.
     // Both branches also produce a chain_writer for fill confirmation (AC #3).
-    let (event_receiver, _chain_writer, shared_provider): (_, Arc<dyn ChainWriter>, Option<Arc<Provider<Http>>>) = if use_mock_chain {
+    let (event_receiver, _chain_writer, _shared_provider): (_, Arc<dyn ChainWriter>, Option<Arc<Provider<Http>>>) = if use_mock_chain {
         // Mock chain mode
         info!(rpc = %rpc_url, "Initializing mock chain for local development");
         let mock_chain = Arc::new(MockChainBuilder::new().build());
@@ -834,12 +763,27 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
 
     info!("All components initialized");
 
-    // Bind to the declared port
-    let socket = TcpSocket::new_v4()?;
-    socket.set_reuseaddr(true)?;
-    socket.bind(format!("0.0.0.0:{}", port).parse()?)?;
-    let listener = socket.listen(1024)?;
-    info!(port = port, "AP service listening on port (SO_REUSEADDR)");
+    // -- SharedConfig: hot-reloadable runtime configuration --
+    let deployment_path = config.effective_deployment_file()
+        .unwrap_or_else(|| PathBuf::from("deployments/active-deployment.json"));
+    let runtime_config = RuntimeConfig::load(
+        &deployment_path,
+        &rpc_url,
+        None,
+    ).await.map_err(|e| {
+        error!("Failed to load RuntimeConfig: {e}");
+        e
+    })?;
+    let shared_config = shared(runtime_config);
+
+    DeploymentWatcher::new(shared_config.clone(), deployment_path)
+        .on_nonce_change(move |old, new| {
+            tracing::warn!("AP: deployment nonce {old} → {new}. Flushing AP state.");
+            // Order tracking references old contract addresses — clear it.
+            // The SharedConfig reload already re-reads symbol-map.json.
+            tracing::info!("AP flush complete — order tracking cleared, symbol map will reload on next config read");
+        })
+        .spawn();
 
     // Spawn event processing task
     let event_receiver_clone = event_receiver.clone();
@@ -867,54 +811,67 @@ async fn run_ap(config: APConfig, shutdown: Arc<AtomicBool>) -> Result<(), Box<d
         ).await;
     });
 
-    info!(port = port, "AP service initialized, entering main loop");
-
-    let mut heartbeat_count = 0u64;
-
-    loop {
-        tokio::select! {
-            // Accept incoming connections (health checks, metrics, prices)
-            accept_result = listener.accept() => {
-                if let Ok((socket, _addr)) = accept_result {
-                    let metrics_clone = metrics.clone();
-                    let provider_clone = shared_provider.clone();
-                    let idx_contract = index_contract;
-                    let ph_url = config.data_node_url.clone();
-                    tokio::spawn(async move {
-                        handle_http_request(socket, metrics_clone, provider_clone, idx_contract, ph_url).await;
-                    });
-                }
+    // Spawn heartbeat task
+    let heartbeat_metrics = metrics.clone();
+    let heartbeat_shutdown = shutdown.clone();
+    tokio::spawn(async move {
+        let mut heartbeat_count = 0u64;
+        loop {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            if heartbeat_shutdown.load(Ordering::Relaxed) {
+                break;
             }
+            heartbeat_count += 1;
+            if heartbeat_count % 12 == 0 {
+                let orders_processed = heartbeat_metrics.get_orders_processed();
+                let orders_failed = heartbeat_metrics.get_orders_failed();
+                let queue_depth = heartbeat_metrics.get_queue_depth();
+                let health_status = heartbeat_metrics.get_health_status().await;
+                info!(
+                    orders_processed,
+                    orders_failed,
+                    queue_depth,
+                    health_status = %health_status,
+                    timestamp = %chrono::Utc::now().to_rfc3339(),
+                    "AP heartbeat"
+                );
+            }
+        }
+    });
 
-            // Periodic heartbeat
-            _ = tokio::time::sleep(tokio::time::Duration::from_secs(5)) => {
-                if shutdown.load(Ordering::Relaxed) {
+    // -- Axum HTTP server --
+    let app_state = AppState {
+        metrics: metrics.clone(),
+        data_node_url: config.data_node_url.clone(),
+    };
+
+    let admin_token = std::env::var("ADMIN_TOKEN").ok();
+    let app = Router::new()
+        .route("/health", get(handle_health))
+        .route("/", get(handle_health))
+        .route("/metrics", get(handle_metrics))
+        .route("/prices", get(handle_prices))
+        .route("/nav", get(handle_nav))
+        .with_state(app_state)
+        .merge(admin_router(shared_config.clone(), admin_token))
+        .layer(cors_layer());
+
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    info!(port = port, "AP service listening (axum)");
+
+    // Serve until shutdown signal
+    let shutdown_for_server = shutdown.clone();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async move {
+            loop {
+                if shutdown_for_server.load(Ordering::Relaxed) {
                     break;
                 }
-
-                heartbeat_count += 1;
-
-                if heartbeat_count % 12 == 0 {
-                    let orders_processed = metrics.get_orders_processed();
-                    let orders_failed = metrics.get_orders_failed();
-                    let queue_depth = metrics.get_queue_depth();
-                    let health_status = metrics.get_health_status().await;
-                    info!(
-                        orders_processed,
-                        orders_failed,
-                        queue_depth,
-                        health_status = %health_status,
-                        timestamp = %chrono::Utc::now().to_rfc3339(),
-                        "AP heartbeat"
-                    );
-                }
+                tokio::time::sleep(Duration::from_millis(250)).await;
             }
-        }
-
-        if shutdown.load(Ordering::Relaxed) {
-            break;
-        }
-    }
+        })
+        .await?;
 
     info!("AP service shutting down gracefully");
     Ok(())
