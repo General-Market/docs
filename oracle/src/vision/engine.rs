@@ -1540,6 +1540,9 @@ pub async fn run(
     let mut gc_timer = tokio::time::interval(std::time::Duration::from_secs(30));
     gc_timer.tick().await; // consume the immediate first tick
 
+    let mut heartbeat_counter: u64 = 0;
+    let heartbeat_every: u64 = 60; // log heartbeat every ~60 poll iterations
+
     loop {
         if shutdown.load(Ordering::Relaxed) {
             tracing::info!("Vision tick engine shutting down");
@@ -1558,11 +1561,25 @@ pub async fn run(
                     break;
                 }
 
+                heartbeat_counter += 1;
+
                 let now = get_chain_timestamp(&config.rpc_ws_url).await;
 
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
 
                 if due_batches.is_empty() {
+                    // Periodic heartbeat so operators know the engine is alive
+                    if heartbeat_counter % heartbeat_every == 0 {
+                        let active = scheduler.active_batch_count().await;
+                        let soonest = scheduler.soonest_due_in(now, config.reveal_window_secs).await;
+                        tracing::info!(
+                            now,
+                            active_batches = active,
+                            reveal_window_secs = config.reveal_window_secs,
+                            soonest_due_in_secs = soonest.map(|s| s as i64).unwrap_or(-1),
+                            "Vision engine heartbeat — no due batches"
+                        );
+                    }
                     continue;
                 }
 
@@ -1599,9 +1616,9 @@ pub async fn run(
 
                             // Skip backlog — but always resolve the LATEST tick (don't skip everything)
                             if batch.tick_duration > 0 {
-                                let current_tick = now / batch.tick_duration;
-                                let latest_resolvable = if current_tick > batch.created_at_tick {
-                                    current_tick - batch.created_at_tick - 1
+                                let current_abs_tick = now / batch.tick_duration;
+                                let latest_resolvable = if current_abs_tick > batch.created_at_tick {
+                                    current_abs_tick - batch.created_at_tick - 1
                                 } else {
                                     0
                                 };
@@ -1612,6 +1629,9 @@ pub async fn run(
                                             batch_id,
                                             skipped_from = tick_id,
                                             resolving = latest_resolvable,
+                                            created_at_tick = batch.created_at_tick,
+                                            current_abs_tick,
+                                            tick_duration = batch.tick_duration,
                                             "Skipping backlog, will resolve latest"
                                         );
                                         for skip_tick in tick_id..latest_resolvable {
@@ -1664,6 +1684,10 @@ pub async fn run(
                 }
 
                 if work_items.is_empty() {
+                    tracing::warn!(
+                        due_batch_count = due_batches.len(),
+                        "All due batches skipped (empty players / missing config / no batch state)"
+                    );
                     continue;
                 }
 

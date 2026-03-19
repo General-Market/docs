@@ -560,6 +560,28 @@ impl TickScheduler {
     pub async fn get_all_batch_ids(&self) -> Vec<u64> {
         self.batches.read().await.keys().copied().collect()
     }
+
+    /// Return how many seconds until the soonest batch becomes due.
+    /// Returns `None` if there are no active batches.
+    pub async fn soonest_due_in(&self, now: u64, reveal_window_secs: u64) -> Option<u64> {
+        let batches = self.batches.read().await;
+        let last_resolved = self.last_resolved.read().await;
+
+        batches
+            .iter()
+            .filter(|(_, batch)| !batch.paused)
+            .map(|(&id, batch)| {
+                let next_tick = match last_resolved.get(&id) {
+                    Some(&t) => t + 1,
+                    None => 0,
+                };
+                let tick_end_time =
+                    (batch.created_at_tick + next_tick + 1) * batch.tick_duration;
+                let reveal_deadline = tick_end_time + reveal_window_secs;
+                reveal_deadline.saturating_sub(now)
+            })
+            .min()
+    }
 }
 
 #[cfg(test)]
@@ -1057,5 +1079,94 @@ mod tests {
 
         let (real, _virt) = scheduler.get_user_balance(user).await;
         assert_eq!(real, U256::zero(), "Should saturate to 0, not underflow");
+    }
+
+    // === Realistic created_at_tick tests (production-scale values) ===
+
+    #[tokio::test]
+    async fn test_due_batches_production_scale_created_at_tick() {
+        let scheduler = TickScheduler::new();
+
+        // Simulate production: batch created at timestamp 1773880000 with tick_duration=120
+        // created_at_tick = 1773880000 / 120 = 14782333
+        let created_at_tick = 1773880000u64 / 120;
+        assert_eq!(created_at_tick, 14782333);
+
+        let batch = make_batch(1, 120, created_at_tick);
+        scheduler.on_batch_created(batch).await;
+
+        // Current time: 1773887000 (about 7000 seconds after creation)
+        let now = 1773887000u64;
+        let reveal_window = 600u64;
+
+        // No ticks resolved yet → next_tick = 0
+        // tick_end_time = (14782333 + 0 + 1) * 120 = 1773880080
+        // reveal_deadline = 1773880080 + 600 = 1773880680
+        // now (1773887000) >= 1773880680 → due
+        let due = scheduler.get_due_batches(now, reveal_window).await;
+        assert_eq!(due, vec![1], "Tick 0 should be due when batch is hours old");
+
+        // Simulate backlog skip: resolve up to latest_resolvable
+        // current_abs_tick = 1773887000 / 120 = 14782391
+        // latest_resolvable = 14782391 - 14782333 - 1 = 57
+        let current_abs_tick = now / 120;
+        assert_eq!(current_abs_tick, 14782391);
+        let latest_resolvable = current_abs_tick - created_at_tick - 1;
+        assert_eq!(latest_resolvable, 57);
+
+        // Mark ticks 0..57 as resolved (what the backlog skip does)
+        for t in 0..latest_resolvable {
+            scheduler.mark_resolved(1, t).await;
+        }
+        // Then resolve tick 57 itself
+        scheduler.mark_resolved(1, latest_resolvable).await;
+
+        // Next tick = 58
+        assert_eq!(scheduler.next_tick_for_batch(1).await, 58);
+
+        // Tick 58 end time = (14782333 + 58 + 1) * 120 = 14782392 * 120 = 1773887040
+        // reveal_deadline = 1773887040 + 600 = 1773887640
+        // now (1773887000) < 1773887640 → NOT due yet
+        let due = scheduler.get_due_batches(now, reveal_window).await;
+        assert!(due.is_empty(), "Tick 58 should NOT be due yet (need 640 more seconds)");
+
+        // After reveal_window elapses: now = 1773887640
+        let due = scheduler.get_due_batches(1773887640, reveal_window).await;
+        assert_eq!(due, vec![1], "Tick 58 should be due at reveal deadline");
+
+        // Resolve tick 58, check tick 59 timing
+        scheduler.mark_resolved(1, 58).await;
+        // Tick 59 end = (14782333 + 59 + 1) * 120 = 14782393 * 120 = 1773887160
+        // reveal_deadline = 1773887160 + 600 = 1773887760
+        // Exactly tick_duration (120) seconds after tick 58 became due
+        let due = scheduler.get_due_batches(1773887759, reveal_window).await;
+        assert!(due.is_empty(), "Tick 59 not due 1s before deadline");
+        let due = scheduler.get_due_batches(1773887760, reveal_window).await;
+        assert_eq!(due, vec![1], "Tick 59 due exactly at deadline");
+    }
+
+    #[tokio::test]
+    async fn test_soonest_due_in() {
+        let scheduler = TickScheduler::new();
+
+        // Batch with known timing
+        let batch = make_batch(1, 120, 14782333);
+        scheduler.on_batch_created(batch).await;
+
+        // After resolving through tick 57, next tick 58 ends at 1773887040
+        for t in 0..=57 {
+            scheduler.mark_resolved(1, t).await;
+        }
+
+        let now = 1773887000u64;
+        let reveal_window = 600u64;
+        // reveal_deadline = 1773887040 + 600 = 1773887640
+        // soonest_due_in = 1773887640 - 1773887000 = 640
+        let soonest = scheduler.soonest_due_in(now, reveal_window).await;
+        assert_eq!(soonest, Some(640));
+
+        // When already past the deadline
+        let soonest = scheduler.soonest_due_in(1773887700, reveal_window).await;
+        assert_eq!(soonest, Some(0), "Should be 0 when tick is already overdue");
     }
 }
