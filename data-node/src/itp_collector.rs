@@ -711,6 +711,38 @@ pub async fn run(
             }
         }
 
+        // 2g2. ITP count reconciliation: detect ITPs created outside the event window
+        // (e.g., created before data-node started, or cursor was ahead of creation blocks)
+        if let Ok(on_chain_count) = contract.get_itp_count().call().await {
+            let on_chain = on_chain_count.as_u64();
+            let cached = *state.itp_count.read().await;
+            if on_chain > cached {
+                info!(cached, on_chain, new = on_chain - cached, "Detected new ITPs — hydrating");
+                for i in (cached + 1)..=on_chain {
+                    let mut itp_id_bytes = [0u8; 32];
+                    ethers::types::U256::from(i).to_big_endian(&mut itp_id_bytes);
+                    let itp_id_hex = format!("0x{}", hex::encode(itp_id_bytes));
+                    if let Ok((_id, creator, total_supply, _nav, assets, weights, inventory)) =
+                        fetch_itp_state_with_retry(&contract, itp_id_bytes).await
+                    {
+                        let cached_state = CachedItpState {
+                            creator,
+                            total_supply,
+                            assets,
+                            weights,
+                            inventory,
+                            name: String::new(),
+                            symbol: String::new(),
+                            settlement_address: None,
+                        };
+                        let mut cache = chain_cache.itp_states.write().await;
+                        cache.states.insert(itp_id_hex, cached_state);
+                    }
+                }
+                *state.itp_count.write().await = on_chain;
+            }
+        }
+
         // 2h. Periodic snapshot from cache (zero RPC)
         if last_periodic.elapsed().as_secs() >= periodic_interval_secs {
             let cache = chain_cache.itp_states.read().await;
