@@ -163,10 +163,14 @@ type ReferencePrices = Arc<RwLock<HashMap<H256, i128>>>;
 /// How long to suppress retry for missing configs (batch engine may generate them later).
 const MISSING_CONFIG_TTL: std::time::Duration = std::time::Duration::from_secs(300);
 
+/// How long cached configs remain valid before re-fetching from data-node.
+/// Configs regenerate each tick, so this should be shorter than the shortest tick duration.
+const CONFIG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(55);
+
 /// Cache of fetched configs to avoid re-fetching within same tick.
-/// Maps config_hash (H256) -> (source_id, Vec<MarketConfig>).
+/// Maps config_hash (H256) -> (source_id, Vec<MarketConfig>, fetched_at).
 struct ConfigCache {
-    configs: RwLock<HashMap<H256, (String, Vec<MarketConfig>)>>,
+    configs: RwLock<HashMap<H256, (String, Vec<MarketConfig>, std::time::Instant)>>,
     /// Config hashes that returned 404 — downgrade to debug after first WARN.
     /// Entries expire after MISSING_CONFIG_TTL so configs generated later can be retried.
     known_missing: RwLock<HashMap<H256, std::time::Instant>>,
@@ -186,51 +190,64 @@ impl ConfigCache {
         config_hash: &H256,
         source_id_h256: Option<&H256>,
     ) -> Result<(String, Vec<MarketConfig>), Box<dyn std::error::Error + Send + Sync>> {
-        // Check cache first
+        // Check cache first (with TTL — configs regenerate each tick)
         {
             let cache = self.configs.read().await;
-            if let Some(entry) = cache.get(config_hash) {
-                return Ok(entry.clone());
+            if let Some((source_id, configs, fetched_at)) = cache.get(config_hash) {
+                if fetched_at.elapsed() < CONFIG_CACHE_TTL {
+                    return Ok((source_id.clone(), configs.clone()));
+                }
+                // Expired — fall through to re-fetch
             }
         }
 
-        // Zero config hash — look up by source_id from recommended batches
-        if config_hash.is_zero() {
-            if let Some(sid_h256) = source_id_h256 {
-                let bytes = sid_h256.as_bytes();
-                let trimmed: Vec<u8> = bytes.iter().copied().take_while(|&b| b != 0).collect();
-                let source_name = String::from_utf8(trimmed).unwrap_or_default();
-                if !source_name.is_empty() {
-                    let recommended = batch_config_orchestrator::fetch_recommended(data_node_url).await?;
-                    if let Some(batch) = recommended.into_iter().find(|b| b.source_id == source_name) {
-                        let source_id = batch.source_id.clone();
-                        let market_configs = Self::parse_market_configs(&batch);
-                        self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone()));
-                        self.known_missing.write().await.remove(config_hash);
-                        return Ok((source_id, market_configs));
-                    }
-                    return Err(format!("No recommended config for source '{}'", source_name).into());
+        // Try fetching by config hash first (unless hash is zero)
+        if !config_hash.is_zero() {
+            let hash_hex = format!("0x{}", hex::encode(config_hash));
+            match batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex).await {
+                Ok(batch) => {
+                    let source_id = batch.source_id.clone();
+                    let market_configs = Self::parse_market_configs(&batch);
+                    self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
+                    self.known_missing.write().await.remove(config_hash);
+                    return Ok((source_id, market_configs));
+                }
+                Err(e) => {
+                    // Hash not found — configs regenerated since batch creation.
+                    // Fall through to source_id lookup below.
+                    tracing::debug!(
+                        config_hash = %hash_hex,
+                        error = %e,
+                        "Config hash not found on data-node, falling back to source_id lookup"
+                    );
                 }
             }
-            return Err("Zero config hash with no source_id fallback".into());
         }
 
-        // Fetch from data-node by config hash
-        let hash_hex = format!("0x{}", hex::encode(config_hash));
-        let batch = batch_config_orchestrator::fetch_config_by_hash(data_node_url, &hash_hex)
-            .await?;
+        // Fallback: look up by source_id from recommended batches.
+        // This handles both zero config hashes and stale hashes (configs
+        // regenerated each tick, so on-chain hash may not match data-node).
+        //
+        // On-chain source_id is keccak256(source_name), so we hash each
+        // recommended batch's source_id string and compare.
+        if let Some(sid_h256) = source_id_h256 {
+            if !sid_h256.is_zero() {
+                let recommended = batch_config_orchestrator::fetch_recommended(data_node_url).await?;
+                // Match by keccak256(source_name) == on-chain source_id hash
+                if let Some(batch) = recommended.into_iter().find(|b| {
+                    H256::from(keccak256(b.source_id.as_bytes())) == *sid_h256
+                }) {
+                    let source_id = batch.source_id.clone();
+                    let market_configs = Self::parse_market_configs(&batch);
+                    self.configs.write().await.insert(*config_hash, (source_id.clone(), market_configs.clone(), std::time::Instant::now()));
+                    self.known_missing.write().await.remove(config_hash);
+                    return Ok((source_id, market_configs));
+                }
+                return Err(format!("No recommended config matching source_id {:?}", sid_h256).into());
+            }
+        }
 
-        let source_id = batch.source_id.clone();
-        let market_configs = Self::parse_market_configs(&batch);
-
-        // Cache it and clear from known_missing (config now available)
-        self.configs
-            .write()
-            .await
-            .insert(*config_hash, (source_id.clone(), market_configs.clone()));
-        self.known_missing.write().await.remove(config_hash);
-
-        Ok((source_id, market_configs))
+        Err("Config hash not found and no source_id fallback available".into())
     }
 
     fn parse_market_configs(batch: &batch_config_orchestrator::RecommendedBatch) -> Vec<MarketConfig> {
