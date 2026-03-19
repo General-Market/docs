@@ -262,6 +262,73 @@ class Tracker:
             "total_pnl": active_pnl + history_pnl,
         }
 
+    def recover_bitmaps(self, strategy, data_node_url: str, oracle_urls: List[str]):
+        """
+        For every active position that has no bitmap (e.g. loaded from an old
+        pnl.json before bitmap persistence was added), generate a fresh bitmap
+        and submit it to the oracles.
+
+        Called once per bot startup, after _load_history.
+        """
+        from framework.chain import fetch_batch_config, submit_bitmap
+        from framework.core import encode_bitmap, hash_bitmap
+
+        missing = [
+            (bid, pos)
+            for bid, pos in self._positions.items()
+            if not pos.get("bitmap")
+        ]
+        if not missing:
+            return
+
+        log.info(
+            "Recovering bitmaps for %d positions with no stored bitmap", len(missing)
+        )
+        recovered = 0
+        for batch_id, pos in missing:
+            try:
+                # Get configHash from chain to find the right batch config
+                info = self._executor.get_batch_info(batch_id)
+                config_hash = info["configHash"]
+                if isinstance(config_hash, bytes):
+                    config_hash_hex = "0x" + config_hash.hex()
+                else:
+                    config_hash_hex = config_hash if config_hash.startswith("0x") else "0x" + config_hash
+
+                batch_cfg = fetch_batch_config(data_node_url, config_hash_hex)
+                if batch_cfg and batch_cfg.get("markets"):
+                    market_count = len(batch_cfg["markets"])
+                    market_ids = [m["assetId"] for m in batch_cfg["markets"]]
+                    markets = [
+                        {"id": mid, "price": 0, "change": None, "volume": None, "market_cap": None}
+                        for mid in market_ids
+                    ]
+                    bets = strategy.predict(markets)
+                else:
+                    # No config available — use a default market count
+                    market_count = pos.get("market_count", 10)
+                    dummy = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
+                    bets = strategy.predict(dummy)
+
+                bitmap = encode_bitmap(bets, market_count)
+                bm_hash = hash_bitmap(bitmap)
+
+                pos["bitmap"] = bitmap
+                pos["bitmap_hash"] = bm_hash
+                pos["bets"] = bets
+
+                if oracle_urls:
+                    submit_bitmap(oracle_urls, self._executor.bot_addr, batch_id, bitmap, bm_hash, retries=3)
+
+                recovered += 1
+                log.info("Recovered bitmap for batch %d (%d markets)", batch_id, market_count)
+            except Exception as e:
+                log.warning("Batch %d: bitmap recovery failed: %s", batch_id, e)
+
+        if recovered:
+            self._save_history()
+            log.info("Bitmap recovery complete: %d/%d batches recovered", recovered, len(missing))
+
     def _load_history(self):
         """Load from pnl.json, validating persisted positions against chain."""
         path = self._config.get("pnl_file", "pnl.json")

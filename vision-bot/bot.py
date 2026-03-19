@@ -234,6 +234,11 @@ def main():
         http_url=cfg["data_node"],
     )
 
+    # Recover bitmaps for any positions loaded from pnl.json that have no stored bitmap.
+    # This happens when bots are restarted after positions were joined on a previous run
+    # that predates bitmap persistence. Without bitmaps the oracle voids those positions.
+    tracker.recover_bitmaps(strategy, cfg["data_node"], oracle_urls_fn())
+
     # Run
     if "--once" in sys.argv:
         run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed)
