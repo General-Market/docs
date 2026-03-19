@@ -177,7 +177,7 @@ impl TickScheduler {
         let mut tx = pool.begin().await?;
         for pb in balances {
             sqlx::query(
-                "UPDATE vision_positions SET balance = $1 WHERE batch_id = $2 AND player = $3",
+                "UPDATE vision_positions SET balance = $1::numeric WHERE batch_id = $2 AND player = $3",
             )
             .bind(pb.new_balance.to_string())
             .bind(batch_id as i64)
