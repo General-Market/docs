@@ -5795,6 +5795,7 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
         total_supply: String,
         aum_usd: f64,
         asset_count: usize,
+        settlement_address: Option<String>,
     }
 
     let itp_cache = state.chain_cache.itp_states.read().await;
@@ -5833,6 +5834,7 @@ pub async fn compute_aum_ranking_json(state: &AppState) -> String {
             total_supply: itp_state.total_supply.to_string(),
             aum_usd,
             asset_count: itp_state.assets.len(),
+            settlement_address: itp_state.settlement_address.clone(),
         });
     }
 

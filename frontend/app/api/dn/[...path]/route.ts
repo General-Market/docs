@@ -54,12 +54,12 @@ export async function GET(
       })
     }
 
-    // For regular JSON responses, pass through
+    // For regular JSON responses, cache briefly to avoid redundant round-trips
     return new Response(res.body, {
       status: res.status,
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'public, s-maxage=5, stale-while-revalidate=10',
       },
     })
   } catch (e: any) {
