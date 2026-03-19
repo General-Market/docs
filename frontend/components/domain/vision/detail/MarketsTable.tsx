@@ -293,6 +293,9 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
   const { data, isLoading } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
 
+  // Markets come directly from per-source snapshot (already filtered server-side)
+  const sourceMarkets: SnapshotPrice[] = data?.prices ?? []
+
   // Fetch live batch to get per-market resolution types via batch ID
   const { data: batches } = useBatches()
   const activeBatch = useMemo(() => {
@@ -361,9 +364,6 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
   const [search, setSearch] = useState('')
   const [consensusOpen, setConsensusOpen] = useState<string | null>(null)
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null)
-
-  // Markets come directly from per-source snapshot (already filtered server-side)
-  const sourceMarkets: SnapshotPrice[] = data?.prices ?? []
 
   // Apply search filter
   const filteredMarkets = useMemo(() => {
