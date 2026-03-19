@@ -50,7 +50,7 @@ export default defineConfig({
     },
     {
       name: 'vision-data',
-      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$/,
+      testMatch: /(^|\/)10-vision\.spec\.ts$|(^|\/)1[2-5]-.*\.spec\.ts$|(^|\/)19-.*\.spec\.ts$|(^|\/)2[0-1]-.*\.spec\.ts$|(^|\/)25-.*\.spec\.ts$|(^|\/)4[5-9]-.*\.spec\.ts$/,
     },
     // Phase 2: UI verification (depends on respective Phase 1 only — limited blast radius)
     {

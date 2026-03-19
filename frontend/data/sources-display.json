@@ -2,7 +2,7 @@
   "sources": [
     {
       "sourceId": "coingecko",
-      "internalIds": ["crypto"],
+      "internalIds": ["crypto", "defi"],
       "name": "CoinGecko Crypto",
       "description": "Cryptocurrency market data — prices, volumes, market caps for thousands of tokens.",
       "category": "finance",
