@@ -856,7 +856,7 @@ export function NormalVsFrame3D() {
       ariaLabel="Side-by-side comparison showing a normal Ethereum transaction on the left versus a Frame transaction on the right, demonstrating how EIP-8141 moves authentication inside the transaction via the ACCEPT opcode"
       srDescription="A 3D diorama comparing normal and Frame transactions. The left side shows a single data cube with an ECDSA padlock sliding along a rail to an execute endpoint. The right side shows a wireframe envelope containing three frame containers: F0 (purple, auth), F1 (blue, data), and F2 (blue, data). A data cube emerges from F0, passes through an ACCEPT gate that flashes green, then continues to F1 and F2. The key insight: normal transactions authenticate outside with a signature, while Frame transactions authenticate inside via the ACCEPT opcode."
       legend={<Legend />}
-      fallbackText="Normal TX vs Frame TX -- authentication moves from outside the transaction to inside one of its frames via ACCEPT"
+      fallbackText="Normal TX vs Frame TX — authentication moves from outside the transaction to inside one of its frames via ACCEPT"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5, 8], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>

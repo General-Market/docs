@@ -1,5 +1,13 @@
 # Design Decision Backlog
 
+## Session: 20260319-k8m1 (Batch threshold calibration + display fix)
+
+- [DECISION] Replaced fixed volatility bands (0.3%/3%/30%) with median-based per-asset threshold calibration. The median of recent signed changes is the 50th percentile by definition — ~50% of future ticks will exceed it. This gives 50/50 outcomes without manual tuning.
+- [DECISION] Per-source lookback window for median calibration: pumpfun=10 ticks (regime-tracking), crypto/defi/stocks=20 (standard), weather/environment=48 (slow-changing), macro=30. Defaults to 20 for unknown sources.
+- [DECISION] Resolution type selection from median: positive median → UP_X (upward trend, threshold=median), negative median → DOWN_X (downward trend, threshold=|median|), near-zero median → UP_0 (any positive wins). Fallback chain: median → last_settlement → 24h_history → up_0.
+- [DECISION] Frontend "Up X" display bug: `thresholdBps` was not flowing from batch config API to badge renderer. Fixed by carrying `thresholdBps` alongside `resType` in the resolution map and rendering "Up 0.3%" instead of "Up X" for _X types.
+- [DECISION] Weather/transit sources need a fundamentally different resolver reference window (compare to 24h ago, not last tick). Deferred to Phase 2 — requires oracle resolver changes to support custom `reference_lookback_secs` per source.
+
 ## Session: 20260319-p3x9 (Vision poisoned positions + P2P balance proof aggregation)
 
 - [DECISION] Root cause of signer_bitmap=4 (single oracle): `key_registry: None` was passed to `oracle::vision::engine::run()` in main.rs. The aggregation task received peer proofs but discarded them because it had no registry to verify BLS keys. One-line fix: pass `components.consensus.keys.key_registry` as `Arc<dyn KeyRegistry>`.

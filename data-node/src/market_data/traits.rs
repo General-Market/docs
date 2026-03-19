@@ -134,6 +134,114 @@ pub fn load_all_asset_entries(json_str: &str) -> Result<Vec<AssetEntry>> {
     Ok(entries)
 }
 
+// ============================================================================
+// BATCH STRATEGY — per-source calibration for 50/50 outcomes
+// ============================================================================
+
+/// How the batch engine should calibrate thresholds for this source.
+///
+/// Each source lives in a different volatility universe. PumpFun tokens
+/// swing 50% in 5 minutes; Swiss weather barely moves 0.1° in an hour.
+/// The strategy tells the batch engine how to set thresholds so that
+/// ~50% of bets resolve UP and ~50% DOWN.
+#[derive(Debug, Clone, Copy)]
+pub struct BatchStrategy {
+    /// How many recent settlements to use for median calibration.
+    /// Short lookback (10) tracks regime changes in volatile sources.
+    /// Long lookback (48) smooths noise in slow-changing sources.
+    pub lookback_ticks: usize,
+
+    /// Floor — never set threshold below this (bps).
+    /// Prevents trivially won bets on noise.
+    pub min_threshold_bps: u32,
+
+    /// Ceiling — never exceed this (bps).
+    /// Prevents impossible-to-win bets.
+    pub max_threshold_bps: u32,
+
+    /// Resolution type when median is near zero (no directional trend).
+    /// "up_0" = any positive wins (binary coin-flip).
+    /// "flat_x" = flat if below threshold (ternary: flat/up/down).
+    pub zero_trend_type: &'static str,
+
+    /// Reference lookback for the resolver (seconds).
+    /// None = compare to previous tick end (default).
+    /// Some(86400) = compare to the value 24 hours ago.
+    /// Stored in batch config for the oracle resolver to read.
+    pub reference_lookback_secs: Option<u64>,
+}
+
+impl BatchStrategy {
+    /// Default: median of 20 ticks, no special reference, 0-10000 bps range.
+    pub const DEFAULT: Self = Self {
+        lookback_ticks: 20,
+        min_threshold_bps: 0,
+        max_threshold_bps: 10000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+
+    /// Fast volatile source (meme tokens, live streams).
+    /// Short lookback to track regime changes.
+    pub const FAST_VOLATILE: Self = Self {
+        lookback_ticks: 10,
+        min_threshold_bps: 50,   // at least 0.5% move to win
+        max_threshold_bps: 10000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+
+    /// Slow environmental source (weather, air quality, tides).
+    /// Long lookback, compare to 24h ago for meaningful bets.
+    pub const ENVIRONMENTAL: Self = Self {
+        lookback_ticks: 48,
+        min_threshold_bps: 0,
+        max_threshold_bps: 5000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: Some(86400), // 24h
+    };
+
+    /// Macro/daily source (rates, bonds, inflation).
+    /// Long lookback, tight range — these barely move.
+    pub const MACRO_DAILY: Self = Self {
+        lookback_ticks: 30,
+        min_threshold_bps: 0,
+        max_threshold_bps: 1000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+
+    /// Engagement/social source (reddit, twitch, hackernews).
+    /// High variance, regime changes common.
+    pub const ENGAGEMENT: Self = Self {
+        lookback_ticks: 15,
+        min_threshold_bps: 10,
+        max_threshold_bps: 10000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+
+    /// Status/event source (transit delays, outages, alerts).
+    /// Binary-ish data, small thresholds.
+    pub const STATUS: Self = Self {
+        lookback_ticks: 20,
+        min_threshold_bps: 0,
+        max_threshold_bps: 5000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+
+    /// Probability source (polymarket, sports odds).
+    /// Already 0-100, moderate lookback.
+    pub const PROBABILITY: Self = Self {
+        lookback_ticks: 20,
+        min_threshold_bps: 10,
+        max_threshold_bps: 5000,
+        zero_trend_type: "up_0",
+        reference_lookback_secs: None,
+    };
+}
+
 /// Trait that every market data source must implement.
 ///
 /// The sync engine calls these methods in a loop:
@@ -191,6 +299,15 @@ pub trait MarketDataSource: Send + Sync {
     /// the collector is alive and the value is current.
     fn always_record_price(&self) -> bool {
         false
+    }
+
+    /// Batch strategy for threshold calibration.
+    ///
+    /// Override this in your source to define how the batch engine should
+    /// compute thresholds for 50/50 outcomes. Each source knows its own
+    /// volatility profile better than any centralized match statement.
+    fn batch_strategy(&self) -> BatchStrategy {
+        BatchStrategy::DEFAULT
     }
 }
 

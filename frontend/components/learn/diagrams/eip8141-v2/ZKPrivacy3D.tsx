@@ -786,7 +786,7 @@ export function ZKPrivacy3D() {
           </div>
         </div>
       }
-      fallbackText="ZK Privacy via Frame TX -- ZK paymaster is Frame 0, withdrawal is Frame 1. CALLDATAREAD verifies proof matches withdrawal. No relayer needed. No link between deposit and withdrawal."
+      fallbackText="ZK Privacy via Frame TX — ZK paymaster is Frame 0, withdrawal is Frame 1. CALLDATAREAD verifies proof matches withdrawal. No relayer needed. No link between deposit and withdrawal."
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 3, 8], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>

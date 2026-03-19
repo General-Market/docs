@@ -828,7 +828,7 @@ export function EOFContainerization3D() {
       ariaLabel="Comparison of smart contract bytecode formats. Left shows today's mixed code and data as chaotically tumbling grey cubes. Right shows EOF format with neatly organized colored sections being scanned by an analysis beam."
       srDescription="A 3D diorama comparing contract bytecode formats. The left side shows a translucent pink container filled with 60 small grey cubes tumbling chaotically, representing today's mixed code-and-data bytecode that is difficult to analyze. Red spheres drift among them, representing analysis failures. The right side shows a taller translucent green container with four neatly stacked colored sections: a green header, two blue code sections with organized cube grids, and an indigo data section. A green analysis beam sweeps top-to-bottom through the structured container while a yellow gas meter beside it fills as each section is scanned."
       legend={<Legend />}
-      fallbackText="EOF bytecode format -- from mixed blobs to structured, analyzable sections"
+      fallbackText="EOF bytecode format — from mixed blobs to structured, analyzable sections"
     >
       {({ reducedMotion }) => (
         <Canvas

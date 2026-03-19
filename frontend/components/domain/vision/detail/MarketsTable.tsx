@@ -72,18 +72,35 @@ function truncateMiddle(str: string, maxLen: number): string {
 
 // Human-readable resolution type labels
 const RES_TYPE_DISPLAY: Record<string, string> = {
-  UP_0: 'Up/Dn', UP_30: 'Up 30bp', UP_X: 'Up X',
-  DOWN_0: 'Dn/Up', DOWN_30: 'Dn 30bp', DOWN_X: 'Dn X',
-  FLAT_0: 'Flat', FLAT_X: 'Flat X',
+  UP_0: 'Up/Dn', UP_30: 'Up 30bp',
+  DOWN_0: 'Dn/Up', DOWN_30: 'Dn 30bp',
+  FLAT_0: 'Flat',
   UP_300: 'Up 3%', UP_3000: 'Up 30%',
   DOWN_300: 'Dn 3%', DOWN_3000: 'Dn 30%',
+  FLAT_300: 'Flat 3%', FLAT_3000: 'Flat 30%',
 }
 
-function resolutionBadge(resType: string | undefined) {
+/** Format _X types with their actual threshold: UP_X + 30bps → "Up 0.3%" */
+function formatResLabel(resType: string, thresholdBps?: number): string {
+  // Fixed types have known labels
+  const fixed = RES_TYPE_DISPLAY[resType]
+  if (fixed) return fixed
+  // _X types: compute % from bps
+  if (resType.endsWith('_X') && thresholdBps != null && thresholdBps > 0) {
+    const pct = thresholdBps / 100
+    const pctStr = pct >= 1 ? `${pct.toFixed(0)}%` : `${pct.toFixed(1)}%`
+    if (resType.startsWith('UP')) return `Up ${pctStr}`
+    if (resType.startsWith('DOWN')) return `Dn ${pctStr}`
+    if (resType.startsWith('FLAT')) return `Flat ${pctStr}`
+  }
+  return resType
+}
+
+function resolutionBadge(resType: string | undefined, thresholdBps?: number) {
   if (!resType) {
     return <span className="text-[9px] text-text-muted">&mdash;</span>
   }
-  const label = RES_TYPE_DISPLAY[resType] ?? resType
+  const label = formatResLabel(resType, thresholdBps)
   const isUp = resType.startsWith('UP')
   const isDown = resType.startsWith('DOWN')
   const isFlat = resType.startsWith('FLAT')
@@ -118,6 +135,7 @@ const RESOLUTION_TYPE_LABELS: Record<number, string> = {
   6: 'FLAT_0', 7: 'FLAT_X',
   8: 'UP_300', 9: 'UP_3000',
   10: 'DOWN_300', 11: 'DOWN_3000',
+  12: 'FLAT_300', 13: 'FLAT_3000',
 }
 
 // ── Asset Price History Chart ──
@@ -303,8 +321,8 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     return batches.find(b => b.sourceId === sourceId) ?? null
   }, [batches, sourceId])
 
-  // Fetch latest batch config for this source from data-node (has per-market resolution types)
-  const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string }[] }>({
+  // Fetch latest batch config for this source from data-node (has per-market resolution types + thresholds)
+  const { data: batchConfigData } = useQuery<{ markets: { assetId: string; resolutionType: string; thresholdBps: number }[] }>({
     queryKey: ['batch-config-source', sourceId],
     queryFn: async () => {
       const res = await fetch(`/api/vision/config/${sourceId}`)
@@ -316,14 +334,14 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
     retry: 1,
   })
 
-  // Compute resolution type per market from 24h change (same logic as data-node batch_engine)
+  // Resolution type + threshold per market
   const resolutionMap = useMemo(() => {
-    const map = new Map<string, string>()
-    // If data-node config has matching assetIds, use them
+    const map = new Map<string, { resType: string; thresholdBps: number }>()
+    // If data-node config has matching assetIds, use them (includes thresholdBps)
     if (batchConfigData?.markets?.length) {
       for (const m of batchConfigData.markets) {
         if (m.assetId && m.resolutionType) {
-          map.set(m.assetId, m.resolutionType.toUpperCase())
+          map.set(m.assetId, { resType: m.resolutionType.toUpperCase(), thresholdBps: m.thresholdBps ?? 0 })
         }
       }
       if (map.size > 0) return map
@@ -333,11 +351,12 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
       const pct = parseFloat(market.changePct ?? '0')
       const abs = Math.abs(pct)
       let resType: string
-      if (abs < 0.3) resType = 'FLAT_X'
-      else if (abs < 3) resType = pct < 0 ? 'DOWN_0' : 'UP_X'
-      else if (abs < 30) resType = pct < 0 ? 'DOWN_300' : 'UP_300'
-      else resType = pct < 0 ? 'DOWN_3000' : 'UP_3000'
-      map.set(market.assetId, resType)
+      let thresholdBps: number
+      if (abs < 0.3) { resType = 'FLAT_X'; thresholdBps = 30 }
+      else if (abs < 3) { resType = pct < 0 ? 'DOWN_0' : 'UP_X'; thresholdBps = 30 }
+      else if (abs < 30) { resType = pct < 0 ? 'DOWN_300' : 'UP_300'; thresholdBps = 300 }
+      else { resType = pct < 0 ? 'DOWN_3000' : 'UP_3000'; thresholdBps = 3000 }
+      map.set(market.assetId, { resType, thresholdBps })
     }
     return map
   }, [batchConfigData, sourceMarkets])
@@ -450,7 +469,7 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
             const vol = formatVolume(market.volume24h)
             const betState = getBetState(market.assetId)
             const isExpanded = expandedAssetId === market.assetId
-            const resType = resolutionMap.get(market.assetId)
+            const resInfo = resolutionMap.get(market.assetId)
             const consensus = consensusMap.get(market.assetId) ?? []
 
             // Momentum bar — 24h change as subtle colored background behind price
@@ -491,14 +510,17 @@ export function MarketsTable({ sourceId, bitmapEditor, isResolving }: MarketsTab
 
                   {/* Resolution type — from config or computed from 24h change */}
                   <div className="text-center">
-                    {resolutionBadge(resType ?? (() => {
-                      const pct = parseFloat(market.changePct ?? '0')
-                      const abs = Math.abs(pct)
-                      if (abs < 0.3) return 'FLAT_X'
-                      if (abs < 3) return pct < 0 ? 'DOWN_0' : 'UP_X'
-                      if (abs < 30) return pct < 0 ? 'DOWN_300' : 'UP_300'
-                      return pct < 0 ? 'DOWN_3000' : 'UP_3000'
-                    })())}
+                    {resolutionBadge(
+                      resInfo?.resType ?? (() => {
+                        const pct = parseFloat(market.changePct ?? '0')
+                        const abs = Math.abs(pct)
+                        if (abs < 0.3) return 'FLAT_X'
+                        if (abs < 3) return pct < 0 ? 'DOWN_0' : 'UP_X'
+                        if (abs < 30) return pct < 0 ? 'DOWN_300' : 'UP_300'
+                        return pct < 0 ? 'DOWN_3000' : 'UP_3000'
+                      })(),
+                      resInfo?.thresholdBps
+                    )}
                   </div>
 
                   {/* Value — momentum bar behind price */}

@@ -749,7 +749,7 @@ export function MultisigAuth3D() {
       ariaLabel="Multisig authentication flow showing Alice and Bob sending signatures to Frame 0 (Validate), which uses CALLDATAREAD to inspect Frame 1's calldata before firing ACCEPT and executing the transfer"
       srDescription="A 3D scene showing multisig authentication with Frame TXs. Alice and Bob (purple spheres) each emit signature cubes that travel along curved paths to Frame 0 (the validator vault). An amber CALLDATAREAD arc flows from Frame 0 toward Frame 1's calldata, showing the validation frame reading the execution frame's data. When both signatures verify, an ACCEPT flash ring expands outward, the vault lock flips from indigo to green, and a command beam with token particles streams to Frame 1 (Execute)."
       legend={<Legend />}
-      fallbackText="Multisig authentication -- two signers verify independently, ACCEPT fires once both signatures check out"
+      fallbackText="Multisig authentication — two signers verify independently, ACCEPT fires once both signatures check out"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5.5, 9], fov: 35 }} dpr={[1, 2]} gl={{ antialias: true }}>

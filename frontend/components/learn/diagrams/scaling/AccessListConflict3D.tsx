@@ -806,7 +806,7 @@ export function AccessListConflict3D() {
       ariaLabel="3D visualization showing how transactions declare storage slots, detect conflicts, and get sorted into parallel execution lanes"
       srDescription="A 3D scene with three zones flowing left to right. On the left, 8 transaction cubes appear in a vertical stack, each decorated with colored dots representing read (blue) and write (red) storage slots. In the center, amber conflict wires pulse between transactions that share write slots: TX0 and TX3 both write slot C, TX1 and TX5 both access slot D. On the right, 4 parallel lanes receive the sorted transactions: conflicting transactions share a lane for serial execution while non-conflicting ones spread across lanes for parallel execution. Labels show 1 lane takes 800ms versus 4 lanes taking 200ms."
       legend={<Legend />}
-      fallbackText="Access list conflict detection -- transactions declare storage slots and get sorted into parallel lanes based on conflicts"
+      fallbackText="Access list conflict detection — transactions declare storage slots and get sorted into parallel lanes based on conflicts"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 3, 9], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>

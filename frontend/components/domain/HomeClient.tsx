@@ -279,7 +279,7 @@ export function HomeClient() {
         {/* ── Mobile bottom bar — glass slider ── */}
         <LayoutGroup id="nav-mobile">
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass-nav shadow-[0_-4px_30px_rgba(0,0,0,0.08)] safe-area-bottom">
-            <div className="flex items-center overflow-x-auto scrollbar-hide h-[60px] px-2 gap-1 snap-x snap-mandatory">
+            <div className="flex items-center justify-center overflow-x-auto scrollbar-hide h-[60px] px-2 gap-1 snap-x snap-mandatory">
               {NAV_GROUPS.flatMap(g => g.items).map((item) => {
                 const isActive = activeSection === item.id
                 const Icon = ICON_MAP[item.id]

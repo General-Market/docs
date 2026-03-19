@@ -796,7 +796,7 @@ export function ProverConsensus3D() {
       ariaLabel="3-of-5 independent prover consensus: four provers agree, one buggy prover is outvoted"
       srDescription="Five prover nodes in a semicircle receive a block. Four produce matching proofs (green checks). One buggy prover produces a different result (red X). The 4-of-5 consensus accepts the block and flags the buggy prover."
       legend={<Legend />}
-      fallbackText="Prover consensus -- 5 independent teams, 3-of-5 must agree, single bug cannot compromise network"
+      fallbackText="Prover consensus — 5 independent teams, 3-of-5 must agree, single bug cannot compromise network"
     >
       {({ reducedMotion }) => (
         <Canvas

@@ -640,7 +640,7 @@ export function FrameOverview3D() {
       ariaLabel="ACCEPT is the trust boundary. A data cube in Frame 0 reads Frame 1's calldata via an amber arc, then passes through the ACCEPT gate. Corridor walls shift from purple (untrusted) to green (committed)."
       srDescription="A 3D scene showing three frames arranged left to right: Frame 0, Frame 1, and Frame 2, connected by a corridor with walls. A purple data cube starts in Frame 0. An amber arc appears from Frame 1 to Frame 0, representing CALLDATAREAD -- Frame 0 reading Frame 1's calldata before deciding. Sparks travel along the arc from Frame 1 toward Frame 0. The CALLDATAREAD fades, then the cube approaches the ACCEPT gate at the center. When ACCEPT fires, a green torus ring expands, the gate flashes, and the corridor walls shift from purple to green. The cube turns green and slides through Frame 1 and Frame 2."
       legend={<SceneLegend items={[{ color: PURPLE, label: 'Untrusted / validation' }, { color: GREEN, label: 'Committed / execution' }, { color: AMBER, label: 'CALLDATAREAD' }]} />}
-      fallbackText="Frame overview -- ACCEPT gate is the trust boundary. Purple corridor turns green after ACCEPT fires. Amber CALLDATAREAD arc reads Frame 1 before ACCEPT."
+      fallbackText="Frame overview — ACCEPT gate is the trust boundary. Purple corridor turns green after ACCEPT fires. Amber CALLDATAREAD arc reads Frame 1 before ACCEPT."
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 3, 7], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>

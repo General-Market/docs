@@ -771,7 +771,7 @@ export function BlobSampling3D() {
       ariaLabel="Central block producer tower broadcasting data blobs outward, with 8 validators around the perimeter sampling specific cells from a grid, collectively achieving 100% data availability coverage"
       srDescription="A 3D diorama showing PeerDAS blob sampling. A dark central tower represents the block producer, broadcasting data via expanding indigo rings. Four 4x4 blob grids arranged in a ring contain 64 data cells. Eight green validator figures around the perimeter shoot thin beams at specific cells, which glow green on contact. Collectively, all cells are sampled, achieving 100% data availability coverage without any single validator downloading everything."
       legend={<Legend />}
-      fallbackText="PeerDAS blob sampling -- validators sample individual cells from data blobs to achieve full coverage"
+      fallbackText="PeerDAS blob sampling — validators sample individual cells from data blobs to achieve full coverage"
     >
       {({ reducedMotion }) => (
         <Canvas

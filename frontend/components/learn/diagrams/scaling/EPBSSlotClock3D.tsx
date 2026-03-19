@@ -674,7 +674,7 @@ export function EPBSSlotClock3D() {
       ariaLabel="Two clock faces comparing Ethereum slot time utilization. Today's clock shows 97.5% grey wasted time with a tiny red verification sliver. The ePBS clock shows three colored segments for builder, proposer, and verifier roles using about 83% of the slot."
       srDescription="A 3D diorama with two clock faces. The left clock represents today's Ethereum slot: 97.5% is a grey dead zone with only a tiny 9-degree red sliver for verification. The right clock shows ePBS: a 100-degree blue builder segment, a 50-degree amber proposer segment, a 150-degree green verification segment, and a 60-degree grey overhead gap, using approximately 83% of the slot productively."
       legend={<Legend />}
-      fallbackText="ePBS slot utilization -- from 2.5% verification-only to ~83% productive use"
+      fallbackText="ePBS slot utilization — from 2.5% verification-only to ~83% productive use"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 6, 5], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>

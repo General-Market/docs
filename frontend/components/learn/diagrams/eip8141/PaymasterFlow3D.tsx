@@ -855,7 +855,7 @@ export function PaymasterFlow3D() {
       ariaLabel="Paymaster gas flow showing how a user with RAI tokens but no ETH can still transact, with the paymaster covering gas in ETH and collecting a RAI fee"
       srDescription="A 3D scene with three nodes. On the left, a blue sphere represents the user holding amber RAI token discs but no ETH, shown by a red X mark. In the center, an indigo hexagonal prism represents the paymaster holding green ETH spheres. On the right, a blue cube is the target. An amber CALLDATAREAD arc connects user to paymaster as the paymaster reads the transaction intent. The paymaster burns ETH for gas (particles rise upward), an ACCEPT ring fires green, then a green beam extends to the target. Finally, amber RAI tokens flow back from user to paymaster as the fee payment."
       legend={<Legend />}
-      fallbackText="Paymaster Flow -- User has RAI but no ETH. Paymaster pays gas in ETH, takes fee in RAI."
+      fallbackText="Paymaster Flow — User has RAI but no ETH. Paymaster pays gas in ETH, takes fee in RAI."
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 6, 10], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>

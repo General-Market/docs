@@ -876,7 +876,7 @@ export function ZKEVMPopulation3D() {
       ariaLabel="Side-by-side comparison: re-execution verification where 8 validators process a block one at a time (12 seconds) versus ZK proof verification where a prover compresses the block into a proof that all 8 validators verify instantly (0.5 seconds)"
       srDescription="A 3D scene split in two. Left side shows a block entering and 8 grey validator cubes lighting up red one at a time sequentially, with a timer counting to 12 seconds. Right side shows the same block entering a violet prover box that compresses it into a small green proof token, which then broadcasts to all 8 validators simultaneously turning them green, with a timer reaching only 0.5 seconds."
       legend={<Legend />}
-      fallbackText="ZK-EVM verification -- proof verification (0.5s) vs re-execution (12s)"
+      fallbackText="ZK-EVM verification — proof verification (0.5s) vs re-execution (12s)"
     >
       {({ reducedMotion }) => (
         <Canvas

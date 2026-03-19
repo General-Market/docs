@@ -8,14 +8,14 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
+import { useAllMorphoMarkets, type AllMarketData } from '@/hooks/useAllMorphoMarkets'
 import { VaultDeposit } from '@/components/lending/VaultDeposit'
 import { VaultPosition } from '@/components/lending/VaultPosition'
 import { BorrowUsdc } from '@/components/lending/BorrowUsdc'
 import { RepayDebt } from '@/components/lending/RepayDebt'
 import { LendItpModal } from './LendItpModal'
-import { BRIDGED_ITP_ABI, INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
+import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
 import { getAllMorphoMarkets, getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
-import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
@@ -93,6 +93,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
   const { vaultInfo, userPosition, refetch: refetchVault } = useMetaMorphoVault()
   const { markets, refetch: refetchMarkets } = useMorphoMarkets()
   const { position, refetch: refetchPosition } = useMorphoPosition()
+  const { data: allMarketData } = useAllMorphoMarkets()
 
   // State for the borrow modal opened from the markets table
   const [borrowModalItp, setBorrowModalItp] = useState<{
@@ -262,7 +263,7 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
 
       {/* Markets Table */}
       <MarketsTableInline
-        liveMarkets={markets}
+        allMarketData={allMarketData}
         onBorrow={(settlementAddress, name) => setBorrowModalItp({ settlementAddress, name })}
         activeBorrowCollaterals={
           position?.debtAmount && position.debtAmount > 0n
@@ -317,113 +318,26 @@ function InfoRow({ label, value, valueColor, mono }: { label: string; value: str
 }
 
 /* ── Inline Markets Table ── */
-import type { MarketInfo } from '@/lib/types/morpho'
 
 interface MarketsTableInlineProps {
-  liveMarkets: MarketInfo[]
+  allMarketData?: Map<string, AllMarketData>
   onBorrow: (collateralToken: string, itpName: string) => void
   activeBorrowCollaterals: Set<string>
 }
 
-function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: MarketsTableInlineProps) {
+function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }: MarketsTableInlineProps) {
   const t = useTranslations('lending')
   const { address } = useAccount()
   const publicClient = usePublicClient({ chainId: indexL3.id })
   const [itpNames, setItpNames] = useState<Map<string, string>>(new Map())
   const [userBalances, setUserBalances] = useState<Map<string, bigint>>(new Map())
-  const [onChainVaults, setOnChainVaults] = useState<string[]>([])
-  // Reverse map: vault address → itpId (full 0x-padded hex)
-  const [vaultToItpId, setVaultToItpId] = useState<Map<string, string>>(new Map())
-  // Dynamic market discovery: collateral tokens found in the vault's supply queue
-  const [vaultMarketCollaterals, setVaultMarketCollaterals] = useState<Set<string>>(new Set())
   const publicClientRef = useRef(publicClient)
 
   useEffect(() => { publicClientRef.current = publicClient }, [publicClient])
 
-  // Discover all ITP vaults from the Index contract on-chain
-  useEffect(() => {
-    const discoverVaults = async () => {
-      const client = publicClientRef.current
-      if (!client) return
-      try {
-        const count = await client.readContract({
-          address: INDEX_PROTOCOL.index,
-          abi: INDEX_ABI,
-          functionName: 'getItpCount',
-        }) as bigint
-        const vaults: string[] = []
-        const idMap = new Map<string, string>()
-        for (let i = 1n; i <= count; i++) {
-          const itpId = '0x' + i.toString(16).padStart(64, '0') as `0x${string}`
-          try {
-            const vault = await client.readContract({
-              address: INDEX_PROTOCOL.index,
-              abi: INDEX_ABI,
-              functionName: 'itpVaults',
-              args: [itpId],
-            }) as string
-            if (vault && vault !== '0x0000000000000000000000000000000000000000') {
-              vaults.push(vault)
-              idMap.set(vault.toLowerCase(), itpId)
-            }
-          } catch { /* skip */ }
-        }
-        setOnChainVaults(vaults)
-        setVaultToItpId(idMap)
-      } catch { /* Index contract not available */ }
-    }
-    discoverVaults()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Discover authorized markets from the MetaMorpho vault's supply queue
-  // This is the dynamic counterpart to the static batch-markets.json
-  useEffect(() => {
-    const discoverVaultMarkets = async () => {
-      const client = publicClientRef.current
-      if (!client) return
-      try {
-        const queueLen = await client.readContract({
-          address: MORPHO_ADDRESSES.metaMorphoVault,
-          abi: [{ name: 'supplyQueueLength', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] }],
-          functionName: 'supplyQueueLength',
-        }) as bigint
-        const collaterals = new Set<string>()
-        for (let i = 0n; i < queueLen; i++) {
-          try {
-            const marketId = await client.readContract({
-              address: MORPHO_ADDRESSES.metaMorphoVault,
-              abi: [{ name: 'supplyQueue', type: 'function', stateMutability: 'view', inputs: [{ type: 'uint256' }], outputs: [{ type: 'bytes32' }] }],
-              functionName: 'supplyQueue',
-              args: [i],
-            }) as `0x${string}`
-            // Read market params from Morpho core to get collateral token
-            const params = await client.readContract({
-              address: MORPHO_ADDRESSES.morpho,
-              abi: [{ name: 'idToMarketParams', type: 'function', stateMutability: 'view', inputs: [{ type: 'bytes32' }], outputs: [{ type: 'address' }, { type: 'address' }, { type: 'address' }, { type: 'address' }, { type: 'uint256' }] }],
-              functionName: 'idToMarketParams',
-              args: [marketId],
-            }) as readonly [string, string, string, string, bigint]
-            const collateralToken = params[1] // loanToken, collateralToken, oracle, irm, lltv
-            if (collateralToken && collateralToken !== '0x0000000000000000000000000000000000000000') {
-              collaterals.add(collateralToken.toLowerCase())
-            }
-          } catch { /* skip individual market read failures */ }
-        }
-        setVaultMarketCollaterals(collaterals)
-      } catch { /* vault not available */ }
-    }
-    discoverVaultMarkets()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Get all registered markets from the registry
-  const allRegistryMarkets = getAllMorphoMarkets()
-
-  // Build a set of collateral tokens from live + registry + on-chain discovered vaults
-  const allCollateralTokens = Array.from(new Set([
-    ...liveMarkets.map(m => m.params.collateralToken),
-    ...allRegistryMarkets.map(m => m.collateralToken),
-    ...onChainVaults,
-  ]))
+  // Registry is the sole source of rows
+  const allMarkets = getAllMorphoMarkets()
+  const allCollateralTokens = allMarkets.map(m => m.collateralToken)
 
   // Fetch ITP names and user balances for all collateral tokens
   const fetchInfo = useCallback(async () => {
@@ -464,37 +378,28 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
 
   useEffect(() => { fetchInfo() }, [fetchInfo])
 
-  // Build live market lookup by collateral token
-  const liveByCollateral = new Map(liveMarkets.map(m => [m.params.collateralToken.toLowerCase(), m]))
-
-  // Build rows: one per unique collateral token, with live data where available
+  // Build rows: one per registry entry, with market data from allMarketData map
   const namesMap = itpIdNames as Record<string, { name: string; ticker: string }>
   const rows = allCollateralTokens.map(addr => {
-    const live = liveByCollateral.get(addr.toLowerCase())
     const registry = getMorphoMarketForItp(addr)
-    const itpId = vaultToItpId.get(addr.toLowerCase()) || ''
-    const idEntry = itpId ? namesMap[itpId] : undefined
-    const itpNum = itpId ? parseInt(itpId.slice(2), 16) : 0
-    const name = idEntry?.name || itpNames.get(addr) || (itpNum ? `ITP #${itpNum}` : 'ITP')
-    const ticker = idEntry?.ticker || ''
+    const mktData = allMarketData?.get(addr.toLowerCase())
+    const name = itpNames.get(addr) || 'ITP'
     const userBal = userBalances.get(addr) ?? 0n
     const lltv = registry ? Number(registry.lltv) / 1e16 : 77
 
+    const tvlRaw = mktData ? parseFloat(formatUnits(mktData.totalSupplyAssets, 18)) : 0
+
     return {
       collateralToken: addr,
-      itpId,
       name,
-      ticker,
+      ticker: '',
       userBalance: userBal,
-      supplyApy: live && live.borrowApy > 0 ? (live.borrowApy * (live.utilization / 100)).toFixed(2) : '--',
-      borrowApy: live ? live.borrowApy.toFixed(2) : '--',
-      tvl: live && live.totalBorrowed > 0n
-        ? `$${(parseFloat(formatUnits(live.totalBorrowed, 18)) / (live.utilization / 100 || 1)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      borrowApy: mktData ? mktData.borrowApy.toFixed(2) : '--',
+      tvl: mktData && mktData.totalSupplyAssets > 0n
+        ? `$${tvlRaw.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : '--',
-      tvlRaw: live && live.totalBorrowed > 0n
-        ? parseFloat(formatUnits(live.totalBorrowed, 18)) / (live.utilization / 100 || 1)
-        : 0,
-      utilization: live ? `${live.utilization.toFixed(1)}%` : '--',
+      tvlRaw,
+      utilization: mktData ? `${mktData.utilization.toFixed(1)}%` : '--',
       lltv: `${lltv.toFixed(0)}%`,
     }
   })
@@ -541,21 +446,12 @@ function MarketsTableInline({ liveMarkets, onBorrow, activeBorrowCollaterals }: 
               rows.map((row) => (
                 <tr key={row.collateralToken} className="border-b border-black/[0.04] last:border-0 hover:bg-black/[0.02] transition-colors">
                   <td className="px-3 sm:px-4 py-3">
-                    {row.itpId ? (
-                      <Link href={`/itp/${row.itpId}`} className="flex items-center gap-2 group">
-                        <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
-                          <span className="text-text-primary text-micro font-bold">{row.ticker ? row.ticker.slice(0, 4) : row.name.slice(0, 3)}</span>
-                        </div>
-                        <span className="font-semibold text-text-primary text-sm group-hover:underline">{t('markets_table.market_pair', { name: row.name })}</span>
-                      </Link>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
-                          <span className="text-text-primary text-micro font-bold">{row.name.slice(0, 3)}</span>
-                        </div>
-                        <span className="font-semibold text-text-primary text-sm">{t('markets_table.market_pair', { name: row.name })}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-muted rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-text-primary text-micro font-bold">{row.name.slice(0, 3)}</span>
                       </div>
-                    )}
+                      <span className="font-semibold text-text-primary text-sm">{t('markets_table.market_pair', { name: row.name })}</span>
+                    </div>
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right font-mono tabular-nums hidden sm:table-cell">
                     {row.userBalance > 0n ? (

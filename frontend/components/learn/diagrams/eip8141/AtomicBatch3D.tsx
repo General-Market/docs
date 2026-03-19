@@ -780,7 +780,7 @@ export function AtomicBatch3D() {
       ariaLabel="Comparison showing how separate transactions create a vulnerability gap that attackers exploit, versus a single Frame TX that executes atomically with no gap"
       srDescription="A 3D diorama split into two rows. The top row (BEFORE) shows two separate transaction cubes -- TX 1 approve and TX 2 swap -- with a pulsing red vulnerability gap between them. An attacker arrow descends into the gap, representing a front-running or sandwich attack. The bottom row (AFTER) shows a single Frame TX envelope containing three frames: F0 validate, F1 approve, and F2 swap, connected by green particles flowing continuously with no gaps. A shield icon on the envelope deflects an attacker arrow, demonstrating atomic execution prevents front-running."
       legend={<Legend />}
-      fallbackText="Separate TXs have a vulnerability gap exploitable by attackers -- Frame TXs execute atomically with no gap"
+      fallbackText="Separate TXs have a vulnerability gap exploitable by attackers — Frame TXs execute atomically with no gap"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5, 9], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>

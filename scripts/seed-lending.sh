@@ -15,8 +15,8 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ── Parse flags ──
 BUY_ONLY=false
 BORROW_ONLY=false
-BUY_AMOUNT=100  # USDC per ITP
-BORROW_PCT=30   # Borrow 30% of collateral value (conservative, LLTV=77%)
+BUY_AMOUNT=100  # Max USDC per ITP (randomized 1-100)
+BORROW_MAX=100  # Max borrow per market in USDC (randomized 1-100)
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -89,8 +89,7 @@ for i in $(seq 0 $((MARKET_COUNT - 1))); do
   LLTVS+=($(python3 -c "import json; d=json.load(open('$BATCH_MARKETS')); print(d['markets'][$i]['lltv'])"))
 done
 
-# ── Amount in 18 decimals ──
-BUY_WEI=$(python3 -c "print(int($BUY_AMOUNT * 10**18))")
+# ── Constants ──
 DEADLINE=$(($(date +%s) + 86400))  # 24h from now
 MAX_UINT="0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
 
@@ -101,8 +100,8 @@ if ! $BORROW_ONLY; then
   echo "══ Phase 1: Buy ITPs ══"
 
   # Mint L3 USDC first (MockERC20 — public mint)
-  TOTAL_USDC=$(python3 -c "print(int($BUY_AMOUNT * $MARKET_COUNT * 2 * 10**18))")
-  echo "Minting $((BUY_AMOUNT * MARKET_COUNT * 2)) L3 USDC to deployer..."
+  TOTAL_USDC=$(python3 -c "print(int($BUY_AMOUNT * $MARKET_COUNT * 3 * 10**18))")
+  echo "Minting USDC to deployer..."
   cast send "$L3_USDC" "mint(address,uint256)" "$DEPLOYER" "$TOTAL_USDC" \
     --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 100000 2>/dev/null || echo "  (mint may have failed — might not be MockERC20)"
 
@@ -128,18 +127,19 @@ if ! $BORROW_ONLY; then
     # Check existing balance
     BAL=$(cast call "$COLL" "balanceOf(address)(uint256)" "$DEPLOYER" --rpc-url "$L3_RPC" 2>/dev/null || echo "0")
     if [[ "$BAL" != "0" && "$BAL" != "0x0" ]]; then
-      echo "  Market $i: already has $BAL collateral, skipping buy"
+      echo "  Market $i: already has collateral, skipping buy"
       ORDER_IDS+=("")
       continue
     fi
 
-    # Submit buy order: submitOrder(bytes32, uint8, uint256, uint256, uint256, uint256)
-    # side=0 (Buy), limitPrice=10 USDC (10x buffer), slippageTier=1
+    # Random buy amount 1-100 USDC
+    RAND_BUY=$(( (RANDOM % BUY_AMOUNT) + 1 ))
+    RAND_BUY_WEI=$(python3 -c "print(int($RAND_BUY * 10**18))")
     LIMIT_PRICE=$(python3 -c "print(int(10 * 10**18))")
-    echo -n "  Market $i: buying ITP ${ITP_ID:0:18}... "
+    echo -n "  Market $i: buying \$$RAND_BUY of ITP ${ITP_ID:0:18}... "
     ORDER_ID=$(cast send "$INDEX" \
       "submitOrder(bytes32,uint8,uint256,uint256,uint256,uint256)" \
-      "$ITP_ID" 0 "$BUY_WEI" "$LIMIT_PRICE" 1 "$DEADLINE" \
+      "$ITP_ID" 0 "$RAND_BUY_WEI" "$LIMIT_PRICE" 1 "$DEADLINE" \
       --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 500000 \
       --json 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','0x0'))" || echo "failed")
 
@@ -211,25 +211,42 @@ for i in $(seq 0 $((MARKET_COUNT - 1))); do
 
   # Use full balance as collateral
   SUPPLY_AMOUNT="$BAL"
-  # Borrow = collateral_value * BORROW_PCT / 100
-  # Since NAV ≈ $1 and oracle price = 1e36, collateral value ≈ collateral amount
-  BORROW_AMOUNT=$(python3 -c "print(int(int('$BAL') * $BORROW_PCT // 100))")
+  # Random borrow 1-BORROW_MAX USDC
+  RAND_BORROW=$(( (RANDOM % BORROW_MAX) + 1 ))
+  BORROW_AMOUNT=$(python3 -c "print(int($RAND_BORROW * 10**18))")
+  # Cap at 50% of collateral value (safe vs 77% LLTV)
+  MAX_SAFE=$(python3 -c "print(int(int('$BAL') * 50 // 100))")
+  BORROW_AMOUNT=$(python3 -c "print(min(int('$BORROW_AMOUNT'), int('$MAX_SAFE')))")
   if [[ "$BORROW_AMOUNT" == "0" ]]; then
-    BORROW_AMOUNT=$(python3 -c "print(int(1 * 10**18))")  # minimum 1 USDC
+    BORROW_AMOUNT=$(python3 -c "print(int(1 * 10**18))")
   fi
 
-  echo -n "  Market $i ($COLL): "
+  MP="(${LOAN_TOKEN},${COLL},${ORACLES[$i]},${IRMS[$i]},${LLTVS[$i]})"
+  BORROW_USD=$(python3 -c "print(f'{int(\"$BORROW_AMOUNT\") / 10**18:.0f}')")
+  echo -n "  Market $i: \$$BORROW_USD borrow — "
 
   # Approve collateral to Morpho
   cast send "$COLL" "approve(address,uint256)" "$MORPHO" "$MAX_UINT" \
     --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 100000 2>/dev/null || true
 
-  # supplyCollateral(MarketParams, uint256 assets, address onBehalf, bytes data)
-  # MarketParams = (loanToken, collateralToken, oracle, irm, lltv)
+  # Supply USDC liquidity directly if market has no supply (non-queue markets)
+  MARKET_SUPPLY=$(cast call "$MORPHO" "market(bytes32)(uint128,uint128,uint128,uint128,uint128,uint128)" \
+    "$(python3 -c "from web3 import Web3; print(Web3.solidity_keccak(['address','address','address','address','uint256'], ['${LOAN_TOKEN}','${COLL}','${ORACLES[$i]}','${IRMS[$i]}',int('${LLTVS[$i]}')]).hex())")" \
+    --rpc-url "$L3_RPC" 2>/dev/null | head -1 | awk '{print $1}' || echo "0")
+  if [[ "$MARKET_SUPPLY" == "0" ]]; then
+    # Supply USDC directly (deployer is both lender and borrower for seeding)
+    SUPPLY_USDC=$(python3 -c "print(int($BORROW_AMOUNT) * 3)")  # 3x borrow for headroom
+    cast send "$LOAN_TOKEN" "approve(address,uint256)" "$MORPHO" "$MAX_UINT" \
+      --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 100000 2>/dev/null || true
+    cast send "$MORPHO" "supply((address,address,address,address,uint256),uint256,uint256,address,bytes)" \
+      "$MP" "$SUPPLY_USDC" "0" "$DEPLOYER" "0x" \
+      --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 500000 2>/dev/null || true
+  fi
+
+  # Supply collateral
   RESULT=$(cast send "$MORPHO" \
     "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)" \
-    "(${LOAN_TOKEN},${COLL},${ORACLES[$i]},${IRMS[$i]},${LLTVS[$i]})" \
-    "$SUPPLY_AMOUNT" "$DEPLOYER" "0x" \
+    "$MP" "$SUPPLY_AMOUNT" "$DEPLOYER" "0x" \
     --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 500000 \
     --json 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','0x0'))" || echo "0x0")
 
@@ -241,20 +258,18 @@ for i in $(seq 0 $((MARKET_COUNT - 1))); do
     continue
   fi
 
-  # borrow(MarketParams, uint256 assets, uint256 shares, address onBehalf, address receiver)
+  # Borrow
   RESULT=$(cast send "$MORPHO" \
     "borrow((address,address,address,address,uint256),uint256,uint256,address,address)" \
-    "(${LOAN_TOKEN},${COLL},${ORACLES[$i]},${IRMS[$i]},${LLTVS[$i]})" \
-    "$BORROW_AMOUNT" "0" "$DEPLOYER" "$DEPLOYER" \
+    "$MP" "$BORROW_AMOUNT" "0" "$DEPLOYER" "$DEPLOYER" \
     --rpc-url "$L3_RPC" --private-key "$DEPLOYER_KEY" --gas-limit 500000 \
     --json 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin).get('status','0x0'))" || echo "0x0")
 
   if [[ "$RESULT" == "0x1" ]]; then
-    BORROW_USD=$(python3 -c "print(f'{int(\"$BORROW_AMOUNT\") / 10**18:.2f}')")
-    echo "borrowed $BORROW_USD USDC"
+    echo "borrowed \$$BORROW_USD"
     BORROWED=$((BORROWED + 1))
   else
-    echo "borrow FAILED (may exceed LLTV)"
+    echo "borrow FAILED"
   fi
 done
 

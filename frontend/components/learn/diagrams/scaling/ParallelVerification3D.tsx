@@ -651,7 +651,7 @@ export function ParallelVerification3D() {
       ariaLabel="Side-by-side comparison showing transactions processed one at a time on the left versus five parallel lanes on the right, demonstrating how access lists enable parallel execution"
       srDescription="A 3D diorama comparing sequential and parallel transaction verification. The left side shows 8 transaction cubes moving one at a time along a single conveyor rail through a bottleneck funnel. The right side shows the same 8 cubes distributed across 5 parallel lanes, all advancing simultaneously. Amber dependency wires connect lanes that share storage slots."
       legend={<Legend />}
-      fallbackText="Parallel verification -- access lists enable 5 transaction lanes instead of one sequential queue"
+      fallbackText="Parallel verification — access lists enable 5 transaction lanes instead of one sequential queue"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5, 7], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>

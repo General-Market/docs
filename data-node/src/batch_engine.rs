@@ -329,6 +329,64 @@ async fn get_all_24h_changes(
         .collect())
 }
 
+/// Per-source lookback ticks for median threshold calibration.
+/// Sources with wildly different volatility profiles need different windows.
+fn median_lookback_ticks(source_id: &str) -> usize {
+    match source_id {
+        // Fast, extreme volatility — short lookback tracks regime changes
+        "pumpfun" => 10,
+        "twitch" => 10,
+        "chaturbate" => 10,
+        // Moderate volatility — standard window
+        "crypto" | "defi" | "stocks" | "polymarket" => 20,
+        // Slow-changing — need larger lookback for meaningful median
+        "weather" | "airnow" | "noaa_met" | "noaa_tides" | "nwps" | "ndbc"
+        | "usgs_water" | "spaceweather" => 48,
+        "rates" | "bls" | "worldbank" | "eia" | "ecb" | "bonds"
+        | "futures" | "bchain" | "opec" | "imf" | "cftc" => 30,
+        // Default: 20 ticks
+        _ => 20,
+    }
+}
+
+/// Get the median signed change % over the last N settlements per asset.
+/// Returns HashMap<asset_id, median_change_pct>.
+///
+/// The median of signed changes is the natural 50/50 threshold:
+/// by definition, ~50% of future values will exceed it.
+async fn get_median_settlement_changes(
+    pool: &PgPool,
+    source_id: &str,
+    lookback_ticks: usize,
+) -> Result<HashMap<String, f64>, sqlx::Error> {
+    // Postgres PERCENTILE_CONT gives exact median
+    let rows: Vec<(String, Option<f64>)> = sqlx::query_as(
+        r#"
+        WITH recent AS (
+            SELECT asset_id, change_pct::float8 as change_pct,
+                   ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY settled_at DESC) as rn
+            FROM batch_settlements
+            WHERE source_id = $1
+        )
+        SELECT asset_id,
+               PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY change_pct) as median_change
+        FROM recent
+        WHERE rn <= $2
+        GROUP BY asset_id
+        HAVING COUNT(*) >= 3
+        "#,
+    )
+    .bind(source_id)
+    .bind(lookback_ticks as i64)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(id, median)| median.map(|m| (id, m)))
+        .collect())
+}
+
 /// Get all healthy assets for a source.
 /// "Healthy" = has a price in `market_prices_latest` within 2× sync_interval and value > 0.
 ///
@@ -369,6 +427,7 @@ async fn get_healthy_assets(
 }
 
 /// Pick resolution type and threshold based on observed volatility (abs change %).
+/// Used as FALLBACK when median calibration has no data.
 /// - <0.3% avg change  → "flat_x" with 30 bps (low volatility)
 /// - 0.3-3%            → "up_x"   with 30 bps (moderate volatility)
 /// - 3-30%             → "up_300" with 300 bps (high volatility)
@@ -387,26 +446,83 @@ fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
     }
 }
 
+/// Convert a median signed change to a resolution type + threshold that
+/// yields ~50/50 outcomes by construction.
+///
+/// The median IS the 50th percentile: ~50% of ticks will exceed it.
+/// - Positive median → UP_X (asset trends up, bet threshold = median)
+/// - Negative median → DOWN_X (asset trends down, bet threshold = |median|)
+/// - Near-zero median → UP_0 (no trend, any positive = UP)
+fn resolution_from_median(median_change_pct: f64) -> (&'static str, u32) {
+    let threshold_bps = sanitize_threshold_bps(median_change_pct.abs());
+    if threshold_bps == 0 {
+        // No meaningful trend — binary up/down on any movement
+        return ("up_0", 0);
+    }
+    if median_change_pct >= 0.0 {
+        ("up_x", threshold_bps)
+    } else {
+        ("down_x", threshold_bps)
+    }
+}
+
 /// Compute thresholds for all assets of a source in batch.
-/// Uses 2 queries total (not N+1).
-/// Priority: last batch settlement > 24h history > flat_x (no data).
-/// Resolution type adapts to observed volatility.
+///
+/// Strategy: **median-first calibration** for 50/50 outcomes.
+///
+/// Priority:
+/// 1. Median of last N settlement changes (50/50 by construction)
+/// 2. Last batch settlement (fallback to volatility bands)
+/// 3. 24h price history (fallback to volatility bands)
+/// 4. No data → up_0 (any positive = up)
+///
+/// The lookback window is per-source: fast sources (pumpfun) use 10 ticks,
+/// slow sources (weather) use 48 ticks. See `median_lookback_ticks()`.
 async fn compute_asset_thresholds(
     pool: &PgPool,
     source_id: &str,
     asset_ids: &[String],
 ) -> Vec<BatchMarket> {
-    let settlement_changes = get_all_last_settlement_changes(pool, source_id)
+    let lookback = median_lookback_ticks(source_id);
+
+    // Primary: median calibration from settlement history
+    let median_changes = get_median_settlement_changes(pool, source_id, lookback)
         .await
         .unwrap_or_default();
-    let history_changes = get_all_24h_changes(pool, source_id)
-        .await
-        .unwrap_or_default();
+
+    // Fallback sources (only queried if median is incomplete)
+    let settlement_changes = if median_changes.len() < asset_ids.len() {
+        get_all_last_settlement_changes(pool, source_id)
+            .await
+            .unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
+    let history_changes = if median_changes.len() + settlement_changes.len() < asset_ids.len() {
+        get_all_24h_changes(pool, source_id)
+            .await
+            .unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
 
     asset_ids
         .iter()
         .map(|asset_id| {
-            // Try last settlement first (signed change → direction-aware resolution)
+            // 1. Median calibration — 50/50 by construction
+            if let Some(&median_pct) = median_changes.get(asset_id) {
+                if !median_pct.is_nan() && !median_pct.is_infinite() {
+                    let (res_type, threshold_bps) = resolution_from_median(median_pct);
+                    return BatchMarket {
+                        asset_id: asset_id.clone(),
+                        resolution_type: res_type.to_string(),
+                        threshold_bps,
+                        threshold_source: "median".to_string(),
+                    };
+                }
+            }
+
+            // 2. Last settlement (fallback — volatility bands)
             if let Some(&change_pct) = settlement_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
                     let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
@@ -419,7 +535,7 @@ async fn compute_asset_thresholds(
                 }
             }
 
-            // Try 24h history (signed change → direction-aware resolution)
+            // 3. 24h history (fallback — volatility bands)
             if let Some(&change_pct) = history_changes.get(asset_id) {
                 if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
                     let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
@@ -432,11 +548,11 @@ async fn compute_asset_thresholds(
                 }
             }
 
-            // Fallback: flat_x with 30 bps (no data = assume low volatility)
+            // 4. No data — binary up/down on any movement
             BatchMarket {
                 asset_id: asset_id.clone(),
-                resolution_type: "flat_x".to_string(),
-                threshold_bps: 30,
+                resolution_type: "up_0".to_string(),
+                threshold_bps: 0,
                 threshold_source: "no_data".to_string(),
             }
         })
@@ -928,5 +1044,29 @@ mod tests {
         assert_eq!(resolution_for_volatility(30.0), ("up_3000", 3000));
         // Extreme negative → down_3000
         assert_eq!(resolution_for_volatility(-30.0), ("down_3000", 3000));
+    }
+
+    #[test]
+    fn test_resolution_from_median() {
+        // Zero median → up_0 (any positive = up)
+        assert_eq!(resolution_from_median(0.0), ("up_0", 0));
+        assert_eq!(resolution_from_median(0.005), ("up_0", 0)); // rounds to 0 bps
+
+        // Positive median → up_x with threshold
+        assert_eq!(resolution_from_median(0.5), ("up_x", 50));   // 0.5% → 50 bps
+        assert_eq!(resolution_from_median(2.5), ("up_x", 250));  // 2.5% → 250 bps
+        assert_eq!(resolution_from_median(15.0), ("up_x", 1500));
+
+        // Negative median → down_x with threshold
+        assert_eq!(resolution_from_median(-0.5), ("down_x", 50));
+        assert_eq!(resolution_from_median(-3.7), ("down_x", 370));
+    }
+
+    #[test]
+    fn test_median_lookback_ticks() {
+        assert_eq!(median_lookback_ticks("pumpfun"), 10);
+        assert_eq!(median_lookback_ticks("crypto"), 20);
+        assert_eq!(median_lookback_ticks("weather"), 48);
+        assert_eq!(median_lookback_ticks("some_new_source"), 20); // default
     }
 }

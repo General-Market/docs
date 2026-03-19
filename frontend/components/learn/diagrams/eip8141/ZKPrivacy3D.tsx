@@ -910,7 +910,7 @@ export function ZKPrivacy3D() {
       ariaLabel="ZK privacy via Frame Transactions: a ZK-SNARK paymaster frame verifies proofs and pays gas, eliminating relayers, while a withdrawal frame sends funds to a fresh address with no link to the deposit"
       srDescription="A 3D scene showing privacy via Frame Transactions. On the left, a blue deposit address sphere. On the right, a green withdrawal address sphere. A permanent dashed red line with X between them shows NO LINK. In the center, a Frame Transaction envelope appears containing two frames: Frame 0 (purple) is the ZK paymaster that receives a ZK proof cube, verifies it, and fires a green ACCEPT ring. Frame 1 (green) is the execution frame for the withdrawal. An amber CALLDATAREAD arc shows Frame 0 reading Frame 1 withdrawal calldata to verify the proof matches. A green beam extends from Frame 1 to the fresh withdrawal address. Finally, a comparison shows the old relayer-based approach crossed out versus the new Frame TX approach where the paymaster IS a frame."
       legend={<Legend />}
-      fallbackText="ZK Privacy via Frame TX -- ZK paymaster is Frame 0, withdrawal is Frame 1. CALLDATAREAD verifies proof matches withdrawal. No relayer needed."
+      fallbackText="ZK Privacy via Frame TX — ZK paymaster is Frame 0, withdrawal is Frame 1. CALLDATAREAD verifies proof matches withdrawal. No relayer needed."
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5.5, 10], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>

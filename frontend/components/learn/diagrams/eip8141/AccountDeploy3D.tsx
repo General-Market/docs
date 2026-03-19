@@ -658,7 +658,7 @@ export function AccountDeploy3D() {
       ariaLabel="3D animation showing a new account deployment in 3 frames: the address exists before the code does (CREATE2 deterministic), funds arrive first, then the wallet deploys and executes its first transaction"
       srDescription="A 3D scene showing account deployment. On the left, an indigo hexagonal factory node. In the center, an empty plot with a pulsing amber address beacon and pre-funded coins. A deploy beam shoots from the factory, construction particles spiral upward, and the plot fills into a solid green wallet. A purple validation arc curves in, an ACCEPT ring expands green, then an execute beam sends token particles to a blue USDC target on the right. The key insight: the address is deterministic -- funds can arrive before the wallet even exists."
       legend={<Legend />}
-      fallbackText="Account deployment in 3 frames -- address exists before code does (CREATE2). Funds arrive first, then deploy + validate + execute atomically."
+      fallbackText="Account deployment in 3 frames — address exists before code does (CREATE2). Funds arrive first, then deploy + validate + execute atomically."
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [-1, 6, 9], fov: 36 }} dpr={[1, 2]} gl={{ antialias: true }}>

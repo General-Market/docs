@@ -620,7 +620,7 @@ export function FrameOverview3D() {
       ariaLabel="An envelope wireframe containing 3 frame containers with an ACCEPT gate in the middle. A cube transitions from red (untrusted) to green (trusted) as it passes through the gate."
       srDescription="A 3D scene showing a Frame Transaction envelope containing three frames. The left side is the untrusted zone tinted red, the right side is the trusted zone tinted green. An ACCEPT gate stands in the middle with two green pillars and an arch. A data cube starts red at Frame 0, slides toward the ACCEPT gate, transitions dramatically from red to green at the gate with a flash ring effect, then continues through Frame 1 and Frame 2. An amber CALLDATAREAD arc connects Frame 0 to Frame 1 with traveling spark particles."
       legend={<Legend />}
-      fallbackText="Frame overview -- envelope with 3 frames, ACCEPT gate transitions untrusted (red) to trusted (green)"
+      fallbackText="Frame overview — envelope with 3 frames, ACCEPT gate transitions untrusted (red) to trusted (green)"
     >
       {({ reducedMotion }) => (
         <Canvas flat camera={{ position: [0, 5, 8], fov: 34 }} dpr={[1, 2]} gl={{ antialias: true }}>
