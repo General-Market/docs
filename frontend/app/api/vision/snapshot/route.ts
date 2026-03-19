@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AA_DATA_NODE_URL } from '@/lib/config'
-import { toInternalId } from '@/lib/vision/source-ids'
+import { allInternalIds } from '@/lib/vision/source-ids'
 
 const AA_DATA_NODE = AA_DATA_NODE_URL
 const DETAIL_LIMIT = 10_000   // Per-source detail page (crypto=10K, defi=6K)
@@ -30,18 +30,23 @@ export async function GET(request: Request) {
   try {
     // If requesting a specific source, fetch just that source from data-node
     if (sourceFilter) {
-      const res = await fetch(
-        `${AA_DATA_NODE}/vision/snapshot?source=${encodeURIComponent(toInternalId(sourceFilter))}&limit=${DETAIL_LIMIT}`,
-        { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
-      )
-      if (!res.ok) throw new Error(`AA data-node ${res.status}`)
-      const raw = await res.json()
-      const snapshots: Array<Record<string, unknown>> = raw.snapshots ?? []
+      // Try all internal IDs for this source (e.g., coingecko → ["defi", "crypto"])
+      let snapshots: Array<Record<string, unknown>> = []
+      for (const internalId of allInternalIds(sourceFilter)) {
+        const res = await fetch(
+          `${AA_DATA_NODE}/vision/snapshot?source=${encodeURIComponent(internalId)}&limit=${DETAIL_LIMIT}`,
+          { next: { revalidate: 30 }, signal: AbortSignal.timeout(30_000) },
+        )
+        if (!res.ok) continue
+        const raw = await res.json()
+        const s: Array<Record<string, unknown>> = raw.snapshots ?? []
+        if (s.length > snapshots.length) snapshots = s
+      }
 
       return NextResponse.json({
-        generatedAt: raw.generatedAt,
+        generatedAt: new Date().toISOString(),
         maxAgeSecs: null,
-        totalAssets: raw.count ?? snapshots.length,
+        totalAssets: snapshots.length,
         sources: [],
         prices: snapshots.map(transformSnapshot),
       })
