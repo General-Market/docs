@@ -258,20 +258,38 @@ class Tracker:
         }
 
     def _load_history(self):
-        """Load from pnl.json."""
+        """Load from pnl.json, validating persisted positions against chain."""
         path = self._config.get("pnl_file", "pnl.json")
         try:
             if os.path.exists(path):
                 with open(path) as f:
                     data = json.load(f)
                 self._history = data.get("history", [])
-                # Restore active positions
+                # Restore active positions, purging stale ones from old deployments
+                stale = []
                 for pos in data.get("active", []):
-                    # Convert bitmap back from hex if stored
                     if "bitmap_hex" in pos:
                         pos["bitmap"] = bytes.fromhex(pos["bitmap_hex"])
                         del pos["bitmap_hex"]
-                    self._positions[pos["batch_id"]] = pos
+                    batch_id = pos["batch_id"]
+                    # Validate against chain: joinTimestamp == 0 means this
+                    # position doesn't exist on the current contract
+                    try:
+                        on_chain = self._executor.get_position(batch_id)
+                        if on_chain["joinTimestamp"] == 0:
+                            stale.append(batch_id)
+                            continue
+                    except Exception:
+                        # Chain read failed — position is suspect, purge it
+                        stale.append(batch_id)
+                        continue
+                    self._positions[batch_id] = pos
+                if stale:
+                    log.warning(
+                        "Purged %d stale positions (old deployment): %s",
+                        len(stale), stale,
+                    )
+                    self._save_history()
         except Exception:
             pass
 

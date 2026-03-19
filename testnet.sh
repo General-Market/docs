@@ -835,6 +835,10 @@ json.dump(d, open('deployments/vision-batches.json', 'w'), indent=2)
         echo -e "  ${GREEN}vision-batches.json synced with active-deployment.json${NC}"
     fi
 
+    # Wipe bot PnL files — positions from the old contract are now invalid
+    vps_be_ssh "rm -f $VPS_BE_DIR/docker/testnet/vision-swarm/pnl-data/pnl-*.json" 2>/dev/null || true
+    echo -e "  ${GREEN}Cleared stale bot PnL files${NC}"
+
     # Fund test accounts with L3 USDC
     echo -e "${BLUE}[7/14] Funding accounts with L3 USDC...${NC}"
     if [ -n "$L3_USDC" ] && [ "$L3_USDC" != "" ]; then
