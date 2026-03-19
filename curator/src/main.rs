@@ -13,6 +13,8 @@
 //! - Alert dispatcher (Telegram or log)
 
 use clap::Parser;
+use common::runtime::config::{RuntimeConfig, shared};
+use common::runtime::watcher::DeploymentWatcher;
 use curator::alerting::{AlertDispatcher, LogAlerter, TelegramAlerter};
 use curator::allocator::AllocationBot;
 use curator::collector::{NavCollector, OraclePusher};
@@ -23,7 +25,7 @@ use curator::data_node_client::DataNodeClient;
 use curator::health_monitor::{write_report_to_file, HealthMonitor, Severity};
 use curator::shared_state::SharedCuratorState;
 use ethers::types::{Address, U256};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -440,6 +442,10 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
     // For unified mode, collector config may fail if not all fields are present.
     // That's fine — we'll skip tasks whose config is incomplete.
 
+    // Bootstrap SharedConfig (hot-reload, admin routes)
+    let shared_config = bootstrap_shared_config(&args.rpc_url).await;
+    let admin_token = std::env::var("ADMIN_TOKEN").ok();
+
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = shutdown.clone();
 
@@ -557,6 +563,8 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
         };
 
         let sd = shutdown.clone();
+        let sc = Some(shared_config.clone());
+        let at = admin_token.clone();
         handles.push(tokio::spawn(async move {
             if let Err(e) = curator::quote_server::run_quote_api_server(
                 &listen_addr,
@@ -565,6 +573,8 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
                 state_for_quote,
                 rate_push_config,
                 sd,
+                sc,
+                at,
             )
             .await
             {
@@ -612,6 +622,42 @@ async fn run_unified(args: CuratorArgs) -> Result<(), Box<dyn std::error::Error>
 }
 
 // ============================================================================
+// SharedConfig Bootstrap
+// ============================================================================
+
+/// Load SharedConfig from deployment file + RPC, spawn DeploymentWatcher.
+/// Returns the SharedConfig handle for use by the rest of the service.
+async fn bootstrap_shared_config(rpc_url: &str) -> common::runtime::config::SharedConfig {
+    let deployment_path = PathBuf::from(
+        std::env::var("DEPLOYMENT_FILE")
+            .unwrap_or_else(|_| "deployments/active-deployment.json".into()),
+    );
+
+    let runtime_config = RuntimeConfig::load(&deployment_path, rpc_url, None)
+        .await
+        .expect("Failed to load runtime config");
+
+    info!(
+        deployment_nonce = runtime_config.deployment_nonce,
+        rpc = %rpc_url,
+        path = %deployment_path.display(),
+        "RuntimeConfig loaded"
+    );
+
+    let shared_config = shared(runtime_config);
+
+    // Spawn watcher — monitors deployment file + polls on-chain nonce
+    DeploymentWatcher::new(shared_config.clone(), deployment_path)
+        .on_nonce_change(|old, new| {
+            warn!("Curator: deployment nonce {old} → {new}. Flushing curator state.");
+            info!("Curator flush complete — markets will be re-discovered on next health check cycle");
+        })
+        .spawn();
+
+    shared_config
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 
@@ -632,10 +678,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if args.health_monitor_mode {
         // Health Monitor Mode (legacy)
+        let rpc_url = args.rpc_url.clone();
         let config = HealthMonitorConfig::from_args(args)?;
         setup_logging(&log_level)?;
 
         info!("Starting in Health Monitor mode");
+        let _shared_config = bootstrap_shared_config(&rpc_url).await;
 
         let shutdown = Arc::new(AtomicBool::new(false));
         let shutdown_clone = shutdown.clone();
@@ -653,10 +701,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if args.allocation_mode {
         // Allocation Bot Mode (legacy)
+        let rpc_url = args.rpc_url.clone();
         let config = AllocationConfig::from_args(args)?;
         setup_logging(&log_level)?;
 
         info!("Starting in Allocation Bot mode");
+        let _shared_config = bootstrap_shared_config(&rpc_url).await;
 
         let shutdown = Arc::new(AtomicBool::new(false));
         let shutdown_clone = shutdown.clone();
@@ -674,10 +724,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else {
         // Oracle Collector Mode (default, legacy)
+        let rpc_url = args.rpc_url.clone();
         let config = CuratorConfig::from_args(args)?;
         setup_logging(&log_level)?;
 
         info!("Starting in Oracle Collector mode");
+        let _shared_config = bootstrap_shared_config(&rpc_url).await;
 
         let shutdown = Arc::new(AtomicBool::new(false));
         let shutdown_clone = shutdown.clone();

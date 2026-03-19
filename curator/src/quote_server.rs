@@ -16,9 +16,10 @@ use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    routing::post,
+    routing::{get, post},
     Json, Router,
 };
+use common::runtime::config::SharedConfig;
 use ethers::types::{Address, U256};
 use serde_json::json;
 use std::collections::HashMap;
@@ -53,6 +54,8 @@ pub async fn run_quote_api_server(
     shared_state: SharedCuratorState,
     rate_push_config: Option<RatePushConfig>,
     shutdown: Arc<AtomicBool>,
+    shared_config: Option<SharedConfig>,
+    admin_token: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Load market registry
     let registry = if let Some(path) = market_configs_path {
@@ -91,10 +94,17 @@ pub async fn run_quote_api_server(
         rate_pusher,
     });
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/api/lending/quote", post(handle_quote))
-        .route("/health", axum::routing::get(handle_health))
+        .route("/health", get(handle_health))
         .with_state(state);
+
+    // Merge admin routes (hot-reload, config introspection, log-level) if SharedConfig available
+    if let Some(sc) = shared_config {
+        let admin = common::runtime::admin::admin_router(sc, admin_token);
+        app = app.merge(admin);
+        info!("Admin routes merged into quote server (/admin/reload, /admin/config, /admin/health, /admin/log-level)");
+    }
 
     let listener = tokio::net::TcpListener::bind(listen_addr).await?;
     info!(addr = %listen_addr, "Quote API server listening");
