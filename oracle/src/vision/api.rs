@@ -1166,9 +1166,20 @@ async fn leaderboard_from_postgres(
     batch_id: Option<u64>,
 ) -> axum::response::Response {
     let query = if let Some(sid) = source_id {
-        // source_id in Postgres is stored as bytes32 hex (e.g. "0x70756d7066756e00...")
-        // The frontend sends human-readable strings (e.g. "pumpfun"), so convert.
-        let hex_sid = string_to_bytes32_hex(sid);
+        // source_id in Postgres is keccak256(name + "_" + version) stored as "0x..." hex.
+        // The frontend sends human-readable strings (e.g. "coingecko").
+        // Try keccak256(name), keccak256(name_v1) ... keccak256(name_v5) + bytes32 fallback.
+        let mut candidates: Vec<String> = Vec::new();
+        // Bare name
+        candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(sid.as_bytes()))));
+        // Versioned: name_v1 through name_v5
+        for v in 1..=5u8 {
+            let versioned = format!("{}_v{}", sid, v);
+            candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
+        }
+        // Bytes32 ASCII fallback (legacy)
+        candidates.push(string_to_bytes32_hex(sid));
+        let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
         format!(
             "SELECT vp.player,
                     SUM(vp.balance::numeric)::text as total_balance,
@@ -1177,9 +1188,9 @@ async fn leaderboard_from_postgres(
                     SUM(CASE WHEN vp.balance::numeric > vp.total_deposited::numeric THEN 1 ELSE 0 END) as wins
              FROM vision_positions vp
              JOIN vision_batches vb ON vp.batch_id = vb.id
-             WHERE vb.source_id = '{}'
+             WHERE vb.source_id IN ({})
              GROUP BY vp.player",
-            hex_sid.replace('\'', "")
+            in_clause
         )
     } else if let Some(bid) = batch_id {
         format!(
@@ -1242,7 +1253,15 @@ async fn leaderboard_from_postgres(
 
     // Merge settled round results — filter by source/batch when provided
     let round_query = if let Some(sid) = source_id {
-        let hex_sid = string_to_bytes32_hex(sid);
+        // Same keccak256 candidate matching as the main leaderboard query
+        let mut candidates: Vec<String> = Vec::new();
+        candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(sid.as_bytes()))));
+        for v in 1..=5u8 {
+            let versioned = format!("{}_v{}", sid, v);
+            candidates.push(format!("0x{}", hex::encode(ethers::utils::keccak256(versioned.as_bytes()))));
+        }
+        candidates.push(string_to_bytes32_hex(sid));
+        let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
         format!(
             "SELECT vrp.player,
                     SUM(vrp.payout::numeric)::text as total_payout,
@@ -1253,9 +1272,9 @@ async fn leaderboard_from_postgres(
                     SUM(vrp.total_markets)::bigint as total_markets
              FROM vision_round_players vrp
              JOIN vision_batches vb ON vrp.batch_id = vb.id
-             WHERE vb.source_id = '{}'
+             WHERE vb.source_id IN ({})
              GROUP BY vrp.player",
-            hex_sid.replace('\'', "")
+            in_clause
         )
     } else if let Some(bid) = batch_id {
         format!(
