@@ -404,6 +404,33 @@ class Tracker:
                         if on_chain["joinTimestamp"] == 0:
                             stale.append(batch_id)
                             continue
+                        # Check if stored bitmap hash matches on-chain commitment.
+                        # A mismatch means the original bitmap was lost and replaced
+                        # with a regenerated one — the oracle will reject it every cycle.
+                        # Mark as poisoned so the re-submit loop skips it and startup
+                        # can trigger a withdrawal.
+                        on_chain_bm_hash = on_chain.get("bitmapHash", b"")
+                        if isinstance(on_chain_bm_hash, bytes):
+                            on_chain_hash_hex = on_chain_bm_hash.hex()
+                        else:
+                            on_chain_hash_hex = str(on_chain_bm_hash).lstrip("0x")
+                        stored_bm_hash = pos.get("bitmap_hash")
+                        if isinstance(stored_bm_hash, bytes):
+                            stored_hash_hex = stored_bm_hash.hex()
+                        else:
+                            stored_hash_hex = ""
+                        if on_chain_hash_hex and stored_hash_hex and on_chain_hash_hex != stored_hash_hex:
+                            log.warning(
+                                "Batch %d: stored bitmap hash mismatch (on-chain: %s, stored: %s) — marking poisoned",
+                                batch_id, on_chain_hash_hex[:16], stored_hash_hex[:16],
+                            )
+                            pos["poisoned"] = True
+                        elif on_chain_hash_hex == Tracker._NULL_BITMAP_HASH:
+                            log.warning(
+                                "Batch %d: joined with null bitmap hash — marking poisoned",
+                                batch_id,
+                            )
+                            pos["poisoned"] = True
                     except Exception:
                         # Chain read failed — position is suspect, purge it
                         stale.append(batch_id)
