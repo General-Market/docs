@@ -37,6 +37,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_0_KEY}
       PNL_FILE: /app/pnl-data/pnl-0.json
+      STRATEGY: momentum
+      STAKE_PER_TICK: "0.5"
 
   swarm-bot-1:
     <<: *bot-common
@@ -47,6 +49,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_1_KEY}
       PNL_FILE: /app/pnl-data/pnl-1.json
+      STRATEGY: contrarian
+      STAKE_PER_TICK: "0.3"
 
   swarm-bot-2:
     <<: *bot-common
@@ -57,6 +61,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_2_KEY}
       PNL_FILE: /app/pnl-data/pnl-2.json
+      STRATEGY: random
+      STAKE_PER_TICK: "0.2"
 
   swarm-bot-3:
     <<: *bot-common
@@ -67,6 +73,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_3_KEY}
       PNL_FILE: /app/pnl-data/pnl-3.json
+      STRATEGY: bullish
+      STAKE_PER_TICK: "0.4"
 
   swarm-bot-4:
     <<: *bot-common
@@ -77,6 +85,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_4_KEY}
       PNL_FILE: /app/pnl-data/pnl-4.json
+      STRATEGY: bearish
+      STAKE_PER_TICK: "0.6"
 
   swarm-bot-5:
     <<: *bot-common
@@ -87,6 +97,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_5_KEY}
       PNL_FILE: /app/pnl-data/pnl-5.json
+      STRATEGY: momentum
+      STAKE_PER_TICK: "0.1"
 
   swarm-bot-6:
     <<: *bot-common
@@ -97,6 +109,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_6_KEY}
       PNL_FILE: /app/pnl-data/pnl-6.json
+      STRATEGY: contrarian
+      STAKE_PER_TICK: "0.7"
 
   swarm-bot-7:
     <<: *bot-common
@@ -107,6 +121,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_7_KEY}
       PNL_FILE: /app/pnl-data/pnl-7.json
+      STRATEGY: random
+      STAKE_PER_TICK: "0.8"
 
   swarm-bot-8:
     <<: *bot-common
@@ -117,6 +133,8 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_8_KEY}
       PNL_FILE: /app/pnl-data/pnl-8.json
+      STRATEGY: bullish
+      STAKE_PER_TICK: "0.9"
 
   swarm-bot-9:
     <<: *bot-common
@@ -127,3 +145,5 @@ services:
     environment:
       BOT_PRIVATE_KEY: ${SWARM_BOT_9_KEY}
       PNL_FILE: /app/pnl-data/pnl-9.json
+      STRATEGY: bearish
+      STAKE_PER_TICK: "0.15"

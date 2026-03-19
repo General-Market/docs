@@ -373,15 +373,17 @@ async fn get_healthy_assets(
 /// - 0.3-3%            → "up_x"   with 30 bps (moderate volatility)
 /// - 3-30%             → "up_300" with 300 bps (high volatility)
 /// - 30%+              → "up_3000" with 3000 bps (extreme volatility)
-fn resolution_for_volatility(abs_change_pct: f64) -> (&'static str, u32) {
-    if abs_change_pct < 0.3 {
+fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
+    let abs_pct = change_pct.abs();
+    let is_down = change_pct < 0.0;
+    if abs_pct < 0.3 {
         ("flat_x", 30)
-    } else if abs_change_pct < 3.0 {
-        ("up_x", 30)
-    } else if abs_change_pct < 30.0 {
-        ("up_300", 300)
+    } else if abs_pct < 3.0 {
+        if is_down { ("down_0", 30) } else { ("up_x", 30) }
+    } else if abs_pct < 30.0 {
+        if is_down { ("down_300", 300) } else { ("up_300", 300) }
     } else {
-        ("up_3000", 3000)
+        if is_down { ("down_3000", 3000) } else { ("up_3000", 3000) }
     }
 }
 
@@ -404,11 +406,10 @@ async fn compute_asset_thresholds(
     asset_ids
         .iter()
         .map(|asset_id| {
-            // Try last settlement first
+            // Try last settlement first (signed change → direction-aware resolution)
             if let Some(&change_pct) = settlement_changes.get(asset_id) {
-                let abs_pct = change_pct.abs();
-                if abs_pct > 0.0 && !abs_pct.is_nan() && !abs_pct.is_infinite() {
-                    let (res_type, threshold_bps) = resolution_for_volatility(abs_pct);
+                if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
+                    let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
@@ -418,11 +419,10 @@ async fn compute_asset_thresholds(
                 }
             }
 
-            // Try 24h history
+            // Try 24h history (signed change → direction-aware resolution)
             if let Some(&change_pct) = history_changes.get(asset_id) {
-                let abs_pct = change_pct.abs();
-                if abs_pct > 0.0 && !abs_pct.is_nan() && !abs_pct.is_infinite() {
-                    let (res_type, threshold_bps) = resolution_for_volatility(abs_pct);
+                if change_pct.abs() > 0.0 && !change_pct.is_nan() && !change_pct.is_infinite() {
+                    let (res_type, threshold_bps) = resolution_for_volatility(change_pct);
                     return BatchMarket {
                         asset_id: asset_id.clone(),
                         resolution_type: res_type.to_string(),
@@ -908,20 +908,25 @@ mod tests {
         // Low volatility → flat_x 30 bps
         assert_eq!(resolution_for_volatility(0.0), ("flat_x", 30));
         assert_eq!(resolution_for_volatility(0.1), ("flat_x", 30));
-        assert_eq!(resolution_for_volatility(0.29), ("flat_x", 30));
+        assert_eq!(resolution_for_volatility(-0.1), ("flat_x", 30));
 
-        // Moderate volatility → up_x 30 bps
+        // Moderate positive → up_x
         assert_eq!(resolution_for_volatility(0.3), ("up_x", 30));
-        assert_eq!(resolution_for_volatility(1.5), ("up_x", 30));
         assert_eq!(resolution_for_volatility(2.99), ("up_x", 30));
+        // Moderate negative → down_0
+        assert_eq!(resolution_for_volatility(-0.3), ("down_0", 30));
+        assert_eq!(resolution_for_volatility(-2.99), ("down_0", 30));
 
-        // High volatility → up_300 300 bps
+        // High positive → up_300
         assert_eq!(resolution_for_volatility(3.0), ("up_300", 300));
         assert_eq!(resolution_for_volatility(15.0), ("up_300", 300));
-        assert_eq!(resolution_for_volatility(29.99), ("up_300", 300));
+        // High negative → down_300
+        assert_eq!(resolution_for_volatility(-3.0), ("down_300", 300));
+        assert_eq!(resolution_for_volatility(-15.0), ("down_300", 300));
 
-        // Extreme volatility → up_3000 3000 bps
+        // Extreme positive → up_3000
         assert_eq!(resolution_for_volatility(30.0), ("up_3000", 3000));
-        assert_eq!(resolution_for_volatility(100.0), ("up_3000", 3000));
+        // Extreme negative → down_3000
+        assert_eq!(resolution_for_volatility(-30.0), ("down_3000", 3000));
     }
 }
