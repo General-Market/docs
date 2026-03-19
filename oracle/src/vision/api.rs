@@ -1180,29 +1180,52 @@ async fn leaderboard_from_postgres(
         // Bytes32 ASCII fallback (legacy)
         candidates.push(string_to_bytes32_hex(sid));
         let in_clause = candidates.iter().map(|c| format!("'{}'", c.replace('\'', ""))).collect::<Vec<_>>().join(",");
+        // Use tick deltas for accurate PnL (vision_positions.balance lags behind)
         format!(
-            "SELECT vp.player,
-                    SUM(vp.balance::numeric)::text as total_balance,
-                    SUM(vp.total_deposited::numeric)::text as total_deposited,
-                    COUNT(DISTINCT vp.batch_id) as batches_joined,
-                    SUM(CASE WHEN vp.balance::numeric > vp.total_deposited::numeric THEN 1 ELSE 0 END) as wins
-             FROM vision_positions vp
-             JOIN vision_batches vb ON vp.batch_id = vb.id
-             WHERE vb.source_id IN ({})
-             GROUP BY vp.player",
-            in_clause
+            "WITH source_batches AS (
+                SELECT id FROM vision_batches WHERE source_id IN ({in_clause})
+             ),
+             positions AS (
+                SELECT vp.player, SUM(vp.total_deposited::numeric) as deposited,
+                       COUNT(DISTINCT vp.batch_id) as batches
+                FROM vision_positions vp WHERE vp.batch_id IN (SELECT id FROM source_batches)
+                GROUP BY vp.player
+             ),
+             deltas AS (
+                SELECT td.player, SUM(td.delta::numeric) as pnl,
+                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
+                FROM vision_player_tick_deltas td WHERE td.batch_id IN (SELECT id FROM source_batches)
+                GROUP BY td.player
+             )
+             SELECT COALESCE(p.player, d.player) as player,
+                    (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
+                    COALESCE(p.deposited, 0)::text as total_deposited,
+                    COALESCE(p.batches, 0)::bigint as batches_joined,
+                    COALESCE(d.wins, 0)::bigint as wins
+             FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
+            in_clause = in_clause
         )
     } else if let Some(bid) = batch_id {
         format!(
-            "SELECT vp.player,
-                    SUM(vp.balance::numeric)::text as total_balance,
-                    SUM(vp.total_deposited::numeric)::text as total_deposited,
-                    COUNT(DISTINCT vp.batch_id) as batches_joined,
-                    SUM(CASE WHEN vp.balance::numeric > vp.total_deposited::numeric THEN 1 ELSE 0 END) as wins
-             FROM vision_positions vp
-             WHERE vp.batch_id = {}
-             GROUP BY vp.player",
-            bid
+            "WITH positions AS (
+                SELECT vp.player, SUM(vp.total_deposited::numeric) as deposited,
+                       COUNT(DISTINCT vp.batch_id) as batches
+                FROM vision_positions vp WHERE vp.batch_id = {bid}
+                GROUP BY vp.player
+             ),
+             deltas AS (
+                SELECT td.player, SUM(td.delta::numeric) as pnl,
+                       SUM(CASE WHEN td.delta::numeric > 0 THEN 1 ELSE 0 END) as wins
+                FROM vision_player_tick_deltas td WHERE td.batch_id = {bid}
+                GROUP BY td.player
+             )
+             SELECT COALESCE(p.player, d.player) as player,
+                    (COALESCE(p.deposited, 0) + COALESCE(d.pnl, 0))::text as total_balance,
+                    COALESCE(p.deposited, 0)::text as total_deposited,
+                    COALESCE(p.batches, 0)::bigint as batches_joined,
+                    COALESCE(d.wins, 0)::bigint as wins
+             FROM positions p FULL OUTER JOIN deltas d ON LOWER(p.player) = LOWER(d.player)",
+            bid = bid
         )
     } else {
         return (
