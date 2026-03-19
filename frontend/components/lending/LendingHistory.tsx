@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useMorphoHistory, type MorphoTx } from '@/hooks/useMorphoHistory'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 interface LendingHistoryProps {
   market: MorphoMarketEntry
@@ -71,9 +72,14 @@ export function LendingHistory({ market }: LendingHistoryProps) {
                 {parseFloat(tx.amount).toFixed(tx.token === 'USDC' ? 2 : 4)} {tx.token}
               </span>
             </div>
-            <span className="text-text-muted">
-              {formatTime(tx.timestamp)}
-            </span>
+            <a
+              href={getTxUrl(tx.txHash, 'l3')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-muted hover:text-text-primary transition-colors"
+            >
+              {formatTime(tx.timestamp)} ↗
+            </a>
           </div>
         ))}
       </div>

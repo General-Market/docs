@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { truncateAddress } from '@/lib/utils/address'
-import { getAddressUrl } from '@/lib/utils/basescan'
+import { getAddressUrl } from '@/lib/utils/explorer'
 import {
   formatSignedTimeAgo,
   type KeeperSignature,

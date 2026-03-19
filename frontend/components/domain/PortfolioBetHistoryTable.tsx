@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useIsMobile } from '@/hooks/useMediaQueries'
 import { formatUSD, formatNumber, toBaseUnits } from '@/lib/utils/formatters'
 import { formatRelativeTime } from '@/lib/utils/time'
-import { getTxUrl } from '@/lib/utils/basescan'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 const ITEMS_PER_PAGE = 20
 

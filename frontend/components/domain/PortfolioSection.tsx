@@ -25,7 +25,7 @@ import { useTranslations } from 'next-intl'
 import { useChainWriteContract } from '@/hooks/useChainWrite'
 import { INDEX_ABI } from '@/lib/contracts/index-protocol-abi'
 import { INDEX_PROTOCOL } from '@/lib/contracts/addresses'
-import { L3_EXPLORER_URL, SETTLEMENT_EXPLORER_URL } from '@/lib/config'
+import { getAddressUrl, getExplorerBaseUrl } from '@/lib/utils/explorer'
 
 const PAGE_SIZE = 10
 
@@ -450,11 +450,11 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
           </div>
 
           {/* Explorer links */}
-          {address && (L3_EXPLORER_URL || SETTLEMENT_EXPLORER_URL) && (
+          {address && (getExplorerBaseUrl('l3') || getExplorerBaseUrl('settlement')) && (
             <div className="flex gap-4 mt-3 mb-2 text-label text-text-muted">
-              {L3_EXPLORER_URL && (
+              {getExplorerBaseUrl('l3') && (
                 <a
-                  href={`${L3_EXPLORER_URL}/address/${address}`}
+                  href={getAddressUrl(address, 'l3')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-text-primary transition-colors flex items-center gap-1"
@@ -465,9 +465,9 @@ export function PortfolioSection({ expanded, onToggle, deployedItps }: Portfolio
                   L3 Explorer
                 </a>
               )}
-              {SETTLEMENT_EXPLORER_URL && (
+              {getExplorerBaseUrl('settlement') && (
                 <a
-                  href={`${SETTLEMENT_EXPLORER_URL}/address/${address}`}
+                  href={getAddressUrl(address, 'settlement')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-text-primary transition-colors flex items-center gap-1"

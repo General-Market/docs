@@ -9,6 +9,7 @@ import { useCreateBatch } from '@/hooks/vision/useCreateBatch'
 import { useSetBatchMetadata } from '@/hooks/vision/useSetBatchMetadata'
 import { useSetDeployerName } from '@/hooks/vision/useSetDeployerName'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
+import { getTxUrl } from '@/lib/utils/explorer'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 // Maps to IVision.ResolutionType enum (see resolver.rs for full logic)
@@ -706,7 +707,14 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                         <div className="bg-color-info/10 border border-color-info/30 rounded-lg p-3 text-color-info text-sm">
                           <p>Transaction submitted, waiting for confirmation...</p>
                           {txHash && (
-                            <p className="text-xs font-mono mt-1 text-color-info/60 break-all">Tx: {txHash}</p>
+                            <a
+                              href={getTxUrl(txHash, 'l3')}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-mono mt-1 text-color-info/60 break-all hover:text-color-info transition-colors block"
+                            >
+                              Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)} ↗
+                            </a>
                           )}
                         </div>
                       )}
@@ -737,7 +745,14 @@ export function CreateBatchModal({ onClose }: CreateBatchModalProps) {
                           <p className="text-sm font-mono">Batch ID: #{batchId.toString()}</p>
                         )}
                         {txHash && (
-                          <p className="text-xs font-mono mt-2 text-color-up/70 break-all">Tx: {txHash}</p>
+                          <a
+                            href={getTxUrl(txHash, 'l3')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-mono mt-2 text-color-up/70 break-all hover:text-color-up transition-colors block"
+                          >
+                            Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)} ↗
+                          </a>
                         )}
                       </div>
 

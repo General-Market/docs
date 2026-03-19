@@ -9,6 +9,7 @@ import { ERC20_ABI } from '@/lib/contracts/index-protocol-abi'
 import { useVaultDeposit } from '@/hooks/useVaultDeposit'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
 import { indexL3 } from '@/lib/wagmi'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 export function VaultDeposit() {
   const t = useTranslations('lending')
@@ -32,6 +33,7 @@ export function VaultDeposit() {
     deposit,
     isApprovalNeeded,
     approve,
+    txHash,
     isPending,
     isConfirming,
     isSuccess,
@@ -200,6 +202,17 @@ export function VaultDeposit() {
         >
           {buttonText}
         </button>
+
+        {step === 'success' && txHash && (
+          <a
+            href={getTxUrl(txHash, 'l3')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
+          >
+            View on explorer ↗
+          </a>
+        )}
 
         {isProcessing && (
           <button

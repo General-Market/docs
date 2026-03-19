@@ -7,6 +7,7 @@ import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { calculateHealthFactor } from '@/lib/types/morpho'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface WithdrawCollateralProps {
@@ -38,6 +39,7 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
     isSuccess,
     error: actionError,
     reset: resetAction,
+    txHash: withdrawTxHash,
   } = useMorphoActions(market)
 
   const collateralAmount = position?.collateralAmount ?? 0n
@@ -241,6 +243,17 @@ export function WithdrawCollateral({ market, onSuccess }: WithdrawCollateralProp
         >
           {buttonText}
         </button>
+
+        {step === 'success' && withdrawTxHash && (
+          <a
+            href={getTxUrl(withdrawTxHash, 'l3')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
+          >
+            View on explorer ↗
+          </a>
+        )}
 
         {isProcessing && (
           <button

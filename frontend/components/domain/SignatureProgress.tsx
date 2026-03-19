@@ -8,6 +8,7 @@ import {
   isThresholdMet,
   type SignatureStatus,
 } from '@/lib/types/resolution'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 /**
  * Props for SignatureProgress component
@@ -212,10 +213,14 @@ export function SignatureProgress({
       {/* Submitted transaction link */}
       {data.status === 'submitted' && data.txHash && (
         <div className="mt-2 pt-2 border-t border-border-light">
-          <span className="text-xs text-text-muted">Tx: </span>
-          <span className="text-xs text-color-info">
-            {data.txHash.slice(0, 10)}...{data.txHash.slice(-8)}
-          </span>
+          <a
+            href={getTxUrl(data.txHash, 'l3')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-color-info hover:text-text-primary transition-colors font-mono"
+          >
+            Tx: {data.txHash.slice(0, 10)}...{data.txHash.slice(-8)} ↗
+          </a>
         </div>
       )}
     </div>

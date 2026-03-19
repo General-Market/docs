@@ -1,6 +1,7 @@
 import { createConfig, http, fallback } from 'wagmi'
 import { type Chain } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
+import { getExplorerBaseUrl } from '@/lib/utils/explorer'
 
 // RPC URLs from environment
 // On HTTPS pages, browser blocks HTTP RPC (mixed content).
@@ -20,6 +21,9 @@ export const indexL3: Chain = {
     default: { http: [envL3RpcUrl] },
     public: { http: [envL3RpcUrl] },
   },
+  blockExplorers: {
+    default: { name: 'L3 Explorer', url: getExplorerBaseUrl('l3') || '' },
+  },
   testnet: true,
 }
 
@@ -27,7 +31,7 @@ export const indexL3: Chain = {
 // Native currency and explorer are env-driven: Sonic testnet uses S, local Anvil uses ETH.
 const settlementNativeName = process.env.NEXT_PUBLIC_SETTLEMENT_NATIVE_NAME || 'Sonic'
 const settlementNativeSymbol = process.env.NEXT_PUBLIC_SETTLEMENT_NATIVE_SYMBOL || 'S'
-const settlementExplorer = process.env.NEXT_PUBLIC_SETTLEMENT_EXPLORER_URL || 'https://testnet.sonicscan.org'
+const settlementExplorer = getExplorerBaseUrl('settlement')
 
 export const settlementChain: Chain = {
   id: Number(process.env.NEXT_PUBLIC_SETTLEMENT_CHAIN_ID) || 421611337,
@@ -38,7 +42,7 @@ export const settlementChain: Chain = {
     public: { http: [envRpcUrl] },
   },
   blockExplorers: {
-    default: { name: 'Explorer', url: settlementExplorer },
+    default: { name: 'Sonic Explorer', url: settlementExplorer },
   },
   testnet: true,
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { useDeployment } from '@/hooks/useDeployment'
 
-const EXPLORER_BASE = process.env.NEXT_PUBLIC_EXPLORER_URL || process.env.NEXT_PUBLIC_L3_EXPLORER_URL || ''
+import { getContractUrl, getExplorerBaseUrl } from '@/lib/utils/explorer'
 const STORAGE_KEY = 'gm-how-it-works-collapsed'
 
 /**
@@ -25,7 +25,7 @@ export function HowItWorks() {
   const t = useTranslations('common')
   const { getAddress } = useDeployment()
   const contractAddress = getAddress('Index')
-  const explorerUrl = `${EXPLORER_BASE}/${contractAddress}`
+  const explorerUrl = contractAddress ? getContractUrl(contractAddress) : getExplorerBaseUrl('l3')
 
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isHydrated, setIsHydrated] = useState(false)

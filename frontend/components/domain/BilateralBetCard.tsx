@@ -15,7 +15,7 @@ import {
 } from '@/lib/types/bilateral-bet'
 import { ArbitrationBadge } from './ArbitrationBadge'
 import { useArbitrationStatus } from '@/hooks/useBilateralBets'
-import { getTxUrl } from '@/lib/utils/basescan'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 interface BilateralBetCardProps {
   /** The bilateral bet to display */

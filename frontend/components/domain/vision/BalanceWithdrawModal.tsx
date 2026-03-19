@@ -10,6 +10,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 type Mode = 'choose' | 'l3' | 'settlement'
 
@@ -134,9 +135,14 @@ export function BalanceWithdrawModal({ onClose }: BalanceWithdrawModalProps) {
                   {mode === 'settlement' ? ' to Settlement' : ' to L3 wallet'}
                 </p>
                 {(l3TxHash || settlementTxHash) && (
-                  <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                    Tx: {l3TxHash || settlementTxHash}
-                  </p>
+                  <a
+                    href={getTxUrl((l3TxHash || settlementTxHash)!, l3TxHash ? 'l3' : 'settlement')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors inline-block"
+                  >
+                    Tx: {((l3TxHash || settlementTxHash)!).slice(0, 10)}...{((l3TxHash || settlementTxHash)!).slice(-8)} ↗
+                  </a>
                 )}
                 {mode === 'settlement' && (
                   <p className="text-xs text-text-muted mt-2">

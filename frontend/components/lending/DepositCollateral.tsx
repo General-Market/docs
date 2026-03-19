@@ -9,6 +9,7 @@ import { useUserState } from '@/hooks/useUserState'
 import { useItpApproval } from '@/hooks/useItpApproval'
 import { useMorphoActions } from '@/hooks/useMorphoActions'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { getTxUrl } from '@/lib/utils/explorer'
 import type { MorphoMarketEntry } from '@/lib/contracts/morpho-markets-registry'
 
 interface DepositCollateralProps {
@@ -55,6 +56,7 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
     isSuccess,
     error: actionError,
     reset: resetAction,
+    txHash: depositTxHash,
   } = useMorphoActions(market)
 
   const parsedAmount = amount ? parseUnits(amount, 18) : 0n
@@ -226,6 +228,17 @@ export function DepositCollateral({ market, itpId, onSuccess }: DepositCollatera
         >
           {buttonText}
         </button>
+
+        {step === 'success' && depositTxHash && (
+          <a
+            href={getTxUrl(depositTxHash, 'l3')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center text-xs text-text-muted font-mono hover:text-text-primary transition-colors"
+          >
+            View on explorer ↗
+          </a>
+        )}
 
         {isProcessing && (
           <button

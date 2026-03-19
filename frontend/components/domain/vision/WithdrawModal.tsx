@@ -13,6 +13,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_ADDRESS, VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 type Mode = 'choose' | 'withdraw' | 'claim'
 
@@ -207,9 +208,14 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
                   </p>
                 )}
                 {(withdrawHash || claimHash) && (
-                  <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                    Tx: {withdrawHash || claimHash}
-                  </p>
+                  <a
+                    href={getTxUrl((withdrawHash || claimHash)!, 'l3')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors inline-block"
+                  >
+                    Tx: {((withdrawHash || claimHash)!).slice(0, 10)}...{((withdrawHash || claimHash)!).slice(-8)} ↗
+                  </a>
                 )}
               </div>
               <button

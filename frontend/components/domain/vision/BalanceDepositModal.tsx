@@ -12,6 +12,7 @@ import { VISION_USDC_DECIMALS, SETTLEMENT_USDC_DECIMALS, SETTLEMENT_USDC_ADDRESS
 import { indexL3, settlementChain } from '@/lib/wagmi'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 const ERC20_BALANCE_ABI = [{
   name: 'balanceOf', type: 'function', stateMutability: 'view',
@@ -366,14 +367,24 @@ export function BalanceDepositModal({ onClose }: BalanceDepositModalProps) {
                     <span className="text-sm text-text-secondary">{stepLabel}</span>
                   </div>
                   {l3ApproveHash && (
-                    <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                      Approve tx: {l3ApproveHash}
-                    </p>
+                    <a
+                      href={getTxUrl(l3ApproveHash, 'l3')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors block"
+                    >
+                      Approve tx: {l3ApproveHash.slice(0, 10)}...{l3ApproveHash.slice(-8)} ↗
+                    </a>
                   )}
                   {l3DepositHash && (
-                    <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                      Deposit tx: {l3DepositHash}
-                    </p>
+                    <a
+                      href={getTxUrl(l3DepositHash, 'l3')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors block"
+                    >
+                      Deposit tx: {l3DepositHash.slice(0, 10)}...{l3DepositHash.slice(-8)} ↗
+                    </a>
                   )}
                 </div>
               )}

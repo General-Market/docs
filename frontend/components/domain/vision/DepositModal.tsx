@@ -9,6 +9,7 @@ import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { usePostHogTracker } from '@/hooks/usePostHog'
 import { VISION_USDC_DECIMALS } from '@/lib/vision/constants'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
+import { getTxUrl } from '@/lib/utils/explorer'
 
 interface DepositModalProps {
   batchId: number
@@ -92,9 +93,14 @@ export function DepositModal({ batchId, currentBalance, onClose }: DepositModalP
                   {t('deposit_modal.success_description', { amount, id: batchId })}
                 </p>
                 {depositHash && (
-                  <p className="text-xs text-text-muted font-mono mt-2 break-all">
-                    Tx: {depositHash}
-                  </p>
+                  <a
+                    href={getTxUrl(depositHash, 'l3')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-text-muted font-mono mt-2 break-all hover:text-text-primary transition-colors inline-block"
+                  >
+                    Tx: {depositHash.slice(0, 10)}...{depositHash.slice(-8)} ↗
+                  </a>
                 )}
               </div>
               <button

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react'
 import { useToast } from '@/lib/contexts/ToastContext'
-import { getTxUrl } from '@/lib/utils/basescan'
-import type { ExplorerChain } from '@/lib/utils/basescan'
+import { getTxUrl } from '@/lib/utils/explorer'
+import type { ExplorerChain } from '@/lib/utils/explorer'
 
 interface TransactionNotificationParams {
   /** Transaction hash from wagmi writeContract / sendTransaction */

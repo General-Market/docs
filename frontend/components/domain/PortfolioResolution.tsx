@@ -8,7 +8,7 @@ import { useBetTrades, formatTradePosition, formatTradePrice } from '@/hooks/use
 import { useCategoryById, formatCategoryDisplay } from '@/hooks/useCategories'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { truncateAddress } from '@/lib/utils/address'
-import { getAddressUrl, getTxUrl } from '@/lib/utils/basescan'
+import { getAddressUrl, getTxUrl } from '@/lib/utils/explorer'
 import { formatUsdcString } from '@/lib/utils/formatters'
 
 interface PortfolioResolutionProps {

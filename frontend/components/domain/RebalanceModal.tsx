@@ -12,6 +12,7 @@ import { getCoinGeckoUrl } from '@/lib/coingecko'
 import { useTranslations } from 'next-intl'
 import { DATA_NODE_URL, SETTLEMENT_RPC_URL as SETTLEMENT_RPC, L3_RPC_URL as L3_RPC } from '@/lib/config'
 import { usePostHogTracker } from '@/hooks/usePostHog'
+import { getTxUrl } from '@/lib/utils/explorer'
 import { SpringModal, SpringBackdrop, glass, ModalClose } from '@/components/ui/spring'
 
 const L3_INDEX = INDEX_PROTOCOL.index
@@ -662,7 +663,14 @@ export function RebalanceModal({ itpId, itpName, onClose, initialHoldings }: Reb
               {status === 'success' && (
                 <div className={`mt-4 ${glass.success} p-3 text-color-up text-sm`}>
                   <p className="font-medium mb-1">{t('rebalance.success.title')}</p>
-                  <p className="text-xs font-mono break-all text-color-up/70">{t('rebalance.success.l3_tx')} {txHash}</p>
+                  <a
+                    href={getTxUrl(txHash, 'l3')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono break-all text-color-up/70 hover:text-color-up transition-colors inline-block"
+                  >
+                    {t('rebalance.success.l3_tx')} {txHash.slice(0, 10)}...{txHash.slice(-8)} ↗
+                  </a>
                 </div>
               )}
 
