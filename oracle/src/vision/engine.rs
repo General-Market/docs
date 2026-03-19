@@ -1603,7 +1603,13 @@ pub async fn run(
 
                 heartbeat_counter += 1;
 
-                let now = get_chain_timestamp(&config.rpc_ws_url).await;
+                // Use wall clock time for scheduling, not chain timestamp.
+                // Orbit L3 only produces blocks on transactions — chain timestamp
+                // freezes when idle, causing the tick engine to stall indefinitely.
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
 
                 let due_batches = scheduler.get_due_batches(now, config.reveal_window_secs).await;
 
