@@ -452,8 +452,10 @@ export default function BatchEntryPanel({
                               <span className={`flex-1 text-right font-semibold ${tick.won ? 'text-color-up' : 'text-color-down'}`}>
                                 {pnlSign}{tick.pnl.toFixed(2)}
                               </span>
-                              <span className={`w-[52px] text-right text-[9px] font-semibold ${isClaimed ? 'text-neutral-300' : 'text-amber-500'}`}>
-                                {isClaimed ? 'Claimed' : 'Pending'}
+                              <span className={`w-[52px] text-right text-[9px] font-semibold ${
+                                tick.pnl > 0 ? 'text-color-up' : tick.pnl < 0 ? 'text-color-down' : 'text-neutral-400'
+                              }`}>
+                                {tick.pnl > 0 ? 'Won' : tick.pnl < 0 ? 'Lost' : 'Flat'}
                               </span>
                             </div>
                           )
