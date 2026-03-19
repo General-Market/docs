@@ -75,10 +75,10 @@ export function TopPlayers({ batchId }: { batchId?: number }) {
                 {truncateAddress(player.walletAddress)}
               </div>
               <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
-                {player.totalBets || 0}
+                {player.portfolioBets || player.totalBets || 0}
               </div>
               <div className="text-right font-mono tabular-nums text-[12px] text-text-muted">
-                {formatVolume(player.volume || 0)}
+                {formatVolume(player.totalVolume || player.volume || 0)}
               </div>
               <div className="text-right font-mono tabular-nums font-semibold text-black">
                 {player.winRate.toFixed(1)}%
