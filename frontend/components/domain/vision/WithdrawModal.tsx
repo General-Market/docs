@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAccount, useReadContract } from 'wagmi'
 import { formatUnits } from 'viem'
+import { useQuery } from '@tanstack/react-query'
 import { useWithdraw } from '@/hooks/vision/useWithdraw'
 import { useClaim } from '@/hooks/vision/useClaim'
 import { VISION_ABI } from '@/lib/contracts/vision-abi'
@@ -63,8 +64,29 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
   const lastClaimedTick = pos?.lastClaimedTick ?? 0n
   const startTick = pos?.startTick ?? 0n
 
-  // Profit calculation: balance - totalDeposited + totalClaimed (net profit)
-  const profit = onChainBalance > totalDeposited ? onChainBalance - totalDeposited + totalClaimed : 0n
+  // Fetch oracle balance proof for real-time PnL
+  const { data: oracleBalanceData } = useQuery({
+    queryKey: ['vision-oracle-balance', batchId, address],
+    queryFn: async () => {
+      const res = await fetch(`/api/vision/balance/${batchId}/${address}`)
+      if (!res.ok) return null
+      return res.json()
+    },
+    enabled: !!address && isConnected,
+    refetchInterval: 10_000,
+    staleTime: 5000,
+  })
+
+  // Oracle balance as bigint (balance proof response uses wei string)
+  const oracleBalance: bigint | null = oracleBalanceData?.balance
+    ? BigInt(oracleBalanceData.balance)
+    : null
+
+  // Use oracle balance for PnL when available; fall back to on-chain
+  const effectiveBalance = oracleBalance ?? onChainBalance
+
+  // Profit calculation: effectiveBalance - totalDeposited + totalClaimed (net profit)
+  const profit = effectiveBalance > totalDeposited ? effectiveBalance - totalDeposited + totalClaimed : 0n
   const estimatedFee = (profit * 3n) / 1000n // 0.3% on profit
 
   // --- Withdraw hook ---
@@ -207,12 +229,32 @@ export function WithdrawModal({ batchId, onClose }: WithdrawModalProps) {
             <div className="space-y-4">
               {/* Position overview */}
               <div className={`${glass.section} p-4 space-y-3`}>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
-                  <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
-                    {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
-                  </span>
-                </div>
+                {/* Oracle balance — real-time, primary display */}
+                {oracleBalance !== null ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">Oracle Balance</span>
+                      <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
+                        {parseFloat(formatUnits(oracleBalance, VISION_USDC_DECIMALS)).toFixed(2)} USDC
+                      </span>
+                    </div>
+                    {onChainBalance !== oracleBalance && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
+                        <span className="text-sm text-text-secondary tabular-nums font-mono">
+                          {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.on_chain_balance')}</span>
+                    <span className="text-lg font-bold text-text-primary tabular-nums font-mono">
+                      {onChainBalance > 0n ? parseFloat(formatUnits(onChainBalance, VISION_USDC_DECIMALS)).toFixed(2) : '0.00'} USDC
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{t('withdraw_modal.total_deposited')}</span>
                   <span className="text-sm text-text-secondary tabular-nums font-mono">

@@ -7,7 +7,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const batchId = searchParams.get('batch_id')
-    const qs = batchId ? `?batch_id=${batchId}` : ''
+    const sourceId = searchParams.get('source_id')
+    const params = new URLSearchParams()
+    if (sourceId) params.set('source_id', sourceId)
+    else if (batchId) params.set('batch_id', batchId)
+    const qs = params.toString() ? `?${params.toString()}` : ''
     const res = await fetch(`${ISSUER_URL}/vision/leaderboard${qs}`, {
       next: { revalidate: 5 },
       signal: AbortSignal.timeout(10_000),

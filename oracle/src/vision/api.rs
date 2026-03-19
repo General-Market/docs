@@ -1240,8 +1240,38 @@ async fn leaderboard_from_postgres(
         entry.3 += wins;
     }
 
-    // Merge settled round results
-    if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(
+    // Merge settled round results — filter by source/batch when provided
+    let round_query = if let Some(sid) = source_id {
+        let hex_sid = string_to_bytes32_hex(sid);
+        format!(
+            "SELECT vrp.player,
+                    SUM(vrp.payout::numeric)::text as total_payout,
+                    SUM(vrp.deposited::numeric)::text as total_deposited,
+                    SUM(CASE WHEN vrp.pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                    COUNT(*)::bigint as rounds_played,
+                    SUM(vrp.correct_count)::bigint as total_correct,
+                    SUM(vrp.total_markets)::bigint as total_markets
+             FROM vision_round_players vrp
+             JOIN vision_batches vb ON vrp.batch_id = vb.id
+             WHERE vb.source_id = '{}'
+             GROUP BY vrp.player",
+            hex_sid.replace('\'', "")
+        )
+    } else if let Some(bid) = batch_id {
+        format!(
+            "SELECT player,
+                    SUM(payout::numeric)::text as total_payout,
+                    SUM(deposited::numeric)::text as total_deposited,
+                    SUM(CASE WHEN pnl::numeric > 0 THEN 1 ELSE 0 END)::text as wins,
+                    COUNT(*)::bigint as rounds_played,
+                    SUM(correct_count)::bigint as total_correct,
+                    SUM(total_markets)::bigint as total_markets
+             FROM vision_round_players
+             WHERE batch_id = {}
+             GROUP BY player",
+            bid
+        )
+    } else {
         "SELECT player,
                 SUM(payout::numeric)::text as total_payout,
                 SUM(deposited::numeric)::text as total_deposited,
@@ -1250,8 +1280,9 @@ async fn leaderboard_from_postgres(
                 SUM(correct_count)::bigint as total_correct,
                 SUM(total_markets)::bigint as total_markets
          FROM vision_round_players
-         GROUP BY player",
-    )
+         GROUP BY player".to_string()
+    };
+    if let Ok(round_rows) = sqlx::query_as::<_, RoundStatsRow>(&round_query)
     .fetch_all(pool)
     .await
     {

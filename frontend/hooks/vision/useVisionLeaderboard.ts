@@ -27,12 +27,12 @@ function parseNum(v: unknown): number {
  * Returns data in the same AgentRanking format as the ITP leaderboard,
  * extended with round-based fields: roundsPlayed, roundsWon, avgCorrectPct.
  */
-async function fetchVisionLeaderboard(batchId?: number): Promise<VisionLeaderboardResponse> {
+async function fetchVisionLeaderboard(batchId?: number, sourceId?: string): Promise<VisionLeaderboardResponse> {
   if (!VISION_API_URL) {
     return { leaderboard: [], updatedAt: new Date().toISOString() }
   }
 
-  const params = batchId !== undefined ? `?batch_id=${batchId}` : ''
+  const params = sourceId !== undefined ? `?source_id=${sourceId}` : batchId !== undefined ? `?batch_id=${batchId}` : ''
   const response = await fetch(`${VISION_API_URL}/vision/leaderboard${params}`)
 
   if (!response.ok) {
@@ -79,10 +79,10 @@ async function fetchVisionLeaderboard(batchId?: number): Promise<VisionLeaderboa
   }
 }
 
-export function useVisionLeaderboard(batchId?: number) {
+export function useVisionLeaderboard(batchId?: number, sourceId?: string) {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['vision-leaderboard', batchId],
-    queryFn: () => fetchVisionLeaderboard(batchId),
+    queryKey: ['vision-leaderboard', batchId, sourceId],
+    queryFn: () => fetchVisionLeaderboard(batchId, sourceId),
     refetchInterval: 5000,
     staleTime: 3000,
   })

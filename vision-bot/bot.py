@@ -137,8 +137,17 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
         time.sleep(2)  # initial wait for block confirmation
         submit_bitmap(oracle_urls, executor.bot_addr, batch_id, bitmap, bm_hash, retries=5)
 
-        tracker.on_join(batch_id, deposit_wei, bitmap, bets)
+        tracker.on_join(batch_id, deposit_wei, bitmap, bets, bitmap_hash=bm_hash)
         risk.record_join(batch_id, deposit_wei)
+
+    # Re-submit bitmaps for all active positions (survives oracle restarts)
+    for bid in list(tracker.active_ids):
+        pos = tracker.positions.get(bid)
+        if pos and pos.get("bitmap") and pos.get("bitmap_hash"):
+            submit_bitmap(
+                oracle_urls, executor.bot_addr, bid,
+                pos["bitmap"], pos["bitmap_hash"], retries=1,
+            )
 
     # Round-based mode: poll oracle for active rounds, join new ones
     if cfg.get("round_based", False):

@@ -173,21 +173,37 @@ impl TickScheduler {
         batch_id: u64,
         balances: &[PlayerBalance],
     ) -> Result<(), sqlx::Error> {
-        // 1. Persist to DB first — all-or-nothing via transaction.
-        let mut tx = pool.begin().await?;
-        for pb in balances {
-            sqlx::query(
-                "UPDATE vision_positions SET balance = $1::numeric WHERE batch_id = $2 AND player = $3",
-            )
-            .bind(pb.new_balance.to_string())
-            .bind(batch_id as i64)
-            .bind(format!("{:?}", pb.player))
-            .execute(&mut *tx)
-            .await?;
-        }
-        tx.commit().await?;
+        // Retry with backoff on deadlock (all batches resolve in parallel)
+        let mut attempt = 0u64;
+        loop {
+            attempt += 1;
+            let result = async {
+                let mut tx = pool.begin().await?;
+                for pb in balances {
+                    sqlx::query(
+                        "UPDATE vision_positions SET balance = $1::numeric WHERE batch_id = $2 AND player = $3",
+                    )
+                    .bind(pb.new_balance.to_string())
+                    .bind(batch_id as i64)
+                    .bind(format!("{:?}", pb.player))
+                    .execute(&mut *tx)
+                    .await?;
+                }
+                tx.commit().await
+            }
+            .await;
 
-        // 2. Only update in-memory state after DB confirms.
+            match result {
+                Ok(()) => break,
+                Err(e) if attempt < 5 && format!("{e}").contains("deadlock") => {
+                    tokio::time::sleep(std::time::Duration::from_millis(50 * attempt)).await;
+                    continue;
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        // Only update in-memory state after DB confirms.
         self.apply_tick_balances(batch_id, balances).await;
 
         Ok(())

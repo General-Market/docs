@@ -27,7 +27,7 @@ class Tracker:
         self._history: list[dict] = []  # completed positions
         self._load_history()
 
-    def on_join(self, batch_id: int, deposit_wei: int, bitmap: bytes, bets: list[str]):
+    def on_join(self, batch_id: int, deposit_wei: int, bitmap: bytes, bets: list[str], bitmap_hash: bytes | None = None):
         """Record a new join."""
         self._positions[batch_id] = {
             "batch_id": batch_id,
@@ -35,6 +35,7 @@ class Tracker:
             "balance": deposit_wei,
             "pnl": 0,
             "bitmap": bitmap,
+            "bitmap_hash": bitmap_hash,
             "bets": bets,
             "joined_at": time.time(),
             "last_claimed_tick": 0,
@@ -137,7 +138,7 @@ class Tracker:
         submit_bitmap(urls, self._executor.bot_addr, batch_id, bitmap, bitmap_hash)
 
         # Track
-        self.on_join(batch_id, deposit, bitmap, bets)
+        self.on_join(batch_id, deposit, bitmap, bets, bitmap_hash=bitmap_hash)
         log.info("Joined round %d (%d markets)", batch_id, market_count)
 
     def _try_claim(self, batch_id: int, pos: dict):
@@ -244,6 +245,10 @@ class Tracker:
     @property
     def active_count(self) -> int:
         return len(self._positions)
+
+    @property
+    def positions(self) -> dict[int, dict]:
+        return self._positions
 
     def get_summary(self) -> dict:
         """Return aggregate PnL stats."""
