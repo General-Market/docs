@@ -15,6 +15,11 @@ use oracle::{
 use oracle::arbitration::{self, ArbitrationSubsystem};
 use oracle::arbitration::types::ArbitrationConfig;
 use common::types::P2PMessage;
+use common::runtime::config::{SharedConfig, RuntimeConfig, shared};
+use common::runtime::admin::admin_router;
+use common::runtime::watcher::DeploymentWatcher;
+use common::runtime::validate::StartupValidator;
+use common::runtime::migrate::run_migrations;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -363,6 +368,10 @@ struct OracleApiState {
     bls_keypair_loaded: bool,
     /// Epoch-millis timestamp of last successful RPC call (updated by consensus loop)
     last_rpc_success_ms: Arc<std::sync::atomic::AtomicU64>,
+    /// Hot-reloadable runtime config (deployment addresses, URLs, tuning)
+    runtime_config: SharedConfig,
+    /// True while a deployment flush is in progress — handlers should return 503
+    flushing: Arc<AtomicBool>,
 }
 
 /// GET /health — oracle health check with metrics
@@ -581,8 +590,13 @@ async fn axum_root_health_handler(
     axum_health_handler(state).await
 }
 
-/// Build the core oracle API router (health, ready, nav-sign, registry-sync).
+/// Build the core oracle API router (health, ready, nav-sign, registry-sync, admin).
 fn oracle_api_routes(state: Arc<OracleApiState>) -> axum::Router {
+    let admin = admin_router(
+        state.runtime_config.clone(),
+        std::env::var("ADMIN_TOKEN").ok(),
+    );
+
     axum::Router::new()
         .route("/health", axum::routing::get(axum_health_handler))
         .route("/ready", axum::routing::get(axum_ready_handler))
@@ -590,9 +604,10 @@ fn oracle_api_routes(state: Arc<OracleApiState>) -> axum::Router {
         .route("/api/nav-sign", axum::routing::get(axum_nav_sign_handler))
         .route("/api/registry-sync", axum::routing::get(axum_registry_sync_handler))
         .with_state(state)
+        .merge(admin)
 }
 
-async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, oracle_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<oracle::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<oracle::vision::pending_ops::PendingOpsQueue>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data_node_url: Option<String>, itp_id: String, mock_usdt_addr: Option<ethers::types::Address>, vision_router: Option<axum::Router>, nav_oracle_address: Option<ethers::types::Address>, itp_token_address: Option<ethers::types::Address>, settlement_chain_id: Option<u64>, mirror_registry_address: Option<ethers::types::Address>, oracle_registry_address_for_sync: Option<ethers::types::Address>, vision_config: Option<oracle::vision::config::VisionConfig>, vision_ops_queue_shared: Arc<oracle::vision::pending_ops::PendingOpsQueue>, shared_config: SharedConfig, flushing: Arc<AtomicBool>) -> Result<(), Box<dyn std::error::Error>> {
     let node_id = components.node_id;
     let shutdown = components.shutdown.clone();
 
@@ -1557,6 +1572,8 @@ async fn run_main_loop(mut components: OracleComponents, api_enabled: bool, data
         num_oracles,
         bls_keypair_loaded,
         last_rpc_success_ms: last_rpc_success_ms.clone(),
+        runtime_config: shared_config,
+        flushing,
     });
     let mut api_router = oracle_api_routes(oracle_state);
     if let Some(vision) = vision_router {
@@ -4586,6 +4603,143 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     setup_logging(&config)?;
 
+    // --- SharedConfig: hot-reloadable runtime configuration ---
+    let deployment_path = config.deployment_file.clone()
+        .unwrap_or_else(|| PathBuf::from("deployments/active-deployment.json"));
+    let rpc_url = config.effective_rpc_url();
+    let index_addr = config.effective_contract_addresses()
+        .ok()
+        .map(|ca| ca.index);
+
+    let runtime_config = match RuntimeConfig::load(&deployment_path, &rpc_url, index_addr).await {
+        Ok(cfg) => cfg,
+        Err(e) => {
+            warn!("RuntimeConfig load with nonce failed ({e}), retrying without nonce");
+            RuntimeConfig::load(&deployment_path, &rpc_url, None).await
+                .unwrap_or_else(|e2| panic!("RuntimeConfig load failed — deployment file unreadable: {e2}"))
+        }
+    };
+
+    // Advisory startup validation (does not block startup)
+    let validation_errors = StartupValidator::validate(&runtime_config).await;
+    if !validation_errors.is_empty() {
+        for e in &validation_errors {
+            warn!("Startup validation: {e}");
+        }
+    }
+
+    // Auto-migrate if migrations directory exists and DATABASE_URL is set
+    let vision_db_url = config.vision.as_ref()
+        .filter(|v| v.enabled)
+        .map(|v| v.database_url.clone());
+    if let Some(ref db_url) = vision_db_url {
+        if !db_url.is_empty() {
+            let migrations_dir = std::path::Path::new("migrations");
+            if migrations_dir.exists() {
+                match sqlx::PgPool::connect(db_url).await {
+                    Ok(migration_pool) => {
+                        match run_migrations(&migration_pool, migrations_dir).await {
+                            Ok(count) => {
+                                if count > 0 {
+                                    info!(count, "Auto-migrations applied");
+                                }
+                            }
+                            Err(e) => warn!("Auto-migration failed (non-fatal): {e}"),
+                        }
+                    }
+                    Err(e) => warn!("Could not connect for migrations: {e}"),
+                }
+            }
+        }
+    }
+
+    let shared_config = shared(runtime_config);
+
+    // Spawn DeploymentWatcher with flush callback for nonce changes
+    let flushing = Arc::new(AtomicBool::new(false));
+    {
+        let watcher_config = shared_config.clone();
+        let watcher_path = deployment_path.clone();
+        let flush_flag = flushing.clone();
+        let flush_db_url = vision_db_url.clone();
+
+        DeploymentWatcher::new(watcher_config, watcher_path)
+            .with_nonce_poll_interval(std::time::Duration::from_secs(60))
+            .on_nonce_change(move |old_nonce, new_nonce| {
+                tracing::warn!("DEPLOYMENT NONCE CHANGED: {old_nonce} -> {new_nonce}. Flushing all state.");
+                let flushing_flag = flush_flag.clone();
+                let db_url = flush_db_url.clone();
+
+                // Set flushing BEFORE spawn to close the race window.
+                // If set inside the spawn, a request arriving between spawn() and the first
+                // line of the async block would see flushing=false and hit a TRUNCATE.
+                flushing_flag.store(true, Ordering::SeqCst);
+
+                tokio::spawn(async move {
+                    // Drop guard that clears flushing flag even on panic.
+                    // Without this, a panic during TRUNCATE leaves flushing=true forever,
+                    // and the service returns 503 on every request until restart.
+                    struct FlushGuard(Arc<AtomicBool>);
+                    impl Drop for FlushGuard {
+                        fn drop(&mut self) {
+                            self.0.store(false, Ordering::SeqCst);
+                        }
+                    }
+                    let _guard = FlushGuard(flushing_flag);
+
+                    let start = std::time::Instant::now();
+
+                    // 1. Truncate all contract-dependent tables (if DB available)
+                    if let Some(ref url) = db_url {
+                        match sqlx::PgPool::connect(url).await {
+                            Ok(pool) => {
+                                let tables = [
+                                    "vision_batches", "vision_batch_state", "vision_bitmaps",
+                                    "vision_positions", "vision_tick_results", "vision_user_balances",
+                                    "vision_deposit_orders", "vision_withdraw_orders", "vision_balance_proofs",
+                                    "vision_kv_store", "vision_player_tick_deltas",
+                                    "signed_batch_configs", "batch_configs", "batch_settlements",
+                                    "oracle_health_snapshots", "vision_last_resolved", "vision_reference_prices",
+                                ];
+                                for table in &tables {
+                                    let sql = format!("TRUNCATE TABLE {table} CASCADE");
+                                    if let Err(e) = sqlx::query(&sql).execute(&pool).await {
+                                        tracing::warn!("Failed to truncate {table}: {e}");
+                                    }
+                                }
+
+                                // 3. Reset chain_listener bookmark
+                                sqlx::query("DELETE FROM vision_kv_store WHERE key = 'chain_listener_last_block'")
+                                    .execute(&pool).await.ok();
+                            }
+                            Err(e) => {
+                                tracing::warn!("Flush: could not connect to DB for truncation: {e}");
+                            }
+                        }
+                    }
+
+                    // 2. Delete consensus WAL files
+                    for entry in std::fs::read_dir("logs").into_iter().flatten() {
+                        if let Ok(entry) = entry {
+                            if entry.file_name().to_string_lossy().starts_with("consensus-")
+                                && entry.file_name().to_string_lossy().ends_with(".wal")
+                            {
+                                let _ = std::fs::remove_file(entry.path());
+                            }
+                        }
+                    }
+
+                    // 4. Log BLS re-registration warning if OracleRegistry address changed
+                    tracing::warn!("Check if OracleRegistry address changed — may need BLS re-registration");
+
+                    // FlushGuard::drop clears flushing=false (even on panic)
+                    let elapsed = start.elapsed();
+                    tracing::info!("Oracle flush complete for nonce change (took {elapsed:?})");
+                });
+            })
+            .spawn();
+    }
+
     let shutdown = Arc::new(AtomicBool::new(false));
     let shutdown_clone = shutdown.clone();
 
@@ -5066,7 +5220,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, oracle_registry_for_sync, vision_config, vision_ops_queue).await {
+    if let Err(e) = run_main_loop(components, args.api_enabled, args.data_node_url, args.itp_id, mock_usdt_addr, vision_api_router, nav_oracle_address, itp_token_address, settlement_chain_id, mirror_registry_address, oracle_registry_for_sync, vision_config, vision_ops_queue, shared_config, flushing).await {
         error!(code = "E008", error = %e, "Oracle node error");
         std::process::exit(1);
     }
