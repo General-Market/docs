@@ -143,7 +143,7 @@ def run_cycle(cfg, executor, tracker, strategy, risk, oracle_urls_fn, feed):
     # Re-submit bitmaps for all active positions (survives oracle restarts)
     for bid in list(tracker.active_ids):
         pos = tracker.positions.get(bid)
-        if not pos or not pos.get("bitmap"):
+        if not pos or not pos.get("bitmap") or pos.get("poisoned"):
             continue
         bm = pos["bitmap"]
         bm_hash = pos.get("bitmap_hash") or hash_bitmap(bm)
@@ -235,9 +235,19 @@ def main():
     )
 
     # Recover bitmaps for any positions loaded from pnl.json that have no stored bitmap.
-    # This happens when bots are restarted after positions were joined on a previous run
-    # that predates bitmap persistence. Without bitmaps the oracle voids those positions.
-    tracker.recover_bitmaps(strategy, cfg["data_node"], oracle_urls_fn())
+    # Positions joined with the null bitmap hash are unrecoverable and must be withdrawn.
+    poisoned = tracker.recover_bitmaps(strategy, cfg["data_node"], oracle_urls_fn())
+    if poisoned:
+        log.info(
+            "%d positions have unrecoverable null-hash bitmaps — attempting forced withdrawal",
+            len(poisoned),
+        )
+        for bid in poisoned:
+            try:
+                tracker._try_withdraw(bid, tracker.positions[bid])
+                log.info("Batch %d: forced withdrawal succeeded", bid)
+            except Exception as e:
+                log.warning("Batch %d: forced withdrawal failed: %s", bid, e)
 
     # Run
     if "--once" in sys.argv:

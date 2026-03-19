@@ -262,11 +262,19 @@ class Tracker:
             "total_pnl": active_pnl + history_pnl,
         }
 
-    def recover_bitmaps(self, strategy, data_node_url: str, oracle_urls: List[str]):
+    # Keccak256 of empty bytes — the null bitmap hash produced when a position
+    # was joined without a real bitmap. Positions with this hash cannot be
+    # recovered: the oracle will never accept any non-empty bitmap for them.
+    _NULL_BITMAP_HASH = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+
+    def recover_bitmaps(self, strategy, data_node_url: str, oracle_urls: List[str]) -> List[int]:
         """
-        For every active position that has no bitmap (e.g. loaded from an old
-        pnl.json before bitmap persistence was added), generate a fresh bitmap
-        and submit it to the oracles.
+        For every active position that has no bitmap or was joined with the
+        null bitmap hash, determine whether it can be recovered or must be
+        abandoned (flagged for withdrawal and rejoin).
+
+        Returns list of batch_ids that are poisoned (null-hash join) and
+        should be withdrawn and re-joined by the caller.
 
         Called once per bot startup, after _load_history.
         """
@@ -279,15 +287,38 @@ class Tracker:
             if not pos.get("bitmap")
         ]
         if not missing:
-            return
+            return []
 
         log.info(
-            "Recovering bitmaps for %d positions with no stored bitmap", len(missing)
+            "Checking %d positions with no stored bitmap", len(missing)
         )
+
+        poisoned: List[int] = []
         recovered = 0
+
         for batch_id, pos in missing:
             try:
-                # Get configHash from chain to find the right batch config
+                # Check if this position was joined with the null bitmap hash.
+                # If so, no valid bitmap can ever satisfy the oracle — must withdraw.
+                on_chain_pos = self._executor.get_position(batch_id)
+                on_chain_hash = on_chain_pos.get("bitmapHash", b"")
+                if isinstance(on_chain_hash, bytes):
+                    on_chain_hash_hex = on_chain_hash.hex()
+                else:
+                    on_chain_hash_hex = str(on_chain_hash).lstrip("0x")
+
+                if on_chain_hash_hex == self._NULL_BITMAP_HASH or on_chain_hash == b"\x00" * 32:
+                    log.warning(
+                        "Batch %d: joined with null bitmap hash — position is unrecoverable, marking for withdrawal",
+                        batch_id,
+                    )
+                    pos["poisoned"] = True
+                    poisoned.append(batch_id)
+                    continue
+
+                # Hash is real — we lost the bitmap bytes but can regenerate predictions.
+                # The new bitmap won't match the original hash, but this is better than silence.
+                # The oracle will reject it, so log a warning instead of spamming retries.
                 info = self._executor.get_batch_info(batch_id)
                 config_hash = info["configHash"]
                 if isinstance(config_hash, bytes):
@@ -305,13 +336,27 @@ class Tracker:
                     ]
                     bets = strategy.predict(markets)
                 else:
-                    # No config available — use a default market count
                     market_count = pos.get("market_count", 10)
                     dummy = [{"id": f"m{i}", "price": 0, "change": None, "volume": None, "market_cap": None} for i in range(market_count)]
                     bets = strategy.predict(dummy)
 
                 bitmap = encode_bitmap(bets, market_count)
                 bm_hash = hash_bitmap(bitmap)
+
+                # Check if regenerated hash matches on-chain commitment
+                if isinstance(bm_hash, bytes):
+                    new_hash_hex = bm_hash.hex()
+                else:
+                    new_hash_hex = str(bm_hash).lstrip("0x")
+
+                if new_hash_hex != on_chain_hash_hex:
+                    log.warning(
+                        "Batch %d: original bitmap lost and hash mismatch (on-chain: %s) — marking for withdrawal",
+                        batch_id, on_chain_hash_hex[:16],
+                    )
+                    pos["poisoned"] = True
+                    poisoned.append(batch_id)
+                    continue
 
                 pos["bitmap"] = bitmap
                 pos["bitmap_hash"] = bm_hash
@@ -325,9 +370,14 @@ class Tracker:
             except Exception as e:
                 log.warning("Batch %d: bitmap recovery failed: %s", batch_id, e)
 
-        if recovered:
+        if recovered or poisoned:
             self._save_history()
-            log.info("Bitmap recovery complete: %d/%d batches recovered", recovered, len(missing))
+            log.info(
+                "Bitmap recovery complete: %d recovered, %d poisoned (need withdrawal)",
+                recovered, len(poisoned),
+            )
+
+        return poisoned
 
     def _load_history(self):
         """Load from pnl.json, validating persisted positions against chain."""
