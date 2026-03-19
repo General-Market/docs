@@ -10,23 +10,42 @@
 
 **Spec:** `docs/plans/2026-03-17-vision-round-based-batches.md`
 
-**Key simplification:** No backward compatibility. The old tick engine (`engine.rs` run loop), dual-balance flow, `claimRewards`, per-tick balance tracking — all dead code. The lifecycle manager replaces everything.
+**Key simplification:** No backward compatibility. The old tick engine (`engine.rs` run loop), `claimRewards`, per-tick balance tracking — all dead code. The lifecycle manager replaces everything.
+
+**USDC flow:**
+1. Player joins round via `joinBatchDirect` (USDC transferred from wallet to batch position)
+2. Oracle auto-settles via `settleBatch` → credits `realBalance` (not wallet)
+3. Player's Vision balance accumulates across all settled rounds from all sources
+4. Player clicks ONE "Withdraw" button (header bar) to pull all `realBalance` to wallet
+5. For subsequent rounds: player can use `joinBatch` (from Vision balance) — no need to withdraw+redeposit
+
+**Bot flow:** First round: `joinBatchDirect`. Subsequent rounds: `joinBatch` (from accumulated Vision balance). Only calls `withdrawBalance()` when shutting down.
+
+**Don't gut engine.rs yet:** Ship lifecycle manager ALONGSIDE the existing tick engine. Once lifecycle works end-to-end, remove old code in a separate PR. No safety net removal during the initial ship.
 
 ---
 
-## What gets deleted
+## What gets deleted (AFTER lifecycle manager is proven working)
 
 | Component | What dies | Why |
 |-----------|----------|-----|
-| `engine.rs` tick resolution loop (lines 1826-2300) | Replaced by lifecycle manager | One engine, not two |
-| `engine.rs` balance proof generation | Replaced by settlement | No per-tick proofs needed |
-| `engine.rs` bitmap gossip task | Moved into lifecycle manager | Simpler ownership |
-| `useWithdraw.ts` hook | Dead — settlement is automatic | No manual BLS proof fetch |
-| `useJoinBatch.ts` (dual-balance) | Replaced by `useJoinBatchDirect` | No Vision balance intermediary |
-| `BalanceDepositModal.tsx` | Dead — no Vision balance needed | Direct USDC in/out |
+| `engine.rs` tick resolution loop (lines 1826-2300) | Replaced by lifecycle manager | **Phase 2 — not on first ship** |
+| `engine.rs` balance proof generation | Replaced by settlement | Per-tick proofs no longer needed |
+| `WithdrawModal.tsx` (per-batch BLS proof modal) | Dead — settlement is automatic | No manual BLS proof fetch |
+| `BalanceDepositModal.tsx` | Dead — `joinBatchDirect` handles it | No need to pre-deposit to Vision balance |
 | `vision_player_tick_deltas` table | Replaced by `vision_round_players` | Per-round, not per-tick |
 | `vision_balance_proofs` table | Dead — no per-tick proofs | Settlement replaces proofs |
-| Bot dual-balance flow in `bot.py` | Replaced by direct deposit | One flow |
+
+## What SURVIVES (critical — do NOT delete)
+
+| Component | Why it lives |
+|-----------|-------------|
+| `VisionBalanceBar` (header) | Shows accumulated Vision balance + ONE "Withdraw" button |
+| `withdrawBalance()` on-chain | Players withdraw accumulated USDC from all settled rounds |
+| `joinBatch` (from Vision balance) | Subsequent rounds pull from Vision balance (no withdraw+redeposit) |
+| `useJoinBatch.ts` hook | Used for round 2+ (from Vision balance) |
+| `engine.rs` tick loop | **Keep running alongside lifecycle manager until proven stable** |
+| `IncomingBalanceProofsBatch` types | Imported by main.rs, consensus, P2P — keep type definitions |
 
 ## What survives
 
@@ -302,16 +321,27 @@ The `process_source_round` function is NOT a skeleton with TODOs — it contains
 7. Record in `vision_round_players` (per-player PnL with checked U256 subtraction)
 8. Call `scheduler.mark_settled(pool, batch_id)` + `bitmap_store.purge_batch_from_db(pool, batch_id)`
 
-- [ ] **Step 2: Gut engine.rs**
+- [ ] **Step 2: Add source filter to engine.rs (DON'T gut it)**
 
-Remove the tick resolution loop (lines 1826-2300). Keep:
-- Bitmap gossip handler (the `incoming_gossip_rx` select branch)
-- GC timer (for cleaning settled batches from memory)
-- Balance proof collector (repurpose for settlement proof aggregation)
+Keep the existing tick engine running for non-round sources. Add a skip filter at the top of the batch iteration loop (same as original plan Task 4):
 
-The `run()` function becomes a lightweight event handler, not a tick engine.
+```rust
+// In engine.rs tick loop, skip round-based sources
+let round_source_ids: Vec<H256> = config.round_based_sources.iter()
+    .flat_map(|s| {
+        let mut c = vec![H256::from(keccak256(s.as_bytes()))];
+        for v in 1..=5u8 { c.push(H256::from(keccak256(format!("{}_v{}", s, v).as_bytes()))); }
+        c
+    })
+    .collect();
 
-- [ ] **Step 3: Spawn lifecycle manager in main.rs**
+// Inside the batch loop:
+if round_source_ids.contains(&batch.source_id) { continue; }
+```
+
+The old engine stays alive as a safety net. Once lifecycle manager is proven, remove the old code in a separate PR.
+
+- [ ] **Step 3: Spawn lifecycle manager ALONGSIDE engine in main.rs**
 
 Replace the tick engine spawn with:
 
@@ -389,8 +419,8 @@ Fetch from `/api/vision/rounds` (existing proxy). Returns active rounds with sta
 Replace the dual-balance join flow with direct USDC:
 1. `approve(VISION_ADDRESS, amount)` on USDC contract
 2. `joinBatchDirect(batchId, configHash, amount, stake, bitmapHash)` on Vision contract
-3. Remove Withdraw button (settlement is automatic)
-4. Remove Vision balance display
+3. Remove per-batch WithdrawModal (BLS proof modal) — settlement is automatic
+4. KEEP VisionBalanceBar in header — shows accumulated balance + global Withdraw button
 5. Show round state: "Betting (2:31 left)" / "Settling..." / "Settled: +$X.XX"
 
 - [ ] **Step 4: Commit**
@@ -402,28 +432,29 @@ git commit -m "feat: joinBatchDirect frontend, remove dual-balance flow"
 
 ---
 
-## Task 6: Bot — direct deposit only
+## Task 6: Bot — smart deposit (direct first, from-balance after)
 
 **Files:**
 - Modify: `vision-bot/bot.py`
 - Modify: `vision-bot/framework/tracker.py`
 
-- [ ] **Step 1: Remove dual-balance flow from bot.py**
+- [ ] **Step 1: Smart join flow in bot.py**
 
-In `run_cycle`, replace:
+In `run_cycle`, replace the old dual-balance flow with a smart flow that checks Vision balance first:
+
 ```python
-executor.approve_usdc(deposit_wei)
-executor.deposit_balance(deposit_wei)
-executor.join_batch(...)
+# Check if bot has Vision balance (from previous round settlements)
+vision_balance = executor.get_vision_balance()
+if vision_balance >= deposit_wei:
+    # Use accumulated balance from previous settlements
+    executor.join_batch(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
+else:
+    # First round or balance withdrawn — direct USDC from wallet
+    executor.approve_usdc(deposit_wei)
+    executor.join_batch_direct(batch_id, config_hash, deposit_wei, stake_wei, bm_hash)
 ```
 
-With:
-```python
-executor.approve_usdc(deposit_wei)
-executor.join_batch_direct(...)
-```
-
-`join_batch_direct` already exists in `chain.py` (line 372).
+Add `get_vision_balance()` to Executor in `chain.py` — reads `balanceOf(bot_addr)` from Vision contract.
 
 - [ ] **Step 2: Fix _join_round placeholder**
 
