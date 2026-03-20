@@ -385,7 +385,7 @@ impl TickScheduler {
                 "SELECT id, creator, tick_duration, created_at_tick, paused, \
                  source_id, config_hash, next_config_hash, next_lock_offset, last_promotion_tick, \
                  next_tick_duration \
-                 FROM vision_batches WHERE NOT paused",
+                 FROM vision_batches WHERE NOT paused AND (state = 'active' OR state IS NULL)",
             )
             .fetch_all(pool)
             .await?;
@@ -615,6 +615,23 @@ impl TickScheduler {
                 reveal_deadline.saturating_sub(now)
             })
             .min()
+    }
+
+    /// Remove a batch from all in-memory state. Called after settlement.
+    pub async fn remove_batch(&self, batch_id: u64) {
+        self.batches.write().await.remove(&batch_id);
+        self.players.write().await.remove(&batch_id);
+        self.last_resolved.write().await.remove(&batch_id);
+    }
+
+    /// Mark a batch as settled in Postgres and remove from memory.
+    pub async fn mark_settled(&self, pool: &PgPool, batch_id: u64) -> Result<(), sqlx::Error> {
+        sqlx::query("UPDATE vision_batches SET state = 'settled', paused = true WHERE id = $1")
+            .bind(batch_id as i64)
+            .execute(pool)
+            .await?;
+        self.remove_batch(batch_id).await;
+        Ok(())
     }
 }
 

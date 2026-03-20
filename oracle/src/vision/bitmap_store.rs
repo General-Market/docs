@@ -149,6 +149,24 @@ impl BitmapStore {
         // Active bitmaps persist for players who didn't re-submit.
     }
 
+    /// Remove all bitmaps (pending + active) for a batch. Called after settlement.
+    pub async fn purge_batch(&self, batch_id: u64) {
+        let mut guard = self.slots.write().await;
+        guard.pending.remove(&batch_id);
+        guard.active.remove(&batch_id);
+    }
+
+    /// Purge from both memory and DB.
+    pub async fn purge_batch_from_db(&self, pool: &PgPool, batch_id: u64) -> Result<(), BitmapStoreError> {
+        sqlx::query("DELETE FROM vision_bitmaps WHERE batch_id = $1")
+            .bind(batch_id as i64)
+            .execute(pool)
+            .await
+            .map_err(BitmapStoreError::Db)?;
+        self.purge_batch(batch_id).await;
+        Ok(())
+    }
+
     /// Remove pending bitmaps for `batch_id` whose `target_tick_id` is older
     /// than `last_resolved_tick_id`.  Called after a tick resolves so that
     /// stragglers don't accumulate indefinitely.
