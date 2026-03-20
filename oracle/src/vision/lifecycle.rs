@@ -257,13 +257,37 @@ impl BatchLifecycleManager {
 
                 // Step 3: Create new batch (fetch fresh config from data-node)
                 match self.create_new_round(&source.source_name).await {
-                    Ok(batch_id) => {
-                        info!(
-                            source = %source.source_name,
-                            new_batch_id = batch_id,
-                            "New round created"
-                        );
-                        source.current_batch_id = Some(batch_id);
+                    Ok(lifecycle_id) => {
+                        // create_new_round returns a Postgres lifecycle ID, not the
+                        // on-chain batch_id. The chain listener registers the real
+                        // batch via BatchCreated events. Poll the scheduler briefly
+                        // to resolve the on-chain ID — that's what resolve_and_settle
+                        // needs when this batch rotates into previous_batch_id.
+                        let on_chain_id = self.poll_for_on_chain_batch(
+                            source.source_id,
+                            &source.source_name,
+                        ).await;
+
+                        match on_chain_id {
+                            Some(id) => {
+                                info!(
+                                    source = %source.source_name,
+                                    lifecycle_id,
+                                    on_chain_batch_id = id,
+                                    "New round created — on-chain batch resolved"
+                                );
+                                source.current_batch_id = Some(id);
+                            }
+                            None => {
+                                warn!(
+                                    source = %source.source_name,
+                                    lifecycle_id,
+                                    "New round created but on-chain batch not yet visible in scheduler — will resolve next heartbeat"
+                                );
+                                // Store nothing; next heartbeat will create a fresh batch.
+                                // Better to skip one round than settle with the wrong ID.
+                            }
+                        }
                     }
                     Err(e) => {
                         warn!(
@@ -306,6 +330,49 @@ impl BatchLifecycleManager {
         }
 
         Ok(())
+    }
+
+    /// Poll the scheduler for the on-chain batch ID matching a source.
+    ///
+    /// After `create_new_round` submits the `createBatch` TX, the chain listener
+    /// processes the `BatchCreated` event and calls `scheduler.on_batch_created`.
+    /// This may take a few seconds. We poll up to 10s with 500ms intervals.
+    async fn poll_for_on_chain_batch(
+        &self,
+        source_id: H256,
+        source_name: &str,
+    ) -> Option<u64> {
+        const POLL_INTERVAL_MS: u64 = 500;
+        const MAX_POLLS: u64 = 20; // 10 seconds total
+
+        // Snapshot existing batches for this source *before* polling,
+        // so we can detect the newly added one.
+        let existing_max = self.scheduler.find_latest_batch_for_source(source_id).await;
+
+        for attempt in 0..MAX_POLLS {
+            if attempt > 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(POLL_INTERVAL_MS)).await;
+            }
+
+            if let Some(latest) = self.scheduler.find_latest_batch_for_source(source_id).await {
+                // Accept if there was no previous batch, or if a new (higher) one appeared
+                if existing_max.is_none() || latest > existing_max.unwrap() {
+                    debug!(
+                        source = %source_name,
+                        on_chain_batch_id = latest,
+                        poll_attempt = attempt,
+                        "On-chain batch detected in scheduler"
+                    );
+                    return Some(latest);
+                }
+            }
+        }
+
+        warn!(
+            source = %source_name,
+            "On-chain batch not found in scheduler after polling"
+        );
+        None
     }
 
     /// Resolve a completed round: fetch snapshot, run resolver, compute settlement.

@@ -590,6 +590,22 @@ impl TickScheduler {
             .unwrap_or(0)
     }
 
+    /// Find the latest (highest ID) on-chain batch for a given source.
+    ///
+    /// The chain listener registers batches via `on_batch_created` using on-chain
+    /// IDs from `BatchCreated` events. This method finds the most recent one for
+    /// a source, so the lifecycle manager can track the correct on-chain ID
+    /// instead of its internal Postgres sequence.
+    pub async fn find_latest_batch_for_source(&self, source_id: H256) -> Option<u64> {
+        self.batches
+            .read()
+            .await
+            .iter()
+            .filter(|(_, batch)| batch.source_id == source_id)
+            .map(|(&id, _)| id)
+            .max()
+    }
+
     /// Get all batch IDs (for leaderboard aggregation).
     pub async fn get_all_batch_ids(&self) -> Vec<u64> {
         self.batches.read().await.keys().copied().collect()
