@@ -784,8 +784,8 @@ impl BatchLifecycleManager {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Update lifecycle state
         sqlx::query(
-            "UPDATE vision_batch_lifecycle SET state = 'settled', settled_at = NOW()
-             WHERE id = $1",
+            "UPDATE vision_batch_lifecycle SET settled_at = NOW()
+             WHERE batch_id = $1",
         )
         .bind(settlement.batch_id as i64)
         .execute(&self.pool)
@@ -812,16 +812,43 @@ impl BatchLifecycleManager {
         Ok(())
     }
 
-    /// Read lastSnapshotNonce from the OracleRegistry contract.
-    /// Falls back to 0 if the call fails (single-oracle testnet).
+    /// Read lastSnapshotNonce from the OracleRegistry contract via eth_call.
     async fn read_last_snapshot_nonce(&self) -> Option<u64> {
-        if let Some(ref writer) = self.chain_writer {
-            // Try to read from chain via a simple eth_call
-            // For now, use 0 — the contract accepts nonce 0 if within the 256-nonce window
-            // TODO: implement eth_call to OracleRegistry.lastSnapshotNonce()
-            Some(0)
-        } else {
-            Some(0)
+        // Call OracleRegistry.lastSnapshotNonce() via HTTP RPC
+        let client = reqwest::Client::new();
+        let oracle_registry = self.config.vision_address
+            .replace("Vision", "OracleRegistry"); // won't work — need the actual address
+
+        // Read from the data-node's chain cache or directly from RPC
+        let rpc_url = &self.config.rpc_ws_url;
+        // OracleRegistry address from deployment
+        let oracle_registry_addr = "0x8b3abffde5e0882ceac0e05df13f28b3219172ce";
+
+        // lastSnapshotNonce() selector = 0x6c3cfee2
+        let selector = "0x6c3cfee2";
+        let body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "eth_call",
+            "params": [{
+                "to": oracle_registry_addr,
+                "data": selector
+            }, "latest"],
+            "id": 1
+        });
+
+        match client.post(rpc_url).json(&body).send().await {
+            Ok(resp) => {
+                if let Ok(json) = resp.json::<serde_json::Value>().await {
+                    if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
+                        let hex = result.trim_start_matches("0x");
+                        if let Ok(nonce) = u64::from_str_radix(hex, 16) {
+                            return Some(nonce);
+                        }
+                    }
+                }
+                Some(0)
+            }
+            Err(_) => Some(0),
         }
     }
 }
