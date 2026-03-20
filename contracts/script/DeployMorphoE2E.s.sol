@@ -9,7 +9,7 @@ import {MirrorOracleRegistry} from "../src/registry/MirrorOracleRegistry.sol";
 import {ITPNAVOracle} from "../src/oracle/ITPNAVOracle.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 import {Morpho} from "@morpho-blue/Morpho.sol";
-import {AdaptiveCurveIrm} from "@morpho-blue-irm/adaptive-curve-irm/AdaptiveCurveIrm.sol";
+import {CuratorRateIRM} from "../src/irm/CuratorRateIRM.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // ERC1967Proxy no longer needed — oracle uses the main OracleRegistry
 import "./helpers/DeployBLSHelper.sol";
@@ -64,9 +64,9 @@ contract DeployMorphoE2E is DeployBLSHelper {
         Morpho morpho = new Morpho(deployer);
         console.log("Morpho deployed:", address(morpho));
 
-        // 2. Deploy AdaptiveCurveIRM
-        AdaptiveCurveIrm irm = new AdaptiveCurveIrm(address(morpho));
-        console.log("AdaptiveCurveIRM deployed:", address(irm));
+        // 2. Deploy CuratorRateIRM
+        CuratorRateIRM irm = new CuratorRateIRM(address(morpho), deployer);
+        console.log("CuratorRateIRM deployed:", address(irm));
 
         // 3. Deploy ITPNAVOracle using the main OracleRegistry
         // (no separate MirrorOracleRegistry — avoids nonce desync when
@@ -109,6 +109,10 @@ contract DeployMorphoE2E is DeployBLSHelper {
         console.log("Market created, ID:");
         console.logBytes32(Id.unwrap(marketId));
 
+        // Set initial borrow rate: 5% APR = 0.05 / 31536000 ≈ 1585489599 WAD per second
+        irm.setRate(marketId, 1585489599);
+        console.log("Initial borrow rate set: 5% APR");
+
         // 6. Deploy MetaMorpho vault (timelock=0 for testnet, no waiting)
         MetaMorpho vault = new MetaMorpho(
             deployer,
@@ -150,7 +154,7 @@ contract DeployMorphoE2E is DeployBLSHelper {
         );
         string memory p2 = string.concat(
             '    "MORPHO": "', vm.toString(address(morpho)),
-            '",\n    "ADAPTIVE_IRM": "', vm.toString(address(irm)),
+            '",\n    "CURATOR_RATE_IRM": "', vm.toString(address(irm)),
             '",\n    "MIRROR_REGISTRY": "', vm.toString(mainRegistry),
             '",\n    "ITP_NAV_ORACLE": "', vm.toString(address(oracle)),
             '",\n    "METAMORPHO_VAULT": "', vm.toString(vaultAddr),
