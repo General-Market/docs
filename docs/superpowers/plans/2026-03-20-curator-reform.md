@@ -131,10 +131,29 @@ Also update `--oracle-addresses` (line 1742) and `--itp-addresses` (line 1744) t
       - "$(python3 -c "import json; d=json.load(open('deployments/batch-markets.json')); print(','.join([m['collateralToken'] for m in d['markets']]))" 2>/dev/null || echo "$ITP_ADDR")"
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Fix deploy-batch-markets.sh IRM key read (line 23)**
 
 ```bash
-git add testnet.sh
+# Change:
+CURATOR_IRM=$(jq -r '.contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
+# To:
+CURATOR_IRM=$(jq -r '.contracts.CURATOR_RATE_IRM // .contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
+```
+
+- [ ] **Step 6: Remove singular `--oracle-address` and `--itp-address` flags from curator docker (lines 1730-1733)**
+
+These pass single values and conflict with the new plural `--oracle-addresses` / `--itp-addresses`. Delete these 4 lines:
+```yaml
+      - "--oracle-address"
+      - "$ORACLE_ADDR"
+      - "--itp-address"
+      - "$ITP_ADDR"
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add testnet.sh scripts/deploy-batch-markets.sh
 git commit -m "fix: testnet.sh reads CURATOR_RATE_IRM key, no queue caps, all market IDs to curator"
 ```
 
@@ -146,15 +165,6 @@ git commit -m "fix: testnet.sh reads CURATOR_RATE_IRM key, no queue caps, all ma
 - Delete: `frontend/hooks/useMorphoMarkets.ts`
 - Delete: `frontend/components/lending/MarketsTable.tsx`
 - Modify: `frontend/lib/contracts/morpho-addresses.ts`
-
-- [ ] **Step 0: Fix deploy-batch-markets.sh IRM key read (line 23)**
-
-```bash
-# Change:
-CURATOR_IRM=$(jq -r '.contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
-# To:
-CURATOR_IRM=$(jq -r '.contracts.CURATOR_RATE_IRM // .contracts.ADAPTIVE_IRM' "$MORPHO_DEPLOYMENT")
-```
 
 - [ ] **Step 1: Fix `getDefaultMarketParams` IRM field**
 
@@ -174,23 +184,37 @@ rm frontend/hooks/useMorphoMarkets.ts
 rm frontend/components/lending/MarketsTable.tsx
 ```
 
-- [ ] **Step 3: Remove useMorphoMarkets from lending/index.ts barrel export**
+- [ ] **Step 3: Remove MarketsTable from lending/index.ts barrel export**
 
-Check if `frontend/components/lending/index.ts` exports MarketsTable and remove the line.
+`frontend/components/lending/index.ts` line 1 exports MarketsTable — remove that line. Build fails if the barrel references a deleted file.
 
 - [ ] **Step 4: Fix VaultModal — remove useMorphoMarkets import and usage**
 
-In `VaultModal.tsx`, remove:
-```typescript
-import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'
-```
-And remove line 92:
-```typescript
-const { markets, refetch: refetchMarkets } = useMorphoMarkets()
-```
-And the `refetchMarkets` from the refresh handler.
+In `VaultModal.tsx`:
 
-Replace `market = markets[0]` and derived values with aggregates from `allMarketData`:
+1. Add `useMemo` to React imports (line 3): `import { useState, useEffect, useRef, useCallback, useMemo } from 'react'`
+
+2. Remove import: `import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'`
+
+3. Remove line 92: `const { markets, refetch: refetchMarkets } = useMorphoMarkets()`
+
+4. **DELETE lines 113-116** (the old variable declarations that depend on `markets`):
+```typescript
+// DELETE these lines:
+const market = markets[0]
+const supplyApy = vaultInfo?.apy ?? 0
+const borrowApy = market?.borrowApy ?? 0
+const utilization = vaultInfo?.utilization ?? 0
+```
+
+5. Remove `refetchMarkets` from BOTH the `handleRefresh` body AND the useEffect dependency array (line 111)
+
+6. Destructure `oraclePrice` from `useMorphoPosition`: change line 93 to:
+```typescript
+const { position, oraclePrice, refetch: refetchPosition } = useMorphoPosition()
+```
+
+Replace with aggregates from `allMarketData`:
 ```typescript
 // Aggregate stats from all markets
 const { totalSupply, totalBorrow, weightedBorrowApy } = useMemo(() => {
@@ -273,18 +297,18 @@ vaultInfo = {
 }
 ```
 
-5. Remove unused imports: `MORPHO_ABI`, `CURATOR_RATE_IRM_ABI`, `useSSEOracle`, `MORPHO_ADDRESSES.marketId`
+5. Remove unused imports AND their usages: `MORPHO_ABI`, `CURATOR_RATE_IRM_ABI`, `useSSEOracle`, `MORPHO_ADDRESSES.marketId`. Also remove the `const sseOracle = useSSEOracle()` call (line 123) — leaving the call after removing the import causes a compile error.
 
 - [ ] **Step 5b: Fix VaultModal — remove ALL `market` variable references**
 
 After removing `useMorphoMarkets`, the `market = markets[0]` variable is gone. Fix ALL references:
 
 - `borrowApy = market?.borrowApy` → replaced by `weightedBorrowApy` (from step 4 aggregate)
-- `market.navPrice` in `collateralValue` → use `position?.oraclePrice` from `useMorphoPosition` instead:
+- `market.navPrice` in `collateralValue` → use `oraclePrice` from `useMorphoPosition` destructuring (Step 4 point 6):
 ```typescript
-const oraclePrice = position?.oraclePrice ? parseFloat(formatUnits(BigInt(position.oraclePrice), 36)) : 1
+const oraclePriceNum = oraclePrice ? parseFloat(formatUnits(oraclePrice, 36)) : 1
 const collateralValue = position?.collateralAmount
-  ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * oraclePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * oraclePriceNum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   : '—'
 ```
 - `market?.lltvPercent` → hardcode `77` or read from first `allMarketData` entry:
@@ -321,7 +345,7 @@ git commit -m "fix: delete useMorphoMarkets + MarketsTable dead code, aggregate 
 ## Task 4: E2E Test — Lending Curator
 
 **Files:**
-- Create: `frontend/e2e/tests/28-lending-curator.spec.ts`
+- Create: `frontend/e2e/tests/36-lending-curator.spec.ts`
 
 - [ ] **Step 1: Write the test**
 
@@ -330,7 +354,7 @@ Number as `09-` to fall into `itp-data` project (matches `0[1-578]-`... actually
 
 ```typescript
 /**
- * 28-lending-curator — Verify lending markets have real data after curator reform.
+ * 36-lending-curator — Verify lending markets have real data after curator reform.
  */
 import { test, expect } from '../fixtures/wallet'
 import { FRONTEND_URL } from '../env'
@@ -377,13 +401,13 @@ test.describe('Lending Curator', () => {
 })
 ```
 
-File name: `frontend/e2e/tests/28-lending-curator.spec.ts`
+File name: `frontend/e2e/tests/36-lending-curator.spec.ts`
 ```
 
 - [ ] **Step 2: Commit**
 
 ```bash
-git add frontend/e2e/tests/48-lending-curator.spec.ts
+git add frontend/e2e/tests/36-lending-curator.spec.ts
 git commit -m "test: E2E lending curator — verify markets have real TVL and APY"
 ```
 
