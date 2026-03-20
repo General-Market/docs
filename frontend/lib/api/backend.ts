@@ -75,8 +75,9 @@ export async function fetchUserState(user: string, itpId: string): Promise<UserS
   return fetchJson<UserState>(`/user-state?user=${user}&itp_id=${itpId}`)
 }
 
-export async function fetchMorphoPosition(user: string): Promise<MorphoPosition | null> {
-  return fetchJson<MorphoPosition>(`/morpho-position?user=${user}`)
+export async function fetchMorphoPosition(user: string, marketId?: string): Promise<MorphoPosition | null> {
+  const qs = marketId ? `&market_id=${marketId}` : ''
+  return fetchJson<MorphoPosition>(`/morpho-position?user=${user}${qs}`)
 }
 
 export async function fetchOrder(orderId: bigint): Promise<OrderData | null> {

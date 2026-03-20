@@ -68,7 +68,7 @@ export function useMorphoPosition(market?: MorphoMarketEntry): UseMorphoPosition
     }
 
     try {
-      const result = await fetchMorphoPosition(user)
+      const result = await fetchMorphoPosition(user, market?.marketId)
       if (result) {
         setRestData(result)
         setError(null)
