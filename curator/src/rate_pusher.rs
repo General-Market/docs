@@ -6,12 +6,13 @@
 //! - Before liquidation (liquidation bot)
 //! - On crisis detection (health monitor)
 
+use crate::data_node_client::DataNodeClient;
 use ethers::prelude::*;
 use ethers::types::{Address, TransactionRequest, U256};
 use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// Errors from rate pushing
 #[derive(Debug, Error)]
@@ -31,6 +32,8 @@ pub struct RatePusher {
     provider: Arc<Provider<Http>>,
     wallet: LocalWallet,
     irm_address: Address,
+    /// Optional data-node client for reading borrow rates via HTTP instead of RPC
+    data_node_client: Option<DataNodeClient>,
 }
 
 impl RatePusher {
@@ -50,11 +53,70 @@ impl RatePusher {
             provider: Arc::new(provider),
             wallet,
             irm_address,
+            data_node_client: None,
         })
     }
 
-    /// Read the current rate for a market from CuratorRateIRM
+    /// Set data-node client for proxying rate reads through the data-node HTTP API
+    pub fn set_data_node_client(&mut self, client: DataNodeClient) {
+        self.data_node_client = Some(client);
+    }
+
+    /// Read the current rate for a market — tries data-node first, falls back to RPC
     pub async fn read_current_rate(&self, market_id: [u8; 32]) -> Result<U256, RatePushError> {
+        // Try data-node first when configured
+        if let Some(ref dn) = self.data_node_client {
+            match self.read_rate_from_data_node(dn, market_id).await {
+                Ok(rate) => {
+                    debug!(
+                        market = %hex::encode(market_id),
+                        rate = %rate,
+                        "Borrow rate via data-node"
+                    );
+                    return Ok(rate);
+                }
+                Err(e) => {
+                    warn!(
+                        market = %hex::encode(market_id),
+                        error = %e,
+                        "Data-node rate read failed, falling back to RPC"
+                    );
+                }
+            }
+        }
+
+        self.rpc_read_current_rate(market_id).await
+    }
+
+    /// Read borrow rate from data-node's cached market data
+    async fn read_rate_from_data_node(
+        &self,
+        dn: &DataNodeClient,
+        market_id: [u8; 32],
+    ) -> Result<U256, RatePushError> {
+        let markets = dn
+            .get_all_markets()
+            .await
+            .map_err(|e| RatePushError::Provider(format!("data-node get_all_markets: {}", e)))?;
+
+        let market_hex = format!("0x{}", hex::encode(market_id));
+
+        let found = markets
+            .iter()
+            .find(|m| m.market_id == market_hex)
+            .ok_or_else(|| {
+                RatePushError::Provider(format!(
+                    "Market {} not found in data-node response",
+                    market_hex
+                ))
+            })?;
+
+        U256::from_dec_str(&found.borrow_rate_per_second)
+            .map_err(|e| RatePushError::Provider(format!("Invalid borrow_rate_per_second: {}", e)))
+    }
+
+    /// Read the current rate for a market from CuratorRateIRM via direct RPC (fallback)
+    async fn rpc_read_current_rate(&self, market_id: [u8; 32]) -> Result<U256, RatePushError> {
         // Function selector for rates(bytes32): keccak256("rates(bytes32)")[:4]
         let selector = &ethers::utils::keccak256(b"rates(bytes32)")[..4];
 

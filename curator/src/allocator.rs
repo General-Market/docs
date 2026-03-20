@@ -9,6 +9,7 @@
 //! - Compute reallocation decisions respecting tier caps
 //! - Execute vault.reallocate() transactions
 
+use crate::data_node_client::{DataNodeClient, MorphoMarketData};
 use crate::quote::CrisisLevel;
 use crate::tier_config::{RiskTier, RiskTierConfig};
 use chrono::{DateTime, Utc};
@@ -41,6 +42,23 @@ pub const CAP_WARNING_THRESHOLD_PCT: u8 = 80;
 
 /// Minimum allocation amount for retry (1 USDC = 1e6, avoid dust)
 pub const MIN_ALLOCATION_AMOUNT: u64 = 1_000_000;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/// Parse a hex-encoded market ID string (e.g. "0xabcd...") into a [u8; 32].
+/// Returns None if the hex is invalid or not exactly 32 bytes.
+fn parse_market_id_hex(hex_str: &str) -> Option<[u8; 32]> {
+    let hex = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+    let bytes = hex::decode(hex).ok()?;
+    if bytes.len() != 32 {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&bytes);
+    Some(out)
+}
 
 // ============================================================================
 // Function Selectors (precomputed keccak256 for efficiency)
@@ -233,6 +251,8 @@ pub struct AllocationBot {
     market_params_cache: HashMap<[u8; 32], MarketParamsData>,
     /// HTTP timeout for RPC calls
     rpc_timeout: Duration,
+    /// Optional data-node client for reading market state via HTTP instead of RPC
+    data_node_client: Option<DataNodeClient>,
 }
 
 impl AllocationBot {
@@ -261,7 +281,13 @@ impl AllocationBot {
             risk_tier_configs,
             market_params_cache: HashMap::new(),
             rpc_timeout: Duration::from_secs(30),
+            data_node_client: None,
         })
+    }
+
+    /// Set data-node client for proxying market reads through the data-node HTTP API
+    pub fn set_data_node_client(&mut self, client: DataNodeClient) {
+        self.data_node_client = Some(client);
     }
 
     /// Add a new market to monitor
@@ -474,8 +500,29 @@ impl AllocationBot {
         Ok(assets)
     }
 
-    /// Read all market metrics
+    /// Read all market metrics — tries data-node first, falls back to per-market RPC
     pub async fn read_all_market_metrics(&mut self) -> Result<Vec<MarketMetrics>, AllocatorError> {
+        // Try data-node first when configured
+        if self.data_node_client.is_some() {
+            match self.read_all_market_metrics_from_data_node().await {
+                Ok(metrics) if !metrics.is_empty() => {
+                    debug!(count = metrics.len(), "Market metrics via data-node");
+                    return Ok(metrics);
+                }
+                Ok(_) => {
+                    warn!("Data-node returned empty market list, falling back to RPC");
+                }
+                Err(e) => {
+                    warn!(error = %e, "Data-node market read failed, falling back to RPC");
+                }
+            }
+        }
+
+        self.read_all_market_metrics_via_rpc().await
+    }
+
+    /// Read all market metrics via direct RPC (fallback path)
+    async fn read_all_market_metrics_via_rpc(&mut self) -> Result<Vec<MarketMetrics>, AllocatorError> {
         let mut metrics = Vec::new();
         // Clone market_ids to avoid borrowing self while iterating
         // (read_market_metrics takes &mut self for cache updates)
@@ -501,6 +548,108 @@ impl AllocationBot {
                     // Skip failed markets gracefully
                 }
             }
+        }
+
+        Ok(metrics)
+    }
+
+    /// Read market metrics from data-node, with RPC for vault position and market params
+    async fn read_all_market_metrics_from_data_node(
+        &mut self,
+    ) -> Result<Vec<MarketMetrics>, AllocatorError> {
+        let dn = self.data_node_client.as_ref().unwrap();
+        let all_markets = dn
+            .get_all_markets()
+            .await
+            .map_err(|e| AllocatorError::ReadError(format!("data-node get_all_markets: {}", e)))?;
+
+        // Index data-node markets by their ID bytes for lookup
+        let dn_by_id: HashMap<[u8; 32], &MorphoMarketData> = all_markets
+            .iter()
+            .filter_map(|m| {
+                parse_market_id_hex(&m.market_id).map(|id| (id, m))
+            })
+            .collect();
+
+        let market_ids: Vec<_> = self.market_ids.iter().copied().collect();
+        let mut metrics = Vec::new();
+
+        for market_id in market_ids {
+            let dn_market = match dn_by_id.get(&market_id) {
+                Some(m) => *m,
+                None => {
+                    // Market not in data-node response — fall back to RPC for this one
+                    match self.read_market_metrics(market_id).await {
+                        Ok(m) => {
+                            metrics.push(m);
+                            continue;
+                        }
+                        Err(e) => {
+                            warn!(
+                                market_id = %hex::encode(market_id),
+                                error = %e,
+                                "Market not in data-node and RPC fallback failed, skipping"
+                            );
+                            continue;
+                        }
+                    }
+                }
+            };
+
+            // Parse supply/borrow from data-node strings
+            let total_supply = U256::from_dec_str(&dn_market.total_supply_assets)
+                .unwrap_or(U256::zero());
+            let total_supply_shares = U256::from_dec_str(&dn_market.total_supply_shares)
+                .unwrap_or(U256::zero());
+            let total_borrow = U256::from_dec_str(&dn_market.total_borrow_assets)
+                .unwrap_or(U256::zero());
+
+            let utilization_pct = if total_supply.is_zero() {
+                0u8
+            } else {
+                let util = total_borrow
+                    .checked_mul(U256::from(100))
+                    .unwrap_or(U256::MAX)
+                    .checked_div(total_supply)
+                    .unwrap_or(U256::zero());
+                util.as_u64().min(100) as u8
+            };
+
+            // Vault position still requires RPC (data-node doesn't track per-vault positions)
+            let vault_supply = self
+                .read_vault_supply_in_market_with_totals(market_id, total_supply, total_supply_shares)
+                .await
+                .unwrap_or(U256::zero());
+
+            // Market params: cache or RPC
+            let market_params = match self.get_market_params(market_id).await {
+                Ok(p) => p,
+                Err(e) => {
+                    warn!(
+                        market_id = %hex::encode(market_id),
+                        error = %e,
+                        "Failed to get market params, skipping"
+                    );
+                    continue;
+                }
+            };
+
+            debug!(
+                market_id = %hex::encode(market_id),
+                utilization = utilization_pct,
+                vault_supply = %vault_supply,
+                "Read market metrics (data-node + RPC position)"
+            );
+
+            metrics.push(MarketMetrics {
+                market_id,
+                total_supply,
+                total_borrow,
+                total_supply_shares,
+                utilization_pct,
+                vault_supply,
+                market_params,
+            });
         }
 
         Ok(metrics)
