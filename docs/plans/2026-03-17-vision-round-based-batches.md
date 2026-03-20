@@ -316,14 +316,7 @@ Settlement happens automatically via oracle. The bot just needs to:
 6. USDC arrives back in wallet (minus fees on profit)
 7. Join next round if desired
 
-### "Auto-join" toggle (frontend convenience)
-
-Frontend watches for `BatchSettled` event on the current round. When it fires:
-1. Fetch the new betting batch for same source/timeframe
-2. Prompt player: "Round settled. +$X.XX profit. Join next round?"
-3. If auto-join enabled: submit `joinBatchDirect` tx automatically
-
-This is a frontend UX feature — the contract doesn't know about continuity.
+Players must manually join each round. No auto-join — each bet is a conscious decision.
 
 ### API changes
 
@@ -597,4 +590,4 @@ Both coexist in the same contract.
 3. **No cross-batch state** — each batch is fully independent. No balance carry-over, no position migration, no shared state.
 4. **Deterministic resolution** — all oracles compute identical results from pinned prices + config hash. BLS consensus proves agreement.
 5. **Clean lifecycle** — each batch moves through exactly one path: `created → betting → locked → settling → settled`. No re-entry, no resurrection.
-6. **Player must act** — joining each round requires an explicit transaction. Auto-join is a frontend convenience, not a contract feature.
+6. **Player must act** — joining each round requires an explicit transaction. Each bet is a conscious decision.

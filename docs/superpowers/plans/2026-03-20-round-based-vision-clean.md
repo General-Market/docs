@@ -411,7 +411,7 @@ Fetch from `/api/vision/rounds` (existing proxy). Returns active rounds with sta
 3. KEEP `BalanceDepositModal` import — user deposits USDC before playing
 4. KEEP `VisionBalanceBar` in header — shows balance + Deposit + Withdraw buttons
 5. Show round state: "Betting (2:31 left)" / "Settling..." / "Settled: +$X.XX"
-6. After settlement, show "Round settled! +$X.XX added to balance. Join next round?"
+6. After settlement, show "Round settled! +$X.XX added to balance." Players join the next round manually.
 
 - [ ] **Step 3: Commit**
 
