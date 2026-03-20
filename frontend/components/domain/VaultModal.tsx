@@ -14,7 +14,6 @@ import { BorrowUsdc } from '@/components/lending/BorrowUsdc'
 import { RepayDebt } from '@/components/lending/RepayDebt'
 import { LendItpModal } from './LendItpModal'
 import { BRIDGED_ITP_ABI } from '@/lib/contracts/index-protocol-abi'
-import { getAllMorphoMarkets, getMorphoMarketForItp } from '@/lib/contracts/morpho-markets-registry'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
 import { useTranslations } from 'next-intl'
@@ -347,9 +346,8 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
 
   useEffect(() => { publicClientRef.current = publicClient }, [publicClient])
 
-  // Registry is the sole source of rows
-  const allMarkets = getAllMorphoMarkets()
-  const allCollateralTokens = allMarkets.map(m => m.collateralToken)
+  // SSE-fed hook is the sole source of rows
+  const allCollateralTokens = allMarketData ? [...allMarketData.keys()] : []
 
   // Fetch ITP names and user balances for all collateral tokens
   const fetchInfo = useCallback(async () => {
@@ -390,13 +388,12 @@ function MarketsTableInline({ allMarketData, onBorrow, activeBorrowCollaterals }
 
   useEffect(() => { fetchInfo() }, [fetchInfo])
 
-  // Build rows: one per registry entry, with market data from allMarketData map
+  // Build rows: one per SSE-fed market entry
   const rows = allCollateralTokens.map(addr => {
-    const registry = getMorphoMarketForItp(addr)
-    const mktData = allMarketData?.get(addr.toLowerCase())
+    const mktData = allMarketData?.get(addr)
     const name = itpNames.get(addr) || 'ITP'
     const userBal = userBalances.get(addr) ?? 0n
-    const lltv = registry ? Number(registry.lltv) / 1e16 : 77
+    const lltv = mktData ? Number(mktData.lltv) / 1e16 : 77
 
     const tvlRaw = mktData ? parseFloat(formatUnits(mktData.totalSupplyAssets, 18)) : 0
 
