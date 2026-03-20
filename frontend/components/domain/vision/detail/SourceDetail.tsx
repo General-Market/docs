@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { useSourceSnapshot, useMarketSnapshotMeta } from '@/hooks/vision/useMarketSnapshot'
 import { useBatches } from '@/hooks/vision/useBatches'
+import { useRounds } from '@/hooks/vision/useRounds'
 import { useBitmapEditor } from '@/hooks/vision/useBitmapEditor'
 import { useSourceRegistry, findSource } from '@/hooks/vision/useSourceRegistry'
 import { getBatchTickState } from '@/lib/vision/tick'
@@ -76,6 +77,8 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
   const { data: snapshotData } = useSourceSnapshot(sourceId)
   const { data: meta } = useMarketSnapshotMeta()
   const { data: batches } = useBatches()
+  const { data: rounds } = useRounds(sourceId)
+  const activeRound = rounds?.[0]
   const bitmapEditor = useBitmapEditor()
 
   // Find source schedule from meta
@@ -239,6 +242,21 @@ export function SourceDetail({ sourceId, initialSource }: SourceDetailProps) {
               {formatTime(tickState.remaining)}
             </div>
           </div>
+          {/* Round state — shown when rounds API is available */}
+          {activeRound && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                Round
+              </div>
+              <div className="text-[16px] font-bold font-mono text-black">
+                {activeRound.status === 'betting' ? 'Betting Open' :
+                 activeRound.status === 'settling' ? 'Settling...' :
+                 activeRound.status === 'settled' ? 'Settled' :
+                 activeRound.status === 'locked' ? 'Locked' :
+                 activeRound.status}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content split */}
