@@ -24,6 +24,7 @@ use tokio::sync::mpsc;
 use tracing::{info, warn, error, debug};
 
 use crate::chain::EthersChainWriter;
+use common::traits::ChainWriter;
 use crate::consensus::aggregator::compute_threshold;
 use super::batch_config_orchestrator;
 use super::bitmap_store::BitmapStore;
@@ -992,88 +993,54 @@ impl BatchLifecycleManager {
         Ok(())
     }
 
-    /// Read lastSnapshotNonce from the OracleRegistry contract via eth_call.
+    /// Read lastSnapshotNonce from the OracleRegistry contract.
+    ///
+    /// Uses the chain_writer's ethers-rs provider (same transport the oracle uses for all
+    /// other contract calls) to call `lastSnapshotNonce()` on the OracleRegistry.
+    /// Orbit L3's sequencer rejects raw JSON-RPC `eth_call` for proxy contracts, but ethers-rs
+    /// sends a properly typed transaction object that the sequencer accepts.
     async fn read_last_snapshot_nonce(&self) -> Option<u64> {
-        let client = reqwest::Client::new();
-
-        // Use L3 HTTP RPC. Prefer ORACLE_RPC_URL env var, fall back to config ws url (strip ws://).
-        let rpc_url = std::env::var("ORACLE_RPC_URL")
-            .unwrap_or_else(|_| {
-                // ws:// → http://
-                self.config.rpc_ws_url
-                    .replace("wss://", "https://")
-                    .replace("ws://", "http://")
-            });
-
-        // Always read the OracleRegistry address from the Vision contract itself.
-        // The deployment file may reference a different proxy than Vision actually uses.
-        // Selector for `oracleRegistry()`: keccak256("oracleRegistry()")[..4] = 0x0ad5d672
-        let oracle_registry_addr = if !self.config.oracle_registry_address.is_empty() {
-            self.config.oracle_registry_address.clone()
-        } else if !self.config.vision_address.is_empty() {
-            // Read oracleRegistry() from the Vision contract directly.
-            // Selector: keccak256("oracleRegistry()") = 0x0ad5d672
-            let vision_addr = self.config.vision_address.clone();
-            let body = serde_json::json!({
-                "jsonrpc": "2.0",
-                "method": "eth_call",
-                "params": [{"to": vision_addr, "data": "0x0ad5d672"}, "latest"],
-                "id": 1
-            });
-            let registry_addr = match client.post(&rpc_url).json(&body).send().await {
-                Ok(resp) => {
-                    if let Ok(json) = resp.json::<serde_json::Value>().await {
-                        if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
-                            // ABI-encoded address: 0x000...{20 bytes}
-                            let hex = result.trim_start_matches("0x");
-                            if hex.len() >= 40 {
-                                format!("0x{}", &hex[hex.len()-40..])
-                            } else {
-                                String::new()
-                            }
-                        } else { String::new() }
-                    } else { String::new() }
-                }
-                Err(_) => String::new(),
-            };
-            if registry_addr.is_empty() {
-                warn!("Failed to read oracleRegistry() from Vision — snapshot nonce defaulting to 0");
+        let writer = match &self.chain_writer {
+            Some(w) => w.clone(),
+            None => {
+                warn!("No chain_writer — cannot read lastSnapshotNonce, defaulting to 0");
                 return Some(0);
             }
-            registry_addr
-        } else {
-            warn!("Neither oracle_registry_address nor vision_address configured — snapshot nonce defaulting to 0");
+        };
+
+        // Resolve OracleRegistry address: prefer explicit config, fall back to empty (fail below).
+        let registry_addr_str = self.config.oracle_registry_address.clone();
+        if registry_addr_str.is_empty() {
+            warn!("oracle_registry_address not configured — snapshot nonce defaulting to 0");
             return Some(0);
+        }
+
+        let registry_addr: Address = match registry_addr_str.parse() {
+            Ok(a) => a,
+            Err(_) => {
+                warn!(addr = %registry_addr_str, "Invalid oracle_registry_address — snapshot nonce defaulting to 0");
+                return Some(0);
+            }
         };
 
         // lastSnapshotNonce() selector = keccak256("lastSnapshotNonce()")[..4] = 0xa776590c
-        let selector = "0xa776590c";
-        let body = serde_json::json!({
-            "jsonrpc": "2.0",
-            "method": "eth_call",
-            "params": [{
-                "to": oracle_registry_addr,
-                "data": selector
-            }, "latest"],
-            "id": 1
-        });
+        let selector = ethers::utils::keccak256(b"lastSnapshotNonce()");
+        let calldata = selector[..4].to_vec();
 
-        match client.post(&rpc_url).json(&body).send().await {
-            Ok(resp) => {
-                if let Ok(json) = resp.json::<serde_json::Value>().await {
-                    if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
-                        let hex = result.trim_start_matches("0x");
-                        // ABI-encoded uint256 is 64 hex chars (32 bytes).
-                        // u64 only needs the last 16 hex chars (8 bytes).
-                        let hex_u64 = if hex.len() > 16 { &hex[hex.len()-16..] } else { hex };
-                        if let Ok(nonce) = u64::from_str_radix(hex_u64, 16) {
-                            return Some(nonce);
-                        }
-                    }
-                }
+        let call_result: Result<Vec<u8>, _> = writer.static_call(registry_addr, calldata).await;
+        match call_result {
+            Ok(bytes) if bytes.len() >= 32 => {
+                let nonce = ethers::types::U256::from_big_endian(&bytes[..32]).as_u64();
+                Some(nonce)
+            }
+            Ok(_) => {
+                warn!("lastSnapshotNonce() returned unexpected data length — defaulting to 0");
                 Some(0)
             }
-            Err(_) => Some(0),
+            Err(e) => {
+                warn!(error = %e, "Failed to read lastSnapshotNonce — defaulting to 0");
+                Some(0)
+            }
         }
     }
 }
