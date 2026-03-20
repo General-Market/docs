@@ -62,10 +62,18 @@ pub fn compute_settlement(
         .collect();
     sorted.sort_by_key(|(addr, _, _)| *addr);
 
+    // Build a deposit lookup for the sorted output
+    let deposit_map: std::collections::HashMap<Address, U256> =
+        player_deposits.iter().cloned().collect();
+
     RoundSettlement {
         batch_id: tick_result.batch_id,
         players: sorted.iter().map(|(a, _, _)| *a).collect(),
         payouts: sorted.iter().map(|(_, p, _)| *p).collect(),
+        deposits: sorted
+            .iter()
+            .map(|(a, _, _)| deposit_map.get(a).copied().unwrap_or(U256::zero()))
+            .collect(),
         correct_counts: sorted.iter().map(|(_, _, c)| *c).collect(),
         total_markets: tick_result.market_results.len() as u32,
     }

@@ -393,6 +393,7 @@ impl BatchLifecycleManager {
                 batch_id,
                 players: vec![],
                 payouts: vec![],
+                deposits: vec![],
                 correct_counts: vec![],
                 total_markets: 0,
             });
@@ -1070,15 +1071,25 @@ impl BatchLifecycleManager {
         // Record per-player results
         for (i, player) in settlement.players.iter().enumerate() {
             let payout = settlement.payouts[i];
+            let deposited = settlement.deposits.get(i).copied().unwrap_or(U256::zero());
             let correct = settlement.correct_counts[i];
+            // pnl = payout - deposited (signed arithmetic via i128)
+            let pnl_str = {
+                let dep = deposited.low_u128() as i128;
+                let pay = payout.low_u128() as i128;
+                (pay - dep).to_string()
+            };
             sqlx::query(
-                "INSERT INTO vision_round_players (lifecycle_id, player, payout, correct_count, total_markets)
-                 VALUES ($1, $2, $3, $4, $5)
+                "INSERT INTO vision_round_players
+                     (batch_id, player, deposited, payout, pnl, correct_count, total_markets, settled_at)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
                  ON CONFLICT DO NOTHING",
             )
             .bind(settlement.batch_id as i64)
             .bind(format!("{:?}", player))
-            .bind(payout.as_u128() as i64) // safe for typical stake sizes
+            .bind(deposited.to_string())
+            .bind(payout.to_string())
+            .bind(pnl_str)
             .bind(correct as i32)
             .bind(settlement.total_markets as i32)
             .execute(&self.pool)

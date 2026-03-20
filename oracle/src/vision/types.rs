@@ -283,6 +283,8 @@ pub struct RoundSettlement {
     pub batch_id: u64,
     pub players: Vec<Address>,
     pub payouts: Vec<U256>,
+    /// Per-player original deposit (18-decimal L3 USDC). Used for pnl recording.
+    pub deposits: Vec<U256>,
     /// Per-player: how many markets they predicted correctly
     pub correct_counts: Vec<u32>,
     pub total_markets: u32,
