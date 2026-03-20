@@ -6,7 +6,7 @@ use common::types::{CrossChainOrder, CrossChainSellOrderEvent, ItpCreationReques
 use crate::api::AppState;
 use crate::chain_cache::{
     NavSnapshot, UserBalances, UserAllowances, UserOrder, MorphoPositionSnapshot,
-    UserCostBasis, FillRecord, CachedLimitOrder, CachedOracle,
+    UserCostBasis, FillRecord, CachedLimitOrder, CachedOracle, CachedMorphoMarket,
 };
 
 // Reuse the IndexCollector abigen pattern from itp_collector.rs
@@ -57,6 +57,8 @@ abigen!(
     MorphoPoller,
     r#"[
         function position(bytes32 id, address user) external view returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral)
+        function market(bytes32 id) external view returns (uint128 totalSupplyAssets, uint128 totalSupplyShares, uint128 totalBorrowAssets, uint128 totalBorrowShares, uint128 lastUpdate, uint128 fee)
+        function idToMarketParams(bytes32 id) external view returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv)
     ]"#
 );
 
@@ -120,6 +122,53 @@ abigen!(
         function getITPState(bytes32 itpId) external view returns (address creator, uint256 totalSupply, uint256 nav, address[] assets, uint256[] weights, uint256[] inventory)
     ]"#
 );
+
+pub async fn poll_morpho_markets_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    if state.batch_markets.is_empty() { return Ok(()); }
+
+    let morpho_addr = crate::api::deployment_addr(&state.morpho_deployment, "MORPHO")?;
+    let morpho = MorphoPoller::new(morpho_addr, Arc::clone(&state.l3_provider));
+
+    let provider = Arc::clone(&state.l3_provider);
+
+    // Parallel: fetch all markets concurrently, per-market IRM
+    let futs: Vec<_> = state.batch_markets.iter().map(|bm| {
+        let morpho = morpho.clone();
+        let provider = Arc::clone(&provider);
+        let bm = bm.clone();
+        async move {
+            let mut market_id_bytes = [0u8; 32];
+            if let Ok(bytes) = hex::decode(bm.market_id.strip_prefix("0x").unwrap_or(&bm.market_id)) {
+                let len = bytes.len().min(32);
+                market_id_bytes[..len].copy_from_slice(&bytes[..len]);
+            }
+            let (tsa, tss, tba, tbs, lu, _fee) = morpho.market(market_id_bytes).call().await.unwrap_or_default();
+            // Per-market IRM (each market can have a different IRM contract)
+            let irm_addr: Address = bm.irm.parse().unwrap_or_default();
+            let irm = IrmReader::new(irm_addr, provider);
+            let rate = irm.rates(market_id_bytes).call().await.unwrap_or_default();
+            CachedMorphoMarket {
+                market_id: bm.market_id,
+                collateral_token: bm.collateral_token,
+                total_supply_assets: tsa.to_string(),
+                total_supply_shares: tss.to_string(),
+                total_borrow_assets: tba.to_string(),
+                total_borrow_shares: tbs.to_string(),
+                borrow_rate_per_second: rate.to_string(),
+                lltv: bm.lltv,
+                oracle: bm.oracle,
+                last_update: lu as u64,
+            }
+        }
+    }).collect();
+
+    let results = futures::future::join_all(futs).await;
+
+    let mut cache = state.chain_cache.morpho_markets.write().await;
+    *cache = results;
+    state.chain_cache.morpho_markets_gen.bump();
+    Ok(())
+}
 
 pub async fn poll_nav_once(state: &AppState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if !state.chain_cache.hydration_complete.load(std::sync::atomic::Ordering::Acquire) {

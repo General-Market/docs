@@ -2546,6 +2546,18 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     let sse_per_ip = cfg_snap.sse_per_ip_limit;
     drop(cfg_snap);
 
+    // Load batch-markets.json (Morpho multi-market registry)
+    let batch_markets: Vec<crate::api::BatchMarketEntry> = {
+        let path = std::env::var("BATCH_MARKETS_FILE")
+            .unwrap_or_else(|_| "deployments/batch-markets.json".to_string());
+        std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
+            .and_then(|v| serde_json::from_value(v["markets"].clone()).ok())
+            .unwrap_or_default()
+    };
+    info!(count = batch_markets.len(), "Loaded batch markets");
+
     let oracle_url = std::env::var("ORACLE_URL").unwrap_or_else(|_| "http://localhost:8100".to_string());
     let app_state = Arc::new(AppState {
         pool,
@@ -2579,6 +2591,7 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
         chain_event_tx: chain_event_tx.clone(),
         source_registry,
         sse_limiter: Arc::new(crate::sse_limiter::SseLimiter::new(sse_max, sse_per_ip)),
+        batch_markets,
     });
 
     // Spawn leaderboard precomputation (every 30s from shared Postgres)
@@ -2625,7 +2638,8 @@ async fn run_serve(args: config::ServeArgs) -> Result<(), Box<dyn std::error::Er
     spawn_poller!("system_snapshot",    5, chain_pollers::poll_system_snapshot_once);
     spawn_poller!("aum_ranking",       10, chain_pollers::poll_aum_ranking_once);
     spawn_poller!("user_cache_eviction", 300, chain_pollers::poll_user_cache_eviction_once);
-    info!("Chain pollers started (NAV=10s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, OracleRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=10s, UserCacheEviction=300s)");
+    spawn_poller!("morpho_markets", 30, chain_pollers::poll_morpho_markets_once);
+    info!("Chain pollers started (NAV=10s, Oracle=2s, Balances=1s, Allowances=3s, Orders=1s, Positions=3s, CostBasis=5s, PendingOrders=1s, BatchedOrders=2s, OracleRegistry=10s, CycleMetadata=2s, RegistryMetadata=10s, SettlementState=2s, PendingRebalances=5s, SystemSnapshot=5s, AumRanking=10s, UserCacheEviction=300s, MorphoMarkets=30s)");
 
     // Spawn chain event scanner (L3 + Settlement log subscriptions)
     {

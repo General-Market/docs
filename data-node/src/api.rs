@@ -282,6 +282,18 @@ async fn refresh_health_stats(
     Ok(count)
 }
 
+/// A single Morpho market from batch-markets.json
+#[derive(Clone, Deserialize)]
+pub struct BatchMarketEntry {
+    #[serde(rename = "marketId")]
+    pub market_id: String,
+    #[serde(rename = "collateralToken")]
+    pub collateral_token: String,
+    pub oracle: String,
+    pub irm: String,
+    pub lltv: String,
+}
+
 pub struct AppState {
     pub pool: PgPool,
     pub collector: Arc<CollectorState>,
@@ -329,6 +341,8 @@ pub struct AppState {
     pub leaderboard_cache: Arc<crate::vision_api::LeaderboardCache>,
     /// Cached player profile data from oracle (30s TTL)
     pub profile_cache: Arc<crate::vision_api::ProfileCache>,
+    /// Morpho batch markets loaded from batch-markets.json
+    pub batch_markets: Vec<BatchMarketEntry>,
 }
 
 /// In-memory TTL cache for hot endpoints.
@@ -418,6 +432,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/liquidity", get(liquidity))
         .route("/liquidity/alerts", get(liquidity_alerts))
         .route("/user-state", get(user_state))
+        .route("/morpho-markets", get(morpho_markets))
         .route("/morpho-position", get(morpho_position))
         .route("/morpho-history", get(morpho_history))
         .route("/order", get(order))
@@ -2634,11 +2649,19 @@ async fn user_state(
     }))
 }
 
+// ---- /morpho-markets ----
+
+async fn morpho_markets(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    let cache = state.chain_cache.morpho_markets.read().await;
+    Json(serde_json::json!({ "markets": *cache }))
+}
+
 // ---- /morpho-position ----
 
 #[derive(Deserialize)]
 struct MorphoPositionQuery {
     user: String,
+    market_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -2669,15 +2692,44 @@ async fn morpho_position(
     let l3 = &state.l3_provider;
 
     let morpho_addr = deployment_addr(&state.morpho_deployment, "MORPHO").map_err(|e| rpc_error(e))?;
-    let oracle_addr = deployment_addr(&state.morpho_deployment, "ITP_NAV_ORACLE")
-        .or_else(|_| deployment_addr(&state.morpho_deployment, "MOCK_ORACLE"))
-        .map_err(|e| rpc_error(e))?;
 
-    let market_id_str = state.morpho_deployment["contracts"]["MARKET_ID"]
-        .as_str()
-        .ok_or_else(|| rpc_error("Missing MARKET_ID".to_string()))?;
+    // Resolve market_id, oracle, lltv — per-market when market_id is provided
+    let (market_id_str, oracle_addr, lltv) = if let Some(ref mid) = params.market_id {
+        let mid_norm = mid.strip_prefix("0x").unwrap_or(mid).to_lowercase();
+        let bm = state.batch_markets.iter().find(|m| {
+            m.market_id.strip_prefix("0x").unwrap_or(&m.market_id).to_lowercase() == mid_norm
+        });
+        match bm {
+            Some(entry) => (
+                mid.clone(),
+                entry.oracle.parse::<Address>().unwrap_or_default(),
+                U256::from_dec_str(&entry.lltv).unwrap_or(U256::from(770000000000000000u64)),
+            ),
+            None => return Err(rpc_error(format!("Unknown market_id: {}", mid))),
+        }
+    } else {
+        // Singleton fallback (existing behavior)
+        let mid = state.morpho_deployment["contracts"]["MARKET_ID"]
+            .as_str()
+            .ok_or_else(|| rpc_error("Missing MARKET_ID".to_string()))?
+            .to_string();
+        let oracle = deployment_addr(&state.morpho_deployment, "ITP_NAV_ORACLE")
+            .or_else(|_| deployment_addr(&state.morpho_deployment, "MOCK_ORACLE"))
+            .map_err(|e| rpc_error(e))?;
+        let lltv_str = state.morpho_deployment["marketParams"]["lltv"]
+            .as_str()
+            .or_else(|| state.morpho_deployment["marketParams"]["lltv"].as_u64().map(|_| ""))
+            .unwrap_or("770000000000000000");
+        let lltv_val: U256 = if lltv_str.is_empty() {
+            U256::from(state.morpho_deployment["marketParams"]["lltv"].as_u64().unwrap_or(770000000000000000))
+        } else {
+            U256::from_dec_str(lltv_str).unwrap_or(U256::from(770000000000000000u64))
+        };
+        (mid, oracle, lltv_val)
+    };
+
     let market_id_bytes: [u8; 32] = {
-        let hex_str = market_id_str.strip_prefix("0x").unwrap_or(market_id_str);
+        let hex_str = market_id_str.strip_prefix("0x").unwrap_or(&market_id_str);
         let bytes = hex::decode(hex_str).map_err(|e| rpc_error(format!("Invalid market_id: {}", e)))?;
         let mut arr = [0u8; 32];
         let len = bytes.len().min(32);
@@ -2685,27 +2737,34 @@ async fn morpho_position(
         arr
     };
 
-    let lltv_str = state.morpho_deployment["marketParams"]["lltv"]
-        .as_str()
-        .or_else(|| state.morpho_deployment["marketParams"]["lltv"].as_u64().map(|_| ""))
-        .unwrap_or("770000000000000000");
-    let lltv: U256 = if lltv_str.is_empty() {
-        U256::from(state.morpho_deployment["marketParams"]["lltv"].as_u64().unwrap_or(770000000000000000))
-    } else {
-        U256::from_dec_str(lltv_str).unwrap_or(U256::from(770000000000000000u64))
-    };
-
     let morpho = MorphoReader::new(morpho_addr, Arc::clone(l3));
     let oracle = MockOracleReader::new(oracle_addr, Arc::clone(l3));
 
-    // Fetch position
+    // User position always from RPC (per-user, not cacheable generically)
     let (supply_shares, borrow_shares, collateral) = morpho.position(market_id_bytes, user).call().await
         .map_err(|e| rpc_error(format!("Morpho.position: {}", e)))?;
 
-    // Fetch market state
-    let (total_supply_assets, total_supply_shares, total_borrow_assets, total_borrow_shares, _last_update, _fee) =
-        morpho.market(market_id_bytes).call().await
-            .map_err(|e| rpc_error(format!("Morpho.market: {}", e)))?;
+    // Try cache first for market state, fall back to RPC
+    let (total_supply_assets, total_supply_shares, total_borrow_assets, total_borrow_shares) = {
+        let cache = state.chain_cache.morpho_markets.read().await;
+        let mid_norm = market_id_str.strip_prefix("0x").unwrap_or(&market_id_str).to_lowercase();
+        let cached = cache.iter().find(|m| {
+            m.market_id.strip_prefix("0x").unwrap_or(&m.market_id).to_lowercase() == mid_norm
+        });
+        if let Some(c) = cached {
+            (
+                U256::from_dec_str(&c.total_supply_assets).unwrap_or_default(),
+                U256::from_dec_str(&c.total_supply_shares).unwrap_or_default(),
+                U256::from_dec_str(&c.total_borrow_assets).unwrap_or_default(),
+                U256::from_dec_str(&c.total_borrow_shares).unwrap_or_default(),
+            )
+        } else {
+            drop(cache);
+            let (tsa, tss, tba, tbs, _lu, _fee) = morpho.market(market_id_bytes).call().await
+                .map_err(|e| rpc_error(format!("Morpho.market: {}", e)))?;
+            (U256::from(tsa), U256::from(tss), U256::from(tba), U256::from(tbs))
+        }
+    };
 
     // Fetch oracle price
     let oracle_price = oracle.current_price().call().await
@@ -2713,11 +2772,9 @@ async fn morpho_position(
 
     // Convert borrow shares to assets (round up for debt)
     let borrow_shares_u256 = U256::from(borrow_shares);
-    let total_borrow_assets_u256 = U256::from(total_borrow_assets);
-    let total_borrow_shares_u256 = U256::from(total_borrow_shares);
 
-    let debt_amount = if total_borrow_shares_u256 > U256::zero() {
-        (borrow_shares_u256 * total_borrow_assets_u256 + total_borrow_shares_u256 - 1) / total_borrow_shares_u256
+    let debt_amount = if total_borrow_shares > U256::zero() {
+        (borrow_shares_u256 * total_borrow_assets + total_borrow_shares - 1) / total_borrow_shares
     } else {
         U256::zero()
     };

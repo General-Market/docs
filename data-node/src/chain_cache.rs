@@ -85,6 +85,21 @@ pub struct CachedItpState {
     pub settlement_address: Option<String>,
 }
 
+/// Cached Morpho market state (polled every 30s)
+#[derive(Clone, Serialize, Default)]
+pub struct CachedMorphoMarket {
+    pub market_id: String,
+    pub collateral_token: String,
+    pub total_supply_assets: String,
+    pub total_supply_shares: String,
+    pub total_borrow_assets: String,
+    pub total_borrow_shares: String,
+    pub borrow_rate_per_second: String,
+    pub lltv: String,
+    pub oracle: String,
+    pub last_update: u64,
+}
+
 /// In-memory cache of all ITP states, keyed by itp_id hex string
 pub struct ItpStateCache {
     pub states: HashMap<String, CachedItpState>,
@@ -236,6 +251,10 @@ pub struct ChainCache {
     // Precomputed AUM ranking (refreshed every 60s)
     pub aum_ranking_json: RwLock<String>,
     pub aum_ranking_gen: Generation,
+
+    // Morpho market state (polled every 30s)
+    pub morpho_markets: RwLock<Vec<CachedMorphoMarket>>,
+    pub morpho_markets_gen: Generation,
 }
 
 impl ChainCache {
@@ -281,6 +300,9 @@ impl ChainCache {
 
             aum_ranking_json: RwLock::new(String::new()),
             aum_ranking_gen: Generation::default(),
+
+            morpho_markets: RwLock::new(Vec::new()),
+            morpho_markets_gen: Generation::default(),
         }
     }
 
