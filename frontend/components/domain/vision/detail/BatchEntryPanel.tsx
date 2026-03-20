@@ -20,7 +20,6 @@ import { VISION_USDC_DECIMALS, VISION_ADDRESS } from '@/lib/vision/constants'
 import { SpringPress } from '@/components/ui/spring'
 import { WalletActionButton } from '@/components/ui/WalletActionButton'
 import { BalanceDepositModal } from '../BalanceDepositModal'
-import { WithdrawModal } from '../WithdrawModal'
 import StrategyList from './StrategyList'
 
 interface BatchEntryPanelProps {
@@ -138,7 +137,6 @@ export default function BatchEntryPanel({
   // -- Local state --
   const [stakeInput, setStakeInput] = useState('')
   const [showDepositModal, setShowDepositModal] = useState(false)
-  const [showClaimModal, setShowClaimModal] = useState(false)
   const [betsSubmittedTick, setBetsSubmittedTick] = useState<number | null>(null)
 
   // -- Per-batch tick timer --
@@ -396,8 +394,6 @@ export default function BatchEntryPanel({
           const pnlNum = parseFloat(formatUnits(pnl, VISION_USDC_DECIMALS))
           const isUp = pnl > 0n
           const isDown = pnl < 0n
-          const canWithdraw = activeBatch && BigInt(activeBatch.currentTick) > position.startTick
-
           return (
             <div className="mb-3 border border-neutral-200 bg-neutral-50 px-3 py-2.5">
               {/* Balance row */}
@@ -465,16 +461,10 @@ export default function BatchEntryPanel({
                   })()}
                 </div>
               )}
-              {/* Withdraw button */}
-              {canWithdraw && (
-                <button
-                  type="button"
-                  onClick={() => setShowClaimModal(true)}
-                  className="mt-2.5 w-full rounded border border-neutral-300 bg-white py-1.5 text-[11px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:border-neutral-400 transition-colors"
-                >
-                  Withdraw
-                </button>
-              )}
+              {/* Settlement is automatic — no withdraw needed */}
+              <p className="mt-2 text-[10px] text-neutral-400 text-center">
+                Settlement is automatic. Payout credited to your Vision balance.
+              </p>
             </div>
           )
         })()}
@@ -532,9 +522,6 @@ export default function BatchEntryPanel({
         />
       </div>
       {showDepositModal && <BalanceDepositModal onClose={() => setShowDepositModal(false)} />}
-      {showClaimModal && activeBatch && (
-        <WithdrawModal batchId={activeBatch.id} onClose={() => setShowClaimModal(false)} />
-      )}
     </div>
   )
 }
