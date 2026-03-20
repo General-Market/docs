@@ -1063,7 +1063,10 @@ impl BatchLifecycleManager {
                 if let Ok(json) = resp.json::<serde_json::Value>().await {
                     if let Some(result) = json.get("result").and_then(|v| v.as_str()) {
                         let hex = result.trim_start_matches("0x");
-                        if let Ok(nonce) = u64::from_str_radix(hex, 16) {
+                        // ABI-encoded uint256 is 64 hex chars (32 bytes).
+                        // u64 only needs the last 16 hex chars (8 bytes).
+                        let hex_u64 = if hex.len() > 16 { &hex[hex.len()-16..] } else { hex };
+                        if let Ok(nonce) = u64::from_str_radix(hex_u64, 16) {
                             return Some(nonce);
                         }
                     }
