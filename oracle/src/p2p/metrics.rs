@@ -34,6 +34,10 @@ pub struct P2PMetrics {
     pub leader_rejections: AtomicU64,
     /// Inbound connections rejected (per-IP limit, INFRA-021).
     pub connection_rejections: AtomicU64,
+    /// Send failures during broadcast (per-peer send errors, INFRA-024).
+    pub broadcast_send_failures: AtomicU64,
+    /// Send failures during direct send_to (INFRA-025).
+    pub send_to_failures: AtomicU64,
 }
 
 /// Serializable point-in-time snapshot of [`P2PMetrics`].
@@ -49,6 +53,8 @@ pub struct P2PMetricsSnapshot {
     pub wal_replays: u64,
     pub leader_rejections: u64,
     pub connection_rejections: u64,
+    pub broadcast_send_failures: u64,
+    pub send_to_failures: u64,
 }
 
 impl P2PMetrics {
@@ -65,6 +71,8 @@ impl P2PMetrics {
             wal_replays: self.wal_replays.load(Ordering::Relaxed),
             leader_rejections: self.leader_rejections.load(Ordering::Relaxed),
             connection_rejections: self.connection_rejections.load(Ordering::Relaxed),
+            broadcast_send_failures: self.broadcast_send_failures.load(Ordering::Relaxed),
+            send_to_failures: self.send_to_failures.load(Ordering::Relaxed),
         }
     }
 }

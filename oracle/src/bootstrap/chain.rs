@@ -77,26 +77,55 @@ impl<'a> ChainBuilder<'a> {
 
         info!(node_id, rpc = %rpc_url, "Initializing EthersChainReader for production");
 
-        // RPC connectivity check
+        // RPC connectivity check with retry (exponential backoff, 10 attempts, 30s cap)
         let provider = ethers::providers::Provider::<ethers::providers::Http>::try_from(rpc_url)
             .map_err(|e| BootstrapError::Chain(format!("Failed to create provider: {}", e)))?;
 
-        match provider.get_chainid().await {
-            Ok(chain_id) => {
-                if chain_id.as_u64() != self.target_chain_id {
-                    return Err(BootstrapError::Chain(format!(
-                        "Chain ID mismatch: expected {}, got {}. Check RPC URL: {} (use --chain-id to override)",
-                        self.target_chain_id, chain_id, rpc_url
-                    )));
+        const MAX_RETRIES: u32 = 10;
+        const BACKOFF_CAP_SECS: u64 = 30;
+        let mut last_err = String::new();
+
+        for attempt in 1..=MAX_RETRIES {
+            match provider.get_chainid().await {
+                Ok(chain_id) => {
+                    if chain_id.as_u64() != self.target_chain_id {
+                        return Err(BootstrapError::Chain(format!(
+                            "Chain ID mismatch: expected {}, got {}. Check RPC URL: {} (use --chain-id to override)",
+                            self.target_chain_id, chain_id, rpc_url
+                        )));
+                    }
+                    if attempt > 1 {
+                        info!(node_id, chain_id = %chain_id, attempt, "RPC connectivity verified after retry");
+                    } else {
+                        info!(node_id, chain_id = %chain_id, "RPC connectivity verified");
+                    }
+                    last_err.clear();
+                    break;
                 }
-                info!(node_id, chain_id = %chain_id, "RPC connectivity verified");
+                Err(e) => {
+                    last_err = format!("{}", e);
+                    if attempt < MAX_RETRIES {
+                        let delay_secs = std::cmp::min(1u64 << (attempt - 1), BACKOFF_CAP_SECS);
+                        warn!(
+                            node_id,
+                            attempt,
+                            max_retries = MAX_RETRIES,
+                            delay_secs,
+                            error = %e,
+                            rpc_url,
+                            "RPC unreachable, retrying"
+                        );
+                        tokio::time::sleep(std::time::Duration::from_secs(delay_secs)).await;
+                    }
+                }
             }
-            Err(e) => {
-                return Err(BootstrapError::Chain(format!(
-                    "Cannot connect to RPC at {}: {}",
-                    rpc_url, e
-                )));
-            }
+        }
+
+        if !last_err.is_empty() {
+            return Err(BootstrapError::Chain(format!(
+                "Cannot connect to RPC at {} after {} attempts: {}",
+                rpc_url, MAX_RETRIES, last_err
+            )));
         }
 
         // On-chain prices are dead; hardcode asset_count to 0

@@ -177,7 +177,8 @@ impl<'a> ConsensusBuilder<'a> {
         let consensus_config = ConsensusConfig::new(keys.peer_id, self.params.num_oracles, keys.node_index)
             .with_timeouts(timeouts)
             .with_oracle_registry_index(keys.oracle_registry_index)
-            .with_signature_threshold(sig_threshold);
+            .with_signature_threshold(sig_threshold)
+            .with_round_timeout_secs(self.params.consensus_round_timeout_secs);
 
         info!(
             self.node_id,
@@ -185,6 +186,7 @@ impl<'a> ConsensusBuilder<'a> {
             node_index = keys.node_index,
             oracle_registry_index = keys.oracle_registry_index,
             signature_threshold = consensus_config.signature_threshold,
+            round_timeout_secs = consensus_config.round_timeout_secs,
             "ConsensusConfig created"
         );
 

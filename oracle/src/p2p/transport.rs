@@ -21,6 +21,81 @@ use super::metrics::P2PMetrics;
 use super::peer_scoring::PeerScorer;
 use super::tls::TlsConfig;
 
+/// Extract the variant name from a P2PMessage for diagnostic logging.
+/// Returns a short string like "Heartbeat", "PriceProposal", etc.
+fn msg_variant_name(msg: &P2PMessage) -> &'static str {
+    match msg {
+        P2PMessage::CycleStart { .. } => "CycleStart",
+        P2PMessage::PriceProposal { .. } => "PriceProposal",
+        P2PMessage::PriceVote { .. } => "PriceVote",
+        P2PMessage::BatchProposal { .. } => "BatchProposal",
+        P2PMessage::BatchSign { .. } => "BatchSign",
+        P2PMessage::Heartbeat { .. } => "Heartbeat",
+        P2PMessage::KickVote { .. } => "KickVote",
+        P2PMessage::ItpCreationProposal { .. } => "ItpCreationProposal",
+        P2PMessage::ItpCreationSign { .. } => "ItpCreationSign",
+        P2PMessage::RebalanceRequestProposal { .. } => "RebalanceRequestProposal",
+        P2PMessage::RebalanceRequestSign { .. } => "RebalanceRequestSign",
+        P2PMessage::BridgeSettlementToL3Proposal { .. } => "BridgeSettlementToL3Proposal",
+        P2PMessage::BridgeSettlementToL3Sign { .. } => "BridgeSettlementToL3Sign",
+        P2PMessage::SubmitOrderForUserProposal { .. } => "SubmitOrderForUserProposal",
+        P2PMessage::SubmitOrderForUserSign { .. } => "SubmitOrderForUserSign",
+        P2PMessage::ConfirmBatchProposal { .. } => "ConfirmBatchProposal",
+        P2PMessage::ConfirmBatchSign { .. } => "ConfirmBatchSign",
+        P2PMessage::ConfirmFillsProposal { .. } => "ConfirmFillsProposal",
+        P2PMessage::ConfirmFillsSign { .. } => "ConfirmFillsSign",
+        P2PMessage::BridgeL3ToSettlementProposal { .. } => "BridgeL3ToSettlementProposal",
+        P2PMessage::BridgeL3ToSettlementSign { .. } => "BridgeL3ToSettlementSign",
+        P2PMessage::ReleaseToVaultProposal { .. } => "ReleaseToVaultProposal",
+        P2PMessage::ReleaseToVaultSign { .. } => "ReleaseToVaultSign",
+        P2PMessage::RebalanceBatchProposal { .. } => "RebalanceBatchProposal",
+        P2PMessage::RebalanceBatchSign { .. } => "RebalanceBatchSign",
+        P2PMessage::UpdateWeightsProposal { .. } => "UpdateWeightsProposal",
+        P2PMessage::UpdateWeightsSign { .. } => "UpdateWeightsSign",
+        P2PMessage::RebalanceProposal { .. } => "RebalanceProposal",
+        P2PMessage::RebalanceSign { .. } => "RebalanceSign",
+        P2PMessage::SubmitSellOrderProposal { .. } => "SubmitSellOrderProposal",
+        P2PMessage::SubmitSellOrderSign { .. } => "SubmitSellOrderSign",
+        P2PMessage::CompleteSellOrderProposal { .. } => "CompleteSellOrderProposal",
+        P2PMessage::CompleteSellOrderSign { .. } => "CompleteSellOrderSign",
+        P2PMessage::BurnSellOrderProposal { .. } => "BurnSellOrderProposal",
+        P2PMessage::BurnSellOrderSign { .. } => "BurnSellOrderSign",
+        P2PMessage::AssetTradesProposal { .. } => "AssetTradesProposal",
+        P2PMessage::AssetTradesSign { .. } => "AssetTradesSign",
+        P2PMessage::RecordCollateralMoveProposal { .. } => "RecordCollateralMoveProposal",
+        P2PMessage::RecordCollateralMoveSign { .. } => "RecordCollateralMoveSign",
+        P2PMessage::MintBridgedSharesProposal { .. } => "MintBridgedSharesProposal",
+        P2PMessage::MintBridgedSharesSign { .. } => "MintBridgedSharesSign",
+        P2PMessage::CompleteBuyOrderProposal { .. } => "CompleteBuyOrderProposal",
+        P2PMessage::CompleteBuyOrderSign { .. } => "CompleteBuyOrderSign",
+        P2PMessage::SetItpNavProposal { .. } => "SetItpNavProposal",
+        P2PMessage::SetItpNavSign { .. } => "SetItpNavSign",
+        P2PMessage::ArbitrationPriceProposal { .. } => "ArbitrationPriceProposal",
+        P2PMessage::ArbitrationPriceVote { .. } => "ArbitrationPriceVote",
+        P2PMessage::ArbitrationResolutionSign { .. } => "ArbitrationResolutionSign",
+        P2PMessage::NavOracleProposal { .. } => "NavOracleProposal",
+        P2PMessage::NavOracleSign { .. } => "NavOracleSign",
+        P2PMessage::BatchConfigProposal { .. } => "BatchConfigProposal",
+        P2PMessage::BatchConfigSign { .. } => "BatchConfigSign",
+        P2PMessage::MirrorSyncProposal { .. } => "MirrorSyncProposal",
+        P2PMessage::MirrorSyncSign { .. } => "MirrorSyncSign",
+        P2PMessage::VisionTickProposal { .. } => "VisionTickProposal",
+        P2PMessage::VisionTickSign { .. } => "VisionTickSign",
+        P2PMessage::VisionCreditBalanceProposal { .. } => "VisionCreditBalanceProposal",
+        P2PMessage::VisionCreditBalanceSign { .. } => "VisionCreditBalanceSign",
+        P2PMessage::VisionCompleteDepositProposal { .. } => "VisionCompleteDepositProposal",
+        P2PMessage::VisionCompleteDepositSign { .. } => "VisionCompleteDepositSign",
+        P2PMessage::VisionRefundDepositProposal { .. } => "VisionRefundDepositProposal",
+        P2PMessage::VisionRefundDepositSign { .. } => "VisionRefundDepositSign",
+        P2PMessage::VisionCompleteWithdrawProposal { .. } => "VisionCompleteWithdrawProposal",
+        P2PMessage::VisionCompleteWithdrawSign { .. } => "VisionCompleteWithdrawSign",
+        P2PMessage::VisionBalanceProofsBatch { .. } => "VisionBalanceProofsBatch",
+        P2PMessage::BitmapGossip { .. } => "BitmapGossip",
+        P2PMessage::BitmapRequest { .. } => "BitmapRequest",
+        P2PMessage::BitmapResponse { .. } => "BitmapResponse",
+    }
+}
+
 /// Maximum total inbound connections (20 oracles + headroom for reconnections)
 const MAX_INBOUND_CONNECTIONS: usize = 30;
 
@@ -438,19 +513,21 @@ impl P2PTransport for TcpP2PTransport {
 
     async fn broadcast(&self, message: P2PMessage) -> Result<(), Error> {
         let connections = self.connections.read().await;
+        let msg_type = msg_variant_name(&message);
 
         if connections.is_empty() {
-            debug!("No peers connected for broadcast");
+            debug!(msg_type, "No peers connected for broadcast");
             return Ok(());
         }
 
-        let mut send_count = 0;
-        let mut error_count = 0;
+        let peer_count = connections.len();
+        let mut send_count: u64 = 0;
+        let mut error_count: u64 = 0;
 
         for (peer_id, conn) in connections.iter() {
             if conn.status() != ConnectionStatus::Connected {
                 let status = conn.status();
-                warn!(code = "INFRA-007", ?peer_id, ?status, "Broadcast skipped — peer not Connected");
+                warn!(code = "INFRA-007", ?peer_id, ?status, msg_type, "Broadcast skipped — peer not Connected");
                 continue;
             }
 
@@ -459,16 +536,33 @@ impl P2PTransport for TcpP2PTransport {
                     send_count += 1;
                 }
                 Err(e) => {
-                    warn!(code = "INFRA-008", ?peer_id, error = %e, "Failed to send to peer");
+                    warn!(code = "INFRA-024", ?peer_id, msg_type, error = %e, "Broadcast delivery failed to peer");
                     error_count += 1;
                 }
             }
         }
 
         if let Some(m) = self.p2p_metrics.get() {
-            m.messages_sent.fetch_add(send_count as u64, std::sync::atomic::Ordering::Relaxed);
+            m.messages_sent.fetch_add(send_count, std::sync::atomic::Ordering::Relaxed);
+            if error_count > 0 {
+                m.broadcast_send_failures.fetch_add(error_count, std::sync::atomic::Ordering::Relaxed);
+            }
         }
-        info!(send_count, error_count, "Broadcast complete");
+
+        if error_count > 0 {
+            warn!(
+                code = "INFRA-024",
+                msg_type,
+                send_count,
+                error_count,
+                peer_count,
+                "Broadcast partial failure — {}/{} peers unreachable",
+                error_count,
+                peer_count,
+            );
+        } else {
+            debug!(msg_type, send_count, peer_count, "Broadcast delivered to all peers");
+        }
 
         // Broadcast is best-effort, don't fail if some sends fail
         Ok(())
@@ -476,12 +570,23 @@ impl P2PTransport for TcpP2PTransport {
 
     async fn send_to(&self, peer_id: PeerId, message: P2PMessage) -> Result<(), Error> {
         let connections = self.connections.read().await;
+        let msg_type = msg_variant_name(&message);
 
         let conn = connections
             .get(&peer_id)
-            .ok_or_else(|| Error::P2PConnection(format!("Peer not found: {:?}", peer_id)))?;
+            .ok_or_else(|| {
+                warn!(code = "INFRA-025", ?peer_id, msg_type, "send_to failed — peer not found");
+                if let Some(m) = self.p2p_metrics.get() {
+                    m.send_to_failures.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+                Error::P2PConnection(format!("Peer not found: {:?}", peer_id))
+            })?;
 
         if conn.status() != ConnectionStatus::Connected {
+            warn!(code = "INFRA-025", ?peer_id, msg_type, status = ?conn.status(), "send_to failed — peer not connected");
+            if let Some(m) = self.p2p_metrics.get() {
+                m.send_to_failures.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
             return Err(Error::P2PConnection(format!(
                 "Peer not connected: {:?}",
                 peer_id
@@ -489,9 +594,15 @@ impl P2PTransport for TcpP2PTransport {
         }
 
         let result = conn.send(message).await;
-        if result.is_ok() {
-            if let Some(m) = self.p2p_metrics.get() {
-                m.messages_sent.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if let Some(m) = self.p2p_metrics.get() {
+            match &result {
+                Ok(_) => {
+                    m.messages_sent.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
+                Err(e) => {
+                    warn!(code = "INFRA-025", ?peer_id, msg_type, error = %e, "send_to failed — write error");
+                    m.send_to_failures.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
             }
         }
         result

@@ -302,6 +302,9 @@ pub struct ConsensusConfig {
     pub timeouts: ConsensusTimeouts,
     /// Signature threshold (BFT: floor(2n/3)+1)
     pub signature_threshold: usize,
+    /// Hard timeout for an entire consensus round in seconds (default: 120).
+    /// If a round exceeds this, it is abandoned and the next cycle proceeds.
+    pub round_timeout_secs: u64,
 }
 
 impl ConsensusConfig {
@@ -314,6 +317,7 @@ impl ConsensusConfig {
             oracle_registry_index: node_index, // Default: same as node_index
             timeouts: ConsensusTimeouts::default(),
             signature_threshold: compute_threshold(num_oracles as usize),
+            round_timeout_secs: 120,
         }
     }
 
@@ -332,6 +336,12 @@ impl ConsensusConfig {
     /// Set custom signature threshold
     pub fn with_signature_threshold(mut self, threshold: usize) -> Self {
         self.signature_threshold = threshold;
+        self
+    }
+
+    /// Set the hard timeout for an entire consensus round
+    pub fn with_round_timeout_secs(mut self, secs: u64) -> Self {
+        self.round_timeout_secs = secs;
         self
     }
 }
@@ -860,60 +870,89 @@ where
         // Determine if we're the leader using deterministic cycle-based rotation.
         let am_leader = self.leader_elector.write().await.is_leader_for_cycle(cycle_number);
 
-        if am_leader {
-            info!(cycle_number, "This node is the leader (price-only)");
-            // Price consensus only — no batch
-            match self.leader_price_consensus(cycle_number, prices).await {
-                Ok(()) => {
-                    // Mark round complete (skip batch phases)
-                    {
-                        let mut state = self.price_state.write().await;
-                        if let Some(round) = state.current_round_mut() {
-                            round.set_phase(ConsensusPhase::Complete);
-                        }
-                    }
+        // Wrap the price consensus round in a hard timeout to prevent indefinite blocking.
+        let timeout_secs = self.config.round_timeout_secs;
+        let timeout_dur = Duration::from_secs(timeout_secs);
+        let warn_secs = timeout_secs / 2;
 
-                    // Oracle signing: if oracle params are provided, run a second
-                    // mini-round to collect BLS signatures on the oracle hash
-                    if let (Some(nav), Some(oracle_addr), Some(itp_addr), Some(cid)) =
-                        (nav_price, oracle_address, itp_address, chain_id)
-                    {
-                        match self.run_nav_oracle_signing(
-                            cycle_number, nav, timestamp, oracle_addr, itp_addr, cid,
-                        ).await {
-                            Ok((agg_sig, count, bitmask)) => {
-                                return ConsensusResult::PriceAgreed {
-                                    aggregated_signature: agg_sig,
-                                    signer_count: count,
-                                    signers_bitmask: bitmask,
-                                    cycle_number,
-                                };
-                            }
-                            Err(e) => {
-                                warn!(cycle_number, error = %e, "Oracle signing failed, returning PriceAgreed without oracle sig");
+        let warn_handle = tokio::spawn({
+            let cn = cycle_number;
+            async move {
+                sleep(Duration::from_secs(warn_secs)).await;
+                warn!(cycle_number = cn, elapsed_secs = warn_secs, timeout_secs,
+                    "Price consensus round still running at halfway mark");
+            }
+        });
+
+        let result = tokio::time::timeout(timeout_dur, async {
+            if am_leader {
+                info!(cycle_number, "This node is the leader (price-only)");
+                // Price consensus only — no batch
+                match self.leader_price_consensus(cycle_number, prices).await {
+                    Ok(()) => {
+                        // Mark round complete (skip batch phases)
+                        {
+                            let mut state = self.price_state.write().await;
+                            if let Some(round) = state.current_round_mut() {
+                                round.set_phase(ConsensusPhase::Complete);
                             }
                         }
-                    }
 
-                    ConsensusResult::PriceAgreed {
-                        aggregated_signature: BLSSignature(vec![0; 64]),
-                        signer_count: 0,
-                        signers_bitmask: U256::zero(),
-                        cycle_number,
+                        // Oracle signing: if oracle params are provided, run a second
+                        // mini-round to collect BLS signatures on the oracle hash
+                        if let (Some(nav), Some(oracle_addr), Some(itp_addr), Some(cid)) =
+                            (nav_price, oracle_address, itp_address, chain_id)
+                        {
+                            match self.run_nav_oracle_signing(
+                                cycle_number, nav, timestamp, oracle_addr, itp_addr, cid,
+                            ).await {
+                                Ok((agg_sig, count, bitmask)) => {
+                                    return ConsensusResult::PriceAgreed {
+                                        aggregated_signature: agg_sig,
+                                        signer_count: count,
+                                        signers_bitmask: bitmask,
+                                        cycle_number,
+                                    };
+                                }
+                                Err(e) => {
+                                    warn!(cycle_number, error = %e, "Oracle signing failed, returning PriceAgreed without oracle sig");
+                                }
+                            }
+                        }
+
+                        ConsensusResult::PriceAgreed {
+                            aggregated_signature: BLSSignature(vec![0; 64]),
+                            signer_count: 0,
+                            signers_bitmask: U256::zero(),
+                            cycle_number,
+                        }
+                    }
+                    Err(e) => {
+                        // Price-only: disagreement just means skip this cycle, try next.
+                        // No emergency pause — prices will converge.
+                        ConsensusResult::Failed {
+                            reason: e.to_string(),
+                            cycle_number,
+                        }
                     }
                 }
-                Err(e) => {
-                    // Price-only: disagreement just means skip this cycle, try next.
-                    // No emergency pause — prices will converge.
-                    ConsensusResult::Failed {
-                        reason: e.to_string(),
-                        cycle_number,
-                    }
+            } else {
+                debug!(cycle_number, "This node is a follower (price-only)");
+                self.run_follower_protocol_price_only(cycle_number).await
+            }
+        }).await;
+
+        warn_handle.abort();
+
+        match result {
+            Ok(consensus_result) => consensus_result,
+            Err(_) => {
+                error!(cycle_number, timeout_secs, "Price consensus round exceeded hard timeout — abandoning cycle");
+                ConsensusResult::Timeout {
+                    phase: ConsensusPhase::PriceProposal,
+                    cycle_number,
                 }
             }
-        } else {
-            debug!(cycle_number, "This node is a follower (price-only)");
-            self.run_follower_protocol_price_only(cycle_number).await
         }
     }
 
@@ -1071,13 +1110,45 @@ where
         // aggregated BLS signatures from leader to followers.
         let am_leader = self.leader_elector.write().await.is_leader_for_cycle(cycle_number);
 
-        if am_leader {
-            info!(cycle_number, "This node is the leader");
-            self.run_leader_protocol(cycle_number, prices, order_ids, fills)
-                .await
-        } else {
-            debug!(cycle_number, "This node is a follower");
-            self.run_follower_protocol(cycle_number).await
+        // Wrap the consensus round in a hard timeout to prevent indefinite blocking
+        // (crashed leader, unresponsive peer, hung API call).
+        let timeout_secs = self.config.round_timeout_secs;
+        let timeout_dur = Duration::from_secs(timeout_secs);
+        let warn_secs = timeout_secs / 2;
+
+        // Spawn a warning timer — fires at the halfway mark if the round is still running.
+        let warn_handle = tokio::spawn({
+            let cn = cycle_number;
+            async move {
+                sleep(Duration::from_secs(warn_secs)).await;
+                warn!(cycle_number = cn, elapsed_secs = warn_secs, timeout_secs,
+                    "Consensus round still running at halfway mark");
+            }
+        });
+
+        let result = tokio::time::timeout(timeout_dur, async {
+            if am_leader {
+                info!(cycle_number, "This node is the leader");
+                self.run_leader_protocol(cycle_number, prices, order_ids, fills)
+                    .await
+            } else {
+                debug!(cycle_number, "This node is a follower");
+                self.run_follower_protocol(cycle_number).await
+            }
+        }).await;
+
+        // Cancel the warning timer if the round completed before it fired
+        warn_handle.abort();
+
+        match result {
+            Ok(consensus_result) => consensus_result,
+            Err(_) => {
+                error!(cycle_number, timeout_secs, "Consensus round exceeded hard timeout — abandoning cycle");
+                ConsensusResult::Timeout {
+                    phase: ConsensusPhase::PriceProposal,
+                    cycle_number,
+                }
+            }
         }
     }
 

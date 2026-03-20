@@ -70,6 +70,8 @@ pub struct BootstrapParams {
     pub skip_wal_replay: bool,
     /// BLS sign timeout for consensus rounds in milliseconds (default: 300).
     pub sign_timeout_ms: u64,
+    /// Hard timeout for an entire consensus round in seconds (default: 120).
+    pub consensus_round_timeout_secs: u64,
 }
 
 /// Main bootstrap orchestrator
