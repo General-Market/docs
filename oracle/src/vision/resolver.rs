@@ -1005,8 +1005,8 @@ mod tests {
             let outcome_f64 = resolve_outcome(pct_change_f64, res_type, threshold_f64);
 
             // Integer BPS path
-            let start_scaled = (start * 1e8) as u128;
-            let end_scaled = (end * 1e8) as u128;
+            let start_scaled = (start * 1e8) as i128;
+            let end_scaled = (end * 1e8) as i128;
             let pct_bps = compute_pct_change_bps(start_scaled, end_scaled);
             let outcome_bps = resolve_outcome_bps(pct_bps, res_type, threshold_bps);
 
