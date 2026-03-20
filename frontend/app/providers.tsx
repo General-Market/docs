@@ -18,7 +18,7 @@ import { ReactNode, useMemo, useState } from 'react'
 function SSEWrapper({ children }: { children: ReactNode }) {
   const { address } = useAccount()
   const topics = useMemo(() => {
-    const t = ['system', 'nav', 'oracle', 'morpho-markets']
+    const t = ['system', 'nav', 'oracle', 'morpho-markets', 'morpho-vault']
     if (address) t.push('balances', 'allowances', 'orders', 'positions', 'cost-basis')
     return t
   }, [address])

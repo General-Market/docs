@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAccount } from 'wagmi'
-import { useSSEPositions, useSSEOracle } from './useSSE'
+import { useSSEPositionForMarket, useSSEOracle } from './useSSE'
 import { fetchMorphoPosition, type MorphoPosition } from '@/lib/api/backend'
 import {
   UserPosition,
@@ -46,8 +46,8 @@ function safeBigInt(s: string | undefined): bigint {
 export function useMorphoPosition(market?: MorphoMarketEntry): UseMorphoPositionReturn {
   const { address } = useAccount()
 
-  // SSE streams — instant updates for raw position + oracle price
-  const ssePosition = useSSEPositions()
+  // SSE streams — instant updates for raw position (keyed by market ID) + oracle price
+  const ssePosition = useSSEPositionForMarket(market?.marketId)
   const sseOracle = useSSEOracle()
 
   // REST for computed fields (debt_amount, max_borrow, max_withdraw)

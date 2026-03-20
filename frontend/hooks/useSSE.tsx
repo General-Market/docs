@@ -129,6 +129,14 @@ export interface MorphoMarketSSE {
   last_update: number
 }
 
+export interface MorphoVaultSSE {
+  total_assets: string
+  total_supply: string
+  name: string
+  symbol: string
+  decimals: number
+}
+
 export interface FillRecord {
   order_id: number
   side: number
@@ -156,6 +164,7 @@ export interface SSEData {
   oraclePrices: OracleSnapshot | null
   systemStatus: SystemSnapshot | null
   morphoMarkets: MorphoMarketSSE[]
+  morphoVault: MorphoVaultSSE | null
   userBalances: UserBalances | null
   userAllowances: UserAllowances | null
   userOrders: UserOrder[]
@@ -173,6 +182,7 @@ const INITIAL_DATA: SSEData = {
   oraclePrices: null,
   systemStatus: null,
   morphoMarkets: [],
+  morphoVault: null,
   userBalances: null,
   userAllowances: null,
   userOrders: [],
@@ -314,6 +324,16 @@ export function SSEProvider({ children, topics, address }: SSEProviderProps) {
           } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
         })
 
+        es.addEventListener('morpho-vault', (event: MessageEvent) => {
+          try {
+            const parsed: MorphoVaultSSE = JSON.parse(event.data)
+            setData(prev => ({ ...prev, morphoVault: parsed }))
+            setConnectionState('connected')
+            reconnectAttemptRef.current = 0
+            if (sseFirstEvent) { sseFirstEvent = false; posthog.capture('sse_connected', { topic: topicsKey }) }
+          } catch (e) { console.error('[SSEProvider] malformed SSE event:', e) }
+        })
+
         es.addEventListener('user-balances', (event: MessageEvent) => {
           try {
             const parsed: UserBalances = JSON.parse(event.data)
@@ -437,9 +457,16 @@ export function useSSEOrders(): UserOrder[] {
   return data.userOrders
 }
 
-export function useSSEPositions(): MorphoPositionSnapshot | null {
+export function useSSEPositions(): Record<string, MorphoPositionSnapshot> | null {
   const { data } = useContext(SSEContext)
   return data.userPositions
+}
+
+/** Look up a single market's position from the SSE positions map by market ID. */
+export function useSSEPositionForMarket(marketId: string | undefined): MorphoPositionSnapshot | null {
+  const { data } = useContext(SSEContext)
+  if (!marketId || !data.userPositions) return null
+  return data.userPositions[marketId] ?? null
 }
 
 export function useSSECostBasis(): UserCostBasis | null {
@@ -460,6 +487,11 @@ export function useSSEOracle(): OracleSnapshot | null {
 export function useSSEMorphoMarkets(): MorphoMarketSSE[] {
   const { data } = useContext(SSEContext)
   return data.morphoMarkets
+}
+
+export function useSSEMorphoVault(): MorphoVaultSSE | null {
+  const { data } = useContext(SSEContext)
+  return data.morphoVault
 }
 
 export function useSSEConnectionState(): SSEConnectionState {
