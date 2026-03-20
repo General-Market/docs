@@ -510,8 +510,9 @@ impl EthersChainWriter {
 
     /// Submit a createBatch transaction to Vision.sol on L3.
     ///
-    /// Returns the transaction hash. The on-chain batchId is emitted via
-    /// the BatchCreated event and picked up by the chain listener.
+    /// Returns `(tx_hash, on_chain_batch_id)`. The `on_chain_batch_id` is parsed
+    /// from the `BatchCreated` event in the receipt logs. This is the contract-assigned
+    /// batch ID that the scheduler and other subsystems must use for tracking.
     pub async fn create_batch(
         &self,
         source_id: H256,
@@ -521,7 +522,7 @@ impl EthersChainWriter {
         bls_sig: Vec<u8>,
         ref_nonce: u64,
         signers_bitmask: U256,
-    ) -> Result<TxHash, Error> {
+    ) -> Result<(TxHash, u64), Error> {
         info!(
             source_id = ?source_id,
             config_hash = ?config_hash,
@@ -537,7 +538,31 @@ impl EthersChainWriter {
             source_id, config_hash, tick_duration, lock_offset,
             &bls_sig, ref_nonce, signers_bitmask,
         );
-        self.submit_tx(tx, "create_batch").await
+        let (tx_hash, receipt) = self.submit_tx_with_receipt(tx, "create_batch").await?;
+
+        // Parse on-chain batchId from BatchCreated event in receipt logs.
+        // Event: BatchCreated(uint256 indexed batchId, bytes32 indexed sourceId, address indexed creator, ...)
+        // batchId is topics[1] (first indexed param).
+        let batch_created_topic = H256::from(ethers::utils::keccak256(
+            b"BatchCreated(uint256,bytes32,address,bytes32,uint256,uint256)",
+        ));
+
+        let on_chain_batch_id = receipt.logs.iter()
+            .find(|log| log.topics.first() == Some(&batch_created_topic))
+            .and_then(|log| log.topics.get(1))
+            .map(|topic| U256::from(topic.as_bytes()).as_u64())
+            .ok_or_else(|| Error::ChainWrite(format!(
+                "createBatch tx {:?} succeeded but no BatchCreated event found in receipt logs",
+                tx_hash,
+            )))?;
+
+        info!(
+            tx_hash = ?tx_hash,
+            on_chain_batch_id,
+            "Parsed on-chain batchId from BatchCreated event"
+        );
+
+        Ok((tx_hash, on_chain_batch_id))
     }
 
     /// Build a settleBatch transaction
@@ -650,6 +675,17 @@ impl EthersChainWriter {
     /// resyncs the nonce manager and retries with a fresh nonce (up to 3 attempts).
     /// This handles the case where bridge buy/sell/batch operations compete for nonces.
     async fn submit_tx(&self, tx: TypedTransaction, operation: &str) -> Result<TxHash, Error> {
+        let (tx_hash, _receipt) = self.submit_tx_with_receipt(tx, operation).await?;
+        Ok(tx_hash)
+    }
+
+    /// Like `submit_tx` but also returns the `TransactionReceipt`.
+    /// Callers that need event logs (e.g. `create_batch` parsing `BatchCreated`) use this.
+    async fn submit_tx_with_receipt(
+        &self,
+        tx: TypedTransaction,
+        operation: &str,
+    ) -> Result<(TxHash, TransactionReceipt), Error> {
         const MAX_NONCE_RETRIES: u32 = 3;
 
         for nonce_attempt in 0..=MAX_NONCE_RETRIES {
@@ -728,7 +764,7 @@ impl EthersChainWriter {
                         ));
                     }
 
-                    Ok::<_, String>(tx_hash)
+                    Ok::<_, String>((tx_hash, receipt))
                 }
             })
             .await;
@@ -744,7 +780,7 @@ impl EthersChainWriter {
             );
 
             match result {
-                Ok(tx_hash) => {
+                Ok((tx_hash, receipt)) => {
                     // Track the pending transaction
                     self.nonce_manager.track_pending(nonce, tx_hash);
 
@@ -765,7 +801,7 @@ impl EthersChainWriter {
                         );
                     }
 
-                    return Ok(tx_hash);
+                    return Ok((tx_hash, receipt));
                 }
                 Err(e) => {
                     let error_msg = e.to_string();

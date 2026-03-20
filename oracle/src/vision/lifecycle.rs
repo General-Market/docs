@@ -732,11 +732,14 @@ impl BatchLifecycleManager {
                 };
 
                 let signers_bitmask = U256::from(signer_bits);
-                self.submit_create_batch(
+                if let Some(on_chain_id) = self.submit_create_batch(
                     source_name, writer, source_id, config_hash,
                     tick_duration, lock_offset, aggregated.0,
                     ref_nonce, signers_bitmask, lifecycle_id,
-                ).await;
+                ).await {
+                    return Ok(on_chain_id);
+                }
+                // Submission failed — fall through to return lifecycle_id as fallback
             } else {
                 warn!(
                     source = %source_name,
@@ -758,6 +761,9 @@ impl BatchLifecycleManager {
     }
 
     /// Submit createBatch on-chain (extracted for reuse from two code paths above).
+    ///
+    /// Returns the on-chain batch ID parsed from the `BatchCreated` event,
+    /// or `None` if the submission failed.
     async fn submit_create_batch(
         &self,
         source_name: &str,
@@ -770,7 +776,7 @@ impl BatchLifecycleManager {
         ref_nonce: u64,
         signers_bitmask: U256,
         lifecycle_id: u64,
-    ) {
+    ) -> Option<u64> {
         info!(
             source = %source_name,
             ?source_id,
@@ -791,13 +797,34 @@ impl BatchLifecycleManager {
             ref_nonce,
             signers_bitmask,
         ).await {
-            Ok(tx_hash) => {
+            Ok((tx_hash, on_chain_batch_id)) => {
                 info!(
                     source = %source_name,
                     tx_hash = ?tx_hash,
                     lifecycle_id,
-                    "createBatch submitted on-chain"
+                    on_chain_batch_id,
+                    "createBatch submitted — on-chain batchId extracted from receipt"
                 );
+
+                // Update the lifecycle DB record with the real on-chain batch ID
+                if let Err(e) = sqlx::query(
+                    "UPDATE vision_batch_lifecycle SET batch_id = $1 WHERE batch_id = $2",
+                )
+                .bind(on_chain_batch_id as i64)
+                .bind(lifecycle_id as i64)
+                .execute(&self.pool)
+                .await
+                {
+                    warn!(
+                        source = %source_name,
+                        lifecycle_id,
+                        on_chain_batch_id,
+                        error = %e,
+                        "Failed to update lifecycle record with on-chain batch_id"
+                    );
+                }
+
+                Some(on_chain_batch_id)
             }
             Err(e) => {
                 error!(
@@ -805,6 +832,7 @@ impl BatchLifecycleManager {
                     error = %e,
                     "createBatch on-chain submission failed"
                 );
+                None
             }
         }
     }
