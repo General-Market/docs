@@ -306,7 +306,8 @@ impl ChainCache {
         }
     }
 
-    pub async fn get_or_create_user(&self, address: &str) -> Arc<RwLock<UserCache>> {
+    /// Returns (cache, is_new) — caller can trigger eager poll for new users
+    pub async fn get_or_create_user(&self, address: &str) -> (Arc<RwLock<UserCache>>, bool) {
         let addr = address.to_lowercase();
         {
             let users = self.users.read().await;
@@ -315,12 +316,13 @@ impl ChainCache {
                 if let Ok(mut uc) = u.try_write() {
                     uc.last_activity = Instant::now();
                 }
-                return Arc::clone(u);
+                return (Arc::clone(u), false);
             }
         }
         let mut users = self.users.write().await;
+        let is_new = !users.contains_key(&addr);
         let entry = users.entry(addr).or_insert_with(|| Arc::new(RwLock::new(UserCache::default())));
-        Arc::clone(entry)
+        (Arc::clone(entry), is_new)
     }
 
     pub async fn evict_stale_users(&self, max_age: std::time::Duration) {

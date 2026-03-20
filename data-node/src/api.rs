@@ -6172,7 +6172,21 @@ async fn sse_stream(
             matches!(t.as_str(), "balances" | "allowances" | "orders" | "positions" | "cost-basis")
         );
         if has_user_topic {
-            Some(state.chain_cache.get_or_create_user(addr).await)
+            let (cache, is_new) = state.chain_cache.get_or_create_user(addr).await;
+            // Eager poll for new users — don't wait 60s for the next cycle
+            if is_new {
+                let state_clone = Arc::clone(&state);
+                let addr_clone = addr.clone();
+                tokio::spawn(async move {
+                    tracing::info!(user = %addr_clone, "Eager polling new user");
+                    // Run all user pollers — they iterate registered users including this new one
+                    let _ = crate::chain_pollers::poll_user_balances_once(&state_clone).await;
+                    let _ = crate::chain_pollers::poll_user_allowances_once(&state_clone).await;
+                    let _ = crate::chain_pollers::poll_user_orders_once(&state_clone).await;
+                    let _ = crate::chain_pollers::poll_user_positions_once(&state_clone).await;
+                });
+            }
+            Some(cache)
         } else {
             None
         }
