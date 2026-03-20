@@ -12,7 +12,17 @@
 
 **Scope (this phase):** `/morpho-markets` endpoint + frontend + curator allocator/rate_pusher. **Deferred to phase 2:** health_monitor migration, market_deployer migration, `/morpho-vault/supply-queue` + `/index/itp-vaults` endpoints, multi-market position poller.
 
-**Audit fixes applied:** 11 issues from 3 cynical security researchers (4 CRIT, 7 HIGH).
+**Audit fixes applied:** 20 issues from 6 cynical security researchers across 2 rounds.
+
+**IMPLEMENTER WARNINGS (from final audit — must handle):**
+1. Use `spawn_poller!` macro for wiring the poller (NOT inline code). Search for existing `spawn_poller!` calls in main.rs.
+2. Add `batch_markets` field to BOTH the `AppState` struct AND its constructor in main.rs.
+3. Add `morpho_markets` + `morpho_markets_gen` to BOTH `ChainCache` struct AND `ChainCache::new()`.
+4. Extend `MorphoPositionQuery` struct with `market_id: Option<String>`.
+5. Use per-market `bm.irm` for IRM address inside the poller loop, NOT a global IRM reader.
+6. Normalize `0x` prefix in `market_id` comparisons: `strip_prefix("0x")` on both sides.
+7. Curator's `MarketMetrics` needs `vault_supply` (vault position per market) — data-node CANNOT provide this. Keep direct RPC for allocator's read-before-write path. Data-node path is for monitoring/rate reads only.
+8. VaultModal's `MarketsTableInline` still calls `getAllMorphoMarkets()` — after this plan, the table rows should come from the hook's data, not the static registry. Either update VaultModal or document the bifurcation.
 
 ---
 
