@@ -1,4 +1,3 @@
-export { MarketsTable } from './MarketsTable'
 export { DepositCollateral } from './DepositCollateral'
 export { BorrowUsdc } from './BorrowUsdc'
 export { PositionCard } from './PositionCard'

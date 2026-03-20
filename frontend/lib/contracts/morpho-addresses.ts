@@ -40,7 +40,7 @@ export function getDefaultMarketParams(): MarketParams {
     loanToken: MORPHO_ADDRESSES.loanToken,
     collateralToken: MORPHO_ADDRESSES.collateralToken,
     oracle: MORPHO_ADDRESSES.itpOracle,
-    irm: MORPHO_ADDRESSES.adaptiveIrm,
+    irm: MORPHO_ADDRESSES.curatorRateIrm,
     lltv: MORPHO_ADDRESSES.lltv,
   }
 }

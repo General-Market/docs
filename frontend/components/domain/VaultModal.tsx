@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 import { formatUnits } from 'viem'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useMetaMorphoVault } from '@/hooks/useMetaMorphoVault'
-import { useMorphoMarkets } from '@/hooks/useMorphoMarkets'
 import { useMorphoPosition } from '@/hooks/useMorphoPosition'
 import { useAllMorphoMarkets, type AllMarketData } from '@/hooks/useAllMorphoMarkets'
 import { VaultDeposit } from '@/components/lending/VaultDeposit'
@@ -89,8 +88,7 @@ export function VaultModal({ onClose, inline }: VaultModalProps) {
 function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAction; toggleAction: (a: ActiveAction) => void }) {
   const t = useTranslations('lending')
   const { vaultInfo, userPosition, refetch: refetchVault } = useMetaMorphoVault()
-  const { markets, refetch: refetchMarkets } = useMorphoMarkets()
-  const { position, refetch: refetchPosition } = useMorphoPosition()
+  const { position, oraclePrice, refetch: refetchPosition } = useMorphoPosition()
   const { data: allMarketData } = useAllMorphoMarkets()
 
   // State for the borrow modal opened from the markets table
@@ -103,17 +101,30 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
   useEffect(() => {
     const handleRefresh = () => {
       refetchVault()
-      refetchMarkets()
       refetchPosition()
     }
     window.addEventListener('lending-refresh', handleRefresh)
     return () => window.removeEventListener('lending-refresh', handleRefresh)
-  }, [refetchVault, refetchMarkets, refetchPosition])
+  }, [refetchVault, refetchPosition])
 
-  const market = markets[0]
-  const supplyApy = vaultInfo?.apy ?? 0
-  const borrowApy = market?.borrowApy ?? 0
-  const utilization = vaultInfo?.utilization ?? 0
+  const { totalSupply, totalBorrow, weightedBorrowApy } = useMemo(() => {
+    let ts = 0n, tb = 0n, weightedRate = 0
+    if (allMarketData) {
+      for (const m of allMarketData.values()) {
+        ts += m.totalSupplyAssets
+        tb += m.totalBorrowAssets
+        weightedRate += m.borrowApy * Number(m.totalBorrowAssets)
+      }
+    }
+    return {
+      totalSupply: ts,
+      totalBorrow: tb,
+      weightedBorrowApy: tb > 0n ? weightedRate / Number(tb) : 0,
+    }
+  }, [allMarketData])
+  const borrowApy = weightedBorrowApy
+  const utilization = totalSupply > 0n ? Number((totalBorrow * 10000n) / totalSupply) / 100 : 0
+  const supplyApy = borrowApy > 0 ? borrowApy * utilization / 100 : (vaultInfo?.apy ?? 0)
 
   // Format vault TVL
   const vaultTvl = vaultInfo?.totalAssets
@@ -130,16 +141,19 @@ function LendDashboard({ activeAction, toggleAction }: { activeAction: ActiveAct
     : utilization === 0 ? 'No borrows yet' : '$0.00'
 
   // User borrow data
+  const oraclePriceNum = oraclePrice ? parseFloat(formatUnits(oraclePrice, 36)) : 1
   const collateralValue = position?.collateralAmount
-    ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * (market ? parseFloat(formatUnits(market.navPrice, 36)) : 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : '$0.00'
+    ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * oraclePriceNum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '—'
   const outstandingDebt = position?.debtAmount
     ? `$${parseFloat(formatUnits(position.debtAmount, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : '$0.00'
+    : '—'
   const maxBorrow = position?.maxBorrow
     ? `$${parseFloat(formatUnits(position.maxBorrow, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : '$0.00'
-  const lltvPercent = market?.lltvPercent ?? 70
+    : '—'
+  const lltvPercent = allMarketData && allMarketData.size > 0
+    ? Number([...allMarketData.values()][0].lltv) / 1e16
+    : 77
 
   return (
     <div className="space-y-6">

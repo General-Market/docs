@@ -3,10 +3,8 @@
 import { useAccount, useReadContract } from 'wagmi'
 import { indexL3 } from '@/lib/wagmi'
 import { MORPHO_ADDRESSES } from '@/lib/contracts/morpho-addresses'
-import { METAMORPHO_VAULT_ABI, MORPHO_ABI } from '@/lib/contracts/morpho-abi'
-import { CURATOR_RATE_IRM_ABI } from '@/lib/contracts/curator-rate-irm-abi'
-import { VaultInfo, VaultPosition, calculateUtilization } from '@/lib/types/morpho'
-import { useSSEOracle } from './useSSE'
+import { METAMORPHO_VAULT_ABI } from '@/lib/contracts/morpho-abi'
+import { VaultInfo, VaultPosition } from '@/lib/types/morpho'
 
 interface UseMetaMorphoVaultReturn {
   /** Vault information */
@@ -119,72 +117,19 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     },
   })
 
-  // SSE oracle for borrow rate
-  const sseOracle = useSSEOracle()
-
-  // Fetch market data for utilization calculation
-  const {
-    data: marketData,
-    isLoading: isMarketLoading,
-    refetch: refetchMarket,
-  } = useReadContract({
-    address: MORPHO_ADDRESSES.morpho,
-    abi: MORPHO_ABI,
-    functionName: 'market',
-    args: [MORPHO_ADDRESSES.marketId],
-    chainId: indexL3.id,
-    query: {
-      refetchInterval: 15000,
-    },
-  })
-
-  // Read stored borrow rate from IRM contract as fallback
-  const {
-    data: irmStoredRate,
-  } = useReadContract({
-    address: MORPHO_ADDRESSES.curatorRateIrm,
-    abi: CURATOR_RATE_IRM_ABI,
-    functionName: 'rates',
-    args: [MORPHO_ADDRESSES.marketId],
-    chainId: indexL3.id,
-    query: {
-      refetchInterval: 15000,
-    },
-  })
-
   // Calculate vault info
-  // Vault shares decimals default to 18 for ERC4626 if not fetched
+  // APY and utilization are now computed by VaultModal from allMarketData aggregation
   const vaultDecimals = decimals !== undefined ? Number(decimals) : 18
 
   let vaultInfo: VaultInfo | undefined
-  if (totalAssets !== undefined && name !== undefined && symbol !== undefined && marketData) {
-    const totalBorrowAssets = BigInt(marketData[2])
-    const totalSupplyAssets = BigInt(marketData[0])
-
-    const utilization = calculateUtilization(totalBorrowAssets, totalSupplyAssets)
-
-    // Compute borrow APY from CuratorRateIRM rate (WAD per second, 1e18 scale)
-    // Priority: SSE borrow_rate → on-chain IRM rates() → linear fallback
-    let borrowApy: number
-    const sseBorrowRate = sseOracle?.borrow_rate_ray
-    if (sseBorrowRate && sseBorrowRate !== '0') {
-      const ratePerSec = Number(BigInt(sseBorrowRate)) / 1e18
-      borrowApy = ratePerSec * 365.25 * 86400 * 100
-    } else if (irmStoredRate && irmStoredRate > 0n) {
-      const ratePerSec = Number(irmStoredRate) / 1e18
-      borrowApy = ratePerSec * 365.25 * 86400 * 100
-    } else {
-      borrowApy = utilization * 0.15
-    }
-    const supplyApy = borrowApy * (utilization / 100)
-
+  if (totalAssets !== undefined && name !== undefined && symbol !== undefined) {
     vaultInfo = {
       address: MORPHO_ADDRESSES.metaMorphoVault,
       name: name as string,
       symbol: symbol as string,
       totalAssets: totalAssets as bigint,
-      apy: supplyApy,
-      utilization,
+      apy: 0,
+      utilization: 0,
       decimals: vaultDecimals,
     }
   }
@@ -209,13 +154,12 @@ export function useMetaMorphoVault(): UseMetaMorphoVaultReturn {
     refetchTotalAssets()
     refetchTotalSupply()
     refetchUserShares()
-    refetchMarket()
   }
 
   return {
     vaultInfo,
     userPosition,
-    isLoading: isTotalAssetsLoading || isTotalSupplyLoading || isNameLoading || isSymbolLoading || isDecimalsLoading || isUserSharesLoading || isMarketLoading,
+    isLoading: isTotalAssetsLoading || isTotalSupplyLoading || isNameLoading || isSymbolLoading || isDecimalsLoading || isUserSharesLoading,
     error: totalAssetsError as Error | null,
     refetch,
   }
