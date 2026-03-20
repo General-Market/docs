@@ -216,22 +216,67 @@ const maxBorrow = position?.maxBorrow && position.maxBorrow > 0n
 
 - [ ] **Step 5: Remove useMetaMorphoVault singleton market reads**
 
-In `useMetaMorphoVault.ts`, remove the `useReadContract` for `MORPHO_ABI` `market` function (lines 126-139) and the `irmStoredRate` read (lines 142-153). These read single-market data that's now handled by `useAllMorphoMarkets`.
+In `useMetaMorphoVault.ts`:
 
-Keep: `totalAssets`, `totalSupply`, `name`, `symbol`, `decimals`, `userShares` — these are vault-level (ERC4626), not market-level.
+1. Remove the `useReadContract` for `MORPHO_ABI` `market` function (lines 126-139) and the `irmStoredRate` read (lines 142-153).
 
-Simplify `vaultInfo` computation: remove `borrowApy`/`utilization` calculation (lines 160-189). Just return:
+2. **CRITICAL: Remove `&& marketData` from the vaultInfo guard** (line 160). Change:
+```typescript
+if (totalAssets !== undefined && name !== undefined && symbol !== undefined && marketData) {
+```
+To:
+```typescript
+if (totalAssets !== undefined && name !== undefined && symbol !== undefined) {
+```
+Without this, `vaultInfo` is permanently `undefined` and the entire lending UI is dead.
+
+3. **CRITICAL: Remove `refetchMarket` from the `refetch` function** and `isMarketLoading` from `isLoading`:
+```typescript
+const refetch = () => {
+  refetchTotalAssets()
+  refetchTotalSupply()
+  refetchUserShares()
+  // refetchMarket removed — no longer exists
+}
+// ...
+isLoading: isTotalAssetsLoading || isTotalSupplyLoading || isNameLoading || isSymbolLoading || isDecimalsLoading || isUserSharesLoading,
+// removed: || isMarketLoading
+```
+
+4. Remove all `borrowApy`/`utilization`/`supplyApy` computation. Simplify `vaultInfo`:
 ```typescript
 vaultInfo = {
   address: MORPHO_ADDRESSES.metaMorphoVault,
   name: name as string,
   symbol: symbol as string,
   totalAssets: totalAssets as bigint,
-  apy: 0, // Will be overridden by VaultModal from aggregate data
+  apy: 0, // Overridden by VaultModal from aggregate data
   utilization: 0,
   decimals: vaultDecimals,
 }
 ```
+
+5. Remove unused imports: `MORPHO_ABI`, `CURATOR_RATE_IRM_ABI`, `useSSEOracle`, `MORPHO_ADDRESSES.marketId`
+
+- [ ] **Step 5b: Fix VaultModal — remove ALL `market` variable references**
+
+After removing `useMorphoMarkets`, the `market = markets[0]` variable is gone. Fix ALL references:
+
+- `borrowApy = market?.borrowApy` → replaced by `weightedBorrowApy` (from step 4 aggregate)
+- `market.navPrice` in `collateralValue` → use `position?.oraclePrice` from `useMorphoPosition` instead:
+```typescript
+const oraclePrice = position?.oraclePrice ? parseFloat(formatUnits(BigInt(position.oraclePrice), 36)) : 1
+const collateralValue = position?.collateralAmount
+  ? `$${(parseFloat(formatUnits(position.collateralAmount, 18)) * oraclePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  : '—'
+```
+- `market?.lltvPercent` → hardcode `77` or read from first `allMarketData` entry:
+```typescript
+const lltvPercent = allMarketData && allMarketData.size > 0
+  ? Number([...allMarketData.values()][0].lltv) / 1e16
+  : 77
+```
+- `refetchMarkets` in `handleRefresh` → remove the call entirely
 
 - [ ] **Step 6: Type-check**
 
@@ -259,58 +304,63 @@ git commit -m "fix: delete useMorphoMarkets + MarketsTable dead code, aggregate 
 ## Task 4: E2E Test — Lending Curator
 
 **Files:**
-- Create: `frontend/e2e/tests/48-lending-curator.spec.ts`
+- Create: `frontend/e2e/tests/28-lending-curator.spec.ts`
 
 - [ ] **Step 1: Write the test**
 
+Use wallet fixture (not raw `@playwright/test`). Scope locators to `#lend`. Use proper wait patterns.
+Number as `09-` to fall into `itp-data` project (matches `0[1-578]-`... actually use `28-` for `ui-verify-itp`).
+
 ```typescript
 /**
- * 48-lending-curator — Verify lending markets have real data after curator reform.
- * Tests:
- * 1. Multiple markets exist with non-zero supply
- * 2. Markets table shows real borrow APY (not '--' or '0.00%')
- * 3. Vault TVL is non-zero
+ * 28-lending-curator — Verify lending markets have real data after curator reform.
  */
-import { test, expect } from '@playwright/test'
-import { VISION_API } from '../env'
+import { test, expect } from '../fixtures/wallet'
+import { FRONTEND_URL } from '../env'
 
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000'
-
-test.describe('Lending Markets', () => {
-  test('48a: lending section shows non-zero vault TVL', async ({ page }) => {
-    await page.goto(`${BASE_URL}/index#lend`)
-    await page.waitForTimeout(3000)
-
-    // Click the Lending nav item
+test.describe('Lending Curator', () => {
+  test('28a: lending section shows non-zero vault TVL', async ({ walletPage: page }) => {
+    // Navigate to lending section
     const lendBtn = page.locator('button:has-text("Lending")')
-    if (await lendBtn.isVisible()) await lendBtn.click()
+    await expect(lendBtn).toBeVisible({ timeout: 15_000 })
+    await lendBtn.click()
     await page.waitForTimeout(2000)
 
-    // Vault TVL should not be '--' or '$0'
-    const tvlCell = page.locator('text=/Vault TVL/').locator('..').locator('p.font-extrabold')
-    await expect(tvlCell).not.toHaveText('--')
+    const lendSect = page.locator('#lend')
+    await expect(lendSect).toBeVisible({ timeout: 30_000 })
+
+    // Vault TVL should not be '--'
+    const tvlCell = lendSect.locator('text=/Vault TVL/').locator('..').locator('p')
+    await expect(tvlCell).not.toHaveText('--', { timeout: 30_000 })
   })
 
-  test('48b: markets table has multiple rows with borrow APY', async ({ page }) => {
-    await page.goto(`${BASE_URL}/index#lend`)
-    await page.waitForTimeout(3000)
-
+  test('28b: markets table has rows with borrow APY', async ({ walletPage: page }) => {
     const lendBtn = page.locator('button:has-text("Lending")')
-    if (await lendBtn.isVisible()) await lendBtn.click()
-    await page.waitForTimeout(3000)
+    await expect(lendBtn).toBeVisible({ timeout: 15_000 })
+    await lendBtn.click()
 
-    // Markets table should have rows
-    const marketRows = page.locator('table tbody tr')
-    const rowCount = await marketRows.count()
+    const lendSect = page.locator('#lend')
+    await expect(lendSect).toBeVisible({ timeout: 30_000 })
+
+    // Scoped to #lend to avoid matching other tables
+    const marketTable = lendSect.locator('table').first()
+    await expect(marketTable).toBeVisible({ timeout: 30_000 })
+
+    const rows = marketTable.locator('tbody tr')
+    await expect(rows.first()).toBeVisible({ timeout: 30_000 })
+    const rowCount = await rows.count()
     expect(rowCount, 'Markets table should have rows').toBeGreaterThan(0)
 
     // At least one row should have a non-placeholder borrow APY
-    const apyCells = page.locator('table tbody tr td:nth-child(3)')
+    const apyCells = marketTable.locator('tbody tr td:nth-child(3)')
     const allText = await apyCells.allTextContents()
     const hasRealApy = allText.some(t => t.includes('%') && !t.includes('--'))
     expect(hasRealApy, 'At least one market should show real borrow APY').toBe(true)
   })
 })
+```
+
+File name: `frontend/e2e/tests/28-lending-curator.spec.ts`
 ```
 
 - [ ] **Step 2: Commit**
@@ -342,10 +392,12 @@ This was missing — the previous version only supplied collateral but no USDC, 
 
 - [ ] **Step 2: Vary utilization ratios**
 
-Replace the fixed `3x` headroom with random multiplier:
+Replace the fixed `3x` headroom with random multiplier. Use the ACTUAL borrow amount (after cap) to size supply:
 ```python
+    # Size supply based on actual borrow (after collateral cap), not uncapped rand_borrow
+    actual_borrow = borrow_wei / 10**18  # in USDC units
     headroom = random.uniform(1.5, 5.0)  # 20-67% utilization
-    supply_usdc = str(int(rand_borrow * headroom * 10**18))
+    supply_usdc = str(int(actual_borrow * headroom * 10**18))
 ```
 
 - [ ] **Step 3: Commit**
