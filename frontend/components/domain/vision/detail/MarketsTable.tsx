@@ -70,30 +70,27 @@ function truncateMiddle(str: string, maxLen: number): string {
   return `${str.slice(0, half + 1)}...${str.slice(-half)}`
 }
 
-// Human-readable resolution type labels
-const RES_TYPE_DISPLAY: Record<string, string> = {
-  UP_0: 'Up/Dn', UP_30: 'Up 30bp',
-  DOWN_0: 'Dn/Up', DOWN_30: 'Dn 30bp',
-  FLAT_0: 'Flat',
-  UP_300: 'Up 3%', UP_3000: 'Up 30%',
-  DOWN_300: 'Dn 3%', DOWN_3000: 'Dn 30%',
-  FLAT_300: 'Flat 3%', FLAT_3000: 'Flat 30%',
-}
-
-/** Format _X types with their actual threshold: UP_X + 30bps → "Up 0.3%" */
+/** Format resolution type with precise threshold from config.
+ *  UP_X + 30bps → "Up 0.3%"   DOWN_X + 50bps → "Dn 0.5%"
+ *  FLAT_X + 30bps → "Flat 0.3%"   UP_0 → "Up/Dn"
+ */
 function formatResLabel(resType: string, thresholdBps?: number): string {
-  // Fixed types have known labels
-  const fixed = RES_TYPE_DISPLAY[resType]
-  if (fixed) return fixed
-  // _X types: compute % from bps
-  if (resType.endsWith('_X') && thresholdBps != null && thresholdBps > 0) {
-    const pct = thresholdBps / 100
-    const pctStr = pct >= 1 ? `${pct.toFixed(0)}%` : `${pct.toFixed(1)}%`
-    if (resType.startsWith('UP')) return `Up ${pctStr}`
-    if (resType.startsWith('DOWN')) return `Dn ${pctStr}`
-    if (resType.startsWith('FLAT')) return `Flat ${pctStr}`
+  const dir = resType.startsWith('UP') ? 'Up'
+    : resType.startsWith('DOWN') ? 'Dn'
+    : resType.startsWith('FLAT') ? 'Flat'
+    : null
+  if (!dir) return resType
+
+  const bps = thresholdBps ?? 0
+  if (bps <= 0) {
+    return dir === 'Flat' ? 'Flat' : dir === 'Up' ? 'Up/Dn' : 'Dn/Up'
   }
-  return resType
+
+  const pct = bps / 100
+  const pctStr = pct >= 10 ? `${pct.toFixed(0)}%`
+    : pct >= 1 ? `${pct.toFixed(1).replace(/\.0$/, '')}%`
+    : `${pct.toFixed(2).replace(/0$/, '')}%`
+  return `${dir} ${pctStr}`
 }
 
 function resolutionBadge(resType: string | undefined, thresholdBps?: number) {
@@ -128,15 +125,6 @@ function formatVolume(vol: string | null): string {
   return num.toFixed(0)
 }
 
-// Resolution type enum → label (matches IVision.ResolutionType)
-const RESOLUTION_TYPE_LABELS: Record<number, string> = {
-  0: 'UP_0', 1: 'UP_30', 2: 'UP_X',
-  3: 'DOWN_0', 4: 'DOWN_30', 5: 'DOWN_X',
-  6: 'FLAT_0', 7: 'FLAT_X',
-  8: 'UP_300', 9: 'UP_3000',
-  10: 'DOWN_300', 11: 'DOWN_3000',
-  12: 'FLAT_300', 13: 'FLAT_3000',
-}
 
 // ── Asset Price History Chart ──
 

@@ -453,24 +453,28 @@ fn resolution_for_volatility(change_pct: f64) -> (&'static str, u32) {
     }
 }
 
-/// Convert a median signed change to a resolution type + threshold that
-/// yields ~50/50 outcomes by construction.
+/// Convert a median signed change to a resolution type + threshold.
 ///
-/// The median IS the 50th percentile: ~50% of ticks will exceed it.
-/// - Positive median → UP_X (asset trends up, bet threshold = median)
-/// - Negative median → DOWN_X (asset trends down, bet threshold = |median|)
-/// - Near-zero median → UP_0 (no trend, any positive = UP)
+/// Three types only:
+/// - `flat_x` — nearly stationary (|median| < 0.1%), ternary: flat/up/down
+/// - `up_0` / `down_0` — trivial volatility (0.1-0.2%), any movement wins
+/// - `up_x` / `down_x` — everything else, exact median threshold for 50/50
 fn resolution_from_median(median_change_pct: f64) -> (&'static str, u32) {
     let threshold_bps = sanitize_threshold_bps(median_change_pct.abs());
-    if threshold_bps == 0 {
-        // No meaningful trend — binary up/down on any movement
-        return ("up_0", 0);
+    let up = median_change_pct >= 0.0;
+
+    // Nearly stationary — flat within ±threshold
+    if threshold_bps < 10 {
+        return ("flat_x", 30);
     }
-    if median_change_pct >= 0.0 {
-        ("up_x", threshold_bps)
-    } else {
-        ("down_x", threshold_bps)
+
+    // Trivial volatility — any directional movement wins
+    if threshold_bps < 20 {
+        return if up { ("up_0", 0) } else { ("down_0", 0) };
     }
+
+    // Everything else — exact median threshold, 50/50 by construction
+    if up { ("up_x", threshold_bps) } else { ("down_x", threshold_bps) }
 }
 
 /// Clamp threshold_bps to the source's strategy bounds.
@@ -1061,18 +1065,25 @@ mod tests {
 
     #[test]
     fn test_resolution_from_median() {
-        // Zero median → up_0 (any positive = up)
-        assert_eq!(resolution_from_median(0.0), ("up_0", 0));
-        assert_eq!(resolution_from_median(0.005), ("up_0", 0)); // rounds to 0 bps
+        // Nearly stationary → flat_x
+        assert_eq!(resolution_from_median(0.0), ("flat_x", 30));
+        assert_eq!(resolution_from_median(0.05), ("flat_x", 30));
+        assert_eq!(resolution_from_median(-0.05), ("flat_x", 30));
 
-        // Positive median → up_x with threshold
-        assert_eq!(resolution_from_median(0.5), ("up_x", 50));   // 0.5% → 50 bps
-        assert_eq!(resolution_from_median(2.5), ("up_x", 250));  // 2.5% → 250 bps
-        assert_eq!(resolution_from_median(15.0), ("up_x", 1500));
+        // Trivial volatility → up_0 / down_0
+        assert_eq!(resolution_from_median(0.15), ("up_0", 0));
+        assert_eq!(resolution_from_median(-0.15), ("down_0", 0));
 
-        // Negative median → down_x with threshold
-        assert_eq!(resolution_from_median(-0.5), ("down_x", 50));
-        assert_eq!(resolution_from_median(-3.7), ("down_x", 370));
+        // Everything else → up_x / down_x with exact median threshold
+        assert_eq!(resolution_from_median(0.3), ("up_x", 30));
+        assert_eq!(resolution_from_median(0.5), ("up_x", 50));
+        assert_eq!(resolution_from_median(-0.3), ("down_x", 30));
+        assert_eq!(resolution_from_median(1.0), ("up_x", 100));
+        assert_eq!(resolution_from_median(-1.5), ("down_x", 150));
+        assert_eq!(resolution_from_median(3.0), ("up_x", 300));
+        assert_eq!(resolution_from_median(10.0), ("up_x", 1000));
+        assert_eq!(resolution_from_median(-15.0), ("down_x", 1500));
+        assert_eq!(resolution_from_median(50.0), ("up_x", 5000));
     }
 
     #[test]
